@@ -45,7 +45,7 @@ public:
 
   [[nodiscard]] static std::vector<Neuron::SpriteDesc> Sprites();
 
-  // How wide the interface's text is set, as the atlas it is drawn from sets it (ADR-056): the fonts Typefaces names, in
+  // How wide the interface's text is set, as the atlas it is drawn from sets it (ADR-061): the fonts Typefaces names, in
   // its order, rasterized for a back buffer at _scale pixels to a reference unit. The layout measures every line it places
   // with it, so that a line is cut short, wrapped or given room by what it takes on the screen. It reads the fonts where
   // they are, so they must outlive it.

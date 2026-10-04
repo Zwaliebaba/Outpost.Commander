@@ -594,7 +594,7 @@ constexpr float CARD_HEIGHT = 80.0f;
 constexpr float CARD_GAP = 7.0f;
 constexpr std::size_t CARDS_PER_LINE = 3;
 // A part card's lines under its name: its numbers, any note, such as a weapon's splash, and at its foot the research that
-// unlocks it. A row whose cards have notes is taller, so that a note and that line never meet (ADR-056).
+// unlocks it. A row whose cards have notes is taller, so that a note and that line never meet (ADR-061).
 constexpr float CARD_NUMBERS_TOP = 34.0f;
 constexpr float CARD_NOTE_TOP = 50.0f;
 constexpr float CARD_NOTE_ROOM = 14.0f;
@@ -618,7 +618,7 @@ constexpr float ORE_MARK_SHARE = 0.6f;
 constexpr float ORE_MARK_GAP_UNITS = 5.0f;
 // The title face's size, which Hud::Typefaces gives it, for the diamond beside a figure in it.
 constexpr float TITLE_FACE_UNITS = 22.0f;
-// The room a line cut short to fit keeps from what stands beside it, such as a cost (ADR-056).
+// The room a line cut short to fit keeps from what stands beside it, such as a cost (ADR-061).
 constexpr float FIT_GAP_UNITS = 6.0f;
 // The box a window's header holds the player's Ore in.
 constexpr float ORE_BOX_WIDTH = 116.0f;
@@ -707,7 +707,7 @@ DesignerExtent ExtentOf(const Hud::DesignerPanel& _panel) noexcept
 }
 
 // Draws into a window of the layout in reference units from the window's top-left corner, as the windows' layouts place
-// everything (ADR-031), measuring its text with the fonts it is drawn in (ADR-056).
+// everything (ADR-031), measuring its text with the fonts it is drawn in (ADR-061).
 class Painter
 {
 public:
@@ -760,8 +760,7 @@ public:
   }
 
   // A line that ends at _right.
-  void RightText(std::string _text, float _right, float _top, const DirectX::XMFLOAT4& _color, Hud::Typeface _face,
-                 float _tracking = 0.0f)
+  void RightText(std::string _text, float _right, float _top, const DirectX::XMFLOAT4& _color, Hud::Typeface _face, float _tracking = 0.0f)
   {
     const float left = _right - Width(_text, _face, _tracking);
     Text(std::move(_text), left, _top, _color, _face, _tracking);
@@ -878,11 +877,12 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
   const float costWidth = paint.DiamondAndFigureWidth(cost, Hud::Typeface::Figure, 13.0f);
   paint.Text(paint.Fit(label, Hud::Typeface::Name, room - costWidth - FIT_GAP_UNITS), BUTTON_INSET, labelTop, labelColor,
              Hud::Typeface::Name);
-  paint.DiamondAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, 13.0f, _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+  paint.DiamondAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, 13.0f,
+                         _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
 }
 
-void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::DesignerPanel& _panel, Outpost::WindowManager::Point _corner,
-                 float _scale)
+void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::DesignerPanel& _panel,
+                 Outpost::WindowManager::Point _corner, float _scale)
 {
   const DesignerExtent extent = ExtentOf(_panel);
   (void)OpenWindow(_layout, Outpost::WindowKind::Designer, std::string(), _corner, DESIGNER_WIDTH, extent.height - Hud::TITLE_BAR_UNITS,
@@ -1115,7 +1115,7 @@ constexpr float QUEUE_ROW_GAP = 4.0f;
 constexpr float QUEUE_BAR_WIDTH = 120.0f;
 constexpr float OPTION_HEIGHT = 48.0f;
 // A topic card: its name, then a line for each line of its effect and for each prerequisite neither researched nor queued,
-// or one for its tier and time. Every card is as tall as the most lines any topic needs, and two at least (ADR-056).
+// or one for its tier and time. Every card is as tall as the most lines any topic needs, and two at least (ADR-061).
 constexpr float TOPIC_LINES_TOP = 28.0f;
 constexpr float TOPIC_LINE_UNITS = 16.0f;
 constexpr float TOPIC_FOOT_UNITS = 4.0f;
@@ -1330,7 +1330,8 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     {
       paint.Sprite(Hud::Sprite::Checkbox, left + CARD_INSET, lineTop + 2.0f, 10.0f, AMBER_COLOR);
       const std::string needs = need == 0 ? std::format("NEEDS{}{}", DOT, topic.needs[need]) : std::format("+ {}", topic.needs[need]);
-      paint.Text(paint.Fit(needs, Hud::Typeface::Label, width - 28.0f - CARD_INSET), left + 28.0f, lineTop, AMBER_COLOR, Hud::Typeface::Label);
+      paint.Text(paint.Fit(needs, Hud::Typeface::Label, width - 28.0f - CARD_INSET), left + 28.0f, lineTop, AMBER_COLOR,
+                 Hud::Typeface::Label);
       lineTop += TOPIC_LINE_UNITS;
     }
     if (!blocked)
@@ -1943,14 +1944,16 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS;
     Painter paint =
       frame({.xUnits = MARGIN, .yUnits = underOreUnits + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP}, TERRITORY_PANEL_WIDTH, heightUnits);
-    constexpr float ADVANCE = 13.0f * MONO_ADVANCE;
-    const auto row = [&](std::string _label, const std::string& _own, const std::string& _enemy, float _top)
+    const auto row = [&](const std::string& _label, const std::string& _own, const std::string& _enemy, float _top)
     {
-      paint.Text(std::move(_label), PADDING, _top, TEXT_COLOR, Typeface::Name);
       const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
-      paint.RightText(_enemy, TERRITORY_PANEL_WIDTH - PADDING, figureTop, ENEMY_COLOR, Typeface::Figure, ADVANCE);
-      paint.RightText(std::format("{} : ", _own), TERRITORY_PANEL_WIDTH - PADDING - (CharactersOf(_enemy) * ADVANCE), figureTop, OWN_COLOR,
-                      Typeface::Figure, ADVANCE);
+      const float right = TERRITORY_PANEL_WIDTH - PADDING;
+      std::string own = std::format("{} : ", _own);
+      const float ownRight = right - paint.Width(_enemy, Typeface::Figure);
+      const float labelRoom = ownRight - paint.Width(own, Typeface::Figure) - PADDING - FIT_GAP_UNITS;
+      paint.Text(paint.Fit(_label, Typeface::Name, labelRoom), PADDING, _top, TEXT_COLOR, Typeface::Name);
+      paint.RightText(_enemy, right, figureTop, ENEMY_COLOR, Typeface::Figure);
+      paint.RightText(std::move(own), ownRight, figureTop, OWN_COLOR, Typeface::Figure);
     };
     row(std::format("Nodes of {}", territory.nodes), std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes),
         TERRITORY_INSET_UNITS);
@@ -1973,8 +1976,9 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, ALERT_PANEL_WIDTH, heightUnits);
     for (size_t line = 0; line < _content.alerts.size(); ++line)
     {
-      paint.Text(_content.alerts[line].first, PADDING, TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS),
-                 line == 0 ? WARNING_COLOR : TEXT_COLOR, Typeface::Name);
+      paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, ALERT_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
+                 TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS), line == 0 ? WARNING_COLOR : TEXT_COLOR,
+                 Typeface::Name);
     }
   }
   if (!_content.research.empty())

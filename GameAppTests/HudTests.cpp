@@ -13,6 +13,39 @@ constexpr Outpost::PlayerId PLAYER{1};
 constexpr Outpost::DesignId SWARM{1};
 constexpr Outpost::DesignId LINE{2};
 
+// The HUD's fonts as the game rasterizes them for a back buffer of each size, kept for the run, since a TextMetrics reads
+// them where they are (ADR-061). A font that is not installed throws, as ADR-030 has it: the tests never guess a width.
+std::map<float, std::vector<Neuron::GlyphAtlas::Font>> g_fontsByScale;
+
+std::span<const Neuron::GlyphAtlas::Font> FontsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  const float scale = Outpost::Hud::Scale(_widthPixels, _heightPixels);
+  auto found = g_fontsByScale.find(scale);
+  if (found == g_fontsByScale.end())
+  {
+    found =
+      g_fontsByScale.emplace(scale, Neuron::RasterizeUiAtlas(Outpost::Hud::Typefaces(), Outpost::Hud::Sprites(), scale).glyphs.fonts).first;
+  }
+  return found->second;
+}
+
+Outpost::Hud::TextMetrics MetricsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  return {FontsFor(_widthPixels, _heightPixels), Outpost::Hud::Scale(_widthPixels, _heightPixels)};
+}
+
+// The HUD and the menu laid out as GameClient lays them out, with the fonts at the back buffer's scale.
+Outpost::Hud::Layout Lay(const Outpost::Hud::Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
+                         std::span<const Outpost::PlanePosition> _view = {}, const Outpost::WindowManager* _windows = nullptr)
+{
+  return Outpost::Hud::Lay(_content, MetricsFor(_widthPixels, _heightPixels), _widthPixels, _heightPixels, _view, _windows);
+}
+
+Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  return Outpost::Hud::LayMenu(MetricsFor(_widthPixels, _heightPixels), _widthPixels, _heightPixels);
+}
+
 Outpost::Snapshot Newest()
 {
   Outpost::Snapshot snapshot{.tick = 5, .player = PLAYER, .ore = 12345};
@@ -85,6 +118,100 @@ Outpost::EntityView Ship(std::uint32_t _id, Outpost::DesignId _design, std::int3
           .hitPointsHundredths = _hitPointsHundredths,
           .maxHitPointsHundredths = _maxHundredths};
 }
+// A name of DESIGN_NAME_LIMIT characters in the name face's widest capital, ending in _last so that names differ.
+std::string LongestName(char _last)
+{
+  return std::string(Outpost::DESIGN_NAME_LIMIT - 1, 'W') + _last;
+}
+
+// The longest content the game makes, with every window open (task 14.1): six designs of the longest names, all selected,
+// one of them loaded in the designer of five weapons, every part locked or every part unlocked; a full queue at a
+// Shipyard and at the Lab; a page of topics, among them Relay Archives with both its prerequisites to do; a placement's
+// hint, the research line, the alerts, the territory and the banner. The Ore is five figures, more than any match in the
+// review banked.
+Outpost::Hud::Content LongestContent(bool _unlocked)
+{
+  Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
+  newest.ore = 99999;
+  std::vector<Outpost::EntityId> selected;
+  for (std::uint32_t i = 0; i < 6; ++i)
+  {
+    const Outpost::DesignId design{10 + i};
+    newest.designs.push_back({.id = design,
+                              .nameUtf8 = LongestName(static_cast<char>('A' + i)),
+                              .hull = Outpost::HullId{2},
+                              .drive = Outpost::DriveId{1},
+                              .weapon = Outpost::WeaponId{2},
+                              .cost = 1234});
+    newest.entities.push_back(Ship(100 + i, design, 150000, 220000));
+    selected.push_back(Outpost::EntityId{100 + i});
+  }
+  Outpost::Designer designer;
+  designer.Update(newest);
+  designer.Load(newest.designs.back());
+  Outpost::Hud::Content content =
+    Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, std::nullopt);
+  content.research = "Researching Mass Driver Calibration, 99%";
+  content.alerts = {{"Shipyard 05 is under attack", {}}, {"Mining Rig 12 destroyed", {}}, {"Relay 03 lost", {}}};
+  content.territory = Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .ownTickets = 10000, .enemyTickets = 10000};
+  content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
+  content.buttons = {{.label = "Shipyard|300"},
+                     {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
+                     {.label = "Production"},
+                     {.label = "Ship designer"},
+                     {.label = "Research"}};
+
+  Outpost::Hud::ProductionPanel production{.producer = "SHIPYARD 05", .hasProducer = true, .canStep = true, .ore = newest.ore};
+  for (const Outpost::DesignView& design : newest.designs)
+    production.options.push_back({.name = design.nameUtf8, .detail = "M\xC2\xB7I\xC2\xB7L", .cost = design.cost});
+  for (std::size_t job = 0; job < Outpost::QUEUE_LIMIT; ++job)
+    production.queue.push_back({.name = LongestName('Q'), .front = job == 0, .permille = 1000});
+  content.production = production;
+
+  Outpost::Hud::ResearchPanel laboratory{.lab = "RESEARCH LAB", .hasLab = true, .ore = newest.ore};
+  laboratory.topics = {
+    {.name = "Relay Archives", .effect = "Opens tier 2", .cost = 400, .needs = {"IMPROVED EXTRACTION", "HULL PLATING"}},
+    {.name = "Mass Driver Calibration", .effect = "Mass Driver fire rate +10%", .cost = 150, .time = "TIER 1 \xC2\xB7 60 s"},
+    {.name = "Defense Autoloader",
+     .effect = "Defense Gun fire rate +20%",
+     .cost = 250,
+     .needs = {"MASS DRIVER CALIBRATION", "AUTOMATED SHIPYARDS"}},
+    {.name = "Reinforced Structures", .effect = "Every structure's hit points +25%", .cost = 250, .time = "TIER 2 \xC2\xB7 120 s"}};
+  while (laboratory.topics.size() < Outpost::Hud::TOPICS_SHOWN + 1)
+    laboratory.topics.push_back(
+      {.name = "Deep Core Survey", .effect = "Asteroids' Ore reserve +30%", .cost = 300, .time = "TIER 2 \xC2\xB7 90 s"});
+  for (std::size_t job = 0; job < Outpost::QUEUE_LIMIT; ++job)
+    laboratory.queue.push_back({.name = "Mass Driver Calibration", .front = job == 0, .waiting = job == 0});
+  content.laboratory = laboratory;
+  return content;
+}
+
+// What 14.1's tests lay out: the menu, and the longest content with its parts locked and unlocked.
+std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> layouts;
+  layouts.emplace_back(L"the menu", LayMenu(_widthPixels, _heightPixels));
+  layouts.emplace_back(L"locked", Lay(LongestContent(false), _widthPixels, _heightPixels));
+  layouts.emplace_back(L"unlocked", Lay(LongestContent(true), _widthPixels, _heightPixels));
+  return layouts;
+}
+
+// The box a text's line is set in, in pixels, as UiPipeline::DrawText sets it: from its pen, rounded to a pixel, as wide as
+// its characters' advances and its tracking, and a line of its font tall.
+Outpost::Hud::Rect LineBoxOf(const Outpost::Hud::Text& _text, std::span<const Neuron::GlyphAtlas::Font> _fonts)
+{
+  const Neuron::GlyphAtlas::Font& font = _fonts[static_cast<std::size_t>(_text.typeface)];
+  return {.left = std::round(_text.left),
+          .top = std::round(_text.top),
+          .width = font.Width(_text.text, std::round(_text.trackingPixels)),
+          .height = font.lineHeight};
+}
+
+// A text named for a failure: its layout, the back buffer's width and what it says.
+std::wstring Named(const std::wstring& _layout, std::uint32_t _widthPixels, const Outpost::Hud::Text& _text)
+{
+  return std::format(L"{} at {} wide: \"{}\"", _layout, _widthPixels, std::wstring(winrt::to_hstring(_text.text)));
+}
 } // namespace
 
 TEST_CLASS(HudTests)
@@ -111,9 +238,9 @@ public:
   TEST_METHOD(LaysTheDesignerOutAsAWindow)
   {
     Outpost::WindowManager windows;
-    Assert::IsTrue(Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows).windows.empty(), L"closed, it is not laid out");
+    Assert::IsTrue(Lay(WithDesigner(), 1920, 1080, {}, &windows).windows.empty(), L"closed, it is not laid out");
     windows.Open(Outpost::WindowKind::Designer);
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows);
+    const Outpost::Hud::Layout layout = Lay(WithDesigner(), 1920, 1080, {}, &windows);
     Assert::AreEqual(size_t{1}, layout.windows.size());
     const Outpost::Hud::Window& window = layout.windows.front();
     Assert::IsTrue(window.kind == Outpost::WindowKind::Designer);
@@ -148,7 +275,7 @@ public:
   TEST_METHOD(KeepsAMovedWindowOnTheScreenAndInFront)
   {
     Outpost::WindowManager windows;
-    const Outpost::Hud::Layout hudOnly = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows);
+    const Outpost::Hud::Layout hudOnly = Lay(WithDesigner(), 1920, 1080, {}, &windows);
     const auto build =
       std::ranges::find(hudOnly.actions, Outpost::Hud::ActionKind::Build, [](const auto& _entry) { return _entry.second.kind; });
     Assert::IsTrue(build != hudOnly.actions.end());
@@ -161,7 +288,7 @@ public:
     const Outpost::WindowManager::Point over{.xUnits = buildX - 20.0f, .yUnits = buildY - 60.0f};
     windows.Grab(Outpost::WindowKind::Designer, over, over);
     windows.Release();
-    const Outpost::Hud::Layout covered = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows);
+    const Outpost::Hud::Layout covered = Lay(WithDesigner(), 1920, 1080, {}, &windows);
     const Outpost::Hud::Window& window = covered.windows.front();
     Assert::IsTrue(window.frame.Contains(buildX, buildY));
     Assert::AreEqual(size_t{1}, covered.LayerAt(buildX, buildY));
@@ -172,14 +299,14 @@ public:
     windows.Grab(Outpost::WindowKind::Designer, {}, {});
     windows.Drag({.xUnits = 5000.0f, .yUnits = 5000.0f});
     windows.Release();
-    const Outpost::Hud::Window farWindow = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows).windows.front();
+    const Outpost::Hud::Window farWindow = Lay(WithDesigner(), 1920, 1080, {}, &windows).windows.front();
     Assert::AreEqual(1920.0f - Outpost::Hud::WINDOW_KEPT_ON_SCREEN_UNITS, farWindow.frame.left, 0.01f);
     Assert::AreEqual(1080.0f - Outpost::Hud::TITLE_BAR_UNITS, farWindow.frame.top, 0.01f);
     // And off the top-left one.
     windows.Grab(Outpost::WindowKind::Designer, {}, {});
     windows.Drag({.xUnits = -5000.0f, .yUnits = -5000.0f});
     windows.Release();
-    const Outpost::Hud::Window nearWindow = Outpost::Hud::Lay(WithDesigner(), 1280, 720, {}, &windows).windows.front();
+    const Outpost::Hud::Window nearWindow = Lay(WithDesigner(), 1280, 720, {}, &windows).windows.front();
     Assert::AreEqual(Outpost::Hud::WINDOW_KEPT_ON_SCREEN_UNITS * (720.0f / 1080.0f), nearWindow.frame.left + nearWindow.frame.width, 0.01f);
     Assert::AreEqual(0.0f, nearWindow.frame.top, 0.01f);
   }
@@ -208,7 +335,7 @@ public:
     const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), {}, {});
     Assert::AreEqual(12345, content.ore);
     Assert::IsTrue(content.selection.empty());
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, layout.panels.size());
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "12,345"; }));
   }
@@ -248,7 +375,7 @@ public:
     Assert::AreEqual(1.0f, Outpost::Hud::Scale(1920, 1200));
 
     const Outpost::Hud::Content content{.ore = 0, .selection = {"1 ship", "Hit points 1 / 1"}};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1200);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1200);
     Assert::AreEqual(size_t{2}, layout.panels.size());
     const Outpost::Hud::Rect& selection = layout.panels[1];
     // Centered, and as far above the bottom edge as on a 1080-line screen.
@@ -262,7 +389,7 @@ public:
   {
     const auto incomeText = [](std::int32_t _hundredths)
     {
-      const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .oreIncomeHundredthsPerSecond = _hundredths}, 1920, 1080);
+      const Outpost::Hud::Layout layout = Lay({.ore = 0, .oreIncomeHundredthsPerSecond = _hundredths}, 1920, 1080);
       const auto income = std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.ends_with("/s"); });
       return income != layout.texts.end() ? income->text : std::string();
     };
@@ -276,7 +403,7 @@ public:
   {
     const auto incomeColor = [](std::int32_t _hundredths)
     {
-      const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .oreIncomeHundredthsPerSecond = _hundredths}, 1920, 1080);
+      const Outpost::Hud::Layout layout = Lay({.ore = 0, .oreIncomeHundredthsPerSecond = _hundredths}, 1920, 1080);
       const auto income = std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.ends_with("/s"); });
       Assert::IsTrue(income != layout.texts.end());
       return income->color;
@@ -320,7 +447,7 @@ public:
     // ADR-046: the button says so in place of its cost; a button the player only cannot afford says nothing more.
     Assert::AreEqual(std::string("ONE PER PLAYER"), content.buttons[1].note);
     Assert::IsTrue(content.buttons[0].note.empty());
-    const Outpost::Hud::Layout noted = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout noted = Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "ONE PER PLAYER"; }));
     Assert::IsFalse(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "200"; }));
 
@@ -374,7 +501,7 @@ public:
     Assert::IsTrue(content.sectors[0].side == Outpost::Hud::Side::Own && content.sectors[2].side == Outpost::Hud::Side::Enemy);
 
     content.fog = true;
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
     Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
                     L"no tickets without them");
@@ -504,7 +631,7 @@ public:
     const Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
     const Outpost::Hud::Content content{
       .ore = 0, .buttons = {{.label = "Shipyard|300", .action = build}, {.label = "Research Lab|200", .action = build, .enabled = false}}};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, layout.actions.size());
     const Outpost::Hud::Rect& area = layout.actions.front().first;
     Assert::IsTrue(area.left + area.width < 1920.0f && area.left > 1920.0f - 400.0f);
@@ -549,7 +676,7 @@ public:
     const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{full, dry}, {});
     Assert::IsFalse(content.marks[0].dry);
     Assert::IsTrue(content.marks[1].dry);
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const auto colorAt = [&layout](Outpost::PlanePosition _position)
     {
       const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(_position);
@@ -570,7 +697,7 @@ public:
     const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, {});
     Assert::AreEqual(size_t{1}, content.marks.size());
     const std::vector<Outpost::PlanePosition> view{{-200.0f, 150.0f}, {200.0f, 150.0f}, {300.0f, -150.0f}, {-300.0f, -150.0f}};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080, view);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080, view);
     const Outpost::Hud::Rect& map = layout.minimap;
     Assert::IsTrue(map.width > 0.0f && map.left < 400.0f && map.top + map.height > 800.0f, L"bottom-left");
 
@@ -638,7 +765,7 @@ public:
     const Outpost::Hud::ResearchPanel waiting = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
     const auto automated = std::ranges::find(waiting.topics, std::string("Automated Shipyards"), &Outpost::Hud::TopicCard::name);
     Assert::IsTrue(automated != waiting.topics.end());
-    Assert::AreEqual(std::string("NEEDS \xC2\xB7 IMPROVED EXTRACTION"), automated->needs);
+    Assert::IsTrue(automated->needs == std::vector<std::string>{"IMPROVED EXTRACTION"});
     Assert::IsFalse(automated->enabled);
     const Outpost::Hud::ResearchPanel none = Outpost::Hud::DescribeResearch(newest, {});
     Assert::AreEqual(std::string("NO RESEARCH LAB"), none.lab);
@@ -648,7 +775,7 @@ public:
     // Nothing selected, the research still shows under the Ore.
     const Outpost::Hud::Content unselected = Outpost::Hud::Describe(newest, std::vector{lab}, {});
     Assert::AreEqual(std::string("Researching Hull Plating, 25%"), unselected.research);
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(unselected, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(unselected, 1920, 1080);
     Assert::IsTrue(
       std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Researching Hull Plating, 25%"; }));
   }
@@ -890,7 +1017,7 @@ public:
 
     Outpost::Hud::Content content;
     content.designer = panel;
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, layout.windows.size());
     const Outpost::Hud::Rect& frame = layout.windows.front().frame;
     Assert::IsTrue(frame.top >= 0.0f && frame.top + frame.height <= 1080.0f, std::to_wstring(frame.top + frame.height).c_str());
@@ -904,7 +1031,7 @@ public:
       designer.Update(_newest);
       Outpost::Hud::Content content;
       content.designer = DesignerOf(_newest, designer);
-      return Outpost::Hud::Lay(content, 1920, 1080);
+      return Lay(content, 1920, 1080);
     };
     const auto count = [](const Outpost::Hud::Layout& _layout, Outpost::Hud::ActionKind _kind)
     { return static_cast<size_t>(std::ranges::count(_layout.actions, _kind, [](const auto& _entry) { return _entry.second.kind; })); };
@@ -1006,12 +1133,12 @@ public:
     Assert::AreEqual(std::string("TIER 1 \xC2\xB7 60 s"), panel.topics[0].time);
     Assert::IsTrue(panel.topics[1].gateway && panel.topics[1].tier == 2);
     Assert::AreEqual(std::string("TIER 2 \xC2\xB7 150 s"), panel.topics[1].time);
-    Assert::AreEqual(std::string("NEEDS \xC2\xB7 RELAY ARCHIVES"), panel.topics[2].needs, L"its tier waits for the gateway");
+    Assert::IsTrue(panel.topics[2].needs == std::vector<std::string>{"RELAY ARCHIVES"}, L"its tier waits for the gateway");
     Assert::IsFalse(panel.topics[2].gateway);
 
     Outpost::Hud::Content content;
     content.laboratory = panel;
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const Outpost::Hud::Span panels = layout.PanelsOf(1);
     const auto gold = std::count_if(layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.first),
                                     layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.end),
@@ -1038,7 +1165,7 @@ public:
     Outpost::Designer designer;
     designer.Update(newest);
     content.designer = DesignerOf(newest, designer);
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{3}, layout.windows.size());
     const Outpost::Hud::Window& production = layout.windows[0];
     const Outpost::Hud::Window& lab = layout.windows[1];
@@ -1083,7 +1210,7 @@ public:
        .side = Outpost::Hud::Side::Neutral,
        .kind = Outpost::EntityKind::AsteroidField},
     };
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
 
     // With no fog and no view, the marks are the last panels, in order.
     Assert::IsTrue(layout.panels.size() >= 2);
@@ -1101,7 +1228,7 @@ public:
   {
     const auto oreAt = [](std::int32_t _ore)
     {
-      const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = _ore, .oreIncomeHundredthsPerSecond = 2700}, 1920, 1080);
+      const Outpost::Hud::Layout layout = Lay({.ore = _ore, .oreIncomeHundredthsPerSecond = 2700}, 1920, 1080);
       const auto diamond = std::ranges::find(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite);
       const auto figure = std::ranges::find(layout.texts, Outpost::WithThousands(_ore), &Outpost::Hud::Text::text);
       const auto income = std::ranges::find(layout.texts, std::string("+27/s"), &Outpost::Hud::Text::text);
@@ -1122,8 +1249,8 @@ public:
     const Outpost::Hud::Content healthy{.ore = 0, .selection = {"Shipyard", "Hit points 3,000 / 3,000"}};
     Outpost::Hud::Content hurt = healthy;
     hurt.selectionHealth = 0.2f;
-    const Outpost::Hud::Layout without = Outpost::Hud::Lay(healthy, 1920, 1080);
-    const Outpost::Hud::Layout with = Outpost::Hud::Lay(hurt, 1920, 1080);
+    const Outpost::Hud::Layout without = Lay(healthy, 1920, 1080);
+    const Outpost::Hud::Layout with = Lay(hurt, 1920, 1080);
     const Outpost::Hud::Rect& panel = with.panels[1];
     Assert::IsTrue(panel.height > without.panels[1].height, L"the bar is under the lines");
     Assert::AreEqual(without.panels[1].top + without.panels[1].height, panel.top + panel.height, 0.01f, L"anchored to the bottom");
@@ -1141,7 +1268,7 @@ public:
     const Outpost::PlanePosition at{.xMeters = 400.0f, .zMeters = 400.0f};
     content.marks = {{.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Own, .kind = Outpost::EntityKind::Structure},
                      {.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Neutral, .kind = Outpost::EntityKind::Asteroid}};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const Outpost::Hud::Rect& ore = layout.panels[layout.panels.size() - 2];
     const Outpost::Hud::Rect& rig = layout.panels.back();
     Assert::IsTrue(ore.color.x > ore.color.z && rig.color.z > rig.color.x, L"the gold ore first, the blue rig over it");
@@ -1157,7 +1284,7 @@ public:
                                         .buttons = {{.label = "Production"}},
                                         .research = "Researching Hull Plating, 25%",
                                         .mapSizeMeters = 2000.0f};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const Outpost::Hud::Span sprites = layout.SpritesOf(0);
     const auto corners = std::count_if(layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.first),
                                        layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end),
@@ -1176,7 +1303,7 @@ public:
                                     .hasProducer = true,
                                     .ore = 12345,
                                     .options = {{.name = "Swarm", .cost = 2500, .action = {.kind = Outpost::Hud::ActionKind::Queue}}}};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const auto has = [&layout](std::string_view _text)
     { return std::ranges::any_of(layout.texts, [_text](const Outpost::Hud::Text& _line) { return _line.text == _text; }); };
     Assert::IsTrue(has("12,345") && has("1,500") && has("2,500"));
@@ -1197,7 +1324,7 @@ public:
       yard.queue.assign(_jobs, Outpost::JobView{.design = SWARM});
       Outpost::Hud::Content content;
       content.production = Outpost::Hud::DescribeProduction(newest, &yard);
-      return Outpost::Hud::Lay(content, 1920, 1080);
+      return Lay(content, 1920, 1080);
     };
     const Outpost::Hud::Layout empty = lay(0);
     const Outpost::Hud::Layout busy = lay(Outpost::QUEUE_LIMIT - 1);
@@ -1227,7 +1354,7 @@ public:
   {
     const auto panelOf = [](std::vector<std::string> _lines)
     {
-      const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .selection = std::move(_lines)}, 1920, 1080);
+      const Outpost::Hud::Layout layout = Lay({.ore = 0, .selection = std::move(_lines)}, 1920, 1080);
       return layout.panels[1];
     };
     const Outpost::Hud::Rect narrow = panelOf({"Shipyard", "Hit points 3,000 / 3,000"});
@@ -1247,10 +1374,10 @@ public:
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
     content.marks.push_back({.position = {}, .radiusMeters = 8.0f, .side = Outpost::Hud::Side::Own, .kind = Outpost::EntityKind::Ship});
     const auto isFog = [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; };
-    Assert::IsFalse(std::ranges::any_of(Outpost::Hud::Lay(content, 1920, 1080).panels, isFog), L"no fog without fog of war");
+    Assert::IsFalse(std::ranges::any_of(Lay(content, 1920, 1080).panels, isFog), L"no fog without fog of war");
 
     content.fog = true;
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, static_cast<size_t>(std::ranges::count_if(layout.panels, isFog)));
     const auto fog = std::ranges::find_if(layout.panels, isFog);
     Assert::AreEqual(layout.minimap.left, fog->left);
@@ -1267,7 +1394,7 @@ public:
   // A press on a panel belongs to the HUD.
   TEST_METHOD(CoversItsPanels)
   {
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .selection = {}}, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay({.ore = 0, .selection = {}}, 1920, 1080);
     Assert::IsTrue(layout.Covers(20.0f, 20.0f));
     Assert::IsFalse(layout.Covers(960.0f, 540.0f));
   }
@@ -1319,7 +1446,7 @@ public:
   {
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
     content.alerts = {{"Relay suppressed: South", {.xMeters = 0.0f, .zMeters = -500.0f}}, {"Enemy ships in West", {}}};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const auto newest = std::ranges::find(layout.texts, std::string("Relay suppressed: South"), &Outpost::Hud::Text::text);
     const auto older = std::ranges::find(layout.texts, std::string("Enemy ships in West"), &Outpost::Hud::Text::text);
     Assert::IsTrue(newest != layout.texts.end() && older != layout.texts.end());
@@ -1342,7 +1469,7 @@ public:
     Assert::IsTrue(content.territory.has_value());
     const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
     Assert::IsTrue(territory.ownTickets == 1000 && territory.enemyTickets == 870);
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const auto text = [&layout](std::string_view _text) { return std::ranges::find(layout.texts, _text, &Outpost::Hud::Text::text); };
     Assert::IsTrue(text("Tickets") != layout.texts.end());
     Assert::IsTrue(text("1,000 : ") != layout.texts.end() && text("870") != layout.texts.end());
@@ -1354,7 +1481,7 @@ public:
   TEST_METHOD(LaysOutTheBannerWithTheWayBack)
   {
     const Outpost::Hud::Content content{.ore = 0, .outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Match length 6:13"}};
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Defeat"; }));
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Match length 6:13"; }));
     Assert::AreEqual(size_t{1}, layout.actions.size());
@@ -1370,7 +1497,7 @@ public:
   {
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
-      const Outpost::Hud::Layout layout = Outpost::Hud::LayMenu(width, height);
+      const Outpost::Hud::Layout layout = LayMenu(width, height);
       Assert::AreEqual(size_t{2}, layout.actions.size());
       Assert::IsTrue(layout.actions[0].second.kind == Outpost::Hud::ActionKind::StartSkirmish);
       Assert::IsTrue(layout.actions[1].second.kind == Outpost::Hud::ActionKind::Quit);
@@ -1381,6 +1508,73 @@ public:
                      Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StartSkirmish});
       Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Outpost Commander"; }));
       Assert::IsFalse(layout.minimap.width > 0.0f);
+    }
+  }
+  // Task 14.1: at either size, with the longest content, every text ends inside the smallest panel it starts in, measured
+  // with the fonts it is drawn in.
+  TEST_METHOD(KeepsEveryTextInsideItsPanel)
+  {
+    for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
+    {
+      const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
+      for (const auto& [name, layout] : LongestLayouts(width, height))
+      {
+        for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
+        {
+          const Outpost::Hud::Span texts = layout.TextsOf(layer);
+          const Outpost::Hud::Span panels = layout.PanelsOf(layer);
+          for (std::size_t t = texts.first; t < texts.end; ++t)
+          {
+            const Outpost::Hud::Text& text = layout.texts[t];
+            if (text.text.empty())
+              continue;
+            const Outpost::Hud::Rect box = LineBoxOf(text, fonts);
+            const Outpost::Hud::Rect* smallest = nullptr;
+            for (std::size_t p = panels.first; p < panels.end; ++p)
+            {
+              const Outpost::Hud::Rect& panel = layout.panels[p];
+              if (panel.Contains(box.left + 0.5f, box.top + 0.5f) &&
+                  (smallest == nullptr || panel.width * panel.height < smallest->width * smallest->height))
+                smallest = &panel;
+            }
+            const std::wstring what = Named(name, width, text);
+            Assert::IsNotNull(smallest, std::format(L"{} starts in no panel", what).c_str());
+            Assert::IsTrue(
+              box.left + box.width <= smallest->left + smallest->width + 0.5f,
+              std::format(L"{} runs {} px past its panel", what, box.left + box.width - smallest->left - smallest->width).c_str());
+          }
+        }
+      }
+    }
+  }
+
+  // Task 14.1: at either size, with the longest content, no two texts' line boxes meet within a layer.
+  TEST_METHOD(OverlapsNoTwoTexts)
+  {
+    for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
+    {
+      const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
+      for (const auto& [name, layout] : LongestLayouts(width, height))
+      {
+        for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
+        {
+          const Outpost::Hud::Span texts = layout.TextsOf(layer);
+          for (std::size_t a = texts.first; a < texts.end; ++a)
+          {
+            const Outpost::Hud::Rect first = LineBoxOf(layout.texts[a], fonts);
+            for (std::size_t b = a + 1; b < texts.end; ++b)
+            {
+              const Outpost::Hud::Rect second = LineBoxOf(layout.texts[b], fonts);
+              const bool meet = first.width > 0.0f && second.width > 0.0f && first.left < second.left + second.width &&
+                                second.left < first.left + first.width && first.top < second.top + second.height &&
+                                second.top < first.top + first.height;
+              Assert::IsFalse(meet, std::format(L"{} meets \"{}\"", Named(name, width, layout.texts[a]),
+                                                std::wstring(winrt::to_hstring(layout.texts[b].text)))
+                                      .c_str());
+            }
+          }
+        }
+      }
     }
   }
 };

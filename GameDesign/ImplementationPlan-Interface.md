@@ -13,7 +13,7 @@ The Phase 1 plan's rules hold, with these:
 1. **Read AGENTS.md, then Phase 1 design §11 and §12, then the ADRs the task names.** The review is not in the repository; what it found is summarized below, with how each figure was found.
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone (owner, 2026-09-30), in milestone order.
 3. **A gate is an owner decision.** The task does not start until the owner has answered, and the answer is written into the gates table, with its date, first. Phase 1's design is closed, so an answer that changes what it says the interface shows is recorded in the task's ADR, naming the section it changes, as tasks 9.5–9.7 recorded the owner's reviews.
-4. **Accepted ADRs are not edited.** A changed decision is a new ADR that supersedes it, numbered from ADR-056.
+4. **ADRs are edited in place**, as AGENTS.md §6 has it: a decision that changes is rewritten where it stands, and a new ADR takes the next free number, ADR-061 onward.
 5. **Every task is presentation.** It is built, its tests run, and the game is run and looked at, at 1920×1080 and at 2880×1920 as task 9.1 was (AGENTS.md §3). The owner's run accepts it.
 6. **No task lands with a text outside its panel or over another**, once task 14.1's tests exist.
 
@@ -47,7 +47,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 14.1 | Text measured with its fonts, and kept inside its card | — | — | todo |
+| 14.1 | Text measured with its fonts, and kept inside its card | — | — | built, awaiting CI and the owner's run |
 | 14.2 | A type scale that reads | 14.1 | K1 | todo |
 | 15.1 | What production and research are doing, on the HUD | 14.2 | K2 | todo |
 | 15.2 | Keys on the buttons | 14.2 | — | todo |
@@ -102,6 +102,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
   - `OverlapsNoTwoTexts`: no two texts' line boxes meet within a layer.
   - The first fails at Relay Archives before the fix. The existing `HudTests` pass, with any position that measuring moves updated, and the PR says which.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-04):** [ADR-061](../Design/ADR/ADR-061-measured-text.md), which rewrote ADR-043's estimate in place. The client measures with `UiPipeline::Fonts`, after `UiPipeline::UseScale`, rather than `UiPipeline::TextWidth`. The tests rasterize with `Neuron::RasterizeUiAtlas`, which packs what `Neuron::RasterizeFont` draws. The territory panel and the alerts, which came after the review, are measured too. Written without a Windows build: not yet compiled, its tests not yet run, and not yet seen on screen.
 
 ### 14.2 — A type scale that reads
 
