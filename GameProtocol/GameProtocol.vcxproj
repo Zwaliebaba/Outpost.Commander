@@ -84,6 +84,8 @@
     <ClInclude Include="DesignStats.h" />
     <ClInclude Include="Placement.h" />
     <ClInclude Include="Transport.h" />
+    <ClInclude Include="QuicTransport.h" />
+    <ClInclude Include="WireFormat.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -92,6 +94,8 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Placement.cpp" />
+    <ClCompile Include="QuicTransport.cpp" />
+    <ClCompile Include="WireFormat.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

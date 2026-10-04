@@ -167,7 +167,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // of their own while the window and the device are created (ADR-049). The window stays hidden until all of them are
     // in, so that bad tuning, map or model data is still reported before the screen goes full screen. The next match's
     // server is made while the menu shows.
-    const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress};
+    // A match's players connect to its server over QUIC, as they will to a server of its own (ADR-060).
+    const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true};
     auto serverLoad = PrepareAsync(
       [serverDesc] { return ServerStart{.server = Outpost::CreateInProcessServer(serverDesc), .ai = Outpost::LoadPackagedAiSettings()}; });
     auto assetsLoad = PrepareAsync(Outpost::LoadClientAssets);
@@ -204,10 +205,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     {
       match.emplace();
       match->server = std::move(nextServer);
-      match->player = match->server->Connect(HUMAN_PLAYER);
+      // Each player takes a seat over QUIC, and the server welcomes it before the match starts (ADR-060).
+      match->player = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(HUMAN_PLAYER), HUMAN_PLAYER);
       // The rival always connects, so that the server builds both players' snapshots as in a match against the AI. Under
       // load the rival's ships are kept moving through it; the stress scene orders its own; otherwise it is the AI.
-      match->rival = match->server->Connect(RIVAL_PLAYER);
+      match->rival = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(RIVAL_PLAYER), RIVAL_PLAYER);
       if (!load && !stress)
       {
         match->ai.emplace(aiSettings, ticksPerSecond);
@@ -318,7 +320,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           match.reset();
           client.ShowMenu();
           seed = NewSeed();
-          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress});
+          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true});
           break;
         case Outpost::GameClient::Request::Quit:
           PostQuitMessage(0);

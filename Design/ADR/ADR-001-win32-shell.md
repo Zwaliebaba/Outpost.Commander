@@ -41,4 +41,4 @@ The project started from the WinUI 3 template. The owner has chosen Win32.
 - **XAML, and WinRT APIs in general.** Input, audio and windowing use the Win32 and DirectX APIs the Windows SDK ships, such as XInput. A WinRT-only API, for example `Windows.Gaming.Input`, needs this ADR changed.
 - **`Microsoft::WRL::ComPtr`, and the C++/WinRT package.** COM uses the SDK's `<winrt/base.h>` (AGENTS.md R12).
 - **An unpackaged build** for day-to-day development, and any packaging tool beyond the two above, without changing this ADR. Any other package needs an ADR of its own, as ADR-004 and ADR-005 are.
-- **Windows before 10 1809** (`10.0.17763`), the package's minimum version.
+- **Windows before 11** (`10.0.22000`), the package's minimum version, which QUIC's TLS 1.3 sets ([ADR-060](ADR-060-quic-in-process.md)).

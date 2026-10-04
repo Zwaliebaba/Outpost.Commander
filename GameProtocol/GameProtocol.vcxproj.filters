@@ -50,11 +50,23 @@
     <ClInclude Include="Server.h">
       <Filter>Connection</Filter>
     </ClInclude>
+    <ClInclude Include="QuicTransport.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="WireFormat.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Placement.cpp">
       <Filter>Placement</Filter>
+    </ClCompile>
+    <ClCompile Include="QuicTransport.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="WireFormat.cpp">
+      <Filter>Connection</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
