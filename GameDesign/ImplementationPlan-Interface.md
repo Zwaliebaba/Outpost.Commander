@@ -13,7 +13,7 @@ The Phase 1 plan's rules hold, with these:
 1. **Read AGENTS.md, then Phase 1 design §11 and §12, then the ADRs the task names.** The review is not in the repository; what it found is summarized below, with how each figure was found.
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone (owner, 2026-09-30), in milestone order.
 3. **A gate is an owner decision.** The task does not start until the owner has answered, and the answer is written into the gates table, with its date, first. Phase 1's design is closed, so an answer that changes what it says the interface shows is recorded in the task's ADR, naming the section it changes, as tasks 9.5–9.7 recorded the owner's reviews.
-4. **Accepted ADRs are not edited.** A changed decision is a new ADR that supersedes it, numbered from ADR-056.
+4. **ADRs are edited in place**, as AGENTS.md §6 has it: a decision that changes is rewritten where it stands, and a new ADR takes the next free number, ADR-061 onward.
 5. **Every task is presentation.** It is built, its tests run, and the game is run and looked at, at 1920×1080 and at 2880×1920 as task 9.1 was (AGENTS.md §3). The owner's run accepts it.
 6. **No task lands with a text outside its panel or over another**, once task 14.1's tests exist.
 
@@ -47,8 +47,8 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 14.1 | Text measured with its fonts, and kept inside its card | — | — | todo |
-| 14.2 | A type scale that reads | 14.1 | K1 | todo |
+| 14.1 | Text measured with its fonts, and kept inside its card | — | — | built, in PR #65 with 14.2, CI green; awaiting the owner's run |
+| 14.2 | A type scale that reads | 14.1 | K1 | built, in PR #65, CI green; awaiting the owner's run |
 | 15.1 | What production and research are doing, on the HUD | 14.2 | K2 | todo |
 | 15.2 | Keys on the buttons | 14.2 | — | todo |
 | 15.3 | The designer's preview in figures | 14.2 | — | todo |
@@ -74,7 +74,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 
 | Gate | Decision | Proposed in | Blocks |
 |---|---|---|---|
-| K1 | The type scale, the locked text's color and the room they take, as 14.2 proposes. With them the designer grows from 728 × 790 units with five weapons, 38% of a 1080p screen's width and 73% of its height, to about 816 × 840, 43% and 78%; Phase 1 §12 gives 38% and 65% at the mockup's three weapons. It changes what gate H6 accepted. **Decided on 2026-10-03:** as proposed. | 14.2 | — |
+| K1 | The type scale, the locked text's color and the room they take, as 14.2 proposes. With them the designer grows from 728 × 790 units with five weapons, 38% of a 1080p screen's width and 73% of its height, to about 816 × 840, 43% and 78%; Phase 1 §12 gives 38% and 65% at the mockup's three weapons. It changes what gate H6 accepted. **Decided on 2026-10-03:** as proposed. **On 2026-10-04** the owner decided what the proposal had not foreseen: the three texts the contrast test found besides those it names are raised, the Queue button by darkening its green; and production narrows to 478 units so that research stays 560 and both stand clear of the designer. | 14.2 | — |
 | K2 | The HUD says what production and research are doing, as 15.1 proposes: a status panel under the Ore, and a line on a producer's or the Lab's selection panel, which Phase 1 §12 keeps to its name, hit points, construction and window buttons. **Decided on 2026-10-03:** as proposed. | 15.1 | — |
 | K3 | The selection ring a fixed width on the screen, about 3 px at 1080p at any zoom, in place of the band ADR-042 decision 3 keeps. **Decided on 2026-10-03:** as proposed. | 15.5 | — |
 | K4 | How the keys with no button are taught: a Controls window on F1, and whether the main menu says so, which MVP §9 keeps to Start skirmish and Quit. **Decided on 2026-10-03:** as proposed; whether the menu gains its line is 16.4's to propose at the owner's run. | 16.4 | — |
@@ -102,6 +102,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
   - `OverlapsNoTwoTexts`: no two texts' line boxes meet within a layer.
   - The first fails at Relay Archives before the fix. The existing `HudTests` pass, with any position that measuring moves updated, and the PR says which.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-04):** [ADR-061](../Design/ADR/ADR-061-measured-text.md), which rewrote ADR-043's estimate in place. The client measures with `UiPipeline::Fonts`, after `UiPipeline::UseScale`, rather than `UiPipeline::TextWidth`. The tests rasterize with `Neuron::RasterizeUiAtlas`, which packs what `Neuron::RasterizeFont` draws. The territory panel and the alerts, which came after the review, are measured too. CI compiled it and ran its tests on 2026-10-04; `OverlapsNoTwoTexts` found two pairs of lines that met at 1280×720, a damage card's hull and figure and the Queue button's label and detail, which were spaced apart. The layout tests name every offender rather than the first. Not yet seen on screen.
 
 ### 14.2 — A type scale that reads
 
@@ -116,6 +117,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 - **ADR:** a new one: the type scale, the locked text's color, and the room they take. Gate H6 accepted the mockup's sizes and colors as built, and they live in `Hud.cpp` rather than an ADR, so the new ADR records what changes from what H6 accepted.
 - **Acceptance:** `HudTests.NamesItsTypefacesAndSprites` with the new sizes; 14.1's tests; and `SetsEveryTextAtFourAndAHalfToOne`, which computes each text's contrast against the panel it starts in, as the review did, and lists the texts K1 exempts.
 - **Verify:** CI; run, the designer beside the mockup; **owner run**, which closes K1's sizes.
+- **As built (2026-10-04):** [ADR-062](../Design/ADR/ADR-062-type-scale-and-contrast.md), which rewrote ADR-043's window widths in place. The sizes and the locked text are as proposed, set in `Hud::FaceUnits`. The name's count takes the labels' color and the title bar's labels the row labels'; nothing is named decorative, and the contrast test exempts no text. The owner's answers of 2026-10-04 raised a shown chip's code, the worse figure's red and the Queue button's cost, and narrowed production to 478. The part cards are 220 wide and the designer 818, but a card stays 80 units tall: measured, the larger faces need only 2 units more in a row with notes, not about 12. The designer is 818 × 810 with three weapons and 818 × 913 with five and the module row; K1's 840 predates the module row. Topic lines are 18 units apart, and a slot row's label and pick 18 units apart, which `OverlapsNoTwoTexts` found meeting at 1280×720 on the module row. CI green on 2026-10-04. Not yet seen on screen.
 
 ---
 
