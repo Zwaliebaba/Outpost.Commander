@@ -139,10 +139,10 @@ auto Fields(Self& _value)
 {
   auto& [id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters, hitPointsHundredths,
          maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
-         remembered, sightMeters, standing, oreReserveHundredths] = _value;
+         secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths] = _value;
   return std::tie(id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters,
                   hitPointsHundredths, maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue,
-                  research, jobPermille, remembered, sightMeters, standing, oreReserveHundredths);
+                  research, jobPermille, secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths);
 }
 
 template <typename Self>
@@ -183,10 +183,10 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, ResearchTopicView>
 auto Fields(Self& _value)
 {
-  auto& [id, nameUtf8, effectUtf8, cost, researchSeconds, prerequisites, researched, unlocksHull, unlocksDrive, unlocksWeapon, tier,
-         gateway] = _value;
+  auto& [id, nameUtf8, effectUtf8, cost, researchSeconds, prerequisites, researched, unlocksHull, unlocksDrive, unlocksWeapon, tier] =
+    _value;
   return std::tie(id, nameUtf8, effectUtf8, cost, researchSeconds, prerequisites, researched, unlocksHull, unlocksDrive, unlocksWeapon,
-                  tier, gateway);
+                  tier);
 }
 
 template <typename Self>
@@ -201,8 +201,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, StructureLevelView>
 auto Fields(Self& _value)
 {
-  auto& [cost, buildSeconds, maxHitPointsHundredths] = _value;
-  return std::tie(cost, buildSeconds, maxHitPointsHundredths);
+  auto& [cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites] = _value;
+  return std::tie(cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites);
 }
 
 template <typename Self>
@@ -250,11 +250,11 @@ template <typename Self>
 auto Fields(Self& _value)
 {
   auto& [tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-         constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, matchOver, winner, matchEndedTick, ending,
-         fogOfWar, sectors, tickets, startingTickets] = _value;
+         constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, matchOver, winner,
+         matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
   return std::tie(tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-                  constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, matchOver, winner, matchEndedTick,
-                  ending, fogOfWar, sectors, tickets, startingTickets);
+                  constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, matchOver, winner,
+                  matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets);
 }
 
 template <typename Self>

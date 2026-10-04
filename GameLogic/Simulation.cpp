@@ -406,6 +406,8 @@ Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, boo
     view.research = _entity.researchQueue;
     if (_entity.jobWorkNeeded > 0)
       view.jobPermille = static_cast<std::int32_t>(std::int64_t{_entity.jobWorkDone} * PERMILLE / _entity.jobWorkNeeded);
+    if (_entity.secondJobWorkNeeded > 0)
+      view.secondJobPermille = static_cast<std::int32_t>(std::int64_t{_entity.secondJobWorkDone} * PERMILLE / _entity.secondJobWorkNeeded);
   }
   return view;
 }
@@ -469,8 +471,7 @@ Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuni
                               .unlocksHull = UnlockedBy<HullId>(topic),
                               .unlocksDrive = UnlockedBy<DriveId>(topic),
                               .unlocksWeapon = UnlockedBy<WeaponId>(topic),
-                              .tier = topic.tier,
-                              .gateway = topic.IsGateway()});
+                              .tier = topic.tier});
   }
   return effects;
 }
@@ -575,7 +576,7 @@ Outpost::EntityId Outpost::Simulation::SpawnConstructor(PlayerId _owner, PlanePo
 }
 
 Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters,
-                                                      std::int32_t _hitPointsHundredths, std::int32_t _armorHundredths)
+                                                      std::int32_t _hitPointsHundredths, std::int32_t _armorHundredths, std::int32_t _level)
 {
   const EntityId id{++m_lastEntityId};
   const StructureTuning* tuning = StructureTuningFor(_kind);
@@ -588,6 +589,7 @@ Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, Structure
                         .hitPointsHundredths = _hitPointsHundredths,
                         .maxHitPointsHundredths = _hitPointsHundredths,
                         .armorHundredths = _armorHundredths,
+                        .level = _level,
                         .structureWeapon = tuning != nullptr ? tuning->structureWeapon : StructureWeaponId{}});
   if (_kind == StructureKind::MiningRig)
   {
@@ -851,7 +853,10 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
         const StructureLevelTuning& tuning = structure.levels[static_cast<size_t>(level - 2)];
         type.levels.push_back({.cost = tuning.cost,
                                .buildSeconds = tuning.buildConstructorSeconds,
-                               .maxHitPointsHundredths = StructureHitPoints(_player, structure, level)});
+                               .maxHitPointsHundredths = StructureHitPoints(_player, structure, level),
+                               .opensTier = tuning.opensTier,
+                               .researchSlots = tuning.researchSlots,
+                               .prerequisites = tuning.prerequisites});
       }
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
@@ -864,6 +869,13 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     snapshot.modules = effects.modules;
     snapshot.research = effects.topics;
     snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
+    // The tier its finished Research Lab's level has opened (Phase 3 design §6).
+    for (const Entity& entity : m_entities)
+    {
+      if (entity.kind == EntityKind::Structure && entity.structure == StructureKind::ResearchLab && entity.owner == _player &&
+          entity.IsBuilt())
+        snapshot.researchTier = std::max(snapshot.researchTier, OpenTier(*m_tuning, entity.level));
+    }
   }
   snapshot.matchOver = m_matchOver;
   snapshot.winner = m_winner;
@@ -1886,6 +1898,11 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Upgrad
   if (structure->level >= tuning->TopLevel())
     return CommandResult::TopLevel;
   const StructureLevelTuning& next = tuning->levels[static_cast<size_t>(structure->level - 1)];
+  // A Research Lab's level may need topics researched first (Phase 3 design §6).
+  const std::span<const ResearchTopicId> researched = Researched(_player);
+  if (!std::ranges::all_of(next.prerequisites,
+                           [&researched](ResearchTopicId _topic) { return std::ranges::find(researched, _topic) != researched.end(); }))
+    return CommandResult::PrerequisiteMissing;
   PlayerState* player = FindPlayer(_player);
   const std::int64_t cost = std::int64_t{next.cost} * HUNDREDTHS;
   if (player == nullptr || player->oreHundredths < cost)
@@ -2341,8 +2358,10 @@ void Outpost::Simulation::Mine()
   }
 }
 
-// Each built Research Lab works on the front of its queue. A topic starts, and is paid for, once the player has the Ore
-// (design §5); until then it waits. A finished topic applies at once (design §8).
+// Each built Research Lab works on the front of its queue, and from the level that gives it a second slot on the topic
+// behind it too (Phase 3 design §6). A topic starts, and is paid for, once the player has the Ore (design §5), and the
+// second once the first has started and what it requires is researched; until then it waits. A finished topic applies at
+// once (design §8).
 void Outpost::Simulation::Research()
 {
   std::vector<std::pair<PlayerId, ResearchTopicId>> finished;
@@ -2350,25 +2369,55 @@ void Outpost::Simulation::Research()
   {
     if (lab.kind != EntityKind::Structure || lab.researchQueue.empty() || !lab.IsBuilt())
       continue;
-    const ResearchTopicId topicId = lab.researchQueue.front();
-    if (lab.jobWorkNeeded == 0)
-    {
-      const auto topic = std::ranges::find(m_tuning->research, topicId, &ResearchTopicTuning::id);
-      PlayerState* player = FindPlayer(lab.owner);
-      if (player == nullptr || player->oreHundredths < std::int64_t{topic->cost} * HUNDREDTHS)
-        continue;
-      player->oreHundredths -= std::int64_t{topic->cost} * HUNDREDTHS;
-      lab.jobWorkNeeded =
-        std::max(1, static_cast<std::int32_t>(std::llround(topic->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
-      lab.jobWorkDone = 0;
-    }
-    lab.jobWorkDone += MILLITICKS_PER_TICK;
-    if (lab.jobWorkDone < lab.jobWorkNeeded)
+    PlayerState* player = FindPlayer(lab.owner);
+    if (player == nullptr)
       continue;
-    finished.emplace_back(lab.owner, topicId);
-    lab.researchQueue.erase(lab.researchQueue.begin());
-    lab.jobWorkDone = 0;
-    lab.jobWorkNeeded = 0;
+    // The front topic, and from the level that gives a second slot the one behind it, once what it requires is researched,
+    // not only queued ahead of it (Phase 3 design §6). Each is paid for when it starts.
+    const std::int32_t slots =
+      std::min<std::int32_t>(ResearchSlots(*m_tuning, lab.level), static_cast<std::int32_t>(lab.researchQueue.size()));
+    const auto work = [&](std::size_t _slot) -> std::pair<std::int32_t&, std::int32_t&>
+    {
+      return _slot == 0 ? std::pair<std::int32_t&, std::int32_t&>{lab.jobWorkDone, lab.jobWorkNeeded}
+                        : std::pair<std::int32_t&, std::int32_t&>{lab.secondJobWorkDone, lab.secondJobWorkNeeded};
+    };
+    std::vector<std::size_t> done;
+    for (std::size_t slot = 0; std::cmp_less(slot, slots); ++slot)
+    {
+      auto [workDone, workNeeded] = work(slot);
+      const auto topic = std::ranges::find(m_tuning->research, lab.researchQueue[slot], &ResearchTopicTuning::id);
+      if (workNeeded == 0)
+      {
+        if (slot > 0 && lab.jobWorkNeeded == 0)
+          break;
+        const bool ready = std::ranges::all_of(topic->prerequisites, [player](ResearchTopicId _id)
+                                               { return std::ranges::find(player->researched, _id) != player->researched.end(); });
+        if (!ready || player->oreHundredths < std::int64_t{topic->cost} * HUNDREDTHS)
+          continue;
+        player->oreHundredths -= std::int64_t{topic->cost} * HUNDREDTHS;
+        workNeeded = std::max(1, static_cast<std::int32_t>(std::llround(topic->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
+        workDone = 0;
+      }
+      workDone += MILLITICKS_PER_TICK;
+      if (workDone >= workNeeded)
+        done.push_back(slot);
+    }
+    // The finished leave the queue, the second's progress moving to the front when the first is done.
+    for (auto slot = done.rbegin(); slot != done.rend(); ++slot)
+    {
+      finished.emplace_back(lab.owner, lab.researchQueue[*slot]);
+      lab.researchQueue.erase(lab.researchQueue.begin() + static_cast<std::ptrdiff_t>(*slot));
+      if (*slot == 0)
+      {
+        lab.jobWorkDone = std::exchange(lab.secondJobWorkDone, 0);
+        lab.jobWorkNeeded = std::exchange(lab.secondJobWorkNeeded, 0);
+      }
+      else
+      {
+        lab.secondJobWorkDone = 0;
+        lab.secondJobWorkNeeded = 0;
+      }
+    }
   }
   for (const auto& [player, topic] : finished)
   {
@@ -2462,6 +2511,9 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StartR
     return CommandResult::AlreadyResearched;
   if (!std::ranges::all_of(topic->prerequisites, known))
     return CommandResult::PrerequisiteMissing;
+  // A tier is researched only once the Lab's level has opened it (Phase 3 design §6).
+  if (lab->level < LabLevelFor(*m_tuning, topic->tier))
+    return CommandResult::LevelTooLow;
   if (lab->researchQueue.size() >= QUEUE_LIMIT)
     return CommandResult::QueueFull;
   lab->researchQueue.push_back(topic->id);

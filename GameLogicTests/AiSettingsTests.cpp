@@ -65,7 +65,7 @@ public:
     Assert::AreEqual(3, settings.homeAsteroids);
     Assert::AreEqual(3, settings.contestedAsteroids);
     // Tier 1, then tier 2 with the Flak Battery first, then tier 3 with the Rail Cannon first (task 10.4).
-    const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7, 9, 11, 10, 13, 16, 17, 14, 15, 12, 18, 19, 20, 21, 22, 24, 23, 25};
+    const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7, 11, 10, 13, 16, 17, 14, 15, 12, 19, 20, 21, 22, 24, 23, 25};
     Assert::AreEqual(order.size(), settings.researchOrder.size());
     for (size_t i = 0; i < order.size(); ++i)
       Assert::AreEqual(order[i], settings.researchOrder[i].value);

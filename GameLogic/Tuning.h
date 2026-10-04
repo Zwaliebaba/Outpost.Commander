@@ -136,6 +136,12 @@ struct StructureLevelTuning
   double buildConstructorSeconds = 0.0;
   // A Shipyard's: the hulls it builds from this level on (Phase 3 design §5).
   std::vector<HullId> hulls;
+  // A Research Lab's (Phase 3 design §6): the research tier this level opens, or 0; the topics that must be researched
+  // before it is ordered, which the file calls "requires"; and how many topics the Lab researches at once from this level
+  // on, or 0 where the level does not change it.
+  std::int32_t opensTier = 0;
+  std::vector<ResearchTopicId> prerequisites;
+  std::int32_t researchSlots = 0;
 };
 
 // The most levels a structure has: the owner's models have five (ADR-045).
@@ -205,18 +211,11 @@ struct UpgradeEffect
   std::int32_t percent = 0;
 };
 
-// A tier's gateway (Phase 1 design §6): it does nothing itself, and every other topic of its tier requires it.
-struct GatewayEffect
-{
-  std::int32_t tier = 0;
+// An upgrade, or the component the topic unlocks.
+using ResearchEffect = std::variant<UpgradeEffect, HullId, DriveId, WeaponId>;
 
-  friend bool operator==(const GatewayEffect&, const GatewayEffect&) = default;
-};
-
-// An upgrade, the component the topic unlocks, or the tier it opens.
-using ResearchEffect = std::variant<UpgradeEffect, HullId, DriveId, WeaponId, GatewayEffect>;
-
-// The research tiers (Phase 1 design §6): tier 1 needs no gateway, and each tier after it opens with one.
+// The research tiers (Phase 1 design §6): tier 1 is open from the start, and each tier after it is opened by a level of the
+// Research Lab (Phase 3 design §6).
 inline constexpr std::int32_t RESEARCH_TIERS = 3;
 
 struct ResearchTopicTuning
@@ -229,11 +228,6 @@ struct ResearchTopicTuning
   // The topics that must be researched first. The file calls them "requires", a keyword in C++.
   std::vector<ResearchTopicId> prerequisites;
   ResearchEffect effect;
-
-  [[nodiscard]] bool IsGateway() const noexcept
-  {
-    return std::holds_alternative<GatewayEffect>(effect);
-  }
 };
 
 struct Tuning
@@ -256,11 +250,20 @@ struct Tuning
 // when no level does.
 [[nodiscard]] std::int32_t ShipyardLevelFor(const Tuning& _tuning, HullId _hull) noexcept;
 
+// The level a Research Lab must be at to research a topic of _tier (Phase 3 design §6, gate K2): the level that opens it,
+// or 1 for tier 1.
+[[nodiscard]] std::int32_t LabLevelFor(const Tuning& _tuning, std::int32_t _tier) noexcept;
+
+// The highest research tier a Research Lab at _level has opened, 1 at least, and how many topics it researches at once,
+// 1 at least (Phase 3 design §6).
+[[nodiscard]] std::int32_t OpenTier(const Tuning& _tuning, std::int32_t _level) noexcept;
+[[nodiscard]] std::int32_t ResearchSlots(const Tuning& _tuning, std::int32_t _level) noexcept;
+
 // Reads the text of OutpostCommander/Assets/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference
 // names something that exists, that each structure kind appears exactly once, and that no research topic requires
-// itself, even through others. And the tiers hold: a topic requires none of a later tier, each tier after the first has
-// one gateway, of its own tier, and every other topic of that tier requires it (ADR-033). Only the Command Station, the
+// itself, even through others. And the tiers hold: a topic requires none of a later tier, and each tier after the first is
+// opened by one level of the Research Lab, in order (ADR-033). Only the Command Station, the
 // Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL (ADR-064), and a Shipyard that names the hulls
 // it builds names each once, at level 1 or at one of its levels. A member the loader does not know is
 // an error too, so that a misspelled optional member is not ignored.

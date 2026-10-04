@@ -169,8 +169,6 @@ std::string Outpost::EffectText(const Tuning& _tuning, const ResearchTopicTuning
         }
         return {};
       }
-      else if constexpr (std::is_same_v<Effect, GatewayEffect>)
-        return std::format("Opens tier {}", _effect.tier);
       else if constexpr (std::is_same_v<Effect, HullId>)
         return std::format("Unlocks the {} hull", NameOf(_tuning.hulls, _effect));
       else if constexpr (std::is_same_v<Effect, DriveId>)

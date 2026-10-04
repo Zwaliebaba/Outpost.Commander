@@ -337,7 +337,7 @@ CheckParts Researched(const CheckParts& _parts, const Outpost::Tuning& _tuning,
                        [&](const GameLogicTests::CheckWeapon& _weapon) { return !locked(_weapon.id); });
 
   // Upgrades of one stat add their percentages (ADR-033). Those a clump's battle cannot feel, its economy, its structures,
-  // its speed and its Constructors, change nothing here; a gateway does nothing at all.
+  // its speed and its Constructors, change nothing here.
   std::int32_t hullPercent = 0;
   std::vector<std::pair<Outpost::WeaponId, std::int32_t>> weaponPercents;
   for (const Outpost::ResearchTopicTuning* topic : _researched)
@@ -371,8 +371,6 @@ CheckParts Researched(const CheckParts& _parts, const Outpost::Tuning& _tuning,
 
 bool AffectsBattles(const Outpost::ResearchTopicTuning& _topic)
 {
-  if (_topic.IsGateway())
-    return false;
   const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&_topic.effect);
   return upgrade == nullptr || upgrade->target == Outpost::UpgradeTarget::AllHulls || upgrade->target == Outpost::UpgradeTarget::Weapon;
 }
@@ -584,7 +582,7 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
     const bool unlocksUnmodelled = std::visit(
       [&available]<typename Effect>([[maybe_unused]] const Effect& _effect)
       {
-        if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect> || std::is_same_v<Effect, Outpost::GatewayEffect>)
+        if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect>)
           return false;
         else
         {

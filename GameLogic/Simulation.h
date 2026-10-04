@@ -118,6 +118,10 @@ struct Entity
   std::vector<ResearchTopicId> researchQueue;
   std::int32_t jobWorkDone = 0;
   std::int32_t jobWorkNeeded = 0;
+  // A Research Lab's second topic, researched beside the first from the level that gives it a second slot (Phase 3 design
+  // §6), counted as the first is: zero until it starts.
+  std::int32_t secondJobWorkDone = 0;
+  std::int32_t secondJobWorkNeeded = 0;
   // A Shipyard's number among its owner's, given when it is first finished, and the ships it has built (Phase 1 design
   // §11).
   std::uint32_t shipyardNumber = 0;
@@ -179,7 +183,8 @@ enum class CommandResult : std::uint8_t
   UnknownComponent,
   // The topic is researched already, or already in the lab's queue.
   AlreadyResearched,
-  // A topic the research needs first is neither researched nor ahead of it in the queue (design §8).
+  // A topic the research needs first is neither researched nor ahead of it in the queue (design §8), or a topic a Research
+  // Lab's next level needs is not researched (Phase 3 design §6).
   PrerequisiteMissing,
   // A design's name is empty, too long, or holds a character the HUD cannot show.
   InvalidName,
@@ -204,7 +209,8 @@ enum class CommandResult : std::uint8_t
   AlreadyUpgrading,
   // An upgrade names a structure at its kind's highest level, which for a kind that does not grow is its first.
   TopLevel,
-  // A Shipyard's job names a hull above its level (Phase 3 design §5).
+  // A Shipyard's job names a hull above its level, or a Research Lab's a topic of a tier its level has not opened (Phase 3
+  // design §5, §6).
   LevelTooLow,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
@@ -300,9 +306,9 @@ public:
 
   // Places a built structure, which blocks movement unless it is a Mining Rig, which stands on its asteroid. Once the
   // tuning data is known, a kind that carries a Defence gun is armed. Without hit points it is out of combat, as task
-  // 2.7's load places them.
+  // 2.7's load places them. It stands at _level, which tests give it as they give its hit points (Phase 3 design §4).
   EntityId SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters,
-                          std::int32_t _hitPointsHundredths = 0, std::int32_t _armorHundredths = 0);
+                          std::int32_t _hitPointsHundredths = 0, std::int32_t _armorHundredths = 0, std::int32_t _level = 1);
 
   // Match setup, after PlaceMap and UseTuning: gives every player its Command Station on its start and the starting
   // Constructors in front of it, facing the map's center (design §6). Throws Neuron::Exception when the base would

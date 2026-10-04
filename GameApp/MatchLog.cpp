@@ -126,9 +126,13 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
       continue;
     m_researched.push_back(key);
     *m_out << std::format("research {} player {} topic {} {}\n", _snapshot.tick, _snapshot.player.value, topic.id.value, topic.nameUtf8);
-    if (topic.gateway)
-      *m_out << std::format("tier {} player {} tier {}\n", _snapshot.tick, _snapshot.player.value, topic.tier);
   }
+  // Each tier the player's Research Lab opens, once, the first time it opens it (Phase 3 design §6).
+  auto tier = std::ranges::find(m_tiers, _snapshot.player, &std::pair<PlayerId, std::int32_t>::first);
+  if (tier == m_tiers.end())
+    tier = m_tiers.insert(m_tiers.end(), {_snapshot.player, 1});
+  for (; tier->second < _snapshot.researchTier; ++tier->second)
+    *m_out << std::format("tier {} player {} tier {}\n", _snapshot.tick, _snapshot.player.value, tier->second + 1);
 
   // A player sees the components of every ship it sees (design §10, ADR-024), and every snapshot lists every component by
   // name, unlocked or not; one it does not list is written as its identifier.

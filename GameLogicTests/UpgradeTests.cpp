@@ -18,7 +18,6 @@ constexpr Outpost::PlanePosition LAB{.xMeters = -600.0f, .zMeters = -600.0f};
 // The repository's topics that Reinforced Structures needs (design §8, Phase 1 design §6).
 constexpr Outpost::ResearchTopicId IMPROVED_EXTRACTION{1};
 constexpr Outpost::ResearchTopicId HULL_PLATING{2};
-constexpr Outpost::ResearchTopicId RELAY_ARCHIVES{9};
 constexpr Outpost::ResearchTopicId REINFORCED_STRUCTURES{14};
 
 Outpost::Command Upgrade(Outpost::PlayerId _player, Outpost::EntityId _structure, std::vector<Outpost::EntityId> _constructors = {})
@@ -104,14 +103,14 @@ public:
     Assert::IsTrue(result(Upgrade(BLUE, yard)) == Outpost::CommandResult::AlreadyUpgrading);
     Assert::AreEqual(before - cost, OreOf(arena, BLUE));
 
-    // Ore the player does not have: a player with 350 Ore pays for the station's 300 and not then for the Lab's 400.
+    // Ore the player does not have: a player with 350 Ore pays for the station's 300 and not then for a Shipyard's 150.
     constexpr Outpost::PlayerId POOR{3};
     arena.World().AddPlayer(POOR, 350);
     const Outpost::EntityId station = arena.Structure(POOR, Outpost::StructureKind::CommandStation, {.xMeters = 900.0f, .zMeters = 900.0f});
-    const Outpost::EntityId lab = arena.Structure(POOR, Outpost::StructureKind::ResearchLab, {.xMeters = -900.0f, .zMeters = 900.0f});
-    Assert::IsTrue(arena.Tick({Upgrade(POOR, station), Upgrade(POOR, lab)}) ==
+    const Outpost::EntityId poorYard = arena.Structure(POOR, Outpost::StructureKind::Shipyard, {.xMeters = -900.0f, .zMeters = 900.0f});
+    Assert::IsTrue(arena.Tick({Upgrade(POOR, station), Upgrade(POOR, poorYard)}) ==
                    std::vector<Outpost::CommandResult>{Outpost::CommandResult::Applied, Outpost::CommandResult::NotEnoughOre});
-    Assert::IsFalse(arena.Get(lab).IsUpgrading());
+    Assert::IsFalse(arena.Get(poorYard).IsUpgrading());
     Assert::AreEqual(50, OreOf(arena, POOR));
   }
 
@@ -245,8 +244,9 @@ public:
     Assert::IsTrue(arena.Tick({Upgrade(BLUE, yard, {constructor})})[0] == Outpost::CommandResult::Applied);
     Assert::IsTrue(TicksToLevel(arena, yard, 2, 2 * LevelTicks(arena, Outpost::StructureKind::Shipyard, 1)) > 0);
 
-    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
-    for (const Outpost::ResearchTopicId topic : {IMPROVED_EXTRACTION, HULL_PLATING, RELAY_ARCHIVES, REINFORCED_STRUCTURES})
+    // A Lab at level 2, which has opened Reinforced Structures' tier (Phase 3 design §6).
+    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 2);
+    for (const Outpost::ResearchTopicId topic : {IMPROVED_EXTRACTION, HULL_PLATING, REINFORCED_STRUCTURES})
     {
       Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::StartResearchCommand{.lab = lab, .topic = topic})})[0] ==
                      Outpost::CommandResult::Applied);

@@ -24,7 +24,7 @@ This goes beyond design §13, which had the AI change only as far as Phase 1's r
 
 ## Decision
 
-1. **The attack group is 20 warships, and 12 more for each tier the AI has opened past the first.** `attackGroupShips`, gate G9's value, is 20 and `attackGroupGrowthPerTier` is 12; the tier is the highest gateway the AI has researched.
+1. **The attack group is 20 warships, and 12 more for each tier the AI has opened past the first.** `attackGroupShips`, gate G9's value, is 20 and `attackGroupGrowthPerTier` is 12; the tier is the highest its Research Lab's level has opened, the snapshot's `researchTier` (Phase 3 design §6).
 2. **An attack that has lost 10% of the ships it set out with falls back.** It goes to the rally with a move order, out of the fight, and its ships rejoin the reserve. The reserve then waits 240 seconds before it attacks again, however many ships it has (`retreatLossShare` 0.1, `regroupSeconds` 240). The losses count against the group's size when it last grew. A lost battle so costs part of a fleet, not all of it. Phase 2's task 19.2 set both against S4 on the map with territory, and the owner kept the 240 seconds over Phase 1's 120 on 2026-10-04; on Phase 1's map they were 30% and 120 seconds ([ADR-047](ADR-047-a-fight-seen-whole.md) decision 6).
 3. **It plans 2 Defence Platforms round its base for each Shipyard** (`homePlatformsPerShipyard` 2). They stand toward the map's center, 260 m from the Command Station, at turns of 0 and ±0.5 and ±1 radian, then a ring 70 m further out. Each is built once the income reaches its Shipyard's share. An attack on a base that has grown so costs the attacker more than it costs the base.
 4. **Nothing else in its play changes here.** It still goes for production first (ADR-037), defends its structures, counters what it has seen, and follows the ore. On a map with territory it also plays for territory ([ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
@@ -40,7 +40,7 @@ All measured in the Linux container: clang 18 at `-O2`, `--ai-matches`' code aga
   - The switch's own seeds 1 to 10 give 56.3.
 - **The spread is wide.** Of the 80 matches, 23 end within 45–60 minutes, 25 before and 32 after. 3 had not ended at 150 minutes, all of seeds 41 to 80. Why they stall has not been looked at.
 - **The seat bias is gone, for now.** Player 1 wins 39 and player 2 wins 38, where under the old play one side won about two-thirds (ADR-038, ADR-039). Its cause is still not known, so it may come back.
-- **Tier 3 is rare.** 78 of the 80 matches reach tier 2 and 2 reach tier 3: an AI at war spends its Ore on ships and seldom affords the 600-Ore gateway. P2 asks whether each tier changes the game, so this matters for task 13.2.
+- **Tier 3 is rare.** 78 of the 80 matches reach tier 2 and 2 reach tier 3: an AI at war spends its Ore on ships and seldom affords the 600-Ore gateway. Phase 3 replaced the gateway with the Lab's level 3, at the same 600 Ore ([ADR-064](ADR-064-structure-upgrades.md) decision 10). P2 asks whether each tier changes the game, so this matters for task 13.2.
 - **Two more ideas were tried and dropped**, with figures for seeds 1 to 40:
   - Falling back from a fleet stronger than the group, by hit points times damage a second: a median of 32.2 to 33.5 minutes, no better than without it.
   - Leaving the enemy's base alone until tier 2 or 3: a median of 25.7 at tier 2, and at tier 3 alone 36 of 40 matches still going at 150 minutes, since few AIs reach tier 3.

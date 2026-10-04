@@ -4,7 +4,7 @@ namespace Outpost
 {
 // The record of one match for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3), and Phase 1's P1, P2 and P4
 // (Phase 1 plan task 13.1). It holds how long the match ran and how it ended; when each player finished each research
-// topic, and each gateway that opened a tier; every warship as it first appeared, by its components and its module;
+// topic, and each research tier its Research Lab opened; every warship as it first appeared, by its components and its module;
 // each player's warship count every 30 seconds, and its peak; and each ore asteroid as it ran dry. It reads only
 // snapshots, as any client does. Tools/MatchLog.py summarizes it.
 //
@@ -12,7 +12,7 @@ namespace Outpost
 //
 //   match seed <seed> ticks_per_second <rate>
 //   research <tick> player <player> topic <id> <name>
-//   tier <tick> player <player> tier <tier>          the player finished the gateway that opens the tier
+//   tier <tick> player <player> tier <tier>          the player's Research Lab opened the tier (Phase 3 design §6)
 //   built <tick> player <player> hull <id> drive <id> weapon <id> <hull name>+<drive name>+<weapon name>[+<module name>]
 //   fleet <tick> player <player> warships <count>    every 30 seconds, from the player's own snapshots
 //   dry <tick> asteroid <id>                         the asteroid's reserve ran out (Phase 1 design §8)
@@ -72,6 +72,8 @@ private:
 
   // What has been written already.
   std::vector<std::pair<PlayerId, ResearchTopicId>> m_researched;
+  // The highest research tier each player's Lab has opened that the log has written.
+  std::vector<std::pair<PlayerId, std::int32_t>> m_tiers;
   std::set<EntityId> m_built;
   std::set<EntityId> m_dry;
   std::vector<Fleet> m_fleets;

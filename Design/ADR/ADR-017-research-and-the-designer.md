@@ -21,6 +21,7 @@ Design §9 puts the designer in the Shipyard panel, with live stats: damage per 
    - `StartResearchCommand` adds a topic to the back of the player's built Research Lab's queue, which holds up to `QUEUE_LIMIT`.
    - A topic is refused when it is researched or queued already, or when one of its prerequisites is neither researched nor ahead of it in the queue.
    - The front topic starts when the player can pay. It is paid for then, and until then it waits at the front, as a Shipyard's job does (ADR-016).
+   - **A level 4 Lab researches its front two topics at once** (Phase 3 design §6, gate K3; [ADR-064](ADR-064-structure-upgrades.md) decision 10). The second starts once the first has started and once its own prerequisites are researched, not only queued ahead of it, and it is paid for when it starts. Each takes its own time. When the first finishes, the second's progress moves to the front. The snapshot carries the second's progress (`secondJobPermille`).
    - It takes its `researchSeconds`, counted in thousandths of a tick (ADR-014), and the next topic starts on the following tick.
    - The queue belongs to the lab. A lab destroyed takes its queue with it, and the topic under way is lost with its Ore.
 2. **An upgrade is a factor on the tuning data's base number, and it applies on the tick its topic finishes.** Two topics on one rate add their percentages ([ADR-033](ADR-033-research-tiers.md) decision 3).
