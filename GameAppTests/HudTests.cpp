@@ -669,14 +669,16 @@ public:
     Assert::AreEqual(size_t{3}, content.buttons.size());
     Assert::AreEqual(std::string("Upgrade to L2 \xC2\xB7 0:30|150"), content.buttons[2].label);
     Assert::IsTrue(content.buttons[2].action == upgrade && content.buttons[2].enabled);
+    Assert::IsFalse(content.buttons[2].progressPermille.has_value());
 
-    // Building the level: how far it has come, and the button dim with the reason.
+    // Building the level: how far it has come, and the button dim with the reason and a bar for the work.
     yard.upgradePermille = 417;
     content = describe(yard);
     expected = {"Shipyard 01 \xC2\xB7 L1", "Upgrading to L2, 41%", "Hit points 2,500 / 2,500", "L2: 3,000 hit points"};
     Assert::IsTrue(content.selection == expected);
     Assert::IsFalse(content.buttons[2].enabled);
-    Assert::AreEqual(std::string("UPGRADING"), content.buttons[2].note);
+    Assert::AreEqual(std::string("UPGRADING \xC2\xB7 41%"), content.buttons[2].note);
+    Assert::IsTrue(content.buttons[2].progressPermille == 417);
 
     // Short of Ore: dim, and the cost says why.
     yard.upgradePermille.reset();
@@ -685,6 +687,7 @@ public:
     Assert::AreEqual(std::string("Upgrade to L3 \xC2\xB7 1:00|300"), content.buttons[2].label);
     Assert::IsFalse(content.buttons[2].enabled);
     Assert::IsTrue(content.buttons[2].note.empty());
+    Assert::IsFalse(content.buttons[2].progressPermille.has_value());
 
     yard.level = 3;
     content = describe(yard);
@@ -703,6 +706,22 @@ public:
     platform.shipyardNumber = 0;
     platform.level = 1;
     Assert::AreEqual(std::string("Defence Platform"), describe(platform).selection.front());
+  }
+
+  // The work a button started runs as a bar along its foot, from its left edge, as far as the work has come.
+  TEST_METHOD(DrawsAButtonsWorkAsABar)
+  {
+    Outpost::Hud::Content content{.ore = 0,
+                                  .buttons = {{.label = "Upgrade to L2|150", .enabled = false, .note = "UPGRADING \xC2\xB7 25%"}}};
+    const std::size_t idle = Lay(content, 1920, 1080).panels.size();
+    content.buttons[0].progressPermille = 250;
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    Assert::AreEqual(idle + 2, layout.panels.size(), L"a track and its fill");
+    const auto track = std::ranges::adjacent_find(
+      layout.panels, [](const Outpost::Hud::Rect& _track, const Outpost::Hud::Rect& _fill)
+      { return _fill.left == _track.left && _fill.top == _track.top && _fill.height == _track.height && _fill.width < _track.width; });
+    Assert::IsTrue(track != layout.panels.end());
+    Assert::AreEqual(track->width / 4.0f, std::next(track)->width, 0.01f);
   }
 
   // Phase 3 design §7: a Command Station's next level names the nodes it lets the player hold and the Defence guns it adds;
