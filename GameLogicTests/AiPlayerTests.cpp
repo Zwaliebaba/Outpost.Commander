@@ -924,7 +924,9 @@ public:
         asteroid.reserveOre = 200;
     }
     AiMatch match(3, map);
-    match.Run(8.0 * 60.0);
+    // Nine minutes: its fourth sector waits for its Command Station's level 2, 300 Ore and 45 s of a Constructor's work
+    // before the Relay (Phase 3 design §7), where Phase 2 had it in eight.
+    match.Run(9.0 * 60.0);
     const Outpost::Snapshot view = match.View(AI);
     std::ptrdiff_t dry = 0;
     std::ptrdiff_t mining = 0;

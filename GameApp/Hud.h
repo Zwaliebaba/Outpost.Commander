@@ -373,12 +373,14 @@ public:
     bool suppressed = false;
   };
 
-  // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8).
+  // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8). With them,
+  // how many the player's Command Station lets it hold (Phase 3 design §7), shown against its own; zero for none.
   struct Territory
   {
     std::int32_t ownNodes = 0;
     std::int32_t enemyNodes = 0;
     std::int32_t nodes = 0;
+    std::int32_t cap = 0;
     std::optional<std::int32_t> ownTickets;
     std::optional<std::int32_t> enemyTickets;
   };

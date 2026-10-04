@@ -86,7 +86,8 @@ void CombatEffects::Receive(const Snapshot& _snapshot)
                          .shooter = shot.shooter,
                          .from = shot.from,
                          .to = shot.to,
-                         .radiusMeters = shot.splashRadiusMeters});
+                         .radiusMeters = shot.splashRadiusMeters,
+                         .gun = shot.gun});
   }
 }
 
@@ -109,7 +110,7 @@ std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const Muzzl
       continue;
     Effect shot = effect;
     if (_muzzle)
-      shot.from = _muzzle(effect.shooter, effect.to).value_or(effect.from);
+      shot.from = _muzzle(effect.shooter, effect.to, effect.gun).value_or(effect.from);
     const DirectX::XMFLOAT4 beamColor = shot.look == ShotLook::Beam && _tint ? _tint(shot.shooter).value_or(BEAM_COLOR) : BEAM_COLOR;
     AddShot(shot, _viewTick, beamColor, draws);
   }

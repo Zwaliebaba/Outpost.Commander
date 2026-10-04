@@ -13,7 +13,8 @@ float Distance(Outpost::PlanePosition _a, Outpost::PlanePosition _b) noexcept
 } // namespace
 
 Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, PlanePosition _cursor, std::span<const EntityView> _entities,
-                                            float _mapSizeMeters, std::span<const SectorView> _sectors, PlayerId _player)
+                                            float _mapSizeMeters, std::span<const SectorView> _sectors, PlayerId _player,
+                                            std::int32_t _nodeCap)
 {
   if (_type.structure == StructureKind::Relay)
   {
@@ -28,7 +29,8 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
     };
     GhostPlacement ghost =
       PlaceGhost({.structure = StructureKind::Shipyard, .radiusMeters = _type.radiusMeters}, sector->node, _entities, _mapSizeMeters);
-    ghost.valid = ghost.valid && !sector->holder.IsValid() && std::ranges::any_of(sector->adjacent, heldByPlayer);
+    ghost.valid = ghost.valid && !sector->holder.IsValid() && std::ranges::any_of(sector->adjacent, heldByPlayer) &&
+                  !AtNodeCap(_sectors, _entities, _player, _nodeCap);
     return ghost;
   }
   if (_type.structure == StructureKind::MiningRig)
@@ -73,4 +75,22 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
   // A ghost outside the map, or one overlap, makes it invalid: the search stops at the first overlap, and outside the map
   // it is not made at all.
   return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = inside && std::ranges::none_of(_entities, overlaps)};
+}
+
+std::int32_t Outpost::NodesTaken(std::span<const SectorView> _sectors, std::span<const EntityView> _entities, PlayerId _player) noexcept
+{
+  const auto held = std::ranges::count(_sectors, _player, &SectorView::holder);
+  const auto sites = std::ranges::count_if(_entities,
+                                           [_player](const EntityView& _entity)
+                                           {
+                                             return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::Relay &&
+                                                    _entity.owner == _player && _entity.builtPermille < PERMILLE;
+                                           });
+  return static_cast<std::int32_t>(held + sites);
+}
+
+bool Outpost::AtNodeCap(std::span<const SectorView> _sectors, std::span<const EntityView> _entities, PlayerId _player,
+                        std::int32_t _nodeCap) noexcept
+{
+  return _nodeCap > 0 && NodesTaken(_sectors, _entities, _player) >= _nodeCap;
 }

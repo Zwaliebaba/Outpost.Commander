@@ -170,9 +170,28 @@ public:
       Assert::IsTrue(band != draws.end() && band->to == TARGET);
       return band->from;
     };
-    Assert::IsTrue(beamFrom([](Outpost::EntityId _shooter, Outpost::PlanePosition) -> std::optional<Outpost::PlanePosition>
+    Assert::IsTrue(beamFrom([](Outpost::EntityId _shooter, Outpost::PlanePosition, std::uint8_t) -> std::optional<Outpost::PlanePosition>
                             { return _shooter == Outpost::EntityId{1} ? std::optional(MUZZLE) : std::nullopt; }) == MUZZLE);
-    Assert::IsTrue(beamFrom([](Outpost::EntityId, Outpost::PlanePosition) { return std::optional<Outpost::PlanePosition>(); }) == GUN);
+    Assert::IsTrue(
+      beamFrom([](Outpost::EntityId, Outpost::PlanePosition, std::uint8_t) { return std::optional<Outpost::PlanePosition>(); }) == GUN);
+  }
+
+  // Phase 3 design §7: the view is told which of the shooter's guns fired, so a Command Station's further guns fire from
+  // hardpoints of their own.
+  TEST_METHOD(TheViewIsToldWhichGunFired)
+  {
+    Outpost::CombatEffects effects = Effects();
+    Outpost::Snapshot snapshot = Shot(10, LANCE);
+    snapshot.shots.front().gun = 2;
+    effects.Receive(snapshot);
+    std::vector<std::uint8_t> guns;
+    static_cast<void>(effects.At(After(10, 0.01),
+                                 [&guns](Outpost::EntityId, Outpost::PlanePosition, std::uint8_t _gun)
+                                 {
+                                   guns.push_back(_gun);
+                                   return std::optional<Outpost::PlanePosition>();
+                                 }));
+    Assert::IsTrue(guns == std::vector<std::uint8_t>{2});
   }
 
   // ADR-028: a beam is in the color the view gives its shooter, so the player sees whose fire it is, and a neutral one

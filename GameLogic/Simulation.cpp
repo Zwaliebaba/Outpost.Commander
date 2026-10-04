@@ -856,7 +856,9 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                .maxHitPointsHundredths = StructureHitPoints(_player, structure, level),
                                .opensTier = tuning.opensTier,
                                .researchSlots = tuning.researchSlots,
-                               .prerequisites = tuning.prerequisites});
+                               .prerequisites = tuning.prerequisites,
+                               .nodes = tuning.nodes,
+                               .guns = tuning.guns});
       }
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
@@ -881,6 +883,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   snapshot.winner = m_winner;
   snapshot.matchEndedTick = m_matchEndedTick;
   snapshot.ending = m_ending;
+  if (HasTerritory())
+    snapshot.nodeCap = NodeCapOf(_player);
   if (HasTerritory() && !m_basePlayers.empty())
   {
     const auto nodes = static_cast<std::int64_t>(m_sectors.size());
@@ -1314,6 +1318,64 @@ void Outpost::Simulation::Fight()
   };
   std::vector<Hit> hits;
 
+  // One gun of _shooter: it reloads, waits while it has no target, and fires at _target when it is ready (ADR-014). The
+  // shot names the gun, so that the client draws a structure's guns from their own hardpoints (ADR-064).
+  const auto fire = [&](Entity& _shooter, const Armament& _armament, EntityId _target, std::int32_t& _reloadMilliticks, std::uint8_t _gun)
+  {
+    const auto intervalMilliticks =
+      static_cast<std::int32_t>(std::llround(_armament.fireIntervalSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK));
+    if (!_target.IsValid())
+    {
+      // Idle: the weapon finishes reloading, waits, and an interval later goes cold.
+      _reloadMilliticks = std::max(-intervalMilliticks, _reloadMilliticks - MILLITICKS_PER_TICK);
+      return;
+    }
+    // A cold weapon fires its first shot at a random moment within its interval, so that a group's volleys do not land
+    // together (design §7, the balance check's model). A ship that lost its target only for a moment keeps its rhythm.
+    if (_reloadMilliticks <= -intervalMilliticks && intervalMilliticks > 0)
+      _reloadMilliticks = static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks)));
+    _reloadMilliticks -= MILLITICKS_PER_TICK;
+    if (_reloadMilliticks > 0)
+      return;
+    // A weapon that was ready and waiting fires now, and its next shot comes a whole interval later; one firing steadily
+    // carries the fraction of a tick over, so an interval that is not a whole number of ticks keeps its average.
+    _reloadMilliticks = std::max(_reloadMilliticks, -MILLITICKS_PER_TICK) + intervalMilliticks;
+
+    // The balance check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells
+    // it that an enemy is in range.
+    EntityId shotTarget = _target;
+    if (m_targetRule != TargetRule::Nearest && _target != _shooter.attackTarget)
+      shotTarget = ChooseTarget(_shooter, _armament.rangeMeters, m_targetRule);
+    const Entity& target = *FindEntity(shotTarget);
+    hits.push_back({target.id, HitHundredths(_armament.damageHundredths, target.armorHundredths)});
+    RevealShooter(target.owner, _shooter.id);
+    m_shots.push_back({.shooter = _shooter.id,
+                       .target = target.id,
+                       .weapon = _armament.weapon,
+                       .from = _shooter.position,
+                       .to = target.position,
+                       .splashRadiusMeters = _armament.splashRadiusMeters,
+                       .gun = _gun});
+    // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
+    // after its own armor. Never the shooter's own side (ADR-014).
+    if (_armament.splashRadiusMeters > 0.0f)
+    {
+      const float reach = _armament.splashRadiusMeters * _armament.splashRadiusMeters;
+      const std::int32_t damageHundredths = _armament.damageHundredths;
+      for (const Entity& other : m_entities)
+      {
+        if (other.id == target.id || other.maxHitPointsHundredths <= 0 || !other.owner.IsValid() || other.owner == _shooter.owner)
+          continue;
+        const PlaneVector between = other.position - target.position;
+        if (Dot(between, between) <= reach)
+        {
+          hits.push_back({other.id, HitHundredths(damageHundredths, other.armorHundredths)});
+          RevealShooter(other.owner, _shooter.id);
+        }
+      }
+    }
+  };
+
   for (Entity& ship : m_entities)
   {
     if (ship.maxHitPointsHundredths <= 0)
@@ -1333,57 +1395,16 @@ void Outpost::Simulation::Fight()
     if (!chosen.IsValid())
       chosen = ChooseTarget(ship, armament->rangeMeters, TargetRule::Nearest);
     ship.target = chosen;
+    const Armament& gun = *armament;
+    fire(ship, gun, ship.target, ship.reloadMilliticks, 0);
 
-    const auto intervalMilliticks =
-      static_cast<std::int32_t>(std::llround(armament->fireIntervalSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK));
-    if (!ship.target.IsValid())
+    // A Command Station's further Defence guns, which its level gives (Phase 3 design §7), each the gun it carries, at the
+    // target the station keeps, on a rhythm of its own.
+    if (ship.kind == EntityKind::Structure)
     {
-      // Idle: the weapon finishes reloading, waits, and an interval later goes cold.
-      ship.reloadMilliticks = std::max(-intervalMilliticks, ship.reloadMilliticks - MILLITICKS_PER_TICK);
-      continue;
-    }
-    // A cold weapon fires its first shot at a random moment within its interval, so that a group's volleys do not land
-    // together (design §7, the balance check's model). A ship that lost its target only for a moment keeps its rhythm.
-    if (ship.reloadMilliticks <= -intervalMilliticks && intervalMilliticks > 0)
-      ship.reloadMilliticks = static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks)));
-    ship.reloadMilliticks -= MILLITICKS_PER_TICK;
-    if (ship.reloadMilliticks > 0)
-      continue;
-    // A weapon that was ready and waiting fires now, and its next shot comes a whole interval later; one firing steadily
-    // carries the fraction of a tick over, so an interval that is not a whole number of ticks keeps its average.
-    ship.reloadMilliticks = std::max(ship.reloadMilliticks, -MILLITICKS_PER_TICK) + intervalMilliticks;
-
-    // The balance check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells
-    // it that an enemy is in range.
-    EntityId shotTarget = ship.target;
-    if (m_targetRule != TargetRule::Nearest && ship.target != ship.attackTarget)
-      shotTarget = ChooseTarget(ship, armament->rangeMeters, m_targetRule);
-    const Entity& target = *FindEntity(shotTarget);
-    hits.push_back({target.id, HitHundredths(armament->damageHundredths, target.armorHundredths)});
-    RevealShooter(target.owner, ship.id);
-    m_shots.push_back({.shooter = ship.id,
-                       .target = target.id,
-                       .weapon = armament->weapon,
-                       .from = ship.position,
-                       .to = target.position,
-                       .splashRadiusMeters = armament->splashRadiusMeters});
-    // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
-    // after its own armor. Never the shooter's own side (ADR-014).
-    if (armament->splashRadiusMeters > 0.0f)
-    {
-      const float reach = armament->splashRadiusMeters * armament->splashRadiusMeters;
-      const std::int32_t damageHundredths = armament->damageHundredths;
-      for (const Entity& other : m_entities)
-      {
-        if (other.id == target.id || other.maxHitPointsHundredths <= 0 || !other.owner.IsValid() || other.owner == ship.owner)
-          continue;
-        const PlaneVector between = other.position - target.position;
-        if (Dot(between, between) <= reach)
-        {
-          hits.push_back({other.id, HitHundredths(damageHundredths, other.armorHundredths)});
-          RevealShooter(other.owner, ship.id);
-        }
-      }
+      ship.extraGunReloadMilliticks.resize(static_cast<std::size_t>(std::max(0, StationGuns(*m_tuning, ship.structure, ship.level) - 1)));
+      for (std::size_t extra = 0; extra < ship.extraGunReloadMilliticks.size(); ++extra)
+        fire(ship, gun, ship.target, ship.extraGunReloadMilliticks[extra], static_cast<std::uint8_t>(extra + 1));
     }
   }
 
@@ -1819,6 +1840,10 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const BuildS
   PlanePosition position = _build.position;
   if (const CommandResult result = CheckPlacement(_player, _build.structure, radius, position); result != CommandResult::Applied)
     return result;
+  // A Relay past the nodes the player's Command Station lets it hold is refused; one under construction counts, as it
+  // takes its node (Phase 3 design §7).
+  if (const std::int32_t cap = NodeCapOf(_player); _build.structure == StructureKind::Relay && cap > 0 && NodesTaken(_player) >= cap)
+    return CommandResult::CapReached;
   PlayerState* player = FindPlayer(_player);
   const std::int64_t cost = std::int64_t{costOre} * HUNDREDTHS;
   if (player == nullptr || player->oreHundredths < cost)
@@ -2297,6 +2322,28 @@ void Outpost::Simulation::UpdateTerritory()
   }
   for (size_t index = 0; index < m_sectors.size(); ++index)
     m_sectors[index].cutOff = m_sectors[index].holder.IsValid() && linked[index] == 0;
+}
+
+std::int32_t Outpost::Simulation::NodeCapOf(PlayerId _player) const noexcept
+{
+  if (!m_tuning)
+    return 0;
+  const auto station = std::ranges::find_if(
+    m_entities, [_player](const Entity& _entity)
+    { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::CommandStation && _entity.owner == _player; });
+  return NodeCap(*m_tuning, station != m_entities.end() ? station->level : 1);
+}
+
+std::int32_t Outpost::Simulation::NodesTaken(PlayerId _player) const noexcept
+{
+  const auto held = std::ranges::count(m_sectors, _player, &Sector::holder);
+  const auto sites = std::ranges::count_if(m_entities,
+                                           [_player](const Entity& _entity)
+                                           {
+                                             return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::Relay &&
+                                                    _entity.owner == _player && !_entity.IsBuilt();
+                                           });
+  return static_cast<std::int32_t>(held + sites);
 }
 
 double Outpost::Simulation::TerritoryShare(const Entity& _rig) const noexcept

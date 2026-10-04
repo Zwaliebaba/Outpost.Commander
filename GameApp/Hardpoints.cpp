@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
 namespace
 {
@@ -204,23 +203,21 @@ DirectX::XMFLOAT3 Outpost::PlacePoint(const ModelPose& _pose, const DirectX::XMF
 }
 
 std::optional<Outpost::PlanePosition> Outpost::NearestMuzzle(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose,
-                                                             PlanePosition _target)
+                                                             PlanePosition _target, std::uint8_t _gun)
 {
-  std::optional<PlanePosition> nearest;
-  float nearestMeters = std::numeric_limits<float>::max();
+  // Each gun by how far it is from the target; a stable sort keeps the model's order between guns as near as each other.
+  std::vector<std::pair<float, PlanePosition>> guns;
   for (const Neuron::MeshHardpoint& hardpoint : _hardpoints)
   {
     if (HardpointKindOf(hardpoint.tag) != HardpointKind::Gun)
       continue;
     const DirectX::XMFLOAT3 at = PlacePoint(_pose, hardpoint.position);
-    const float meters = std::hypot(at.x - _target.xMeters, at.z - _target.zMeters);
-    if (meters < nearestMeters)
-    {
-      nearestMeters = meters;
-      nearest = PlanePosition{.xMeters = at.x, .zMeters = at.z};
-    }
+    guns.emplace_back(std::hypot(at.x - _target.xMeters, at.z - _target.zMeters), PlanePosition{.xMeters = at.x, .zMeters = at.z});
   }
-  return nearest;
+  if (guns.empty())
+    return std::nullopt;
+  std::ranges::stable_sort(guns, {}, &std::pair<float, PlanePosition>::first);
+  return guns[_gun % guns.size()].second;
 }
 
 void Outpost::AddExhaustGlows(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose, const DirectX::XMFLOAT4& _color,

@@ -312,6 +312,10 @@ public:
         fields.push_back({"buildConstructorSeconds", *structure.buildConstructorSeconds});
       if (structure.structureWeapon.IsValid())
         fields.push_back({"structureWeapon", Number(structure.structureWeapon.value)});
+      if (structure.nodes > 0)
+        fields.push_back({"nodes", Number(structure.nodes)});
+      if (structure.guns > 0)
+        fields.push_back({"guns", Number(structure.guns)});
       const std::string path = std::format("structures[{}]", i);
       // A list of hulls, or none, as the file holds it.
       const auto expectHulls = [](const Neuron::JsonValue& _json, const std::vector<Outpost::HullId>& _hulls, const std::string& _path)
@@ -338,6 +342,10 @@ public:
             levelFields.push_back({"opensTier", Number(loaded.opensTier)});
           if (loaded.researchSlots > 0)
             levelFields.push_back({"researchSlots", Number(loaded.researchSlots)});
+          if (loaded.nodes > 0)
+            levelFields.push_back({"nodes", Number(loaded.nodes)});
+          if (loaded.guns > 0)
+            levelFields.push_back({"guns", Number(loaded.guns)});
           size_t levelElsewhere = expectHulls(levels[j], loaded.hulls, levelPath + ".hulls");
           if (const Neuron::JsonValue* required = levels[j].Find("requires"))
           {
@@ -468,6 +476,14 @@ public:
     Assert::AreEqual(3, top(Outpost::StructureKind::Shipyard));
     Assert::AreEqual(4, top(Outpost::StructureKind::ResearchLab));
     Assert::AreEqual(1, top(Outpost::StructureKind::Relay));
+    // The station's cap and guns at each level (gates K4, K6).
+    for (std::int32_t level = 1; level <= 5; ++level)
+    {
+      Assert::AreEqual(level + 2, Outpost::NodeCap(repository, level));
+      Assert::AreEqual(std::array{1, 1, 2, 2, 3}[static_cast<size_t>(level - 1)],
+                       Outpost::StationGuns(repository, Outpost::StructureKind::CommandStation, level));
+      Assert::AreEqual(1, Outpost::StationGuns(repository, Outpost::StructureKind::DefensePlatform, level));
+    }
   }
 
   TEST_METHOD(RejectsBrokenLevels)
@@ -497,6 +513,13 @@ public:
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30,",
                             "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30, \"hulls\": [1],"),
                     "structures[2].hulls");
+    // A Command Station's cap and guns (Phase 3 design §7), which no other kind has, and at least one of each.
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                            "\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"nodes\": 4 } ]"),
+                    "structures[1].levels[0].nodes");
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
+                            "\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1, \"guns\": 0 },"),
+                    "structures[0].guns");
     // A kind the owner gave no levels to (Phase 3 design §11).
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40 }",
                             "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40, \"levels\": [] }"),

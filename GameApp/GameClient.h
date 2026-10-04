@@ -172,8 +172,9 @@ private:
   [[nodiscard]] Stance RigStance(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
   // The color of the shooter's beams: its side's, made lighter (ADR-028). Nothing for a shooter the view does not hold.
   [[nodiscard]] std::optional<DirectX::XMFLOAT4> BeamColor(EntityId _shooter) const;
-  // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
-  [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
+  // The shooter's gun nearest _target where the view draws it this frame, or for a further gun the next nearest, for the
+  // combat effects (ADR-018).
+  [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target, std::uint8_t _gun) const;
   // Queues _entity's model for the frame's batches of faces and lines (ADR-053).
   void QueueEntity(const EntityView& _entity);
   // Starts the blast and the explosion of every ship and structure _snapshot reports destroyed (ADR-026), before the view

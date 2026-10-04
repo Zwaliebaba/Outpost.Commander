@@ -201,8 +201,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, StructureLevelView>
 auto Fields(Self& _value)
 {
-  auto& [cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites] = _value;
-  return std::tie(cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites);
+  auto& [cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites, nodes, guns] = _value;
+  return std::tie(cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites, nodes, guns);
 }
 
 template <typename Self>
@@ -233,8 +233,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, ShotView>
 auto Fields(Self& _value)
 {
-  auto& [shooter, target, weapon, from, to, splashRadiusMeters] = _value;
-  return std::tie(shooter, target, weapon, from, to, splashRadiusMeters);
+  auto& [shooter, target, weapon, from, to, splashRadiusMeters, gun] = _value;
+  return std::tie(shooter, target, weapon, from, to, splashRadiusMeters, gun);
 }
 
 template <typename Self>
@@ -250,11 +250,11 @@ template <typename Self>
 auto Fields(Self& _value)
 {
   auto& [tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-         constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, matchOver, winner,
+         constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, nodeCap, matchOver, winner,
          matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
   return std::tie(tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-                  constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, matchOver, winner,
-                  matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets);
+                  constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, nodeCap, matchOver,
+                  winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets);
 }
 
 template <typename Self>

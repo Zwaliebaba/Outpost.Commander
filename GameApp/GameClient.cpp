@@ -610,7 +610,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   UpdateBanking(_elapsedSeconds);
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(
-    m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); },
+    m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target, std::uint8_t _gun) { return MuzzleOf(_shooter, _target, _gun); },
     [this](EntityId _shooter) { return BeamColor(_shooter); });
   m_particleGlows.clear();
   m_particles.At(m_view.ViewTick(), m_particleGlows);
@@ -1515,7 +1515,7 @@ std::optional<DirectX::XMFLOAT4> Outpost::GameClient::BeamColor(EntityId _shoote
   return DirectX::XMFLOAT4{toWhite(set->color.x), toWhite(set->color.y), toWhite(set->color.z), 1.0f};
 }
 
-std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target) const
+std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target, std::uint8_t _gun) const
 {
   const EntityView* shooter = FindById(m_entities, _shooter);
   if (shooter == nullptr)
@@ -1523,7 +1523,7 @@ std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _sh
   const std::optional<PlacedModel> placed = PlaceModel(*shooter);
   if (!placed.has_value())
     return std::nullopt;
-  return NearestMuzzle(ModelHardpoints(placed->set->name, *placed->model, placed->level), placed->pose, _target);
+  return NearestMuzzle(ModelHardpoints(placed->set->name, *placed->model, placed->level), placed->pose, _target, _gun);
 }
 
 void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList)
@@ -1571,9 +1571,10 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   if (type == newest.structureTypes.end())
     return;
   // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046). A
-  // Relay snaps to its sector's node, and a rig needs a sector the player holds (ADR-056).
+  // Relay snaps to its sector's node, and waits at its Command Station's node cap, and a rig needs a sector the player holds
+  // (ADR-056).
   const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities,
-                                          newest.mapSizeMeters, newest.sectors, newest.player);
+                                          newest.mapSizeMeters, newest.sectors, newest.player, newest.nodeCap);
   const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};
   m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ghost.radiusMeters), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
   // The structure itself, shown where it would stand.

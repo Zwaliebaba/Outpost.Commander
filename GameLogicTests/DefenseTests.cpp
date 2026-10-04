@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "MatchArena.h"
 
+#include <set>
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace GameLogicTests
@@ -102,6 +104,38 @@ public:
     Assert::IsFalse(shooters.empty());
     for (const Outpost::EntityId shooter : shooters)
       Assert::IsTrue(shooter == station, L"only the Command Station fires");
+  }
+
+  // Phase 3 design §7, gate K6: a Command Station has one Defence gun at levels 1 and 2, two at 3 and 4, and three at 5,
+  // each the station's gun firing on its own rhythm; a Defence Platform has one at any level. Each shot names its gun.
+  TEST_METHOD(AStationsLevelGivesItsGuns)
+  {
+    const auto gunsFiring = [](Outpost::StructureKind _kind, std::int32_t _level)
+    {
+      MatchArena arena;
+      (void)arena.Structure(BLUE, _kind, PLATFORM, _level);
+      // A Shipyard of Red's in range: no ship, so the guns turn on it, and it stands through the ten seconds.
+      (void)arena.Structure(RED, Outpost::StructureKind::Shipyard, {.xMeters = 0.0f, .zMeters = 200.0f});
+      std::set<std::uint8_t> guns;
+      std::size_t shots = 0;
+      for (int tick = 0; tick < 10 * 20; ++tick)
+      {
+        for (const Outpost::ShotView& shot : TickShots(arena))
+        {
+          guns.insert(shot.gun);
+          ++shots;
+        }
+      }
+      // One shot a second a gun, give or take its random first shot.
+      Assert::IsTrue(shots >= (guns.size() * 9) && shots <= (guns.size() * 11), std::to_wstring(shots).c_str());
+      return guns.size();
+    };
+    Assert::AreEqual(size_t{1}, gunsFiring(Outpost::StructureKind::CommandStation, 1));
+    Assert::AreEqual(size_t{1}, gunsFiring(Outpost::StructureKind::CommandStation, 2));
+    Assert::AreEqual(size_t{2}, gunsFiring(Outpost::StructureKind::CommandStation, 3));
+    Assert::AreEqual(size_t{2}, gunsFiring(Outpost::StructureKind::CommandStation, 4));
+    Assert::AreEqual(size_t{3}, gunsFiring(Outpost::StructureKind::CommandStation, 5));
+    Assert::AreEqual(size_t{1}, gunsFiring(Outpost::StructureKind::DefensePlatform, 1));
   }
 };
 } // namespace GameLogicTests

@@ -220,6 +220,10 @@ struct StructureLevelView
   std::int32_t opensTier = 0;
   std::int32_t researchSlots = 0;
   std::vector<ResearchTopicId> prerequisites;
+  // A Command Station's level (Phase 3 design §7): the nodes its player may hold from it on, and its Defence guns; 0 where
+  // it does not change them.
+  std::int32_t nodes = 0;
+  std::int32_t guns = 0;
 
   friend bool operator==(const StructureLevelView&, const StructureLevelView&) = default;
 };
@@ -303,6 +307,9 @@ struct ShotView
   PlanePosition to;
   // How far its splash reached around `to`; zero for a weapon without splash.
   float splashRadiusMeters = 0.0f;
+  // Which of the shooter's guns fired it: 0 for a ship's and a structure's first, and 1 on for a Command Station's further
+  // Defence guns (Phase 3 design §7), which the client draws from hardpoints of their own.
+  std::uint8_t gun = 0;
 };
 
 // An entity destroyed in the tick, where it was, so the client can show it go after it has left the snapshot (task 3.5).
@@ -351,6 +358,9 @@ struct Snapshot
   // The highest research tier the player's finished Research Lab has opened by its level, and 1 without one (Phase 3
   // design §6).
   std::int32_t researchTier = 1;
+  // On a map with territory, the nodes the player may hold, home included, by its Command Station's level, or level 1's
+  // without one (Phase 3 design §7); zero otherwise.
+  std::int32_t nodeCap = 0;
   // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
   // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
   // (owner, 2026-10-01).
