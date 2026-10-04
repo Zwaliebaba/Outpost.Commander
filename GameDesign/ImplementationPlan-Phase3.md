@@ -1,6 +1,6 @@
 # Outpost Commander — Phase 3 Implementation Plan
 
-Status: **open** · Started 2026-10-04, from [the Phase 3 design](OutpostCommander-Phase3.md)'s draft · Opened the same day, when the owner had run Phase 2 and accepted the design (gate K7), and answered Q1–Q4 · Derived from the Phase 3 design
+Status: **closed** · Started 2026-10-04, from [the Phase 3 design](OutpostCommander-Phase3.md)'s draft · Opened the same day, when the owner had run Phase 2 and accepted the design (gate K7), and answered Q1–Q4 · Every milestone built and merged on 2026-10-04, #67 to #73 · The owner's runs done on 2026-10-04: the client tasks work, T5 reads, and Easy is beatable · Derived from the Phase 3 design
 
 The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 2 plan](Archive/ImplementationPlan-Phase2.md) is closed.
 
@@ -23,18 +23,18 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 20.1 | Upgrading a structure, on the server | — | K5, K6 decided | done, in PR |
+| 20.1 | Upgrading a structure, on the server | — | K5, K6 decided | done |
 | 20.2 | The client shows levels and upgrades | 20.1 | — | done: owner run on 2026-10-04 |
-| 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | done, in PR |
+| 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | done |
 | 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | done: owner run on 2026-10-04 |
-| 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | done, in PR |
-| 22.2 | The Lab's second research slot | 22.1 | K3 decided | done, in PR |
+| 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | done |
+| 22.2 | The Lab's second research slot | 22.1 | K3 decided | done |
 | 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | done: owner run on 2026-10-04 |
-| 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | done, in PR |
+| 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | done |
 | 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | done: owner run on 2026-10-04 |
-| 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | done, in PR |
-| 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | done, in PR |
-| 25.2 | T1–T5 | 24.1, 25.1 | — | T1–T4 answered, in PR; T5: owner run |
+| 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | done |
+| 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | done |
+| 25.2 | T1–T5 | 24.1, 25.1 | — | done: T5 owner run on 2026-10-04 |
 
 ### Milestone order
 
@@ -258,5 +258,5 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **Scope:** Easy, Normal and Hard, each a settings file, picked on the menu. Normal stays `Opponent.json`, the AI that T1–T4 measure.
 - **ADR:** ADR-065; ADR-020 edited in place for the menu.
 - **Acceptance:** `AiSettingsTests.LoadsEachDifficulty`, `HudTests.LaysOutTheMenu`.
-- **Verify:** CI; Easy and Hard against Normal, AI against AI; **owner run.**
+- **Verify:** CI; Easy and Hard against Normal, AI against AI; **owner run**: Easy is beatable (owner, 2026-10-04).
 - **As built:** [ADR-065](../Design/ADR/ADR-065-ai-difficulty.md). On seeds 1–20, each difficulty in both seats, Normal beats Easy in all 20 and Hard beats Normal in all 20, before 25.2's tuning and after it. A larger economy alone made Hard weaker; its edge is territory.

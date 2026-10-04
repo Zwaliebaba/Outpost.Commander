@@ -36,7 +36,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 - **T2, the cap's stall: missed, and kept** (owner, 2026-10-04). Both players sit at their caps with equal nodes for a median of 9:28 a match, from 6:14 to 10:33, against the 5 minutes asked. Most of it is the opening: both reach level 1's three nodes at about 2:25 and wait for level 2, then sit at four each until one reaches level 3. No setting of the AI's moved it. A level 2 of 150 Ore and 30 s gave 8:40, and a cap one node higher at every level 5:10 but a median match of 25:08 that never needed level 3, so the numbers of §7 stay. The stall does not stall the match: most end by domination.
 - **T3, the levels reached: missed on the Research Lab, and kept** (owner, 2026-10-04). Each side reaches level 3 of the Command Station and of a Shipyard in all 40, and of the Research Lab in 11, so all three in 11 of the 40. Tier 3 is opened in 33 of the 40 matches and by 44 of the 80 players, against Phase 1's 2 in 80.
 - **T4, upgraded structures fought over: yes.** A median of 4 structures above level 1 is attacked a match, from 0 to 12.
-- **T5, does it read:** the owner's judgement in play, still to come.
+- **T5, does it read: yes.** The owner's judgement in play, on 2026-10-04: a structure's level reads at a glance, and what the next level gives is clear before buying it.
 
 ---
 
