@@ -1,6 +1,6 @@
 # Outpost Commander — Phase 3 Design: Structures That Grow
 
-Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Not accepted: acceptance waits on Phase 2's owner run (gate K7)
+Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](OutpostCommander-Horizon.md) · Not accepted: acceptance waits on Phase 2's owner run (gate K7)
 
 This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. It is accepted after the owner has run Phase 2 (gate K7).
 
@@ -34,7 +34,8 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 
 ## 3. Decided by the owner on 2026-10-04
 
-- **Phase 3 is upgrades, on Phase 2's 5 km map.** The 10 km world, forward Shipyards, relay jumps and pathing by sector, which Phase 2 §7 kept for Phase 3, move to **Phase 4**. Phase 3 is measured against the same map and the same S1–S4 as Phase 2, so a change in the figures can be traced to it.
+- **Phase 3 is upgrades, on Phase 2's 5 km map.** The 10 km world, forward Shipyards, relay jumps and pathing by sector, which Phase 2 §7 kept for Phase 3, wait on **the horizon** (below). Phase 3 is measured against the same map and the same S1–S4 as Phase 2, so a change in the figures can be traced to it.
+- **The long-term direction is [the horizon](OutpostCommander-Horizon.md)**: a galaxy that keeps running, played by a circle of friends in seasons of weeks and later of months. There the world grows by star systems, each a map like this one, rather than into one 10 km map, and a relay jump becomes travel between systems (Horizon O8). Phase 3's rules are unchanged by it. What Phase 3 builds is what the horizon builds on: an upgraded structure is a target worth a raid, as a vault system would be worth a fleet (Horizon §6.1), and the Command Station's cap on nodes is the pattern for a bound on fleets (Horizon §6.2).
 - **Constructors upgrade a structure, and it keeps working** (§4). A Shipyard keeps building, a Lab keeps researching and a Command Station keeps firing while its next level is built.
 - **The Research Lab's level opens research tiers** (§6), in place of the gateway topics. Research is tied to the Lab and not to the Command Station, because a lost Command Station is lost for good (Phase 1 gate H5), and losing it would otherwise end a player's research for the rest of the match.
 - **The Command Station's level is a hard cap on the nodes a player holds** (§7).
@@ -111,7 +112,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 - **The cap refuses new claims; it never takes a node away.** Nodes already held stay held, whatever happens to the Command Station.
 - **A player without a Command Station** has level 1's cap, 3 nodes. It keeps every Relay it has, and builds no new one while it holds 3 or more.
 - **Why these numbers.** Domination drains only while the two sides hold different numbers of nodes (Phase 2 §8). Two players at the same cap hold equal numbers, and nothing drains: that is the stall T2 measures. On nine nodes, two players at level 1 can each hold their home and both flanks, which is today's opening, and the first player to reach level 2 can go ahead by one node. From level 3, two caps of 5 add up to more than the map's nine nodes, so both sides cannot be at their cap at once: the nodes are contested, and domination decides as it does today.
-- **On Phase 4's 25 nodes**, these caps have to be scaled to the map's size. That is Phase 4's to decide.
+- **On a larger map, or across a galaxy of systems** (the horizon, §3), these caps have to be scaled to the number of nodes. That is for the phase that builds it to decide.
 - **The station's guns** (gate K6). A second Defence gun at level 3 and a third at level 5, each the gun the station carries today, aiming and firing on its own. The simulation gives both sides the same guns; the art does not, with the Human Command Station's 4 hardpoints at level 1 and 12 at level 5 and the Tarkan's 3 and 6, so the client spreads each gun's shots over its set's hardpoints. Three guns and +80% hit points make a level 5 home much harder to raid than today's: the siege that ends a match by the base takes a larger fleet, and T1 checks that S3 still sees it happen.
 
 ---
@@ -143,13 +144,13 @@ Its numbers are starting values in `Opponent.json`, tuned against T1–T3.
 - **Phase 1 §6:** the research tree loses topics 9 and 18, the gateways (§6). The balance check is unchanged: it checks battles at each tier's components, not when they become available.
 - **The match log** records each upgrade started, finished or lost with its structure, each attack on a structure above level 1 (T4), and the time both sides spend at their cap with equal nodes (T2).
 - **ADR-033** is edited in place: a tier is opened by the Research Lab's level, and `GatewayEffect` is removed. **ADR-045** is edited in place: the level is in the simulation and the snapshot, and every level is fitted to level 1's size. **ADR-017** is edited in place for the second research slot. **ADR-056** is edited in place for the cap. A new ADR records the upgrade itself.
-- **Phase 2 §7** names Phase 4, not Phase 3, as the place for the world.
+- **Phase 2 §7** names the horizon, not Phase 3, as the place for the world (§3).
 
 ---
 
 ## 11. Out of scope for Phase 3
 
-Everything Phase 2 kept out stays out. Also out: the 10 km world, forward Shipyards, relay jumps and pathing by sector (Phase 4); levels for the Relay, the Defence Platform and the Mining Rig, which have no art for them; levels 4 and 5 of the Shipyard and level 5 of the Lab (gate K3); new hulls.
+Everything Phase 2 kept out stays out. Also out: the 10 km world, forward Shipyards, relay jumps and pathing by sector (the horizon, §3); levels for the Relay, the Defence Platform and the Mining Rig, which have no art for them; levels 4 and 5 of the Shipyard and level 5 of the Lab (gate K3); new hulls.
 
 ---
 
