@@ -41,4 +41,8 @@ struct ShipDesign
 // A design's name as design §7 writes it, such as "Small+Ion+Mass Driver", with its module after a fourth plus when it
 // has one. Throws Neuron::Exception when an identifier names nothing in _tuning.
 [[nodiscard]] std::string DesignName(const Tuning& _tuning, const DesignComponents& _components);
+
+// The name a starting design is saved under: the short name the tuning data gives it, such as "Swarm", or its components'
+// name (ADR-069).
+[[nodiscard]] std::string StartingDesignName(const Tuning& _tuning, const DesignComponents& _components);
 } // namespace Outpost

@@ -131,6 +131,16 @@ Outpost::ModuleTuning ReadModule(ObjectReader& _reader)
   return module;
 }
 
+Outpost::StartingDesignTuning ReadStartingDesign(ObjectReader& _reader)
+{
+  Outpost::StartingDesignTuning design;
+  design.hull = _reader.Identifier<Outpost::HullId>("hull");
+  design.drive = _reader.Identifier<Outpost::DriveId>("drive");
+  design.weapon = _reader.Identifier<Outpost::WeaponId>("weapon");
+  design.name = _reader.String("name");
+  return design;
+}
+
 Outpost::ConstructorTuning ReadConstructor(ObjectReader& _reader)
 {
   Outpost::ConstructorTuning constructor;
@@ -519,6 +529,42 @@ void CheckResearchIsAcyclic(const std::vector<Outpost::ResearchTopicTuning>& _re
   }
 }
 
+// Each named starting design is of components that exist and no research unlocks, under a name the server takes, and
+// neither its components nor its name is another's (ADR-069).
+void CheckStartingDesigns(const Outpost::Tuning& _tuning)
+{
+  const auto unlocked = [&_tuning]<typename IdType>(IdType _id)
+  {
+    return std::ranges::any_of(_tuning.research,
+                               [_id](const Outpost::ResearchTopicTuning& _topic)
+                               {
+                                 const IdType* unlocks = std::get_if<IdType>(&_topic.effect);
+                                 return unlocks != nullptr && *unlocks == _id;
+                               });
+  };
+  for (size_t i = 0; i < _tuning.startingDesigns.size(); ++i)
+  {
+    const Outpost::StartingDesignTuning& design = _tuning.startingDesigns[i];
+    const std::string path = Neuron::JsonElementPath("startingDesigns", i);
+    CheckExists(_tuning.hulls, design.hull, std::format("{}.hull", path), "hull");
+    CheckExists(_tuning.drives, design.drive, std::format("{}.drive", path), "drive");
+    CheckExists(_tuning.weapons, design.weapon, std::format("{}.weapon", path), "weapon");
+    if (unlocked(design.hull) || unlocked(design.drive) || unlocked(design.weapon))
+      Neuron::JsonFail(path, "is not a starting design: research unlocks one of its components");
+    if (!Outpost::IsValidDesignName(design.name))
+      Neuron::JsonFail(std::format("{}.name", path), std::format("\"{}\" is not a name the server takes", design.name));
+    for (size_t j = 0; j < i; ++j)
+    {
+      const Outpost::StartingDesignTuning& earlier = _tuning.startingDesigns[j];
+      if (earlier.hull == design.hull && earlier.drive == design.drive && earlier.weapon == design.weapon)
+        Neuron::JsonFail(path, std::format("names the design of {} again", Neuron::JsonElementPath("startingDesigns", j)));
+      if (earlier.name == design.name)
+        Neuron::JsonFail(std::format("{}.name", path),
+                         std::format("\"{}\" is {}'s name too", design.name, Neuron::JsonElementPath("startingDesigns", j)));
+    }
+  }
+}
+
 Outpost::Tuning ReadTuning(std::string_view _json)
 {
   const JsonValue document = Neuron::ParseJson(_json);
@@ -545,6 +591,8 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   tuning.structureWeapons = Neuron::ReadJsonList<Outpost::StructureWeaponTuning>(root, "structureWeapons", ReadStructureWeapon);
   tuning.structures = Neuron::ReadJsonList<Outpost::StructureTuning>(root, "structures", ReadStructure);
   tuning.research = Neuron::ReadJsonList<Outpost::ResearchTopicTuning>(root, "research", ReadResearchTopic);
+  if (root.Optional("startingDesigns") != nullptr)
+    tuning.startingDesigns = Neuron::ReadJsonList<Outpost::StartingDesignTuning>(root, "startingDesigns", ReadStartingDesign);
   root.Finish();
 
   CheckUniqueIds(tuning.hulls, "hulls");
@@ -556,6 +604,7 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   CheckReferences(tuning);
   CheckResearchIsAcyclic(tuning.research);
   CheckTiers(tuning);
+  CheckStartingDesigns(tuning);
   return tuning;
 }
 } // namespace

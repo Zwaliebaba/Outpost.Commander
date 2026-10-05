@@ -388,6 +388,43 @@ public:
       for (size_t j = 0; j < prerequisites.size(); ++j)
         Assert::IsTrue(prerequisites[j].AsNumber() == Number(topic.prerequisites[j].value), Widen(path).c_str());
     }
+
+    // ADR-069: the starting designs' short names.
+    const Neuron::JsonValue::Array& startingDesigns = json.Find("startingDesigns")->AsArray();
+    Assert::AreEqual(startingDesigns.size(), tuning.startingDesigns.size());
+    for (size_t i = 0; i < startingDesigns.size(); ++i)
+    {
+      const Outpost::StartingDesignTuning& design = tuning.startingDesigns[i];
+      ExpectSame(startingDesigns[i],
+                 {{"hull", Number(design.hull.value)},
+                  {"drive", Number(design.drive.value)},
+                  {"weapon", Number(design.weapon.value)},
+                  {"name", design.name}},
+                 std::format("startingDesigns[{}]", i));
+    }
+  }
+
+  // ADR-069: a starting design's name is optional, and one that is given names components that exist and no research
+  // unlocks, under a name the server takes, and neither its components nor its name is another's.
+  TEST_METHOD(RejectsABrokenStartingDesignName)
+  {
+    Assert::IsTrue(Outpost::LoadTuning(MINIMAL_TUNING).startingDesigns.empty(), L"none named");
+    const auto replaced = [](std::string_view _from, std::string_view _to)
+    {
+      std::string text = ReadRepositoryTuning();
+      const size_t at = text.find(_from);
+      Assert::IsTrue(at != std::string::npos && text.find(_from, at + 1) == std::string::npos, Widen(_from).c_str());
+      text.replace(at, _from.size(), _to);
+      return text;
+    };
+    ExpectLoadError(replaced("\"name\": \"Swarm\"", "\"name\": \"\""), "startingDesigns[0].name");
+    ExpectLoadError(replaced("\"name\": \"Swarm\"", "\"name\": \"Swarm\", \"nickname\": \"S\""), "startingDesigns[0].nickname");
+    ExpectLoadError(replaced("\"weapon\": 2, \"name\": \"Picket\"", "\"weapon\": 3, \"name\": \"Picket\""),
+                    "startingDesigns[1]: is not a starting design");
+    ExpectLoadError(replaced("\"weapon\": 2, \"name\": \"Picket\"", "\"weapon\": 9, \"name\": \"Picket\""), "startingDesigns[1].weapon");
+    ExpectLoadError(replaced("\"name\": \"Picket\"", "\"name\": \"Swarm\""), "startingDesigns[1].name");
+    ExpectLoadError(replaced("\"hull\": 1, \"drive\": 1, \"weapon\": 2,", "\"hull\": 1, \"drive\": 1, \"weapon\": 1,"),
+                    "startingDesigns[1]: names the design of startingDesigns[0] again");
   }
 
   TEST_METHOD(LoadsAMinimalFile)

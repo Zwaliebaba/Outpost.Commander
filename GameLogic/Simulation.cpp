@@ -507,7 +507,7 @@ void Outpost::Simulation::SaveStartingDesigns(PlayerId _owner, const Tuning& _tu
   {
     if (FindDesign(_owner, components) == nullptr)
     {
-      (void)SaveDesign(_owner, DesignName(_tuning, components), components, DesignStatsFor(_tuning, components));
+      (void)SaveDesign(_owner, StartingDesignName(_tuning, components), components, DesignStatsFor(_tuning, components));
     }
   }
 }

@@ -238,6 +238,16 @@ struct ResearchTopicTuning
   ResearchEffect effect;
 };
 
+// A starting design's short name (ADR-069): the hull, drive and weapon no research unlocks, and the name each player's copy
+// is saved under, such as "Swarm". A starting design the file does not name takes its components' name (DesignName).
+struct StartingDesignTuning
+{
+  HullId hull;
+  DriveId drive;
+  WeaponId weapon;
+  std::string name;
+};
+
 struct Tuning
 {
   RulesTuning rules;
@@ -252,6 +262,8 @@ struct Tuning
   // One per StructureKind, in the order of the file.
   std::vector<StructureTuning> structures;
   std::vector<ResearchTopicTuning> research;
+  // Optional in the file; none names no starting design.
+  std::vector<StartingDesignTuning> startingDesigns;
 };
 
 // The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5, gate K1): the level that names it, or 1

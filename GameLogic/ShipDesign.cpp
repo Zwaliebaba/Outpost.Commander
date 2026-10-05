@@ -117,6 +117,17 @@ std::vector<Outpost::DesignComponents> Outpost::StartingDesigns(const Tuning& _t
   return designs;
 }
 
+std::string Outpost::StartingDesignName(const Tuning& _tuning, const DesignComponents& _components)
+{
+  const auto named = std::ranges::find_if(_tuning.startingDesigns,
+                                          [&_components](const StartingDesignTuning& _design)
+                                          {
+                                            return !_components.module.IsValid() && _design.hull == _components.hull &&
+                                                   _design.drive == _components.drive && _design.weapon == _components.weapon;
+                                          });
+  return named != _tuning.startingDesigns.end() ? named->name : DesignName(_tuning, _components);
+}
+
 std::string Outpost::DesignName(const Tuning& _tuning, const DesignComponents& _components)
 {
   std::string name =
