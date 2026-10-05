@@ -16,10 +16,10 @@ constexpr Outpost::DesignId LINE{2};
 
 // The HUD's fonts as the game rasterizes them for a back buffer of this size, kept for the run, since a TextMetrics reads
 // them where they are (ADR-061). A font that is not installed throws, as ADR-030 has it: the tests never guess a width.
-std::span<const Neuron::GlyphAtlas::Font> FontsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+std::span<const Neuron::GlyphAtlas::Font> FontsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f)
 {
   static std::map<float, std::vector<Neuron::GlyphAtlas::Font>> g_fontsByScale;
-  const float scale = Outpost::Hud::Scale(_widthPixels, _heightPixels);
+  const float scale = Outpost::Hud::Scale(_widthPixels, _heightPixels, _factor);
   auto found = g_fontsByScale.find(scale);
   if (found == g_fontsByScale.end())
   {
@@ -29,21 +29,24 @@ std::span<const Neuron::GlyphAtlas::Font> FontsFor(std::uint32_t _widthPixels, s
   return found->second;
 }
 
-Outpost::Hud::TextMetrics MetricsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+Outpost::Hud::TextMetrics MetricsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f)
 {
-  return {FontsFor(_widthPixels, _heightPixels), Outpost::Hud::Scale(_widthPixels, _heightPixels)};
+  return {FontsFor(_widthPixels, _heightPixels, _factor), Outpost::Hud::Scale(_widthPixels, _heightPixels, _factor)};
 }
 
-// The HUD and the menu laid out as GameClient lays them out, with the fonts at the back buffer's scale.
+// The HUD and the menu laid out as GameClient lays them out, with the fonts at the back buffer's scale and the interface's
+// own (ADR-070).
 Outpost::Hud::Layout Lay(const Outpost::Hud::Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                         std::span<const Outpost::PlanePosition> _view = {}, const Outpost::WindowManager* _windows = nullptr)
+                         std::span<const Outpost::PlanePosition> _view = {}, const Outpost::WindowManager* _windows = nullptr,
+                         float _factor = 1.0f)
 {
-  return Outpost::Hud::Lay(_content, MetricsFor(_widthPixels, _heightPixels), _widthPixels, _heightPixels, _view, _windows);
+  return Outpost::Hud::Lay(_content, MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _view, _windows,
+                           _factor);
 }
 
-Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f)
 {
-  return Outpost::Hud::LayMenu(MetricsFor(_widthPixels, _heightPixels), _widthPixels, _heightPixels);
+  return Outpost::Hud::LayMenu(MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _factor);
 }
 
 Outpost::Snapshot Newest()
@@ -197,17 +200,41 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
   return content;
 }
 
+// The interface's own scale steps the longest content's windows fit at this size (ADR-070), from the first.
+std::vector<float> ReachableSteps(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  const Outpost::Snapshot newest = DesignerSnapshot(true, true);
+  const std::array<float, 6>& steps = Outpost::Hud::INTERFACE_STEPS;
+  std::vector<float> reachable{steps.front()};
+  for (std::size_t step = 1; step < steps.size() && Outpost::Hud::WindowsFit(&newest, _widthPixels, _heightPixels, steps[step]); ++step)
+    reachable.push_back(steps[step]);
+  return reachable;
+}
+
 // What 14.1's and 14.2's tests lay out: the menu, and the longest content with its parts locked and unlocked, and with the
-// Small hull previewed in place of the loaded design's Medium, which makes some figures better and some worse.
+// Small hull previewed in place of the loaded design's Medium, which makes some figures better and some worse; at every
+// step of the interface's own scale that the windows fit (ADR-070), each named with its step.
 std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
 {
   const Outpost::Hud::Action smallHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}};
   std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> layouts;
-  layouts.emplace_back(L"the menu", LayMenu(_widthPixels, _heightPixels));
-  layouts.emplace_back(L"locked", Lay(LongestContent(false), _widthPixels, _heightPixels));
-  layouts.emplace_back(L"unlocked", Lay(LongestContent(true), _widthPixels, _heightPixels));
-  layouts.emplace_back(L"previewing", Lay(LongestContent(true, smallHull), _widthPixels, _heightPixels));
+  for (const float factor : ReachableSteps(_widthPixels, _heightPixels))
+  {
+    const std::wstring step = std::format(L" at {}%", std::lround(factor * 100.0f));
+    layouts.emplace_back(L"the menu" + step, LayMenu(_widthPixels, _heightPixels, factor));
+    layouts.emplace_back(L"locked" + step, Lay(LongestContent(false), _widthPixels, _heightPixels, {}, nullptr, factor));
+    layouts.emplace_back(L"unlocked" + step, Lay(LongestContent(true), _widthPixels, _heightPixels, {}, nullptr, factor));
+    layouts.emplace_back(L"previewing" + step, Lay(LongestContent(true, smallHull), _widthPixels, _heightPixels, {}, nullptr, factor));
+  }
   return layouts;
+}
+
+// The fonts a layout of LongestLayouts was set in: its step's, found by its font size.
+std::span<const Neuron::GlyphAtlas::Font> FontsOf(const Outpost::Hud::Layout& _layout, std::uint32_t _widthPixels,
+                                                  std::uint32_t _heightPixels)
+{
+  return FontsFor(_widthPixels, _heightPixels,
+                  _layout.fontPixels / Outpost::Hud::FONT_UNITS / Outpost::Hud::Scale(_widthPixels, _heightPixels));
 }
 
 // The box a text's line is set in, in pixels, as UiPipeline::DrawText sets it: from its pen, rounded to a pixel, as wide as
@@ -2290,16 +2317,84 @@ public:
                                    return false;
                                  });
     };
-    for (const std::uint8_t key :
-         {Outpost::KEY_ATTACK_MOVE, Outpost::KEY_STOP, Outpost::KEY_HOLD_SECTOR, Outpost::KEY_PATROL, Outpost::KEY_FIRST_GROUP,
-          Outpost::KEY_LAST_GROUP, Outpost::KEY_PAN_UP, Outpost::KEY_PAN_LEFT, Outpost::KEY_PAN_DOWN, Outpost::KEY_PAN_RIGHT,
-          Outpost::KEY_TURN_COUNTERCLOCKWISE, Outpost::KEY_TURN_CLOCKWISE, Outpost::KEY_DESIGNER, Outpost::KEY_PRODUCTION,
-          Outpost::KEY_RESEARCH, Outpost::KEY_CONTROLS, Outpost::KEY_CANCEL, Outpost::KEY_LATEST_ALERT, Outpost::KEY_EVERY_HEALTH_BAR})
+    for (const std::uint8_t key : {Outpost::KEY_ATTACK_MOVE,
+                                   Outpost::KEY_STOP,
+                                   Outpost::KEY_HOLD_SECTOR,
+                                   Outpost::KEY_PATROL,
+                                   Outpost::KEY_FIRST_GROUP,
+                                   Outpost::KEY_LAST_GROUP,
+                                   Outpost::KEY_PAN_UP,
+                                   Outpost::KEY_PAN_LEFT,
+                                   Outpost::KEY_PAN_DOWN,
+                                   Outpost::KEY_PAN_RIGHT,
+                                   Outpost::KEY_TURN_COUNTERCLOCKWISE,
+                                   Outpost::KEY_TURN_CLOCKWISE,
+                                   Outpost::KEY_DESIGNER,
+                                   Outpost::KEY_PRODUCTION,
+                                   Outpost::KEY_RESEARCH,
+                                   Outpost::KEY_CONTROLS,
+                                   Outpost::KEY_CANCEL,
+                                   Outpost::KEY_LATEST_ALERT,
+                                   Outpost::KEY_EVERY_HEALTH_BAR,
+                                   Outpost::KEY_LARGER_INTERFACE,
+                                   Outpost::KEY_SMALLER_INTERFACE})
     {
       Assert::IsTrue(named(Outpost::KeyName(key)), std::wstring(winrt::to_hstring(Outpost::KeyName(key))).c_str());
     }
     Assert::AreEqual(std::string("F1"), Outpost::KeyName(Outpost::KEY_CONTROLS));
     Assert::AreEqual(Outpost::KeyBindings().size(), keys.size(), L"a line in the column for each binding");
+  }
+
+  // ADR-070 (task 17.1): Ctrl+= and Ctrl+- step the interface's own scale through its steps, a factor on the screen's, as
+  // far as the designer, laid out for the match's components, and the Controls window fit the screen between its margins;
+  // a new screen or match takes it down to the largest step that fits.
+  TEST_METHOD(StepsTheInterfaceAsFarAsItsWindowsFit)
+  {
+    using Hud = Outpost::Hud;
+    Assert::AreEqual(1.25f, Hud::Scale(1920, 1080, 1.25f), 1e-6f);
+    Assert::AreEqual(2.5f, Hud::Scale(3840, 2160, 1.25f), 1e-6f);
+
+    // The menu has no designer: the Controls window, about 740 units tall, fits a 1080-unit screen up to 125%.
+    Assert::AreEqual(1.1f, Hud::StepInterface(1.0f, 1, nullptr, 1920, 1080));
+    Assert::AreEqual(1.25f, Hud::StepInterface(1.1f, 1, nullptr, 1920, 1080));
+    Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 1, nullptr, 1920, 1080), L"150% leaves the Controls window no room");
+
+    // With five weapons and the module row, the designer is 913 units tall: 110% fits 16:9, and 125% a 3:2 screen.
+    const Outpost::Snapshot newest = DesignerSnapshot(true, true);
+    Assert::IsTrue(Hud::WindowsFit(&newest, 1920, 1080, 1.1f));
+    Assert::IsFalse(Hud::WindowsFit(&newest, 1920, 1080, 1.25f));
+    Assert::AreEqual(1.1f, Hud::StepInterface(1.0f, 1, &newest, 1920, 1080));
+    Assert::AreEqual(1.1f, Hud::StepInterface(1.1f, 1, &newest, 1920, 1080), L"no further than fits");
+    Assert::AreEqual(1.1f, Hud::StepInterface(1.1f, 1, &newest, 3840, 2160), L"the same at any 16:9 size");
+    Assert::AreEqual(1.25f, Hud::StepInterface(1.1f, 1, &newest, 2880, 1920));
+    Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 1, &newest, 2880, 1920));
+
+    // Down a step at a time, never below the first; and a match that starts at a step its designer does not fit at comes
+    // down to one it does.
+    Assert::AreEqual(1.1f, Hud::StepInterface(1.25f, -1, &newest, 2880, 1920));
+    Assert::AreEqual(1.0f, Hud::StepInterface(1.0f, -1, &newest, 1920, 1080));
+    Assert::AreEqual(1.1f, Hud::StepInterface(1.25f, 0, &newest, 1920, 1080));
+    Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 0, nullptr, 1920, 1080), L"the menu keeps it");
+  }
+
+  // ADR-070 (task 17.1): a moved window stays where it can be taken hold of across a step of the interface's own scale, and
+  // the layout is set at the step.
+  TEST_METHOD(KeepsAMovedWindowOnTheScreenAcrossAStep)
+  {
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Designer);
+    windows.Grab(Outpost::WindowKind::Designer, {}, {.xUnits = 1500.0f, .yUnits = 1000.0f});
+    windows.Release();
+    for (const float factor : Outpost::Hud::INTERFACE_STEPS)
+    {
+      const Outpost::Hud::Layout layout = Lay(WithDesigner(), 1920, 1080, {}, &windows, factor);
+      Assert::AreEqual(Outpost::Hud::FONT_UNITS * factor, layout.fontPixels, 1e-4f);
+      const Outpost::Hud::Window& window = layout.windows.front();
+      Assert::IsTrue(window.titleBar.top >= 0.0f && window.titleBar.top + window.titleBar.height <= 1080.01f,
+                     L"its title bar on the screen");
+      Assert::IsTrue(window.frame.left + (Outpost::Hud::WINDOW_KEPT_ON_SCREEN_UNITS * factor) <= 1920.01f);
+      Assert::AreEqual(Outpost::Hud::TITLE_BAR_UNITS * factor, window.titleBar.height, 1e-3f);
+    }
   }
 
   // Task 14.1: at either size, with the longest content, every text ends inside the smallest panel it starts in, measured
@@ -2309,9 +2404,9 @@ public:
     std::wstring offenders;
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
-      const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
       for (const auto& [name, layout] : LongestLayouts(width, height))
       {
+        const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsOf(layout, width, height);
         for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
         {
           const Outpost::Hud::Span texts = layout.TextsOf(layer);
@@ -2348,9 +2443,9 @@ public:
     std::wstring offenders;
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
-      const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
       for (const auto& [name, layout] : LongestLayouts(width, height))
       {
+        const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsOf(layout, width, height);
         for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
         {
           const Outpost::Hud::Span texts = layout.TextsOf(layer);

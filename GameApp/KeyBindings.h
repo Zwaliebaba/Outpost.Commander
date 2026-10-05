@@ -34,6 +34,10 @@ inline constexpr std::uint8_t KEY_CANCEL = VK_ESCAPE;
 inline constexpr std::uint8_t KEY_LATEST_ALERT = VK_SPACE;
 // Held, shows a bar over every ship and structure, whole or not (ADR-047).
 inline constexpr std::uint8_t KEY_EVERY_HEALTH_BAR = VK_MENU;
+// With Ctrl, make the interface larger or smaller, as far as its windows fit (ADR-070): the keys that read = and - on a US
+// keyboard.
+inline constexpr std::uint8_t KEY_LARGER_INTERFACE = VK_OEM_PLUS;
+inline constexpr std::uint8_t KEY_SMALLER_INTERFACE = VK_OEM_MINUS;
 
 // A letter key as a button's cap shows it: the letter.
 [[nodiscard]] inline std::string KeyCap(std::uint8_t _key)
@@ -62,6 +66,10 @@ inline constexpr std::uint8_t KEY_EVERY_HEALTH_BAR = VK_MENU;
     return "Space";
   case VK_MENU:
     return "Alt";
+  case VK_OEM_PLUS:
+    return "=";
+  case VK_OEM_MINUS:
+    return "-";
   default:
     return KeyCap(_key);
   }
@@ -110,6 +118,8 @@ struct KeyBinding
     {.keys = KeyName(KEY_CONTROLS), .does = "These controls"},
     {.keys = KeyName(KEY_CANCEL), .does = "Close the front window, or cancel an order"},
     {.keys = std::format("{}, held", KeyName(KEY_EVERY_HEALTH_BAR)), .does = "Every health bar"},
+    {.keys = std::format("Ctrl+{} and Ctrl+{}", KeyName(KEY_LARGER_INTERFACE), KeyName(KEY_SMALLER_INTERFACE)),
+     .does = "The interface larger and smaller"},
   };
 }
 } // namespace Outpost

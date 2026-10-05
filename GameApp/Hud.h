@@ -607,8 +607,9 @@ public:
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
 
   // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, and buttons to start a
-  // skirmish against the AI and to quit (task 6.2).
-  [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels);
+  // skirmish against the AI and to quit (task 6.2). _factor is the interface's own scale (ADR-070).
+  [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
+                                      float _factor = 1.0f);
 
   // Where everything goes on a back buffer of this size, its text measured with _metrics, which are the fonts at this
   // size's scale. _view is the ground the camera shows, its corners in order, outlined on the minimap; empty when the
@@ -616,15 +617,29 @@ public:
   // left them; without a manager, every window the content has, at its default place.
   [[nodiscard]] static Layout Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels,
                                   std::uint32_t _heightPixels, std::span<const PlanePosition> _view = {},
-                                  const WindowManager* _windows = nullptr);
+                                  const WindowManager* _windows = nullptr, float _factor = 1.0f);
 
   // Where a window _widthUnits wide may stand with its top-left corner at _corner on a screen of this size, in reference
   // units: moved only as far as keeps its title bar on the screen, and WINDOW_KEPT_ON_SCREEN_UNITS of its width.
   [[nodiscard]] static WindowManager::Point KeepOnScreen(WindowManager::Point _corner, float _widthUnits, float _screenWidthUnits,
                                                          float _screenHeightUnits) noexcept;
 
-  // The scale from reference units to pixels: the largest at which the whole reference frame fits (ADR-006).
-  [[nodiscard]] static float Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexcept;
+  // The scale from reference units to pixels: the largest at which the whole reference frame fits (ADR-006), times the
+  // interface's own scale, _factor, which the player sets (ADR-070).
+  [[nodiscard]] static float Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f) noexcept;
+
+  // The interface's own scale steps, a factor on the screen's (ADR-070): Ctrl+= takes the next, and Ctrl+- the one before.
+  static constexpr std::array<float, 6> INTERFACE_STEPS{1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f};
+
+  // Whether the windows of a fixed size, the designer laid out for _newest's components and the Controls window, fit a
+  // screen of this size between its margins at _factor (ADR-070). Without a snapshot, as on the menu, the Controls window
+  // alone.
+  [[nodiscard]] static bool WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor);
+
+  // The step _step away from _factor among INTERFACE_STEPS, up for a positive _step and down for a negative one, as far as
+  // the windows fit; and with no step, the largest that fits at or below _factor, as a new screen or match needs.
+  [[nodiscard]] static float StepInterface(float _factor, int _step, const Snapshot* _newest, std::uint32_t _widthPixels,
+                                           std::uint32_t _heightPixels);
 };
 
 // _value with a comma between each group of three digits, such as "12,000".
