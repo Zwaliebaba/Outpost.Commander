@@ -2011,15 +2011,15 @@ public:
       const auto window = std::ranges::find(layout.windows, _kind, &Outpost::Hud::Window::kind);
       return window != layout.windows.end() ? window->frame : Outpost::Hud::Rect{};
     };
-    constexpr float margin = 16.0f;
+    constexpr float MARGIN_UNITS = 16.0f;
 
     Outpost::WindowManager windows;
     windows.Open(Outpost::WindowKind::Research);
     const Outpost::Hud::Rect alone = frameOf(windows, Outpost::WindowKind::Research);
-    Assert::AreEqual(margin, alone.left, 0.01f, L"research alone at the margin");
+    Assert::AreEqual(MARGIN_UNITS, alone.left, 0.01f, L"research alone at the margin");
     windows.Open(Outpost::WindowKind::Production);
     const Outpost::Hud::Rect second = frameOf(windows, Outpost::WindowKind::Production);
-    Assert::AreEqual(alone.left + alone.width + margin, second.left, 0.01f, L"production beside it");
+    Assert::AreEqual(alone.left + alone.width + MARGIN_UNITS, second.left, 0.01f, L"production beside it");
     Assert::AreEqual(alone.top, second.top, 0.01f);
     Assert::IsTrue(second.left + second.width <= 1920.0f - 16.0f - 818.0f, L"clear of the designer");
     Assert::AreEqual(alone.left, frameOf(windows, Outpost::WindowKind::Research).left, 0.01f, L"research keeps its place");
@@ -2028,8 +2028,8 @@ public:
     inOrder.Open(Outpost::WindowKind::Production);
     inOrder.Open(Outpost::WindowKind::Research);
     const Outpost::Hud::Rect production = frameOf(inOrder, Outpost::WindowKind::Production);
-    Assert::AreEqual(margin, production.left, 0.01f);
-    Assert::AreEqual(production.left + production.width + margin, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
+    Assert::AreEqual(MARGIN_UNITS, production.left, 0.01f);
+    Assert::AreEqual(production.left + production.width + MARGIN_UNITS, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
 
     // Moved, a window stays where it was left, and its place is free for the next to open.
     inOrder.Grab(Outpost::WindowKind::Production, {.xUnits = 700.0f, .yUnits = 600.0f}, {.xUnits = 700.0f, .yUnits = 600.0f});
@@ -2037,7 +2037,7 @@ public:
     inOrder.Close(Outpost::WindowKind::Research);
     inOrder.Open(Outpost::WindowKind::Research);
     Assert::AreEqual(700.0f, frameOf(inOrder, Outpost::WindowKind::Production).left, 0.01f);
-    Assert::AreEqual(margin, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
+    Assert::AreEqual(MARGIN_UNITS, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
   }
 
   // Task 14.1: at either size, with the longest content, every text ends inside the smallest panel it starts in, measured
