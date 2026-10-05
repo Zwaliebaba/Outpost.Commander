@@ -204,11 +204,11 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
 std::vector<float> ReachableSteps(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
 {
   const Outpost::Snapshot newest = DesignerSnapshot(true, true);
-  std::vector<float> steps{1.0f};
-  for (float next = Outpost::Hud::StepInterface(1.0f, 1, &newest, _widthPixels, _heightPixels); next > steps.back();
-       next = Outpost::Hud::StepInterface(next, 1, &newest, _widthPixels, _heightPixels))
-    steps.push_back(next);
-  return steps;
+  const std::array<float, 6>& steps = Outpost::Hud::INTERFACE_STEPS;
+  std::vector<float> reachable{steps.front()};
+  for (std::size_t step = 1; step < steps.size() && Outpost::Hud::WindowsFit(&newest, _widthPixels, _heightPixels, steps[step]); ++step)
+    reachable.push_back(steps[step]);
+  return reachable;
 }
 
 // What 14.1's and 14.2's tests lay out: the menu, and the longest content with its parts locked and unlocked, and with the
