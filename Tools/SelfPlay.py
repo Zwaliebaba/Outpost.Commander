@@ -640,7 +640,8 @@ def write_report(folder, lines):
 # ---- The self-test ---------------------------------------------------------------------------------------------------
 
 def self_test():
-  """Checks the search without the game: the optimizer, the encoding, the loader's rules and the scoring."""
+  """Checks the search without the game: the optimizer, the encoding, the loader's rules, the scoring, and that the
+  knobs and the research order follow Opponent.json and the tuning data."""
   failures = []
 
   def check(condition, message):
@@ -686,9 +687,19 @@ def self_test():
   check(restored.ask() == optimizer.ask(), "a search restored from its pickle asks something else")
 
   base = json.loads(PACKAGED_SETTINGS.read_text(encoding="utf-8"))
+  tuning = json.loads(PACKAGED_TUNING.read_text(encoding="utf-8"))
   check(decode(encode(base, base), base) == base, "the packaged settings do not decode to themselves")
   check(not check_settings(base, base), "the packaged settings break the search's ranges: "
         + "; ".join(check_settings(base, base)))
+  # The search follows Opponent.json: every number in it is a knob, so that one the AI gains is not silently held at its
+  # packaged value, and every knob is in it. The research order holds every topic of the tree, since a topic missing
+  # from it is one the AI never researches and the search cannot move.
+  numbers = {name for name, value in base.items() if isinstance(value, (int, float)) and not isinstance(value, bool)}
+  knobs = {knob.name for knob in KNOBS}
+  check(numbers == knobs, f"Opponent.json's numbers and the knobs differ: {sorted(numbers ^ knobs)}")
+  topics = sorted(topic["id"] for topic in tuning["research"])
+  check(sorted(base["researchOrder"]) == topics,
+        f"the research order holds {sorted(base['researchOrder'])}, and the tree {topics}")
   draw = random.Random(3)
   for _ in range(3000):
     point = [draw.uniform(-4.0, 5.0) for _ in range(dimensions(base))]
@@ -702,7 +713,6 @@ def self_test():
       check(seen == set(range(int(knob.low), int(knob.high) + 1)), f"{knob.name} does not reach every whole number")
   # secondSlotTier's range starts at the tier the Lab has open when its level with a second slot is next, and ends one
   # past it, at never.
-  tuning = json.loads(PACKAGED_TUNING.read_text(encoding="utf-8"))
   lab = next(structure for structure in tuning["structures"] if structure.get("kind") == "ResearchLab")
   slot = next(index for index, level in enumerate(lab["levels"]) if level.get("researchSlots", 1) > 1)
   open_tier = max([1] + [level.get("opensTier", 1) for level in lab["levels"][:slot]])
