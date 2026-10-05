@@ -1275,7 +1275,7 @@ public:
     panel = DesignerOf(newest, designer, modules.cards[1].action);
     Assert::AreEqual(std::string("Preview: with Sensor Array instead"), panel.hint);
     const auto previewed = std::ranges::find(panel.bars, std::string("Sensors"), &Outpost::Hud::StatBar::label);
-    Assert::AreEqual(std::string("700"), previewed->previewValue);
+    Assert::AreEqual(std::string("700 (+700)"), previewed->previewValue, L"from no sight of its own (task 15.3)");
 
     Outpost::Hud::Content content;
     content.designer = panel;
