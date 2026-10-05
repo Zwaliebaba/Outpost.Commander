@@ -69,13 +69,15 @@ from MatchLog import clock, read_matches, summarize  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGED_SETTINGS = REPO_ROOT / "OutpostCommander" / "Assets" / "Opponent.json"
+PACKAGED_TUNING = REPO_ROOT / "OutpostCommander" / "Assets" / "Tuning.json"
 # Where the Release|x64 build puts the game: the package layout first, which holds the Assets folder beside the
 # executable, and the bare output folder in case the layout lives there.
 EXE_CANDIDATES = (REPO_ROOT / "x64" / "Release" / "OutpostCommander" / "AppX" / "OutpostCommander.exe",
                   REPO_ROOT / "x64" / "Release" / "OutpostCommander" / "OutpostCommander.exe")
 OUTPUT_NAME = "OutpostCommander-selfplay"
 STATE_NAME = "state.pickle"
-STATE_VERSION = 1
+# 2: secondSlotTier's range moved, so a point saved by version 1 decodes to other settings.
+STATE_VERSION = 2
 
 # Seeds: each generation takes the next block from SEARCH_SEEDS, each confirmation from CONFIRM_SEEDS. The report plays
 # seeds 1 to --report-seeds, the ones the ADRs measure on, which the search never plays.
@@ -134,7 +136,10 @@ KNOBS = (
   Knob("attackWithoutLeadShare", 1.0, 3.0, False),
   Knob("frontPlatforms", 0, 3, True),
   Knob("claimSectors", 0, 4, True),
-  Knob("secondSlotTier", 1, 3, True),
+  # The Lab's level with a second slot comes after the level that opens tier 3 (Tuning.json), so tier 3 is open whenever
+  # that level is next, and every tier up to 3 plays alike: 3 takes the second slot and 4 never does. The self-test
+  # holds this range to the tuning data.
+  Knob("secondSlotTier", 3, 4, True),
   Knob("attackLevelMeters", 0.0, 1500.0, False),
 )
 # The research keys start this much closer together than the knobs, relative to the step size: a key one step away
@@ -695,6 +700,16 @@ def self_test():
     if knob.whole:
       seen = {knob.value(i / 999) for i in range(1000)}
       check(seen == set(range(int(knob.low), int(knob.high) + 1)), f"{knob.name} does not reach every whole number")
+  # secondSlotTier's range starts at the tier the Lab has open when its level with a second slot is next, and ends one
+  # past it, at never.
+  tuning = json.loads(PACKAGED_TUNING.read_text(encoding="utf-8"))
+  lab = next(structure for structure in tuning["structures"] if structure.get("kind") == "ResearchLab")
+  slot = next(index for index, level in enumerate(lab["levels"]) if level.get("researchSlots", 1) > 1)
+  open_tier = max([1] + [level.get("opensTier", 1) for level in lab["levels"][:slot]])
+  second_slot = next(knob for knob in KNOBS if knob.name == "secondSlotTier")
+  check((second_slot.low, second_slot.high) == (open_tier, open_tier + 1),
+        f"secondSlotTier searches {second_slot.low:g} to {second_slot.high:g}, but the Lab has tier {open_tier} open when "
+        f"its second slot is next")
   check(reflect(-0.25) == 0.25 and reflect(1.25) == 0.75 and reflect(2.5) == 0.5, "reflection is wrong")
 
   match = collections.namedtuple("Match", "winner tickets")
