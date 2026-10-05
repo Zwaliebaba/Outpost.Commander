@@ -60,7 +60,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 16.4 | A controls window | 15.2 | K4 | built, in PR #78; awaiting CI and the owner's run |
 | 16.5 | Short names for the starting designs | — | K6 | built, in PR #78; awaiting CI and a run |
 | 16.6 | The sky's crosses | — | K5 | done: kept as they are (owner, 2026-10-05) |
-| 17.1 | An interface scale the player sets | 14.2 | K7 | built, in PR #M17; awaiting CI and the owner's run |
+| 17.1 | An interface scale the player sets | 14.2 | K7 | built, in PR #79; awaiting CI and the owner's run |
 
 ### Milestone order
 
