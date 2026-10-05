@@ -84,6 +84,8 @@ STATE_VERSION = 2
 SEARCH_SEEDS = 1_000
 CONFIRM_SEEDS = 1_000_000
 CONFIDENCE_Z = 1.96
+# The structures with levels as the match log names them (Tools/MatchLog.py), and as the report names them.
+LEVEL_KINDS = (("station", "Command Station"), ("shipyard", "Shipyard"), ("lab", "Research Lab"))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -564,22 +566,40 @@ def endings(counts):
 
 
 def side_summary(name, matches, players):
-  """What one side did over the report's matches: its tiers, its peak fleet and what it built most."""
-  tier_two = []
+  """What one side did over the report's matches: its tiers, its structures' levels, its peak fleet and what it built
+  most."""
+  opened = collections.defaultdict(list)
+  levels = collections.defaultdict(list)
   peaks = []
   built = collections.Counter()
   for match, player in zip(matches, players):
-    opened = [tick for tick, owner, tier in match.tiers if owner == player and tier == 2]
-    if opened:
-      tier_two.append(match.seconds(min(opened)))
+    first = {}
+    for tick, owner, tier in match.tiers:
+      if owner == player:
+        first[tier] = min(tick, first.get(tier, tick))
+    for tier, tick in first.items():
+      opened[tier].append(match.seconds(tick))
+    first = {}
+    for tick, owner, _, kind, level, how in match.upgrades:
+      if owner == player and how == "finished":
+        first[(kind, level)] = min(tick, first.get((kind, level), tick))
+    for key, tick in first.items():
+      levels[key].append(match.seconds(tick))
     if player in match.peaks:
       peaks.append(match.peaks[player][1])
     built.update(design for _, owner, design in match.built if owner == player)
   lines = [f"  {name}"]
-  if tier_two:
-    lines.append(f"    Tier 2 opened in {len(tier_two)} of {len(matches)}, at a median {clock(statistics.median(tier_two))}")
-  else:
-    lines.append(f"    Tier 2 opened in none of {len(matches)}")
+  for tier in (2, 3):
+    if opened[tier]:
+      lines.append(f"    Tier {tier} opened in {len(opened[tier])} of {len(matches)}, at a median "
+                   f"{clock(statistics.median(opened[tier]))}")
+    else:
+      lines.append(f"    Tier {tier} opened in none of {len(matches)}")
+  for kind, label in LEVEL_KINDS:
+    reached = sorted(level for what, level in levels if what == kind)
+    if reached:
+      lines.append(f"    {label}: " + ", ".join(f"L{level} in {len(levels[(kind, level)])}, at a median "
+                                                f"{clock(statistics.median(levels[(kind, level)]))}" for level in reached))
   if peaks:
     lines.append(f"    Peak warships: median {statistics.median(peaks):g}, from {min(peaks)} to {max(peaks)}")
   if built:
