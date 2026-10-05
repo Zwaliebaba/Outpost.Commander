@@ -127,8 +127,8 @@ std::string LongestName(char _last)
 // The longest content the game makes, with every window open (task 14.1): six designs of the longest names, all selected,
 // one of them loaded in the designer of five weapons, every part locked or every part unlocked; a full queue at a
 // Shipyard and at the Lab; a page of topics, among them Relay Archives with both its prerequisites to do; a placement's
-// hint, the research line, the alerts, the territory and the banner. The Ore is five figures, more than any match in the
-// review banked. With _hovered, the designer previews the part under the pointer.
+// hint, the status panel's lines, the alerts, the territory and the banner. The Ore is five figures, more than any match in
+// the review banked. With _hovered, the designer previews the part under the pointer.
 Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
@@ -151,16 +151,17 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
   designer.Load(newest.designs.back());
   Outpost::Hud::Content content =
     Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, _hovered);
-  content.research = "Researching Mass Driver Calibration, 99%";
+  content.status = {{.text = "Researching Mass Driver Calibration, 99% (+4 queued)"},
+                    {.text = "Shipyards: 12 building, 12 waiting for Ore, 12 IDLE", .idle = true}};
   content.alerts = {{"Shipyard 05 is under attack", {}}, {"Mining Rig 12 destroyed", {}}, {"Relay 03 lost", {}}};
   content.territory =
     Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .cap = 12, .ownTickets = 10000, .enemyTickets = 10000};
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
   content.buttons = {{.label = "Shipyard|300"},
                      {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
-                     {.label = "Production"},
-                     {.label = "Ship designer"},
-                     {.label = "Research"}};
+                     {.label = "Production", .key = "P"},
+                     {.label = "Ship designer", .key = "D"},
+                     {.label = "Research", .key = "R"}};
 
   Outpost::Hud::ProductionPanel production{.producer = "SHIPYARD 05", .hasProducer = true, .canStep = true, .ore = newest.ore};
   for (const Outpost::DesignView& design : newest.designs)
@@ -591,6 +592,7 @@ public:
 
   // Task 4.5, Phase 1 design §12: a selected structure shows its kind, hit points and construction; its queue and what it
   // can add to it are its windows', which its panel opens once it is the player's own and finished (owner, 2026-10-03).
+  // ADR-066: a line says what its front job is and how far it has come. Task 15.2: each window's button shows its key.
   TEST_METHOD(DescribesAStructureAndOpensItsWindows)
   {
     Outpost::Snapshot newest = Newest();
@@ -607,12 +609,15 @@ public:
     const auto describe = [&](const Outpost::EntityView& _entity)
     { return Outpost::Hud::Describe(newest, std::vector{_entity}, selected); };
     Outpost::Hud::Content content = describe(yard);
-    const std::vector<std::string> expected{"Shipyard", "Hit points 2,500 / 2,500"};
-    Assert::IsTrue(content.selection == expected, L"the queue is the production window's");
+    const std::vector<std::string> expected{"Shipyard", "Hit points 2,500 / 2,500",
+                                            "Building Small+Ion+Mass Driver \xC2\xB7 45% \xC2\xB7 +1 queued"};
+    Assert::IsTrue(content.selection == expected, L"the rest of the queue is the production window's");
     Assert::AreEqual(size_t{2}, content.buttons.size());
     Assert::IsTrue(content.buttons[0].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = yard.id});
     Assert::IsTrue(content.buttons[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenDesigner, .producer = yard.id});
+    Assert::AreEqual(std::string("P"), content.buttons[0].key);
+    Assert::AreEqual(std::string("D"), content.buttons[1].key);
 
     Outpost::EntityView station = yard;
     station.structure = Outpost::StructureKind::CommandStation;
@@ -626,6 +631,7 @@ public:
     content = describe(lab);
     Assert::AreEqual(size_t{1}, content.buttons.size());
     Assert::IsTrue(content.buttons[0].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenResearch, .producer = lab.id});
+    Assert::AreEqual(std::string("R"), content.buttons[0].key);
 
     Outpost::EntityView theirs = yard;
     theirs.owner = Outpost::PlayerId{2};
@@ -664,7 +670,7 @@ public:
     const Outpost::Hud::Action upgrade{.kind = Outpost::Hud::ActionKind::Upgrade, .producer = yard.id};
 
     Outpost::Hud::Content content = describe(yard);
-    std::vector<std::string> expected{"Shipyard 01 \xC2\xB7 L1", "Hit points 2,500 / 2,500", "L2: 3,000 hit points"};
+    std::vector<std::string> expected{"Shipyard 01 \xC2\xB7 L1", "Hit points 2,500 / 2,500", "Idle", "L2: 3,000 hit points"};
     Assert::IsTrue(content.selection == expected);
     Assert::AreEqual(size_t{3}, content.buttons.size());
     Assert::AreEqual(std::string("Upgrade to L2 \xC2\xB7 0:30|150"), content.buttons[2].label);
@@ -674,7 +680,7 @@ public:
     // Building the level: how far it has come, and the button dim with the reason and a bar for the work.
     yard.upgradePermille = 417;
     content = describe(yard);
-    expected = {"Shipyard 01 \xC2\xB7 L1", "Upgrading to L2, 41%", "Hit points 2,500 / 2,500", "L2: 3,000 hit points"};
+    expected = {"Shipyard 01 \xC2\xB7 L1", "Upgrading to L2, 41%", "Hit points 2,500 / 2,500", "Idle", "L2: 3,000 hit points"};
     Assert::IsTrue(content.selection == expected);
     Assert::IsFalse(content.buttons[2].enabled);
     Assert::AreEqual(std::string("UPGRADING \xC2\xB7 41%"), content.buttons[2].note);
@@ -912,7 +918,7 @@ public:
 
   // Task 5.1, Phase 1 design §12: the research window shows the Research Lab's queue, and offers each topic not researched
   // or queued yet with what it does and what it costs, dim while its prerequisite is neither; the topic under way shows
-  // under the Ore.
+  // under the Ore, in the status panel (ADR-066).
   TEST_METHOD(DescribesTheResearchLab)
   {
     Outpost::Snapshot newest = Newest();
@@ -973,7 +979,8 @@ public:
 
     // Nothing selected, the research still shows under the Ore.
     const Outpost::Hud::Content unselected = Outpost::Hud::Describe(newest, std::vector{lab}, {});
-    Assert::AreEqual(std::string("Researching Hull Plating, 25%"), unselected.research);
+    Assert::AreEqual(size_t{1}, unselected.status.size());
+    Assert::AreEqual(std::string("Researching Hull Plating, 25%"), unselected.status[0].text);
     const Outpost::Hud::Layout layout = Lay(unselected, 1920, 1080);
     Assert::IsTrue(
       std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Researching Hull Plating, 25%"; }));
@@ -1087,7 +1094,8 @@ public:
   }
 
   // Phase 1 design §11: hovering a part previews the design it would make, and how each number changes; lower is better
-  // for cost and build time. Hovering the pick previews nothing.
+  // for cost and build time. Hovering the pick previews nothing. Task 15.3: each figure reads the previewed number and its
+  // change as a signed number, a number that keeps reads alone, and a damage card adds its change per ship.
   TEST_METHOD(PreviewsAHoveredPart)
   {
     const Outpost::Snapshot newest = DesignerSnapshot();
@@ -1097,7 +1105,8 @@ public:
     const Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer, medium);
     Assert::AreEqual(std::string("Preview: with Medium instead"), panel.hint);
     using Change = Outpost::Hud::Change;
-    const std::array<std::string, 6> values{"450", "8", "52", "120", "165", "16"};
+    // Hit points, armor and cost rise, speed falls, range keeps, and build time rises: cost and time are worse for it.
+    const std::array<std::string, 6> values{"450 (+252)", "8 (+6)", "52 (-26)", "120", "165 (+78)", "16 (+8)"};
     const std::array<Change, 6> changes{Change::Better, Change::Better, Change::Worse, Change::Same, Change::Worse, Change::Worse};
     for (size_t i = 0; i < panel.bars.size(); ++i)
     {
@@ -1109,6 +1118,19 @@ public:
     Assert::AreEqual(450.0f / 1680.0f, panel.bars[0].previewShare.value_or(0.0f), 1e-4f);
     Assert::AreEqual(std::string("18.2 / 100 ore"), panel.damage[0].perOre, L"the damage cards show the preview");
     Assert::IsTrue(panel.damage[0].change == Change::Same, L"the same weapon");
+    Assert::IsTrue(panel.damage[0].perShipChange.empty(), L"no change to show");
+
+    // The Lance in place of the Mass Driver: more damage to every hull, and each card says how much more, to a tenth, as
+    // the figures are written: 30.0 to 34.4, 15.0 to 32.2, and 8.8 to 30.0.
+    const Outpost::Hud::DesignerPanel lance =
+      DesignerOf(newest, designer, Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickWeapon, .weapon = Outpost::WeaponId{2}});
+    const std::array<std::string, 3> perShipChanges{"+4.4", "+17.2", "+21.2"};
+    for (size_t i = 0; i < lance.damage.size(); ++i)
+    {
+      Assert::IsTrue(lance.damage[i].change == Change::Better);
+      Assert::AreEqual(perShipChanges[i], lance.damage[i].perShipChange);
+    }
+    Assert::AreEqual(std::string("220 (+100)"), lance.bars[3].previewValue, L"range");
 
     const Outpost::Hud::DesignerPanel same =
       DesignerOf(newest, designer, Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}});
@@ -1253,7 +1275,7 @@ public:
     panel = DesignerOf(newest, designer, modules.cards[1].action);
     Assert::AreEqual(std::string("Preview: with Sensor Array instead"), panel.hint);
     const auto previewed = std::ranges::find(panel.bars, std::string("Sensors"), &Outpost::Hud::StatBar::label);
-    Assert::AreEqual(std::string("700"), previewed->previewValue);
+    Assert::AreEqual(std::string("700 (+700)"), previewed->previewValue, L"from no sight of its own (task 15.3)");
 
     Outpost::Hud::Content content;
     content.designer = panel;
@@ -1579,14 +1601,14 @@ public:
     const Outpost::Hud::Content content{.ore = 0,
                                         .selection = {"Shipyard"},
                                         .buttons = {{.label = "Production"}},
-                                        .research = "Researching Hull Plating, 25%",
+                                        .status = {{.text = "Researching Hull Plating, 25%"}},
                                         .mapSizeMeters = 2000.0f};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const Outpost::Hud::Span sprites = layout.SpritesOf(0);
     const auto corners = std::count_if(layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.first),
                                        layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end),
                                        [](const Outpost::Hud::SpriteMark& _mark) { return _mark.sprite == Outpost::Hud::Sprite::Corner; });
-    Assert::AreEqual(std::ptrdiff_t{20}, corners, L"four for each of the Ore, the research, the selection, the buttons and the minimap");
+    Assert::AreEqual(std::ptrdiff_t{20}, corners, L"four for each of the Ore, the status, the selection, the buttons and the minimap");
   }
 
   // ADR-043: Ore is written one way, as Ore's diamond and the figure grouped in thousands: the stockpile, a button's cost,
@@ -1816,6 +1838,208 @@ public:
       Assert::IsFalse(layout.minimap.width > 0.0f);
     }
   }
+  // ADR-066: under the Ore, a line for the Research Lab once the player has a finished one, and one for the Shipyards once
+  // the first is finished: what the Lab researches and how far it has come, that it waits for Ore, or that it is idle; and
+  // how many Shipyards build, wait for Ore and stand idle. An idle line says IDLE, in the warning's color, and a click on a
+  // line opens its window: research, or production at the first idle Shipyard, or at the first Shipyard when none is.
+  TEST_METHOD(ShowsWhatProductionAndResearchAreDoing)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating"}};
+    const auto structure = [](std::uint32_t _id, Outpost::StructureKind _kind, std::uint32_t _number)
+    {
+      return Outpost::EntityView{.id = Outpost::EntityId{_id},
+                                 .kind = Outpost::EntityKind::Structure,
+                                 .owner = PLAYER,
+                                 .structure = _kind,
+                                 .shipyardNumber = _number};
+    };
+    const auto statusOf = [&newest](const std::vector<Outpost::EntityView>& _entities)
+    { return Outpost::Hud::Describe(newest, _entities, {}).status; };
+
+    std::vector<Outpost::EntityView> entities{structure(20, Outpost::StructureKind::CommandStation, 0)};
+    Assert::IsTrue(statusOf(entities).empty(), L"no Lab and no Shipyard");
+    Outpost::EntityView lab = structure(40, Outpost::StructureKind::ResearchLab, 0);
+    lab.builtPermille = 500;
+    entities.push_back(lab);
+    Assert::IsTrue(statusOf(entities).empty(), L"not until the Lab is finished");
+
+    const Outpost::Hud::Action research{.kind = Outpost::Hud::ActionKind::OpenResearch, .producer = lab.id};
+    entities.back().builtPermille = Outpost::PERMILLE;
+    std::vector<Outpost::Hud::StatusLine> status = statusOf(entities);
+    Assert::AreEqual(size_t{1}, status.size());
+    Assert::AreEqual(std::string("Research Lab IDLE"), status[0].text);
+    Assert::IsTrue(status[0].idle && status[0].action == research);
+    entities.back().research = {Outpost::ResearchTopicId{2}};
+    Assert::AreEqual(std::string("Researching Hull Plating, waiting for Ore"), statusOf(entities)[0].text);
+    entities.back().jobPermille = 620;
+    status = statusOf(entities);
+    Assert::AreEqual(std::string("Researching Hull Plating, 62%"), status[0].text);
+    Assert::IsFalse(status[0].idle);
+
+    // Shipyards 01 and 03 build, 02 waits for Ore, and 04 and 05 stand idle: production opens at 04, the first idle by
+    // number, wherever it stands among the entities.
+    Outpost::EntityView building = structure(31, Outpost::StructureKind::Shipyard, 1);
+    building.queue = {{.design = SWARM}};
+    building.jobPermille = 100;
+    Outpost::EntityView waiting = structure(32, Outpost::StructureKind::Shipyard, 2);
+    waiting.queue = {{.design = SWARM}};
+    Outpost::EntityView third = building;
+    third.id = Outpost::EntityId{33};
+    third.shipyardNumber = 3;
+    entities.push_back(structure(35, Outpost::StructureKind::Shipyard, 5));
+    entities.push_back(waiting);
+    entities.push_back(structure(34, Outpost::StructureKind::Shipyard, 4));
+    entities.push_back(building);
+    entities.push_back(third);
+    Outpost::EntityView theirs = structure(36, Outpost::StructureKind::Shipyard, 0);
+    theirs.owner = Outpost::PlayerId{2};
+    entities.push_back(theirs);
+    status = statusOf(entities);
+    Assert::AreEqual(size_t{2}, status.size());
+    Assert::AreEqual(std::string("Shipyards: 2 building, 1 waiting for Ore, 2 IDLE"), status[1].text, L"not the enemy's");
+    Assert::IsTrue(status[1].idle);
+    Assert::IsTrue(status[1].action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = Outpost::EntityId{34}});
+
+    // None idle: no warning, and production opens at the first Shipyard.
+    std::erase_if(entities, [](const Outpost::EntityView& _entity) { return _entity.queue.empty() && _entity.shipyardNumber > 0; });
+    status = statusOf(entities);
+    Assert::AreEqual(std::string("Shipyards: 2 building, 1 waiting for Ore"), status[1].text);
+    Assert::IsFalse(status[1].idle);
+    Assert::IsTrue(status[1].action.producer == building.id);
+
+    // Laid out: under the Ore, the idle line in the warning's color, and a click on each line opens its window.
+    entities.push_back(structure(34, Outpost::StructureKind::Shipyard, 4));
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, {});
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    const auto labLine = std::ranges::find(layout.texts, content.status[0].text, &Outpost::Hud::Text::text);
+    const auto yardsLine = std::ranges::find(layout.texts, content.status[1].text, &Outpost::Hud::Text::text);
+    Assert::IsTrue(labLine != layout.texts.end() && yardsLine != layout.texts.end());
+    Assert::IsTrue(labLine->top > 60.0f && labLine->left < 40.0f && yardsLine->top > labLine->top, L"under the Ore");
+    Assert::IsTrue(yardsLine->color.x > yardsLine->color.z && labLine->color.z > labLine->color.x, L"the idle line warns");
+    Assert::IsTrue(layout.ActionAt(labLine->left + 4.0f, labLine->top + 6.0f) == research);
+    Assert::IsTrue(layout.ActionAt(yardsLine->left + 4.0f, yardsLine->top + 6.0f) == content.status[1].action);
+  }
+
+  // ADR-066: the selection panel of the player's own finished Shipyard, Command Station or Research Lab says what its front
+  // job is and how far it has come, or that it waits for Ore, with how many more are queued; or that it is idle. An enemy
+  // structure's queue stays unshown (task 9.4).
+  TEST_METHOD(SaysWhatASelectedProducerIsDoing)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating"}};
+    Outpost::EntityView yard{.id = Outpost::EntityId{30},
+                             .kind = Outpost::EntityKind::Structure,
+                             .owner = PLAYER,
+                             .structure = Outpost::StructureKind::Shipyard,
+                             .hitPointsHundredths = 250000,
+                             .maxHitPointsHundredths = 250000};
+    const auto lineOf = [&](const Outpost::EntityView& _entity)
+    {
+      const std::vector<std::string> selection = Outpost::Hud::Describe(newest, std::vector{_entity}, std::vector{_entity.id}).selection;
+      return selection.size() > 2 ? selection[2] : std::string();
+    };
+    Assert::AreEqual(std::string("Idle"), lineOf(yard));
+    yard.queue = {{.design = LINE}, {.design = SWARM}, {.design = SWARM}};
+    Assert::AreEqual(std::string("Building Medium+Ion+Lance \xC2\xB7 waiting for Ore \xC2\xB7 +2 queued"), lineOf(yard));
+    yard.jobPermille = 625;
+    Assert::AreEqual(std::string("Building Medium+Ion+Lance \xC2\xB7 62% \xC2\xB7 +2 queued"), lineOf(yard));
+
+    Outpost::EntityView station = yard;
+    station.structure = Outpost::StructureKind::CommandStation;
+    station.queue = {{.role = Outpost::ShipRole::Constructor}};
+    Assert::AreEqual(std::string("Building Constructor \xC2\xB7 62%"), lineOf(station));
+
+    Outpost::EntityView lab = yard;
+    lab.structure = Outpost::StructureKind::ResearchLab;
+    lab.queue.clear();
+    lab.research = {Outpost::ResearchTopicId{2}};
+    Assert::AreEqual(std::string("Researching Hull Plating \xC2\xB7 62%"), lineOf(lab));
+
+    Outpost::EntityView theirs = yard;
+    theirs.owner = Outpost::PlayerId{2};
+    Assert::AreEqual(std::string(), lineOf(theirs), L"not the enemy's");
+  }
+
+  // Task 15.2: a button that opens a window shows its key at its right end, as a cap, an outline with the letter in the
+  // label face; a Build button, which has its cost there, shows none.
+  TEST_METHOD(ShowsAWindowsKeyOnItsButton)
+  {
+    const Outpost::Hud::Content content{.ore = 500,
+                                        .buttons = {{.label = "Shipyard|300", .action = {.kind = Outpost::Hud::ActionKind::Build}},
+                                                    {.label = "Production",
+                                                     .action = {.kind = Outpost::Hud::ActionKind::OpenProduction},
+                                                     .key = Outpost::KeyCap(Outpost::KEY_PRODUCTION)}}};
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    Assert::AreEqual(size_t{2}, layout.actions.size());
+    const Outpost::Hud::Rect& build = layout.actions[0].first;
+    const Outpost::Hud::Rect& production = layout.actions[1].first;
+    const auto inside = [](const Outpost::Hud::Rect& _area, const Outpost::Hud::Text& _text)
+    { return _area.Contains(_text.left, _text.top); };
+    const auto cap = std::ranges::find(layout.texts, std::string("P"), &Outpost::Hud::Text::text);
+    Assert::IsTrue(cap != layout.texts.end() && inside(production, *cap));
+    Assert::IsTrue(cap->left > production.left + (production.width * 0.8f), L"at the right end");
+    Assert::IsTrue(cap->typeface == Outpost::Hud::Typeface::Label);
+    Assert::IsTrue(std::ranges::any_of(layout.panels,
+                                       [&](const Outpost::Hud::Rect& _panel)
+                                       {
+                                         return _panel.width < 2.0f && _panel.height > 10.0f &&
+                                                _panel.left > production.left + (production.width * 0.8f) &&
+                                                _panel.left < production.left + production.width - 4.0f &&
+                                                production.Contains(_panel.left, _panel.top);
+                                       }),
+                   L"the cap's outline, inside the button's right end");
+    Assert::IsFalse(
+      std::ranges::any_of(layout.texts, [&](const Outpost::Hud::Text& _text) { return inside(build, _text) && _text.text.size() == 1; }),
+      L"no cap on a Build button");
+    Assert::AreEqual(std::string("D"), Outpost::KeyCap(Outpost::KEY_DESIGNER));
+    Assert::AreEqual(std::string("R"), Outpost::KeyCap(Outpost::KEY_RESEARCH));
+  }
+
+  // Task 15.4: a production or research window not yet moved opens in the first of the two places under the Ore that no
+  // open window holds, production's and then research's, so that research alone opens at the margin, and the two stand
+  // side by side in the order they opened. A moved window stays where it was left.
+  TEST_METHOD(OpensAWindowWhereThereIsRoom)
+  {
+    Outpost::Hud::Content content;
+    content.production = Outpost::Hud::ProductionPanel{.producer = "SHIPYARD 01", .hasProducer = true};
+    content.laboratory = Outpost::Hud::ResearchPanel{.lab = "RESEARCH LAB", .hasLab = true};
+    const auto frameOf = [&content](const Outpost::WindowManager& _windows, Outpost::WindowKind _kind)
+    {
+      const Outpost::Hud::Layout layout = Lay(content, 1920, 1080, {}, &_windows);
+      const auto window = std::ranges::find(layout.windows, _kind, &Outpost::Hud::Window::kind);
+      return window != layout.windows.end() ? window->frame : Outpost::Hud::Rect{};
+    };
+    constexpr float MARGIN_UNITS = 16.0f;
+
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Research);
+    const Outpost::Hud::Rect alone = frameOf(windows, Outpost::WindowKind::Research);
+    Assert::AreEqual(MARGIN_UNITS, alone.left, 0.01f, L"research alone at the margin");
+    windows.Open(Outpost::WindowKind::Production);
+    const Outpost::Hud::Rect second = frameOf(windows, Outpost::WindowKind::Production);
+    Assert::AreEqual(alone.left + alone.width + MARGIN_UNITS, second.left, 0.01f, L"production beside it");
+    Assert::AreEqual(alone.top, second.top, 0.01f);
+    Assert::IsTrue(second.left + second.width <= 1920.0f - 16.0f - 818.0f, L"clear of the designer");
+    Assert::AreEqual(alone.left, frameOf(windows, Outpost::WindowKind::Research).left, 0.01f, L"research keeps its place");
+
+    Outpost::WindowManager inOrder;
+    inOrder.Open(Outpost::WindowKind::Production);
+    inOrder.Open(Outpost::WindowKind::Research);
+    const Outpost::Hud::Rect production = frameOf(inOrder, Outpost::WindowKind::Production);
+    Assert::AreEqual(MARGIN_UNITS, production.left, 0.01f);
+    Assert::AreEqual(production.left + production.width + MARGIN_UNITS, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
+
+    // Moved, a window stays where it was left, and its place is free for the next to open.
+    inOrder.Grab(Outpost::WindowKind::Production, {.xUnits = 700.0f, .yUnits = 600.0f}, {.xUnits = 700.0f, .yUnits = 600.0f});
+    inOrder.Release();
+    inOrder.Close(Outpost::WindowKind::Research);
+    inOrder.Open(Outpost::WindowKind::Research);
+    Assert::AreEqual(700.0f, frameOf(inOrder, Outpost::WindowKind::Production).left, 0.01f);
+    Assert::AreEqual(MARGIN_UNITS, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
+  }
+
   // Task 14.1: at either size, with the longest content, every text ends inside the smallest panel it starts in, measured
   // with the fonts it is drawn in. Every offender is named, not only the first.
   TEST_METHOD(KeepsEveryTextInsideItsPanel)

@@ -98,6 +98,9 @@
     <ClInclude Include="Alerts.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="KeyBindings.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />

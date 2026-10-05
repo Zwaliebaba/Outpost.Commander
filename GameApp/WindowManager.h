@@ -29,7 +29,11 @@ public:
     friend bool operator==(const Point&, const Point&) = default;
   };
 
-  // Opens _window at the front, where it was left, or where the HUD puts it first; an open window comes to the front.
+  // How many places the windows that stand under the Ore have, production's and research's (task 15.4).
+  static constexpr std::size_t SLOTS = 2;
+
+  // Opens _window at the front, where it was left, or where the HUD puts it first; an open window comes to the front. A
+  // production or research window not yet moved takes the first slot no other open window holds (task 15.4).
   void Open(WindowKind _window);
   void Close(WindowKind _window) noexcept;
   [[nodiscard]] bool IsOpen(WindowKind _window) const noexcept;
@@ -47,6 +51,9 @@ public:
 
   // Where _window's top-left corner was left; nothing until it has been moved, when the HUD places it.
   [[nodiscard]] std::optional<Point> PositionOf(WindowKind _window) const noexcept;
+  // Which of the SLOTS an open production or research window not yet moved stands in, the first being production's place
+  // (task 15.4); nothing for any other window.
+  [[nodiscard]] std::optional<std::size_t> SlotOf(WindowKind _window) const noexcept;
 
   // A press on _window's title bar at _pointer, while the window's top-left corner stands at _corner: the window comes to
   // the front, and moves with the pointer until Release.
@@ -72,6 +79,7 @@ private:
 
   std::vector<WindowKind> m_order;
   std::array<std::optional<Point>, WINDOW_KINDS> m_positions{};
+  std::array<std::optional<std::size_t>, WINDOW_KINDS> m_slots{};
   std::optional<WindowKind> m_grabbed;
   // From the grabbed window's top-left corner to where it was taken hold of.
   Point m_grabOffset;

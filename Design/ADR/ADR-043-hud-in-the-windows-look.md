@@ -18,7 +18,7 @@ The owner asked on 2026-10-03 for these to be fixed in the same change as the ri
 
 ## Decision
 
-1. **Every panel of the HUD takes a window's look**, without a title bar, since it does not move. That is the Ore, the research line, the hint, the match's end, the selection, the buttons, the minimap's square and the main menu. Each has a window's body and a bracket at each corner, and stays anchored where it was (design §12, ADR-015).
+1. **Every panel of the HUD takes a window's look**, without a title bar, since it does not move. That is the Ore, the status panel ([ADR-066](ADR-066-production-status-on-the-hud.md)), the hint, the match's end, the selection, the buttons, the minimap's square and the main menu. Each has a window's body and a bracket at each corner, and stays anchored where it was (design §12, ADR-015).
 2. **Its text takes the windows' faces**: a panel's first line in the title face, its other lines in the name face, and figures in the figure face.
 3. **Ore is written one way everywhere**: Ore's diamond and the figure grouped in thousands. This holds for the stockpile, a window's Ore box, a card's cost and a button's cost.
    - The stockpile drops the word "Ore".

@@ -49,11 +49,11 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 |---|---|---|---|---|
 | 14.1 | Text measured with its fonts, and kept inside its card | — | — | built, in PR #65 with 14.2, CI green; awaiting the owner's run |
 | 14.2 | A type scale that reads | 14.1 | K1 | built, in PR #65, CI green; awaiting the owner's run |
-| 15.1 | What production and research are doing, on the HUD | 14.2 | K2 | todo |
-| 15.2 | Keys on the buttons | 14.2 | — | todo |
-| 15.3 | The designer's preview in figures | 14.2 | — | todo |
-| 15.4 | Windows open where there is room | — | — | todo |
-| 15.5 | The selection ring at a fixed width | — | K3 | todo |
+| 15.1 | What production and research are doing, on the HUD | 14.2 | K2 | built, in PR #77, CI green; awaiting the owner's run |
+| 15.2 | Keys on the buttons | 14.2 | — | built, in PR #77, CI green; awaiting the owner's run |
+| 15.3 | The designer's preview in figures | 14.2 | — | built, in PR #77, CI green; awaiting the owner's run |
+| 15.4 | Windows open where there is room | — | — | built, in PR #77, CI green; awaiting a run |
+| 15.5 | The selection ring at a fixed width | — | K3 | built, in PR #77, CI green; awaiting the owner's run |
 | 16.1 | The windows' headers and bodies | 14.2 | — | todo |
 | 16.2 | The minimap's marks and size | — | K5 | todo |
 | 16.3 | What a production card says | 14.2 | K5 | todo |
@@ -140,6 +140,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 - **ADR:** a new one: what the HUD reports of production, and what it adds to Phase 1 §12's selection panel.
 - **Acceptance:** `HudTests`: the panel with no Lab and no Shipyard; a Lab researching, waiting for Ore and idle; Shipyards building and idle; a click on each line; the selection panel's line for a Shipyard building, waiting and idle, and none on an enemy's.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-05):** [ADR-066](../Design/ADR/ADR-066-production-status-on-the-hud.md). The Shipyards' line counts those waiting for Ore apart from those building, "Shipyards: 2 building, 1 waiting for Ore, 1 IDLE", since a Shipyard that waits is neither. The Lab's line comes once the Lab is finished, as the Shipyards' does. A waiting producer's selection line names its job, "Building Swarm · waiting for Ore". The Command Station gets the selection line and no status line. The panel's place is kept for two lines, so the windows open at 148 units from the top, where they opened at 128. Written without MSVC; not yet seen on screen.
 
 ### 15.2 — Keys on the buttons
 
@@ -151,6 +152,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 - **ADR:** none.
 - **Acceptance:** `HudTests`: each window button shows its key, and a Build button none; 14.1's tests.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-05):** the keys are in `GameApp/KeyBindings.h`. A cap is 20 units square, outlined and lettered in the row labels' color. Written without MSVC; not yet seen on screen.
 
 ### 15.3 — The designer's preview in figures
 
@@ -163,6 +165,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 - **ADR:** none: §11 already asks for "the change against the current one".
 - **Acceptance:** `HudTests`: the figures for a part that raises, lowers and keeps a number, cost and build time included; 14.1's tests with the widest preview.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-05):** a number that keeps reads alone, "120", with no "(+0)". The change is the difference of the two figures as written, rounded first. To fit "1,680 (+1,482)", the bars narrow from 116 units to 90 and the figures end at 316, where they ended at 290. A damage card's change stands at its right, on the large figure's line. Written without MSVC; not yet seen on screen.
 
 ### 15.4 — Windows open where there is room
 
@@ -171,6 +174,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 - **ADR:** none: where a window first stands is the HUD's (ADR-031, decision 2).
 - **Acceptance:** `HudTests`: research alone at the first slot; production then research, and research then production, side by side in the order they opened; a moved window kept.
 - **Verify:** CI; run.
+- **As built (2026-10-05):** `WindowManager` keeps which slot each window took as it opened, and frees it when the window closes or is moved, so a window keeps its place while the other opens or closes. The second slot stands beside where the other window's width would end, so research in the first and production in the second still clear the designer. [ADR-031](../Design/ADR/ADR-031-floating-windows.md) is rewritten for it. Written without MSVC; not yet seen on screen.
 
 ### 15.5 — The selection ring at a fixed width
 
@@ -180,6 +184,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 - **ADR:** a new one, superseding ADR-042 decision 3 for the selection.
 - **Acceptance:** `GameAppTests` for what is pure: the band's width in meters, at a distance from the camera, comes to the same pixels near and far.
 - **Verify:** CI; run, near and far; **owner run.**
+- **As built (2026-10-05):** [ADR-067](../Design/ADR/ADR-067-selection-ring-at-a-fixed-width.md), which rewrites ADR-042 decision 3 in place. The ring is one-pixel lines a pixel apart, as many as 3 units at the HUD's scale, from `Camera::MetersPerPixelAt`. Written without MSVC; not yet seen on screen.
 
 ---
 

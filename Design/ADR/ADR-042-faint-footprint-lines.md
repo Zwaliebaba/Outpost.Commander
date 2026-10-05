@@ -24,7 +24,7 @@ The owner decided on 2026-10-03 to make the rings thin and faint, at full streng
 2. **Some rings are at full strength**, in the color of a structure's own lines (`EdgeColor`, ADR-040):
    - Under the structure the pointer is on. It is picked as a click picks it (`PickEntity`), and not through the HUD.
    - Under every structure while one is being placed, since then the player is choosing where it stands among them.
-3. **The selection keeps its band.** A selected structure's green ring takes the place of its line, and the placement ghost keeps its band too, so a selection stays the strongest mark on the ground.
+3. **The selection takes the place of the line.** A selected structure's green ring takes the place of its line, and stays the strongest mark on the ground. It is a fixed width on the screen, which [ADR-067](ADR-067-selection-ring-at-a-fixed-width.md) owns. The placement ghost keeps its band.
 4. **A Mining Rig's ring is its own footprint's, laid over its rock.**
    - Its radius is 1.3 times the rig's 25 m footprint, 32.5 m.
    - Each of its 96 points stands 0.3 m above the rock's surface under it (`Neuron::SurfaceHeightAt`), or above the ground past the rock's edge.

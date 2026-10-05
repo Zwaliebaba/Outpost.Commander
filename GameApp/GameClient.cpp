@@ -13,11 +13,7 @@ constexpr auto CAMERA_FILE = L"Camera.json";
 // The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
-// The keys that open and close the designer, the production window and the research window (Phase 1 design §12), clear of
-// the orders' A and S, the camera's Q and E and arrows, and the control groups' digits.
-constexpr std::uint8_t KEY_DESIGNER = 'D';
-constexpr std::uint8_t KEY_PRODUCTION = 'P';
-constexpr std::uint8_t KEY_RESEARCH = 'R';
+// The windows' keys are KeyBindings.h's, which the HUD's buttons show (task 15.2).
 // Moves the camera to the newest alert (ADR-059).
 constexpr std::uint8_t KEY_LATEST_ALERT = VK_SPACE;
 
@@ -97,8 +93,12 @@ constexpr float RIG_FOOT_HEIGHT_SHARE = 0.05f;
 // and it still reads as light (ADR-028).
 constexpr float BEAM_WHITE_SHARE = 0.35f;
 
-// The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
-// click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it.
+// The selection is a ring on the ground around each selected ship or structure, green, or amber while attack-move waits for
+// its click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it. The
+// ring is SELECTION_RING_UNITS of the HUD's reference units wide at any zoom, about 3 pixels at 1080p: as many one-pixel
+// lines as that is pixels, a pixel apart, centered on the ring's radius (ADR-067). The placement ghost and the effects
+// keep the band of RING_INNER_RADIUS to RING_OUTER_RADIUS.
+constexpr float SELECTION_RING_UNITS = 3.0f;
 constexpr float RING_INNER_RADIUS = 1.0f;
 constexpr float RING_OUTER_RADIUS = 1.15f;
 constexpr int RING_SEGMENTS = 48;
@@ -1262,14 +1262,28 @@ void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
 {
   const DirectX::XMFLOAT4& ringColor =
     m_controls.IsAttackMoveArmed() || m_controls.ArmedStanding().has_value() ? ATTACK_MOVE_COLOR : SELECTION_COLOR;
+  const float hudScale = Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels);
+  const auto lines = static_cast<int>(std::max(1L, std::lround(SELECTION_RING_UNITS * hudScale)));
+  m_selectionDraws.clear();
   for (const EntityId id : m_controls.Selected())
   {
-    const EntityView* ship = FindById(m_entities, id);
-    if (ship == nullptr)
+    const EntityView* selected = FindById(m_entities, id);
+    if (selected == nullptr)
       continue;
-    const DirectX::XMFLOAT3 at{ship->position.xMeters, OVERLAY_LIFT_METERS, ship->position.zMeters};
-    m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ship->radiusMeters * RING_SIZE_PER_FOOTPRINT), ringColor);
+    // Nothing for a point behind the camera.
+    const float metersPerPixel = m_camera.MetersPerPixelAt(selected->position, m_viewport).value_or(0.0f);
+    if (metersPerPixel <= 0.0f)
+      continue;
+    const DirectX::XMFLOAT3 at{selected->position.xMeters, OVERLAY_LIFT_METERS, selected->position.zMeters};
+    const float radius = selected->radiusMeters * RING_SIZE_PER_FOOTPRINT;
+    for (int line = 0; line < lines; ++line)
+    {
+      const float offset = (static_cast<float>(line) - (static_cast<float>(lines - 1) / 2.0f)) * metersPerPixel;
+      m_selectionDraws.push_back(
+        {.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, std::max(radius + offset, 0.0f)), ringColor, 0.0f)});
+    }
   }
+  m_pipeline.DrawLines(_commandList, m_selectionDraws);
 
   // The box's corners on the ground, so the outline covers exactly the ground the screen rectangle does.
   const std::optional<ScreenRect> box = m_controls.DragBox();

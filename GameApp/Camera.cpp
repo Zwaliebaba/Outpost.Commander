@@ -251,6 +251,21 @@ std::optional<DirectX::XMFLOAT2> Outpost::Camera::PixelOf(PlanePosition _point, 
                            (1.0f - screenY) * 0.5f * static_cast<float>(_viewport.heightPixels)};
 }
 
+std::optional<float> Outpost::Camera::MetersPerPixelAt(PlanePosition _point, const Viewport& _viewport) const noexcept
+{
+  if (_viewport.heightPixels == 0)
+    return std::nullopt;
+  // The point's depth along the line of sight, which a perspective divides by: the viewport's height spans twice that
+  // depth times the tangent of half the vertical field of view.
+  const DirectX::XMFLOAT4X4 viewMatrix = View(_viewport.AspectRatio());
+  const DirectX::XMVECTOR seen = DirectX::XMVector3TransformCoord(DirectX::XMVectorSet(_point.xMeters, 0.0f, _point.zMeters, 1.0f),
+                                                                  DirectX::XMLoadFloat4x4(&viewMatrix));
+  const float depth = DirectX::XMVectorGetZ(seen);
+  if (depth <= 0.0f)
+    return std::nullopt;
+  return 2.0f * depth * std::tan(Radians(m_settings.verticalFieldOfViewDegrees) / 2.0f) / static_cast<float>(_viewport.heightPixels);
+}
+
 DirectX::XMFLOAT2 Outpost::Camera::GroundForward() const noexcept
 {
   return {std::cos(m_yawRadians), std::sin(m_yawRadians)};

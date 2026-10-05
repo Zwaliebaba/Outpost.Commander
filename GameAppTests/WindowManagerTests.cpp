@@ -65,6 +65,40 @@ public:
     Assert::IsFalse(windows.PositionOf(WindowKind::Research).has_value());
   }
 
+  // Task 15.4: a production or research window not yet moved takes the first slot no open window holds as it opens, and
+  // keeps it while it is open; closing or moving it frees its slot. The designer takes none.
+  TEST_METHOD(TakesTheFirstFreeSlot)
+  {
+    Outpost::WindowManager windows;
+    windows.Open(WindowKind::Designer);
+    Assert::IsFalse(windows.SlotOf(WindowKind::Designer).has_value());
+    windows.Open(WindowKind::Research);
+    windows.Open(WindowKind::Production);
+    Assert::IsTrue(windows.SlotOf(WindowKind::Research) == std::size_t{0});
+    Assert::IsTrue(windows.SlotOf(WindowKind::Production) == std::size_t{1});
+    windows.Open(WindowKind::Research);
+    Assert::IsTrue(windows.SlotOf(WindowKind::Research) == std::size_t{0}, L"brought to the front, it keeps its slot");
+
+    windows.Close(WindowKind::Research);
+    Assert::IsFalse(windows.SlotOf(WindowKind::Research).has_value());
+    Assert::IsTrue(windows.SlotOf(WindowKind::Production) == std::size_t{1}, L"the other stays where it is");
+    windows.Open(WindowKind::Research);
+    Assert::IsTrue(windows.SlotOf(WindowKind::Research) == std::size_t{0});
+
+    windows.Grab(WindowKind::Research, {}, {.xUnits = 300.0f, .yUnits = 300.0f});
+    windows.Release();
+    Assert::IsFalse(windows.SlotOf(WindowKind::Research).has_value(), L"moved, it stands where it was left");
+    windows.Close(WindowKind::Production);
+    windows.Open(WindowKind::Production);
+    Assert::IsTrue(windows.SlotOf(WindowKind::Production) == std::size_t{0});
+    windows.Close(WindowKind::Research);
+    windows.Open(WindowKind::Research);
+    Assert::IsFalse(windows.SlotOf(WindowKind::Research).has_value(), L"a moved window opens where it was left");
+
+    windows.CloseAll();
+    Assert::IsFalse(windows.SlotOf(WindowKind::Production).has_value());
+  }
+
   // Closing the window being dragged lets it go.
   TEST_METHOD(ClosingAWindowLetsItGo)
   {
