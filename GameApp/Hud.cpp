@@ -1742,9 +1742,9 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
   return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
 }
 
-Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor)
 {
-  const float scale = Scale(_widthPixels, _heightPixels);
+  const float scale = Scale(_widthPixels, _heightPixels, _factor);
   Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
   // A skirmish at each difficulty (ADR-065), then Quit.
   const std::array<Button, 4> buttons{
@@ -2323,15 +2323,54 @@ std::vector<Neuron::SpriteDesc> Hud::Sprites()
   };
 }
 
-float Hud::Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexcept
+float Hud::Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor) noexcept
 {
-  return std::min(static_cast<float>(_widthPixels) / REFERENCE_WIDTH_UNITS, static_cast<float>(_heightPixels) / REFERENCE_HEIGHT_UNITS);
+  return _factor *
+         std::min(static_cast<float>(_widthPixels) / REFERENCE_WIDTH_UNITS, static_cast<float>(_heightPixels) / REFERENCE_HEIGHT_UNITS);
+}
+
+bool Hud::WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor)
+{
+  const float scale = Scale(_widthPixels, _heightPixels, _factor);
+  if (scale <= 0.0f)
+    return false;
+  const float screenWidthUnits = static_cast<float>(_widthPixels) / scale;
+  const float screenHeightUnits = static_cast<float>(_heightPixels) / scale;
+  const auto fits = [&](float _widthUnits, float _heightUnits)
+  { return _widthUnits + (2.0f * MARGIN) <= screenWidthUnits && _heightUnits + (2.0f * MARGIN) <= screenHeightUnits; };
+  if (!fits(CONTROLS_WINDOW_WIDTH, ControlsHeight(KeyBindings())))
+    return false;
+  if (_newest == nullptr)
+    return true;
+  // The designer with every component of the match, locked or not, as tall as it grows.
+  Designer designer;
+  designer.Update(*_newest);
+  return fits(DESIGNER_WIDTH, ExtentOf(DescribeDesigner(*_newest, designer, std::nullopt)).height);
+}
+
+float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  // The step _factor stands at, or the one below it.
+  std::size_t at = 0;
+  for (std::size_t step = 0; step < INTERFACE_STEPS.size(); ++step)
+  {
+    if (INTERFACE_STEPS[step] <= _factor + 0.001f)
+      at = step;
+  }
+  if (_step > 0 && at + 1 < INTERFACE_STEPS.size() && WindowsFit(_newest, _widthPixels, _heightPixels, INTERFACE_STEPS[at + 1]))
+    return INTERFACE_STEPS[at + 1];
+  if (_step < 0 && at > 0)
+    return INTERFACE_STEPS[at - 1];
+  // Down to the largest that fits, and never below the first step.
+  while (at > 0 && !WindowsFit(_newest, _widthPixels, _heightPixels, INTERFACE_STEPS[at]))
+    --at;
+  return INTERFACE_STEPS[at];
 }
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                     std::span<const PlanePosition> _view, const WindowManager* _windows)
+                     std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor)
 {
-  const float scale = Scale(_widthPixels, _heightPixels);
+  const float scale = Scale(_widthPixels, _heightPixels, _factor);
   const auto width = static_cast<float>(_widthPixels);
   const auto height = static_cast<float>(_heightPixels);
   Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};

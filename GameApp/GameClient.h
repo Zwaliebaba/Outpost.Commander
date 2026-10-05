@@ -211,6 +211,8 @@ private:
   void HandleTyping(Neuron::InputState& _input);
   // Opens a window, aimed at the structure selected on its own if it shows one, or closes it.
   void ToggleWindow(WindowKind _window);
+  // Steps the interface's own scale from Ctrl+= and Ctrl+-, and keeps it where its windows fit (ADR-070).
+  void UpdateInterfaceFactor(const Neuron::InputState& _input);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   // A faint ring, one pixel wide, in its side's color under every structure that is not selected, fading as the camera comes
@@ -298,6 +300,18 @@ private:
   std::vector<EntityView> m_entities;
   std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;
+  // The interface's own scale, a factor on the screen's that lasts until the game closes, and what it was last fitted to: the
+  // screen's size, and whether there was a match to size the designer by (ADR-070).
+  struct InterfaceFit
+  {
+    std::uint32_t widthPixels = 0;
+    std::uint32_t heightPixels = 0;
+    bool match = false;
+
+    friend bool operator==(const InterfaceFit&, const InterfaceFit&) = default;
+  };
+  float m_interfaceFactor = 1.0f;
+  InterfaceFit m_interfaceFit;
   // Every set's models in the catalog's order, each set's after the one before.
   std::vector<LoadedModel> m_models;
   // How long the frame being drawn took to come, which a ship's speed is measured over.

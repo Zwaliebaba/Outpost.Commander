@@ -60,7 +60,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 16.4 | A controls window | 15.2 | K4 | built, in PR #78; awaiting CI and the owner's run |
 | 16.5 | Short names for the starting designs | — | K6 | built, in PR #78; awaiting CI and a run |
 | 16.6 | The sky's crosses | — | K5 | done: kept as they are (owner, 2026-10-05) |
-| 17.1 | An interface scale the player sets | 14.2 | K7 | todo |
+| 17.1 | An interface scale the player sets | 14.2 | K7 | built, in PR #M17; awaiting CI and the owner's run |
 
 ### Milestone order
 
@@ -273,6 +273,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **ADR:** a new one, beside ADR-006's scale.
 - **Acceptance:** 14.1's and 14.2's tests at every step, at 1920×1080 and 1280×720; `HudTests` that a moved window stays on the screen across a step.
 - **Verify:** CI; run at each step; **owner run.**
+- **As built (2026-10-05):** [ADR-070](../Design/ADR/ADR-070-interface-scale.md). The steps are 100%, 110%, 125%, 150%, 175% and 200%. A step up is taken only while the designer, laid out for the match's components, and the Controls window fit between the screen's margins. That is 110% in a match on any 16:9 screen, since the designer with five weapons and the module row is 913 units tall, and 125% on 2880×1920. A new screen size, or a match starting, takes the factor down to the largest step that fits. The factor scales the HUD, the windows and the menu, not the world's marks. 14.1's and 14.2's tests run at every step the longest content fits. Written without MSVC; not yet seen on screen.
 
 ---
 

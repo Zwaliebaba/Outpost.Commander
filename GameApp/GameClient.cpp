@@ -560,14 +560,16 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                                  std::uint32_t _viewportHeightPixels)
 {
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
-  // The text is laid out with the fonts the frame draws it in, at this size (ADR-061).
-  const float scale = Hud::Scale(_viewportWidthPixels, _viewportHeightPixels);
+  UpdateInterfaceFactor(_input);
+  // The text is laid out with the fonts the frame draws it in, at this size and the interface's own scale (ADR-061,
+  // ADR-070).
+  const float scale = Hud::Scale(_viewportWidthPixels, _viewportHeightPixels, m_interfaceFactor);
   m_ui.UseScale(scale);
   const Hud::TextMetrics metrics(m_ui.Fonts(), scale);
   if (m_screen == Screen::Menu)
   {
     // The menu is all there is: a press on its buttons, and nothing for the camera or the controls.
-    m_hudLayout = Hud::LayMenu(metrics, _viewportWidthPixels, _viewportHeightPixels);
+    m_hudLayout = Hud::LayMenu(metrics, _viewportWidthPixels, _viewportHeightPixels, m_interfaceFactor);
     if (!_input.active)
       return;
     for (const Neuron::InputEvent& event : _input.events)
@@ -705,11 +707,33 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_firstTopic = content.laboratory->firstTopic;
     }
     content.controls = m_windows.IsOpen(WindowKind::Controls);
-    m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows);
+    m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows, m_interfaceFactor);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
   }
   WatchForResponse();
+}
+
+void Outpost::GameClient::UpdateInterfaceFactor(const Neuron::InputState& _input)
+{
+  // Ctrl+= and Ctrl+- step the interface's own scale. It is checked again whenever the screen's size, or whether there is a
+  // match to size the designer by, changes, so that its windows still fit; it lasts until the game closes (ADR-070).
+  int step = 0;
+  if (_input.active)
+  {
+    for (const Neuron::InputEvent& event : _input.events)
+    {
+      if (event.kind == Neuron::InputEventKind::KeyDown && event.control)
+        step += event.key == KEY_LARGER_INTERFACE ? 1 : event.key == KEY_SMALLER_INTERFACE ? -1 : 0;
+    }
+  }
+  const Snapshot* newest = m_screen == Screen::Match && !m_view.IsEmpty() ? &m_view.Newest() : nullptr;
+  const InterfaceFit fit{.widthPixels = m_viewport.widthPixels, .heightPixels = m_viewport.heightPixels, .match = newest != nullptr};
+  if (step == 0 && fit == m_interfaceFit)
+    return;
+  m_interfaceFit = fit;
+  m_interfaceFactor =
+    Hud::StepInterface(m_interfaceFactor, std::clamp(step, -1, 1), newest, m_viewport.widthPixels, m_viewport.heightPixels);
 }
 
 void Outpost::GameClient::ToggleWindow(WindowKind _window)
@@ -913,7 +937,7 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
 
 Outpost::WindowManager::Point Outpost::GameClient::ToUnits(float _xPixels, float _yPixels) const noexcept
 {
-  const float scale = Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels);
+  const float scale = Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels, m_interfaceFactor);
   return {.xUnits = _xPixels / scale, .yUnits = _yPixels / scale};
 }
 
