@@ -27,10 +27,10 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| SP1.1 | `--ai-matches` plays any two settings | — | — | in review, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
-| SP1.2 | The search over the AI's numbers | SP1.1 | — | in review, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
+| SP1.1 | `--ai-matches` plays any two settings | — | — | done, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
+| SP1.2 | The search over the AI's numbers | SP1.1 | — | done, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
 | SP1.3 | The first search, and what it found | SP1.2 | — | todo: owner run |
-| SP1.4 | The search follows Phase 3 | SP1.2, Phase 3's AI | — | todo |
+| SP1.4 | The search follows Phase 3 | SP1.2, Phase 3's AI | — | built, in review |
 | SP2.1 | The network's shape, as an ADR | SP1.3 | N1–N6 decided | todo |
 | SP2.2 | The network plays | SP2.1, Phase 3 built | — | todo |
 | SP2.3 | Trajectories, the warm start and the trainer | SP2.2 | — | todo |
@@ -56,7 +56,7 @@ SP2 targets Phase 3's rules, so SP2.2 waits for Phase 3 to be built. SP1.4 follo
 ### SP1.2 — The search over the AI's numbers
 
 - **Goal:** ADR-063 decisions 3 to 8.
-- **Scope:** `Tools/SelfPlay.py`: a separable CMA-ES over the 22 numbers of `Opponent.json` and its research order, against a champion and a hall of fame, from both seats on shared seeds; a champion confirmed on fresh seeds; state saved every generation, and `--resume`; the report against the packaged settings on seeds 1 to 40; `--self-test`.
+- **Scope:** `Tools/SelfPlay.py`: a separable CMA-ES over the numbers of `Opponent.json` and its research order, against a champion and a hall of fame, from both seats on shared seeds; a champion confirmed on fresh seeds; state saved every generation, and `--resume`; the report against the packaged settings on seeds 1 to 40; `--self-test`.
 - **Verify:** `--self-test`, and a short search against the stand-in in the container, stopped and resumed.
 
 ### SP1.3 — The first search, and what it found
@@ -76,6 +76,13 @@ SP2 targets Phase 3's rules, so SP2.2 waits for Phase 3 to be built. SP1.4 follo
 - **Goal:** the search moves Phase 3's numbers too, once Phase 3's AI has them in `Opponent.json` (Phase 3 §8).
 - **Scope:** `Tools/SelfPlay.py`'s table of knobs follows `Opponent.json` as Phase 3 leaves it. Its upgrade numbers are added, each with a range that holds its packaged value, and any number Phase 3 removes is taken out. The research order follows the packaged file by itself: 23 topics once the gateways go.
 - **Verify:** `--self-test`, which checks that the packaged settings lie in every range and decode to themselves, and a short search in the container.
+- **As built:** [ADR-063](../Design/ADR/ADR-063-self-play-probe.md) decisions 3 and 6, and ADR-020 decision 14, edited in place.
+  - **Phase 3's two numbers were already knobs.** Phase 3's AI added `secondSlotTier` and `attackLevelMeters` to the table with the AI itself, and the research order already held the 23 topics, so this task found the table complete: 24 knobs.
+  - **`secondSlotTier` was a dimension of noise.** The Lab's level with a second slot comes after the level that opens tier 3, so 1, 2 and 3 play alike. It is now searched at 3, take the slot, and 4, never take it; the self-test holds that range to `Tuning.json`'s Lab levels. The saved state's version moves to 2, so a search saved under the old range is refused rather than read wrongly.
+  - **The self-test fails when the search falls behind**: a number of `Opponent.json` without a knob, a knob not in the file, or a topic of the tree missing from the research order. Each was broken on purpose once, and the self-test failed each time.
+  - **The report** gives each side's tier 3 beside its tier 2, and when it first finished each level of its Command Station, Shipyards and Lab.
+  - **Run in the container:** a search of 6 generations against a stand-in for the game, which writes match logs from the settings it is given, played its matches, promoted its champions and wrote the report with each side's levels. Stopped after 2 generations and resumed to 4, it gave the same history and report as a run straight to 4, and a state saved by version 1 was refused. The stand-in decides nothing as the game does, so this checks the script, not the AI.
+  - **The AI, run in the container** on the server and AI built with clang 18 against a stand-in for the Windows headers: seeds 1 to 4, both players at each `secondSlotTier` from 1 to 4. At 1, 2 and 3 every seed logged the same bytes. At 4 no Lab reached level 4, and the two seeds where player 1's Lab had reached it at 3, seeds 1 and 4, played on differently; seed 4's winner then won by production at 50:45 rather than by domination at 57:00. In seeds 2 and 3 no Lab came within reach of level 4, so 4 changed nothing there. A match took 11 to 29 CPU seconds, about 0.42 ms a tick. Floats replay only on one build (ADR-009), so MSVC's Release build may play these seeds differently.
 
 ---
 

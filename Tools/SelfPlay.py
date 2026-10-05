@@ -69,19 +69,23 @@ from MatchLog import clock, read_matches, summarize  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGED_SETTINGS = REPO_ROOT / "OutpostCommander" / "Assets" / "Opponent.json"
+PACKAGED_TUNING = REPO_ROOT / "OutpostCommander" / "Assets" / "Tuning.json"
 # Where the Release|x64 build puts the game: the package layout first, which holds the Assets folder beside the
 # executable, and the bare output folder in case the layout lives there.
 EXE_CANDIDATES = (REPO_ROOT / "x64" / "Release" / "OutpostCommander" / "AppX" / "OutpostCommander.exe",
                   REPO_ROOT / "x64" / "Release" / "OutpostCommander" / "OutpostCommander.exe")
 OUTPUT_NAME = "OutpostCommander-selfplay"
 STATE_NAME = "state.pickle"
-STATE_VERSION = 1
+# 2: secondSlotTier's range moved, so a point saved by version 1 decodes to other settings.
+STATE_VERSION = 2
 
 # Seeds: each generation takes the next block from SEARCH_SEEDS, each confirmation from CONFIRM_SEEDS. The report plays
 # seeds 1 to --report-seeds, the ones the ADRs measure on, which the search never plays.
 SEARCH_SEEDS = 1_000
 CONFIRM_SEEDS = 1_000_000
 CONFIDENCE_Z = 1.96
+# The structures with levels as the match log names them (Tools/MatchLog.py), and as the report names them.
+LEVEL_KINDS = (("station", "Command Station"), ("shipyard", "Shipyard"), ("lab", "Research Lab"))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -134,7 +138,10 @@ KNOBS = (
   Knob("attackWithoutLeadShare", 1.0, 3.0, False),
   Knob("frontPlatforms", 0, 3, True),
   Knob("claimSectors", 0, 4, True),
-  Knob("secondSlotTier", 1, 3, True),
+  # The Lab's level with a second slot comes after the level that opens tier 3 (Tuning.json), so tier 3 is open whenever
+  # that level is next, and every tier up to 3 plays alike: 3 takes the second slot and 4 never does. The self-test
+  # holds this range to the tuning data.
+  Knob("secondSlotTier", 3, 4, True),
   Knob("attackLevelMeters", 0.0, 1500.0, False),
 )
 # The research keys start this much closer together than the knobs, relative to the step size: a key one step away
@@ -559,22 +566,40 @@ def endings(counts):
 
 
 def side_summary(name, matches, players):
-  """What one side did over the report's matches: its tiers, its peak fleet and what it built most."""
-  tier_two = []
+  """What one side did over the report's matches: its tiers, its structures' levels, its peak fleet and what it built
+  most."""
+  opened = collections.defaultdict(list)
+  levels = collections.defaultdict(list)
   peaks = []
   built = collections.Counter()
   for match, player in zip(matches, players):
-    opened = [tick for tick, owner, tier in match.tiers if owner == player and tier == 2]
-    if opened:
-      tier_two.append(match.seconds(min(opened)))
+    first = {}
+    for tick, owner, tier in match.tiers:
+      if owner == player:
+        first[tier] = min(tick, first.get(tier, tick))
+    for tier, tick in first.items():
+      opened[tier].append(match.seconds(tick))
+    first = {}
+    for tick, owner, _, kind, level, how in match.upgrades:
+      if owner == player and how == "finished":
+        first[(kind, level)] = min(tick, first.get((kind, level), tick))
+    for key, tick in first.items():
+      levels[key].append(match.seconds(tick))
     if player in match.peaks:
       peaks.append(match.peaks[player][1])
     built.update(design for _, owner, design in match.built if owner == player)
   lines = [f"  {name}"]
-  if tier_two:
-    lines.append(f"    Tier 2 opened in {len(tier_two)} of {len(matches)}, at a median {clock(statistics.median(tier_two))}")
-  else:
-    lines.append(f"    Tier 2 opened in none of {len(matches)}")
+  for tier in (2, 3):
+    if opened[tier]:
+      lines.append(f"    Tier {tier} opened in {len(opened[tier])} of {len(matches)}, at a median "
+                   f"{clock(statistics.median(opened[tier]))}")
+    else:
+      lines.append(f"    Tier {tier} opened in none of {len(matches)}")
+  for kind, label in LEVEL_KINDS:
+    reached = sorted(level for what, level in levels if what == kind)
+    if reached:
+      lines.append(f"    {label}: " + ", ".join(f"L{level} in {len(levels[(kind, level)])}, at a median "
+                                                f"{clock(statistics.median(levels[(kind, level)]))}" for level in reached))
   if peaks:
     lines.append(f"    Peak warships: median {statistics.median(peaks):g}, from {min(peaks)} to {max(peaks)}")
   if built:
@@ -635,7 +660,8 @@ def write_report(folder, lines):
 # ---- The self-test ---------------------------------------------------------------------------------------------------
 
 def self_test():
-  """Checks the search without the game: the optimizer, the encoding, the loader's rules and the scoring."""
+  """Checks the search without the game: the optimizer, the encoding, the loader's rules, the scoring, and that the
+  knobs and the research order follow Opponent.json and the tuning data."""
   failures = []
 
   def check(condition, message):
@@ -681,9 +707,19 @@ def self_test():
   check(restored.ask() == optimizer.ask(), "a search restored from its pickle asks something else")
 
   base = json.loads(PACKAGED_SETTINGS.read_text(encoding="utf-8"))
+  tuning = json.loads(PACKAGED_TUNING.read_text(encoding="utf-8"))
   check(decode(encode(base, base), base) == base, "the packaged settings do not decode to themselves")
   check(not check_settings(base, base), "the packaged settings break the search's ranges: "
         + "; ".join(check_settings(base, base)))
+  # The search follows Opponent.json: every number in it is a knob, so that one the AI gains is not silently held at its
+  # packaged value, and every knob is in it. The research order holds every topic of the tree, since a topic missing
+  # from it is one the AI never researches and the search cannot move.
+  numbers = {name for name, value in base.items() if isinstance(value, (int, float)) and not isinstance(value, bool)}
+  knobs = {knob.name for knob in KNOBS}
+  check(numbers == knobs, f"Opponent.json's numbers and the knobs differ: {sorted(numbers ^ knobs)}")
+  topics = sorted(topic["id"] for topic in tuning["research"])
+  check(sorted(base["researchOrder"]) == topics,
+        f"the research order holds {sorted(base['researchOrder'])}, and the tree {topics}")
   draw = random.Random(3)
   for _ in range(3000):
     point = [draw.uniform(-4.0, 5.0) for _ in range(dimensions(base))]
@@ -695,6 +731,15 @@ def self_test():
     if knob.whole:
       seen = {knob.value(i / 999) for i in range(1000)}
       check(seen == set(range(int(knob.low), int(knob.high) + 1)), f"{knob.name} does not reach every whole number")
+  # secondSlotTier's range starts at the tier the Lab has open when its level with a second slot is next, and ends one
+  # past it, at never.
+  lab = next(structure for structure in tuning["structures"] if structure.get("kind") == "ResearchLab")
+  slot = next(index for index, level in enumerate(lab["levels"]) if level.get("researchSlots", 1) > 1)
+  open_tier = max([1] + [level.get("opensTier", 1) for level in lab["levels"][:slot]])
+  second_slot = next(knob for knob in KNOBS if knob.name == "secondSlotTier")
+  check((second_slot.low, second_slot.high) == (open_tier, open_tier + 1),
+        f"secondSlotTier searches {second_slot.low:g} to {second_slot.high:g}, but the Lab has tier {open_tier} open when "
+        f"its second slot is next")
   check(reflect(-0.25) == 0.25 and reflect(1.25) == 0.75 and reflect(2.5) == 0.5, "reflection is wrong")
 
   match = collections.namedtuple("Match", "winner tickets")
