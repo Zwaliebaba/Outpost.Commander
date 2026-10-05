@@ -13,9 +13,7 @@ constexpr auto CAMERA_FILE = L"Camera.json";
 // The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
-// The windows' keys are KeyBindings.h's, which the HUD's buttons show (task 15.2).
-// Moves the camera to the newest alert (ADR-059).
-constexpr std::uint8_t KEY_LATEST_ALERT = VK_SPACE;
+// The keys are KeyBindings.h's, which the HUD's buttons and the Controls window show (tasks 15.2 and 16.4).
 
 // One light from above and behind the default view's top-left, and how much of an object's color the unlit side keeps.
 // Presentation, not tuning: the design asks only that the scene reads clearly (design §11).
@@ -112,12 +110,11 @@ constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 // A damaged ship's or structure's bar floats above it, as long as its footprint is wide and just off it toward -z: green
 // above half its hit points, then amber, then red, over a full-length bar in its side's color darkened to
 // HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02, ADR-028); dark gray for a
-// side the data does not name. The gap is small, so that the bar reads as the ship's. Held, HEALTH_BAR_ALL_KEY shows a bar
-// over every ship and structure, whole or not (ADR-047).
+// side the data does not name. The gap is small, so that the bar reads as the ship's. Held, KEY_EVERY_HEALTH_BAR shows a
+// bar over every ship and structure, whole or not (ADR-047).
 constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
 constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
 constexpr float HEALTH_BAR_GAP_METERS = 1.5f;
-constexpr std::uint8_t HEALTH_BAR_ALL_KEY = VK_MENU;
 // A bar is never shorter or thinner on screen than these, in the HUD's reference units at the screen's middle: zoomed out,
 // a Small hull's own 16 m is a few pixels long and its 2.5 m is one (ADR-047).
 constexpr float HEALTH_BAR_LEAST_LENGTH_UNITS = 32.0f;
@@ -584,7 +581,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     return;
   }
 
-  m_everyHealthBar = _input.active && _input.IsDown(HEALTH_BAR_ALL_KEY);
+  m_everyHealthBar = _input.active && _input.IsDown(KEY_EVERY_HEALTH_BAR);
   m_view.Advance(_elapsedSeconds);
   std::swap(m_previousEntities, m_entities);
   m_view.Entities(m_entities);
@@ -627,7 +624,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   }
   HandleTyping(input);
   // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12). D, P and R open or close
-  // the designer, the production window and the research window. Space moves the camera to the newest alert (ADR-059).
+  // the designer, the production window and the research window, and F1 the Controls window (task 16.4). Space moves the
+  // camera to the newest alert (ADR-059).
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
@@ -638,7 +636,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       toggled = WindowKind::Production;
     else if (keyDown && event->key == KEY_RESEARCH)
       toggled = WindowKind::Research;
-    if (keyDown && event->key == VK_ESCAPE && m_windows.CloseFront())
+    else if (keyDown && event->key == KEY_CONTROLS)
+      toggled = WindowKind::Controls;
+    if (keyDown && event->key == KEY_CANCEL && m_windows.CloseFront())
       event = input.events.erase(event);
     else if (keyDown && event->key == KEY_LATEST_ALERT)
     {
@@ -704,6 +704,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       content.laboratory = Hud::DescribeResearch(m_view.Newest(), m_entities, m_firstTopic);
       m_firstTopic = content.laboratory->firstTopic;
     }
+    content.controls = m_windows.IsOpen(WindowKind::Controls);
     m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);

@@ -54,12 +54,12 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 15.3 | The designer's preview in figures | 14.2 | — | built, in PR #77, CI green; awaiting the owner's run |
 | 15.4 | Windows open where there is room | — | — | built, in PR #77, CI green; awaiting a run |
 | 15.5 | The selection ring at a fixed width | — | K3 | built, in PR #77, CI green; awaiting the owner's run |
-| 16.1 | The windows' headers and bodies | 14.2 | — | todo |
-| 16.2 | The minimap's marks and size | — | K5 | todo |
-| 16.3 | What a production card says | 14.2 | K5 | todo |
-| 16.4 | A controls window | 15.2 | K4 | todo |
-| 16.5 | Short names for the starting designs | — | K6 | todo |
-| 16.6 | The sky's crosses | — | K5 | todo |
+| 16.1 | The windows' headers and bodies | 14.2 | — | built, in PR #78, CI green; awaiting the owner's run |
+| 16.2 | The minimap's marks and size | — | K5 | built, in PR #78, CI green; awaiting the owner's run |
+| 16.3 | What a production card says | 14.2 | K5 | built, in PR #78, CI green; awaiting the owner's run |
+| 16.4 | A controls window | 15.2 | K4 | built, in PR #78, CI green; awaiting the owner's run |
+| 16.5 | Short names for the starting designs | — | K6 | built, in PR #78, CI green; awaiting a run |
+| 16.6 | The sky's crosses | — | K5 | done: kept as they are (owner, 2026-10-05) |
 | 17.1 | An interface scale the player sets | 14.2 | K7 | todo |
 
 ### Milestone order
@@ -77,9 +77,9 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 | K1 | The type scale, the locked text's color and the room they take, as 14.2 proposes. With them the designer grows from 728 × 790 units with five weapons, 38% of a 1080p screen's width and 73% of its height, to about 816 × 840, 43% and 78%; Phase 1 §12 gives 38% and 65% at the mockup's three weapons. It changes what gate H6 accepted. **Decided on 2026-10-03:** as proposed. **On 2026-10-04** the owner decided what the proposal had not foreseen: the three texts the contrast test found besides those it names are raised, the Queue button by darkening its green; and production narrows to 478 units so that research stays 560 and both stand clear of the designer. | 14.2 | — |
 | K2 | The HUD says what production and research are doing, as 15.1 proposes: a status panel under the Ore, and a line on a producer's or the Lab's selection panel, which Phase 1 §12 keeps to its name, hit points, construction and window buttons. **Decided on 2026-10-03:** as proposed. | 15.1 | — |
 | K3 | The selection ring a fixed width on the screen, about 3 px at 1080p at any zoom, in place of the band ADR-042 decision 3 keeps. **Decided on 2026-10-03:** as proposed. | 15.5 | — |
-| K4 | How the keys with no button are taught: a Controls window on F1, and whether the main menu says so, which MVP §9 keeps to Start skirmish and Quit. **Decided on 2026-10-03:** as proposed; whether the menu gains its line is 16.4's to propose at the owner's run. | 16.4 | — |
-| K5 | The review's smaller looks, each yes or no: the gateway's gold stripe (16.1); the minimap's outlined ore, lighter fields and 300 units (16.2); a production card's build time and strength against each hull (16.3); the brightest stars kept as ADR-028's crosses, shortened, or drawn as dots (16.6). **Decided on 2026-10-03:** yes to each, as proposed; 16.6's choice among its three is made at the owner's run. **On 2026-10-04** the gateway's stripe lapsed: [Phase 3](Archive/OutpostCommander-Phase3.md) removes the gateway topics (its §6), and the owner chose Phase 3 over 16.1. | 16.2, 16.3, 16.6 | — |
-| K6 | Short names for the four starting designs, as 16.5 proposes from the MVP design's own nicknames (§7). **Decided on 2026-10-03:** as proposed; Line or Lancer is 16.5's to put to the owner. | 16.5 | — |
+| K4 | How the keys with no button are taught: a Controls window on F1, and whether the main menu says so, which MVP §9 keeps to Start skirmish and Quit. **Decided on 2026-10-03:** as proposed; whether the menu gains its line is 16.4's to propose at the owner's run. **On 2026-10-05** the owner decided it does not: the menu is unchanged. | 16.4 | — |
+| K5 | The review's smaller looks, each yes or no: the gateway's gold stripe (16.1); the minimap's outlined ore, lighter fields and 300 units (16.2); a production card's build time and strength against each hull (16.3); the brightest stars kept as ADR-028's crosses, shortened, or drawn as dots (16.6). **Decided on 2026-10-03:** yes to each, as proposed; 16.6's choice among its three is made at the owner's run. **On 2026-10-05** the owner chose to keep ADR-028's crosses. **On 2026-10-04** the gateway's stripe lapsed: [Phase 3](Archive/OutpostCommander-Phase3.md) removes the gateway topics (its §6), and the owner chose Phase 3 over 16.1. | 16.2, 16.3, 16.6 | — |
+| K6 | Short names for the four starting designs, as 16.5 proposes from the MVP design's own nicknames (§7). **Decided on 2026-10-03:** as proposed; Line or Lancer is 16.5's to put to the owner. **On 2026-10-05** the owner chose Lancer. | 16.5 | — |
 | K7 | Whether the player can scale the interface beyond the screen's fit (ADR-006), how and how far, or not now. **Decided on 2026-10-03:** as proposed, Ctrl+= and Ctrl+- as far as the windows fit. | 17.1 | — |
 
 ---
@@ -204,6 +204,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: the headers; the arrows' places and size; the page line on the first, a middle and the last page.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-05):** [ADR-068](../Design/ADR/ADR-068-interface-polish.md). The ships built read "BUILT · 4", in the labels' grammar, left of the slots. The designer's title bar reads "< SHIPYARD 05 > · DESIGNER". The saved-design chips narrow from 220 to 216 so their arrows, now 24 square, clear the third chip. Written without MSVC; not yet seen on screen.
 
 ### 16.2 — The minimap's marks and size
 
@@ -215,6 +216,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: an ore mark outlined; `MapPointAt` and `MinimapPixelOf` at the new size; the marks' contrast against the map, computed as 14.2's test computes it.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-05):** [ADR-068](../Design/ADR/ADR-068-interface-polish.md). The outline is 2 units wide, and a dry asteroid is outlined too. A field is 2.1:1 and a dry asteroid 3.1:1, both computed. Written without MSVC; not yet seen on screen.
 
 ### 16.3 — What a production card says
 
@@ -223,6 +225,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: the time and the bars of two designs that differ; 14.1's tests.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-05):** [ADR-068](../Design/ADR/ADR-068-interface-polish.md). The bars are marked with each hull's initial from the snapshot. The Constructor's time was not in the snapshot, so `Snapshot::constructorBuildSeconds` carries it, and the protocol version goes from 5 to 6. A card is 74 units tall, where it was 48. Written without MSVC; not yet seen on screen.
 
 ### 16.4 — A controls window
 
@@ -234,6 +237,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: the window names every key in the header; `WindowManagerTests` with a fourth kind; 14.1's tests.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-05):** [ADR-068](../Design/ADR/ADR-068-interface-polish.md). The window opens in the middle of the screen, takes no slot under the Ore, and lists 26 actions under three headings. The menu is unchanged (owner, 2026-10-05). The name field's typing keys are text entry and are not listed. Written without MSVC; not yet seen on screen.
 
 ### 16.5 — Short names for the starting designs
 
@@ -242,6 +246,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **ADR:** a new one: where a starting design's name lives in the tuning data (ADR-008).
 - **Acceptance:** `TuningTests` read the names and refuse an invalid one; `DesignTests.StartingDesignsAreTheFourOfTheFirstMinutes`, and every test that names a starting design, follow; the chips show the names whole.
 - **Verify:** CI; run.
+- **As built (2026-10-05):** [ADR-069](../Design/ADR/ADR-069-starting-design-names.md). `Tuning.json` gains an optional `startingDesigns` list: Swarm, Picket, Brawler and Lancer (owner, 2026-10-05). Match setup saves them under those names. The match log now names them so too, beside their components. Written without MSVC; not yet seen on screen.
 
 ### 16.6 — The sky's crosses
 
@@ -250,6 +255,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **ADR:** the milestone's, superseding ADR-028 decision 3 if they change.
 - **Acceptance:** `StarfieldTests` for what changes.
 - **Verify:** run; **owner run.**
+- **As built (2026-10-05):** nothing changes. The owner chose to keep ADR-028's crosses on 2026-10-05, and [ADR-068](../Design/ADR/ADR-068-interface-polish.md) records it.
 
 ---
 

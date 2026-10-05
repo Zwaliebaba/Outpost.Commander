@@ -343,10 +343,12 @@ struct Snapshot
   std::int32_t oreIncomeHundredthsPerSecond = 0;
   std::vector<DesignView> designs;
   // The match's rules the client shows: the map, a square of this side centered on the origin; every kind of structure;
-  // and what a Constructor costs. Empty and zero when the server has no tuning data.
+  // and what a Constructor costs, and how long the Command Station takes to build one (ADR-068). Empty and zero when the
+  // server has no tuning data.
   float mapSizeMeters = 0.0f;
   std::vector<StructureTypeView> structureTypes;
   std::int32_t constructorCost = 0;
+  double constructorBuildSeconds = 0.0;
   // The player's components and research topics, in the tuning data's order, with the player's research applied, and how
   // much faster than the base rate its Shipyards build (design §8). Empty and 1 when the server has no tuning data.
   std::vector<HullView> hulls;

@@ -18,13 +18,8 @@ constexpr float NEAR_PLANE_SHARE_OF_DISTANCE = 0.01f;
 constexpr float MINIMUM_NEAR_PLANE_METERS = 1.0f;
 constexpr float FAR_PLANE_BEYOND_FOCUS_METERS = 4000.0f;
 
-// The arrow keys pan: A and S are attack-move and stop (design §9), decided by the owner on 2026-09-30.
-constexpr std::uint8_t KEY_PAN_UP = VK_UP;
-constexpr std::uint8_t KEY_PAN_LEFT = VK_LEFT;
-constexpr std::uint8_t KEY_PAN_DOWN = VK_DOWN;
-constexpr std::uint8_t KEY_PAN_RIGHT = VK_RIGHT;
-constexpr std::uint8_t KEY_Q = 'Q';
-constexpr std::uint8_t KEY_E = 'E';
+// The arrow keys pan: A and S are attack-move and stop (design §9), decided by the owner on 2026-09-30. The camera's keys
+// are KeyBindings.h's, which the Controls window lists (task 16.4).
 
 float Radians(float _degrees) noexcept
 {
@@ -131,7 +126,7 @@ void Outpost::Camera::Update(const Neuron::InputState& _input, float _elapsedSec
   const float panMeters = m_viewWidthMeters * m_settings.panViewWidthsPerSecond * _elapsedSeconds;
   Pan(std::clamp(right, -1.0f, 1.0f) * panMeters, std::clamp(forward, -1.0f, 1.0f) * panMeters);
 
-  Rotate(Axis(_input, KEY_Q, KEY_E) * Radians(m_settings.rotateDegreesPerSecond) * _elapsedSeconds);
+  Rotate(Axis(_input, KEY_TURN_COUNTERCLOCKWISE, KEY_TURN_CLOCKWISE) * Radians(m_settings.rotateDegreesPerSecond) * _elapsedSeconds);
   Zoom(_input.wheelNotches);
 }
 

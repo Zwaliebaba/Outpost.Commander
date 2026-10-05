@@ -99,6 +99,22 @@ public:
     Assert::IsFalse(windows.SlotOf(WindowKind::Production).has_value());
   }
 
+  // Task 16.4: the Controls window is a fourth kind, opened, ordered and closed as the others are, and it takes no slot.
+  TEST_METHOD(OpensTheControlsAsAFourthKind)
+  {
+    Outpost::WindowManager windows;
+    windows.Open(WindowKind::Designer);
+    windows.Open(WindowKind::Controls);
+    Assert::IsTrue(Order(windows) == std::vector{WindowKind::Controls, WindowKind::Designer});
+    Assert::IsFalse(windows.SlotOf(WindowKind::Controls).has_value());
+    windows.Grab(WindowKind::Controls, {}, {.xUnits = 40.0f, .yUnits = 50.0f});
+    windows.Release();
+    Assert::IsTrue(windows.PositionOf(WindowKind::Controls) == Point{.xUnits = 40.0f, .yUnits = 50.0f});
+    Assert::IsTrue(windows.CloseFront());
+    Assert::IsFalse(windows.IsOpen(WindowKind::Controls));
+    Assert::IsTrue(windows.IsOpen(WindowKind::Designer));
+  }
+
   // Closing the window being dragged lets it go.
   TEST_METHOD(ClosingAWindowLetsItGo)
   {

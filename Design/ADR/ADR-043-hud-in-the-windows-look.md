@@ -33,7 +33,7 @@ The owner asked on 2026-10-03 for these to be fixed in the same change as the ri
    - The cards stay where they are as the queue grows, so a card can be clicked again and again.
    - The queue shows a row for each job and no empty ones. Its label still counts the jobs against the limit, "QUEUE · 2 / 5".
    - The window grows at its foot.
-7. **The minimap draws an ore asteroid in Ore's gold, darkened**, so that blue is the player's, red the enemy's and gold is ore. A ship is a small square, a structure a larger one, a rock at its size, a run-dry asteroid in rust, and the camera's view an outline. A field's darkness, the least size of an ore asteroid's mark and the order the marks are drawn in are ADR-046's.
+7. **The minimap draws an ore asteroid in Ore's gold, darkened**, so that blue is the player's, red the enemy's and gold is ore. A ship is a small square, a structure a larger one, a rock at its size, a run-dry asteroid in rust, and the camera's view an outline. A field's darkness, the least size of an ore asteroid's mark and the order the marks are drawn in are ADR-046's. An ore asteroid's mark is an outline, and the field's and the dry asteroid's colors and the minimap's size are [ADR-068](ADR-068-interface-polish.md)'s.
 
 ## Consequences
 

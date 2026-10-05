@@ -159,15 +159,25 @@ public:
     Assert::AreEqual(630, Outpost::HitHundredths(1470, 840));
   }
 
-  // Design §7: the first minutes are played with the four designs of the components no research unlocks.
+  // Design §7: the first minutes are played with the four designs of the components no research unlocks. ADR-069: each is
+  // saved under the short name the tuning data gives it, the MVP design's nicknames, and keeps its components' name besides.
   TEST_METHOD(StartingDesignsAreTheFourOfTheFirstMinutes)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
     std::vector<std::string> names;
+    std::vector<std::string> shortNames;
     for (const Outpost::DesignComponents& components : Outpost::StartingDesigns(tuning))
+    {
       names.push_back(Outpost::DesignName(tuning, components));
+      shortNames.push_back(Outpost::StartingDesignName(tuning, components));
+    }
     const std::vector<std::string> expected{"Small+Ion+Mass Driver", "Small+Ion+Lance", "Medium+Ion+Mass Driver", "Medium+Ion+Lance"};
     Assert::IsTrue(names == expected);
+    const std::vector<std::string> nicknames{"Swarm", "Picket", "Brawler", "Lancer"};
+    Assert::IsTrue(shortNames == nicknames);
+    // A design the file does not name, such as a scout of a starting design's components, keeps its components' name.
+    const Outpost::DesignComponents scout{Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1}, Outpost::ModuleId{1}};
+    Assert::AreEqual(std::string("Small+Ion+Mass Driver+Sensor Array"), Outpost::StartingDesignName(tuning, scout));
   }
 
   // Design §6, §7, §9: every match starts with the starting designs saved, the starting Ore, and a base of a Command
@@ -183,6 +193,7 @@ public:
     {
       const Outpost::Snapshot snapshot = server.World().BuildSnapshot(player);
       Assert::AreEqual(size_t{4}, snapshot.designs.size());
+      Assert::AreEqual(std::string("Swarm"), snapshot.designs[0].nameUtf8, L"saved under its short name (ADR-069)");
       Assert::AreEqual(tuning.rules.startingOre, snapshot.ore);
       size_t constructors = 0;
       size_t stations = 0;

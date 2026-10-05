@@ -24,7 +24,7 @@ The owner decided gate K1 on 2026-10-03 as the plan proposed. On 2026-10-04 the 
    - **A worse figure's red** goes from (0.75, 0.08, 0.044) to (0.80, 0.09, 0.05), from 4.3:1 to 4.6:1 on a window (owner, 2026-10-04). The health and rating bars use the same red.
    - **The Queue button's green face and stripes** go to 0.65 of the mockup's, so the gold of its cost goes from 3.5:1 to 4.6:1 (owner, 2026-10-04). The gold stays the gold of every other cost.
 4. **The designer grows to fit.**
-   - Its part cards and saved-design chips go from 190 units wide to 220, so a hull's numbers fit at the detail size. That line is like "1,400 HP · ARM 24 · 25m/s".
+   - Its part cards and saved-design chips go from 190 units wide to 220, so a hull's numbers fit at the detail size. That line is like "1,400 HP · ARM 24 · 25m/s". The chips are 216 since [ADR-068](ADR-068-interface-polish.md) grew their arrows.
    - The window goes from 728 units wide to 818.
    - Its header's queue slots and its Save button are placed from its right edge, not at fixed places.
    - A card keeps the mockup's 80 units. A row of cards with a note is 2 units taller than before, 96, with the note at 52 and the lock line 20 units from the foot.

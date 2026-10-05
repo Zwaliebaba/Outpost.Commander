@@ -108,5 +108,11 @@
       "effect": { "upgrade": "shipyards", "stat": "buildSpeed", "percent": 25 } },
     { "id": 25, "name": "Rapid Construction", "tier": 3, "cost": 350, "researchSeconds": 100, "requires": [],
       "effect": { "upgrade": "constructors", "stat": "buildRate", "percent": 25 } }
+  ],
+  "startingDesigns": [
+    { "hull": 1, "drive": 1, "weapon": 1, "name": "Swarm" },
+    { "hull": 1, "drive": 1, "weapon": 2, "name": "Picket" },
+    { "hull": 2, "drive": 1, "weapon": 1, "name": "Brawler" },
+    { "hull": 2, "drive": 1, "weapon": 2, "name": "Lancer" }
   ]
 }
