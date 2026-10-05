@@ -49,11 +49,11 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 |---|---|---|---|---|
 | 14.1 | Text measured with its fonts, and kept inside its card | — | — | built, in PR #65 with 14.2, CI green; awaiting the owner's run |
 | 14.2 | A type scale that reads | 14.1 | K1 | built, in PR #65, CI green; awaiting the owner's run |
-| 15.1 | What production and research are doing, on the HUD | 14.2 | K2 | built, in PR #M15; awaiting CI and the owner's run |
-| 15.2 | Keys on the buttons | 14.2 | — | built, in PR #M15; awaiting CI and the owner's run |
-| 15.3 | The designer's preview in figures | 14.2 | — | built, in PR #M15; awaiting CI and the owner's run |
-| 15.4 | Windows open where there is room | — | — | built, in PR #M15; awaiting CI and a run |
-| 15.5 | The selection ring at a fixed width | — | K3 | built, in PR #M15; awaiting CI and the owner's run |
+| 15.1 | What production and research are doing, on the HUD | 14.2 | K2 | built, in PR #77; awaiting CI and the owner's run |
+| 15.2 | Keys on the buttons | 14.2 | — | built, in PR #77; awaiting CI and the owner's run |
+| 15.3 | The designer's preview in figures | 14.2 | — | built, in PR #77; awaiting CI and the owner's run |
+| 15.4 | Windows open where there is room | — | — | built, in PR #77; awaiting CI and a run |
+| 15.5 | The selection ring at a fixed width | — | K3 | built, in PR #77; awaiting CI and the owner's run |
 | 16.1 | The windows' headers and bodies | 14.2 | — | todo |
 | 16.2 | The minimap's marks and size | — | K5 | todo |
 | 16.3 | What a production card says | 14.2 | K5 | todo |
