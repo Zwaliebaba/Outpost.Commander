@@ -2063,7 +2063,12 @@ public:
   // its page is; and a window's body is opaque.
   TEST_METHOD(WritesTheWindowsHeaders)
   {
+    // A Command Station beside Shipyard 01, so that production has another producer to step to and its arrows take clicks.
     Outpost::Snapshot newest = DesignerSnapshot();
+    newest.entities.push_back({.id = Outpost::EntityId{20},
+                               .kind = Outpost::EntityKind::Structure,
+                               .owner = PLAYER,
+                               .structure = Outpost::StructureKind::CommandStation});
     Outpost::Designer designer;
     designer.Update(newest);
     Outpost::Hud::Content content;
