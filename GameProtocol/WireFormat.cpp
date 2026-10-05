@@ -250,11 +250,11 @@ template <typename Self>
 auto Fields(Self& _value)
 {
   auto& [tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-         constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, nodeCap, matchOver, winner,
-         matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
+         constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier,
+         nodeCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
   return std::tie(tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-                  constructorCost, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier, nodeCap, matchOver,
-                  winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets);
+                  constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor,
+                  researchTier, nodeCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets);
 }
 
 template <typename Self>

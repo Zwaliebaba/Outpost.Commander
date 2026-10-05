@@ -304,8 +304,17 @@ public:
     bool waiting = false;
   };
 
+  // How a design does against one hull, rated as the designer rates its damage (Phase 1 design §11): the hull's initial,
+  // and the rating.
+  struct HullRating
+  {
+    std::string hull;
+    Rating rating = Rating::Poor;
+  };
+
   // A button of a window that adds to a queue: what it adds, a line under the name, such as a design's abbreviation, its
-  // cost, and whether it can be pressed now.
+  // cost, and whether it can be pressed now; and under them how long one takes to build and, for a design, how it does
+  // against each hull (ADR-068).
   struct QueueOption
   {
     std::string name;
@@ -313,6 +322,8 @@ public:
     std::int32_t cost = 0;
     Action action;
     bool enabled = true;
+    std::string time;
+    std::vector<HullRating> strengths;
   };
 
   // The production window (Phase 1 design §12; owner, 2026-10-03): the producer it shows, such as "COMMAND STATION" or
@@ -438,6 +449,8 @@ public:
     // The production and research windows' content, while they are open; GameClient fills them.
     std::optional<ProductionPanel> production;
     std::optional<ResearchPanel> laboratory;
+    // Whether the Controls window is open (task 16.4); its lines are KeyBindings'.
+    bool controls = false;
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;

@@ -863,6 +863,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
       }
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
+    snapshot.constructorBuildSeconds = m_tuning->constructor.buildSeconds;
 
     // The components and topics as the player has them, kept from when its research or the tuning data last changed.
     const ResearchEffects& effects = EffectsOf(_player);

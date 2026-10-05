@@ -79,6 +79,7 @@ Outpost::Snapshot FullSnapshot()
                                                  .nodes = 6,
                                                  .guns = 2}}});
   snapshot.constructorCost = 55;
+  snapshot.constructorBuildSeconds = 55.5;
   snapshot.hulls.push_back({.id = Outpost::HullId{56},
                             .nameUtf8 = "Small",
                             .hitPointsHundredths = 57,
@@ -213,6 +214,7 @@ public:
     Assert::AreEqual(0.75, snapshot.modules[0].speedFactor);
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);
     Assert::AreEqual(96, snapshot.startingTickets);
+    Assert::AreEqual(55.5, snapshot.constructorBuildSeconds, L"the Constructor's build time (ADR-068)");
   }
 
   TEST_METHOD(CarriesHelloAndWelcome)

@@ -6,11 +6,7 @@
 
 namespace
 {
-constexpr std::uint8_t KEY_ATTACK_MOVE = 'A';
-constexpr std::uint8_t KEY_STOP = 'S';
-// The standing orders (ADR-059): hold a sector, and patrol.
-constexpr std::uint8_t KEY_HOLD_SECTOR = 'H';
-constexpr std::uint8_t KEY_PATROL = 'T';
+// The orders' keys are KeyBindings.h's, which the Controls window lists (task 16.4).
 
 // Whether _later follows _earlier closely enough to be a double click or a double tap. The millisecond clock wraps,
 // and unsigned subtraction wraps with it.
@@ -21,8 +17,8 @@ bool IsDouble(std::uint32_t _earlier, std::uint32_t _later) noexcept
 
 std::optional<size_t> GroupKey(std::uint8_t _key) noexcept
 {
-  if (_key >= '0' && _key <= '9')
-    return static_cast<size_t>(_key - '0');
+  if (_key >= Outpost::KEY_FIRST_GROUP && _key <= Outpost::KEY_LAST_GROUP)
+    return static_cast<size_t>(_key - Outpost::KEY_FIRST_GROUP);
   return std::nullopt;
 }
 
@@ -317,7 +313,7 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
 
 void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Frame& _frame)
 {
-  if (_event.key == VK_ESCAPE)
+  if (_event.key == KEY_CANCEL)
   {
     m_attackMoveArmed = false;
     m_standingArmed.reset();
