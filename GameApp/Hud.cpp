@@ -87,12 +87,17 @@ constexpr float VIEW_LINE_UNITS = 1.5f;
 // The hint, anchored to the top edge's middle.
 constexpr float HINT_PANEL_WIDTH = 640.0f;
 
-// The research line, under the Ore panel.
-constexpr float RESEARCH_PANEL_WIDTH = 560.0f;
-constexpr float RESEARCH_PANEL_GAP = 8.0f;
-// The territory, under the research line's place (ADR-056, ADR-057), and the room above and below its lines.
-constexpr float TERRITORY_PANEL_WIDTH = 260.0f;
+// The status panel under the Ore (ADR-066): as wide as its longest line within these, and the room above and below its
+// lines, which the territory's and the alerts' panels keep too. Its place is kept for two lines, whether or not it has them,
+// so that what stands under it does not move as a Lab or a Shipyard is finished.
+constexpr float STATUS_PANEL_MIN_WIDTH = 260.0f;
+constexpr float STATUS_PANEL_WIDTH = 560.0f;
+constexpr float STATUS_LINES_KEPT = 2.0f;
+constexpr float PANEL_GAP = 8.0f;
 constexpr float TERRITORY_INSET_UNITS = 10.0f;
+constexpr float STATUS_PANEL_KEPT_UNITS = (2.0f * TERRITORY_INSET_UNITS) + (STATUS_LINES_KEPT * NAME_LINE_UNITS);
+// The territory, under the status panel's place (ADR-056, ADR-057).
+constexpr float TERRITORY_PANEL_WIDTH = 260.0f;
 // The alerts, under the territory (ADR-059), and how large an alert's mark is on the minimap.
 constexpr float ALERT_PANEL_WIDTH = 380.0f;
 constexpr float ALERT_MARK_UNITS = 14.0f;
@@ -124,25 +129,6 @@ std::string Tenths(double _value)
   return rounded == std::round(rounded) ? std::format("{:.0f}", rounded) : std::format("{:.1f}", rounded);
 }
 
-// The front topic of the player's Research Lab, and how far it has come (design §8).
-std::string ResearchLine(const Outpost::Snapshot& _newest, std::span<const Outpost::EntityView> _entities)
-{
-  for (const Outpost::EntityView& lab : _entities)
-  {
-    if (lab.kind != Outpost::EntityKind::Structure || lab.structure != Outpost::StructureKind::ResearchLab || lab.owner != _newest.player ||
-        lab.research.empty())
-      continue;
-    const auto topic = std::ranges::find(_newest.research, lab.research.front(), &Outpost::ResearchTopicView::id);
-    const std::string name = topic != _newest.research.end() ? topic->nameUtf8 : std::string("Research");
-    std::string line = lab.jobPermille > 0 ? std::format("Researching {}, {}%", name, lab.jobPermille / 10)
-                                           : std::format("Researching {}, waiting for Ore", name);
-    if (lab.research.size() > 1)
-      line += std::format(" (+{} queued)", lab.research.size() - 1);
-    return line;
-  }
-  return {};
-}
-
 // A design's name, or the Constructor's for no design.
 std::string DesignNameOf(const Outpost::Snapshot& _newest, Outpost::DesignId _design)
 {
@@ -170,6 +156,99 @@ constexpr std::string_view DOT = " \xC2\xB7 ";
 constexpr std::string_view TIMES = "\xC3\x97";
 // How many saved designs' chips the designer shows at once.
 constexpr std::size_t CHIPS_SHOWN = 3;
+
+// The name of a Research Lab's topic.
+std::string TopicNameOf(const Outpost::Snapshot& _newest, Outpost::ResearchTopicId _topic)
+{
+  const auto topic = std::ranges::find(_newest.research, _topic, &Outpost::ResearchTopicView::id);
+  return topic != _newest.research.end() ? topic->nameUtf8 : std::string("Research");
+}
+
+// The name of the front job of a producer's queue, which is not empty.
+std::string FrontJobNameOf(const Outpost::Snapshot& _newest, const Outpost::EntityView& _producer)
+{
+  const Outpost::JobView& job = _producer.queue.front();
+  return DesignNameOf(_newest, job.role == Outpost::ShipRole::Constructor ? Outpost::DesignId{} : job.design);
+}
+
+// What a producer or the Research Lab is doing, for its selection panel (ADR-066): "Building Swarm · 62% · +2 queued",
+// "Building Swarm · waiting for Ore", or "Idle" with nothing queued. _verb names the work and _front the front job.
+std::string WorkLine(std::string_view _verb, const std::string& _front, std::int32_t _permille, std::size_t _queued)
+{
+  if (_queued == 0)
+    return "Idle";
+  std::string line = _permille > 0 ? std::format("{} {}{}{}%", _verb, _front, DOT, _permille / 10)
+                                   : std::format("{} {}{}waiting for Ore", _verb, _front, DOT);
+  if (_queued > 1)
+    line += std::format("{}+{} queued", DOT, _queued - 1);
+  return line;
+}
+
+// The status panel's lines (ADR-066): what the player's finished Research Lab is doing, and how many of its finished
+// Shipyards are building, waiting for Ore and idle. A line that reports an idle Lab or Shipyard says IDLE. A click on the
+// Lab's line opens research, and on the Shipyards' opens production at the first idle Shipyard, or at the first if none is.
+std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std::span<const Outpost::EntityView> _entities)
+{
+  const auto own = [&_newest](const Outpost::EntityView& _entity, Outpost::StructureKind _kind)
+  {
+    return _entity.kind == Outpost::EntityKind::Structure && _entity.structure == _kind && _entity.owner == _newest.player &&
+           !_entity.remembered && _entity.builtPermille >= Outpost::PERMILLE;
+  };
+  std::vector<Hud::StatusLine> lines;
+  const auto lab = std::ranges::find_if(_entities, [&own](const Outpost::EntityView& _entity)
+                                        { return own(_entity, Outpost::StructureKind::ResearchLab); });
+  if (lab != _entities.end())
+  {
+    const Hud::Action open{.kind = Hud::ActionKind::OpenResearch, .producer = lab->id};
+    if (lab->research.empty())
+      lines.push_back({.text = "Research Lab IDLE", .idle = true, .action = open});
+    else
+    {
+      const std::string name = TopicNameOf(_newest, lab->research.front());
+      std::string text = lab->jobPermille > 0 ? std::format("Researching {}, {}%", name, lab->jobPermille / 10)
+                                              : std::format("Researching {}, waiting for Ore", name);
+      if (lab->research.size() > 1)
+        text += std::format(" (+{} queued)", lab->research.size() - 1);
+      lines.push_back({.text = std::move(text), .action = open});
+    }
+  }
+
+  std::vector<const Outpost::EntityView*> shipyards;
+  for (const Outpost::EntityView& entity : _entities)
+  {
+    if (own(entity, Outpost::StructureKind::Shipyard))
+      shipyards.push_back(&entity);
+  }
+  if (shipyards.empty())
+    return lines;
+  std::ranges::sort(shipyards, {}, &Outpost::EntityView::shipyardNumber);
+  std::size_t building = 0;
+  std::size_t waiting = 0;
+  const Outpost::EntityView* firstIdle = nullptr;
+  std::size_t idle = 0;
+  for (const Outpost::EntityView* shipyard : shipyards)
+  {
+    if (shipyard->queue.empty())
+    {
+      firstIdle = firstIdle != nullptr ? firstIdle : shipyard;
+      ++idle;
+    }
+    else if (shipyard->jobPermille > 0)
+      ++building;
+    else
+      ++waiting;
+  }
+  std::string text = std::format("Shipyards: {} building", building);
+  if (waiting > 0)
+    text += std::format(", {} waiting for Ore", waiting);
+  if (idle > 0)
+    text += std::format(", {} IDLE", idle);
+  lines.push_back(
+    {.text = std::move(text),
+     .idle = idle > 0,
+     .action = {.kind = Hud::ActionKind::OpenProduction, .producer = (firstIdle != nullptr ? firstIdle : shipyards.front())->id}});
+  return lines;
+}
 // A damage card's rating: Good from two thirds of the best any design does to the hull, Fair from a third.
 constexpr float GOOD_SHARE = 2.0f / 3.0f;
 constexpr float FAIR_SHARE = 1.0f / 3.0f;
@@ -250,6 +329,18 @@ Best BestOfAll(const Outpost::Snapshot& _newest)
 float ShareOf(double _value, double _best) noexcept
 {
   return _best > 0.0 ? static_cast<float>(std::clamp(_value / _best, 0.0, 1.0)) : 0.0f;
+}
+
+// The change from _current to _preview as a signed number in ASCII (ADR-030), "+252", "-26" or "+4.5": whole and grouped in
+// thousands when _whole, and otherwise to a tenth as Tenths writes it. Both are rounded as their figures are first, so that
+// the change is the difference of the two figures shown (task 15.3).
+std::string SignedChange(double _current, double _preview, bool _whole)
+{
+  const double step = _whole ? 1.0 : 10.0;
+  const double change = (std::round(_preview * step) - std::round(_current * step)) / step;
+  const char sign = change < 0.0 || (change == 0.0 && _preview < _current) ? '-' : '+';
+  return _whole ? std::format("{}{}", sign, Outpost::WithThousands(std::llround(std::abs(change))))
+                : std::format("{}{}", sign, Tenths(std::abs(change)));
 }
 
 // How _preview compares to _current, where higher is better unless _lowerIsBetter.
@@ -421,46 +512,48 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   {
     const Best best = BestOfAll(_newest);
     const double factor = _newest.shipyardBuildSpeedFactor;
-    // Lower is better for cost and build time.
-    const auto bar =
-      [&](std::string_view _label, std::string_view _unit, double _best, const auto& _value, const auto& _text, bool _lowerIsBetter = false)
+    // Lower is better for cost and build time. _shown is a number as its figure shows it, whole when _whole and to a tenth
+    // otherwise, which a preview's change is counted in.
+    const auto bar = [&](std::string_view _label, std::string_view _unit, double _best, const auto& _value, const auto& _text,
+                         const auto& _shown, bool _whole, bool _lowerIsBetter = false)
     {
       Hud::StatBar row{
         .label = std::string(_label), .value = _text(*stats), .unit = std::string(_unit), .share = ShareOf(_value(*stats), _best)};
       if (previewStats.has_value())
       {
         row.previewShare = ShareOf(_value(*previewStats), _best);
-        row.previewValue = _text(*previewStats);
         row.change = ChangeOf(_value(*stats), _value(*previewStats), _lowerIsBetter);
+        row.previewValue = row.change == Hud::Change::Same
+                             ? _text(*previewStats)
+                             : std::format("{} ({})", _text(*previewStats), SignedChange(_shown(*stats), _shown(*previewStats), _whole));
       }
       panel.bars.push_back(std::move(row));
     };
     panel.bars.reserve(7);
+    const auto hitPoints = [](const Outpost::DesignStats& _s) { return static_cast<double>(WholePoints(_s.hitPointsHundredths)); };
+    const auto armor = [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.armorHundredths) / Outpost::HUNDREDTHS; };
+    const auto speed = [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.movement.speedMetersPerSecond); };
+    const auto range = [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.rangeMeters); };
+    const auto sight = [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.moduleSightMeters); };
+    const auto cost = [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.cost); };
+    const auto build = [factor](const Outpost::DesignStats& _s) { return _s.buildSeconds / factor; };
     bar(
       "Hit points", "", best.hitPoints, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.hitPointsHundredths); },
-      [](const Outpost::DesignStats& _s) { return Outpost::WithThousands(WholePoints(_s.hitPointsHundredths)); });
+      [](const Outpost::DesignStats& _s) { return Outpost::WithThousands(WholePoints(_s.hitPointsHundredths)); }, hitPoints, true);
     bar(
       "Armor", "", best.armor, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.armorHundredths); },
-      [](const Outpost::DesignStats& _s) { return Tenths(static_cast<double>(_s.armorHundredths) / Outpost::HUNDREDTHS); });
-    bar(
-      "Speed", "m/s", best.speed, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.movement.speedMetersPerSecond); },
-      [](const Outpost::DesignStats& _s) { return Tenths(_s.movement.speedMetersPerSecond); });
-    bar(
-      "Range", "m", best.range, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.rangeMeters); },
-      [](const Outpost::DesignStats& _s) { return Tenths(_s.rangeMeters); });
+      [&armor](const Outpost::DesignStats& _s) { return Tenths(armor(_s)); }, armor, false);
+    bar("Speed", "m/s", best.speed, speed, [&speed](const Outpost::DesignStats& _s) { return Tenths(speed(_s)); }, speed, false);
+    bar("Range", "m", best.range, range, [&range](const Outpost::DesignStats& _s) { return Tenths(range(_s)); }, range, false);
     // How far a module lets the ship see; none without one, when its weapon sets its sight (Phase 2 design §10).
     if (best.sensor > 0.0)
     {
       bar(
-        "Sensors", "m", best.sensor, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.moduleSightMeters); },
-        [](const Outpost::DesignStats& _s) { return _s.moduleSightMeters > 0.0f ? Tenths(_s.moduleSightMeters) : std::string("-"); });
+        "Sensors", "m", best.sensor, sight,
+        [&sight](const Outpost::DesignStats& _s) { return sight(_s) > 0.0 ? Tenths(sight(_s)) : std::string("-"); }, sight, false);
     }
-    bar(
-      "Cost", "ore", best.cost, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.cost); },
-      [](const Outpost::DesignStats& _s) { return std::to_string(_s.cost); }, true);
-    bar(
-      "Build", "s", best.build, [factor](const Outpost::DesignStats& _s) { return _s.buildSeconds / factor; },
-      [factor](const Outpost::DesignStats& _s) { return Tenths(_s.buildSeconds / factor); }, true);
+    bar("Cost", "ore", best.cost, cost, [](const Outpost::DesignStats& _s) { return std::to_string(_s.cost); }, cost, true, true);
+    bar("Build", "s", best.build, build, [&build](const Outpost::DesignStats& _s) { return Tenths(build(_s)); }, build, false, true);
 
     const Outpost::DesignStats& shown = previewStats.has_value() ? *previewStats : *stats;
     panel.damage.reserve(_newest.hulls.size());
@@ -468,12 +561,17 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     {
       const Outpost::HullView& hull = _newest.hulls[i];
       const double damage = Outpost::DamagePerSecond(shown, hull.armorHundredths);
-      const Hud::Change change =
-        previewStats.has_value() ? ChangeOf(Outpost::DamagePerSecond(*stats, hull.armorHundredths), damage, false) : Hud::Change::Same;
+      const double current = Outpost::DamagePerSecond(*stats, hull.armorHundredths);
+      const Hud::Change change = previewStats.has_value() ? ChangeOf(current, damage, false) : Hud::Change::Same;
       const float share = ShareOf(damage, best.damage[i]);
+      // The change per ship to a tenth, as the figure is written: "+4.5" (task 15.3).
+      const double tenths = (std::round(damage * 10.0) - std::round(current * 10.0)) / 10.0;
       panel.damage.push_back({.hull = hull.nameUtf8,
                               .armor = std::format("ARM {}", Tenths(static_cast<double>(hull.armorHundredths) / Outpost::HUNDREDTHS)),
                               .perShip = std::format("{:.1f}", damage),
+                              .perShipChange = change == Hud::Change::Same
+                                                 ? std::string()
+                                                 : std::format("{}{:.1f}", damage < current ? '-' : '+', std::abs(tenths)),
                               .perOre = std::format("{:.1f} / 100 ore", shown.cost > 0 ? damage * 100.0 / shown.cost : 0.0),
                               .share = share,
                               .rating = share >= GOOD_SHARE   ? Hud::Rating::Good
@@ -613,8 +711,9 @@ constexpr float SECTION_GAP = 20.0f;
 constexpr float SECTION_LABEL_HEIGHT = 26.0f;
 constexpr float BAR_ROW_HEIGHT = 25.0f;
 constexpr float BAR_LEFT = 104.0f;
-constexpr float BAR_WIDTH = 116.0f;
-constexpr float BAR_VALUE_RIGHT = 290.0f;
+// A previewed figure and its change, "1,680 (+1,482)", end at BAR_VALUE_RIGHT clear of the bar (task 15.3).
+constexpr float BAR_WIDTH = 90.0f;
+constexpr float BAR_VALUE_RIGHT = 316.0f;
 constexpr float DAMAGE_LEFT = 364.0f;
 constexpr float DAMAGE_CARD_HEIGHT = 96.0f;
 constexpr float DAMAGE_CARD_GAP = 8.0f;
@@ -630,6 +729,9 @@ constexpr float ORE_MARK_GAP_UNITS = 5.0f;
 constexpr float FIT_GAP_UNITS = 6.0f;
 // The box a window's header holds the player's Ore in.
 constexpr float ORE_BOX_WIDTH = 116.0f;
+// A key's cap on a button (task 15.2), and how far down it the letter's line starts.
+constexpr float KEY_CAP_UNITS = 20.0f;
+constexpr float KEY_CAP_TEXT_TOP = 2.0f;
 
 // The mockup's colors (gate H6, confirmed at the owner's run), sampled from it and made linear, as the render target
 // encodes them to sRGB. Those raised so that every text stands at 4.5:1 or more against its panel say so (ADR-062).
@@ -853,9 +955,9 @@ private:
 };
 
 // A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
-// any cost after a '|' as Ore's diamond and the figure at its right, and its place among the actions when it does
-// something. The label is cut short only where it would meet the cost or the note. Work it started that is under way runs
-// as a bar along its foot, under the label, from left to right.
+// any cost after a '|' as Ore's diamond and the figure at its right, or its key as a cap there (task 15.2), and its place
+// among the actions when it does something. The label is cut short only where it would meet the cost, the note or the
+// cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right.
 void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
 {
   Painter paint(_layout, _metrics, {.xUnits = _area.left / _scale, .yUnits = _area.top / _scale}, _scale);
@@ -883,7 +985,18 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
   const DirectX::XMFLOAT4& labelColor = _button.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
   const float labelTop = (height - NAME_LINE_UNITS) / 2.0f;
   const float figureTop = (height - FIGURE_LINE_UNITS) / 2.0f;
-  const float room = width - (2.0f * BUTTON_INSET);
+  float room = width - (2.0f * BUTTON_INSET);
+  if (!_button.key.empty())
+  {
+    // The key's cap: an outlined square with the letter in the label face, in the middle of it.
+    const float capLeft = width - BUTTON_INSET - KEY_CAP_UNITS;
+    const float capTop = (height - KEY_CAP_UNITS) / 2.0f;
+    paint.Panel(capLeft, capTop, KEY_CAP_UNITS, KEY_CAP_UNITS, FIELD_COLOR);
+    paint.Outline(capLeft, capTop, KEY_CAP_UNITS, KEY_CAP_UNITS, ROW_LABEL_COLOR);
+    paint.Text(_button.key, capLeft + ((KEY_CAP_UNITS - paint.Width(_button.key, Hud::Typeface::Label)) / 2.0f), capTop + KEY_CAP_TEXT_TOP,
+               ROW_LABEL_COLOR, Hud::Typeface::Label);
+    room -= KEY_CAP_UNITS + FIT_GAP_UNITS;
+  }
   std::int32_t cost = 0;
   const std::string figure = split == std::string::npos ? std::string() : _button.label.substr(split + 1);
   const bool costed = split != std::string::npos && std::from_chars(figure.data(), figure.data() + figure.size(), cost).ec == std::errc{};
@@ -1079,6 +1192,12 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     paint.RightText(card.armor, left + cardWidth - 8.0f, cardsTop + 11.0f, LABEL_COLOR, Hud::Typeface::Label);
     // Clear of the hull's line, which the name face sets about 19 units tall, at every scale's rounding.
     paint.Text(card.perShip, left + 10.0f, cardsTop + 30.0f, ChangeColor(card.change, TEXT_COLOR), Hud::Typeface::LargeFigure);
+    // A hovered part's change, at the card's right on the large figure's line (task 15.3).
+    if (!card.perShipChange.empty())
+    {
+      paint.RightText(card.perShipChange, left + cardWidth - 8.0f, cardsTop + 44.0f, ChangeColor(card.change, TEXT_COLOR),
+                      Hud::Typeface::Figure);
+    }
     paint.Panel(left + 10.0f, cardsTop + 66.0f, cardWidth - 20.0f, 4.0f, BAR_TRACK_COLOR);
     paint.Panel(left + 10.0f, cardsTop + 66.0f, (cardWidth - 20.0f) * card.share, 4.0f, RatingColor(card.rating));
     paint.Text(paint.Fit(card.perOre, Hud::Typeface::Detail, cardWidth - 20.0f), left + 10.0f, cardsTop + 76.0f, SOFT_COLOR,
@@ -1158,8 +1277,8 @@ constexpr std::size_t TOPIC_LEAST_LINES = 2;
 constexpr float CARD_SPACING = 8.0f;
 // A card's text stands this far in from its edges.
 constexpr float CARD_INSET = 12.0f;
-// Where the production and research windows stand at first: under the Ore panel and the research line.
-constexpr float WINDOWS_TOP = 128.0f;
+// Where the production and research windows stand at first: under the Ore panel and the status panel's place (ADR-066).
+constexpr float WINDOWS_TOP = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP + STATUS_PANEL_KEPT_UNITS + MARGIN;
 constexpr float CARDS_TOP = SECTION_TOP + SECTION_BODY_GAP;
 
 // The foot of _lines lines of cards _cardHeight tall, at least one.
@@ -1593,7 +1712,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                   .selection = {},
                   .buttons = {},
                   .hint = {},
-                  .research = ResearchLine(_newest, _entities),
+                  .status = StatusLinesOf(_newest, _entities),
                   .designer = std::nullopt,
                   .mapSizeMeters = _newest.mapSizeMeters,
                   .marks = {}};
@@ -1702,20 +1821,38 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         else
           content.selection.push_back(std::format("{}: held", sector->nameUtf8));
       }
-      // Its queue and what it can add to it are its windows' (Phase 1 design §12; owner, 2026-10-03): its panel offers to
-      // open them, once it is the player's own and finished.
+      // Its queue and what it can add to it are its windows' (Phase 1 design §12; owner, 2026-10-03): its panel says what it
+      // is doing (ADR-066) and offers to open them, once it is the player's own and finished.
       if (structure->owner == _newest.player && structure->builtPermille >= PERMILLE)
       {
-        const Action production{.kind = ActionKind::OpenProduction, .producer = structure->id};
-        if (structure->structure == StructureKind::CommandStation)
-          content.buttons.push_back({.label = "Production", .action = production});
-        else if (structure->structure == StructureKind::Shipyard)
+        if (structure->structure == StructureKind::CommandStation || structure->structure == StructureKind::Shipyard)
         {
-          content.buttons.push_back({.label = "Production", .action = production});
-          content.buttons.push_back({.label = "Ship designer", .action = {.kind = ActionKind::OpenDesigner, .producer = structure->id}});
+          content.selection.push_back(WorkLine("Building", structure->queue.empty() ? std::string() : FrontJobNameOf(_newest, *structure),
+                                               structure->jobPermille, structure->queue.size()));
         }
         else if (structure->structure == StructureKind::ResearchLab)
-          content.buttons.push_back({.label = "Research", .action = {.kind = ActionKind::OpenResearch, .producer = structure->id}});
+        {
+          content.selection.push_back(
+            WorkLine("Researching", structure->research.empty() ? std::string() : TopicNameOf(_newest, structure->research.front()),
+                     structure->jobPermille, structure->research.size()));
+        }
+        // Each window's button shows the key that opens it too (task 15.2).
+        const Button production{
+          .label = "Production", .action = {.kind = ActionKind::OpenProduction, .producer = structure->id}, .key = KeyCap(KEY_PRODUCTION)};
+        if (structure->structure == StructureKind::CommandStation)
+          content.buttons.push_back(production);
+        else if (structure->structure == StructureKind::Shipyard)
+        {
+          content.buttons.push_back(production);
+          content.buttons.push_back({.label = "Ship designer",
+                                     .action = {.kind = ActionKind::OpenDesigner, .producer = structure->id},
+                                     .key = KeyCap(KEY_DESIGNER)});
+        }
+        else if (structure->structure == StructureKind::ResearchLab)
+        {
+          content.buttons.push_back(
+            {.label = "Research", .action = {.kind = ActionKind::OpenResearch, .producer = structure->id}, .key = KeyCap(KEY_RESEARCH)});
+        }
         // The next level: what it gives, and a button with its time and cost, dim while one is being built or the Ore is
         // short (Phase 3 design §9).
         const auto next = static_cast<std::size_t>(std::max(0, structure->level - 1));
@@ -2064,18 +2201,18 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
                     income > 0 ? NUMBERS_COLOR : WARNING_COLOR, Typeface::Figure);
   }
 
-  // Under the Ore: the research under way.
-  const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP;
+  // Under the Ore: what the Research Lab and the Shipyards are doing (ADR-066).
+  const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP;
+  const float underStatusUnits = underOreUnits + STATUS_PANEL_KEPT_UNITS + PANEL_GAP;
 
-  // Under the research's place: the nodes each side holds, and each side's tickets, the player's in its color and the
+  // Under the status panel's place: the nodes each side holds, and each side's tickets, the player's in its color and the
   // enemy's in theirs (ADR-056, ADR-057).
   if (_content.territory.has_value())
   {
     const Territory& territory = *_content.territory;
     const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS;
-    Painter paint =
-      frame({.xUnits = MARGIN, .yUnits = underOreUnits + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP}, TERRITORY_PANEL_WIDTH, heightUnits);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = underStatusUnits}, TERRITORY_PANEL_WIDTH, heightUnits);
     const auto row = [&](const std::string& _label, const std::string& _own, const std::string& _enemy, float _top)
     {
       const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
@@ -2102,10 +2239,9 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   if (!_content.alerts.empty())
   {
     const bool tickets = _content.territory.has_value() && _content.territory->ownTickets.has_value();
-    const float territoryUnits = _content.territory.has_value()
-                                   ? (2.0f * TERRITORY_INSET_UNITS) + ((tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS) + RESEARCH_PANEL_GAP
-                                   : 0.0f;
-    const float topUnits = underOreUnits + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP + territoryUnits;
+    const float territoryUnits =
+      _content.territory.has_value() ? (2.0f * TERRITORY_INSET_UNITS) + ((tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS) + PANEL_GAP : 0.0f;
+    const float topUnits = underStatusUnits + territoryUnits;
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
     Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, ALERT_PANEL_WIDTH, heightUnits);
     for (size_t line = 0; line < _content.alerts.size(); ++line)
@@ -2115,11 +2251,27 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
                  Typeface::Name);
     }
   }
-  if (!_content.research.empty())
+  // The status panel: a line for the Research Lab and one for the Shipyards, an idle one in the warning's color, each a place
+  // to click that opens its window (ADR-066). It is as wide as its longest line, within its bounds.
+  if (!_content.status.empty())
   {
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, RESEARCH_PANEL_WIDTH, ORE_PANEL_HEIGHT);
-    paint.Text(paint.Fit(_content.research, Typeface::Name, RESEARCH_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
-               (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
+    float textUnits = 0.0f;
+    for (const StatusLine& line : _content.status)
+      textUnits = std::max(textUnits, _metrics.Width(Typeface::Name, line.text));
+    const float widthUnits = std::clamp(textUnits + (2.0f * PADDING), STATUS_PANEL_MIN_WIDTH, STATUS_PANEL_WIDTH);
+    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.status.size()) * NAME_LINE_UNITS);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, widthUnits, heightUnits);
+    for (size_t line = 0; line < _content.status.size(); ++line)
+    {
+      const StatusLine& status = _content.status[line];
+      const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
+      // The line's row across the panel takes the click, the first and the last reaching to the panel's edge.
+      const float rowTop = line == 0 ? 0.0f : top;
+      const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + NAME_LINE_UNITS;
+      paint.Press(paint.Area(0.0f, rowTop, widthUnits, rowBottom - rowTop, WINDOW_COLOR), status.action);
+      paint.Text(paint.Fit(status.text, Typeface::Name, widthUnits - (2.0f * PADDING)), PADDING, top,
+                 status.idle ? WARNING_COLOR : TEXT_COLOR, Typeface::Name);
+    }
   }
 
   // Top-middle anchor: what a click on the ground will do.
@@ -2318,6 +2470,15 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     const std::optional<WindowManager::Point> moved = _windows != nullptr ? _windows->PositionOf(_kind) : std::nullopt;
     return KeepOnScreen(moved.value_or(_default), _widthUnits, screenWidthUnits, screenHeightUnits);
   };
+  // Production and research stand at first in the slots under the Ore, each in the one it took as it opened (task 15.4):
+  // the first at the margin, the second beside where the other window stands in the first. Without a manager, production
+  // takes the first and research the second.
+  const auto slotted = [&](WindowKind _kind, std::size_t _slot)
+  {
+    const std::size_t slot = _windows != nullptr ? _windows->SlotOf(_kind).value_or(_slot) : _slot;
+    const float other = _kind == WindowKind::Production ? RESEARCH_WINDOW_WIDTH : PRODUCTION_WINDOW_WIDTH;
+    return WindowManager::Point{.xUnits = slot == 0 ? MARGIN : (2.0f * MARGIN) + other, .yUnits = WINDOWS_TOP};
+  };
   for (const WindowKind kind : backToFront)
   {
     // The designer, at first in the top-right corner.
@@ -2327,18 +2488,11 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
         place(kind, {.xUnits = screenWidthUnits - MARGIN - DESIGNER_WIDTH, .yUnits = MARGIN}, DESIGNER_WIDTH);
       LayDesigner(layout, _metrics, *_content.designer, corner, scale);
     }
-    // Production and research, at first side by side under the Ore and the research line, clear of the designer.
+    // Production and research, at first side by side under the Ore and the status panel, clear of the designer.
     else if (kind == WindowKind::Production && _content.production.has_value())
-    {
-      LayProduction(layout, _metrics, *_content.production, place(kind, {.xUnits = MARGIN, .yUnits = WINDOWS_TOP}, PRODUCTION_WINDOW_WIDTH),
-                    scale);
-    }
+      LayProduction(layout, _metrics, *_content.production, place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH), scale);
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
-    {
-      const WindowManager::Point corner =
-        place(kind, {.xUnits = (2.0f * MARGIN) + PRODUCTION_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, RESEARCH_WINDOW_WIDTH);
-      LayResearch(layout, _metrics, *_content.laboratory, corner, scale);
-    }
+      LayResearch(layout, _metrics, *_content.laboratory, place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH), scale);
   }
   return layout;
 }

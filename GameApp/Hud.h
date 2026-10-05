@@ -172,6 +172,8 @@ public:
     // How far the work the button started has come, in thousandths, drawn as a bar along its foot from left to right; none
     // while no such work is under way.
     std::optional<std::int32_t> progressPermille;
+    // The key that does what the button does, drawn as a cap at its right end (task 15.2); none for most buttons.
+    std::string key;
   };
 
   // A component as the designer shows it on its card (Phase 1 design §11): its name, cost and numbers, a note under them,
@@ -211,7 +213,8 @@ public:
   };
 
   // One of the picked design's numbers and its bar, measured against the best any design in the game reaches, locked
-  // components included, so that the scale holds as research unlocks parts. With a part hovered, the design it would make.
+  // components included, so that the scale holds as research unlocks parts. With a part hovered, the design it would make:
+  // its figure with the change as a signed number, "242 (+44)" (task 15.3).
   struct StatBar
   {
     std::string label;
@@ -233,12 +236,13 @@ public:
   };
 
   // Damage per second after armor against one hull (design §9), per ship and per 100 Ore: the hovered part's design while
-  // one is hovered, and how it compares to the picked one.
+  // one is hovered, how it compares to the picked one, and its change per ship as a signed number, "+4.5" (task 15.3).
   struct DamageCard
   {
     std::string hull;
     std::string armor;
     std::string perShip;
+    std::string perShipChange;
     std::string perOre;
     float share = 0.0f;
     Rating rating = Rating::Poor;
@@ -399,6 +403,15 @@ public:
     std::optional<std::int32_t> enemyTickets;
   };
 
+  // A line of the status panel under the Ore (ADR-066): what the Research Lab or the Shipyards are doing, in the warning's
+  // color while any stands idle, and the window a click on it opens.
+  struct StatusLine
+  {
+    std::string text;
+    bool idle = false;
+    Action action;
+  };
+
   // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.
   struct Outcome
   {
@@ -418,8 +431,9 @@ public:
     std::vector<Button> buttons;
     // A line at the top while a structure's placement is armed.
     std::string hint;
-    // A line under the Ore while the player's Research Lab has a topic (task 5.1).
-    std::string research;
+    // The status panel's lines under the Ore (ADR-066): the Research Lab's once the player has a finished one, and the
+    // Shipyards' once the first is finished.
+    std::vector<StatusLine> status;
     std::optional<DesignerPanel> designer;
     // The production and research windows' content, while they are open; GameClient fills them.
     std::optional<ProductionPanel> production;

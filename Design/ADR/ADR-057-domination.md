@@ -17,7 +17,7 @@ On nine nodes, 30 ÷ 9 is not a whole number of tickets, nor of hundredths of on
 5. **A player out of tickets loses.** The match ends as Phase 1's does: once, with the world running on. `Simulation::EndMatch` ends it for either reason. A loss of production is still decided mid-tick, after the fight, and domination at the tick's end, so a player who loses both in one tick loses by production.
 6. **The match records how it ended**: `MatchEnding::LostProduction` or `MatchEnding::Domination`, in `Simulation::Ending` and `Snapshot::ending`.
 7. **Every snapshot carries every player's tickets**, whole and rounded up, so that a player shows none only once it has lost by them, and the tickets each started with. Both players see both, as both see the territory (ADR-056 decision 10).
-8. **The client shows them.** The territory panel moves under the research line's place, below the Ore, and grows a second row: "Tickets", the player's in its color and the enemy's in theirs, as the nodes are. A domination's banner says "By domination." before the match's length.
+8. **The client shows them.** The territory panel moves under the status panel's place ([ADR-066](ADR-066-production-status-on-the-hud.md)), below the Ore, and grows a second row: "Tickets", the player's in its color and the enemy's in theirs, as the nodes are. A domination's banner says "By domination." before the match's length.
 
 ## Consequences
 

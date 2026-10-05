@@ -215,6 +215,38 @@ public:
     }
   }
 
+  // ADR-067: a length of ground across the line of sight, as long as MetersPerPixelAt gives three pixels at its point,
+  // shows three pixels wide, near and far on the screen and zoomed in and out, which keeps the selection's ring a fixed
+  // width on the screen at any zoom.
+  TEST_METHOD(SpansAPixelAtAnyDepth)
+  {
+    const Outpost::Viewport viewport{.widthPixels = 1920, .heightPixels = 1080};
+    for (const float notches : {-30.0f, 0.0f, 30.0f})
+    {
+      Outpost::Camera camera(RepositorySettings());
+      camera.Rotate(0.4f);
+      camera.Zoom(notches);
+      const DirectX::XMFLOAT3 right = camera.ScreenAxes(viewport.AspectRatio()).first;
+      std::array<float, 3> spans{};
+      for (std::size_t row = 0; row < spans.size(); ++row)
+      {
+        // Toward the top of the screen the ground is farther, and a pixel spans more of it.
+        const std::optional<Outpost::PlanePosition> point =
+          camera.GroundPointAtPixel(700.0f, 300.0f + (300.0f * static_cast<float>(row)), viewport);
+        Assert::IsTrue(point.has_value());
+        const Outpost::PlanePosition at = point.value_or(Outpost::PlanePosition{});
+        const float metersPerPixel = camera.MetersPerPixelAt(at, viewport).value_or(0.0f);
+        spans[row] = metersPerPixel;
+        const Outpost::PlanePosition across{.xMeters = at.xMeters + (right.x * 3.0f * metersPerPixel),
+                                            .zMeters = at.zMeters + (right.z * 3.0f * metersPerPixel)};
+        const DirectX::XMFLOAT2 from = camera.PixelOf(at, viewport).value_or(DirectX::XMFLOAT2{});
+        const DirectX::XMFLOAT2 to = camera.PixelOf(across, viewport).value_or(DirectX::XMFLOAT2{});
+        Assert::AreEqual(3.0f, std::hypot(to.x - from.x, to.y - from.y), 0.01f);
+      }
+      Assert::IsTrue(spans[0] > spans[1] && spans[1] > spans[2], L"a pixel spans more of the far ground");
+    }
+  }
+
   TEST_METHOD(RejectsADefaultOutsideTheLimits)
   {
     ExpectRejected(R"("defaultViewWidthMeters": 500)", R"("defaultViewWidthMeters": 5000)");

@@ -97,6 +97,7 @@
     <ClInclude Include="Alerts.h" />
     <ClInclude Include="Designer.h" />
     <ClInclude Include="ProductionTarget.h" />
+    <ClInclude Include="KeyBindings.h" />
     <ClInclude Include="Hud.h" />
   </ItemGroup>
   <ItemGroup>

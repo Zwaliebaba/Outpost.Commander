@@ -305,7 +305,7 @@ private:
   // The ground's grid, as lines.
   std::unique_ptr<Neuron::Mesh> m_grid;
   // A ring and a disc of radius 1 and a strip 1 long and 1 wide, all flat on the ground, scaled where they are drawn; and
-  // the ring as a line, a structure's footprint (ADR-042).
+  // the ring as a line, a structure's footprint and the selection's lines (ADR-042, ADR-067).
   std::unique_ptr<Neuron::Mesh> m_ring;
   std::unique_ptr<Neuron::Mesh> m_ringLine;
   std::unique_ptr<Neuron::Mesh> m_disc;
@@ -315,6 +315,8 @@ private:
   std::vector<Neuron::MeshPipeline::MeshDraw> m_faceDraws;
   std::vector<Neuron::MeshPipeline::MeshDraw> m_lineDraws;
   std::vector<Neuron::MeshPipeline::MeshDraw> m_ringDraws;
+  // The selection's rings, each a few one-pixel lines a pixel apart (ADR-067).
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_selectionDraws;
   // A Mining Rig's ring over its rock, made afresh for each rig as it is drawn.
   std::vector<Neuron::MeshVertex> m_drapedRing;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.

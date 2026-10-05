@@ -21,7 +21,7 @@ The owner decided on 2026-10-01: **DirectWrite rasterizes a glyph atlas once, an
      - The minimap at the bottom left.
      - A hint at the top middle while a placement is armed.
    - **The minimap** is the map's square, +x to the right and +z up. Every entity is a square, at its size or a few pixels, in the colors of [ADR-043](ADR-043-hud-in-the-windows-look.md). The camera's view is outlined as the box around the ground the screen shows.
-   - **Research and the designer** are [ADR-017](ADR-017-research-and-the-designer.md)'s. A line under the Ore names the topic under way. The designer, the research and a structure's production queue are windows that float over the HUD ([ADR-031](ADR-031-floating-windows.md), Phase 1 design §11 and §12).
+   - **Research and the designer** are [ADR-017](ADR-017-research-and-the-designer.md)'s. A status panel under the Ore says what the Research Lab and the Shipyards are doing ([ADR-066](ADR-066-production-status-on-the-hud.md)). The designer, the research and a structure's production queue are windows that float over the HUD ([ADR-031](ADR-031-floating-windows.md), Phase 1 design §11 and §12).
 5. **Input focus is a rectangle test.** A mouse button press on a HUD panel or a window belongs to the HUD and does not reach the player's controls. A release always does, so that a drag begun in the world ends wherever it is let go. The windows are tested front to back before the HUD (ADR-031). The designer's name field is the one element that takes keys: while it has them, no order, control group or camera key reads the keyboard (ADR-017).
 
 ## Consequences

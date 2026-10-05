@@ -57,7 +57,7 @@ Design §9 puts the designer in the Shipyard panel, with live stats: damage per 
    - **Characters.** `Neuron::Window` turns `WM_CHAR` into `InputEventKind::Character` events, which carry the UTF-16 unit.
    - **The keyboard while typing.** While the name field has the keyboard, `GameClient` gives every key and character to the designer and none to the controls or the camera: no order, control group or camera key reads them.
    - **Stopping.** Enter saves, and Escape drops what was typed. A press anywhere but the field ends typing and keeps the text, and so does the designer leaving the screen.
-9. **Research shows in two places.** A line under the Ore names the topic under way and its progress, or that it waits for Ore. The research window ([ADR-031](ADR-031-floating-windows.md) decision 6, Phase 1 design §12) lists the Research Lab's queue and each topic the player may still take, with what it does and its cost.
+9. **Research shows in two places.** A line of the status panel under the Ore names the topic under way and its progress, that it waits for Ore, or that the Lab is idle ([ADR-066](ADR-066-production-status-on-the-hud.md)). The research window ([ADR-031](ADR-031-floating-windows.md) decision 6, Phase 1 design §12) lists the Research Lab's queue and each topic the player may still take, with what it does and its cost.
 
 ## Consequences
 

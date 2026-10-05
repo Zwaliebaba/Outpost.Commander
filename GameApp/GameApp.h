@@ -32,6 +32,7 @@
 #include "Designer.h"
 #include "ProductionTarget.h"
 #include "WindowManager.h"
+#include "KeyBindings.h"
 #include "Hud.h"
 #include "LoadDriver.h"
 #include "MatchLog.h"

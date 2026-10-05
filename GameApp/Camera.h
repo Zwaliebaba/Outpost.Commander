@@ -91,6 +91,10 @@ public:
   // Where a point on the ground shows on the viewport, in pixels from its top-left corner; nothing when it is behind
   // the camera. The point may be off the viewport.
   [[nodiscard]] std::optional<DirectX::XMFLOAT2> PixelOf(PlanePosition _point, const Viewport& _viewport) const noexcept;
+  // How many meters a pixel of the viewport spans at a point on the ground, across the line of sight, as its depth from
+  // the eye sets it: what keeps a mark on the ground a fixed number of pixels wide at any zoom (ADR-067). Nothing when the
+  // point is behind the camera.
+  [[nodiscard]] std::optional<float> MetersPerPixelAt(PlanePosition _point, const Viewport& _viewport) const noexcept;
 
 private:
   // The ground directions that are the screen's right and top.
