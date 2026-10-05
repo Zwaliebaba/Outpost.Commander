@@ -54,11 +54,11 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 15.3 | The designer's preview in figures | 14.2 | — | built, in PR #77; awaiting CI and the owner's run |
 | 15.4 | Windows open where there is room | — | — | built, in PR #77; awaiting CI and a run |
 | 15.5 | The selection ring at a fixed width | — | K3 | built, in PR #77; awaiting CI and the owner's run |
-| 16.1 | The windows' headers and bodies | 14.2 | — | built, in PR #M16; awaiting CI and the owner's run |
-| 16.2 | The minimap's marks and size | — | K5 | built, in PR #M16; awaiting CI and the owner's run |
-| 16.3 | What a production card says | 14.2 | K5 | built, in PR #M16; awaiting CI and the owner's run |
-| 16.4 | A controls window | 15.2 | K4 | built, in PR #M16; awaiting CI and the owner's run |
-| 16.5 | Short names for the starting designs | — | K6 | built, in PR #M16; awaiting CI and a run |
+| 16.1 | The windows' headers and bodies | 14.2 | — | built, in PR #78; awaiting CI and the owner's run |
+| 16.2 | The minimap's marks and size | — | K5 | built, in PR #78; awaiting CI and the owner's run |
+| 16.3 | What a production card says | 14.2 | K5 | built, in PR #78; awaiting CI and the owner's run |
+| 16.4 | A controls window | 15.2 | K4 | built, in PR #78; awaiting CI and the owner's run |
+| 16.5 | Short names for the starting designs | — | K6 | built, in PR #78; awaiting CI and a run |
 | 16.6 | The sky's crosses | — | K5 | done: kept as they are (owner, 2026-10-05) |
 | 17.1 | An interface scale the player sets | 14.2 | K7 | todo |
 
