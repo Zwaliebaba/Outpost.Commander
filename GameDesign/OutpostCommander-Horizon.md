@@ -124,13 +124,13 @@ Whether a front stays interesting for weeks with a few friends and their deputie
 ## 10. Open questions
 
 - **O1 — Progression** (§6.1): tiers opened by holding derelicts and vaults; what losing one does; whether the Lab's levels stay.
-- **O2 — The bound on fleets** (§6.2): upkeep or a command cap, and how it follows territory.
+- **O2 — The bound on fleets** (§6.2): upkeep or a command cap, and how it follows territory. On 2026-10-06 the owner chose a command cap with dearer ships; the [Phase 4 draft](OutpostCommander-Phase4.md) proposes tying it to the Command Station's level rather than to territory (its gate L2).
 - **O3 — Ore over a season** (§6.3): fields that recover, or fields that appear.
 - **O4 — The deputy's directives** (§4): what a player can tell its deputy, and how well it must play.
 - **O5 — Where triggers are evaluated** (§5): the server or the deputy.
 - **O6 — Diplomacy.** A free-for-all among friends and AI empires grows alliances by itself, and with them a player who decides the winner between the others. Accepted as it comes, or designed for.
 - **O7 — Reach.** A check-in needs the PC. The server can post "40 ships inbound to Kessler-3, arriving 21:40" to the friends' group chat through WinHTTP, which is in the Windows SDK, so R14 is not touched, though a dependency on a service deserves an ADR. A web view of the galaxy would reopen ADR-001 and R14.
-- **O8 — The world beyond one map.** A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems. So the 10 km world, relay jumps, forward Shipyards and pathing by sector, which Phase 3's draft had moved to a Phase 4, now wait on this horizon, and Phase 3 §3 says so (owner, 2026-10-04); Phase 3's rules are unchanged. Open: which of them a galaxy of systems still needs inside a system.
+- **O8 — The world beyond one map.** A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems. So the 10 km world, relay jumps, forward Shipyards and pathing by sector, which Phase 3's draft had moved to a Phase 4, now wait on this horizon, and Phase 3 §3 says so (owner, 2026-10-04); Phase 3's rules are unchanged. Open: which of them a galaxy of systems still needs inside a system. **On 2026-10-06 the owner decided that a system is 10 km a side, and that the [Phase 4 draft](OutpostCommander-Phase4.md)'s map is the first one**; that draft proposes Shipyards only in held sectors in place of forward Shipyards anywhere, and leaves relay jumps here.
 - **O9 — Seasons of months** (§7): the versioned save format, the galaxy's arc over a season, and how a season ends.
 
 ---
