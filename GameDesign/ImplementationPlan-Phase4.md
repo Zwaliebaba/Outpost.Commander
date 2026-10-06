@@ -72,7 +72,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 
 ### 27.3 — The client shows the fleet and its cap
 
-- **Scope:** the HUD's top bar shows "FLEET 18 / 30" beside the territory line; a Shipyard's production card says when its front job waits on the cap; the Command Station's Upgrade button says what the next level's cap is (design §13).
+- **Scope:** the status panel's Shipyards line ends with "fleet 18 / 30" and counts the Shipyards waiting for the cap; a Shipyard's selection panel and its production window's queue say when its front job waits for the cap rather than for Ore; the Command Station's next level names its cap (design §13).
 - **Acceptance:** `HudTests` for the fleet line, the waiting card and the upgrade's text.
 - **Verify:** CI; **owner run**.
 

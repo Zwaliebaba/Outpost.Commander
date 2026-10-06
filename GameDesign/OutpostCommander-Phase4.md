@@ -192,7 +192,7 @@ The three difficulty files (ADR-065) carry the new numbers. Normal is tuned agai
 
 ## 13. The client
 
-- **The HUD** shows command points against the cap, "FLEET 18 / 30", beside the territory line "4 / 7".
+- **The HUD** shows command points against the cap at the end of the status panel's Shipyards line, "fleet 18 / 30", and counts the Shipyards waiting for the cap apart from those waiting for Ore. That line is there whatever the map, where the territory panel is only on a map with sectors.
 - **The production window** says when a Shipyard's front job waits on the cap, as it says when one waits for Ore. Queue stays live, since the job only waits (§5). The designer sets a design's retreat threshold (§10).
 - **A selection's panel** shows and changes the retreat threshold.
 - **Derelicts and pirate outposts** are marked on the minimap once seen. A derelict's panel says what it holds. The Constructor's right-click on a derelict salvages it.

@@ -1967,6 +1967,63 @@ public:
     Assert::IsTrue(layout.ActionAt(yardsLine->left + 4.0f, yardsLine->top + 6.0f) == content.status[1].action);
   }
 
+  // Phase 4 design §5: the Shipyards' status line ends with the fleet against its cap, and a Shipyard whose front warship
+  // does not fit under the cap says it waits for the cap, not for Ore: on the status line, in its selection panel and in
+  // its production window. The Command Station's next level names the cap it gives.
+  TEST_METHOD(ShowsTheFleetAgainstItsCap)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.designs = {{.id = SWARM, .nameUtf8 = "Small+Ion+Mass Driver", .hull = Outpost::HullId{1}},
+                      {.id = LINE, .nameUtf8 = "Medium+Ion+Lance", .hull = Outpost::HullId{2}}};
+    newest.hulls = {{.id = Outpost::HullId{1}, .nameUtf8 = "Small", .commandPoints = 1},
+                    {.id = Outpost::HullId{2}, .nameUtf8 = "Medium", .commandPoints = 2}};
+    newest.commandPoints = 11;
+    newest.fleetCap = 12;
+    Outpost::EntityView swarmYard{.id = Outpost::EntityId{31},
+                                  .kind = Outpost::EntityKind::Structure,
+                                  .owner = PLAYER,
+                                  .structure = Outpost::StructureKind::Shipyard,
+                                  .hitPointsHundredths = 250000,
+                                  .maxHitPointsHundredths = 250000,
+                                  .shipyardNumber = 1,
+                                  .queue = {{.design = SWARM}}};
+    Outpost::EntityView lineYard = swarmYard;
+    lineYard.id = Outpost::EntityId{32};
+    lineYard.shipyardNumber = 2;
+    lineYard.queue = {{.design = LINE}, {.design = SWARM}};
+    const std::vector<Outpost::EntityView> entities{swarmYard, lineYard};
+
+    // A Small fits at 11 of 12, so the first waits for Ore; a Medium does not, so the second waits for the cap.
+    const std::vector<Outpost::Hud::StatusLine> status = Outpost::Hud::Describe(newest, entities, {}).status;
+    Assert::AreEqual(size_t{1}, status.size());
+    Assert::AreEqual(std::string("Shipyards: 0 building, 1 waiting for Ore, 1 waiting for the fleet cap \xC2\xB7 fleet 11 / 12"),
+                     status[0].text);
+    const std::vector<std::string> selection = Outpost::Hud::Describe(newest, entities, std::vector{lineYard.id}).selection;
+    Assert::IsTrue(
+      std::ranges::find(selection, std::string("Building Medium+Ion+Lance \xC2\xB7 waiting for the fleet cap \xC2\xB7 +1 queued")) !=
+      selection.end());
+    Assert::IsTrue(Outpost::Hud::DescribeProduction(newest, &entities[1]).queue.front().capped);
+    Assert::IsFalse(Outpost::Hud::DescribeProduction(newest, &entities[0]).queue.front().capped);
+
+    // Without a cap, nothing is said of the fleet.
+    newest.fleetCap = 0;
+    Assert::AreEqual(std::string("Shipyards: 0 building, 2 waiting for Ore"), Outpost::Hud::Describe(newest, entities, {}).status[0].text);
+
+    // The station's next level gives a larger fleet.
+    newest.structureTypes = {
+      {.structure = Outpost::StructureKind::CommandStation,
+       .nameUtf8 = "Command Station",
+       .levels = {{.cost = 300, .buildSeconds = 45.0, .maxHitPointsHundredths = 600000, .nodes = 4, .commandPoints = 20}}}};
+    const Outpost::EntityView station{.id = Outpost::EntityId{20},
+                                      .kind = Outpost::EntityKind::Structure,
+                                      .owner = PLAYER,
+                                      .structure = Outpost::StructureKind::CommandStation,
+                                      .hitPointsHundredths = 500000,
+                                      .maxHitPointsHundredths = 500000};
+    const std::vector<std::string> stationLines = Outpost::Hud::Describe(newest, std::vector{station}, std::vector{station.id}).selection;
+    Assert::IsTrue(std::ranges::find(stationLines, std::string("L2: 4 nodes, fleet 20, 6,000 hit points")) != stationLines.end());
+  }
+
   // ADR-066: the selection panel of the player's own finished Shipyard, Command Station or Research Lab says what its front
   // job is and how far it has come, or that it waits for Ore, with how many more are queued; or that it is idle. An enemy
   // structure's queue stays unshown (task 9.4).

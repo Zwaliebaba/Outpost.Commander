@@ -302,6 +302,8 @@ public:
     bool front = false;
     std::int32_t permille = 0;
     bool waiting = false;
+    // A waiting warship's wait is for its player's fleet cap, not for Ore (Phase 4 design §5).
+    bool capped = false;
   };
 
   // How a design does against one hull, rated as the designer rates its damage (Phase 1 design §11): the hull's initial,

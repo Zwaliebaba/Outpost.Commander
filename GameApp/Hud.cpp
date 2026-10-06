@@ -176,22 +176,39 @@ std::string FrontJobNameOf(const Outpost::Snapshot& _newest, const Outpost::Enti
   return DesignNameOf(_newest, job.role == Outpost::ShipRole::Constructor ? Outpost::DesignId{} : job.design);
 }
 
+// Whether _producer's front job waits for its player's fleet cap rather than for Ore (Phase 4 design §5): a warship not yet
+// started whose hull takes more command points than are left under the cap.
+bool WaitsOnFleetCap(const Outpost::Snapshot& _newest, const Outpost::EntityView& _producer)
+{
+  if (_newest.fleetCap <= 0 || _producer.queue.empty() || _producer.jobPermille > 0 ||
+      _producer.queue.front().role != Outpost::ShipRole::Warship)
+    return false;
+  const auto design = std::ranges::find(_newest.designs, _producer.queue.front().design, &Outpost::DesignView::id);
+  if (design == _newest.designs.end())
+    return false;
+  const auto hull = std::ranges::find(_newest.hulls, design->hull, &Outpost::HullView::id);
+  return hull != _newest.hulls.end() && _newest.commandPoints + hull->commandPoints > _newest.fleetCap;
+}
+
 // What a producer or the Research Lab is doing, for its selection panel (ADR-066): "Building Swarm · 62% · +2 queued",
-// "Building Swarm · waiting for Ore", or "Idle" with nothing queued. _verb names the work and _front the front job.
-std::string WorkLine(std::string_view _verb, const std::string& _front, std::int32_t _permille, std::size_t _queued)
+// "Building Swarm · waiting for Ore", or "Idle" with nothing queued. _verb names the work and _front the front job, and
+// _waitingFor what a job not yet started waits for: Ore, or the fleet cap (Phase 4 design §5).
+std::string WorkLine(std::string_view _verb, const std::string& _front, std::int32_t _permille, std::size_t _queued,
+                     std::string_view _waitingFor = "Ore")
 {
   if (_queued == 0)
     return "Idle";
   std::string line = _permille > 0 ? std::format("{} {}{}{}%", _verb, _front, DOT, _permille / 10)
-                                   : std::format("{} {}{}waiting for Ore", _verb, _front, DOT);
+                                   : std::format("{} {}{}waiting for {}", _verb, _front, DOT, _waitingFor);
   if (_queued > 1)
     line += std::format("{}+{} queued", DOT, _queued - 1);
   return line;
 }
 
 // The status panel's lines (ADR-066): what the player's finished Research Lab is doing, and how many of its finished
-// Shipyards are building, waiting for Ore and idle. A line that reports an idle Lab or Shipyard says IDLE. A click on the
-// Lab's line opens research, and on the Shipyards' opens production at the first idle Shipyard, or at the first if none is.
+// Shipyards are building, waiting for Ore, waiting for the fleet cap and idle, and the fleet against its cap (Phase 4
+// design §5). A line that reports an idle Lab or Shipyard says IDLE. A click on the Lab's line opens research, and on the
+// Shipyards' opens production at the first idle Shipyard, or at the first if none is.
 std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std::span<const Outpost::EntityView> _entities)
 {
   const auto own = [&_newest](const Outpost::EntityView& _entity, Outpost::StructureKind _kind)
@@ -229,6 +246,7 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
   std::ranges::sort(shipyards, {}, &Outpost::EntityView::shipyardNumber);
   std::size_t building = 0;
   std::size_t waiting = 0;
+  std::size_t capped = 0;
   const Outpost::EntityView* firstIdle = nullptr;
   std::size_t idle = 0;
   for (const Outpost::EntityView* shipyard : shipyards)
@@ -240,14 +258,20 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
     }
     else if (shipyard->jobPermille > 0)
       ++building;
+    else if (WaitsOnFleetCap(_newest, *shipyard))
+      ++capped;
     else
       ++waiting;
   }
   std::string text = std::format("Shipyards: {} building", building);
   if (waiting > 0)
     text += std::format(", {} waiting for Ore", waiting);
+  if (capped > 0)
+    text += std::format(", {} waiting for the fleet cap", capped);
   if (idle > 0)
     text += std::format(", {} IDLE", idle);
+  if (_newest.fleetCap > 0)
+    text += std::format("{}fleet {} / {}", DOT, _newest.commandPoints, _newest.fleetCap);
   lines.push_back(
     {.text = std::move(text),
      .idle = idle > 0,
@@ -1399,14 +1423,14 @@ void QueueRows(Painter& _paint, const std::vector<Hud::QueueLine>& _queue, float
     const Hud::QueueLine& line = _queue[slot];
     const float right = WINDOW_INSET + width - 10.0f;
     const float barLeft = right - QUEUE_BAR_WIDTH - 44.0f;
-    // The name runs up to the front job's progress or its wait for Ore.
-    constexpr std::string_view WAITING = "WAITING FOR ORE";
+    // The name runs up to the front job's progress or its wait, for Ore or for the fleet cap (Phase 4 design §5).
+    const std::string_view waiting = line.capped ? "WAITING FOR FLEET CAP" : "WAITING FOR ORE";
     const float nameLeft = WINDOW_INSET + 32.0f;
-    const float nameRight = line.waiting ? right - _paint.Width(WAITING, Hud::Typeface::Label) : line.front ? barLeft : right;
+    const float nameRight = line.waiting ? right - _paint.Width(waiting, Hud::Typeface::Label) : line.front ? barLeft : right;
     _paint.Text(_paint.Fit(line.name, Hud::Typeface::Name, nameRight - nameLeft - FIT_GAP_UNITS), nameLeft, top + 5.0f, TEXT_COLOR,
                 Hud::Typeface::Name);
     if (line.waiting)
-      _paint.RightText(std::string(WAITING), right, top + 9.0f, AMBER_COLOR, Hud::Typeface::Label);
+      _paint.RightText(std::string(waiting), right, top + 9.0f, AMBER_COLOR, Hud::Typeface::Label);
     else if (line.front)
     {
       _paint.Panel(barLeft, top + 12.0f, QUEUE_BAR_WIDTH, 6.0f, BAR_TRACK_COLOR);
@@ -1973,7 +1997,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         if (structure->structure == StructureKind::CommandStation || structure->structure == StructureKind::Shipyard)
         {
           content.selection.push_back(WorkLine("Building", structure->queue.empty() ? std::string() : FrontJobNameOf(_newest, *structure),
-                                               structure->jobPermille, structure->queue.size()));
+                                               structure->jobPermille, structure->queue.size(),
+                                               WaitsOnFleetCap(_newest, *structure) ? "the fleet cap" : "Ore"));
         }
         else if (structure->structure == StructureKind::ResearchLab)
         {
@@ -2006,12 +2031,15 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
           const StructureLevelView& level = type->levels[next];
           const bool upgrading = structure->upgradePermille.has_value();
           // A Shipyard's next level names the hulls it adds, a Research Lab's the tier or the slot it gives, and a Command
-          // Station's the nodes it lets the player hold and the Defence guns it adds (Phase 3 design §5–§7).
+          // Station's the nodes it lets the player hold, the Defence guns it adds (Phase 3 design §5–§7) and its fleet cap
+          // (Phase 4 design §5).
           std::string gives;
           if (level.nodes > 0)
             gives = std::format("{} nodes, ", level.nodes);
           if (level.guns > 0)
             gives += std::format("{} Defence guns, ", level.guns);
+          if (level.commandPoints > 0)
+            gives += std::format("fleet {}, ", level.commandPoints);
           if (level.opensTier > 0)
             gives = std::format("tier {}, ", level.opensTier);
           else if (level.researchSlots > 1)
@@ -2151,6 +2179,8 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
   for (const JobView& job : _producer->queue)
     names.push_back(DesignNameOf(_newest, job.role == ShipRole::Constructor ? DesignId{} : job.design));
   panel.queue = QueueLinesOf(std::move(names), _producer->jobPermille);
+  if (!panel.queue.empty() && WaitsOnFleetCap(_newest, *_producer))
+    panel.queue.front().capped = true;
 
   // A Constructor at the Command Station; each saved design at a Shipyard, with its abbreviation (design §5).
   const bool room = _producer->queue.size() < QUEUE_LIMIT;
