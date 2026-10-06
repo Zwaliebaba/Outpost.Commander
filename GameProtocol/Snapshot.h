@@ -133,6 +133,8 @@ struct HullView
   bool available = false;
   // The level a Shipyard must be at to build it (Phase 3 design §5).
   std::int32_t shipyardLevel = 1;
+  // What a warship of this hull takes of its player's fleet cap (Phase 4 design §5); 0 when the match sets no cap.
+  std::int32_t commandPoints = 0;
 };
 
 struct DriveView
@@ -221,9 +223,11 @@ struct StructureLevelView
   std::int32_t researchSlots = 0;
   std::vector<ResearchTopicId> prerequisites;
   // A Command Station's level (Phase 3 design §7): the nodes its player may hold from it on, and its Defence guns; 0 where
-  // it does not change them.
+  // it does not change them. And the command points its player's warships may take from it on (Phase 4 design §5), 0
+  // where it does not change them.
   std::int32_t nodes = 0;
   std::int32_t guns = 0;
+  std::int32_t commandPoints = 0;
 
   friend bool operator==(const StructureLevelView&, const StructureLevelView&) = default;
 };
@@ -363,6 +367,10 @@ struct Snapshot
   // On a map with territory, the nodes the player may hold, home included, by its Command Station's level, or level 1's
   // without one (Phase 3 design §7); zero otherwise.
   std::int32_t nodeCap = 0;
+  // The command points the player's warships take, those its Shipyards have started included, and the most they may take
+  // by its Command Station's level, or level 1's without one (Phase 4 design §5); the cap is zero when the match sets none.
+  std::int32_t commandPoints = 0;
+  std::int32_t fleetCap = 0;
   // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
   // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
   // (owner, 2026-10-01).

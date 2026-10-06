@@ -150,9 +150,9 @@ template <typename Self>
 auto Fields(Self& _value)
 {
   auto& [id, nameUtf8, hitPointsHundredths, armorHundredths, speedMetersPerSecond, turnRateDegreesPerSecond, footprintRadiusMeters, cost,
-         buildSeconds, available, shipyardLevel] = _value;
+         buildSeconds, available, shipyardLevel, commandPoints] = _value;
   return std::tie(id, nameUtf8, hitPointsHundredths, armorHundredths, speedMetersPerSecond, turnRateDegreesPerSecond, footprintRadiusMeters,
-                  cost, buildSeconds, available, shipyardLevel);
+                  cost, buildSeconds, available, shipyardLevel, commandPoints);
 }
 
 template <typename Self>
@@ -201,8 +201,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, StructureLevelView>
 auto Fields(Self& _value)
 {
-  auto& [cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites, nodes, guns] = _value;
-  return std::tie(cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites, nodes, guns);
+  auto& [cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites, nodes, guns, commandPoints] = _value;
+  return std::tie(cost, buildSeconds, maxHitPointsHundredths, opensTier, researchSlots, prerequisites, nodes, guns, commandPoints);
 }
 
 template <typename Self>
@@ -251,10 +251,11 @@ auto Fields(Self& _value)
 {
   auto& [tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
          constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier,
-         nodeCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
+         nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
   return std::tie(tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
                   constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor,
-                  researchTier, nodeCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets);
+                  researchTier, nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets,
+                  startingTickets);
 }
 
 template <typename Self>

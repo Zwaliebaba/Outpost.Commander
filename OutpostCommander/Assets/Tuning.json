@@ -13,9 +13,9 @@
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 10, "drainTicketsPerNodeDifference": 30 },
   "hulls": [
-    { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 96, "buildSeconds": 30, "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 },
-    { "id": 2, "name": "Medium", "hitPoints": 500, "armor": 8, "speedMetersPerSecond": 40, "cost": 330, "buildSeconds": 60, "footprintRadiusMeters": 14, "turnRateDegreesPerSecond": 120 },
-    { "id": 3, "name": "Large", "hitPoints": 1200, "armor": 14, "speedMetersPerSecond": 25, "cost": 900, "buildSeconds": 120, "footprintRadiusMeters": 24, "turnRateDegreesPerSecond": 60 }
+    { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 96, "buildSeconds": 30, "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180, "commandPoints": 1 },
+    { "id": 2, "name": "Medium", "hitPoints": 500, "armor": 8, "speedMetersPerSecond": 40, "cost": 330, "buildSeconds": 60, "footprintRadiusMeters": 14, "turnRateDegreesPerSecond": 120, "commandPoints": 2 },
+    { "id": 3, "name": "Large", "hitPoints": 1200, "armor": 14, "speedMetersPerSecond": 25, "cost": 900, "buildSeconds": 120, "footprintRadiusMeters": 24, "turnRateDegreesPerSecond": 60, "commandPoints": 4 }
   ],
   "drives": [
     { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 60 },
@@ -38,12 +38,12 @@
   ],
   "structures": [
     { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45, "structureWeapon": 1,
-      "nodes": 3, "guns": 1,
+      "nodes": 3, "guns": 1, "commandPoints": 12,
       "levels": [
-        { "cost": 300, "buildSeconds": 45, "nodes": 4 },
-        { "cost": 500, "buildSeconds": 60, "nodes": 5, "guns": 2 },
-        { "cost": 700, "buildSeconds": 75, "nodes": 6 },
-        { "cost": 900, "buildSeconds": 90, "nodes": 7, "guns": 3 }
+        { "cost": 300, "buildSeconds": 45, "nodes": 4, "commandPoints": 20 },
+        { "cost": 500, "buildSeconds": 60, "nodes": 5, "guns": 2, "commandPoints": 30 },
+        { "cost": 700, "buildSeconds": 75, "nodes": 6, "commandPoints": 40 },
+        { "cost": 900, "buildSeconds": 90, "nodes": 7, "guns": 3, "commandPoints": 50 }
       ] },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40,
       "hulls": [1],

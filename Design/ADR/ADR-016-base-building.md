@@ -29,7 +29,7 @@ Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Ri
    - **The end of the order.** It ends when the target is built and whole, and when the target is destroyed.
    - **What a structure does while it is built.** A structure under construction does nothing but stand, block and take damage. It does not produce, fire or earn.
 6. **Queues pay at the start.** A built Shipyard queues ships of its player's saved designs, and the Command Station queues Constructors, up to five jobs each.
-   - **Starting a job.** The front job starts when the player can pay, and is paid then (design §5). Until then it waits at the front and the jobs behind it wait too.
+   - **Starting a job.** The front job starts when the player can pay, and a warship's also when it fits under the player's fleet cap ([ADR-071](ADR-071-fleet-cap.md)), and is paid then (design §5). Until then it waits at the front and the jobs behind it wait too.
    - **Timing.** A job takes its design's build time, or the Constructor's. The next job starts on the tick after one ends.
    - **Delivery.** A finished ship appears just beyond the producer's footprint, on the side facing the map's center, moved clear of obstacles.
    - **What the snapshot shows.** It carries each producer's queue, and the front job's progress in thousandths: zero while the job waits for Ore.

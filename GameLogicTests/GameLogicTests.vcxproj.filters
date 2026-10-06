@@ -42,5 +42,6 @@
     <ClCompile Include="DominationTests.cpp" />
     <ClCompile Include="StandingOrderTests.cpp" />
     <ClCompile Include="UpgradeTests.cpp" />
+    <ClCompile Include="FleetCapTests.cpp" />
   </ItemGroup>
 </Project>

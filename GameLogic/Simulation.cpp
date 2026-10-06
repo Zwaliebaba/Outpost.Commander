@@ -859,7 +859,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                .researchSlots = tuning.researchSlots,
                                .prerequisites = tuning.prerequisites,
                                .nodes = tuning.nodes,
-                               .guns = tuning.guns});
+                               .guns = tuning.guns,
+                               .commandPoints = tuning.commandPoints});
       }
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
@@ -887,6 +888,11 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   snapshot.ending = m_ending;
   if (HasTerritory())
     snapshot.nodeCap = NodeCapOf(_player);
+  if (m_tuning)
+  {
+    snapshot.commandPoints = CommandPointsOf(_player);
+    snapshot.fleetCap = FleetCapOf(_player);
+  }
   if (HasTerritory() && !m_basePlayers.empty())
   {
     const auto nodes = static_cast<std::int64_t>(m_sectors.size());
@@ -2129,7 +2135,8 @@ void Outpost::Simulation::BuildLevels()
 }
 
 // Each built Shipyard and Command Station works on the front of its queue. A job starts, and is paid for, once the
-// player has the Ore (design §5); until then it waits. A finished ship appears beside its producer, on the side facing
+// player has the Ore (design §5), and a warship's once it fits under its player's fleet cap (Phase 4 design §5); until
+// then it waits. A finished ship appears beside its producer, on the side facing
 // the map's center.
 void Outpost::Simulation::Produce()
 {
@@ -2151,6 +2158,19 @@ void Outpost::Simulation::Produce()
     float producerRadiusMeters = 0.0f;
   };
   std::vector<Delivery> deliveries;
+  // A warship finished earlier in this loop has left its producer's job and is not yet an entity, so its points are counted
+  // from the deliveries.
+  const auto delivered = [this, &deliveries](PlayerId _owner)
+  {
+    std::int32_t points = 0;
+    for (const Delivery& delivery : deliveries)
+    {
+      const ShipDesign* design = delivery.job.role == ShipRole::Warship ? FindDesign(delivery.job.design) : nullptr;
+      if (delivery.owner == _owner && design != nullptr)
+        points += CommandPointsOfHull(design->components.hull);
+    }
+    return points;
+  };
   for (Entity& producer : m_entities)
   {
     if (producer.kind != EntityKind::Structure || producer.queue.empty() || !producer.IsBuilt())
@@ -2170,6 +2190,9 @@ void Outpost::Simulation::Produce()
         }
         cost = design->stats.cost;
         seconds = design->stats.buildSeconds;
+        const std::int32_t cap = FleetCapOf(producer.owner);
+        if (cap > 0 && CommandPointsOf(producer.owner) + delivered(producer.owner) + CommandPointsOfHull(design->components.hull) > cap)
+          continue;
       }
       PlayerState* player = FindPlayer(producer.owner);
       if (player == nullptr || player->oreHundredths < std::int64_t{cost} * HUNDREDTHS)
@@ -2331,6 +2354,43 @@ std::int32_t Outpost::Simulation::NodeCapOf(PlayerId _player) const noexcept
     m_entities, [_player](const Entity& _entity)
     { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::CommandStation && _entity.owner == _player; });
   return NodeCap(*m_tuning, station != m_entities.end() ? station->level : 1);
+}
+
+std::int32_t Outpost::Simulation::FleetCapOf(PlayerId _player) const noexcept
+{
+  if (!m_tuning)
+    return 0;
+  const auto station = std::ranges::find_if(
+    m_entities, [_player](const Entity& _entity)
+    { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::CommandStation && _entity.owner == _player; });
+  return FleetCap(*m_tuning, station != m_entities.end() ? station->level : 1);
+}
+
+std::int32_t Outpost::Simulation::CommandPointsOf(PlayerId _player) const noexcept
+{
+  std::int32_t points = 0;
+  for (const Entity& entity : m_entities)
+  {
+    if (entity.owner != _player)
+      continue;
+    if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Warship)
+      points += CommandPointsOfHull(entity.hull);
+    else if (entity.kind == EntityKind::Structure && entity.jobWorkNeeded > 0 && !entity.queue.empty() &&
+             entity.queue.front().role == ShipRole::Warship)
+    {
+      if (const ShipDesign* design = FindDesign(entity.queue.front().design))
+        points += CommandPointsOfHull(design->components.hull);
+    }
+  }
+  return points;
+}
+
+std::int32_t Outpost::Simulation::CommandPointsOfHull(HullId _hull) const noexcept
+{
+  if (!m_tuning)
+    return 0;
+  const auto hull = std::ranges::find(m_tuning->hulls, _hull, &HullTuning::id);
+  return hull != m_tuning->hulls.end() ? hull->commandPoints : 0;
 }
 
 std::int32_t Outpost::Simulation::NodesTaken(PlayerId _player) const noexcept
