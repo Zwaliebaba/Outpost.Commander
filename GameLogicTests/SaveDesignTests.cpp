@@ -38,7 +38,7 @@ const Outpost::DesignView* ViewOf(const Outpost::Snapshot& _snapshot, Outpost::D
 TEST_CLASS(SaveDesignTests)
 {
 public:
-  // Phase 2 design §10, ADR-058: a design may carry a module, the Sensor Array, from the start. It adds 40 Ore, slows the
+  // Phase 2 design §10, ADR-058: a design may carry a module, the Sensor Array, from the start. It adds 120 Ore, slows the
   // ship by a tenth and lets it see 700 m whatever its weapon; the same components without it are another design.
   TEST_METHOD(SavesADesignWithASensorArray)
   {
@@ -53,7 +53,7 @@ public:
     Assert::IsNotNull(scout);
     Assert::IsNotNull(plain);
     Assert::IsTrue(scout != plain);
-    Assert::AreEqual(plain->stats.cost + 40, scout->stats.cost);
+    Assert::AreEqual(plain->stats.cost + 120, scout->stats.cost);
     Assert::AreEqual(plain->stats.movement.speedMetersPerSecond * 0.9f, scout->stats.movement.speedMetersPerSecond, 1e-4f);
     Assert::AreEqual(700.0f, scout->stats.moduleSightMeters);
 
@@ -94,7 +94,7 @@ public:
     const Outpost::ShipDesign* sentry = arena.World().FindDesign(BLUE, {SMALL, FUSION, LANCE});
     Assert::IsNotNull(sentry);
     const Outpost::DesignId id = sentry->id;
-    Assert::AreEqual(197, sentry->stats.cost);
+    Assert::AreEqual(591, sentry->stats.cost);
     Assert::IsNotNull(ViewOf(arena.World().BuildSnapshot(BLUE), id));
     Assert::IsNull(ViewOf(arena.World().BuildSnapshot(RED), id), L"a design is its player's alone");
 

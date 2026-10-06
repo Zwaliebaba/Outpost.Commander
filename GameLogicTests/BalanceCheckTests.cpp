@@ -66,8 +66,8 @@ public:
     const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
     for (std::uint32_t battle = 0; battle < 4; ++battle)
     {
-      const int first = Fight(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Spread, battle, 4);
-      Assert::AreEqual(first, Fight(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Spread, battle, 4));
+      const int first = Fight(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 6000.0, FireMode::Spread, battle, 4);
+      Assert::AreEqual(first, Fight(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 6000.0, FireMode::Spread, battle, 4));
     }
   }
 
@@ -86,8 +86,8 @@ public:
       {
         for (std::uint32_t battle = 0; battle < 2; ++battle)
         {
-          const int clear = Fight(Named(designs, a), Named(designs, b), 3000.0, mode, battle, 2);
-          Assert::AreEqual(clear, Fight(Named(designs, a), Named(designs, b), 3000.0, mode, battle, 2, tuning.sight));
+          const int clear = Fight(Named(designs, a), Named(designs, b), 9000.0, mode, battle, 2);
+          Assert::AreEqual(clear, Fight(Named(designs, a), Named(designs, b), 9000.0, mode, battle, 2, tuning.sight));
         }
       }
     }
@@ -105,7 +105,7 @@ public:
     int second = 0;
     for (std::uint32_t battle = 0; battle < BATTLES; ++battle)
     {
-      const int outcome = Fight(swarm, swarm, 4500.0, FireMode::Spread, battle, BATTLES);
+      const int outcome = Fight(swarm, swarm, 13500.0, FireMode::Spread, battle, BATTLES);
       first += outcome > 0 ? 1 : 0;
       second += outcome < 0 ? 1 : 0;
     }
@@ -123,21 +123,21 @@ public:
     for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
     {
       // The swarm beats the line, and the brawler beats the swarm (design §7).
-      Assert::IsTrue(Wins(Named(designs, "S+I+MD"), Named(designs, "M+I+La"), 2000.0, mode, BATTLES) >= 16);
-      Assert::IsTrue(Wins(Named(designs, "M+I+MD"), Named(designs, "S+I+MD"), 2000.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "S+I+MD"), Named(designs, "M+I+La"), 6000.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "M+I+MD"), Named(designs, "S+I+MD"), 6000.0, mode, BATTLES) >= 16);
       // The picket beats the heavy.
-      Assert::IsTrue(Wins(Named(designs, "S+I+La"), Named(designs, "L+F+MD"), 2000.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "S+I+La"), Named(designs, "L+F+MD"), 6000.0, mode, BATTLES) >= 16);
     }
     // The line beats the brawler under focus fire only: under spread fire it does not (design §12).
-    Assert::IsTrue(Wins(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Focus, BATTLES) >= 16);
+    Assert::IsTrue(Wins(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 6000.0, FireMode::Focus, BATTLES) >= 16);
 
     // Phase 1 design §5, at the smallest budget of each component's tier (task 10.3): the Flak Battery breaks the swarm,
     // a Pulse picket beats the heavy brawler, and the Rail Cannon kills the heavy Lance line.
     for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
     {
-      Assert::IsTrue(Wins(Named(designs, "M+I+FB"), Named(designs, "S+I+MD"), 4500.0, mode, BATTLES) >= 16);
-      Assert::IsTrue(Wins(Named(designs, "S+P+La"), Named(designs, "L+F+MD"), 4500.0, mode, BATTLES) >= 16);
-      Assert::IsTrue(Wins(Named(designs, "L+F+RC"), Named(designs, "L+F+La"), 6000.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "M+I+FB"), Named(designs, "S+I+MD"), 13500.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "S+P+La"), Named(designs, "L+F+MD"), 13500.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "L+F+RC"), Named(designs, "L+F+La"), 18000.0, mode, BATTLES) >= 16);
     }
   }
 

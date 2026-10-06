@@ -26,26 +26,26 @@ struct ModelRow
 };
 
 // Copied from the model's output on 2026-10-01, after §12 was retuned against the simulation. The model rounds damage
-// per second to one decimal.
+// per second to one decimal. Phase 4 tripled every cost (Phase 4 design §4).
 constexpr std::array<ModelRow, 18> MODEL_TABLE{{
-  {1, 1, 1, 87, 198, 2, 78.0, 120, {30.0, 15.0, 8.8}},
-  {1, 1, 2, 137, 198, 2, 78.0, 220, {34.4, 32.2, 30.0}},
-  {1, 1, 3, 182, 198, 2, 78.0, 280, {14.0, 11.0, 8.0}},
-  {1, 2, 1, 147, 308, 2, 48.0, 120, {30.0, 15.0, 8.8}},
-  {1, 2, 2, 197, 308, 2, 48.0, 220, {34.4, 32.2, 30.0}},
-  {1, 2, 3, 242, 308, 2, 48.0, 280, {14.0, 11.0, 8.0}},
-  {2, 1, 1, 165, 450, 8, 52.0, 120, {30.0, 15.0, 8.8}},
-  {2, 1, 2, 215, 450, 8, 52.0, 220, {34.4, 32.2, 30.0}},
-  {2, 1, 3, 260, 450, 8, 52.0, 280, {14.0, 11.0, 8.0}},
-  {2, 2, 1, 225, 700, 8, 32.0, 120, {30.0, 15.0, 8.8}},
-  {2, 2, 2, 275, 700, 8, 32.0, 220, {34.4, 32.2, 30.0}},
-  {2, 2, 3, 320, 700, 8, 32.0, 280, {14.0, 11.0, 8.0}},
-  {3, 1, 1, 355, 1080, 14, 32.5, 120, {30.0, 15.0, 8.8}},
-  {3, 1, 2, 405, 1080, 14, 32.5, 220, {34.4, 32.2, 30.0}},
-  {3, 1, 3, 450, 1080, 14, 32.5, 280, {14.0, 11.0, 8.0}},
-  {3, 2, 1, 415, 1680, 14, 20.0, 120, {30.0, 15.0, 8.8}},
-  {3, 2, 2, 465, 1680, 14, 20.0, 220, {34.4, 32.2, 30.0}},
-  {3, 2, 3, 510, 1680, 14, 20.0, 280, {14.0, 11.0, 8.0}},
+  {1, 1, 1, 261, 198, 2, 78.0, 120, {30.0, 15.0, 8.8}},
+  {1, 1, 2, 411, 198, 2, 78.0, 220, {34.4, 32.2, 30.0}},
+  {1, 1, 3, 546, 198, 2, 78.0, 280, {14.0, 11.0, 8.0}},
+  {1, 2, 1, 441, 308, 2, 48.0, 120, {30.0, 15.0, 8.8}},
+  {1, 2, 2, 591, 308, 2, 48.0, 220, {34.4, 32.2, 30.0}},
+  {1, 2, 3, 726, 308, 2, 48.0, 280, {14.0, 11.0, 8.0}},
+  {2, 1, 1, 495, 450, 8, 52.0, 120, {30.0, 15.0, 8.8}},
+  {2, 1, 2, 645, 450, 8, 52.0, 220, {34.4, 32.2, 30.0}},
+  {2, 1, 3, 780, 450, 8, 52.0, 280, {14.0, 11.0, 8.0}},
+  {2, 2, 1, 675, 700, 8, 32.0, 120, {30.0, 15.0, 8.8}},
+  {2, 2, 2, 825, 700, 8, 32.0, 220, {34.4, 32.2, 30.0}},
+  {2, 2, 3, 960, 700, 8, 32.0, 280, {14.0, 11.0, 8.0}},
+  {3, 1, 1, 1065, 1080, 14, 32.5, 120, {30.0, 15.0, 8.8}},
+  {3, 1, 2, 1215, 1080, 14, 32.5, 220, {34.4, 32.2, 30.0}},
+  {3, 1, 3, 1350, 1080, 14, 32.5, 280, {14.0, 11.0, 8.0}},
+  {3, 2, 1, 1245, 1680, 14, 20.0, 120, {30.0, 15.0, 8.8}},
+  {3, 2, 2, 1395, 1680, 14, 20.0, 220, {34.4, 32.2, 30.0}},
+  {3, 2, 3, 1530, 1680, 14, 20.0, 280, {14.0, 11.0, 8.0}},
 }};
 
 Outpost::Tuning RepositoryTuning()
@@ -93,7 +93,7 @@ public:
 
     // The raider: the fastest and most fragile, with the swarm-breaker's hits splashing 26 m.
     const Outpost::DesignStats raider = Outpost::DesignStatsFor(tuning, Outpost::HullId{1}, PULSE, FLAK_BATTERY);
-    Assert::AreEqual(132, raider.cost);
+    Assert::AreEqual(396, raider.cost);
     Assert::AreEqual(16500, raider.hitPointsHundredths);
     Assert::AreEqual(96.0f, raider.movement.speedMetersPerSecond, 1e-4f);
     Assert::AreEqual(270.0f * std::numbers::pi_v<float> / 180.0f, raider.movement.turnRateRadiansPerSecond, 1e-4f);
@@ -105,7 +105,7 @@ public:
 
     // The heavy's gun: 320 a hit every 6 s, from 240 m, past the Lance's 220 m.
     const Outpost::DesignStats rail = Outpost::DesignStatsFor(tuning, Outpost::HullId{3}, Outpost::DriveId{2}, RAIL_CANNON);
-    Assert::AreEqual(530, rail.cost);
+    Assert::AreEqual(1590, rail.cost);
     Assert::AreEqual(240.0f, rail.rangeMeters);
     Assert::AreEqual(0.0f, rail.splashRadiusMeters);
     Assert::AreEqual(306.0 / 6.0, Outpost::DamagePerSecond(rail, armorOf(2)), 1e-9);
@@ -139,7 +139,7 @@ public:
     Assert::AreEqual(std::string("Small+Ion+Mass Driver+Sensor Array"), Outpost::DesignName(tuning, scout));
     const Outpost::DesignStats with = Outpost::DesignStatsFor(tuning, scout);
     const Outpost::DesignStats without = Outpost::DesignStatsFor(tuning, Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1});
-    Assert::AreEqual(without.cost + 40, with.cost);
+    Assert::AreEqual(without.cost + 120, with.cost);
     Assert::AreEqual(without.movement.speedMetersPerSecond * 0.9f, with.movement.speedMetersPerSecond, 1e-4f);
     Assert::AreEqual(0.0f, without.moduleSightMeters);
     Assert::AreEqual(700.0f, with.moduleSightMeters);

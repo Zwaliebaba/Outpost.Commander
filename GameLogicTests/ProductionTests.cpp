@@ -171,7 +171,7 @@ public:
 
     // A rig pays for it.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
-    arena.Run(60 * MatchArena::TICKS_PER_SECOND);
+    arena.Run(90 * MatchArena::TICKS_PER_SECOND);
     Assert::AreEqual(size_t{1}, Warships(arena, BLUE));
   }
 

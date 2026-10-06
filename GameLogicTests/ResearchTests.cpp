@@ -406,9 +406,9 @@ public:
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, {600.0f, -600.0f});
     const Outpost::DesignId design = arena.Design(BLUE, SMALL, MASS_DRIVER);
     (void)arena.Tick({Order(BLUE, Outpost::QueueShipCommand{.producer = yard, .design = design})});
-    // A Small hull's 10 s become 8.
+    // A Small hull's 30 s become 24.
     const auto ships = [&arena] { return arena.Owned(BLUE, Outpost::EntityKind::Ship).size(); };
-    arena.Run((8 * MatchArena::TICKS_PER_SECOND) - 2);
+    arena.Run((24 * MatchArena::TICKS_PER_SECOND) - 2);
     Assert::AreEqual(size_t{0}, ships());
     arena.Run(1);
     Assert::AreEqual(size_t{1}, ships());

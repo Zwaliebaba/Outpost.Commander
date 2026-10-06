@@ -8,7 +8,7 @@ Phase 2 design §10 gives a design an optional fourth slot beside hull, drive an
 
 ## Decision
 
-1. **Modules are data.** `Tuning.json` gains a `modules` list, each with an `id`, a `name`, `sightMeters`, `speedFactor` and `cost`. The Sensor Array is module 1: 700 m, a factor of 0.9 and 40 Ore. The loader requires the list, a positive speed factor and unique identifiers.
+1. **Modules are data.** `Tuning.json` gains a `modules` list, each with an `id`, a `name`, `sightMeters`, `speedFactor` and `cost`. The Sensor Array is module 1: 700 m, a factor of 0.9 and 120 Ore, three times Phase 2's 40 since Phase 4 tripled every component's cost (Phase 4 design §4). The loader requires the list, a positive speed factor and unique identifiers.
 2. **No research unlocks a module.** Every module is available from the start, as the design's minute-3 scout needs. A research effect that unlocks one is the change to make when a module needs it.
 3. **A module is part of a design's components.** `DesignComponents`, `DesignView`, `EntityView` and `SaveDesignCommand` carry a `ModuleId`, and no identifier means no module. The same hull, drive and weapon with and without a module are two designs. A starting design has none. The server refuses a module the tuning data does not have, as it refuses any other unknown component (`UnknownComponent`).
 4. **One function still derives a design's stats** (ADR-017 decision 5). `DesignStatsOf` takes an optional module view: its cost is added, its factor slows the ship, and its sight is kept as `DesignStats::moduleSightMeters`. Every snapshot lists the modules (`Snapshot::modules`), so the designer derives what the server does.

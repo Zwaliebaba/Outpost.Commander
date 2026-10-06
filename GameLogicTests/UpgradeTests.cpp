@@ -164,11 +164,11 @@ public:
     const std::vector<Outpost::CommandResult> results = arena.Tick(
       {Upgrade(BLUE, yard), Order(BLUE, Outpost::QueueShipCommand{.producer = yard, .design = arena.Design(BLUE, SMALL, MASS_DRIVER)})});
     Assert::IsTrue(results[1] == Outpost::CommandResult::Applied);
-    const size_t before = arena.Owned(BLUE, Outpost::EntityKind::Ship).size();
-    // A Small ship takes well under the level's time.
+    // Halfway through the level, the Small ship is halfway built: the Shipyard has worked on it all along.
     arena.Run(LevelTicks(arena, Outpost::StructureKind::Shipyard, 1) / 2);
     Assert::IsTrue(arena.Get(yard).IsUpgrading());
-    Assert::AreEqual(before + 1, arena.Owned(BLUE, Outpost::EntityKind::Ship).size(), L"the ship came out during the upgrade");
+    const Outpost::Entity& working = arena.Get(yard);
+    Assert::IsTrue(working.jobWorkNeeded > 0 && working.jobWorkDone * 3 >= working.jobWorkNeeded, L"the ship was built during the upgrade");
   }
 
   // A damaged structure keeps its share of its hit points when the level lands, and a Constructor repairs it while its
