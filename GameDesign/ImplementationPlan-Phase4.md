@@ -91,6 +91,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 
 - **Scope:** AI-against-AI matches over seeds 1–40 on the 5 km map: the most warships each side has, its warships at minute 20, the match's length and how it ended. Recorded here and in design §2 as an interim answer to U2 and U5, before the map changes.
 - **Verify:** the container's figures, stated as such: floats replay only on the same build (ADR-009).
+- **As built:** recorded in design §2. Run with a driver of the container's own, which plays two Normal AIs on the in-process server as `--ai-matches` does and counts each side's warships from its snapshots, on this milestone and on `main` before it: 4 minutes for `main`'s 40 matches and 2 for milestone 27's, on four threads. The median side peaks at 24.5 warships, against 193; every match ends, all 40 by domination, none by production; and the median side holds 8,823 Ore at minute 20. Those last two are for the owner before milestone 28.
 
 ---
 

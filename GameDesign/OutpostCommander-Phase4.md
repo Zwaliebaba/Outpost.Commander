@@ -46,6 +46,22 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 | U7 | Does the engine hold at 10 km? | On the development machine, in Release: the 99th percentile tick at most 5 ms in an AI-against-AI match. 99% of frames take at most 16.7 ms at 1920×1080, with the camera zoomed out over the largest fight. |
 | U8 | Does it read and play? | The owner judges, in play, whether the opening feels like exploring, and whether a 10 km map can be followed with the camera, the minimap and the alerts. |
 
+**Where they stand on 2026-10-06, after milestone 27, on today's 5 km map.** An interim answer to U2 and U5, before the map changes (plan task 27.5). Two Normal AIs over seeds 1–40, run in the Linux container on the server and AI built with clang 18 against a stand-in for the Windows headers, and the same harness on `main` before milestone 27 for comparison. Floats replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently.
+
+| Over seeds 1–40 | Before milestone 27 | After |
+|---|---|---|
+| Most warships a side has at once, median of the 80 sides (largest) | 193 (565) | 24.5 (50) |
+| Warships a side has at minute 20, median (largest) | 123.5 (289) | 15.5 (39) |
+| Warships a side builds in a match, median | 400.5 | 87 |
+| First shot, median | 1:58 | 2:47 |
+| Match length, median (shortest–longest) | 41:27 (24:24–62:48) | 53:50 (44:48–1:29:18) |
+| Endings | 16 domination, 24 production | 40 domination, 0 production |
+| Ore a side holds at minute 20, median | 136 | 8,823 |
+
+- **U2, the swarm: met in the median, not in every match.** The median side peaks at 24.5 warships, against 193 before. But 14 of the 80 sides go over 40, which only a fleet of Small hulls can at a cap of 50, and 36 of the 80 have 20 or more at minute 20, since both AIs reach the top level's cap of 50 by then.
+- **U5, every match ends: yes, but by one ending only.** All 40 end, and all by domination. No AI took the other's base in any of them: with a fleet capped at 50 points against a base of Defence Platforms and a level 5 Command Station's three guns, the siege that ended 24 of the 40 before no longer succeeds. U5 asks for both endings, so it is not yet met.
+- **Ore piles up.** At minute 20 the median side holds 8,823 Ore it cannot spend: its fleet is at the cap and its research is bound by time, not Ore. The cap, not the cost, is what bounds the fleet from the mid-game on. Both are for the owner to weigh before the map grows: the cap's numbers (gate L2), the income on a 10 km map, and whether a capped player should have something to spend Ore on.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06
