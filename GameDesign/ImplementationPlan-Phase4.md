@@ -1,0 +1,103 @@
+# Outpost Commander — Phase 4 Implementation Plan
+
+Status: **open** · Started 2026-10-06, when the owner accepted [the Phase 4 design](OutpostCommander-Phase4.md) with every gate decided as proposed and L11 waived · Derived from the Phase 4 design
+
+The Phase 4 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 3 plan](Archive/ImplementationPlan-Phase3.md) is closed.
+
+---
+
+## How an agent uses this plan
+
+1. **Read AGENTS.md, then the Phase 4 design, then the earlier design sections the task touches.** Phase 4 amends Phase 3, which amends Phase 2, Phase 1 and the MVP. Where they differ, the later document wins.
+2. **Take the lowest-numbered task whose status is `todo` and whose dependencies are `done`.** One PR per milestone (owner, 2026-09-30), in milestone order.
+3. **ADRs are edited in place** (AGENTS.md §6), and new ones take the next free number, ADR-071 onward.
+4. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU. The server, the AI and `GameLogicTests` build and run there against a stand-in for the Windows headers, the test framework and MsQuic, as Phases 2 and 3 did. The client and the renderer do not. Tasks marked *Owner run* stay `in review` until the owner has run them.
+5. **The AI keeps playing at every milestone.** A rule that would stop the AI's plan comes with the least AI change that keeps `AiPlayerTests` passing, as Phase 3's did. Milestone 33 then makes the AI play Phase 4 well.
+6. **The gates are the design's, L1 to L11** (design §16), all decided on 2026-10-06.
+
+Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number names one task across the game's phase plans. The Interface plan's milestones 14 to 17 are a separate series.
+
+---
+
+## Task board
+
+| Task | Title | Depends on | Gate | Status |
+|---|---|---|---|---|
+| 27.1 | Ships and the Defence Platform cost three times as much | — | L1 | in progress |
+| 27.2 | The fleet cap, on the server | — | L2 | in progress |
+| 27.3 | The client shows the fleet and its cap | 27.2 | L2 | todo |
+| 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | todo |
+| 27.5 | Milestone 27 measured on today's map | 27.4 | — | todo |
+| 28.1 | The client and the engine follow the map's size | — | L6 | todo |
+| 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | todo |
+| 28.3 | Production follows territory | — | L5 | todo |
+| 28.4 | The engine measured at 10 km (U7) | 28.2 | — | todo |
+| 29.1 | Placement from the seed | 28.2 | L10 | todo |
+| 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
+| 30.2 | The client draws pirates | 30.1 | L7 | todo |
+| 31.1 | Derelicts and salvage | 29.1 | L8 | todo |
+| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | todo |
+| 32.1 | The Repair Bay and retreat, on the server | — | L9 | todo |
+| 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | todo |
+| 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | — | todo |
+| 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | todo |
+| 34.2 | U1–U8 | 33.1, 34.1 | — | todo |
+
+### Milestone order
+
+27, 28, 29, 30, 31, 32, 33, 34. Milestone 27 changes the economy and the cap on today's 5 km map (owner, 2026-10-06), so their effect is measured before the map changes, as Phase 3 kept its map fixed. Milestone 28 is the engine's largest risk, so it comes before the content that fills the map. Placement from the seed comes before pirates and derelicts, since both are placed by it. The Repair Bay stands on its own and can move earlier if a milestone stalls. The AI is reworked once every rule it plays by is in, and milestone 34 measures what the others built.
+
+---
+
+## Milestone 27 — Fewer ships
+
+### 27.1 — Ships and the Defence Platform cost three times as much
+
+- **Gate:** L1, decided.
+- **Scope:** in `Tuning.json`, every hull's, drive's, weapon's and module's `cost` and every hull's `buildSeconds` times three, and the Defence Platform's `cost` times three. Nothing else changes (design §4). The Q2 check's budgets in `BalanceCheck` and `Tools/BattleModel.py` move by the same factor, so its verdicts stand.
+- **ADR:** ADR-014 and ADR-016 are edited in place where they quote the numbers.
+- **Acceptance:** every `GameLogicTests` suite passes with the new numbers; tests that quote a cost read it from the data where they can.
+- **Verify:** CI; the container's run of `GameLogicTests`; `BalanceCheckTests` at the new budgets.
+
+### 27.2 — The fleet cap, on the server
+
+- **Gate:** L2, decided.
+- **Scope:**
+  - **The data.** Each hull gains `commandPoints`: Small 1, Medium 2, Large 4. The Command Station gains `commandPoints` at level 1 and at each level: 12, 20, 30, 40 and 50. Both are optional, and data without them has no cap, as data without `nodes` has no node cap.
+  - **The rule.** A player's command points are those of its warships and of the warship jobs its Shipyards have started. A warship job that would take a player past its cap waits at the front of its queue, as a job waiting for Ore does, and is neither paid for nor started. A player without a Command Station has level 1's cap (design §5). The cap never removes a ship.
+  - **The snapshot** carries the player's command points and its cap, each hull's points, and each Command Station level's cap. The protocol's version goes up.
+- **ADR:** a new one, ADR-071: the fleet cap.
+- **Acceptance:** `FleetCapTests` cover a job waiting at the cap and starting once a ship is lost, jobs under way counted, a Constructor never counted, the cap rising with the station's level, level 1's cap without a station, and no cap without the data. `TuningTests` cover the new members and their refusals. `WireFormatTests` cover the new fields.
+- **Verify:** CI; the container's run of `GameLogicTests`.
+
+### 27.3 — The client shows the fleet and its cap
+
+- **Scope:** the HUD's top bar shows "FLEET 18 / 30" beside the territory line; a Shipyard's production card says when its front job waits on the cap; the Command Station's Upgrade button says what the next level's cap is (design §13).
+- **Acceptance:** `HudTests` for the fleet line, the waiting card and the upgrade's text.
+- **Verify:** CI; **owner run**.
+
+### 27.4 — The AI plays within the cap
+
+- **Scope:** the AI upgrades its Command Station when its production waits on the cap, and its attack group and raids are sized by what its cap allows, not by a count of ships it can no longer reach. The three difficulty files carry any new numbers (ADR-065).
+- **ADR:** ADR-020 and ADR-041 edited in place.
+- **Acceptance:** `AiPlayerTests` pass, with a test that the AI upgrades its station when capped.
+- **Verify:** CI; AI-against-AI matches in the container.
+
+### 27.5 — Milestone 27 measured on today's map
+
+- **Scope:** AI-against-AI matches over seeds 1–40 on the 5 km map: the most warships each side has, its warships at minute 20, the match's length and how it ended. Recorded here and in design §2 as an interim answer to U2 and U5, before the map changes.
+- **Verify:** the container's figures, stated as such: floats replay only on the same build (ADR-009).
+
+---
+
+## Milestones 28 to 34
+
+Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
+
+- **28 — The 10 km map** (design §6, §11): the fog grid and its texture, the camera's focus and widest view, and the minimap follow the map's size; the 25-sector map and its node caps; Shipyards and Repair Bays only in held sectors; U7 measured.
+- **29 — Placement from the seed** (design §7).
+- **30 — Pirates** (design §8): the neutral owner, its outposts and their guarding rule, and how the client draws them.
+- **31 — Derelicts** (design §9): salvage, its Ore and its research.
+- **32 — The Repair Bay and retreat** (design §10).
+- **33 — The AI plays Phase 4** (design §12).
+- **34 — Measuring Phase 4** (design §2): the match log and U1–U8.

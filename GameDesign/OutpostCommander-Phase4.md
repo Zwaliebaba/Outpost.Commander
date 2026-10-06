@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 4 Design: Fewer Ships, a Wider Reach
 
-Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-06, from the owner's answers of that day · Gates L1–L11 open (§16) · No plan yet: the plan is derived once the gates are decided
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-06, from the owner's answers of that day · Accepted on 2026-10-06, with every gate decided as proposed (§16) · The order of the work is [the Phase 4 plan](ImplementationPlan-Phase4.md)
 
-This document proposes what Phase 4 builds on top of Phase 3, and would amend [the Phase 3 design](Archive/OutpostCommander-Phase3.md), [the Phase 2 design](Archive/OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. What the owner decided on 2026-10-06 is in §3. Everything else is a proposal, and its numbers are starting values, as Phase 3's were.
+This document says what Phase 4 builds on top of Phase 3, and amends [the Phase 3 design](Archive/OutpostCommander-Phase3.md), [the Phase 2 design](Archive/OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. What the owner decided on 2026-10-06 is in §3, and the owner decided every gate of §16 as proposed the same day; the numbers are starting values, as Phase 3's were.
 
 ---
 
@@ -61,7 +61,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 4. Ships cost more
 
-*Proposed (gate L1): the factor is a starting value.*
+*Decided (gate L1): the factor is a starting value.*
 
 - **Every hull, drive, weapon and module costs three times as much, and every hull takes three times as long to build.** A Swarm becomes 261 Ore and 30 s. A Large+Fusion+Rail Cannon goes from 530 Ore and 40 s to 1,590 Ore and 120 s.
 - **Cost and build time move by the same factor**, so a Shipyard spends Ore at today's rate: about 8.7 Ore/s on Swarms. The AI's rule of one Shipyard per 10 Ore/s of income still fits (ADR-020 decision 6).
@@ -73,7 +73,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 5. The fleet cap
 
-*Proposed (gate L2): the numbers are starting values.*
+*Decided (gate L2): the numbers are starting values.*
 
 - **Each warship takes command points by its hull:** Small 1, Medium 2, Large 4. A Constructor takes none.
 - **The Command Station's level sets the cap**, as it sets the nodes a player may hold (Phase 3 §7):
@@ -95,7 +95,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 6. The map: a 10 km system
 
-*Proposed (gates L3–L6).*
+*Decided (gates L3–L6).*
 
 - **10,000 m a side, 25 sectors** on a 5×5 grid of 2 km, each with one node at its center (ADR-036's format, unchanged). The homes are in opposite corners, with their starts at (−4,000, −4,000) and (4,000, 4,000). Sectors are bounded by asteroid fields with passages, as now. The map is point-symmetric about its center.
 - **Travel time.** Start to start is about 11.3 km. Today's 5 km map has 4.95 km between the starts.
@@ -116,7 +116,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 7. Placement from the seed
 
-*Proposed (gate L10).*
+*Decided (gate L10).*
 
 - **Fixed in `Map.json`:** the size, the sector grid, the asteroid fields that bound the sectors, and their passages. The starts and the three home asteroids of each home are fixed too.
 - **Placed from the seed:** every other ore asteroid, every derelict and every pirate outpost. `Map.json` gives the rules for each kind of sector: how many asteroids and of which yield, how many derelicts, and whether pirates hold it. It no longer gives the positions.
@@ -128,7 +128,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 8. Pirates: static guardians
 
-*Proposed (gate L7): the numbers are starting values.*
+*Decided (gate L7): the numbers are starting values.*
 
 - **Pirates are a neutral owner in the simulation, not a player.** They have no Ore, production or research, and they send no commands. Their behavior is a rule that the simulation runs, as a Command Station's gun is, so it is deterministic and costs nothing in transport. The AI as a client (ADR-002) is for players. An ADR records the neutral owner when it is built.
 - **An outpost sits on a sector's node and holds it for no one.** The sector cannot be claimed until the outpost's structures are destroyed. Its asteroids earn nothing for anyone until then. A node held by pirates counts for no one in domination (Phase 2 §8).
@@ -144,7 +144,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 9. Derelicts: salvage
 
-*Proposed (gate L8): the numbers are starting values.*
+*Decided (gate L8): the numbers are starting values.*
 
 - **A derelict is a wreck of the old fleet** (MVP §1), drawn with a hull mesh in grey, without its owner's color. It is not an obstacle that blocks a path, any more than a rig is.
 - **A Constructor salvages it** with a new work order, as it builds a site: 30 s of one Constructor's work, with more Constructors helping at `extraConstructorBuildShare` (ADR-016 decision 5). When the work is done the derelict is gone, and its owner is paid. Warships cannot salvage, so the opening's trip is a Constructor's, escorted or not.
@@ -156,7 +156,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 10. Repair Bay and retreat
 
-*Proposed (gate L9): the numbers are starting values.*
+*Decided (gate L9): the numbers are starting values.*
 
 - **The Repair Bay is a new structure:** 300 Ore and 40 s of a Constructor's work, 2,000 hit points, armor 5, built only in a held sector (§6). It repairs up to 4 friendly warships within 150 m of it, each at 3% of its maximum hit points a second, at no cost. Constructors still repair as today (ADR-016 decision 5). It has no levels, and it is drawn with an existing mesh and a tint until it has art of its own, as the Relay is.
 - **A retreat threshold per ship:** never, at 50% or at 25% of hit points. It is set in the designer for a design, carried by every ship built to it, and changed on a selection. Below its threshold a ship drops its order and goes to the nearest Repair Bay, else the Command Station, else a Shipyard, and is repaired there. Once whole it goes back to its standing order (ADR-059) if it had one, and otherwise waits there.
@@ -193,7 +193,7 @@ The three difficulty files (ADR-065) carry the new numbers. Normal is tuned agai
 ## 13. The client
 
 - **The HUD** shows command points against the cap, "FLEET 18 / 30", beside the territory line "4 / 7".
-- **The designer and the production window** dim Queue for a design that would go over the cap, and say why. The designer also sets a design's retreat threshold.
+- **The production window** says when a Shipyard's front job waits on the cap, as it says when one waits for Ore. Queue stays live, since the job only waits (§5). The designer sets a design's retreat threshold (§10).
 - **A selection's panel** shows and changes the retreat threshold.
 - **Derelicts and pirate outposts** are marked on the minimap once seen. A derelict's panel says what it holds. The Constructor's right-click on a derelict salvages it.
 - **Alerts** (ADR-059) add a ship retreating and a pirate outpost cleared.
@@ -219,7 +219,7 @@ Everything Phase 3 kept out stays out. Also out: veterancy (§3); relay jumps an
 
 ## 16. Gates
 
-Each is an owner decision, and each blocks the plan's tasks that depend on it.
+Each was an owner decision. **The owner decided all of them on 2026-10-06, as proposed**, with L11 waived: Phase 4 starts without waiting for the Interface plan's owner runs.
 
 - **L1 — The rescale** (§4): ×3 on every component's cost and on every hull's build time, ×3 on the Defence Platform's cost, nothing else changed.
 - **L2 — The fleet cap** (§5): 1, 2 and 4 points for Small, Medium and Large hulls, Constructors free; 12, 20, 30, 40 and 50 points at Command Station levels 1–5; tied to the Command Station's level rather than to the nodes held.
@@ -231,4 +231,4 @@ Each is an owner decision, and each blocks the plan's tasks that depend on it.
 - **L8 — Derelicts** (§9): Constructors only, 30 s of work, 300–900 Ore (600 and 1,200 from an outpost), one in three recovering half of a named topic's time.
 - **L9 — Repair and retreat** (§10): the Repair Bay's numbers, the thresholds never / 50% / 25%, set per design and per ship, 25% by default.
 - **L10 — Placement** (§7): what is fixed and what the seed places, point-symmetric, with the rule by distance from the homes.
-- **L11 — When Phase 4 is accepted:** proposed for after the owner has decided L1–L10 and has run the Interface plan's open milestones 14–17, so that Phase 4 builds on an interface that has been played and not only built.
+- **L11 — When Phase 4 is accepted.** Proposed for after the owner has run the Interface plan's open milestones 14–17. **Waived on 2026-10-06:** Phase 4 is accepted now, and those runs stay open.
