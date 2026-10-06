@@ -82,6 +82,14 @@ std::int32_t OpenedTier(const Snapshot& _snapshot) noexcept
   return _snapshot.researchTier;
 }
 
+// What one warship of _hull takes of its player's fleet cap (Phase 4 design §5), from the snapshot's hulls; 0 when the
+// match sets no cap.
+std::int32_t CommandPointsOf(const Snapshot& _snapshot, Outpost::HullId _hull) noexcept
+{
+  const auto hull = std::ranges::find(_snapshot.hulls, _hull, &Outpost::HullView::id);
+  return hull != _snapshot.hulls.end() ? hull->commandPoints : 0;
+}
+
 // How many topics a Research Lab at _level researches at once (Phase 3 design §6), from the snapshot's levels.
 std::int32_t ResearchSlotsOf(const Outpost::StructureTypeView* _lab, std::int32_t _level) noexcept
 {
@@ -353,7 +361,8 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   if (!structureWaiting)
   {
     std::int32_t ore = plan.left;
-    upgradeWaiting = UpgradeShipyards(_snapshot, ore, _orders) || UpgradeLab(_snapshot, ore, _orders);
+    upgradeWaiting =
+      UpgradeShipyards(_snapshot, ore, _orders) || UpgradeLab(_snapshot, ore, _orders) || UpgradeStationForFleet(_snapshot, ore, _orders);
   }
 
   // Constructors left over repair what is damaged, one each.
@@ -1006,6 +1015,33 @@ bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore
   return false;
 }
 
+bool Outpost::AiPlayer::UpgradeStationForFleet(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders)
+{
+  // A level builds itself for most of a minute, so it looks one round of its Shipyards ahead: a ship of its production
+  // design from each.
+  const auto shipyards =
+    std::ranges::count_if(_snapshot.entities, [this](const EntityView& _entity)
+                          { return IsStructure(_entity, StructureKind::Shipyard) && _entity.owner == m_player && IsBuilt(_entity); });
+  const std::int64_t round = std::max<std::int64_t>(1, shipyards) * CommandPointsOf(_snapshot, m_productionDesign.hull);
+  if (_snapshot.fleetCap <= 0 || _snapshot.commandPoints + round <= _snapshot.fleetCap)
+    return false;
+  const EntityView* station = UpgradableStation(_snapshot);
+  const auto ordered = [station](const Command& _order)
+  {
+    const auto* upgrade = std::get_if<UpgradeStructureCommand>(&_order.order);
+    return upgrade != nullptr && upgrade->structure == station->id;
+  };
+  // Build may have ordered it this decision, for a Relay the node cap holds back.
+  if (station == nullptr || std::ranges::any_of(_orders, ordered))
+    return false;
+  const std::int32_t cost = FindType(_snapshot, StructureKind::CommandStation)->levels[static_cast<size_t>(station->level - 1)].cost;
+  if (_ore < cost)
+    return true;
+  OrderUpgrade(*station, _orders);
+  _ore -= cost;
+  return false;
+}
+
 // The AI's Command Station, when it can be upgraded now: finished, not being upgraded, and below its top level (Phase 3
 // design §7).
 const Outpost::EntityView* Outpost::AiPlayer::UpgradableStation(const Snapshot& _snapshot) const
@@ -1262,13 +1298,31 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
 
   const EntityView* target = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget);
   bool grown = false;
-  const std::int32_t groupShips = m_settings.attackGroupShips + ((OpenedTier(_snapshot) - 1) * m_settings.attackGroupGrowthPerTier);
+  std::int32_t groupShips = m_settings.attackGroupShips + ((OpenedTier(_snapshot) - 1) * m_settings.attackGroupGrowthPerTier);
+  // The fleet cap may leave room for fewer ships of its production design's hull than that (Phase 4 design §5): the attack
+  // then goes once the reserve holds attackCapShare of the room its scouts and its raid leave it under the cap.
+  std::int64_t capShips = std::numeric_limits<std::int64_t>::max();
+  if (const std::int32_t hullPoints = CommandPointsOf(_snapshot, m_productionDesign.hull); _snapshot.fleetCap > 0 && hullPoints > 0)
+  {
+    std::int32_t elsewhere = 0;
+    for (const EntityView& ship : _snapshot.entities)
+    {
+      if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner == m_player &&
+          (IsScout(ship) || std::ranges::find(m_raidGroup, ship.id) != m_raidGroup.end()))
+        elsewhere += CommandPointsOf(_snapshot, ship.hull);
+    }
+    capShips = std::max(1, (_snapshot.fleetCap - elsewhere) / hullPoints);
+    const auto share = static_cast<std::int32_t>(std::floor(static_cast<double>(capShips) * m_settings.attackCapShare));
+    groupShips = std::min(groupShips, std::max(1, share));
+  }
   // On a map with territory the main attack waits for a lead in nodes, or for a larger reserve (ADR-041 decision 5).
   std::int32_t nodeLead = 0;
   for (const SectorView& sector : _snapshot.sectors)
     nodeLead += sector.holder == m_player ? 1 : sector.holder.IsValid() ? -1 : 0;
   const bool lead = _snapshot.sectors.empty() || nodeLead >= m_settings.attackNodeLead;
-  const auto withoutLead = static_cast<std::int64_t>(std::ceil(groupShips * m_settings.attackWithoutLeadShare));
+  // Without a lead it waits for more, but never for more than the cap has room for.
+  const auto withoutLead = std::min(static_cast<std::int64_t>(std::ceil(groupShips * m_settings.attackWithoutLeadShare)),
+                                    std::max<std::int64_t>(groupShips, capShips));
   if (std::cmp_greater_equal(reserve.size(), groupShips) && _snapshot.tick >= m_regroupUntilTick &&
       (lead || std::cmp_greater_equal(reserve.size(), withoutLead)))
   {

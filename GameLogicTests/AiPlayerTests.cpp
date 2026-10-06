@@ -85,15 +85,29 @@ private:
   Outpost::Snapshot m_snapshot;
 };
 
+// The repository's tuning data without the fleet cap (Phase 4 design §5), for a test of what the AI does with more ships
+// than the cap lets it have.
+Outpost::Tuning UncappedTuning()
+{
+  Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+  for (Outpost::StructureTuning& structure : tuning.structures)
+  {
+    structure.commandPoints = 0;
+    for (Outpost::StructureLevelTuning& level : structure.levels)
+      level.commandPoints = 0;
+  }
+  return tuning;
+}
+
 // A match on the repository's map and tuning data: the AI plays player 2 through its own connection, and the human
-// player 1 does nothing unless a test orders it.
+// player 1 does nothing unless a test orders it. Without _fleetCap the tuning data has no fleet cap.
 class AiMatch
 {
 public:
   explicit AiMatch(std::uint64_t _seed = 3, std::optional<Outpost::Map> _map = std::nullopt,
-                   std::optional<Outpost::AiSettings> _settings = std::nullopt)
+                   std::optional<Outpost::AiSettings> _settings = std::nullopt, bool _fleetCap = true)
     : m_map(_map.has_value() ? std::move(*_map) : Outpost::LoadMap(ReadRepositoryMap())),
-      m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = _seed}),
+      m_server(_fleetCap ? Outpost::LoadTuning(ReadRepositoryTuning()) : UncappedTuning(), m_map, {.seed = _seed}),
       m_human(m_server.Connect(HUMAN)),
       m_aiConnection(m_server.Connect(AI)),
       m_ai(_settings.has_value() ? std::move(*_settings) : RepositorySettings(), m_server.TicksPerSecond())
@@ -440,6 +454,8 @@ public:
     AiMatch match;
     (void)match.Spawn(AI, BRAWLER, 12, {700.0f, 600.0f});
     Outpost::Snapshot snapshot = match.View(AI);
+    // No fleet cap here, which would let it have fewer ships than these (Phase 4 design §5).
+    snapshot.fleetCap = 0;
     Outpost::AiPlayer ai(settings, 20);
     (void)ai.Update(snapshot);
     Assert::AreEqual(size_t{0}, ai.AttackGroupShips(), L"twelve attacked with the nodes even");
@@ -453,10 +469,13 @@ public:
     AiMatch larger;
     (void)larger.Spawn(AI, BRAWLER, 17, {700.0f, 600.0f});
     Outpost::AiPlayer patient(settings, 20);
-    (void)patient.Update(larger.View(AI));
+    Outpost::Snapshot seventeen = larger.View(AI);
+    seventeen.fleetCap = 0;
+    (void)patient.Update(seventeen);
     Assert::AreEqual(size_t{0}, patient.AttackGroupShips());
     (void)larger.Spawn(AI, BRAWLER, 1, {700.0f, 650.0f});
     Outpost::Snapshot more = larger.View(AI);
+    more.fleetCap = 0;
     more.tick += 20;
     (void)patient.Update(more);
     Assert::AreEqual(size_t{18}, patient.AttackGroupShips());
@@ -562,6 +581,8 @@ public:
     const std::vector<Outpost::EntityId> swarm = match.Spawn(AI, SWARM, 4, {1500.0f, 1500.0f});
     (void)match.Spawn(AI, BRAWLER, 4, {1500.0f, 1400.0f});
     Outpost::Snapshot snapshot = match.View(AI);
+    // No fleet cap, which would send the rest of the reserve on the main attack (Phase 4 design §5).
+    snapshot.fleetCap = 0;
     SectorOf(snapshot, EAST).holder = HUMAN;
     Outpost::AiPlayer ai(settings, 20);
     const std::vector<Outpost::AttackMoveCommand> raid = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
@@ -582,6 +603,7 @@ public:
     // A tick, for the server to work out what each side sees.
     guarded.Run(0.1);
     Outpost::Snapshot watched = guarded.View(AI);
+    watched.fleetCap = 0;
     SectorOf(watched, EAST).holder = HUMAN;
     Outpost::AiPlayer wary(settings, 20);
     (void)wary.Update(watched);
@@ -630,8 +652,9 @@ public:
   }
 
   // Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times 10 Ore/s, so that its Shipyards
-  // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 48.75 Ore/s, and has 4. Without the
-  // platforms task 12.2 adds for each Shipyard, which spend Ore first and so put the timings below later.
+  // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 41.25 Ore/s, and has 4. Without the
+  // platforms task 12.2 adds for each Shipyard, which spend Ore first and so put the timings below later. Phase 4's Defence
+  // Platform at 450 Ore puts its contested rigs, each with a platform, later than Phase 3's 3:20 (Phase 4 design §4).
   TEST_METHOD(BuildsShipyardsByIncome)
   {
     Outpost::AiSettings settings = RepositorySettings();
@@ -650,9 +673,9 @@ public:
     Assert::AreEqual(1500, match.View(AI).oreIncomeHundredthsPerSecond, L"three home rigs at a minute");
     Assert::AreEqual(std::ptrdiff_t{1}, shipyards(), L"the first Shipyard is in the build order whatever the income");
 
-    match.Run(140.0);
+    match.Run(320.0);
     // Phase 1 design §8's map: three home rigs at 5 Ore a second and three on the near ring at 6, raised by a quarter.
-    Assert::AreEqual(4125, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 3:20");
+    Assert::AreEqual(4125, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 6:20");
     Assert::AreEqual(std::ptrdiff_t{4}, shipyards());
     match.Run(60.0);
     Assert::AreEqual(std::ptrdiff_t{4}, shipyards(), L"no fifth Shipyard below 50 Ore/s");
@@ -708,7 +731,8 @@ public:
     settings.attackNodeLead = 0;
     settings.attackWithoutLeadShare = 1.0;
     settings.raidShips = 0;
-    AiMatch match(3, std::nullopt, settings);
+    // More warships than the fleet cap lets it have: the cap's own play is AttacksOnceItsReserveFillsTheCap's.
+    AiMatch match(3, std::nullopt, settings, false);
     const int groupShips = settings.attackGroupShips;
     const Outpost::PlanePosition gathering{700.0f, 600.0f};
     std::vector<Outpost::EntityId> ships = match.Spawn(AI, BRAWLER, groupShips - 1, gathering);
@@ -781,12 +805,13 @@ public:
 
   // Phase 3 design §8: its home and the two flanks its rigs take it to are level 1's cap, so it upgrades its Command
   // Station to level 2 before its claim beyond them, which is its fourth node; and at that cap, with one claim in its
-  // settings and so wanting no more, it upgrades no further.
+  // settings and so wanting no more, it upgrades no further. Without the fleet cap, which upgrades the station for its own
+  // reasons (UpgradesItsStationWhenTheCapHoldsItBack).
   TEST_METHOD(UpgradesItsStationBeforeItsFirstClaim)
   {
     Outpost::AiSettings settings = RepositorySettings();
     settings.claimSectors = 1;
-    AiMatch match(3, std::nullopt, settings);
+    AiMatch match(3, std::nullopt, settings, false);
     std::optional<std::int32_t> levelAtFourth;
     std::int32_t level = 0;
     for (int step = 0; step < 16 && !levelAtFourth.has_value(); ++step)
@@ -950,8 +975,9 @@ public:
     AiMatch match;
     (void)match.Spawn(AI, BRAWLER, 20, {700.0f, 600.0f});
     Outpost::Snapshot snapshot = match.View(AI);
-    // Its Research Lab has opened tier 2 (Phase 3 design §6).
+    // Its Research Lab has opened tier 2 (Phase 3 design §6), and there is no fleet cap (Phase 4 design §5).
     snapshot.researchTier = 2;
+    snapshot.fleetCap = 0;
     Outpost::AiSettings settings = AttackSettings();
     settings.attackGroupGrowthPerTier = 12;
     Outpost::AiPlayer ai(settings, 20);
@@ -960,19 +986,70 @@ public:
     (void)match.Spawn(AI, BRAWLER, 4, {700.0f, 650.0f});
     Outpost::Snapshot more = match.View(AI);
     more.researchTier = snapshot.researchTier;
+    more.fleetCap = 0;
     more.tick = snapshot.tick + 20;
     (void)ai.Update(more);
     Assert::AreEqual(size_t{24}, ai.AttackGroupShips());
   }
 
+  // Task 27.4: under a fleet cap that has room for fewer ships than its attack group asks, the AI attacks once its reserve
+  // holds the settings' share of that room. At level 1's 12 points, six of its Medium brawlers fill the cap, and four are
+  // 80% of them.
+  TEST_METHOD(AttacksOnceItsReserveFillsTheCap)
+  {
+    Outpost::AiSettings settings = AttackSettings();
+    settings.attackCapShare = 0.8;
+    AiMatch match;
+    (void)match.Spawn(AI, BRAWLER, 3, {700.0f, 600.0f});
+    Outpost::AiPlayer ai(settings, 20);
+    Outpost::Snapshot three = match.View(AI);
+    Assert::AreEqual(12, three.fleetCap);
+    (void)ai.Update(three);
+    Assert::AreEqual(size_t{0}, ai.AttackGroupShips(), L"three attacked");
+    (void)match.Spawn(AI, BRAWLER, 1, {700.0f, 650.0f});
+    Outpost::Snapshot four = match.View(AI);
+    four.tick = three.tick + 20;
+    (void)ai.Update(four);
+    Assert::AreEqual(size_t{4}, ai.AttackGroupShips());
+  }
+
+  // Task 27.4: when the fleet cap holds back its next warship, the AI upgrades its Command Station, whose level sets the
+  // cap (Phase 4 design §12); while there is room, it does not.
+  TEST_METHOD(UpgradesItsStationWhenTheCapHoldsItBack)
+  {
+    const auto upgradesStation = [](std::int32_t _brawlers)
+    {
+      AiMatch match;
+      (void)match.Spawn(AI, BRAWLER, _brawlers, {700.0f, 600.0f});
+      Outpost::Snapshot snapshot = match.View(AI);
+      // Ore enough for its base plan and the level both.
+      snapshot.ore = 10000;
+      Outpost::AiPlayer ai(AttackSettings(), 20);
+      const std::vector<Outpost::UpgradeStructureCommand> upgrades = OrdersOf<Outpost::UpgradeStructureCommand>(ai.Update(snapshot));
+      const Outpost::EntityView* station = nullptr;
+      for (const Outpost::EntityView& entity : snapshot.entities)
+      {
+        if (entity.kind == Outpost::EntityKind::Structure && entity.structure == Outpost::StructureKind::CommandStation &&
+            entity.owner == AI)
+          station = &entity;
+      }
+      Assert::IsNotNull(station);
+      return std::ranges::any_of(upgrades,
+                                 [station](const Outpost::UpgradeStructureCommand& _upgrade) { return _upgrade.structure == station->id; });
+    };
+    Assert::IsFalse(upgradesStation(5), L"ten of twelve points leave room for another brawler");
+    Assert::IsTrue(upgradesStation(6), L"twelve of twelve hold the next one back");
+  }
+
   // Task 12.2: the AI fortifies its base with the settings' Defence Platforms for each Shipyard, toward the map's center.
-  // Each Shipyard's platforms are counted once placed, since its Constructors build them in the half minute after it.
+  // Each Shipyard's platforms are counted once placed, since its Constructors build them in the half minute after it. Seven
+  // minutes, where Phase 3 had five: Phase 4's platforms cost three times as much (Phase 4 design §4).
   TEST_METHOD(FortifiesItsBaseForEachShipyard)
   {
     Outpost::AiSettings settings = RepositorySettings();
     settings.homePlatformsPerShipyard = 2;
     AiMatch match(3, std::nullopt, settings);
-    match.Run(5.0 * 60.0);
+    match.Run(7.0 * 60.0);
     const Outpost::Snapshot view = match.View(AI);
     const Outpost::PlanePosition home = match.Start(AI);
     std::ptrdiff_t shipyards = 0;
@@ -984,7 +1061,7 @@ public:
       if (structure->structure == Outpost::StructureKind::DefensePlatform && Outpost::Distance(structure->position, home) < 500.0f)
         ++homePlatforms;
     }
-    Assert::IsTrue(shipyards >= 2, L"fewer Shipyards than five minutes bring");
+    Assert::IsTrue(shipyards >= 2, L"fewer Shipyards than seven minutes bring");
     // The one beside the Command Station, and two for each Shipyard.
     Assert::IsTrue(homePlatforms >= 1 + (2 * shipyards) - 2, L"the base is not fortified as its Shipyards grow");
   }
@@ -1020,9 +1097,10 @@ public:
         asteroid.reserveOre = 200;
     }
     AiMatch match(3, map);
-    // Nine minutes: its fourth sector waits for its Command Station's level 2, 300 Ore and 45 s of a Constructor's work
-    // before the Relay (Phase 3 design §7), where Phase 2 had it in eight.
-    match.Run(9.0 * 60.0);
+    // Twelve minutes: its fourth sector waits for its Command Station's level 2, 300 Ore and 45 s of a Constructor's work
+    // before the Relay (Phase 3 design §7), where Phase 2 had it in eight; and each rig away from home waits for a platform
+    // of 450 Ore (Phase 4 design §4), where Phase 3 had it in nine.
+    match.Run(12.0 * 60.0);
     const Outpost::Snapshot view = match.View(AI);
     std::ptrdiff_t dry = 0;
     std::ptrdiff_t mining = 0;

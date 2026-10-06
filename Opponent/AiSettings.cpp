@@ -78,6 +78,9 @@ Outpost::AiSettings ReadAiSettings(std::string_view _json)
   settings.claimSectors = root.Integer("claimSectors", 0);
   settings.secondSlotTier = root.Integer("secondSlotTier", 1);
   settings.attackLevelMeters = root.Number("attackLevelMeters", JsonBound::NotNegative);
+  settings.attackCapShare = root.Number("attackCapShare", JsonBound::Positive);
+  if (settings.attackCapShare > 1.0)
+    Neuron::JsonFail(root.PathOf("attackCapShare"), "a share of at most 1, since a reserve never holds more than the cap allows");
   root.Finish();
 
   for (size_t i = 0; i < settings.counters.size(); ++i)

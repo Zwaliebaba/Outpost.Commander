@@ -77,6 +77,11 @@ struct AiSettings
   // each level it has above the first, among structures of one rank.
   std::int32_t secondSlotTier = 0;
   double attackLevelMeters = 0.0;
+
+  // The fleet cap (Phase 4 design §5, §12). Its main attack also goes once its reserve holds this share of the ships its
+  // cap lets it have of its production design's hull, when that is fewer than attackGroupShips asks, so that the cap never
+  // keeps it from attacking. A share of 1 waits for a full cap.
+  double attackCapShare = 1.0;
 };
 
 // Reads the text of OutpostCommander/Assets/Opponent.json. Throws Neuron::Exception on the first problem, naming where it

@@ -51,5 +51,6 @@
   "frontPlatforms": 1,
   "claimSectors": 0,
   "secondSlotTier": 3,
-  "attackLevelMeters": 500
+  "attackLevelMeters": 500,
+  "attackCapShare": 1.0
 }
