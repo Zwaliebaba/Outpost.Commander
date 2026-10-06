@@ -23,11 +23,11 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 27.1 | Ships and the Defence Platform cost three times as much | — | L1 | in progress |
-| 27.2 | The fleet cap, on the server | — | L2 | in progress |
-| 27.3 | The client shows the fleet and its cap | 27.2 | L2 | todo |
-| 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | todo |
-| 27.5 | Milestone 27 measured on today's map | 27.4 | — | todo |
+| 27.1 | Ships and the Defence Platform cost three times as much | — | L1 | built, in milestone 27's PR |
+| 27.2 | The fleet cap, on the server | — | L2 | built, in milestone 27's PR |
+| 27.3 | The client shows the fleet and its cap | 27.2 | L2 | built, in milestone 27's PR; awaiting CI and the owner's run |
+| 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | built, in milestone 27's PR |
+| 27.5 | Milestone 27 measured on today's map | 27.4 | — | measured in the container |
 | 28.1 | The client and the engine follow the map's size | — | L6 | todo |
 | 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | todo |
 | 28.3 | Production follows territory | — | L5 | todo |
@@ -58,6 +58,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** ADR-014 and ADR-016 are edited in place where they quote the numbers.
 - **Acceptance:** every `GameLogicTests` suite passes with the new numbers; tests that quote a cost read it from the data where they can.
 - **Verify:** CI; the container's run of `GameLogicTests`; `BalanceCheckTests` at the new budgets.
+- **As built:** ADR-014 and ADR-016 quote none of the numbers; ADR-058 quoted the Sensor Array's 40 Ore and is edited in place. The tests that quote a design's cost or a hull's build time quote the new ones, since they check the data. `BalanceCheckTests`' recorded counters hold at the tripled budgets. The full check (`OUTPOST_BALANCE_FULL`) was not run: a battle's Ore and its ships' costs both triple, so each buys the same ships, and only the per-battle seeds, which hash the budget, change. `GameAppTests`' designer fixtures hold the old numbers as a snapshot of their own and do not read `Tuning.json`, so they are unchanged.
 
 ### 27.2 — The fleet cap, on the server
 
@@ -69,12 +70,14 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** a new one, ADR-071: the fleet cap.
 - **Acceptance:** `FleetCapTests` cover a job waiting at the cap and starting once a ship is lost, jobs under way counted, a Constructor never counted, the cap rising with the station's level, level 1's cap without a station, and no cap without the data. `TuningTests` cover the new members and their refusals. `WireFormatTests` cover the new fields.
 - **Verify:** CI; the container's run of `GameLogicTests`.
+- **As built:** [ADR-071](../Design/ADR/ADR-071-fleet-cap.md); ADR-016 edited in place. `FleetCapTests` has a sixth test, that a Medium's two points do not fit where a Small's one would. The protocol's version is 7.
 
 ### 27.3 — The client shows the fleet and its cap
 
 - **Scope:** the status panel's Shipyards line ends with "fleet 18 / 30" and counts the Shipyards waiting for the cap; a Shipyard's selection panel and its production window's queue say when its front job waits for the cap rather than for Ore; the Command Station's next level names its cap (design §13).
 - **Acceptance:** `HudTests` for the fleet line, the waiting card and the upgrade's text.
 - **Verify:** CI; **owner run**.
+- **As built:** `HudTests.ShowsTheFleetAgainstItsCap`. The fleet is at the end of the Shipyards' status line rather than a panel of its own, so that it needs no room the HUD does not already keep (design §13 edited to match). **Not built or run in the container**, which has no Windows headers for the client: CI is its first build, and the owner's run its first look.
 
 ### 27.4 — The AI plays within the cap
 
@@ -82,6 +85,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** ADR-020 and ADR-041 edited in place.
 - **Acceptance:** `AiPlayerTests` pass, with a test that the AI upgrades its station when capped.
 - **Verify:** CI; AI-against-AI matches in the container.
+- **As built:** ADR-020 decision 15 and ADR-041 decisions 1 and 5 edited in place. The station is upgraded a round of the Shipyards ahead of the cap, a ship of the production design from each, since a level takes most of a minute and waiting for the cap itself stalled production for each one. `attackCapShare` is a new setting, 0.8 for Normal and Hard and 1 for Easy. Raids are unchanged: two Small ships fit any cap. The tests of the attack group's size and of node-driven upgrades run without the cap, and three economy tests are re-timed: each rig away from home waits for a platform of 450 Ore. `AiPlayerTests.AttacksOnceItsReserveFillsTheCap` and `UpgradesItsStationWhenTheCapHoldsItBack` are new.
 
 ### 27.5 — Milestone 27 measured on today's map
 
