@@ -66,6 +66,14 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
 
   const float half = _mapSizeMeters / 2.0f;
   const bool inside = std::abs(_cursor.xMeters) + _type.radiusMeters <= half && std::abs(_cursor.zMeters) + _type.radiusMeters <= half;
+  // On a map with sectors, a Shipyard stands only in a sector the player holds, so that production follows territory
+  // (Phase 4 design §6).
+  if (_type.structure == StructureKind::Shipyard && !_sectors.empty())
+  {
+    const SectorView* sector = FindSector(_sectors, _cursor);
+    if (sector == nullptr || sector->holder != _player)
+      return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = false};
+  }
   const auto overlaps = [&](const EntityView& _other)
   {
     const bool blocks =

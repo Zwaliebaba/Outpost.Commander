@@ -6,8 +6,8 @@ namespace Outpost
 // rules to what the snapshot shows (ADR-016): the footprint stays inside the map and overlaps no asteroid, field or
 // structure, and a Mining Rig snaps to a free ore asteroid within RIG_SNAP_METERS of the cursor. On a map with sectors
 // (ADR-056), a Relay snaps to the node site of the sector under the cursor, which must be adjacent to one the player
-// holds, and a rig's asteroid must be in a sector the player holds; and a Relay waits while the player is at its Command
-// Station's node cap (Phase 3 design §7). The server decides; this only lets the ghost show green or red, and a rig on its
+// holds, a rig's asteroid and a Shipyard must be in a sector the player holds (Phase 4 design §6); and a Relay waits while
+// the player is at its Command Station's node cap (Phase 3 design §7). The server decides; this only lets the ghost show green or red, and a rig on its
 // asteroid or a Relay on its node.
 struct GhostPlacement
 {
