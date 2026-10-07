@@ -44,8 +44,8 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 32.1 | The Repair Bay and retreat, on the server | — | L9 | done |
 | 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | done; the owner's run accepted on 2026-10-07 |
 | 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | owner, 2026-10-07 | done |
-| 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | todo |
-| 34.2 | U1–U8 | 33.1, 34.1 | — | todo |
+| 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | done |
+| 34.2 | U1–U8 | 33.1, 34.1 | — | U1–U5 measured in the container; U6 BALANCE_STATUS; U7 and U8 await the owner |
 
 ### Milestone order
 
@@ -325,4 +325,30 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 
 ## Milestone 34 — Measuring Phase 4
 
-Scoped in detail when it becomes the next milestone, from design §2. Its tasks are on the board above.
+**Asked before 34.1** (owner, 2026-10-07): the match log records Phase 4's events in the client, and the Linux harness measures U1–U5 over seeds 1–40.
+
+### 34.1 — The match log for Phase 4
+
+- **Gate:** design §2.
+- **Scope:**
+  - `MatchLog`'s records of each derelict salvaged, each pirate outpost fought and cleared, and each warship that turns for home, is repaired and fights again, read from snapshots as before.
+  - `Tools/MatchLog.py` scoring U1–U5 for a match and over many.
+- **ADR:** ADR-038 edited in place.
+- **Acceptance:** `MatchLogTests.RecordsThePiratesFightsApart` and `RecordsSalvageRetreatsAndRepairs`.
+- **Verify:** CI; the container's run of `MatchLogTests`; four AI-against-AI matches logged through `MatchLog` in the Linux harness and read by `Tools/MatchLog.py`.
+- **As built:** recorded in [ADR-038](../Design/ADR/ADR-038-phase-one-match-log.md).
+  - The log works out who salvaged a derelict from the snapshots: one gone while the player's Constructors were at it.
+  - U3 counts each warship once however often it goes back, as the design words it; the harness had counted each retreat, which halved the share that fights again.
+  - `Tools/MatchLog.py` leaves the pirates out of the players; their warships had been listed as a player's since milestone 30.
+
+### 34.2 — U1–U8
+
+- **Gate:** design §2.
+- **Scope:** U1–U5 over seeds 1–40 in the container's harness; U6, the balance check of MVP §3 at Phase 4's budgets; U7 and U8, the owner's.
+- **Verify:**
+  - U1–U5: the Linux harness, recorded in design §2 after milestone 33; milestone 34 changes nothing the matches play.
+  - U6: `BalanceCheckTests.TheFullCheck` with `OUTPOST_BALANCE_FULL` set, run in the container.
+  - **U7, owner run:** in Release, `--measure` on an AI-against-AI match for the 99th percentile tick, and a frame capture zoomed out over the largest fight at 1920×1080.
+  - **U8, owner run:** a match against the AI, judging whether the opening feels like exploring, and whether a 10 km map can be followed with the camera, the minimap and the alerts.
+  - The owner's own AI-against-AI figures: `OutpostCommander.exe --ai-matches --matches 40 --limit-minutes 180`, then `python Tools/MatchLog.py --ai-matches`. MSVC's build may play the seeds differently from clang's (ADR-009).
+- **As built:** see design §2.
