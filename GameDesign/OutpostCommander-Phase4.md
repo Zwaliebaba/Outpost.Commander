@@ -84,6 +84,25 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **The first shot comes at 4:42 in every match,** the scouts meeting at the enemy's flank: there is nothing yet to find on the way (U1 waits for milestones 29 to 31).
 - **The engine, in the container:** the median match's 99th percentile tick is 2.5 ms, and the worst match's 4.2 ms, under U7's 5 ms; the slowest single tick is 20 ms in the median match and 39 ms at worst. U7 itself is the owner's run in Release.
 
+**After milestone 29** (plan task 29.1): a lead of one node takes 50 minutes on any map (29.0), and each sector's asteroids are placed from the seed, so the 40 seeds play 40 different maps. The same harness and seeds.
+
+| Over seeds 1–40 | 10 km, after milestone 28 | 10 km, after milestone 29 |
+|---|---|---|
+| Most warships a side has at once, median of the 80 sides (largest) | 25.5 (50) | 21 (46) |
+| Sides over 40 warships at once | 14 of 80 | 4 of 80 |
+| Warships a side has at minute 20, median; sides with 20 or more | 13; 0 of 80 | 14; 12 of 80 |
+| Warships a side builds in a match, median | 129.5 | 82 |
+| First shot, median (earliest–latest) | 4:42 (4:42–4:43) | 4:42 (4:35–5:21) |
+| Match length, median (shortest–longest) | 2:08:55 (1:40:30–3:04:20) | 1:37:06 (54:09–2:30:39) |
+| Endings; won by player 1 | 40 domination; 22 | 40 domination; 20 |
+| Ore a side holds at minute 20, median; sides over 2,000 | 2,625; 50 of 80 | 1,777; 32 of 80 |
+| Ore a side holds at minute 30, median | 18,236 | 17,135 |
+
+- **U5: matches are shorter, and still end by domination only.** A third shorter at the median, and the longest under two and a half hours. Half the matches last 1:23 to 1:50: the sides stay within a node of each other for most of a match, so the drain runs slowly until one pulls ahead. No AI takes the other's base.
+- **Placement from the seed is fair.** Each player wins 20 of the 40, and the first shot varies by up to 46 seconds where every map was the same before.
+- **Ore still piles up** behind the cap, as the owner expected, for Phase 4's later sinks to take (milestones 30 to 32) and milestone 34 to measure.
+- **The engine:** the median match's 99th percentile tick is 2.1 ms in the container, the worst match's 4.2 ms. One match's slowest tick took 72 ms, the most yet; the median match's slowest is 23 ms.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06

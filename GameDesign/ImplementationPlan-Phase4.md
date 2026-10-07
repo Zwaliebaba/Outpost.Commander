@@ -35,7 +35,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 28.3 | Production follows territory | — | L5 | built, in milestone 28's PR; the ghost's test awaits CI |
 | 28.4 | The engine measured at 10 km (U7) | 28.2 | — | measured in the container; U7 awaits the owner's run |
 | 29.0 | A lead of one node takes 50 minutes on any map | 28.4 | owner, 2026-10-07 | built, in milestone 29's PR |
-| 29.1 | Placement from the seed | 28.2 | L10 | todo |
+| 29.1 | Placement from the seed | 28.2 | L10 | built, in milestone 29's PR |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
 | 30.2 | The client draws pirates | 30.1 | L7 | todo |
 | 31.1 | Derelicts and salvage | 29.1 | L8 | todo |
@@ -160,6 +160,15 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** ADR-057 edited in place; design §6 and §14.
 - **Acceptance:** `DominationTests`, a lead of one ending the match in exactly 50 minutes on the 10 km map.
 - **Verify:** CI; the container's run of `GameLogicTests`.
+
+### 29.1 — Placement from the seed
+
+- **Gate:** L10, decided; the asteroids' counts by the owner on 2026-10-07.
+- **Scope:** `Map.json` keeps the size, the sectors, the fields, the starts and each home's three asteroids, and gives each sector a kind; each kind names the ore asteroids it gets by yield, with today's counts. The server places them from the match's seed before the match, point-symmetric (design §7). Derelicts and pirate outposts join the kinds with milestones 30 and 31.
+- **ADR:** a new one, ADR-072: seeded placement. ADR-036 decision 4 edited in place.
+- **Acceptance:** `MapTests` cover the shape and the Ore over twelve seeds, symmetry, reachability, the same seed placing the same map and every asteroid keeping the placement's rules, and the loader's refusals of broken kinds.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
+- **As built:** recorded in [ADR-072](../Design/ADR/ADR-072-seeded-placement.md) and design §2. Seeds 1 to 2,000 all place the map, at about 10 µs each. `Tools/MakeMap.py` writes the kinds. The tests that named an asteroid's place find one the seed placed (`TerritoryMatch::AsteroidIn`), and the fixtures place their bases and loads on the server's placed map; no AI test needed re-timing. Over seeds 1–40 the median match is 1:37, every match ends by domination, and each player wins 20.
 
 ## Milestones 30 to 34
 
