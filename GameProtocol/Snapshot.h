@@ -265,6 +265,9 @@ struct SectorView
   // It is held but no longer linked to its holder's home sector through the sectors its holder holds: it earns the
   // tuning data's share.
   bool cutOff = false;
+  // A pirate structure stands in it, so that it cannot be claimed (Phase 4 design §8). Every player sees it, as it sees
+  // the holder, though the pirates themselves are under fog of war like an enemy (ADR-073).
+  bool guarded = false;
 
   // Whether _position is in the sector, its borders included, as the map's sector is.
   [[nodiscard]] bool Contains(PlanePosition _position) const noexcept

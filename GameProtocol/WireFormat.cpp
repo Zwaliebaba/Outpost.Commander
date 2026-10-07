@@ -217,8 +217,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, SectorView>
 auto Fields(Self& _value)
 {
-  auto& [id, nameUtf8, minXMeters, maxXMeters, minZMeters, maxZMeters, node, adjacent, holder, suppressed, cutOff] = _value;
-  return std::tie(id, nameUtf8, minXMeters, maxXMeters, minZMeters, maxZMeters, node, adjacent, holder, suppressed, cutOff);
+  auto& [id, nameUtf8, minXMeters, maxXMeters, minZMeters, maxZMeters, node, adjacent, holder, suppressed, cutOff, guarded] = _value;
+  return std::tie(id, nameUtf8, minXMeters, maxXMeters, minZMeters, maxZMeters, node, adjacent, holder, suppressed, cutOff, guarded);
 }
 
 template <typename Self>

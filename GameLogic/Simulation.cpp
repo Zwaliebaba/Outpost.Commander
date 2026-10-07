@@ -731,6 +731,8 @@ void Outpost::Simulation::PlacePirates(const Map& _map)
     }
     m_outposts.push_back(std::move(outpost));
   }
+  // Their sectors are guarded from the first tick.
+  UpdateTerritory();
 }
 
 std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands, TickObserver* _observer)
@@ -983,7 +985,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                 .adjacent = placement.adjacent,
                                 .holder = sector.holder,
                                 .suppressed = sector.suppressed,
-                                .cutOff = sector.cutOff});
+                                .cutOff = sector.cutOff,
+                                .guarded = sector.guarded});
   }
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
@@ -1844,7 +1847,7 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
     if (relaySector == nullptr)
       return CommandResult::InvalidPlacement;
     _position = relaySector->placement.node;
-    if (IsGuarded(*relaySector))
+    if (relaySector->guarded)
       return CommandResult::Guarded;
   }
   if (_kind == StructureKind::MiningRig)
@@ -2360,7 +2363,7 @@ const Outpost::Simulation::Sector* Outpost::Simulation::SectorById(std::int32_t 
 // nothing yet. A Relay is suppressed while an enemy warship is within the tuning data's radius of it and none of its
 // owner's is; a Command Station never is. A held sector is linked when its holder holds a path of adjacent sectors to one
 // of its home sectors, the ones its Command Station holds, suppressed ones included; one that is not is cut off (Phase 2
-// design §4–§6, ADR-056).
+// design §4–§6, ADR-056). A sector a pirate structure stands in is guarded, and cannot be claimed (ADR-073).
 void Outpost::Simulation::UpdateTerritory()
 {
   if (!HasTerritory())
@@ -2372,6 +2375,7 @@ void Outpost::Simulation::UpdateTerritory()
     sector.home = false;
     sector.suppressed = false;
     sector.cutOff = false;
+    sector.guarded = false;
     const auto onNode = std::ranges::find_if(m_entities,
                                              [&sector](const Entity& _entity)
                                              {
@@ -2397,6 +2401,15 @@ void Outpost::Simulation::UpdateTerritory()
       (ship.owner == sector.holder ? ownNear : enemyNear) = true;
     }
     sector.suppressed = enemyNear && !ownNear;
+  }
+
+  // A sector a pirate structure stands in is guarded (ADR-073).
+  for (const Entity& entity : m_entities)
+  {
+    if (entity.kind != EntityKind::Structure || entity.owner != PIRATES)
+      continue;
+    for (Sector& sector : m_sectors)
+      sector.guarded = sector.guarded || sector.placement.Contains(entity.position);
   }
 
   // Outward from each home sector through the sectors its holder holds.
@@ -2927,13 +2940,6 @@ void Outpost::Simulation::GuardOutposts()
     if (!homeward && Distance(center, outpost.node) > HOLD_RETURN_METERS)
       (void)OrderMove(PIRATES, outpost.ships, outpost.node, ShipOrder::Move);
   }
-}
-
-bool Outpost::Simulation::IsGuarded(const Sector& _sector) const noexcept
-{
-  return std::ranges::any_of(
-    m_entities, [&_sector](const Entity& _entity)
-    { return _entity.kind == EntityKind::Structure && _entity.owner == PIRATES && _sector.placement.Contains(_entity.position); });
 }
 
 // A new design is of components the player has, and is not one it already has; a saved one is renamed (ADR-017).

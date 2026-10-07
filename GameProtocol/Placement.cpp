@@ -30,7 +30,7 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
     GhostPlacement ghost =
       PlaceGhost({.structure = StructureKind::Shipyard, .radiusMeters = _type.radiusMeters}, sector->node, _entities, _mapSizeMeters);
     ghost.valid = ghost.valid && !sector->holder.IsValid() && std::ranges::any_of(sector->adjacent, heldByPlayer) &&
-                  !AtNodeCap(_sectors, _entities, _player, _nodeCap);
+                  !AtNodeCap(_sectors, _entities, _player, _nodeCap) && !sector->guarded;
     return ghost;
   }
   if (_type.structure == StructureKind::MiningRig)

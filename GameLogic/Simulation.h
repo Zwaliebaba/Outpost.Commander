@@ -457,6 +457,8 @@ private:
     bool home = false;
     bool suppressed = false;
     bool cutOff = false;
+    // A pirate structure stands in it (ADR-073).
+    bool guarded = false;
 
     friend bool operator==(const Sector&, const Sector&) = default;
   };
@@ -513,7 +515,8 @@ private:
   // The first sector that holds _position, or the one with this identifier; nullptr when there is none.
   [[nodiscard]] const Sector* SectorAt(PlanePosition _position) const noexcept;
   [[nodiscard]] const Sector* SectorById(std::int32_t _id) const noexcept;
-  // Works out again who holds each sector, which Relays are suppressed and which sectors are cut off (ADR-056).
+  // Works out again who holds each sector, which Relays are suppressed, which sectors are cut off (ADR-056) and which the
+  // pirates guard (ADR-073).
   void UpdateTerritory();
   // The nodes _player may hold (Phase 3 design §7): its Command Station's level's, or level 1's without one; zero for no
   // cap. And the nodes it holds or has taken with a Relay under construction.
@@ -550,8 +553,6 @@ private:
   [[nodiscard]] bool IsPlanning(EntityId _ship) const noexcept;
   // Once a second, each outpost's ships go after a player's ship or structure near its node, and back to it (ADR-073).
   void GuardOutposts();
-  // Whether a pirate structure stands in _sector.
-  [[nodiscard]] bool IsGuarded(const Sector& _sector) const noexcept;
   void OrderWork(const std::vector<EntityId>& _constructors, EntityId _target);
   // The map's obstacles and every structure but the Mining Rigs, which stand on asteroids; and ships whose way a new
   // structure blocks look for another.

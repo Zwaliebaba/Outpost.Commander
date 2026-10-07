@@ -138,6 +138,12 @@ public:
     return m_server.World().BuildSnapshot(_player);
   }
 
+  // The commands the server has applied, the AI's among them.
+  [[nodiscard]] const std::vector<Outpost::LoggedCommand>& CommandLog() const noexcept
+  {
+    return m_server.CommandLog();
+  }
+
   // The map as the server placed it from the match's seed (ADR-072).
   [[nodiscard]] const Outpost::Map& MapData() const noexcept
   {
@@ -324,6 +330,8 @@ public:
     const Outpost::AiSettings settings = RepositorySettings();
     Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 2).Add(HUMAN, LINE, 3).Get()) == SWARM);
     Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 2).Add(AI, LINE, 9).Get()) == BRAWLER);
+    // Pirates are no fleet to answer: the enemy is the other player (ADR-073).
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 2).Add(Outpost::PIRATES, LINE, 9).Get()) == BRAWLER);
     // A tie goes to the lowest hull: the swarm's, answered with the brawler.
     Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, LINE, 3).Add(HUMAN, SWARM, 3).Get()) == BRAWLER);
   }
@@ -556,6 +564,35 @@ public:
     Assert::AreEqual(size_t{1}, claimed.size(), L"not one claim at five minutes");
     Assert::AreEqual(D5, claimed.front(), L"not D5, which mirrors the B1 player 1 claims");
     Assert::IsTrue(relays(0).empty(), L"a claim with none in the settings");
+  }
+
+  // Until milestone 33 it leaves pirates alone: it orders no Relay in a sector they guard, and claims others in its place
+  // (ADR-073).
+  TEST_METHOD(LeavesASectorWithPiratesAlone)
+  {
+    Outpost::AiSettings settings = RepositorySettings();
+    settings.contestedAsteroids = 0;
+    settings.claimSectors = 8;
+    AiMatch match(3, std::nullopt, settings);
+    match.Run(25 * 60.0);
+    std::vector<std::int32_t> guarded;
+    for (const Outpost::OutpostPlacement& outpost : match.MapData().outposts)
+      guarded.push_back(outpost.sector);
+    const Outpost::Snapshot view = match.View(AI);
+    std::size_t orders = 0;
+    for (const Outpost::LoggedCommand& logged : match.CommandLog())
+    {
+      const auto* build = std::get_if<Outpost::BuildStructureCommand>(&logged.command.order);
+      if (logged.command.player == AI && build != nullptr && build->structure == Outpost::StructureKind::Relay &&
+          std::ranges::find(guarded, Outpost::FindSector(view.sectors, build->position)->id) != guarded.end())
+        ++orders;
+    }
+    std::size_t held = 0;
+    for (const Outpost::SectorView& sector : view.sectors)
+      held += sector.holder == AI ? 1 : 0;
+    // Measured: 145 Relays ordered and 7 sectors held by an AI that tried them, 0 and 9 by this one.
+    Assert::AreEqual(size_t{0}, orders, L"a Relay ordered where the pirates guard");
+    Assert::IsTrue(held >= 8, L"it claimed no other sectors in their place");
   }
 
   // Task 18.1: a sector it holds next to one the enemy holds is its front, and gets the settings' Defence Platform by its

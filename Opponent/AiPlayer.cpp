@@ -200,7 +200,9 @@ Outpost::DesignComponents Outpost::ChooseAnswer(const AiSettings& _settings, con
   std::vector<DesignComponents> warships;
   for (const EntityView& ship : _snapshot.entities)
   {
-    if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner.IsValid() && ship.owner != _snapshot.player)
+    // The enemy is the other player: pirates are no fleet to answer (ADR-073).
+    if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner.IsValid() && ship.owner != _snapshot.player &&
+        ship.owner != PIRATES)
       warships.push_back({.hull = ship.hull, .drive = ship.drive, .weapon = ship.weapon});
   }
   return ChooseAnswer(_settings, warships, _snapshot);
@@ -265,7 +267,9 @@ void Outpost::AiPlayer::Watch(const Snapshot& _snapshot)
   {
     if (entity.kind == EntityKind::Structure && entity.owner == m_player)
       structures.emplace_back(entity.id, entity.position);
-    else if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Warship && entity.owner.IsValid() && entity.owner != m_player)
+    // The enemy's warships, not the pirates', which are no fleet to answer (ADR-073).
+    else if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Warship && entity.owner.IsValid() && entity.owner != m_player &&
+             entity.owner != PIRATES)
       m_seenWarships[entity.id] = {.hull = entity.hull, .drive = entity.drive, .weapon = entity.weapon};
   }
   for (const ShotView& shot : _snapshot.shots)
@@ -684,11 +688,12 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
     return true;
   if (_slot.besideRig.has_value())
     return IsBlocked(m_slots[*_slot.besideRig], _snapshot);
-  // A rig or Relay in a sector the enemy holds waits for the enemy to lose it.
+  // A rig or Relay in a sector the enemy holds waits for the enemy to lose it, and one the pirates guard waits for them
+  // to fall: milestone 33 teaches it to clear them (ADR-073).
   if (_slot.structure == StructureKind::MiningRig || _slot.structure == StructureKind::Relay)
   {
     const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
-    if (sector != nullptr && sector->holder.IsValid() && sector->holder != m_player)
+    if (sector != nullptr && ((sector->holder.IsValid() && sector->holder != m_player) || sector->guarded))
       return true;
   }
   if (_slot.structure != StructureKind::MiningRig)
@@ -717,7 +722,7 @@ bool Outpost::AiPlayer::IsReady(const Slot& _slot, const Snapshot& _snapshot) co
 bool Outpost::AiPlayer::IsClaimable(const Slot& _slot, const Snapshot& _snapshot) const
 {
   const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
-  return sector != nullptr && !sector->holder.IsValid() &&
+  return sector != nullptr && !sector->holder.IsValid() && !sector->guarded &&
          std::ranges::any_of(sector->adjacent,
                              [&](std::int32_t _id)
                              {
@@ -1082,6 +1087,13 @@ void Outpost::AiPlayer::ClaimTerritory(const Snapshot& _snapshot)
   const bool claiming =
     std::ranges::any_of(m_slots, [&](const Slot& _slot)
                         { return _slot.structure == StructureKind::Relay && !IsDone(_slot, _snapshot) && !IsBlocked(_slot, _snapshot); });
+  // A claim the pirates guard is no claim, and it claims another in its place (ADR-073).
+  std::erase_if(m_claimed,
+                [&_snapshot](std::int32_t _id)
+                {
+                  const SectorView* sector = FindSectorById(_snapshot, _id);
+                  return sector != nullptr && sector->guarded;
+                });
   if (claiming || std::cmp_greater_equal(m_claimed.size(), m_settings.claimSectors))
     return;
   const SectorView* claimed = nullptr;
@@ -1090,7 +1102,7 @@ void Outpost::AiPlayer::ClaimTerritory(const Snapshot& _snapshot)
     // A sector its plan already takes, by a rig's Relay, is no claim: the claims are beyond those (Phase 3 design §8).
     const bool planned = std::ranges::any_of(m_slots, [&sector](const Slot& _slot)
                                              { return _slot.structure == StructureKind::Relay && _slot.position == sector.node; });
-    if (sector.holder.IsValid() || planned || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
+    if (sector.holder.IsValid() || sector.guarded || planned || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
       continue;
     const bool adjacent = std::ranges::any_of(sector.adjacent,
                                               [&](std::int32_t _id)
@@ -1356,7 +1368,8 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
     const EntityView* best = nullptr;
     for (const EntityView& entity : _snapshot.entities)
     {
-      if (entity.kind != EntityKind::Structure || !entity.owner.IsValid() || entity.owner == m_player)
+      // It attacks the enemy, not the pirates (ADR-073).
+      if (entity.kind != EntityKind::Structure || !entity.owner.IsValid() || entity.owner == m_player || entity.owner == PIRATES)
         continue;
       // Within a rank, a structure's levels bring it nearer: a Shipyard at level 3 is worth more than one at level 1
       // (Phase 3 design §8).
