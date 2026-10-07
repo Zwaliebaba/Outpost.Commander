@@ -243,7 +243,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Pirates are a neutral owner in the simulation, not a player.** They have no Ore, production or research, and they send no commands. Their behavior is a rule that the simulation runs, as a Command Station's gun is, so it is deterministic and costs nothing in transport. The AI as a client (ADR-002) is for players. An ADR records the neutral owner when it is built.
 - **An outpost sits on a sector's node and holds it for no one.** The sector cannot be claimed until the outpost's structures are destroyed. Its asteroids earn nothing for anyone until then. A node held by pirates counts for no one in domination (Phase 2 §8).
 - **Two sizes:**
-  - **A camp:** one Defence Platform and 3 Small Mass Driver ships. A first fleet of 4–6 Small ships clears it with losses.
+  - **A camp:** one Defence Platform and 3 Small Mass Driver ships. A first fleet of 4–6 Small Lance ships clears it with losses; a fleet of Small Mass Driver ships needs about 8, since the Mass Driver's hit barely tells against the platform's armor (owner, 2026-10-07, from milestone 30's measurement in ADR-073).
   - **A stronghold:** two Defence Platforms and 4 Medium ships, one of them with a Lance. It guards a rich sector or the center.
 - **Guarding.** An outpost's ships attack any player's ship or structure within 600 m of its node, chase no further than 900 m, and then go back to the node. They never raid, and they never leave the sector.
 - **No respawn.** A cleared outpost stays cleared. Pirates are the opening's content and the mid-game's obstacles, not a third side for the whole match.

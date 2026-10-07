@@ -79,7 +79,7 @@ What the design leaves open: how the neutral owner is represented, how an outpos
   | Brawler, Medium Mass Driver | 3 lose; 4 clear it, 2 lost | 8 lose; 10 clear it, 5 lost |
   | Lancer, Medium Lance | 3 clear it, none lost | 3 lose; 4 clear it, 3 lost |
 
-  A Mass Driver's 14 damage does a Defence Platform, armor 10, 4 a hit. §8's "a first fleet of 4–6 Small ships clears it with losses" therefore holds for Pickets, not for Swarms. The numbers are starting values (L7). `PirateTests` keeps the Picket result. The ships fight to the end: since milestone 32 a ship turns for home below a quarter of its hit points unless set never to, and the test sets them so ([ADR-075](ADR-075-repair-and-retreat.md)). The pirates' own ships never retreat.
+  A Mass Driver's 14 damage does a Defence Platform, armor 10, 4 a hit. §8's "a first fleet of 4–6 Small ships clears it with losses" therefore holds for Pickets, not for Swarms. The owner kept the numbers and reworded §8 to say so (2026-10-07). `PirateTests` keeps the Picket result. The ships fight to the end: since milestone 32 a ship turns for home below a quarter of its hit points unless set never to, and the test sets them so ([ADR-075](ADR-075-repair-and-retreat.md)). The pirates' own ships never retreat.
 - **The AI no longer feeds Constructors to the camps.** In 25 minutes on seed 3, with eight claims allowed, an AI that tried the guarded sectors ordered 145 Relays there and held 7 sectors. This one orders none and holds 9.
 - **AI against AI over seeds 1–40** (design §2):
   - 37 matches end, 3 of them by production, the first such endings on the 10 km map. 3 are still level at three hours: the AI attacks only with a lead in nodes, and the guarded sectors were the ones that broke a tie.
