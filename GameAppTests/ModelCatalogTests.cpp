@@ -18,7 +18,7 @@ constexpr std::array<const char*, 3> HULLS{"Small", "Medium", "Large"};
 constexpr std::string_view STRUCTURES = R"("structures": [ { "structure": "CommandStation", "model": "Small" },
   { "structure": "Shipyard", "model": "Small", "tint": 0.5 }, { "structure": "ResearchLab", "model": "Small" },
   { "structure": "MiningRig", "model": "Small" }, { "structure": "DefensePlatform", "model": "Small" },
-  { "structure": "Relay", "model": "Small" } ], "constructor": "Small",
+  { "structure": "Relay", "model": "Small" }, { "structure": "RepairBay", "model": "Small" } ], "constructor": "Small",
   "exhausts": [ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } } ],
   "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.8 },
   "shots": [ { "weapon": 2, "look": "beam" } ])";
@@ -81,6 +81,9 @@ public:
     Assert::AreEqual(std::string("ResearchLab"), catalog.ModelForStructure(Outpost::StructureKind::ResearchLab)->model);
     Assert::AreEqual(std::string("MiningRig"), catalog.ModelForStructure(Outpost::StructureKind::MiningRig)->model);
     Assert::AreEqual(std::string("DefensePlatform"), catalog.ModelForStructure(Outpost::StructureKind::DefensePlatform)->model);
+    // The Relay and the Repair Bay borrow a model and are told apart by their tint, until they have art (Phase 4 design §10).
+    Assert::AreEqual(std::string("Shipyard"), catalog.ModelForStructure(Outpost::StructureKind::RepairBay)->model);
+    Assert::IsTrue(catalog.ModelForStructure(Outpost::StructureKind::RepairBay)->tint < 1.0f);
     Assert::AreEqual(std::string("Constructor"), catalog.constructor);
   }
 

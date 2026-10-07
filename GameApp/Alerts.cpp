@@ -14,6 +14,8 @@ void Outpost::Alerts::Reset() noexcept
   m_alerts.clear();
   m_suppressed.clear();
   m_entered.clear();
+  m_retreating.clear();
+  m_guarded.clear();
 }
 
 void Outpost::Alerts::Raise(Kind _kind, std::string _text, PlanePosition _position, std::int32_t _sector, std::uint64_t _tick,
@@ -86,6 +88,34 @@ void Outpost::Alerts::Observe(const Snapshot& _snapshot, std::uint32_t _ticksPer
             sector->id, _snapshot.tick, _ticksPerSecond);
   }
   m_entered = std::move(entered);
+
+  // A ship of the player's that has started going back to be repaired (ADR-075).
+  std::vector<EntityId> retreating;
+  for (const EntityView& ship : _snapshot.entities)
+  {
+    if (ship.kind != EntityKind::Ship || ship.owner != player || !ship.retreating)
+      continue;
+    retreating.push_back(ship.id);
+    if (std::ranges::find(m_retreating, ship.id) == m_retreating.end())
+    {
+      const SectorView* sector = sectorOf(ship.position);
+      Raise(Kind::ShipRetreating, std::format("Ship retreating: {}", sectorName(sector)), ship.position, sectorId(sector), _snapshot.tick,
+            _ticksPerSecond);
+    }
+  }
+  m_retreating = std::move(retreating);
+
+  // A sector the pirates guarded that they guard no longer, which every player sees (ADR-073).
+  std::vector<std::int32_t> guarded;
+  for (const SectorView& sector : _snapshot.sectors)
+  {
+    if (sector.guarded)
+      guarded.push_back(sector.id);
+    else if (std::ranges::find(m_guarded, sector.id) != m_guarded.end())
+      Raise(Kind::PiratesCleared, std::format("Pirates cleared: {}", sector.nameUtf8), sector.node, sector.id, _snapshot.tick,
+            _ticksPerSecond);
+  }
+  m_guarded = std::move(guarded);
 }
 
 std::vector<Outpost::Alerts::Alert> Outpost::Alerts::Shown(std::uint64_t _tick, std::uint32_t _ticksPerSecond) const

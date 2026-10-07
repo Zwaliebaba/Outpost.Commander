@@ -61,6 +61,11 @@ public:
     return {m_hull, m_drive, m_weapon, m_module};
   }
 
+  // The design's retreat (Phase 4 design §10): as picked, or else the matching design's, or else the default; and stepping
+  // it to the next, from a quarter to half to never and round. Saving sends it.
+  [[nodiscard]] RetreatThreshold Retreat(const Snapshot& _newest) const noexcept;
+  void StepRetreat(const Snapshot& _newest) noexcept;
+
   // The player's saved design of the picked components, if there is one.
   [[nodiscard]] const DesignView* Match(const Snapshot& _newest) const noexcept;
 
@@ -89,10 +94,11 @@ public:
   }
   std::optional<SaveDesignCommand> Edit(const Neuron::InputEvent& _event, const Snapshot& _newest);
 
-  // After a save is sent, the name follows the snapshot again.
+  // After a save is sent, the name and the retreat follow the snapshot again.
   void ForgetTypedName() noexcept
   {
     m_typed.reset();
+    m_retreat.reset();
     m_editing = false;
   }
 
@@ -128,6 +134,7 @@ private:
   std::uint32_t m_count = 1;
   std::size_t m_firstChip = 0;
   std::optional<std::string> m_typed;
+  std::optional<RetreatThreshold> m_retreat;
   bool m_editing = false;
   std::vector<WaitingQueue> m_waiting;
 };

@@ -158,6 +158,12 @@ public:
     sectors[2].holder = PLAYER;
     Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a sector it took");
     Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS).valid, L"without sectors, anywhere");
+
+    // Phase 4 design §10: so is a Repair Bay's.
+    const Outpost::StructureTypeView bay{.structure = Outpost::StructureKind::RepairBay, .nameUtf8 = "Repair Bay", .radiusMeters = 30.0f};
+    sectors[2].holder = {};
+    Assert::IsTrue(Outpost::PlaceGhost(bay, WEST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a bay in its own sector");
+    Assert::IsFalse(Outpost::PlaceGhost(bay, EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a bay in a free sector");
   }
 
   // ADR-016's rules as the ghost shows them: inside the map, and overlapping no asteroid, field or structure.

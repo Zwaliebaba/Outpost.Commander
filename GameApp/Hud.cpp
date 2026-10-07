@@ -310,6 +310,36 @@ std::string Capitals(std::string_view _text)
   return capitals;
 }
 
+// A ship's retreat as the HUD writes it (Phase 4 design §10).
+std::string RetreatWords(Outpost::RetreatThreshold _retreat)
+{
+  switch (_retreat)
+  {
+  case Outpost::RetreatThreshold::Half:
+    return "Retreat at 50%";
+  case Outpost::RetreatThreshold::Quarter:
+    return "Retreat at 25%";
+  case Outpost::RetreatThreshold::Never:
+    break;
+  }
+  return "Never retreat";
+}
+
+// The retreat a press steps to: from a quarter to half to never, and round.
+Outpost::RetreatThreshold NextRetreat(Outpost::RetreatThreshold _retreat) noexcept
+{
+  switch (_retreat)
+  {
+  case Outpost::RetreatThreshold::Quarter:
+    return Outpost::RetreatThreshold::Half;
+  case Outpost::RetreatThreshold::Half:
+    return Outpost::RetreatThreshold::Never;
+  case Outpost::RetreatThreshold::Never:
+    break;
+  }
+  return Outpost::RetreatThreshold::Quarter;
+}
+
 // The best each of a design's numbers reaches over every design the components make, locked ones included, so that the
 // designer's bars keep their scale as research unlocks parts (Phase 1 design §11).
 struct Best
@@ -435,7 +465,11 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
                 .action = {.kind = Hud::ActionKind::SaveDesign},
                 .enabled = savesNew,
                 .selected = match != nullptr && !save.has_value()};
-  panel.rename = {.label = "RENAME", .action = {.kind = Hud::ActionKind::SaveDesign}, .enabled = save.has_value() && !savesNew};
+  // A saved design whose name is kept and whose retreat changed is updated, not renamed.
+  panel.rename = {.label = match != nullptr && save.has_value() && save->nameUtf8 == match->nameUtf8 ? "UPDATE" : "RENAME",
+                  .action = {.kind = Hud::ActionKind::SaveDesign},
+                  .enabled = save.has_value() && !savesNew};
+  panel.retreat = {.label = Capitals(RetreatWords(_designer.Retreat(_newest))), .action = {.kind = Hud::ActionKind::StepRetreat}};
 
   panel.chips.reserve(_newest.designs.size());
   for (const Outpost::DesignView& design : _newest.designs)
@@ -1303,6 +1337,16 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     paint.Text(rename.label, DESIGNER_INSET + 14.0f, footer + 16.0f, rename.enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label,
                tracking);
   }
+  // The design's retreat, between Rename and the stepper; a press steps it (Phase 4 design §10).
+  {
+    constexpr float RETREAT_LEFT = DESIGNER_INSET + 102.0f;
+    constexpr float RETREAT_WIDTH = 206.0f;
+    const Hud::Rect face = paint.Panel(RETREAT_LEFT, footer, RETREAT_WIDTH, FOOTER_HEIGHT, CARD_COLOR);
+    paint.Outline(RETREAT_LEFT, footer, RETREAT_WIDTH, FOOTER_HEIGHT, EDGE_COLOR);
+    paint.Press(face, _panel.retreat.action);
+    paint.Text(paint.Fit(_panel.retreat.label, Hud::Typeface::Label, RETREAT_WIDTH - 28.0f), RETREAT_LEFT + 14.0f, footer + 16.0f,
+               TEXT_COLOR, Hud::Typeface::Label, tracking);
+  }
   constexpr float STEPPER_LEFT = 346.0f;
   constexpr float STEP_WIDTH = 36.0f;
   constexpr float COUNT_WIDTH = 42.0f;
@@ -2106,6 +2150,10 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   bool constructors = false;
   bool holding = false;
   bool patrolling = false;
+  // The first ship's retreat, whether the others share it, and how many are going back to be repaired (Phase 4 design §10).
+  std::optional<RetreatThreshold> retreat;
+  bool mixedRetreat = false;
+  size_t retreating = 0;
   for (const EntityId id : _selected)
   {
     const auto ship = std::ranges::find(_entities, id, &EntityView::id);
@@ -2114,6 +2162,10 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     constructors = constructors || ship->role == ShipRole::Constructor;
     holding = holding || ship->standing == StandingOrder::HoldSector;
     patrolling = patrolling || ship->standing == StandingOrder::Patrol;
+    mixedRetreat = mixedRetreat || (retreat.has_value() && *retreat != ship->retreat);
+    if (!retreat.has_value())
+      retreat = ship->retreat;
+    retreating += ship->retreating ? 1 : 0;
     hitPoints += ship->hitPointsHundredths;
     maxHitPoints += ship->maxHitPointsHundredths;
     const auto counted = std::ranges::find(byDesign, ship->design, &std::pair<DesignId, size_t>::first);
@@ -2150,7 +2202,9 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.selection.emplace_back("Holding a sector");
   if (patrolling)
     content.selection.emplace_back("On patrol");
-
+  if (retreating > 0)
+    content.selection.push_back(ships == 1 ? std::string("Retreating to be repaired")
+                                           : std::format("{} retreating to be repaired", retreating));
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
   {
@@ -2175,6 +2229,14 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                          : capped  ? std::string("NODE CAP")
                                                    : std::string()});
     }
+  }
+  // The selection's retreat, in the corner below the rest, which a press steps for every ship in it, from the first one's
+  // (Phase 4 design §10, §13).
+  if (retreat.has_value())
+  {
+    content.buttons.push_back({.label = mixedRetreat ? std::string("Retreat: mixed") : RetreatWords(*retreat),
+                               .action = {.kind = ActionKind::SetRetreat, .retreat = NextRetreat(*retreat)},
+                               .enabled = true});
   }
   return content;
 }

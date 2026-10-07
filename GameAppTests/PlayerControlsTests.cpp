@@ -503,6 +503,20 @@ public:
     Assert::IsTrue(Only<Outpost::QueueShipCommand>(commands)->producer == Outpost::EntityId{STATION});
   }
 
+  // Phase 4 design §10: the selection panel's retreat goes to every ship selected.
+  TEST_METHOD(SetsTheSelectionsRetreatFromTheHud)
+  {
+    Driver driver;
+    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.WorldView());
+    Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"nothing selected");
+    driver.Click(driver.WorldView()[0]);
+    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.WorldView());
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    const Outpost::SetRetreatCommand* retreat = Only<Outpost::SetRetreatCommand>(commands);
+    Assert::IsTrue(retreat->ships == std::vector<Outpost::EntityId>{Outpost::EntityId{1}});
+    Assert::IsTrue(retreat->retreat == Outpost::RetreatThreshold::Half);
+  }
+
   TEST_METHOD(ForgetsShipsThatAreGone)
   {
     Driver driver;

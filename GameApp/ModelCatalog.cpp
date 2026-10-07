@@ -134,13 +134,14 @@ Outpost::WeaponShot ReadShot(JsonObjectReader& _reader)
 }
 
 // The file spells a kind as its enumerator, as the tuning data does.
-constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 6> STRUCTURE_KINDS = {{
+constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 7> STRUCTURE_KINDS = {{
   {"CommandStation", Outpost::StructureKind::CommandStation},
   {"Shipyard", Outpost::StructureKind::Shipyard},
   {"ResearchLab", Outpost::StructureKind::ResearchLab},
   {"MiningRig", Outpost::StructureKind::MiningRig},
   {"DefensePlatform", Outpost::StructureKind::DefensePlatform},
   {"Relay", Outpost::StructureKind::Relay},
+  {"RepairBay", Outpost::StructureKind::RepairBay},
 }};
 // A tint brighter than this would wash a set's color out to white.
 constexpr double MAXIMUM_TINT = 2.0;

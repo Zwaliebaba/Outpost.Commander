@@ -104,6 +104,12 @@ void Outpost::PlayerControls::SaveDesign(SaveDesignCommand _save)
   Give(std::move(_save));
 }
 
+void Outpost::PlayerControls::SetRetreat(RetreatThreshold _retreat, std::span<const EntityView> _entities)
+{
+  if (std::vector<EntityId> ships = SelectedShips(_entities); !ships.empty())
+    Give(SetRetreatCommand{.ships = std::move(ships), .retreat = _retreat});
+}
+
 void Outpost::PlayerControls::MoveTo(PlanePosition _destination, std::span<const EntityView> _entities)
 {
   std::vector<EntityId> ships = SelectedShips(_entities);
