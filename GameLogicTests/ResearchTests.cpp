@@ -268,11 +268,14 @@ public:
     const Outpost::Snapshot waiting = arena.World().BuildSnapshot(BLUE);
     Assert::AreEqual(0, std::ranges::find(waiting.entities, lab, &Outpost::EntityView::id)->jobPermille);
 
-    // A home rig earns 5 Ore a second: the topic starts, and is paid for, on the tick after the tenth second's income.
+    // A home rig earns 3.5 Ore a second: after 14 seconds the 50 Ore are not all there, and the topic still waits; in the
+    // fifteenth it starts, and is paid for.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
-    arena.Run(10 * MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(std::int64_t{150} * Outpost::HUNDREDTHS, arena.World().OreHundredths(BLUE));
-    arena.Run(2);
+    arena.Run(14 * MatchArena::TICKS_PER_SECOND);
+    Assert::AreEqual(std::int64_t{149} * Outpost::HUNDREDTHS, arena.World().OreHundredths(BLUE));
+    const Outpost::Snapshot stillWaiting = arena.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(0, std::ranges::find(stillWaiting.entities, lab, &Outpost::EntityView::id)->jobPermille);
+    arena.Run(MatchArena::TICKS_PER_SECOND);
     Assert::IsTrue(arena.World().OreHundredths(BLUE) < std::int64_t{100} * Outpost::HUNDREDTHS);
     const Outpost::Snapshot started = arena.World().BuildSnapshot(BLUE);
     Assert::IsTrue(std::ranges::find(started.entities, lab, &Outpost::EntityView::id)->jobPermille > 0);
@@ -382,19 +385,19 @@ public:
     Assert::AreEqual(124200, design->stats.hitPointsHundredths);
   }
 
-  // Design §8: Improved Extraction raises every rig's income at once, and the 6.25 Ore a second a home rig then earns is
-  // paid in full though it is not a whole number of hundredths a tick.
+  // Design §8: Improved Extraction raises every rig's income at once, and the 4.38 Ore a second a home rig then earns, its
+  // 3.5 raised by a quarter to the nearest hundredth, is paid in full though it is not a whole number of hundredths a tick.
   TEST_METHOD(ImprovedExtractionRaisesTheIncome)
   {
     MatchArena arena;
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     (void)ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION});
-    Assert::AreEqual(625, arena.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
+    Assert::AreEqual(438, arena.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
     const std::int64_t start = arena.World().OreHundredths(BLUE);
     arena.Run(MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(start + 625, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start + 438, arena.World().OreHundredths(BLUE));
     arena.Run(3 * MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(start + (std::int64_t{4} * 625), arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start + (std::int64_t{4} * 438), arena.World().OreHundredths(BLUE));
   }
 
   // Design §8: Automated Shipyards build a quarter faster, and the Command Station's Constructors do not.

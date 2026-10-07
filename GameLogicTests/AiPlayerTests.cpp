@@ -487,7 +487,9 @@ public:
   {
     const Outpost::AiSettings settings = RepositorySettings();
     AiMatch match;
-    match.Run(120.0);
+    // Three minutes, where Phase 3 had two: Phase 4's lower income and dearer ships put its first warship at about 2:30
+    // (Phase 4 design §4).
+    match.Run(180.0);
     Outpost::Snapshot view = match.View(AI);
     const auto scout = std::ranges::find_if(view.entities,
                                             [&settings](const Outpost::EntityView& _ship)
@@ -496,7 +498,7 @@ public:
                                                      _ship.role == Outpost::ShipRole::Warship && _ship.hull == settings.scoutDesign.hull &&
                                                      _ship.module == settings.scoutDesign.module;
                                             });
-    Assert::IsTrue(scout != view.entities.end(), L"no scout in the first two minutes");
+    Assert::IsTrue(scout != view.entities.end(), L"no scout in the first three minutes");
     const Outpost::EntityId id = scout->id;
 
     // The enemy's home is the Southwest, beside the South and the West, as far from the AI's. Player 1's scout would go
@@ -652,9 +654,10 @@ public:
   }
 
   // Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times 10 Ore/s, so that its Shipyards
-  // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 41.25 Ore/s, and has 4. Without the
-  // platforms task 12.2 adds for each Shipyard, which spend Ore first and so put the timings below later. Phase 4's Defence
-  // Platform at 450 Ore puts its contested rigs, each with a platform, later than Phase 3's 3:20 (Phase 4 design §4).
+  // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 28.14 Ore/s, and has 2. Without the
+  // platforms task 12.2 adds for each Shipyard, which spend Ore first and so put the timings below later. Phase 4's lower
+  // income and its Defence Platform at 450 Ore put its contested rigs, each with a platform, later than Phase 3's 3:20
+  // (Phase 4 design §4).
   TEST_METHOD(BuildsShipyardsByIncome)
   {
     Outpost::AiSettings settings = RepositorySettings();
@@ -670,15 +673,16 @@ public:
                                    { return _structure->structure == Outpost::StructureKind::Shipyard; });
     };
     match.Run(60.0);
-    Assert::AreEqual(1500, match.View(AI).oreIncomeHundredthsPerSecond, L"three home rigs at a minute");
+    Assert::AreEqual(1050, match.View(AI).oreIncomeHundredthsPerSecond, L"three home rigs at a minute");
     Assert::AreEqual(std::ptrdiff_t{1}, shipyards(), L"the first Shipyard is in the build order whatever the income");
 
     match.Run(320.0);
-    // Phase 1 design §8's map: three home rigs at 5 Ore a second and three on the near ring at 6, raised by a quarter.
-    Assert::AreEqual(4125, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 6:20");
-    Assert::AreEqual(std::ptrdiff_t{4}, shipyards());
+    // Phase 1 design §8's map: three home rigs at 3.5 Ore a second and three on the near ring at 4, each raised by a quarter
+    // to the nearest hundredth (Phase 4 design §4).
+    Assert::AreEqual(2814, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 6:20");
+    Assert::AreEqual(std::ptrdiff_t{2}, shipyards());
     match.Run(60.0);
-    Assert::AreEqual(std::ptrdiff_t{4}, shipyards(), L"no fifth Shipyard below 50 Ore/s");
+    Assert::AreEqual(std::ptrdiff_t{2}, shipyards(), L"no third Shipyard below 30 Ore/s");
   }
 
   // Design §10: at its review the AI answers the enemy's fleet, and its Shipyards build the answer.
@@ -695,6 +699,14 @@ public:
     Assert::IsTrue(match.Ai().ProductionDesign() == SWARM);
 
     const Outpost::DesignId swarm = match.World().FindDesign(AI, SWARM)->id;
+    // Its scout is queued ahead of its warships (ADR-020 decision 13), and with Phase 4's income it may still wait in the
+    // queue when the first warship joins it.
+    const Outpost::DesignComponents scoutDesign = RepositorySettings().scoutDesign;
+    const auto answerOrScout = [&match, swarm, &scoutDesign](const Outpost::JobView& _job)
+    {
+      const Outpost::ShipDesign* design = match.World().FindDesign(_job.design);
+      return _job.design == swarm || (design != nullptr && design->components == scoutDesign);
+    };
     bool queued = false;
     for (int second = 0; second < 300 && !queued; ++second)
     {
@@ -704,8 +716,8 @@ public:
       {
         if (yard->structure != Outpost::StructureKind::Shipyard || yard->queue.empty())
           continue;
-        Assert::IsTrue(std::ranges::all_of(yard->queue, [swarm](const Outpost::JobView& _job) { return _job.design == swarm; }));
-        queued = true;
+        Assert::IsTrue(std::ranges::all_of(yard->queue, answerOrScout));
+        queued = queued || std::ranges::any_of(yard->queue, [swarm](const Outpost::JobView& _job) { return _job.design == swarm; });
       }
     }
     Assert::IsTrue(queued, L"no Shipyard queued a ship in five minutes");
@@ -1097,10 +1109,10 @@ public:
         asteroid.reserveOre = 200;
     }
     AiMatch match(3, map);
-    // Twelve minutes: its fourth sector waits for its Command Station's level 2, 300 Ore and 45 s of a Constructor's work
+    // Fourteen minutes: its fourth sector waits for its Command Station's level 2, 300 Ore and 45 s of a Constructor's work
     // before the Relay (Phase 3 design §7), where Phase 2 had it in eight; and each rig away from home waits for a platform
-    // of 450 Ore (Phase 4 design §4), where Phase 3 had it in nine.
-    match.Run(12.0 * 60.0);
+    // of 450 Ore, paid from Phase 4's lower income (design §4), where Phase 3 had it in nine.
+    match.Run(14.0 * 60.0);
     const Outpost::Snapshot view = match.View(AI);
     std::ptrdiff_t dry = 0;
     std::ptrdiff_t mining = 0;

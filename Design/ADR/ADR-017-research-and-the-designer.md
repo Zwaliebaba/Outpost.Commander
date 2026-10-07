@@ -29,7 +29,7 @@ Design §9 puts the designer in the Shipyard panel, with live stats: damage per 
    - **A fire-rate topic.** It divides the weapon's fire interval. Ships read the interval from their design, so existing ships fire faster from their next shot; a reload under way is not shortened.
    - **Improved Extraction.** It multiplies every rig's income.
    - **Automated Shipyards.** Each tick, a built Shipyard's job advances by the factor, rounded once to whole thousandths: 1,250 at 25%. The job under way speeds up too. The Command Station's Constructors do not, since it is not a Shipyard.
-3. **Income is paid in full when it is not a whole number of hundredths a tick.** An upgraded home rig earns 6.25 Ore a second, which is 31.25 hundredths a tick at 20 Hz.
+3. **Income is paid in full when it is not a whole number of hundredths a tick.** An upgraded home rig earns 4.38 Ore a second, its 3.5 raised by a quarter to the nearest hundredth, which is 21.9 hundredths a tick at 20 Hz.
    - A player's income is counted per second, in hundredths.
    - Each tick adds it to a remainder in hundredths times ticks a second. The player receives the remainder divided by the tick rate, and keeps what is left over.
    - Integers keep a replay exact (ADR-009), and unupgraded income comes out as before: 25 and 40 hundredths every tick.
