@@ -39,6 +39,14 @@ constexpr float HOME_PLATFORM_RING_STEP_METERS = 70.0f;
 constexpr std::array<float, 5> HOME_PLATFORM_TURNS_RADIANS{0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
 // A scout this close to its waypoint goes on to the next (ADR-020 decision 13).
 constexpr float SCOUT_ARRIVED_METERS = 150.0f;
+// While it explores its own half, a scout looks at each pirate outpost from this far from its node, toward its base: outside
+// the 600 m in which the pirates attack, within its Sensor Array's 700 m sight. It goes on from there once this close
+// (ADR-076).
+constexpr float PIRATE_LOOKOUT_METERS = 650.0f;
+constexpr float LOOKOUT_ARRIVED_METERS = 30.0f;
+// The room a lookout keeps clear of asteroids and structures.
+constexpr float LOOKOUT_CLEAR_METERS = 20.0f;
+constexpr std::array<float, 5> LOOKOUT_TURNS_RADIANS{0.0f, 0.35f, -0.35f, 0.7f, -0.7f};
 // An enemy sector is raided only when the AI sees no enemy warship this close to its node (ADR-020 decision 13).
 constexpr float RAID_GUARD_METERS = 600.0f;
 // A detachment sent at a pirate outpost is ordered on to its node this often, since an attack-move ends where it was aimed
@@ -1252,8 +1260,9 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
   if (enemyHome == nullptr || enemyHome->adjacent.empty())
     return;
   // For the opening it explores its own half, moving from node to node of the sectors nearer its base than the enemy's,
-  // its home and those the pirates guard aside, so that it finds derelicts and outposts without seeking a fight; then it
-  // goes round the enemy's flanks (Phase 4 design §2 U1, ADR-076).
+  // its home aside, so that it finds derelicts and outposts without seeking a fight: it looks at a sector the pirates guard
+  // from a lookout outside their reach, so that it learns what a detachment must outweigh. Then it goes round the enemy's
+  // flanks (Phase 4 design §2 U1, ADR-076).
   const bool ownHalf = _snapshot.tick < static_cast<std::uint64_t>(std::llround(m_settings.scoutOwnHalfSeconds * m_ticksPerSecond));
   if (!ownHalf && !m_scoutsOnFlanks)
   {
@@ -1262,12 +1271,33 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
   }
   const PlanePosition enemyBase{.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters};
   std::vector<PlanePosition> waypoints;
+  std::vector<PlanePosition> lookouts;
   if (ownHalf)
   {
+    const StructureTypeView spot{.structure = StructureKind::DefensePlatform, .radiusMeters = LOOKOUT_CLEAR_METERS};
+    const std::span<const EntityView> blockers = Blockers(_snapshot, std::nullopt);
     for (const SectorView& sector : _snapshot.sectors)
     {
-      if (!sector.guarded && !sector.Contains(m_home) && Distance(sector.node, m_home) < Distance(sector.node, enemyBase))
+      if (sector.Contains(m_home) || Distance(sector.node, m_home) >= Distance(sector.node, enemyBase))
+        continue;
+      if (!sector.guarded)
+      {
         waypoints.push_back(sector.node);
+        continue;
+      }
+      const float toHome = std::max(Distance(sector.node, m_home), 1.0f);
+      const float homeAngle = std::atan2(m_home.zMeters - sector.node.zMeters, m_home.xMeters - sector.node.xMeters);
+      for (const float turn : LOOKOUT_TURNS_RADIANS)
+      {
+        const PlanePosition lookout =
+          Along(sector.node, std::cos(homeAngle + turn), std::sin(homeAngle + turn), std::min(PIRATE_LOOKOUT_METERS, toHome));
+        if (PlaceGhost(spot, lookout, blockers, _snapshot.mapSizeMeters).valid)
+        {
+          waypoints.push_back(lookout);
+          lookouts.push_back(lookout);
+          break;
+        }
+      }
     }
   }
   else
@@ -1288,8 +1318,9 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
       continue;
     const auto known = m_scoutWaypoints.find(ship.id);
     size_t next = known != m_scoutWaypoints.end() ? known->second : 0;
-    const bool arrived =
-      known != m_scoutWaypoints.end() && Distance(ship.position, waypoints[next % waypoints.size()]) <= SCOUT_ARRIVED_METERS;
+    const PlanePosition waypoint = waypoints[next % waypoints.size()];
+    const float arrivedMeters = std::ranges::contains(lookouts, waypoint) ? LOOKOUT_ARRIVED_METERS : SCOUT_ARRIVED_METERS;
+    const bool arrived = known != m_scoutWaypoints.end() && Distance(ship.position, waypoint) <= arrivedMeters;
     if (known != m_scoutWaypoints.end() && !arrived)
       continue;
     if (arrived)
