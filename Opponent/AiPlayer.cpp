@@ -819,7 +819,13 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
   std::erase_if(m_work,
                 [&](Work& _work)
                 {
-                  std::erase_if(_work.constructors, [&_snapshot](EntityId _id) { return FindEntity(_snapshot, _id) == nullptr; });
+                  // A Constructor gone, or going back to be repaired, which ended its work order, leaves the crew (ADR-075).
+                  std::erase_if(_work.constructors,
+                                [&_snapshot](EntityId _id)
+                                {
+                                  const EntityView* constructor = FindEntity(_snapshot, _id);
+                                  return constructor == nullptr || constructor->retreating;
+                                });
                   if (_work.constructors.empty())
                     return true;
                   if (!_work.target.IsValid() && _work.slot.has_value())
@@ -841,7 +847,8 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
 
   for (const EntityView& ship : _snapshot.entities)
   {
-    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Constructor || ship.owner != m_player)
+    // One going back to be repaired is left to it until it is whole.
+    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Constructor || ship.owner != m_player || ship.retreating)
       continue;
     const bool busy = std::ranges::any_of(m_work, [&ship](const Work& _work)
                                           { return std::ranges::find(_work.constructors, ship.id) != _work.constructors.end(); });
