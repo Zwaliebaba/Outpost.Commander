@@ -184,7 +184,9 @@ public:
         Assert::AreEqual(size_t{0}, mesh.indices.size() % 3);
         for (const std::uint32_t index : mesh.indices)
           Assert::IsTrue(index < mesh.vertices.size());
-        ++models;
+        // A set that borrows another's meshes, as the pirates' does, ships no files of its own (ADR-073).
+        if (set.meshes == set.name)
+          ++models;
       }
     }
     // Nine models in each ship set, three hulls, the Constructor and the five structures, and the three rocks (design §11).
