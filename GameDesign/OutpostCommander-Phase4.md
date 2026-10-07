@@ -192,7 +192,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 11. The engine at 10 km
 
-- **Path graphs.** The visibility graph covers the whole map (ADR-010), and line tests use ADR-054's grid. At four times the area, with roughly four times the obstacles, a full graph build grows faster than the area does. U7 measures it. Pathing by sector (Phase 2 §7) is built only if U7 misses, and that is a decision recorded in an ADR.
+- **Path graphs.** The visibility graph covers the whole map (ADR-010), and line tests use ADR-054's grid. At four times the area, with roughly four times the obstacles, a full graph build grows faster than the area does. U7 measures it. A destroyed structure, which used to make every graph be built whole, is now taken out of each in place (plan task 28.0, ADR-054, owner, 2026-10-07): in the container, on the 10 km map, that took the 99th percentile tick from about 20 ms to 2 ms. Pathing by sector (Phase 2 §7) is built only if U7 misses, and that is a decision recorded in an ADR.
 - **Fog.** The 20 m grid becomes 500×500 cells, and the fog texture grows from 256×256 to 512×512 (ADR-052). It follows the map's size instead of being fixed.
 - **The minimap** shows four times the area at the same size, so a mark covers less, and its marks are checked at U8.
 - **Snapshots** carry more asteroids, derelicts and pirates, and far fewer ships. Their size is recorded.

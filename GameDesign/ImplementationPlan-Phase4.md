@@ -29,6 +29,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | built, in milestone 27's PR |
 | 27.5 | Milestone 27 measured on today's map | 27.4 | — | measured in the container |
 | 27.6 | The rigs earn about a third less | 27.5 | owner, 2026-10-07 | built, in milestone 27's PR |
+| 28.0 | A destroyed structure is taken out of the path graphs in place | — | owner, 2026-10-07 | built, in milestone 28's PR |
 | 28.1 | The client and the engine follow the map's size | — | L6 | todo |
 | 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | todo |
 | 28.3 | Production follows territory | — | L5 | todo |
@@ -103,6 +104,17 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **As built:** two cuts were measured over seeds 1–40 before choosing, about a third and half; the third is built, and both are in design §2. With it no side goes over 40 warships, and the median side holds 733 Ore at minute 20 against 8,823. The tests that quote a rate quote the new ones. The AI's economy tests are re-timed again: its scout sets out at about 2:30, inside three minutes rather than two; it has 2 Shipyards at 28.14 Ore/s rather than 4 at 41.25; and it has six rigs with ore at fourteen minutes rather than twelve. `BuildsTheAnswerToTheEnemysFleet` allows its scout in the queue beside its answer, since the scout may now still be waiting there when the first warship joins it.
 
 ---
+
+## Milestone 28 — The 10 km map
+
+### 28.0 — A destroyed structure is taken out of the path graphs in place
+
+- **Asked:** before the map changed, AI-against-AI matches on a first 10 km map put the 99th percentile tick at about 20 ms, most of it whole builds of the path graphs a destroyed structure dropped (design §11). The owner chose to take the obstacle out of each graph in place, measured, and to path by sector only if that is not enough (owner, 2026-10-07). It is one PR with the rest of milestone 28.
+- **Scope:** `Pathfinder` keeps each graph across any change of the obstacles that keeps the map's edge, and brings it up to date when it is next needed: reduced by the obstacles taken away, then extended over those added, to the very graph a whole build makes, to the bit. Nothing a match does changes.
+- **ADR:** ADR-054 and ADR-010 edited in place.
+- **Acceptance:** `PathfinderTests.TakenAwayObstaclesReduceTheGraphsToWhatAWholeBuildMakes`; every other suite unchanged.
+- **Verify:** CI; the container's run of `GameLogicTests`; the same matches played before and after.
+- **As built:** recorded in ADR-054 decision 7. On the 10 km map, seeds 1 to 4 for up to 120 minutes, every match plays exactly as before, and the 99th percentile tick falls from 19–22 ms to about 2 ms, the slowest from 88–140 ms to 10–16 ms. A graph of about 2,060 corners loses a structure in under 2 ms, against 22 ms to build whole. Pathing by sector is not needed for this; U7 on the development machine (28.4) decides.
 
 ## Milestones 28 to 34
 
