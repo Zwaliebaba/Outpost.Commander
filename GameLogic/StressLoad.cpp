@@ -9,14 +9,24 @@ namespace
 {
 // Lattice points this far apart hold the widest hull with room to spare.
 constexpr float LATTICE_SPACING_METERS = 50.0f;
-constexpr float RALLY_SHARE_TO_MIDDLE = 0.33f;
+// Where a player's ships gather and its structures stand: on the line from the middle to its start, this far from the
+// middle, where a third and 55% of the way from the start to the middle put them on the 5 km map. In meters rather than
+// shares, so that the fight is as near on a larger map and the fleets meet soon after the run starts.
+constexpr float RALLY_METERS_FROM_MIDDLE = 1650.0f;
+constexpr float STRUCTURES_METERS_FROM_MIDDLE = 1100.0f;
 // How often ships standing idle are sent back into the fight: once a second at 20 Hz.
 constexpr std::uint64_t REORDER_TICKS = 20;
-// Where a player's structures stand: centered this share of the way from its start to the map's middle.
-constexpr float STRUCTURE_SHARE_TO_MIDDLE = 0.55f;
 constexpr std::array<Outpost::StructureKind, 5> STRUCTURE_KINDS{Outpost::StructureKind::CommandStation, Outpost::StructureKind::Shipyard,
                                                                 Outpost::StructureKind::ResearchLab, Outpost::StructureKind::MiningRig,
                                                                 Outpost::StructureKind::DefensePlatform};
+
+// The point _meters from the map's middle toward _start, or _start itself when it is nearer the middle than that.
+Outpost::PlanePosition TowardStart(Outpost::PlanePosition _start, float _meters) noexcept
+{
+  const float startMeters = Outpost::Distance(_start, Outpost::PlanePosition{});
+  const float share = startMeters > _meters ? _meters / startMeters : 1.0f;
+  return {.xMeters = _start.xMeters * share, .zMeters = _start.zMeters * share};
+}
 
 // Clear of the edge and of every obstacle by _clearanceMeters.
 bool IsOpen(const Outpost::Map& _map, Outpost::PlanePosition _point, float _clearanceMeters) noexcept
@@ -73,9 +83,7 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
     side.player = PlayerId{static_cast<std::uint32_t>(index + 1)};
     side.start = _map.starts[index];
     // The fleets head for each other's rally, where replacements appear, so the fight stays in one place.
-    const PlanePosition enemyStart = _map.starts[1 - index];
-    side.enemyRally = {.xMeters = enemyStart.xMeters * (1.0f - RALLY_SHARE_TO_MIDDLE),
-                       .zMeters = enemyStart.zMeters * (1.0f - RALLY_SHARE_TO_MIDDLE)};
+    side.enemyRally = TowardStart(_map.starts[1 - index], RALLY_METERS_FROM_MIDDLE);
     for (const DesignComponents& components : StartingDesigns(_tuning))
     {
       if (const ShipDesign* design = _simulation.FindDesign(side.player, components))
@@ -83,9 +91,7 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
     }
     if (side.designs.empty())
       throw Neuron::Exception(std::format("Player {} has no starting design for the stress load.", side.player.value));
-    // Ships gather a third of the way from the start to the middle, so the fleets meet soon after the run starts.
-    const PlanePosition rally{.xMeters = side.start.xMeters * (1.0f - RALLY_SHARE_TO_MIDDLE),
-                              .zMeters = side.start.zMeters * (1.0f - RALLY_SHARE_TO_MIDDLE)};
+    const PlanePosition rally = TowardStart(side.start, RALLY_METERS_FROM_MIDDLE);
     side.berths = OpenPointsNear(_map, rally, widestMeters);
     side.berths.resize(std::min(side.berths.size(), STRESS_SHIPS_PER_PLAYER));
     if (side.berths.size() < STRESS_SHIPS_PER_PLAYER)
@@ -95,8 +101,7 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
     const auto existing =
       static_cast<size_t>(std::ranges::count_if(_simulation.Entities(), [&side](const Entity& _entity)
                                                 { return _entity.kind == EntityKind::Structure && _entity.owner == side.player; }));
-    const PlanePosition structuresAt{.xMeters = side.start.xMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE),
-                                     .zMeters = side.start.zMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE)};
+    const PlanePosition structuresAt = TowardStart(side.start, STRUCTURES_METERS_FROM_MIDDLE);
     float widestStructureMeters = 0.0f;
     for (const StructureTuning& structure : _tuning.structures)
       widestStructureMeters = std::max(widestStructureMeters, static_cast<float>(structure.footprintRadiusMeters));

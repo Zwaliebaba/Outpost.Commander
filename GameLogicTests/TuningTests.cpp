@@ -517,10 +517,10 @@ public:
     Assert::AreEqual(3, top(Outpost::StructureKind::Shipyard));
     Assert::AreEqual(4, top(Outpost::StructureKind::ResearchLab));
     Assert::AreEqual(1, top(Outpost::StructureKind::Relay));
-    // The station's cap and guns at each level (gates K4, K6).
+    // The station's cap and guns at each level (gates K6, L4).
     for (std::int32_t level = 1; level <= 5; ++level)
     {
-      Assert::AreEqual(level + 2, Outpost::NodeCap(repository, level));
+      Assert::AreEqual((3 * level) + 1, Outpost::NodeCap(repository, level));
       Assert::AreEqual(std::array{1, 1, 2, 2, 3}[static_cast<size_t>(level - 1)],
                        Outpost::StationGuns(repository, Outpost::StructureKind::CommandStation, level));
       Assert::AreEqual(1, Outpost::StationGuns(repository, Outpost::StructureKind::DefensePlatform, level));

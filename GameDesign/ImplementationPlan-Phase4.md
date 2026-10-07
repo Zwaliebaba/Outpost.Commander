@@ -30,8 +30,8 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 27.5 | Milestone 27 measured on today's map | 27.4 | — | measured in the container |
 | 27.6 | The rigs earn about a third less | 27.5 | owner, 2026-10-07 | built, in milestone 27's PR |
 | 28.0 | A destroyed structure is taken out of the path graphs in place | — | owner, 2026-10-07 | built, in milestone 28's PR |
-| 28.1 | The client and the engine follow the map's size | — | L6 | todo |
-| 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | todo |
+| 28.1 | The client and the engine follow the map's size | — | L6 | built, in milestone 28's PR; awaiting CI and the owner's run |
+| 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | built, in milestone 28's PR |
 | 28.3 | Production follows territory | — | L5 | todo |
 | 28.4 | The engine measured at 10 km (U7) | 28.2 | — | todo |
 | 29.1 | Placement from the seed | 28.2 | L10 | todo |
@@ -116,11 +116,27 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Verify:** CI; the container's run of `GameLogicTests`; the same matches played before and after.
 - **As built:** recorded in ADR-054 decision 7. On the 10 km map, seeds 1 to 4 for up to 120 minutes, every match plays exactly as before, and the 99th percentile tick falls from 19–22 ms to about 2 ms, the slowest from 88–140 ms to 10–16 ms. A graph of about 2,060 corners loses a structure in under 2 ms, against 22 ms to build whole. Pathing by sector is not needed for this; U7 on the development machine (28.4) decides.
 
-## Milestones 28 to 34
+### 28.1 — The client and the engine follow the map's size
+
+- **Gate:** L6, decided.
+- **Scope:** the fog's texture holds the 10 km map's 500 cells a side; the ground's grid and the camera's focus reach 5,000 m from the center, and the far plane 8,000 m past the focus; the widest view is 3,000 m (design §6, §11). The minimap and the fog's grid already take the map's size from the snapshot.
+- **ADR:** ADR-012, ADR-036 decision 5 and ADR-052 edited in place.
+- **Verify:** CI; **owner run**, at the widest view over the 10 km map.
+- **As built:** the fog texture is 512 × 512. **Not built or run in the container**: CI is its first build, and the owner's run its first look.
+
+### 28.2 — The 10 km map and its node caps
+
+- **Gates:** L3 and L4, decided.
+- **Scope:** `Map.json` is the 10 km map of design §6, written by `Tools/MakeMap.py`; the Command Station's `nodes` are 4, 7, 10, 13 and 16. The tests that stand on the 5 km map's sectors and positions move to the 10 km map's.
+- **ADR:** ADR-036 decision 4, ADR-057 and ADR-064 decision 11 edited in place, and ADR-056 where it quotes the panel.
+- **Acceptance:** `MapTests` hold the new map's shape, sectors and symmetry; every suite passes on it.
+- **Verify:** CI; the container's run of `GameLogicTests`.
+- **As built:** sectors are named by column and row, A1 to E5, A1 player 1's home. Each player has 3 home, 7 near, 8 contested and 2 rich asteroids nearer its start, 459,000 Ore in all, and two fields on every border leave three passages through it. `python Tools/MakeMap.py --check` says whether the committed map is what the script writes; CI does not run it. Domination's rule is unchanged, so a lead of one node of 25 takes 834 drains, 139 minutes, against 50 on nine (design §6 foresaw it; 28.4 measures what it does to a match). The stress scene's rally and structures stood a share of the way from each start to the middle, which on 10 km put the fleets 7.6 km apart and out of reach of each other in its minute; they now stand 1,650 m and 1,100 m from the middle, where they stood on the 5 km map. Tests moved: `TerritoryTests`, `DominationTests`, `StandingOrderTests` and `AiPlayerTests` to the new sectors and positions; `UpgradesItsStationBeforeItsFirstClaim` becomes `…BeforeItsSecondClaim`, since level 1's four nodes now take a claim beyond the flanks; and three AI economy tests are re-timed, its rigs away from home being further out: two Shipyards by nine minutes rather than seven, and six rigs with ore by sixteen minutes rather than fourteen.
+
+## Milestones 29 to 34
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
 
-- **28 — The 10 km map** (design §6, §11): the fog grid and its texture, the camera's focus and widest view, and the minimap follow the map's size; the 25-sector map and its node caps; Shipyards and Repair Bays only in held sectors; U7 measured.
 - **29 — Placement from the seed** (design §7).
 - **30 — Pirates** (design §8): the neutral owner, its outposts and their guarding rule, and how the client draws them.
 - **31 — Derelicts** (design §9): salvage, its Ore and its research.

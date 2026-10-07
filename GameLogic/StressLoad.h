@@ -7,8 +7,8 @@ namespace Outpost
 inline constexpr size_t STRESS_SHIPS_PER_PLAYER = 100;
 inline constexpr size_t STRESS_STRUCTURES_PER_PLAYER = 20;
 
-// Each of the map's two players fields its starting designs in turn, gathered at a rally a third of the way from its
-// start to the middle, and its structures, with the tuning data's footprints, hit points, armor and Defence guns, beyond
+// Each of the map's two players fields its starting designs in turn, gathered at a rally 1,650 m from the middle toward its
+// start, and its structures, with the tuning data's footprints, hit points, armor and Defence guns, beyond
 // it; the Command Station a match starts with counts as one of them. Both fleets
 // attack-move on the other's rally, so they meet among the structures. Before every tick the load gives each player back
 // the ships it lost, at its rally with the same order, and once a second sends ships standing idle after what is left
