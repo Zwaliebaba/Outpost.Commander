@@ -58,6 +58,12 @@ public:
     Assert::IsTrue(catalog.SetForPlayer(Outpost::PlayerId{1}) == &human);
     Assert::IsTrue(catalog.SetForPlayer(Outpost::PlayerId{2}) == &tarkan);
     Assert::IsNull(catalog.SetForPlayer(Outpost::PlayerId{3}));
+    // The pirates draw with the Tarkan set's meshes, in a color of their own (Phase 4 design §8, ADR-073).
+    const Outpost::ModelSet& pirate = *catalog.SetForPlayer(Outpost::PIRATES);
+    Assert::AreEqual(std::string("Tarkan"), pirate.meshes);
+    Assert::AreEqual(tarkan.models.size(), pirate.models.size());
+    Assert::IsFalse(pirate.color.x == tarkan.color.x && pirate.color.y == tarkan.color.y && pirate.color.z == tarkan.color.z);
+    Assert::AreEqual(std::wstring(L"Models\\Tarkan\\Small.nmf"), Outpost::ModelFileName(pirate, pirate.Model("Small")));
     const std::string* smallModel = catalog.ModelForHull(Outpost::HullId{1});
     Assert::IsNotNull(smallModel);
     Assert::AreEqual(std::string("Small"), *smallModel);
@@ -110,6 +116,27 @@ public:
     const std::string empty = R"("players": [])";
     json.replace(json.find(empty), empty.size(), R"("players": [ { "player": 1, "set": "Martian" } ])");
     ExpectRejected(json);
+  }
+
+  // ADR-073: a set that borrows another's meshes names one that has meshes of its own, and the pirates' set is one there is.
+  TEST_METHOD(RejectsABrokenPirateSet)
+  {
+    const std::string set =
+      R"({ "name": "Human", "color": { "red": 0.5, "green": 0.5, "blue": 0.5 }, "models": [ { "name": "Small", "lengthMeters": 20 } ] })";
+    const auto catalog = [&set](std::string_view _pirate, std::string_view _pirates)
+    {
+      std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+      json.replace(json.find(set), set.size(), std::format("{}, {}", set, _pirate));
+      const std::string players = R"("players": [])";
+      json.replace(json.find(players), players.size(), std::format(R"("players": [], "pirates": "{}")", _pirates));
+      return json;
+    };
+    const std::string borrowing = R"({ "name": "Pirate", "color": { "red": 0.6, "green": 0.2, "blue": 0.9 }, "meshes": "Human" })";
+    const Outpost::ModelCatalog loaded = Outpost::LoadModelCatalog(catalog(borrowing, "Pirate"));
+    Assert::AreEqual(20.0f, loaded.SetForPlayer(Outpost::PIRATES)->Model("Small").lengthMeters);
+    ExpectRejected(catalog(borrowing, "Corsair"));
+    ExpectRejected(catalog(R"({ "name": "Pirate", "color": { "red": 0.6, "green": 0.2, "blue": 0.9 }, "meshes": "Martian" })", "Pirate"));
+    ExpectRejected(catalog(R"({ "name": "Pirate", "color": { "red": 0.6, "green": 0.2, "blue": 0.9 }, "meshes": "Pirate" })", "Pirate"));
   }
 
   // Task 1.3's acceptance: the hulls load at their intended relative sizes in both sets, and the same hull is the same

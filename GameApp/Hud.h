@@ -378,6 +378,8 @@ public:
   {
     Own,
     Enemy,
+    // The pirates' (ADR-073): a sector they guard, and their ships and structures.
+    Pirate,
     Neutral
   };
 

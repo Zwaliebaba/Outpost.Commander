@@ -92,6 +92,18 @@ public:
     Assert::IsFalse(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS).valid, L"no sectors, no Relay");
   }
 
+  // Phase 4 design §8: a Relay's ghost is red in a sector the pirates guard, which every player sees (ADR-073).
+  TEST_METHOD(ARelayWaitsForThePiratesToFall)
+  {
+    constexpr Outpost::PlayerId PLAYER{1};
+    const std::vector<Outpost::EntityView> world = World();
+    std::vector<Outpost::SectorView> sectors = Sectors();
+    sectors[1].guarded = true;
+    Assert::IsFalse(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS, sectors, PLAYER).valid);
+    sectors[1].guarded = false;
+    Assert::IsTrue(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS, sectors, PLAYER).valid);
+  }
+
   // Phase 3 design §7: a Relay's ghost is red while the player has taken its Command Station's cap of nodes, and a Relay
   // still under construction has taken its node.
   TEST_METHOD(ARelayWaitsAtTheNodeCap)

@@ -147,6 +147,9 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
     if (std::ranges::find(m_shotsCounted, key) != m_shotsCounted.end())
       continue;
     m_shotsCounted.push_back(key);
+    // The log is of the players' fights; the pirates' are left out until milestone 34 counts them (ADR-073).
+    if (ownerOf(shot.shooter) == PIRATES || ownerOf(shot.target) == PIRATES)
+      continue;
     PlayerId side = ownerOf(shot.shooter);
     if (!side.IsValid())
     {

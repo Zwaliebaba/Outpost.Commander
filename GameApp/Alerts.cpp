@@ -71,7 +71,7 @@ void Outpost::Alerts::Observe(const Snapshot& _snapshot, std::uint32_t _ticksPer
           _ticksPerSecond);
   }
 
-  // Enemy warships in a sector the player holds that had none it saw the snapshot before.
+  // Enemy or pirate warships in a sector the player holds that had none it saw the snapshot before.
   std::vector<std::int32_t> entered;
   for (const EntityView& ship : _snapshot.entities)
   {
@@ -82,8 +82,8 @@ void Outpost::Alerts::Observe(const Snapshot& _snapshot, std::uint32_t _ticksPer
       continue;
     entered.push_back(sector->id);
     if (std::ranges::find(m_entered, sector->id) == m_entered.end())
-      Raise(Kind::EnemyEntered, std::format("Enemy ships in {}", sector->nameUtf8), ship.position, sector->id, _snapshot.tick,
-            _ticksPerSecond);
+      Raise(Kind::EnemyEntered, std::format("{} ships in {}", ship.owner == PIRATES ? "Pirate" : "Enemy", sector->nameUtf8), ship.position,
+            sector->id, _snapshot.tick, _ticksPerSecond);
   }
   m_entered = std::move(entered);
 }

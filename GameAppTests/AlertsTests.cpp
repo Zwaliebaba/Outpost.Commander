@@ -86,6 +86,18 @@ public:
     Assert::IsTrue(alerts.Shown(2 + (8 * TICKS_PER_SECOND), TICKS_PER_SECOND).empty());
   }
 
+  // ADR-073: pirates in a held sector, as the ships an outpost has left once the player has claimed it, are named so.
+  TEST_METHOD(AlertsToPirateShipsByName)
+  {
+    Outpost::Alerts alerts;
+    Outpost::Snapshot entered = At(2);
+    Outpost::EntityView pirate = EnemyWarship(20, {.xMeters = 300.0f, .zMeters = -800.0f});
+    pirate.owner = Outpost::PIRATES;
+    entered.entities.push_back(pirate);
+    alerts.Observe(entered, TICKS_PER_SECOND);
+    Assert::IsTrue(Texts(alerts, 2) == std::vector<std::string>{"Pirate ships in South"});
+  }
+
   TEST_METHOD(AlertsToARelaySuppressedOrHitAndARigLost)
   {
     Outpost::Alerts alerts;

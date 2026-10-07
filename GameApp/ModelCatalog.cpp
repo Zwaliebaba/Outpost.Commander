@@ -57,7 +57,13 @@ Outpost::ModelSet ReadSet(JsonObjectReader& _reader)
   Outpost::ModelSet set;
   set.name = ReadName(_reader);
   set.color = ReadColor(_reader, "color");
-
+  set.meshes = set.name;
+  // A set that borrows another's meshes takes its models too, once every set is read (LoadModelCatalog).
+  if (_reader.Optional("meshes") != nullptr)
+  {
+    set.meshes = _reader.String("meshes");
+    return set;
+  }
   set.models = Neuron::ReadJsonList<Outpost::ModelEntry>(_reader, "models", ReadModel);
   for (size_t i = 0; i < set.models.size(); ++i)
   {
@@ -191,6 +197,8 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   ModelCatalog catalog;
   catalog.sets = Neuron::ReadJsonList<ModelSet>(reader, "sets", ReadSet);
   catalog.players = Neuron::ReadJsonList<PlayerModels>(reader, "players", ReadPlayer);
+  if (reader.Optional("pirates") != nullptr)
+    catalog.pirates = reader.String("pirates");
   catalog.hulls = Neuron::ReadJsonList<HullModel>(reader, "hulls", ReadHull);
   catalog.structures = Neuron::ReadJsonList<StructureModel>(reader, "structures", ReadStructure);
   catalog.constructor = reader.String("constructor");
@@ -206,6 +214,25 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
     if (first != catalog.sets.begin() + static_cast<std::ptrdiff_t>(i))
       Neuron::JsonFail(Neuron::JsonElementPath("sets", i), std::format("the set \"{}\" is listed twice", catalog.sets[i].name));
   }
+  for (size_t i = 0; i < catalog.sets.size(); ++i)
+  {
+    ModelSet& set = catalog.sets[i];
+    if (set.meshes == set.name)
+      continue;
+    const auto lender = std::ranges::find(catalog.sets, set.meshes, &ModelSet::name);
+    if (lender == catalog.sets.end() || lender->meshes != lender->name)
+      Neuron::JsonFail(Neuron::JsonElementPath("sets", i) + ".meshes",
+                       std::format("there is no set \"{}\" with meshes of its own", set.meshes));
+    set.models = lender->models;
+  }
+  if (!catalog.pirates.empty() && std::ranges::find(catalog.sets, catalog.pirates, &ModelSet::name) == catalog.sets.end())
+    Neuron::JsonFail("pirates", std::format("there is no set \"{}\"", catalog.pirates));
+  // The sets that draw a side: every player's, and the pirates'.
+  std::vector<std::string> sides;
+  for (const PlayerModels& player : catalog.players)
+    sides.push_back(player.set);
+  if (!catalog.pirates.empty())
+    sides.push_back(catalog.pirates);
 
   for (size_t i = 0; i < catalog.players.size(); ++i)
   {
@@ -220,9 +247,9 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
     const std::string path = Neuron::JsonElementPath("hulls", i);
     if (FirstWithSameKey(catalog.hulls, i, &HullModel::hull) != i)
       Neuron::JsonFail(path, std::format("hull {} is listed twice", catalog.hulls[i].hull.value));
-    for (const PlayerModels& player : catalog.players)
+    for (const std::string& side : sides)
     {
-      const ModelSet& set = catalog.Set(player.set);
+      const ModelSet& set = catalog.Set(side);
       if (std::ranges::find(set.models, catalog.hulls[i].model, &ModelEntry::name) == set.models.end())
         Neuron::JsonFail(path + ".model", std::format("the set \"{}\" has no model \"{}\"", set.name, catalog.hulls[i].model));
     }
@@ -239,12 +266,12 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
       Neuron::JsonFail(Neuron::JsonElementPath("shots", i), std::format("weapon {} is listed twice", catalog.shots[i].weapon.value));
   }
 
-  // A model every player's set must have, for drawing whichever player owns it.
-  const auto checkInEverySet = [&catalog](const std::string& _model, const std::string& _path)
+  // A model every side's set must have, for drawing whichever side owns it.
+  const auto checkInEverySet = [&catalog, &sides](const std::string& _model, const std::string& _path)
   {
-    for (const PlayerModels& player : catalog.players)
+    for (const std::string& side : sides)
     {
-      const ModelSet& set = catalog.Set(player.set);
+      const ModelSet& set = catalog.Set(side);
       if (std::ranges::find(set.models, _model, &ModelEntry::name) == set.models.end())
         Neuron::JsonFail(_path, std::format("the set \"{}\" has no model \"{}\"", set.name, _model));
     }
@@ -267,10 +294,15 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
 
 const Outpost::ModelSet* Outpost::ModelCatalog::SetForPlayer(PlayerId _player) const noexcept
 {
-  const auto found = std::ranges::find(players, _player, &PlayerModels::player);
-  if (found == players.end())
-    return nullptr;
-  const auto set = std::ranges::find(sets, found->set, &ModelSet::name);
+  const std::string* name = &pirates;
+  if (_player != PIRATES)
+  {
+    const auto found = std::ranges::find(players, _player, &PlayerModels::player);
+    if (found == players.end())
+      return nullptr;
+    name = &found->set;
+  }
+  const auto set = std::ranges::find(sets, *name, &ModelSet::name);
   return set == sets.end() ? nullptr : &*set;
 }
 
@@ -315,8 +347,10 @@ const Outpost::BankLimits* Outpost::ModelCatalog::BankFor(const EntityView& _ent
 std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model, int _level)
 {
   // The loader allows only ASCII letters and digits in names, so widening them character by character is exact.
-  const std::string name = _model.levels > 0 ? std::format("Models\\{}\\{}_L{}.nmf", _set.name, _model.name, _level)
-                                             : std::format("Models\\{}\\{}.nmf", _set.name, _model.name);
+  // A set made in code rather than read names no meshes, and draws its own.
+  const std::string& meshes = _set.meshes.empty() ? _set.name : _set.meshes;
+  const std::string name = _model.levels > 0 ? std::format("Models\\{}\\{}_L{}.nmf", meshes, _model.name, _level)
+                                             : std::format("Models\\{}\\{}.nmf", meshes, _model.name);
   return {name.begin(), name.end()};
 }
 

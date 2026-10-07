@@ -17,13 +17,16 @@ inline constexpr int FIRST_MODEL_LEVEL = 1;
 // The most levels a model may have; the owner's models have five.
 inline constexpr int MAXIMUM_MODEL_LEVELS = 9;
 
-// A mesh set and the color it is drawn in: the player's Human set, the AI's Tarkan set, and the asteroid (design §1,
-// §11). The color is linear and provisional until team colors are decided (design §15).
+// A mesh set and the color it is drawn in: the player's Human set, the AI's Tarkan set, the pirates' set and the asteroid
+// (design §1, §11). The color is linear and provisional until team colors are decided (design §15).
 struct ModelSet
 {
   std::string name;
   DirectX::XMFLOAT4 color{};
   std::vector<ModelEntry> models;
+  // The set whose mesh files it draws, in its own color: its own name, unless it borrows another set's meshes and models, as
+  // the pirates borrow the Tarkan set's until there is art for them (Phase 4 design §8, ADR-073).
+  std::string meshes;
 
   // The model with this name. Throws Neuron::Exception when the set has none.
   [[nodiscard]] const ModelEntry& Model(std::string_view _name) const;
@@ -94,6 +97,8 @@ struct ModelCatalog
 {
   std::vector<ModelSet> sets;
   std::vector<PlayerModels> players;
+  // The set the pirates are drawn with (ADR-073); none when the data names none, and they are not drawn.
+  std::string pirates;
   std::vector<HullModel> hulls;
   // One per kind of structure, and the model a Constructor is drawn with; the same names are in every player's set.
   std::vector<StructureModel> structures;
@@ -108,7 +113,7 @@ struct ModelCatalog
 
   // The set with this name. Throws Neuron::Exception when there is none.
   [[nodiscard]] const ModelSet& Set(std::string_view _name) const;
-  // The set a player's ships are drawn with, or nullptr for a player the data does not name.
+  // The set a player's ships are drawn with, or the pirates' for PIRATES; nullptr for a player the data does not name.
   [[nodiscard]] const ModelSet* SetForPlayer(PlayerId _player) const noexcept;
   // The model a hull is drawn with, or nullptr for a hull the data does not name.
   [[nodiscard]] const std::string* ModelForHull(HullId _hull) const noexcept;
@@ -126,14 +131,15 @@ struct ModelCatalog
 
 // Reads the text of OutpostCommander/Assets/Models.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "sets[1].models[4].lengthMeters". Besides types and ranges it checks that set names are unique, and model
-// names within a set, that each player, hull, drive, weapon's shot and kind of structure is listed once and every kind is, and that
-// every hull's, structure's and the Constructor's model is in every player's set. A hull's "bank" and the
-// "constructorBank" are optional; without one, those ships fly level. A model's "levels" is optional, from 1 to
-// MAXIMUM_MODEL_LEVELS; without it, the model does not grow.
+// names within a set, that a set that borrows another's meshes names one that has meshes of its own, that each player,
+// hull, drive, weapon's shot and kind of structure is listed once and every kind is, and that every hull's, structure's
+// and the Constructor's model is in every player's set and the pirates' set. A hull's "bank" and the "constructorBank"
+// are optional; without one, those ships fly level. The pirates' set is optional. A model's "levels" is optional, from 1
+// to MAXIMUM_MODEL_LEVELS; without it, the model does not grow.
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);
 
 // Where a model's baked mesh is under the package's Assets folder: Models\<set>\<model>.nmf (ADR-018), or for a model
-// that grows, _level's, Models\<set>\<model>_L<level>.nmf (ADR-045).
+// that grows, _level's, Models\<set>\<model>_L<level>.nmf (ADR-045), the set being the one whose meshes _set draws.
 [[nodiscard]] std::wstring ModelFileName(const ModelSet& _set, const ModelEntry& _model, int _level = FIRST_MODEL_LEVEL);
 
 // How many meshes a model has: one a level for a model that grows, and one for any other.

@@ -31,6 +31,11 @@
       ]
     },
     {
+      "name": "Pirate",
+      "color": { "red": 0.62, "green": 0.22, "blue": 0.9 },
+      "meshes": "Tarkan"
+    },
+    {
       "name": "Asteroids",
       "color": { "red": 0.35, "green": 0.32, "blue": 0.3 },
       "models": [
@@ -44,6 +49,7 @@
     { "player": 1, "set": "Human" },
     { "player": 2, "set": "Tarkan" }
   ],
+  "pirates": "Pirate",
   "hulls": [
     { "hull": 1, "model": "Small", "bank": { "maxDegrees": 50, "fullAtMetersPerSecondSquared": 60, "settleSeconds": 0.25 } },
     { "hull": 2, "model": "Medium", "bank": { "maxDegrees": 45, "fullAtMetersPerSecondSquared": 26, "settleSeconds": 0.3 } },

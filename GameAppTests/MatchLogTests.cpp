@@ -180,6 +180,26 @@ public:
                      out.str());
   }
 
+  // ADR-073: the log is of the players' fights, so a pirate's shot, or a shot at a pirate, is no contact and no engagement
+  // until milestone 34 counts them.
+  TEST_METHOD(LeavesOutThePiratesFights)
+  {
+    std::ostringstream out;
+    {
+      Outpost::MatchLog log(out, 7, 20);
+      for (const std::uint64_t tick : {100u, 110u})
+      {
+        Outpost::Snapshot view = SnapshotOf(HUMAN, tick);
+        view.entities = {Swarm(10, HUMAN), Swarm(30, Outpost::PIRATES)};
+        view.shots = {{.shooter = Outpost::EntityId{10}, .target = Outpost::EntityId{30}, .from = {.xMeters = -50.0f, .zMeters = 50.0f}},
+                      {.shooter = Outpost::EntityId{30}, .target = Outpost::EntityId{10}, .from = {.xMeters = -40.0f, .zMeters = 50.0f}}};
+        log.Record(view);
+      }
+    }
+    Assert::IsTrue(out.str().find("contact") == std::string::npos);
+    Assert::IsTrue(out.str().find("engagement") == std::string::npos);
+  }
+
   // Phase 1 plan task 13.1: each tier the player's Research Lab opens (Phase 3 design §6), the player's own warships every
   // 30 seconds and at their peak, and an asteroid as it runs dry, once.
   TEST_METHOD(RecordsTiersFleetsAndDryAsteroids)
