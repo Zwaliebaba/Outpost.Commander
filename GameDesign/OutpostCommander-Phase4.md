@@ -84,6 +84,25 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **The first shot comes at 4:42 in every match,** the scouts meeting at the enemy's flank: there is nothing yet to find on the way (U1 waits for milestones 29 to 31).
 - **The engine, in the container:** the median match's 99th percentile tick is 2.5 ms, and the worst match's 4.2 ms, under U7's 5 ms; the slowest single tick is 20 ms in the median match and 39 ms at worst. U7 itself is the owner's run in Release.
 
+**After milestone 29** (plan task 29.1): a lead of one node takes 50 minutes on any map (29.0), and each sector's asteroids are placed from the seed, so the 40 seeds play 40 different maps. The same harness and seeds.
+
+| Over seeds 1–40 | 10 km, after milestone 28 | 10 km, after milestone 29 |
+|---|---|---|
+| Most warships a side has at once, median of the 80 sides (largest) | 25.5 (50) | 21 (46) |
+| Sides over 40 warships at once | 14 of 80 | 4 of 80 |
+| Warships a side has at minute 20, median; sides with 20 or more | 13; 0 of 80 | 14; 12 of 80 |
+| Warships a side builds in a match, median | 129.5 | 82 |
+| First shot, median (earliest–latest) | 4:42 (4:42–4:43) | 4:42 (4:35–5:21) |
+| Match length, median (shortest–longest) | 2:08:55 (1:40:30–3:04:20) | 1:37:06 (54:09–2:30:39) |
+| Endings; won by player 1 | 40 domination; 22 | 40 domination; 20 |
+| Ore a side holds at minute 20, median; sides over 2,000 | 2,625; 50 of 80 | 1,777; 32 of 80 |
+| Ore a side holds at minute 30, median | 18,236 | 17,135 |
+
+- **U5: matches are shorter, and still end by domination only.** A third shorter at the median, and the longest under two and a half hours. Half the matches last 1:23 to 1:50: the sides stay within a node of each other for most of a match, so the drain runs slowly until one pulls ahead. No AI takes the other's base.
+- **Placement from the seed is fair.** Each player wins 20 of the 40, and the first shot varies by up to 46 seconds where every map was the same before.
+- **Ore still piles up** behind the cap, as the owner expected, for Phase 4's later sinks to take (milestones 30 to 32) and milestone 34 to measure.
+- **The engine:** the median match's 99th percentile tick is 2.1 ms in the container, the worst match's 4.2 ms. One match's slowest tick took 72 ms, the most yet; the median match's slowest is 23 ms.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06
@@ -153,7 +172,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
   | Medium+Ion | 52 m/s | 3:38 | 1:35 |
   | Large+Fusion | 20 m/s | 9:26 | 4:08 |
 
-- **Node caps for 25 nodes** (gate L4): 4, 7, 10, 13 and 16 at Command Station levels 1–5 (§5's table). The reasoning is Phase 3 §7's, scaled up. From level 4, two caps add up to more than the map's 25 nodes, so both sides cannot sit at their cap at once and domination can decide. Domination's drain is proportional to the share of nodes held (Phase 2 §8), so its numbers carry over unchanged.
+- **Node caps for 25 nodes** (gate L4): 4, 7, 10, 13 and 16 at Command Station levels 1–5 (§5's table). The reasoning is Phase 3 §7's, scaled up. From level 4, two caps add up to more than the map's 25 nodes, so both sides cannot sit at their cap at once and domination can decide. Domination's drain no longer divides by the map's nodes: a lead of one node takes 50 minutes on any map, as it did on the 5 km map's nine (owner, 2026-10-07, after plan task 28.4 found it took 139 minutes on 25; ADR-057).
 - **Production follows territory** (gate L5). Today only Mining Rigs and Relays need a held sector (ADR-056). A Shipyard can stand anywhere a Constructor reaches, which on a 10 km map makes a Shipyard hidden next to the enemy's base the cheapest attack. In Phase 4, a Shipyard and a Repair Bay may be built only in a sector the player holds. Pushing the front forward is then how production moves forward. Relay jumps stay with the horizon, as travel between systems (Horizon O8).
 - **The camera** (gate L6). The widest view is 1,600 m today (ADR-012, gate H8), a sixth of the map. The proposal raises it to 3,000 m, and U7's frame figure is measured at that view. The strategic view stays out (Phase 2 gate J5) unless U8 asks for it.
 
@@ -168,6 +187,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Point-symmetric.** One half of the map is drawn from the seed and the other half mirrors it through the center, so both seats get the same map. The center sector is its own mirror, and its content is placed symmetrically within it.
 - **Deterministic.** Placement uses `Neuron::Random` seeded from the match's seed, inside `Simulation`'s setup, so a match still replays from its seed and command log on the same build (ADR-009).
 - **The proposed rule by distance from the homes:** pirate camps one sector beyond the flanks, pirate strongholds on the rich sectors and in the center, and derelicts in roughly every other sector, richer the further out they lie.
+- **As built** (plan task 29.1, ADR-072): each sector of `Map.json` names a kind, and each kind the asteroids it gets, today's count and yields in each sector (owner, 2026-10-07). The seed draws their places inside the sector, clear of its borders, its node and each other.
 
 ---
 
@@ -248,7 +268,7 @@ The three difficulty files (ADR-065) carry the new numbers. Normal is tuned agai
 ## 14. What changes elsewhere
 
 - **Phase 1:** accepted risk 2, that there is no unit cap, ends (§5).
-- **Phase 2:** S1 and S4 are retired for Phase 4 (§2). The map of §4 is replaced by §6's, and domination is unchanged.
+- **Phase 2:** S1 and S4 are retired for Phase 4 (§2). The map of §4 is replaced by §6's, and §8's drain takes its tickets for each node behind without dividing by the map's nodes (§6).
 - **Phase 3 §7:** the node caps are rescaled for 25 nodes (§6), as its own §7 foresaw.
 - **MVP §3:** the Q2 check's budgets scale with §4's factor.
 - **The horizon:** O8 records that a system is 10 km a side and that Phase 4's map is the first one (§3). O2's bound is proposed here as a cap bought with Command Station levels (§5). Derelicts that pay research are a first step towards §6.1.

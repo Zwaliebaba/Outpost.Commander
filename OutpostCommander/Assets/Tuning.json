@@ -11,7 +11,7 @@
     "levelHitPointsPercent": 20
   },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
-  "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 10, "drainTicketsPerNodeDifference": 30 },
+  "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 3, "drainTicketsPerNodeDifference": 1 },
   "hulls": [
     { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 96, "buildSeconds": 30, "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180, "commandPoints": 1 },
     { "id": 2, "name": "Medium", "hitPoints": 500, "armor": 8, "speedMetersPerSecond": 40, "cost": 330, "buildSeconds": 60, "footprintRadiusMeters": 14, "turnRateDegreesPerSecond": 120, "commandPoints": 2 },

@@ -19,7 +19,8 @@ public:
 
   // What _player's entities among _entities see now, and the sectors it holds that are not suppressed, which it sees whole
   // (ADR-056): those cells become seen, now and for the rest of the match, and Shades says so. A cell is in sight when its
-  // center is within an entity's sight or inside such a sector.
+  // center is within an entity's sight or inside such a sector. Only what changed since the last update is worked out
+  // again: an entity whose place or sight moved, and a sector that came into or went out of sight (ADR-052).
   void Update(std::span<const EntityView> _entities, PlayerId _player, std::span<const SectorView> _sectors = {});
 
   [[nodiscard]] std::uint32_t CellsPerSide() const noexcept
@@ -46,6 +47,18 @@ public:
     return m_revision;
   }
 
+  // For each row of cells, whether any of its shades changed since ClearChangedRows, so that whoever copies the shades
+  // elsewhere can copy only those rows (ADR-052). Reset marks every row.
+  [[nodiscard]] std::span<const std::uint8_t> ChangedRows() const noexcept
+  {
+    return m_changedRows;
+  }
+
+  void ClearChangedRows() noexcept
+  {
+    std::ranges::fill(m_changedRows, std::uint8_t{0});
+  }
+
   // The shade of the cell that holds _point, or the never-seen shade off the map.
   [[nodiscard]] float ShadeAt(PlanePosition _point) const noexcept;
 
@@ -54,15 +67,50 @@ public:
   [[nodiscard]] bool HasSeen(PlanePosition _center, float _radiusMeters) const noexcept;
 
 private:
+  // An entity's sight as the last update counted it.
+  struct Sight
+  {
+    EntityId id;
+    PlanePosition center;
+    float sightMeters = 0.0f;
+  };
+
+  // A sector seen whole as the last update counted it.
+  struct LitSector
+  {
+    std::int32_t id = 0;
+    float minXMeters = 0.0f;
+    float maxXMeters = 0.0f;
+    float minZMeters = 0.0f;
+    float maxZMeters = 0.0f;
+  };
+
   // The row or column an x or z falls in, clamped to the grid.
   [[nodiscard]] int CellOf(float _meters) const noexcept;
+  // The columns of _row whose centers are within the circle, first to last; none when the first is past the last. A row of
+  // a circle is one run of cells, so a circle is counted, or moved, row by row (ADR-052).
+  [[nodiscard]] std::pair<int, int> CircleRow(PlanePosition _center, float _sightMeters, int _row) const noexcept;
+  // Adds _delta to the count of every cell whose center is within the circle or the sector, and notes each cell whose count
+  // left or reached zero.
+  void CountCircle(PlanePosition _center, float _sightMeters, int _delta);
+  // Counts a circle out where it was and in where it is, touching only the cells of each row that are in one and not the
+  // other.
+  void MoveCircle(const Sight& _from, const Sight& _to);
+  void CountSector(const LitSector& _sector, int _delta);
+  void Count(std::vector<std::uint16_t>& _counts, size_t _cell, int _delta);
 
   float m_halfSizeMeters = 0.0f;
   std::uint32_t m_cellsPerSide = 0;
-  std::vector<bool> m_explored;
+  std::vector<std::uint8_t> m_explored;
   std::vector<float> m_shades;
-  // What Update finds in sight, kept so that its storage is not allocated on every update.
-  std::vector<bool> m_inSight;
+  std::vector<std::uint8_t> m_changedRows;
+  // For each cell, how many of the player's entities see it, and how many of the sectors it sees whole hold it.
+  std::vector<std::uint16_t> m_sightCounts;
+  std::vector<std::uint16_t> m_sectorCounts;
+  // What the counts hold, by identifier, and the cells whose counts left or reached zero in this update.
+  std::vector<Sight> m_sights;
+  std::vector<LitSector> m_litSectors;
+  std::vector<size_t> m_touched;
   std::uint64_t m_revision = 0;
 };
 } // namespace Outpost

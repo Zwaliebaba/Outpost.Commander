@@ -185,8 +185,9 @@ public:
   TEST_METHOD(EveryPlayerStartsWithItsDesignsAndABase)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Outpost::InProcessServer server(tuning, map, {.seed = 1});
+    Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
+    // The map as the server placed it from its seed (ADR-072).
+    const Outpost::Map& map = server.MapData();
     server.World().PlaceStartingBases(map);
 
     for (const Outpost::PlayerId player : {BLUE, RED})

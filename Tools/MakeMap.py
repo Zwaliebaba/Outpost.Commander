@@ -2,9 +2,10 @@
 """Writes the repository's map, OutpostCommander/Assets/Map.json (ADR-036 decision 4, Phase 4 design §6).
 
 The map is 10 km a side: 25 sectors of 2 km on a 5 x 5 grid, named by column A to E from west to east and row 1 to 5 from
-south to north, the homes in the corners A1 and E5, point-symmetric about the center. Player 1's asteroids are listed by
-sector, and each is mirrored through the center for player 2. Two asteroid fields stand on every border between two
-sectors, leaving a passage at its middle and one at each corner.
+south to north, the homes in the corners A1 and E5, point-symmetric about the center. Two asteroid fields stand on every
+border between two sectors, leaving a passage at its middle and one at each corner. The homes' asteroids are listed; every
+other asteroid is placed from the match's seed by its sector's kind (ADR-072), which is given here for player 1's half of
+the map and mirrored through the center for player 2's.
 
   python Tools/MakeMap.py           rewrites the map
   python Tools/MakeMap.py --check   fails if the committed map is not what this writes
@@ -24,26 +25,37 @@ FIELD_INSET_METERS = 470
 # A field's radius, picked by its place so that a field and its mirror have the same.
 FIELD_RADII = [170, 150, 190, 160, 180]
 
-# Player 1's ore, by sector (column, row from 0), as offsets from the sector's center.
-PLAYER_ONE_ORE = {
-    (0, 0): [(0, 260, "home"), (260, 0, "home"), (190, 190, "home")],
-    (1, 0): [(-350, 520, "near"), (420, -380, "near")],
-    (0, 1): [(520, -350, "near"), (-380, 420, "near")],
-    (2, 0): [(-450, 480, "near")],
-    (1, 1): [(480, 450, "near")],
-    (0, 2): [(480, -450, "near")],
-    (3, 0): [(-520, 420, "contested")],
-    (2, 1): [(450, 520, "contested")],
-    (1, 2): [(-520, -450, "contested")],
-    (0, 3): [(420, -520, "contested")],
-    (0, 4): [(380, -520, "rich"), (-480, 400, "rich")],
-    # B4, whose mirror is D2: one asteroid nearer each start.
-    (1, 3): [(-500, -380, "contested"), (520, 420, "contested")],
-    # The center, its own mirror.
-    (2, 2): [(480, -300, "contested"), (-150, 560, "contested")],
-}
+# Player 1's home asteroids, as offsets from its start, each mirrored through the center for player 2.
+HOME_ORE = [(0, 260), (260, 0), (190, 190)]
 RADIUS_METERS = {"home": 45, "near": 45, "contested": 45, "rich": 60}
 RESERVE_ORE = {"home": 7500, "near": 9000, "contested": 12000, "rich": 24000}
+
+# Each sector's kind in player 1's half, by (column, row from 0), and so in its mirror (4 - column, 4 - row): the home, its
+# two flanks, the three sectors two steps from it, the four three steps from it, the corner off the diagonal between the
+# homes, the sector next to that corner on the diagonal, and the center.
+PLAYER_ONE_KINDS = {
+    (0, 0): "home",
+    (1, 0): "flank", (0, 1): "flank",
+    (2, 0): "near", (1, 1): "near", (0, 2): "near",
+    (3, 0): "contested", (2, 1): "contested", (1, 2): "contested", (0, 3): "contested",
+    (0, 4): "rich",
+    (1, 3): "between",
+    (2, 2): "center",
+}
+# What each kind places, as (yield, count): Phase 4's 10 km map as it was first laid out by hand, 3 home, 7 near, 8
+# contested and 2 rich asteroids a player.
+KIND_ORE = {
+    "home": [],
+    "flank": [("near", 2)],
+    "near": [("near", 1)],
+    "contested": [("contested", 1)],
+    "between": [("contested", 2)],
+    "center": [("contested", 4)],
+    "rich": [("rich", 2)],
+}
+# How placed asteroids keep clear: of their sector's borders, where the fields stand; of the node, where a Relay and its
+# defenders stand; and of each other, so that each rig has room for a Defence Platform beside it.
+PLACEMENT = {"borderMeters": 250, "nodeClearanceMeters": 350, "oreSpacingMeters": 500}
 
 
 def Asteroid(_x, _z, _yield):
@@ -52,12 +64,20 @@ def Asteroid(_x, _z, _yield):
 
 def Asteroids():
     asteroids = []
-    for (column, row), ores in PLAYER_ONE_ORE.items():
-        for dx, dz, ore in ores:
-            x, z = CENTERS[column] + dx, CENTERS[row] + dz
-            asteroids.append(Asteroid(x, z, ore))
-            asteroids.append(Asteroid(-x, -z, ore))
+    for dx, dz in HOME_ORE:
+        x, z = CENTERS[0] + dx, CENTERS[0] + dz
+        asteroids += [Asteroid(x, z, "home"), Asteroid(-x, -z, "home")]
     return asteroids
+
+
+def KindOf(_column, _row):
+    return PLAYER_ONE_KINDS.get((_column, _row)) or PLAYER_ONE_KINDS[(4 - _column, 4 - _row)]
+
+
+def SectorKinds():
+    return [{"name": name, "ore": [Inline({"yield": ore, "count": count, "radiusMeters": RADIUS_METERS[ore], "reserve": RESERVE_ORE[ore]})
+                                   for ore, count in rules]}
+            for name, rules in KIND_ORE.items()]
 
 
 def Field(_x, _z):
@@ -83,7 +103,8 @@ def Sectors():
             sectors.append({"id": row * 5 + column + 1, "name": f"{COLUMNS[column]}{row + 1}",
                             "minXMeters": EDGES[column], "maxXMeters": EDGES[column + 1],
                             "minZMeters": EDGES[row], "maxZMeters": EDGES[row + 1],
-                            "node": {"xMeters": CENTERS[column], "zMeters": CENTERS[row]}, "adjacent": sorted(adjacent)})
+                            "node": {"xMeters": CENTERS[column], "zMeters": CENTERS[row]}, "adjacent": sorted(adjacent),
+                            "kind": KindOf(column, row)})
     return sectors
 
 
@@ -103,13 +124,16 @@ def MapText():
     sectors = []
     for sector in Sectors():
         head = {key: sector[key] for key in ("id", "name", "minXMeters", "maxXMeters", "minZMeters", "maxZMeters")}
-        tail = f"\"node\": {Inline(sector['node'])}, \"adjacent\": {json.dumps(sector['adjacent'])} }}"
+        tail = f"\"node\": {Inline(sector['node'])}, \"adjacent\": {json.dumps(sector['adjacent'])}, \"kind\": {json.dumps(sector['kind'])} }}"
         sectors.append(f"{Inline(head)[:-2]},\r\n      {tail}")
     lines = ["{", f"  \"sizeMeters\": {SIZE_METERS},", "  \"minimumGapMeters\": 60,"]
     lines += Listed("starts", starts)
     lines += Listed("oreAsteroids", [Inline(asteroid) for asteroid in Asteroids()])
     lines += Listed("asteroidFields", [Inline(field) for field in Fields()])
-    lines += Listed("sectors", sectors, _last=True)
+    lines += Listed("sectors", sectors)
+    kinds = [f"{{ \"name\": {json.dumps(kind['name'])}, \"ore\": [" + ", ".join(kind["ore"]) + "] }" for kind in SectorKinds()]
+    lines += Listed("sectorKinds", kinds)
+    lines.append(f"  \"placement\": {Inline(PLACEMENT)}")
     lines.append("}")
     # JSON in the repository is CRLF (.editorconfig).
     return "\r\n".join(lines) + "\r\n"

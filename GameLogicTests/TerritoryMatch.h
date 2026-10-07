@@ -17,7 +17,7 @@ public:
     : m_map(Outpost::LoadMap(ReadRepositoryMap())),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = 3})
   {
-    World().PlaceStartingBases(m_map);
+    World().PlaceStartingBases(m_server.MapData());
   }
 
   [[nodiscard]] Outpost::Simulation& World() noexcept
@@ -28,6 +28,17 @@ public:
   [[nodiscard]] const Outpost::SectorPlacement& Placement(std::int32_t _sector) const
   {
     return *std::ranges::find(m_map.sectors, _sector, &Outpost::SectorPlacement::id);
+  }
+
+  // An ore asteroid the match's seed placed in the sector (ADR-072).
+  [[nodiscard]] Outpost::PlanePosition AsteroidIn(std::int32_t _sector) const
+  {
+    const Outpost::SectorPlacement& sector = Placement(_sector);
+    const std::vector<Outpost::OreAsteroidPlacement>& asteroids = m_server.MapData().oreAsteroids;
+    const auto found = std::ranges::find_if(asteroids, [&sector](const Outpost::OreAsteroidPlacement& _asteroid)
+                                            { return sector.Contains(_asteroid.position); });
+    Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(found != asteroids.end(), L"no asteroid in the sector");
+    return found->position;
   }
 
   // A finished structure of the tuning data's numbers.

@@ -34,7 +34,9 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | built, in milestone 28's PR |
 | 28.3 | Production follows territory | — | L5 | built, in milestone 28's PR; the ghost's test awaits CI |
 | 28.4 | The engine measured at 10 km (U7) | 28.2 | — | measured in the container; U7 awaits the owner's run |
-| 29.1 | Placement from the seed | 28.2 | L10 | todo |
+| 29.0 | A lead of one node takes 50 minutes on any map | 28.4 | owner, 2026-10-07 | built, in milestone 29's PR |
+| 29.1 | Placement from the seed | 28.2 | L10 | built, in milestone 29's PR |
+| 29.2 | The fog works out only what changed | 28.1 | owner, 2026-10-07 | built, in milestone 29's PR; awaiting CI and the owner's run |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
 | 30.2 | The client draws pirates | 30.1 | L7 | todo |
 | 31.1 | Derelicts and salvage | 29.1 | L8 | todo |
@@ -148,11 +150,40 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Verify:** the container's figures, stated as such; **owner run** of `--measure` and of a match at the widest view.
 - **As built:** recorded in design §2: all 40 end, all by domination, at a median of 2:09; the median side peaks at 25.5 warships; every side's station is at level 5, a cap of 50 points, by minute 20, and the median side holds 18,236 Ore at minute 30; the median match's 99th percentile tick is 2.5 ms in the container. The 40 matches took 16 minutes of processor time, 4:45 on four threads. That the matches are twice as long, all by domination, with the Ore piling up behind the cap, is for the owner before milestone 29.
 
-## Milestones 29 to 34
+## Milestone 29 — Placement from the seed
+
+**Asked after 28.4** (owner, 2026-10-07): a lead of one node takes 50 minutes on any map (29.0); the Ore that piles up behind the fleet cap is left for Phase 4's later sinks, the pirates, salvage and the Repair Bay, and measured again at milestone 34; and seeded placement keeps today's counts of asteroids per sector and draws their places (29.1).
+
+### 29.0 — A lead of one node takes 50 minutes on any map
+
+- **Asked:** 28.4 found every match ending by domination at a median of two hours, a lead of one node taking 139 minutes on 25 nodes against 50 on nine. The owner chose a drain that does not divide by the map's nodes.
+- **Scope:** tickets are whole; every `drainIntervalSeconds` a player loses `drainTicketsPerNodeDifference` for each node it is behind. The data is 1 ticket every 3 seconds, so a lead of one node takes 1,000 drains, 50 minutes, on any map.
+- **ADR:** ADR-057 edited in place; design §6 and §14.
+- **Acceptance:** `DominationTests`, a lead of one ending the match in exactly 50 minutes on the 10 km map.
+- **Verify:** CI; the container's run of `GameLogicTests`.
+
+### 29.1 — Placement from the seed
+
+- **Gate:** L10, decided; the asteroids' counts by the owner on 2026-10-07.
+- **Scope:** `Map.json` keeps the size, the sectors, the fields, the starts and each home's three asteroids, and gives each sector a kind; each kind names the ore asteroids it gets by yield, with today's counts. The server places them from the match's seed before the match, point-symmetric (design §7). Derelicts and pirate outposts join the kinds with milestones 30 and 31.
+- **ADR:** a new one, ADR-072: seeded placement. ADR-036 decision 4 edited in place.
+- **Acceptance:** `MapTests` cover the shape and the Ore over twelve seeds, symmetry, reachability, the same seed placing the same map and every asteroid keeping the placement's rules, and the loader's refusals of broken kinds.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
+- **As built:** recorded in [ADR-072](../Design/ADR/ADR-072-seeded-placement.md) and design §2. Seeds 1 to 2,000 all place the map, at about 10 µs each. `Tools/MakeMap.py` writes the kinds. The tests that named an asteroid's place find one the seed placed (`TerritoryMatch::AsteroidIn`), and the fixtures place their bases and loads on the server's placed map; no AI test needed re-timing. Over seeds 1–40 the median match is 1:37, every match ends by domination, and each player wins 20.
+
+### 29.2 — The fog works out only what changed
+
+- **Asked:** the owner, playing a Debug build on the 10 km map, found the ships stuttering and the controls lagging (2026-10-07), and chose to make the fog's update incremental. Measured in the container, the client's fog update of the whole 250,000-cell grid took about 40 ms a snapshot unoptimized, 2 ms optimized, and every changed fog texture was converted and copied whole.
+- **Scope:** `FogOfWar` keeps a count per cell of the entities and the held sectors that see it, and an update counts again only the sectors that changed and the entities that appeared, went or moved, a moved circle only where its rows' runs differ. It flags the rows whose shades changed, and `GroundMaskPipeline::SetShades` writes and copies only those. The shades are those the whole update gave.
+- **ADR:** ADR-052 edited in place.
+- **Acceptance:** `FogOfWarTests`, with `KeepsWhatIsStillSeen` and `SaysWhichRowsChanged` new.
+- **Verify:** CI; **owner run**, in Debug, on the 10 km map.
+- **As built:** checked against the earlier code cell for cell over 1,200 random updates; on 120 entities, half of them moving, an update takes 2.5 ms unoptimized and 0.4 ms optimized, against 40 ms and 1.1 ms. `FogOfWarTests` ran in the container against a stand-in for the test framework; `GroundMaskPipeline` is not built there, and CI is its first build.
+
+## Milestones 30 to 34
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
 
-- **29 — Placement from the seed** (design §7).
 - **30 — Pirates** (design §8): the neutral owner, its outposts and their guarding rule, and how the client draws them.
 - **31 — Derelicts** (design §9): salvage, its Ore and its research.
 - **32 — The Repair Bay and retreat** (design §10).

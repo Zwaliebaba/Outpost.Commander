@@ -24,7 +24,7 @@ public:
     : m_map(Outpost::LoadMap(ReadRepositoryMap())),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = 5})
   {
-    m_server.World().PlaceStartingBases(m_map);
+    m_server.World().PlaceStartingBases(m_server.MapData());
     Raid(_attacker, m_map.starts[_defender.value - 1]);
   }
 

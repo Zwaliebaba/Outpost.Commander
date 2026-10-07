@@ -33,8 +33,11 @@ public:
 
   // Writes _shades, _cellsPerSide squared of them row by row along x, rows in order of z, into the shades' texture by a
   // copy recorded into the frame's command list. They stay there until the next call, so call it only when they change.
-  // Nothing happens when they are not a square grid of at most TEXTURE_SIDE a side.
-  void SetShades(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, std::span<const float> _shades, UINT _cellsPerSide);
+  // With _changedRows, a flag for each row, only the flagged rows are written and copied, the rest of the texture keeping
+  // what it had; without, every row is (ADR-052). Nothing happens when they are not a square grid of at most TEXTURE_SIDE
+  // a side.
+  void SetShades(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, std::span<const float> _shades, UINT _cellsPerSide,
+                 std::span<const std::uint8_t> _changedRows = {});
 
   // Draws the mask with the shades last set, when the constants' grid is theirs; nothing before the first SetShades.
   void Draw(ID3D12GraphicsCommandList* _commandList, const FrameConstants& _constants) const;

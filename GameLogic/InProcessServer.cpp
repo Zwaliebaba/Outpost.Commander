@@ -66,7 +66,7 @@ std::vector<Outpost::Snapshot> Outpost::LoopbackTransport::Receive()
 
 Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc)
   : m_tuning(std::move(_tuning)),
-    m_map(std::move(_map)),
+    m_map(PlaceContent(std::move(_map), _desc.seed)),
     m_tickHost(static_cast<std::uint32_t>(m_tuning.rules.tickHz), MAX_TICKS_PER_ADVANCE),
     m_simulation(_desc.seed, static_cast<std::uint32_t>(m_tuning.rules.tickHz))
 {

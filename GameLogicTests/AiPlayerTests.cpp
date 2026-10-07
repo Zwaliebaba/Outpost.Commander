@@ -115,7 +115,7 @@ public:
       m_aiConnection(m_server.Connect(AI)),
       m_ai(_settings.has_value() ? std::move(*_settings) : RepositorySettings(), m_server.TicksPerSecond())
   {
-    m_server.World().PlaceStartingBases(m_map);
+    m_server.World().PlaceStartingBases(m_server.MapData());
   }
 
   [[nodiscard]] Outpost::Simulation& World() noexcept
@@ -136,6 +136,12 @@ public:
   [[nodiscard]] Outpost::Snapshot View(Outpost::PlayerId _player)
   {
     return m_server.World().BuildSnapshot(_player);
+  }
+
+  // The map as the server placed it from the match's seed (ADR-072).
+  [[nodiscard]] const Outpost::Map& MapData() const noexcept
+  {
+    return m_server.MapData();
   }
 
   [[nodiscard]] Outpost::PlanePosition Start(Outpost::PlayerId _player) const
@@ -1221,7 +1227,7 @@ public:
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const Outpost::StructureTuning& rig =
       *std::ranges::find(tuning.structures, Outpost::StructureKind::MiningRig, &Outpost::StructureTuning::kind);
-    for (const Outpost::OreAsteroidPlacement& asteroid : Outpost::LoadMap(ReadRepositoryMap()).oreAsteroids)
+    for (const Outpost::OreAsteroidPlacement& asteroid : match.MapData().oreAsteroids)
     {
       if (asteroid.yield != Outpost::OreYield::Contested)
         continue;

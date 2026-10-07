@@ -122,35 +122,56 @@ Neuron::GroundMaskPipeline::GroundMaskPipeline(Renderer& _renderer)
 }
 
 void Neuron::GroundMaskPipeline::SetShades(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, std::span<const float> _shades,
-                                           UINT _cellsPerSide)
+                                           UINT _cellsPerSide, std::span<const std::uint8_t> _changedRows)
 {
-  if (_cellsPerSide == 0 || _cellsPerSide > TEXTURE_SIDE || _shades.size() != size_t{_cellsPerSide} * _cellsPerSide)
+  if (_cellsPerSide == 0 || _cellsPerSide > TEXTURE_SIDE || _shades.size() != size_t{_cellsPerSide} * _cellsPerSide ||
+      (!_changedRows.empty() && _changedRows.size() != _cellsPerSide))
     return;
   // A byte a cell, into this frame's slot, which the GPU is done with: the renderer waited for this frame index's previous
   // frame before handing out the command list. The row and the column past the grid repeat its last, where there is room.
+  // A texture of another grid's size is written whole.
   const UINT side = std::min(_cellsPerSide + 1, TEXTURE_SIDE);
   const UINT64 offset = UPLOAD_SLOT_BYTES * _frameIndex;
   std::uint8_t* texels = m_mappedUpload + offset;
-  for (UINT z = 0; z < side; ++z)
-  {
-    const float* row = _shades.data() + (size_t{std::min(z, _cellsPerSide - 1)} * _cellsPerSide);
-    std::uint8_t* out = texels + (size_t{z} * TEXTURE_SIDE);
-    for (UINT x = 0; x < side; ++x)
-      out[x] = static_cast<std::uint8_t>(std::lround(std::clamp(row[std::min(x, _cellsPerSide - 1)], 0.0f, 1.0f) * 255.0f));
-  }
-
-  const auto toCopy =
-    CD3DX12_RESOURCE_BARRIER::Transition(m_shades.get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-  _commandList->ResourceBarrier(1, &toCopy);
+  const bool everyRow = _changedRows.empty() || m_cellsPerSide != _cellsPerSide;
+  const auto changed = [&](UINT _z) { return everyRow || _changedRows[std::min(_z, _cellsPerSide - 1)] != 0; };
   const D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{
     .Offset = offset, .Footprint = {.Format = DXGI_FORMAT_R8_UNORM, .Width = side, .Height = side, .Depth = 1, .RowPitch = TEXTURE_SIDE}};
   const CD3DX12_TEXTURE_COPY_LOCATION destination(m_shades.get(), 0);
   const CD3DX12_TEXTURE_COPY_LOCATION source(m_upload.get(), footprint);
-  _commandList->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+  bool copying = false;
+  // Each run of changed rows is written and copied as one region.
+  for (UINT z = 0; z < side;)
+  {
+    if (!changed(z))
+    {
+      ++z;
+      continue;
+    }
+    const UINT first = z;
+    for (; z < side && changed(z); ++z)
+    {
+      const float* row = _shades.data() + (size_t{std::min(z, _cellsPerSide - 1)} * _cellsPerSide);
+      std::uint8_t* out = texels + (size_t{z} * TEXTURE_SIDE);
+      for (UINT x = 0; x < side; ++x)
+        out[x] = static_cast<std::uint8_t>(std::lround(std::clamp(row[std::min(x, _cellsPerSide - 1)], 0.0f, 1.0f) * 255.0f));
+    }
+    if (!copying)
+    {
+      const auto toCopy =
+        CD3DX12_RESOURCE_BARRIER::Transition(m_shades.get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+      _commandList->ResourceBarrier(1, &toCopy);
+      copying = true;
+    }
+    const D3D12_BOX rows{.left = 0, .top = first, .front = 0, .right = side, .bottom = z, .back = 1};
+    _commandList->CopyTextureRegion(&destination, 0, first, 0, &source, &rows);
+  }
+  m_cellsPerSide = _cellsPerSide;
+  if (!copying)
+    return;
   const auto toShader =
     CD3DX12_RESOURCE_BARRIER::Transition(m_shades.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   _commandList->ResourceBarrier(1, &toShader);
-  m_cellsPerSide = _cellsPerSide;
 }
 
 void Neuron::GroundMaskPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const FrameConstants& _constants) const
