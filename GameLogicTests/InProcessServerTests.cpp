@@ -160,6 +160,7 @@ public:
       replay.SaveStartingDesigns(player, server.TuningData());
     }
     replay.PlacePirates(server.MapData());
+    replay.PlaceDerelicts(server.MapData());
     (void)replay.SpawnShip(BLUE, SWARM, SMALL_ION, {});
     (void)replay.SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();

@@ -696,6 +696,14 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
     if (sector != nullptr && ((sector->holder.IsValid() && sector->holder != m_player) || sector->guarded))
       return true;
   }
+  // A Relay whose node a wreck covers waits for it to be salvaged (ADR-074), which the AI leaves until milestone 33.
+  if (_slot.structure == StructureKind::Relay && std::ranges::any_of(_snapshot.entities,
+                                                                     [&](const EntityView& _entity) {
+                                                                       return _entity.kind == EntityKind::Derelict &&
+                                                                              Distance(_entity.position, _slot.position) <
+                                                                                _entity.radiusMeters + _slot.radiusMeters;
+                                                                     }))
+    return true;
   if (_slot.structure != StructureKind::MiningRig)
     return false;
   return std::ranges::any_of(_snapshot.entities,

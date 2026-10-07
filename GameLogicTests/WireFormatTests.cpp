@@ -38,8 +38,11 @@ Outpost::Snapshot FullSnapshot()
      .remembered = true,
      .sightMeters = 30.5f,
      .standing = Outpost::StandingOrder::Patrol,
-     .oreReserveHundredths = -31'000'000'000ll});
-  snapshot.entities.push_back({.id = Outpost::EntityId{32}, .kind = Outpost::EntityKind::AsteroidField});
+     .oreReserveHundredths = -31'000'000'000ll,
+     .salvageOre = 750,
+     .salvageTopic = Outpost::ResearchTopicId{97},
+     .salvagePermille = 333});
+  snapshot.entities.push_back({.id = Outpost::EntityId{32}, .kind = Outpost::EntityKind::Derelict});
   snapshot.shots.push_back({.shooter = Outpost::EntityId{33},
                             .target = Outpost::EntityId{34},
                             .weapon = Outpost::WeaponId{35},
@@ -120,7 +123,8 @@ Outpost::Snapshot FullSnapshot()
                                .unlocksHull = Outpost::HullId{82},
                                .unlocksDrive = Outpost::DriveId{83},
                                .unlocksWeapon = Outpost::WeaponId{84},
-                               .tier = 3});
+                               .tier = 3,
+                               .recovered = true});
   snapshot.shipyardBuildSpeedFactor = 1.25;
   snapshot.researchTier = 2;
   snapshot.nodeCap = 5;
@@ -182,7 +186,8 @@ public:
                                  .module = Outpost::ModuleId{17}},
       Outpost::HoldSectorCommand{.ships = ships, .position = {.xMeters = 18.0f}},
       Outpost::PatrolCommand{.ships = ships, .destination = {.zMeters = 19.0f}},
-      Outpost::UpgradeStructureCommand{.structure = Outpost::EntityId{21}}};
+      Outpost::UpgradeStructureCommand{.structure = Outpost::EntityId{21}},
+      Outpost::SalvageCommand{.constructors = ships, .derelict = Outpost::EntityId{22}}};
     Assert::AreEqual(std::variant_size_v<Outpost::Order>, orders.size(), L"every alternative once");
     for (size_t i = 0; i < orders.size(); ++i)
     {
@@ -225,6 +230,9 @@ public:
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);
     Assert::AreEqual(96, snapshot.startingTickets);
     Assert::AreEqual(55.5, snapshot.constructorBuildSeconds, L"the Constructor's build time (ADR-068)");
+    Assert::IsTrue(snapshot.entities[1].kind == Outpost::EntityKind::Derelict, L"the last kind of entity (ADR-074)");
+    Assert::AreEqual(97u, snapshot.entities[0].salvageTopic.value);
+    Assert::IsTrue(snapshot.research[0].recovered);
   }
 
   TEST_METHOD(CarriesHelloAndWelcome)

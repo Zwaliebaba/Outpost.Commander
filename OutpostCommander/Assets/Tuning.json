@@ -119,9 +119,12 @@
     "guardMeters": 600,
     "chaseMeters": 900,
     "outposts": [
-      { "name": "camp", "defensePlatforms": 1, "ships": [{ "hull": 1, "drive": 1, "weapon": 1, "count": 3 }] },
+      { "name": "camp", "defensePlatforms": 1, "ships": [{ "hull": 1, "drive": 1, "weapon": 1, "count": 3 }],
+        "wreck": { "ore": 600, "hull": 3, "radiusMeters": 30 } },
       { "name": "stronghold", "defensePlatforms": 2,
-        "ships": [{ "hull": 2, "drive": 1, "weapon": 1, "count": 3 }, { "hull": 2, "drive": 1, "weapon": 2, "count": 1 }] }
+        "ships": [{ "hull": 2, "drive": 1, "weapon": 1, "count": 3 }, { "hull": 2, "drive": 1, "weapon": 2, "count": 1 }],
+        "wreck": { "ore": 1200, "hull": 3, "radiusMeters": 40 } }
     ]
-  }
+  },
+  "salvage": { "workSeconds": 30, "recoveryPercent": 50 }
 }

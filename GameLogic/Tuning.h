@@ -264,12 +264,31 @@ struct PirateShipsTuning
   std::int32_t count = 0;
 };
 
-// One size of pirate outpost, named for the map to place it by (ADR-072): its Defence Platforms and its ships.
+// The derelict a cleared outpost leaves (Phase 4 design §9, ADR-074): the Ore it pays, and the hull and radius it is drawn
+// with. It names no research topic.
+struct WreckTuning
+{
+  std::int32_t ore = 0;
+  HullId hull;
+  double radiusMeters = 0.0;
+};
+
+// One size of pirate outpost, named for the map to place it by (ADR-072): its Defence Platforms, its ships, and its wreck.
 struct OutpostTuning
 {
   std::string name;
   std::int32_t defensePlatforms = 0;
   std::vector<PirateShipsTuning> ships;
+  WreckTuning wreck;
+};
+
+// Salvage (Phase 4 design §9, ADR-074): a derelict takes workSeconds of one Constructor's work, more Constructors helping as
+// they do on a site, and a topic it names recovers recoveryPercent of the topic's research time. None when the file has
+// none, and then no derelict is placed.
+struct SalvageTuning
+{
+  double workSeconds = 0.0;
+  std::int32_t recoveryPercent = 0;
 };
 
 // Pirates (Phase 4 design §8, ADR-073): an outpost's ships attack any player's ship or structure within guardMeters of its
@@ -299,6 +318,7 @@ struct Tuning
   std::vector<StartingDesignTuning> startingDesigns;
   // Optional in the file.
   PirateTuning pirates;
+  std::optional<SalvageTuning> salvage;
 };
 
 // The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5, gate K1): the level that names it, or 1
@@ -334,6 +354,6 @@ struct Tuning
 // Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL (ADR-064), and a Shipyard that names the hulls
 // it builds names each once, at level 1 or at one of its levels. A member the loader does not know is
 // an error too, so that a misspelled optional member is not ignored. Pirates are optional: an outpost's name is unique, its
-// ships' components exist, and its chase reaches at least as far as its guard.
+// ships' components exist, and its chase reaches at least as far as its guard; its wreck's hull exists. Salvage is optional.
 [[nodiscard]] Tuning LoadTuning(std::string_view _json);
 } // namespace Outpost

@@ -231,7 +231,8 @@ void Outpost::Simulation::UseFog()
 
 bool Outpost::Simulation::Sees(PlayerId _player, const Entity& _entity) const noexcept
 {
-  if (!m_fog || !_entity.owner.IsValid() || _entity.owner == _player)
+  // The map's asteroids and fields are always seen; a derelict is seen as an enemy's structure is (ADR-074).
+  if (!m_fog || (!_entity.owner.IsValid() && _entity.kind != EntityKind::Derelict) || _entity.owner == _player)
     return true;
   const PlayerState* state = FindPlayer(_player);
   return state != nullptr && std::ranges::binary_search(state->seen, _entity.id);
@@ -285,14 +286,14 @@ void Outpost::Simulation::UpdateVision()
     player.seen.clear();
     for (const Entity& entity : m_entities)
     {
-      if (!entity.owner.IsValid() || entity.owner == player.id)
+      if ((!entity.owner.IsValid() && entity.kind != EntityKind::Derelict) || entity.owner == player.id)
         continue;
       const bool revealed =
         std::ranges::find(player.revealedUntil, entity.id, &std::pair<EntityId, std::uint64_t>::first) != player.revealedUntil.end();
       if (!revealed && !InSight(observers, entity.position, entity.radiusMeters) && !InSectorSight(player.id, entity.position))
         continue;
       player.seen.push_back(entity.id);
-      if (entity.kind != EntityKind::Structure)
+      if (entity.kind != EntityKind::Structure && entity.kind != EntityKind::Derelict)
         continue;
       EntityView view = EntityViewOf(entity, false);
       if (const auto known = std::ranges::find(player.remembered, entity.id, &EntityView::id); known != player.remembered.end())
@@ -402,6 +403,13 @@ Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, boo
   if (!_entity.IsBuilt())
     view.builtPermille = static_cast<std::int32_t>(std::int64_t{_entity.buildWorkDone} * PERMILLE / _entity.buildWorkNeeded);
   view.level = _entity.level;
+  if (_entity.kind == EntityKind::Derelict)
+  {
+    view.salvageOre = _entity.salvageOre;
+    view.salvageTopic = _entity.salvageTopic;
+    view.salvagePermille =
+      static_cast<std::int32_t>(std::int64_t{_entity.salvageWorkDone} * PERMILLE / std::max(1, _entity.salvageWorkNeeded));
+  }
   if (_entity.IsUpgrading())
     view.upgradePermille = static_cast<std::int32_t>(std::int64_t{_entity.upgradeWorkDone} * PERMILLE / _entity.upgradeWorkNeeded);
   if (_detailed && (!_entity.queue.empty() || !_entity.researchQueue.empty()))
@@ -709,7 +717,10 @@ void Outpost::Simulation::PlacePirates(const Map& _map)
                            platform->armor * HUNDREDTHS);
     }
 
-    PirateOutpost outpost{.sector = where.id, .node = node};
+    PirateOutpost outpost{
+      .sector = where.id,
+      .node = node,
+      .wreck = {.ore = size->wreck.ore, .hull = size->wreck.hull, .radiusMeters = static_cast<float>(size->wreck.radiusMeters)}};
     std::int32_t ships = 0;
     for (const PirateShipsTuning& group : size->ships)
       ships += group.count;
@@ -733,6 +744,30 @@ void Outpost::Simulation::PlacePirates(const Map& _map)
   }
   // Their sectors are guarded from the first tick.
   UpdateTerritory();
+}
+
+void Outpost::Simulation::PlaceDerelicts(const Map& _map)
+{
+  if (!m_tuning || !m_tuning->salvage.has_value())
+    return;
+  for (const DerelictPlacement& derelict : _map.derelicts)
+    SpawnDerelict(derelict);
+}
+
+void Outpost::Simulation::SpawnDerelict(const DerelictPlacement& _derelict)
+{
+  // A wreck lies as it fell, facing away from the map's center, so that a derelict and its mirror lie alike.
+  const PlaneVector out = Normalized(_derelict.position - PlanePosition{}, {1.0f, 0.0f});
+  m_entities.push_back({.id = EntityId{++m_lastEntityId},
+                        .kind = EntityKind::Derelict,
+                        .hull = _derelict.hull,
+                        .position = _derelict.position,
+                        .headingRadians = std::atan2(out.zMeters, out.xMeters),
+                        .radiusMeters = _derelict.radiusMeters,
+                        .salvageOre = _derelict.ore,
+                        .salvageTopic = _derelict.topic,
+                        .salvageWorkNeeded = std::max(1, static_cast<std::int32_t>(std::llround(m_tuning->salvage->workSeconds *
+                                                                                                m_ticksPerSecond * MILLITICKS_PER_TICK)))});
 }
 
 std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands, TickObserver* _observer)
@@ -944,6 +979,12 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     snapshot.weapons = effects.weapons;
     snapshot.modules = effects.modules;
     snapshot.research = effects.topics;
+    // The topics a salvaged derelict has recovered time of, to take off when they start (ADR-074).
+    if (const PlayerState* state = FindPlayer(_player))
+    {
+      for (ResearchTopicView& topic : snapshot.research)
+        topic.recovered = std::ranges::find(state->recovered, topic.id) != state->recovered.end();
+    }
     snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
     // The tier its finished Research Lab's level has opened (Phase 3 design §6).
     for (const Entity& entity : m_entities)
@@ -1531,6 +1572,33 @@ void Outpost::Simulation::Fight()
   }
   if (blockerDestroyed)
     UpdateObstacles();
+  LeaveWrecks();
+}
+
+// Phase 4 design §8: a cleared outpost leaves a derelict where its largest structure stood. Its Defence Platforms are all
+// one size, so it is where the last of them fell, the first of them in identifier order when the last fall together.
+void Outpost::Simulation::LeaveWrecks()
+{
+  if (!m_tuning || !m_tuning->salvage.has_value())
+    return;
+  for (PirateOutpost& outpost : m_outposts)
+  {
+    if (outpost.wrecked)
+      continue;
+    const SectorPlacement& sector = SectorById(outpost.sector)->placement;
+    const auto inSector = [&sector](PlayerId _owner, EntityKind _kind, PlanePosition _position)
+    { return _owner == PIRATES && _kind == EntityKind::Structure && sector.Contains(_position); };
+    if (std::ranges::any_of(m_entities, [&](const Entity& _entity) { return inSector(_entity.owner, _entity.kind, _entity.position); }))
+      continue;
+    const auto fell = std::ranges::find_if(m_destroyed, [&](const DestroyedView& _destroyed)
+                                           { return inSector(_destroyed.owner, _destroyed.kind, _destroyed.position); });
+    if (fell == m_destroyed.end())
+      continue;
+    outpost.wrecked = true;
+    DerelictPlacement wreck = outpost.wreck;
+    wreck.position = fell->position;
+    SpawnDerelict(wreck);
+  }
 }
 
 // A ship on an attack order stands while its target is in range, and otherwise heads for it, pathing again when the
@@ -1894,8 +1962,9 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
   }
   for (const Entity& other : m_entities)
   {
-    const bool blocks =
-      other.kind == EntityKind::Asteroid || other.kind == EntityKind::AsteroidField || other.kind == EntityKind::Structure;
+    // A derelict blocks no path, but no structure stands on it until it is salvaged (ADR-074).
+    const bool blocks = other.kind == EntityKind::Asteroid || other.kind == EntityKind::AsteroidField ||
+                        other.kind == EntityKind::Structure || other.kind == EntityKind::Derelict;
     if (blocks && Distance(other.position, _position) < other.radiusMeters + _radiusMeters)
       return CommandResult::InvalidPlacement;
   }
@@ -1967,6 +2036,28 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Repair
       std::ranges::find(_repair.constructors, _repair.target) != _repair.constructors.end())
     return CommandResult::NotRepairable;
   OrderWork(_repair.constructors, _repair.target);
+  return CommandResult::Applied;
+}
+
+// Phase 4 design §9: Constructors salvage a derelict their player sees or remembers, as they build a site (ADR-074).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SalvageCommand& _salvage)
+{
+  if (const CommandResult result = ValidateConstructors(_player, _salvage.constructors); result != CommandResult::Applied)
+    return result;
+  if (!m_tuning->salvage.has_value())
+    return CommandResult::NotYetSupported;
+  const Entity* derelict = FindEntity(_salvage.derelict);
+  if (derelict == nullptr)
+    return CommandResult::UnknownTarget;
+  if (derelict->kind != EntityKind::Derelict)
+    return CommandResult::NotSalvageable;
+  if (m_fog && !Sees(_player, *derelict))
+  {
+    const PlayerState* state = FindPlayer(_player);
+    if (state == nullptr || std::ranges::find(state->remembered, derelict->id, &EntityView::id) == state->remembered.end())
+      return CommandResult::NotVisible;
+  }
+  OrderWork(_salvage.constructors, _salvage.derelict);
   return CommandResult::Applied;
 }
 
@@ -2146,32 +2237,54 @@ void Outpost::Simulation::ApproachWork()
 // §6, gate G8). Building: one Constructor does a tick's work each tick, and each further one adds the tuning data's
 // share of one more; a site's hit points rise with its progress from a tenth to full. Repair: each Constructor restores
 // the tuning data's percentage of the target's maximum each second, for nothing. A finished job ends the order. A level
-// being built is no work of theirs (BuildLevels).
+// being built is no work of theirs (BuildLevels). Salvage is built as a site is, and a derelict salvaged pays the player
+// whose crew finished it and leaves; another crew on it that tick finds it gone (ADR-074).
 void Outpost::Simulation::Work()
 {
-  std::vector<std::pair<EntityId, std::int32_t>> crews;
+  struct Crew
+  {
+    EntityId target;
+    PlayerId owner;
+    std::int32_t constructors = 0;
+  };
+  std::vector<Crew> crews;
   for (const Entity& ship : m_entities)
   {
     if (ship.order != ShipOrder::Work || !IsInReach(ship, *FindEntity(ship.workTarget)))
       continue;
-    const auto crew = std::ranges::find(crews, ship.workTarget, &std::pair<EntityId, std::int32_t>::first);
+    const auto crew =
+      std::ranges::find_if(crews, [&ship](const Crew& _crew) { return _crew.target == ship.workTarget && _crew.owner == ship.owner; });
     if (crew != crews.end())
-      ++crew->second;
+      ++crew->constructors;
     else
-      crews.emplace_back(ship.workTarget, 1);
+      crews.push_back({.target = ship.workTarget, .owner = ship.owner, .constructors = 1});
   }
   // In identifier order, so that the result does not depend on which Constructor came first.
-  std::ranges::sort(crews);
+  std::ranges::sort(crews, {}, [](const Crew& _crew) { return std::pair(_crew.target, _crew.owner); });
 
   const ConstructorTuning& tuning = m_tuning->constructor;
   std::vector<EntityId> finished;
-  for (const auto& [id, constructors] : crews)
+  std::vector<EntityId> salvaged;
+  for (const auto& [id, owner, constructors] : crews)
   {
+    if (std::ranges::find(salvaged, id) != salvaged.end())
+      continue;
     Entity& target = *FindMutableEntity(id);
-    // A player's Constructors build and repair only its own, so the target's owner's research sets their rate.
-    const double rate = EffectsOf(target.owner).upgrades.constructorRateFactor;
+    // A crew's own research sets its rate.
+    const double rate = EffectsOf(owner).upgrades.constructorRateFactor;
     const auto work = static_cast<std::int32_t>(
       std::llround(MILLITICKS_PER_TICK * (1.0 + (tuning.extraConstructorBuildShare * static_cast<double>(constructors - 1))) * rate));
+    if (target.kind == EntityKind::Derelict)
+    {
+      target.salvageWorkDone = std::min(target.salvageWorkNeeded, target.salvageWorkDone + work);
+      if (target.salvageWorkDone < target.salvageWorkNeeded)
+        continue;
+      if (PlayerState* player = FindPlayer(owner))
+        Salvage(*player, target);
+      salvaged.push_back(id);
+      finished.push_back(id);
+      continue;
+    }
     if (!target.IsBuilt())
     {
       const std::int64_t maximum = target.maxHitPointsHundredths;
@@ -2199,6 +2312,42 @@ void Outpost::Simulation::Work()
       ship.path.clear();
     }
   }
+  if (!salvaged.empty())
+    std::erase_if(m_entities, [&salvaged](const Entity& _entity) { return std::ranges::find(salvaged, _entity.id) != salvaged.end(); });
+}
+
+// Phase 4 design §9: the Ore is paid at once. The topic's share of its research time comes off now if a Lab of the player's
+// is researching it, and otherwise off the topic when it starts, whatever its tier; a topic researched already gains
+// nothing (ADR-074).
+void Outpost::Simulation::Salvage(PlayerState& _player, const Entity& _derelict)
+{
+  _player.oreHundredths += std::int64_t{_derelict.salvageOre} * HUNDREDTHS;
+  const ResearchTopicId topic = _derelict.salvageTopic;
+  if (!topic.IsValid() || std::ranges::find(_player.researched, topic) != _player.researched.end())
+    return;
+  const auto tuning = std::ranges::find(m_tuning->research, topic, &ResearchTopicTuning::id);
+  if (tuning == m_tuning->research.end())
+    return;
+  const auto recovered = static_cast<std::int32_t>(
+    std::llround(tuning->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK * m_tuning->salvage->recoveryPercent / 100.0));
+  for (Entity& lab : m_entities)
+  {
+    if (lab.kind != EntityKind::Structure || lab.owner != _player.id || lab.researchQueue.empty())
+      continue;
+    // The front topic's work, and the second slot's, each once it has started.
+    if (lab.researchQueue.front() == topic && lab.jobWorkNeeded > 0)
+    {
+      lab.jobWorkDone = std::min(lab.jobWorkNeeded, lab.jobWorkDone + recovered);
+      return;
+    }
+    if (lab.researchQueue.size() > 1 && lab.researchQueue[1] == topic && lab.secondJobWorkNeeded > 0)
+    {
+      lab.secondJobWorkDone = std::min(lab.secondJobWorkNeeded, lab.secondJobWorkDone + recovered);
+      return;
+    }
+  }
+  if (std::ranges::find(_player.recovered, topic) == _player.recovered.end())
+    _player.recovered.push_back(topic);
 }
 
 // A structure being upgraded builds its next level itself, a tick of the level's time each tick, which no Constructor
@@ -2600,6 +2749,13 @@ void Outpost::Simulation::Research()
         player->oreHundredths -= std::int64_t{topic->cost} * HUNDREDTHS;
         workNeeded = std::max(1, static_cast<std::int32_t>(std::llround(topic->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
         workDone = 0;
+        // A derelict recovered part of its time before it started (ADR-074).
+        if (const auto recovered = std::ranges::find(player->recovered, topic->id); recovered != player->recovered.end())
+        {
+          workDone =
+            static_cast<std::int32_t>(std::llround(workNeeded * m_tuning->salvage.value_or(SalvageTuning{}).recoveryPercent / 100.0));
+          player->recovered.erase(recovered);
+        }
       }
       workDone += MILLITICKS_PER_TICK;
       if (workDone >= workNeeded)

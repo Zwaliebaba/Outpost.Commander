@@ -129,6 +129,12 @@ struct Entity
   // §11).
   std::uint32_t shipyardNumber = 0;
   std::uint32_t shipsBuilt = 0;
+  // A derelict's: the Ore it pays, the topic whose time it recovers if any, and its salvage, in thousandths of a tick of one
+  // Constructor's work (ADR-074).
+  std::int32_t salvageOre = 0;
+  ResearchTopicId salvageTopic;
+  std::int32_t salvageWorkDone = 0;
+  std::int32_t salvageWorkNeeded = 0;
 
   [[nodiscard]] bool IsBuilt() const noexcept
   {
@@ -219,6 +225,8 @@ enum class CommandResult : std::uint8_t
   CapReached,
   // A Relay ordered in a sector whose pirate outpost still has a structure standing (Phase 4 design §8).
   Guarded,
+  // A salvage order's target is not a derelict (Phase 4 design §9).
+  NotSalvageable,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -329,6 +337,10 @@ public:
   // leave its sector, or a structure of it would overlap an obstacle.
   void PlacePirates(const Map& _map);
 
+  // Match setup, after UseTuning: the derelicts the map's seed placed (Phase 4 design §9, ADR-074), each with the tuning
+  // data's salvage work. None without salvage in the tuning data.
+  void PlaceDerelicts(const Map& _map);
+
   // Whether a player has lost its Command Station and its last finished Shipyard, or on a map with territory has run out
   // of tickets, which ends the match (Phase 1 design §4, Phase 2 design §8); the player who still stands won, or nobody
   // when both fell in the same tick. Only a match whose bases were placed can end.
@@ -433,6 +445,9 @@ private:
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
     // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
     std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
+    // The topics a salvaged derelict recovered time of before they started, which take that much less once they do
+    // (ADR-074).
+    std::vector<ResearchTopicId> recovered;
     // Its tickets on a map with territory (ADR-057).
     std::int32_t tickets = 0;
     ResearchEffects researchEffects;
@@ -471,6 +486,9 @@ private:
     PlanePosition node;
     std::vector<EntityId> ships;
     EntityId quarry;
+    // The derelict it leaves where its last structure falls, and whether it has (ADR-074).
+    DerelictPlacement wreck;
+    bool wrecked = false;
 
     friend bool operator==(const PirateOutpost&, const PirateOutpost&) = default;
   };
@@ -545,6 +563,13 @@ private:
   CommandResult Apply(PlayerId _player, const HoldSectorCommand& _hold);
   CommandResult Apply(PlayerId _player, const PatrolCommand& _patrol);
   CommandResult Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade);
+  CommandResult Apply(PlayerId _player, const SalvageCommand& _salvage);
+  // Places a derelict, out of combat and blocking no path (ADR-074).
+  void SpawnDerelict(const DerelictPlacement& _derelict);
+  // _player salvaged a derelict: it is paid its Ore, and the topic it names recovers the tuning data's share of its time.
+  void Salvage(PlayerState& _player, const Entity& _derelict);
+  // After a fight, each outpost whose last structure fell leaves its wreck where that structure stood (ADR-074).
+  void LeaveWrecks();
   // The warships among _ships, each once; validated by the caller.
   [[nodiscard]] std::vector<EntityId> WarshipsOf(const std::vector<EntityId>& _ships) const;
   // Once a second, every group on a standing order moves as its order says (ADR-059).

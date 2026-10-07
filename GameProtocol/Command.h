@@ -121,9 +121,17 @@ struct UpgradeStructureCommand
   EntityId structure;
 };
 
+// Constructors salvage a derelict they reach, as they build a site (Phase 4 design §9, ADR-074); its Ore, and the topic's
+// time it recovers, go to the player whose Constructors finish it.
+struct SalvageCommand
+{
+  std::vector<EntityId> constructors;
+  EntityId derelict;
+};
+
 using Order =
   std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand, QueueShipCommand,
-               StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand, UpgradeStructureCommand>;
+               StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand, UpgradeStructureCommand, SalvageCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
 // arrived on; what a client puts there is never trusted (ADR-002).

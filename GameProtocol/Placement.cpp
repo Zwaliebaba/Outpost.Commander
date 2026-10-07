@@ -76,8 +76,8 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
   }
   const auto overlaps = [&](const EntityView& _other)
   {
-    const bool blocks =
-      _other.kind == EntityKind::Asteroid || _other.kind == EntityKind::AsteroidField || _other.kind == EntityKind::Structure;
+    const bool blocks = _other.kind == EntityKind::Asteroid || _other.kind == EntityKind::AsteroidField ||
+                        _other.kind == EntityKind::Structure || _other.kind == EntityKind::Derelict;
     return blocks && Distance(_other.position, _cursor) < _other.radiusMeters + _type.radiusMeters;
   };
   // A ghost outside the map, or one overlap, makes it invalid: the search stops at the first overlap, and outside the map

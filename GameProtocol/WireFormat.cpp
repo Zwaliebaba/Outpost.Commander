@@ -118,6 +118,14 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, SalvageCommand>
+auto Fields(Self& _value)
+{
+  auto& [constructors, derelict] = _value;
+  return std::tie(constructors, derelict);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Command>
 auto Fields(Self& _value)
 {
@@ -139,10 +147,11 @@ auto Fields(Self& _value)
 {
   auto& [id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters, hitPointsHundredths,
          maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
-         secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths] = _value;
+         secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths, salvageOre, salvageTopic, salvagePermille] = _value;
   return std::tie(id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters,
                   hitPointsHundredths, maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue,
-                  research, jobPermille, secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths);
+                  research, jobPermille, secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths, salvageOre,
+                  salvageTopic, salvagePermille);
 }
 
 template <typename Self>
@@ -183,10 +192,10 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, ResearchTopicView>
 auto Fields(Self& _value)
 {
-  auto& [id, nameUtf8, effectUtf8, cost, researchSeconds, prerequisites, researched, unlocksHull, unlocksDrive, unlocksWeapon, tier] =
-    _value;
+  auto& [id, nameUtf8, effectUtf8, cost, researchSeconds, prerequisites, researched, unlocksHull, unlocksDrive, unlocksWeapon, tier,
+         recovered] = _value;
   return std::tie(id, nameUtf8, effectUtf8, cost, researchSeconds, prerequisites, researched, unlocksHull, unlocksDrive, unlocksWeapon,
-                  tier);
+                  tier, recovered);
 }
 
 template <typename Self>
@@ -282,7 +291,7 @@ concept WireRecord = requires(T& _value) { Fields(_value); };
 // be named here too, or a message that carries it is refused.
 constexpr EntityKind LastOf(EntityKind) noexcept
 {
-  return EntityKind::AsteroidField;
+  return EntityKind::Derelict;
 }
 
 constexpr ShipRole LastOf(ShipRole) noexcept

@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <deque>
+#include <map>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -425,6 +426,58 @@ public:
       Assert::IsTrue(plain.oreAsteroids[i].position == full.oreAsteroids[i].position);
   }
 
+  // The seed places the derelicts by sector kind (Phase 4 design §9, ADR-074): on each side one of the two flanks, two of
+  // the three near sectors, two of the four contested and the between sector, each with its mirror, and a third of the
+  // pairs naming a topic.
+  TEST_METHOD(PlacesDerelictsFromTheSeed)
+  {
+    const Outpost::Map listed = Outpost::LoadMap(ReadRepositoryMap());
+    const std::vector<Outpost::ResearchTopicId> topics{Outpost::ResearchTopicId{1}, Outpost::ResearchTopicId{2},
+                                                       Outpost::ResearchTopicId{3}};
+    const std::map<std::string, std::int32_t> ore{{"flank", 300}, {"near", 450}, {"contested", 600}, {"between", 750}};
+    std::vector<std::vector<Outpost::DerelictPlacement>> draws;
+    for (const std::uint64_t seed : SEEDS)
+    {
+      const Outpost::Map map = Outpost::PlaceContent(listed, seed, topics);
+      Assert::AreEqual(size_t{12}, map.derelicts.size());
+      std::vector<std::int32_t> sectors;
+      std::size_t named = 0;
+      for (size_t i = 0; i < map.derelicts.size(); i += 2)
+      {
+        const Outpost::DerelictPlacement& derelict = map.derelicts[i];
+        const Outpost::DerelictPlacement& mirror = map.derelicts[i + 1];
+        Assert::IsTrue(mirror.position == Outpost::PlanePosition{-derelict.position.xMeters, -derelict.position.zMeters}, L"mirrored");
+        Assert::IsTrue(mirror.ore == derelict.ore && mirror.topic == derelict.topic && mirror.hull == derelict.hull);
+        named += derelict.topic.IsValid() ? 1 : 0;
+        for (const Outpost::DerelictPlacement* each : {&derelict, &mirror})
+        {
+          const Outpost::SectorPlacement& sector = *std::ranges::find_if(map.sectors, [each](const Outpost::SectorPlacement& _sector)
+                                                                         { return _sector.Contains(each->position); });
+          Assert::IsTrue(std::ranges::find(sectors, sector.id) == sectors.end(), L"one a sector");
+          sectors.push_back(sector.id);
+          Assert::AreEqual(ore.at(sector.kind), each->ore, L"its kind's Ore");
+          Assert::IsTrue(Distance(each->position, sector.node) >= map.placement.nodeClearanceMeters, L"clear of the node");
+          for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
+            Assert::IsTrue(Distance(each->position, asteroid.position) - each->radiusMeters - asteroid.radiusMeters >=
+                           map.minimumGapMeters);
+        }
+      }
+      Assert::AreEqual(size_t{2}, named, L"a third of the six pairs name a topic");
+      draws.push_back(map.derelicts);
+    }
+    Assert::IsTrue(std::ranges::any_of(draws, [&draws](const auto& _draw) { return _draw != draws.front(); }), L"the seed places them");
+    // Without topics none is named, and the derelicts change neither the asteroids nor the outposts.
+    const Outpost::Map plain = Outpost::PlaceContent(listed, 9);
+    Assert::IsTrue(
+      std::ranges::none_of(plain.derelicts, [](const Outpost::DerelictPlacement& _derelict) { return _derelict.topic.IsValid(); }));
+    Outpost::Map withoutDerelicts = listed;
+    withoutDerelicts.derelictRules.clear();
+    const Outpost::Map bare = Outpost::PlaceContent(withoutDerelicts, 9);
+    Assert::IsTrue(bare.outposts == plain.outposts);
+    for (size_t i = 0; i < bare.oreAsteroids.size(); ++i)
+      Assert::IsTrue(bare.oreAsteroids[i].position == plain.oreAsteroids[i].position);
+  }
+
   TEST_METHOD(RejectsBrokenOutposts)
   {
     constexpr std::string_view SECTORS = R"(], "sectors": [
@@ -451,6 +504,22 @@ public:
     ExpectLoadError(broken("\"kind\": \"wing\", \"count\"", "\"kind\": \"wild\", \"count\""),
                     "outposts[0].kind: \"wild\" is not one of the sector kinds");
     ExpectLoadError(broken("\"count\": 1", "\"count\": 2"), "outposts[0].count: asks for 2 outposts");
+
+    // Derelicts are checked likewise (ADR-074).
+    const std::string derelicts =
+      broken("\"outposts\": [", "\"derelicts\": [ { \"kind\": \"wing\", \"count\": 1, \"ore\": 300, \"hull\": 1, \"radiusMeters\": 20 } ], "
+                                "\"derelictResearchPercent\": 33, \"outposts\": [");
+    Assert::AreEqual(size_t{2}, Outpost::PlaceContent(Outpost::LoadMap(derelicts), 5).derelicts.size());
+    const auto alsoBroken = [&derelicts](std::string_view _from, std::string_view _to)
+    {
+      std::string changed = derelicts;
+      changed.replace(changed.find(_from), _from.size(), _to);
+      return changed;
+    };
+    ExpectLoadError(alsoBroken("\"kind\": \"wing\", \"count\": 1, \"ore\"", "\"kind\": \"wild\", \"count\": 1, \"ore\""),
+                    "derelicts[0].kind");
+    ExpectLoadError(alsoBroken("\"count\": 1, \"ore\"", "\"count\": 2, \"ore\""), "derelicts[0].count: asks for 2 derelicts");
+    ExpectLoadError(alsoBroken("\"derelictResearchPercent\": 33", "\"derelictResearchPercent\": 101"), "derelictResearchPercent");
   }
 
   TEST_METHOD(LoadsAMinimalMap)

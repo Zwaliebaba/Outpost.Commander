@@ -192,7 +192,22 @@ public:
     const Outpost::PlanePosition node = match.Placement(sector).node;
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::Guarded);
     Assert::IsTrue(Assault(match, sector, Outpost::WeaponId{2}, 8, 120).first, L"eight Pickets cleared it");
-    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::Applied);
+    // The camp's wreck lies on the node, where its platform stood, until it is salvaged (ADR-074).
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::InvalidPlacement, L"the wreck blocks");
+    const auto wreck =
+      std::ranges::find_if(match.World().Entities(), [node](const Outpost::Entity& _entity)
+                           { return _entity.kind == Outpost::EntityKind::Derelict && Outpost::Distance(_entity.position, node) < 1.0f; });
+    Assert::IsTrue(wreck != match.World().Entities().end(), L"a wreck on the node");
+    Assert::AreEqual(600, wreck->salvageOre, L"a camp's");
+    const Outpost::EntityId constructor = match.World().SpawnConstructor(BLUE, TowardBlue(match, sector, 80.0f));
+    const Outpost::EntityId derelict = wreck->id;
+    Assert::IsTrue(match.World()
+                       .Tick({{.player = BLUE, .order = Outpost::SalvageCommand{.constructors = {constructor}, .derelict = derelict}}})
+                       .front() == Outpost::CommandResult::Applied,
+                   L"salvage ordered");
+    match.Run(40 * TICKS_PER_SECOND);
+    Assert::IsNull(match.World().FindEntity(derelict), L"salvaged");
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::Applied, L"then a Relay");
   }
 
   // Phase 4 design §8: a first fleet of Small ships clears a camp with losses. Measured: four Pickets clear it and lose

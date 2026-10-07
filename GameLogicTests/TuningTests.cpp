@@ -430,7 +430,17 @@ public:
                     {"count", Number(outpost.ships[j].count)}},
                    std::format("pirates.outposts[{}].ships[{}]", i, j));
       }
+      ExpectSame(
+        *outposts[i].Find("wreck"),
+        {{"ore", Number(outpost.wreck.ore)}, {"hull", Number(outpost.wreck.hull.value)}, {"radiusMeters", outpost.wreck.radiusMeters}},
+        std::format("pirates.outposts[{}].wreck", i));
     }
+
+    // ADR-074: salvage.
+    const Neuron::JsonValue& salvage = *json.Find("salvage");
+    Assert::IsTrue(tuning.salvage.has_value());
+    Assert::AreEqual(salvage.Find("workSeconds")->AsNumber(), tuning.salvage->workSeconds);
+    Assert::IsTrue(salvage.Find("recoveryPercent")->AsNumber() == Number(tuning.salvage->recoveryPercent));
   }
 
   // ADR-073: pirates are optional; an outpost is named once, its ships' components exist, and its chase reaches as far as
@@ -452,6 +462,11 @@ public:
       replaced("\"hull\": 2, \"drive\": 1, \"weapon\": 2, \"count\": 1", "\"hull\": 2, \"drive\": 1, \"weapon\": 9, \"count\": 1"),
       "pirates.outposts[1].ships[1].weapon");
     ExpectLoadError(replaced("\"guardMeters\": 600,", "\"guardMeters\": 600, \"raidMeters\": 1,"), "pirates.raidMeters");
+    // ADR-074: a wreck's hull exists, and salvage recovers at most all of a topic's time.
+    ExpectLoadError(replaced("\"wreck\": { \"ore\": 600, \"hull\": 3", "\"wreck\": { \"ore\": 600, \"hull\": 9"),
+                    "pirates.outposts[0].wreck.hull");
+    ExpectLoadError(replaced("\"recoveryPercent\": 50", "\"recoveryPercent\": 101"), "salvage.recoveryPercent");
+    Assert::IsFalse(Outpost::LoadTuning(MINIMAL_TUNING).salvage.has_value(), L"salvage is optional");
   }
 
   // ADR-069: a starting design's name is optional, and one that is given names components that exist and no research
