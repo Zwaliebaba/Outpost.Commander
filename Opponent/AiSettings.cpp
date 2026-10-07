@@ -82,6 +82,7 @@ Outpost::AiSettings ReadAiSettings(std::string_view _json)
   if (settings.attackCapShare > 1.0)
     Neuron::JsonFail(root.PathOf("attackCapShare"), "a share of at most 1, since a reserve never holds more than the cap allows");
   settings.pirateMargin = root.Number("pirateMargin", JsonBound::Positive);
+  settings.scoutOwnHalfSeconds = root.Number("scoutOwnHalfSeconds", JsonBound::NotNegative);
   root.Finish();
 
   for (size_t i = 0; i < settings.counters.size(); ++i)

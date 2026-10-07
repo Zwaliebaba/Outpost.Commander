@@ -518,8 +518,26 @@ public:
     Assert::IsTrue(scout != view.entities.end(), L"no scout in the first three minutes");
     const Outpost::EntityId id = scout->id;
 
-    // The enemy's home is A1, beside B1 and A2, as far from the AI's. Player 1's scout would go to E4 first, A2's mirror.
-    Outpost::AiPlayer ai(settings, 20);
+    // Phase 4 design §2 U1 (ADR-076): for the opening it moves through its own half, nearer its base than the enemy's, to
+    // a sector the pirates do not guard, without seeking a fight.
+    {
+      Outpost::AiPlayer explorer(settings, 20);
+      const std::vector<Outpost::Command> orders = explorer.Update(view);
+      const std::vector<Outpost::MoveCommand> moves = OrdersOf<Outpost::MoveCommand>(orders);
+      const auto own = std::ranges::find_if(moves, [id](const Outpost::MoveCommand& _order)
+                                            { return _order.ships == std::vector<Outpost::EntityId>{id}; });
+      Assert::IsTrue(own != moves.end(), L"the scout was not sent to explore");
+      const Outpost::PlanePosition home = match.Start(AI);
+      const Outpost::PlanePosition enemy = match.Start(HUMAN);
+      Assert::IsTrue(Outpost::Distance(own->destination, home) < Outpost::Distance(own->destination, enemy), L"in its own half");
+      Assert::IsFalse(Outpost::FindSector(view.sectors, own->destination)->guarded, L"not where the pirates guard");
+    }
+
+    // Then it goes round the enemy's flanks. The enemy's home is A1, beside B1 and A2, as far from the AI's. Player 1's scout
+    // would go to E4 first, A2's mirror.
+    Outpost::AiSettings flanks = settings;
+    flanks.scoutOwnHalfSeconds = 0.0;
+    Outpost::AiPlayer ai(flanks, 20);
     const auto sentTo = [&ai, &view, id]() -> std::optional<Outpost::PlanePosition>
     {
       for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(view)))

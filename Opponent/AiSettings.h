@@ -86,6 +86,9 @@ struct AiSettings
   // Pirates (Phase 4 design §12, ADR-076): a detachment of its reserve goes at a pirate outpost once the detachment's Ore is
   // at least this many times the outpost's, as far as it has seen the outpost.
   double pirateMargin = 1.0;
+  // Its scouts explore its own half of the map for this long, moving through the sectors the pirates do not guard, before
+  // they go round the enemy's flanks (Phase 4 design §2 U1, ADR-076).
+  double scoutOwnHalfSeconds = 0.0;
 };
 
 // Reads the text of OutpostCommander/Assets/Opponent.json. Throws Neuron::Exception on the first problem, naming where it

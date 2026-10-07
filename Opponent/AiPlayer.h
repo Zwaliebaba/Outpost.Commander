@@ -197,6 +197,8 @@ private:
   std::vector<std::int32_t> m_claimed;
   std::vector<std::int32_t> m_fortified;
   std::map<EntityId, size_t> m_scoutWaypoints;
+  // Whether its scouts have left its own half for the enemy's flanks (ADR-076).
+  bool m_scoutsOnFlanks = false;
   std::vector<EntityId> m_raidGroup;
   std::int32_t m_raidSector = 0;
   size_t m_raidLaunch = 0;

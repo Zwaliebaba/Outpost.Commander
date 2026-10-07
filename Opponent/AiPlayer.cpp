@@ -1251,12 +1251,35 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
   const SectorView* enemyHome = FindSector(_snapshot.sectors, {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters});
   if (enemyHome == nullptr || enemyHome->adjacent.empty())
     return;
-  std::vector<PlanePosition> waypoints;
-  for (const std::int32_t id : enemyHome->adjacent)
+  // For the opening it explores its own half, moving from node to node of the sectors nearer its base than the enemy's,
+  // its home and those the pirates guard aside, so that it finds derelicts and outposts without seeking a fight; then it
+  // goes round the enemy's flanks (Phase 4 design §2 U1, ADR-076).
+  const bool ownHalf = _snapshot.tick < static_cast<std::uint64_t>(std::llround(m_settings.scoutOwnHalfSeconds * m_ticksPerSecond));
+  if (!ownHalf && !m_scoutsOnFlanks)
   {
-    if (const SectorView* sector = FindSectorById(_snapshot, id))
-      waypoints.push_back(sector->node);
+    m_scoutsOnFlanks = true;
+    m_scoutWaypoints.clear();
   }
+  const PlanePosition enemyBase{.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters};
+  std::vector<PlanePosition> waypoints;
+  if (ownHalf)
+  {
+    for (const SectorView& sector : _snapshot.sectors)
+    {
+      if (!sector.guarded && !sector.Contains(m_home) && Distance(sector.node, m_home) < Distance(sector.node, enemyBase))
+        waypoints.push_back(sector.node);
+    }
+  }
+  else
+  {
+    for (const std::int32_t id : enemyHome->adjacent)
+    {
+      if (const SectorView* sector = FindSectorById(_snapshot, id))
+        waypoints.push_back(sector->node);
+    }
+  }
+  if (waypoints.empty())
+    return;
   std::ranges::sort(waypoints, [this](PlanePosition _a, PlanePosition _b) { return IsNearer(_a, _b, m_home); });
   std::erase_if(m_scoutWaypoints, [&_snapshot](const auto& _entry) { return FindEntity(_snapshot, _entry.first) == nullptr; });
   for (const EntityView& ship : _snapshot.entities)
@@ -1272,7 +1295,11 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
     if (arrived)
       next = (next + 1) % waypoints.size();
     m_scoutWaypoints[ship.id] = next;
-    _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = {ship.id}, .destination = waypoints[next % waypoints.size()]}));
+    const PlanePosition destination = waypoints[next % waypoints.size()];
+    if (ownHalf)
+      _orders.push_back(MakeCommand(m_player, MoveCommand{.ships = {ship.id}, .destination = destination}));
+    else
+      _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = {ship.id}, .destination = destination}));
   }
 }
 

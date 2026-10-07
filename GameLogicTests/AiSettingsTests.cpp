@@ -121,6 +121,8 @@ public:
     Assert::AreEqual(2.0, Outpost::LoadAiSettings(ReadRepositoryData("OpponentEasy.json")).pirateMargin);
     Assert::AreEqual(1.2, Outpost::LoadAiSettings(ReadRepositoryData("OpponentHard.json")).pirateMargin);
     ExpectLoadError(Replace("\"pirateMargin\": 1.5", "\"pirateMargin\": 0"), "pirateMargin");
+    // Its scout explores its own half for the first ten minutes (U1).
+    Assert::AreEqual(600.0, Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json")).scoutOwnHalfSeconds);
   }
 
   // ADR-065: the Easy and Hard AIs' files load, and differ from the Normal one where their difficulty says: Easy builds a

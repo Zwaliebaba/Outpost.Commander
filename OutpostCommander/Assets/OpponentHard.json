@@ -53,5 +53,6 @@
   "secondSlotTier": 3,
   "attackLevelMeters": 500,
   "attackCapShare": 0.8,
-  "pirateMargin": 1.2
+  "pirateMargin": 1.2,
+  "scoutOwnHalfSeconds": 600
 }
