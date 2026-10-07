@@ -113,6 +113,16 @@ public:
     ExpectLoadError(Replace("\"attackCapShare\": 0.8", "\"attackCapShare\": 1.5"), "attackCapShare");
   }
 
+  // Task 33.1: pirates' play (Phase 4 design §12, ADR-076). A detachment goes once it outweighs an outpost by half again
+  // in Ore; the Easy AI waits for twice, and the Hard one goes at a fifth more.
+  TEST_METHOD(LoadsThePiratesPlay)
+  {
+    Assert::AreEqual(1.5, Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json")).pirateMargin);
+    Assert::AreEqual(2.0, Outpost::LoadAiSettings(ReadRepositoryData("OpponentEasy.json")).pirateMargin);
+    Assert::AreEqual(1.2, Outpost::LoadAiSettings(ReadRepositoryData("OpponentHard.json")).pirateMargin);
+    ExpectLoadError(Replace("\"pirateMargin\": 1.5", "\"pirateMargin\": 0"), "pirateMargin");
+  }
+
   // ADR-065: the Easy and Hard AIs' files load, and differ from the Normal one where their difficulty says: Easy builds a
   // smaller economy, fewer Shipyards, never raids or claims beyond its rigs, reviews its answer less often and attacks later;
   // Hard keeps more Constructors, reviews its answer more often, raids with more ships, and claims at least as much.

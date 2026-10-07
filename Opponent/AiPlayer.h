@@ -56,6 +56,17 @@ public:
     return m_raidGroup.size();
   }
 
+  // The warships it has sent at a pirate outpost and that still live, and the Constructor it has sent to salvage, if any
+  // (ADR-076).
+  [[nodiscard]] size_t PirateShips() const noexcept
+  {
+    return m_pirateGroup.size();
+  }
+  [[nodiscard]] EntityId Salvager() const noexcept
+  {
+    return m_salvager;
+  }
+
 private:
   // A structure the AI's base plan holds, in the order it builds them (owner, 2026-10-01).
   struct Slot
@@ -151,6 +162,14 @@ private:
   // Orders _structure's next level, which builds itself (Phase 3 design §4).
   void OrderUpgrade(const EntityView& _structure, std::vector<Command>& _orders) const;
   void CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders);
+  // Phase 4 design §12 (ADR-076). It remembers what it has seen of each pirate outpost, in Ore and Defence Platforms; sends
+  // a detachment of its reserve at one that outweighs it by the settings' margin, a camp next to its territory or a
+  // stronghold once it has no free sector left to claim; sends one Constructor at a time to salvage the nearest derelict it
+  // knows in or next to its territory, once its home rigs stand; and plans a Repair Bay behind its front.
+  void WatchPirates(const Snapshot& _snapshot);
+  void CommandPirates(const Snapshot& _snapshot, std::vector<const EntityView*>& _reserve, std::vector<Command>& _orders);
+  void SendSalvage(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
+  void PlanRepairBay(const Snapshot& _snapshot);
 
   AiSettings m_settings;
   std::uint32_t m_ticksPerSecond = 0;
@@ -183,6 +202,24 @@ private:
   size_t m_raidLaunch = 0;
   std::uint64_t m_nextRaidTick = 0;
   std::vector<EntityId> m_raidClosing;
+
+  // Pirates (ADR-076): the most it has seen of each guarded sector's outpost, in Ore and in Defence Platforms; the
+  // detachment it has sent at one, the sector, the ships it set out with, when it is ordered on again, and when the next
+  // may set out.
+  std::map<std::int32_t, std::int32_t> m_pirateOre;
+  std::map<std::int32_t, std::int32_t> m_piratePlatforms;
+  std::vector<EntityId> m_pirateGroup;
+  std::int32_t m_pirateSector = 0;
+  size_t m_pirateLaunch = 0;
+  std::uint64_t m_pirateResendTick = 0;
+  std::uint64_t m_nextPirateTick = 0;
+  // Salvage (ADR-076): the Constructor it has sent, the derelict, when it set out, and the derelicts it gave up on.
+  EntityId m_salvager;
+  EntityId m_salvageTarget;
+  std::uint64_t m_salvageTick = 0;
+  std::vector<EntityId> m_abandonedDerelicts;
+  // The sectors it has planned a Repair Bay in (ADR-076).
+  std::vector<std::int32_t> m_bayed;
 
   // Warships committed to the attack, and the enemy structure they are sent at; or, knowing none, whether they were sent
   // across the map to look for one.
