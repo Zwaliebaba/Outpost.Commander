@@ -33,7 +33,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 28.1 | The client and the engine follow the map's size | — | L6 | built, in milestone 28's PR; awaiting CI and the owner's run |
 | 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | built, in milestone 28's PR |
 | 28.3 | Production follows territory | — | L5 | built, in milestone 28's PR; the ghost's test awaits CI |
-| 28.4 | The engine measured at 10 km (U7) | 28.2 | — | todo |
+| 28.4 | The engine measured at 10 km (U7) | 28.2 | — | measured in the container; U7 awaits the owner's run |
 | 29.1 | Placement from the seed | 28.2 | L10 | todo |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
 | 30.2 | The client draws pirates | 30.1 | L7 | todo |
@@ -141,6 +141,12 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Acceptance:** `TerritoryTests.AShipyardNeedsAHeldSector`, `PlacementTests.AShipyardNeedsAHeldSector` and `AiPlayerTests.BuildsItsShipyardsInItsTerritory`.
 - **Verify:** CI; the container's run of `GameLogicTests`.
 - **As built:** a Shipyard in a sector its player later loses keeps working; only its placement is ruled. The server's test fails with the rule taken out. `PlacementTests` is `GameAppTests`', which the container does not build: its calls were checked against `PlaceGhost` in a program of the container's own, and CI is its first run. The placing hint does not say why a Shipyard's ghost is red, as it does not for a rig's; the design asks for neither.
+
+### 28.4 — The engine measured at 10 km (U7)
+
+- **Scope:** AI-against-AI matches over seeds 1–40 on the 10 km map, as 27.5 measured them: the ticks, the fleets, the Ore, the match's length and how it ended. Recorded in design §2. U7 itself, the 99th percentile tick and frame on the development machine in Release, is the owner's run.
+- **Verify:** the container's figures, stated as such; **owner run** of `--measure` and of a match at the widest view.
+- **As built:** recorded in design §2: all 40 end, all by domination, at a median of 2:09; the median side peaks at 25.5 warships; every side is at its cap of 50 points by minute 20 and holds a median 18,236 Ore at minute 30; the median match's 99th percentile tick is 2.5 ms in the container. The 40 matches took 16 minutes of processor time, 4:45 on four threads. That the matches are twice as long, all by domination, with the Ore piling up behind the cap, is for the owner before milestone 29.
 
 ## Milestones 29 to 34
 
