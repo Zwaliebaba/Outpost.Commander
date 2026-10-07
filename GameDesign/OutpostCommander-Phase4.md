@@ -274,7 +274,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
   - A camp's wreck covers its node until it is salvaged.
   - A derelict blocks no path, but no structure stands on one.
   - It is drawn with its hull's model in grey.
-  - The AI leaves derelicts alone until milestone 33.
+  - The AI salvages from milestone 33, one Constructor at a time (§12).
 
 ---
 
@@ -292,7 +292,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
   - "Nearest" is the straight distance. A ship with nowhere to go fights on.
   - Any order the player gives a retreating ship ends its retreat, and the next hit below its threshold starts it again (owner, 2026-10-07).
   - Constructors retreat and are repaired too, their retreat set on a selection (owner, 2026-10-07).
-  - The AI's ships retreat at a quarter, and the AI gives a retreating ship no order. A ship that turns for home leaves its attack group as a lost one does, so a retreat counts toward the fall-back's 15% (owner, 2026-10-07). The fall-back's numbers are unchanged. The AI builds no Repair Bay until milestone 33.
+  - The AI's ships retreat at a quarter, and the AI gives a retreating ship no order. A ship that turns for home leaves its attack group as a lost one does, so a retreat counts toward the fall-back's 15% (owner, 2026-10-07). The fall-back's numbers are unchanged. The AI builds a Repair Bay from milestone 33 (§12).
   - The Repair Bay is drawn with the Shipyard's model, darker.
 
 ---
