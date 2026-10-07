@@ -191,8 +191,7 @@ public:
     match.Run(1);
     const Outpost::PlanePosition node = match.Placement(sector).node;
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::Guarded);
-    const auto [cleared, left] = Assault(match, sector, Outpost::WeaponId{2}, 8, 120);
-    Assert::IsTrue(cleared);
+    Assert::IsTrue(Assault(match, sector, Outpost::WeaponId{2}, 8, 120).first, L"eight Pickets cleared it");
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::Applied);
   }
 
@@ -207,8 +206,7 @@ public:
     }
     {
       TerritoryMatch match(true);
-      const auto [cleared, left] = Assault(match, OutpostOf(match, "camp").sector, Outpost::WeaponId{2}, 3, 120);
-      Assert::IsFalse(cleared, L"three Pickets do not");
+      Assert::IsFalse(Assault(match, OutpostOf(match, "camp").sector, Outpost::WeaponId{2}, 3, 120).first, L"three Pickets do not");
     }
   }
 

@@ -587,9 +587,7 @@ public:
           std::ranges::find(guarded, Outpost::FindSector(view.sectors, build->position)->id) != guarded.end())
         ++orders;
     }
-    std::size_t held = 0;
-    for (const Outpost::SectorView& sector : view.sectors)
-      held += sector.holder == AI ? 1 : 0;
+    const auto held = std::ranges::count(view.sectors, AI, &Outpost::SectorView::holder);
     // Measured: 145 Relays ordered and 7 sectors held by an AI that tried them, 0 and 9 by this one.
     Assert::AreEqual(size_t{0}, orders, L"a Relay ordered where the pirates guard");
     Assert::IsTrue(held >= 8, L"it claimed no other sectors in their place");

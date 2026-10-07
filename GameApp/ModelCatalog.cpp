@@ -229,6 +229,7 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
     Neuron::JsonFail("pirates", std::format("there is no set \"{}\"", catalog.pirates));
   // The sets that draw a side: every player's, and the pirates'.
   std::vector<std::string> sides;
+  sides.reserve(catalog.players.size() + 1);
   for (const PlayerModels& player : catalog.players)
     sides.push_back(player.set);
   if (!catalog.pirates.empty())
