@@ -50,8 +50,6 @@ public:
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
-    // The map as the server placed it from its seed (ADR-072).
-    const Outpost::Map& map = server.MapData();
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});
     server.Advance(150ms);
     const std::vector<Outpost::TickTiming> timings = server.TakeTickTimings();
