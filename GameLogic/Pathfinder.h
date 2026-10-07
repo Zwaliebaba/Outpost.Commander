@@ -79,6 +79,10 @@ public:
   // over them finds near it, which gives the same answer as testing every obstacle, as a longer line does (ADR-054).
   [[nodiscard]] bool IsStraightPathClear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;
 
+  // Whether a disc of _radiusMeters at _point overlaps an obstacle: whether its center is nearer than their radii together
+  // to any obstacle's. The grid answers where it can, as a test of every obstacle would (ADR-054).
+  [[nodiscard]] bool OverlapsObstacle(PlanePosition _point, float _radiusMeters) const;
+
   // The same answer from a test of every obstacle, which is what IsStraightPathClear makes for a longer line, or where
   // its grid cannot answer exactly, and what tests hold it to.
   [[nodiscard]] bool IsStraightPathClearOfEveryObstacle(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;

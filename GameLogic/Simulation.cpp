@@ -1704,6 +1704,13 @@ void Outpost::Simulation::KeepShipsClear()
   {
     if (ship.kind != EntityKind::Ship)
       continue;
+    // Most ships overlap nothing, and the obstacle grid says so; one that does is pushed out as it always was, one
+    // obstacle after another in their order, since a push can move it into another (ADR-054).
+    if (!m_pathfinder.OverlapsObstacle(ship.position, ship.radiusMeters))
+    {
+      ship.position = m_pathfinder.InsideEdge(ship.position, ship.radiusMeters);
+      continue;
+    }
     for (const Obstacle& obstacle : m_pathfinder.Obstacles())
     {
       const float reach = obstacle.radiusMeters + ship.radiusMeters;
