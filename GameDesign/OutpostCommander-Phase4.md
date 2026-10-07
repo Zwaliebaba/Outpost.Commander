@@ -46,21 +46,23 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 | U7 | Does the engine hold at 10 km? | On the development machine, in Release: the 99th percentile tick at most 5 ms in an AI-against-AI match. 99% of frames take at most 16.7 ms at 1920×1080, with the camera zoomed out over the largest fight. |
 | U8 | Does it read and play? | The owner judges, in play, whether the opening feels like exploring, and whether a 10 km map can be followed with the camera, the minimap and the alerts. |
 
-**Where they stand on 2026-10-06, after milestone 27, on today's 5 km map.** An interim answer to U2 and U5, before the map changes (plan task 27.5). Two Normal AIs over seeds 1–40, run in the Linux container on the server and AI built with clang 18 against a stand-in for the Windows headers, and the same harness on `main` before milestone 27 for comparison. Floats replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently.
+**Where they stand on 2026-10-07, after milestone 27, on today's 5 km map.** An interim answer to U2 and U5, before the map changes (plan tasks 27.5 and 27.6). Two Normal AIs over seeds 1–40, run in the Linux container on the server and AI built with clang 18 against a stand-in for the Windows headers, and the same harness on `main` before milestone 27 for comparison. Floats replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently. The middle column is milestone 27 at Phase 3's income; the last is with the income lowered by about a third (owner, 2026-10-07; §4), which is what is built.
 
-| Over seeds 1–40 | Before milestone 27 | After |
-|---|---|---|
-| Most warships a side has at once, median of the 80 sides (largest) | 193 (565) | 24.5 (50) |
-| Warships a side has at minute 20, median (largest) | 123.5 (289) | 15.5 (39) |
-| Warships a side builds in a match, median | 400.5 | 87 |
-| First shot, median | 1:58 | 2:47 |
-| Match length, median (shortest–longest) | 41:27 (24:24–62:48) | 53:50 (44:48–1:29:18) |
-| Endings | 16 domination, 24 production | 40 domination, 0 production |
-| Ore a side holds at minute 20, median | 136 | 8,823 |
+| Over seeds 1–40 | Before milestone 27 | Phase 3's income | Income lowered |
+|---|---|---|---|
+| Most warships a side has at once, median of the 80 sides (largest) | 193 (565) | 24.5 (50) | 21 (38) |
+| Sides over 40 warships at once | — | 14 of 80 | 0 of 80 |
+| Warships a side has at minute 20, median; sides with 20 or more | 123.5; — | 15.5; 36 of 80 | 15; 8 of 80 |
+| Warships a side builds in a match, median | 400.5 | 87 | 66 |
+| First shot, median | 1:58 | 2:47 | 3:14 |
+| Match length, median (shortest–longest) | 41:27 (24:24–62:48) | 53:50 (44:48–1:29:18) | 1:01:05 (46:10–1:31:10) |
+| Endings | 16 domination, 24 production | 40 domination | 40 domination |
+| Ore a side holds at minute 20, median; sides over 2,000 | 136; — | 8,823; 50 of 80 | 733; 19 of 80 |
 
-- **U2, the swarm: met in the median, not in every match.** The median side peaks at 24.5 warships, against 193 before. But 14 of the 80 sides go over 40, which only a fleet of Small hulls can at a cap of 50, and 36 of the 80 have 20 or more at minute 20, since both AIs reach the top level's cap of 50 by then.
-- **U5, every match ends: yes, but by one ending only.** All 40 end, and all by domination. No AI took the other's base in any of them: with a fleet capped at 50 points against a base of Defence Platforms and a level 5 Command Station's three guns, the siege that ended 24 of the 40 before no longer succeeds. U5 asks for both endings, so it is not yet met.
-- **Ore piles up.** At minute 20 the median side holds 8,823 Ore it cannot spend: its fleet is at the cap and its research is bound by time, not Ore. The cap, not the cost, is what bounds the fleet from the mid-game on. Both are for the owner to weigh before the map grows: the cap's numbers (gate L2), the income on a 10 km map, and whether a capped player should have something to spend Ore on.
+- **U2, the swarm: met.** With the lower income no side goes over 40 warships, the median side peaks at 21, and at minute 20 the median side has 15, with 8 of the 80 at 20 or more.
+- **U5, every match ends: yes, but by one ending only.** All 40 end, and all by domination. No AI took the other's base: a fleet capped at 50 points does not break a base of Defence Platforms and a level 5 Command Station's three guns, where the siege ended 24 of the 40 before. The owner decided on 2026-10-07 to measure it again on the 10 km map (§3) rather than tune it on this one.
+- **Ore no longer piles up in the median match.** At Phase 3's income the median side held 8,823 Ore at minute 20 that its capped fleet could not use; with the income lowered by about a third it holds 733. A quarter of the sides still hold over 2,000, mostly the side ahead.
+- **Halving the income instead** was measured too: the median side peaks at 21 warships and builds 47.5, the first shot comes at 4:03, three of the 40 end by production, and the median side holds 421 Ore at minute 20. It is the stronger brake on the opening, and it is not what is built.
 
 ---
 
@@ -73,6 +75,12 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **A Repair Bay and a retreat order are in Phase 4. Veterancy is not** (§10).
 - **No match length target.** The game becomes a server game (the horizon), so Phase 4's length is measured and recorded, not tuned to fit one sitting. A match that does not finish in one sitting is accepted while there is no save (Phase 1, accepted risk 3).
 
+**Decided by the owner on 2026-10-07**, from milestone 27's measurement (§2):
+
+- **The rigs' income is lowered by about a third** (§4), so that Ore runs short before the fleet cap binds, rather than piling up behind it.
+- **That no match ends by taking a base is measured again on the 10 km map** (milestone 28), before anything is tuned for it.
+- **Both land with milestone 27.**
+
 ---
 
 ## 4. Ships cost more
@@ -82,7 +90,8 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Every hull, drive, weapon and module costs three times as much, and every hull takes three times as long to build.** A Swarm becomes 261 Ore and 30 s. A Large+Fusion+Rail Cannon goes from 530 Ore and 40 s to 1,590 Ore and 120 s.
 - **Cost and build time move by the same factor**, so a Shipyard spends Ore at today's rate: about 8.7 Ore/s on Swarms. The AI's rule of one Shipyard per 10 Ore/s of income still fits (ADR-020 decision 6).
 - **A Defence Platform also costs three times as much**, 450 Ore. A platform is a ship that cannot move. If it stayed at 150 Ore while ships tripled, it would trade at a third of today's price against a fleet, and both sides would turtle. The Command Station's guns are part of the station and do not change.
-- **What does not change:** the Constructor (60 Ore, 15 s), Mining Rigs, Relays, the Shipyard and the Research Lab, structure levels, research, starting Ore and the rigs' yields. So, relative to ships, research and building get cheaper. The opening's Ore goes to rigs, Relays, salvage trips and the Lab, and its first few warships go against pirates.
+- **The rigs earn about a third less** (owner, 2026-10-07): 3.5, 4, 5.5 and 6.5 Ore a second at home, near, contested and rich, where Phase 3 had 5, 6, 8 and 10. With Phase 3's income the fleet cap bound from the mid-game on and the median side held 8,823 Ore at minute 20 that it could not use (§2).
+- **What does not change:** the Constructor (60 Ore, 15 s), Mining Rigs, Relays, the Shipyard and the Research Lab, structure levels, research and starting Ore. So research and building get cheaper relative to ships, though the lower income makes everything slower to pay for. The opening's Ore goes to rigs, Relays, salvage trips and the Lab, and its first few warships go against pirates.
 - **The Q2 check is unchanged by a single factor.** It fights designs bought with equal Ore, so if every component's cost moves by the same factor, its budgets move with it, from 2,000–12,000 Ore to 6,000–36,000 Ore, and every win rate stays the same. U6 runs it again anyway. A later retune of one component's cost is a change like any other, and is checked like any other.
 
 ---

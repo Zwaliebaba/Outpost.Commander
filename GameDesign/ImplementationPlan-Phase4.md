@@ -28,6 +28,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 27.3 | The client shows the fleet and its cap | 27.2 | L2 | built, in milestone 27's PR; awaiting CI and the owner's run |
 | 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | built, in milestone 27's PR |
 | 27.5 | Milestone 27 measured on today's map | 27.4 | — | measured in the container |
+| 27.6 | The rigs earn about a third less | 27.5 | owner, 2026-10-07 | built, in milestone 27's PR |
 | 28.1 | The client and the engine follow the map's size | — | L6 | todo |
 | 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | todo |
 | 28.3 | Production follows territory | — | L5 | todo |
@@ -92,6 +93,14 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Scope:** AI-against-AI matches over seeds 1–40 on the 5 km map: the most warships each side has, its warships at minute 20, the match's length and how it ended. Recorded here and in design §2 as an interim answer to U2 and U5, before the map changes.
 - **Verify:** the container's figures, stated as such: floats replay only on the same build (ADR-009).
 - **As built:** recorded in design §2. Run with a driver of the container's own, which plays two Normal AIs on the in-process server as `--ai-matches` does and counts each side's warships from its snapshots, on this milestone and on `main` before it: 4 minutes for `main`'s 40 matches and 2 for milestone 27's, on four threads. The median side peaks at 24.5 warships, against 193; every match ends, all 40 by domination, none by production; and the median side holds 8,823 Ore at minute 20. Those last two are for the owner before milestone 28.
+
+### 27.6 — The rigs earn about a third less
+
+- **Asked:** after 27.5, the owner chose to lower the income so that Ore runs short before the fleet cap binds, in milestone 27's PR, and to measure the sieges that no longer succeed again on the 10 km map (owner, 2026-10-07; design §3).
+- **Scope:** in `Tuning.json`, the rigs' rates from 5, 6, 8 and 10 Ore a second to 3.5, 4, 5.5 and 6.5. Nothing else changes.
+- **ADR:** ADR-016, ADR-017 and ADR-036 edited in place where they quote the rates, and ADR-020 where it times the AI's scout.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40 again, AI against AI.
+- **As built:** two cuts were measured over seeds 1–40 before choosing, about a third and half; the third is built, and both are in design §2. With it no side goes over 40 warships, and the median side holds 733 Ore at minute 20 against 8,823. The tests that quote a rate quote the new ones. The AI's economy tests are re-timed again: its scout sets out at about 2:30, inside three minutes rather than two; it has 2 Shipyards at 28.14 Ore/s rather than 4 at 41.25; and it has six rigs with ore at fourteen minutes rather than twelve. `BuildsTheAnswerToTheEnemysFleet` allows its scout in the queue beside its answer, since the scout may now still be waiting there when the first warship joins it.
 
 ---
 
