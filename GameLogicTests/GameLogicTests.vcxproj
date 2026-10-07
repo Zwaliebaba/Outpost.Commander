@@ -113,6 +113,7 @@
     <ClCompile Include="SaveDesignTests.cpp" />
     <ClCompile Include="MatchOutcomeTests.cpp" />
     <ClCompile Include="AiSettingsTests.cpp" />
+    <ClCompile Include="AiMatchesOptionsTests.cpp" />
     <ClCompile Include="AiPlayerTests.cpp" />
     <ClCompile Include="CombatTests.cpp" />
     <ClCompile Include="BalanceCheck.cpp" />

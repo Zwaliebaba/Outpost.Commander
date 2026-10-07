@@ -39,7 +39,7 @@ Three things stand in the way:
    - Each match is stepped a tick at a time until it ends or reaches 120 minutes. Both AIs get each tick's snapshot, and their commands apply at the next tick, so a match reproduces from its seed.
    - The matches run on as many threads as the machine has, each into a buffer of its own. They are written in seed order to `OutpostCommander-ai-matches.log` in the temporary folder, which each run replaces.
    - No window opens, and a message says when the run is done.
-   - The code is `OutpostCommander/AiMatches.cpp`.
+   - The code is `OutpostCommander/AiMatches.cpp`, and the options it is given are read in `Opponent/AiMatchesOptions.cpp` ([ADR-063](ADR-063-self-play-probe.md)).
 4. **`Tools/MatchLog.py` reports Phase 1's figures**:
    - a match's length against P1's 45 to 60 minutes;
    - the asteroids that ran dry;

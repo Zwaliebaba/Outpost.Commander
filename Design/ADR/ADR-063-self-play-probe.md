@@ -20,7 +20,7 @@ The `--ai-matches` switch of [ADR-038](ADR-038-phase-one-match-log.md) gave both
 
 ## Decision
 
-1. **`--ai-matches` takes options** (`AiMatchesOptions` in `OutpostCommander/AiMatches.h`).
+1. **`--ai-matches` takes options** (`AiMatchesOptions` in `Opponent/AiMatchesOptions.h`). They are read in `Opponent` rather than beside the matches in the executable, because a test project can include `Opponent`; the matches themselves stay in the executable (ADR-038).
    - `--ai1` and `--ai2` name a settings file for player 1's AI and player 2's. A file is read as strictly as the packaged `Opponent.json`, and a problem names the file.
    - `--first-seed`, `--matches` and `--limit-minutes` say which matches to play, and `--log` where to log them.
    - Each option takes a value and is given at most once. Anything else fails, naming the argument, so that a mistyped option cannot run the packaged AI in its place.
@@ -56,7 +56,7 @@ The `--ai-matches` switch of [ADR-038](ADR-038-phase-one-match-log.md) gave both
   - Interrupted in its first generation, it stopped once the matches under way had finished, and `--resume` completed it. A game that failed stopped the search with the game's own message.
 - **Not checked here:** the MSVC build, which CI's Debug|x64 is the first to compile; `CommandLineToArgvW`, standard error and the exit code on Windows; and whether the Release build's package layout puts the game at the script's default path, `x64\Release\OutpostCommander\AppX\OutpostCommander.exe`, with its Assets beside it. `--exe` names it otherwise. These are the owner's first run.
 - **The probe finds only what the scripted AI can do.** A rush or a turtle is a few numbers away. A strategy the AI's code cannot express is not, such as kiting, a base walled shut or a raid on a target the code does not choose. Some of what it finds will be weaknesses in the AI rather than in the rules, and the owner sorts them.
-- **The switch still has no test in CI**, as ADR-038 says: no test project may include both the AI and the log. Its option reading is in `AiMatches.cpp`, beside the matches, and was run in the container only.
+- **The matches still have no test in CI**, as ADR-038 says: no test project may include both the AI and the log. The option reading does: `AiMatchesOptionsTests` checks the defaults, every option in any order, each number's range, and each refusal's message.
 
 ## What this forecloses
 
