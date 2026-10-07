@@ -50,6 +50,7 @@ What the design leaves open: which four a repairer takes when more are near, wha
    - Its designs keep the default, so its ships retreat at a quarter.
    - It takes a retreating ship out of every order it gives, since any order would end the retreat.
    - A retreating ship leaves its attack group or raid, as a lost one does, and rejoins the reserve once it is whole. A retreat so counts toward a group's fall-back.
+   - A retreating Constructor leaves its crew, and is not idle until it is whole, so the AI neither waits on it nor gives it work.
    - It builds no Repair Bay until milestone 33.
 10. **The client** (design §13):
     - The build menu offers the Repair Bay, and its ghost is green only in a sector the player holds. It is drawn with the Shipyard's model, darker (`tint` 0.6 in `Models.json`), until it has a model of its own.
@@ -70,7 +71,11 @@ What the design leaves open: which four a repairer takes when more are near, wha
   - a design carries its retreat to the ships built to it.
 - **Tests that measure a fight to the end say so.** The camp's balance ([ADR-073](ADR-073-pirates.md)), a camp attacking an intruder, and a group holding its sector against an enemy now set their ships never to retreat. Without that, a ship below a quarter turns for home and the fight ends differently.
 - **AI against AI over seeds 1–40, measured in the Linux container** (design §2), the AI's ships retreating at a quarter and no Bay built:
-  - MEASURED_RESULTS
+  - 36 matches end, 35 by domination and 1 by production, at a median of 1:35:08, against 37 at 1:32:57 after milestone 31. Four are level at three hours, against three.
+  - **Fleets last.** A side loses a median of 20.5 warships a match, against 52.5, and builds 35.5, against 69.5. It turns a median of 55.5 ships for home, and 40% of them come back whole; the rest are lost on the way, or the match ends first.
+  - **The cap binds.** A side has no room for one more ship of its production design ATCAP of the match, so the Ore piles up: 4,636 at minute 20 at the median, against 2,474.
+  - **The engine:** the median match's 99th percentile tick is 1.5 ms, the worst match's 2.9 ms, as after milestone 31; the slowest single tick, 76 ms in one match, against 21 ms after milestone 31, is a spike of the kind milestone 29 saw (72 ms). The run was on an idle machine.
+  - **Two alternatives were measured and set aside.** Keeping a retreating ship in its attack group, so that it does not count toward the fall-back, leaves 17 of the 40 level at three hours: a group whose ships keep leaving never falls back and never wins. Taken as idle, a retreating Constructor was given builds the AI then dropped, which held its Ore and its production back; with that fixed, the median match is 15 minutes longer and fleets are rebuilt.
 - **A retreat is a path search.** Each ship that turns for home plans its own path, and a Repair Bay's reach is checked against every ship of its player each tick. Both are counted in the measurement's tick times above.
 
 ## What this forecloses

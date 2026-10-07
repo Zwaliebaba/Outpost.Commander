@@ -130,6 +130,24 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Nothing is salvaged:** the median match ends with 14 derelicts, the 12 placed and the wrecks of the outposts the fleets cleared on their way.
 - **The engine:** the median match's 99th percentile tick is 1.9 ms in the container, against 1.7 ms after milestone 30, and the worst match's 2.9 ms; every derelict is in each player's vision pass.
 
+**After milestone 32** (plan task 32.1): every ship retreats at a quarter of its hit points to a Repair Bay, the Command Station or a Shipyard, and the AI builds no Repair Bay until milestone 33. The same harness and seeds, each match played for up to three hours.
+
+| Over seeds 1–40 | After milestone 31 | After milestone 32 |
+|---|---|---|
+| Match length, median of those that end (shortest–longest) | 1:32:57 (43:27–2:47:15) | 1:35:08 (34:25–2:46:42) |
+| Endings; won by player 1 | 36 domination, 1 production, 3 not ended at 3 hours; 21 | 35 domination, 1 production, 4 not ended at 3 hours; 16 |
+| Warships a side loses in a match, median | 52.5 | 20.5 |
+| Warships a side builds in a match, median | 69.5 | 35.5 |
+| Most warships a side has at once, median (largest) | 21 (50) | 16 (43) |
+| Share of the match a side's fleet has no room for one more ship, median | ATCAP_BASE | ATCAP |
+| Ore a side holds at minute 20, median | 2,474 | 4,636 |
+| Ships a side turns for home, median; of them repaired whole | — | 55.5; 40% |
+
+- **Fleets last.** A side loses well under half as many warships, so it builds half as many, and its fleet stays at the cap. The Ore that piled up behind the cap piles up faster, for milestone 33's Repair Bays and milestone 34 to measure.
+- **Most retreats do not end in a repair:** six in ten ships turned for home are lost on the way, on a map where home can be 10 km off, or the match ends first. A Repair Bay at the front is what milestone 33 is for.
+- **The matches are about as long**, and as often level at three hours: the fall-back counts a ship that turns for home as lost, so an attack still falls back once 15% of it has gone.
+- **The engine:** the median match's 99th percentile tick is 1.5 ms in the container, the worst match's 2.9 ms. One match's slowest tick took 76 ms; the median match's slowest is 16 ms.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06
