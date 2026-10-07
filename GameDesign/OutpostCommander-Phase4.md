@@ -172,7 +172,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **U4, skirmishes: met.** A median of 7 engagements before minute 40, in a median of 4.5 sectors; 33 of the 40 meet five in three.
 - **U5, every match ends: all 40 do, by domination only.** Recorded rather than tuned (owner, 2026-10-07).
 - **The outposts fall.** The AI sends a median of 4 detachments a side, the first at a median of 8:48, and the median match ends with 4 of the 10 pirate structures standing and no derelict left.
-- **The engine:** ENGINE_33
+- **The engine:** the median match's 99th percentile tick is 1.4 ms in the container, the worst match's 3.3 ms. One match's slowest tick took 68 ms; the median match's slowest is 14 ms. Each match ran alone on one core while the other three ran the balance check.
 
 ---
 

@@ -44,7 +44,7 @@ What the design leaves open: how the AI learns an outpost's strength under fog o
   - **U3 is met in number and short in share.** The median side turns 33.5 warships for home, each counted once, and 17 of them fight again after a repair, 45% where U3 asks for half. 55% of the ships turned for home are repaired whole, against 40% after milestone 32. The owner accepted it as measured (2026-10-07).
   - **U4 is met:** a median of 7 engagements before minute 40, in 4.5 sectors.
   - **U5:** all 40 end, all by domination, at a median of 1:39:42. Recorded rather than tuned (owner, 2026-10-07).
-  - ENGINE_33
+  - **The engine:** the median match's 99th percentile tick is 1.4 ms, the worst match's 3.3 ms, against 1.5 ms and 2.9 ms after milestone 32; the slowest single tick is 68 ms. Each match ran alone on one core of the container. The AI's own work is not in these figures, which time the server's tick.
 - **Two versions were set aside.** The first, whose scout went straight for the enemy's flanks, met the enemy at a median of 6:55 over the 40 seeds, with a median of one derelict salvaged before it, and so missed U1. The second explored its own half but skipped the guarded sectors, and so never saw the camp next to its land: in `PlaysPhaseFoursOpening`'s match it sent no detachment in half an hour. It was not measured over the 40 seeds.
 
 ## What this forecloses
