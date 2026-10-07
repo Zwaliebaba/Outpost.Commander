@@ -80,7 +80,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 - **U2, the swarm: met in the median**, as on the 5 km map: the median side peaks at 25.5 warships and has 13 at minute 20. But 14 of the 80 sides go over 40 at some point, all late in a long match, filling the cap of 50 points with Small hulls.
 - **U5, every match ends: yes, by domination only, and in about two hours.** No AI takes the other's base on the bigger map either. Domination is the slow part: its rule carries over unchanged (§6), so a lead of one node of 25 takes 139 minutes where one of nine took 50.
-- **Ore piles up again.** Every side's Command Station is at level 5 and its fleet at the cap of 50 by minute 20, and with more sectors to mine the median side holds 18,236 Ore at minute 30 that it has nothing to spend on.
+- **Ore piles up again.** Every side's Command Station is at level 5, its cap 50 points, by minute 20, and every side fills that cap at some point in its match; with more sectors to mine, the median side holds 18,236 Ore at minute 30 that it has nothing to spend on.
 - **The first shot comes at 4:42 in every match,** the scouts meeting at the enemy's flank: there is nothing yet to find on the way (U1 waits for milestones 29 to 31).
 - **The engine, in the container:** the median match's 99th percentile tick is 2.5 ms, and the worst match's 4.2 ms, under U7's 5 ms; the slowest single tick is 20 ms in the median match and 39 ms at worst. U7 itself is the owner's run in Release.
 

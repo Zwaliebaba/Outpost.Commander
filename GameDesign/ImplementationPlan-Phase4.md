@@ -146,7 +146,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 
 - **Scope:** AI-against-AI matches over seeds 1–40 on the 10 km map, as 27.5 measured them: the ticks, the fleets, the Ore, the match's length and how it ended. Recorded in design §2. U7 itself, the 99th percentile tick and frame on the development machine in Release, is the owner's run.
 - **Verify:** the container's figures, stated as such; **owner run** of `--measure` and of a match at the widest view.
-- **As built:** recorded in design §2: all 40 end, all by domination, at a median of 2:09; the median side peaks at 25.5 warships; every side is at its cap of 50 points by minute 20 and holds a median 18,236 Ore at minute 30; the median match's 99th percentile tick is 2.5 ms in the container. The 40 matches took 16 minutes of processor time, 4:45 on four threads. That the matches are twice as long, all by domination, with the Ore piling up behind the cap, is for the owner before milestone 29.
+- **As built:** recorded in design §2: all 40 end, all by domination, at a median of 2:09; the median side peaks at 25.5 warships; every side's station is at level 5, a cap of 50 points, by minute 20, and the median side holds 18,236 Ore at minute 30; the median match's 99th percentile tick is 2.5 ms in the container. The 40 matches took 16 minutes of processor time, 4:45 on four threads. That the matches are twice as long, all by domination, with the Ore piling up behind the cap, is for the owner before milestone 29.
 
 ## Milestones 29 to 34
 
