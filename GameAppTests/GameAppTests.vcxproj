@@ -104,6 +104,7 @@
     <ClCompile Include="ProductionTargetTests.cpp" />
     <ClCompile Include="CombatEffectsTests.cpp" />
     <ClCompile Include="ExplosionManagerTests.cpp" />
+    <ClCompile Include="EffectRandomTests.cpp" />
     <ClCompile Include="ParticleSystemTests.cpp" />
     <ClCompile Include="StarfieldTests.cpp" />
     <ClCompile Include="FogOfWarTests.cpp" />

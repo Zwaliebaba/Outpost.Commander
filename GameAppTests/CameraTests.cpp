@@ -261,5 +261,119 @@ public:
   {
     ExpectRejected(R"("zoomFactorPerNotch": 1.15)", R"("zoomFactorPerNotch": 1)");
   }
+
+  TEST_METHOD(RejectsAMinimumWiderThanTheMaximum)
+  {
+    ExpectRejected(R"("minimumViewWidthMeters": 150)", R"("minimumViewWidthMeters": 4000)");
+  }
+
+  // Middle-drag holds the ground under the cursor (ADR-012), so the view moves the other way from the mouse. Letting go
+  // ends the drag, and the next press starts a new one where the cursor is, without a jump.
+  TEST_METHOD(MiddleDragHoldsTheGroundUnderTheCursor)
+  {
+    constexpr Outpost::Viewport VIEWPORT{.widthPixels = 1920, .heightPixels = 1080};
+    Outpost::Camera camera(RepositorySettings());
+    Neuron::InputState input;
+    input.active = true;
+    input.keysDown.set(VK_MBUTTON);
+    input.cursorXPixels = 960;
+    input.cursorYPixels = 540;
+    camera.Update(input, 0.0f, VIEWPORT.widthPixels, VIEWPORT.heightPixels);
+    Assert::AreEqual(0.0f, camera.Focus().x, L"a press alone does not pan");
+    Assert::AreEqual(0.0f, camera.Focus().y);
+
+    // Across the middle of the screen a pixel spans the same ground everywhere, so the ground stays exactly under the cursor.
+    const std::optional<Outpost::PlanePosition> held = camera.GroundPointAtPixel(960.0f, 540.0f, VIEWPORT);
+    input.cursorXPixels = 1160;
+    camera.Update(input, 0.0f, VIEWPORT.widthPixels, VIEWPORT.heightPixels);
+    const std::optional<Outpost::PlanePosition> under = camera.GroundPointAtPixel(1160.0f, 540.0f, VIEWPORT);
+    // Assert::Fail does not return, so both are there below it.
+    if (!held.has_value() || !under.has_value())
+      Assert::Fail(L"The middle of the screen does not meet the ground.");
+    Assert::AreEqual(held->xMeters, under->xMeters, TOLERANCE_METERS);
+    Assert::AreEqual(held->zMeters, under->zMeters, TOLERANCE_METERS);
+    Assert::IsTrue(camera.Focus().x < 0.0f, L"the view moved the other way from the mouse");
+
+    // Up the screen the focus moves by the same meters a pixel spans at the focus, the other way from the mouse.
+    Outpost::Camera expected = camera;
+    expected.Pan(0.0f, -100.0f * camera.ViewWidthMeters() / static_cast<float>(VIEWPORT.widthPixels));
+    input.cursorYPixels = 440;
+    camera.Update(input, 0.0f, VIEWPORT.widthPixels, VIEWPORT.heightPixels);
+    Assert::AreEqual(expected.Focus().x, camera.Focus().x, TOLERANCE_METERS);
+    Assert::AreEqual(expected.Focus().y, camera.Focus().y, TOLERANCE_METERS);
+
+    const DirectX::XMFLOAT2 dropped = camera.Focus();
+    input.keysDown.reset(VK_MBUTTON);
+    input.cursorXPixels = 100;
+    input.cursorYPixels = 100;
+    camera.Update(input, 0.0f, VIEWPORT.widthPixels, VIEWPORT.heightPixels);
+    input.keysDown.set(VK_MBUTTON);
+    camera.Update(input, 0.0f, VIEWPORT.widthPixels, VIEWPORT.heightPixels);
+    Assert::AreEqual(dropped.x, camera.Focus().x);
+    Assert::AreEqual(dropped.y, camera.Focus().y);
+  }
+
+  // Each edge of the screen pans toward itself, within edgeScrollMarginPixels of it and no further in, and a corner pans
+  // both ways at once.
+  TEST_METHOD(EdgeScrollsTowardEachEdge)
+  {
+    struct Edge
+    {
+      std::int32_t xPixels;
+      std::int32_t yPixels;
+      float right;
+      float forward;
+    };
+    const Outpost::CameraSettings settings = RepositorySettings();
+    Assert::AreEqual(4, settings.edgeScrollMarginPixels);
+    constexpr float ELAPSED_SECONDS = 0.5f;
+    const float panMeters = settings.defaultViewWidthMeters * settings.panViewWidthsPerSecond * ELAPSED_SECONDS;
+    for (const Edge& edge : {Edge{0, 540, -1.0f, 0.0f}, Edge{4, 540, -1.0f, 0.0f}, Edge{5, 540, 0.0f, 0.0f}, Edge{1919, 540, 1.0f, 0.0f},
+                             Edge{1915, 540, 1.0f, 0.0f}, Edge{1914, 540, 0.0f, 0.0f}, Edge{960, 0, 0.0f, 1.0f}, Edge{960, 4, 0.0f, 1.0f},
+                             Edge{960, 5, 0.0f, 0.0f}, Edge{960, 1079, 0.0f, -1.0f}, Edge{960, 1075, 0.0f, -1.0f},
+                             Edge{960, 1074, 0.0f, 0.0f}, Edge{0, 0, -1.0f, 1.0f}, Edge{1919, 1079, 1.0f, -1.0f}})
+    {
+      Outpost::Camera camera(settings);
+      Outpost::Camera expected(settings);
+      expected.Pan(edge.right * panMeters, edge.forward * panMeters);
+      Neuron::InputState input;
+      input.active = true;
+      input.cursorClipped = true;
+      input.cursorXPixels = edge.xPixels;
+      input.cursorYPixels = edge.yPixels;
+      camera.Update(input, ELAPSED_SECONDS, 1920, 1080);
+      const std::wstring where = std::format(L"at ({}, {})", edge.xPixels, edge.yPixels);
+      Assert::AreEqual(expected.Focus().x, camera.Focus().x, TOLERANCE_METERS, where.c_str());
+      Assert::AreEqual(expected.Focus().y, camera.Focus().y, TOLERANCE_METERS, where.c_str());
+    }
+  }
+
+  // A ray that does not come down to the ground meets it nowhere, a point behind the eye shows nowhere, and a viewport
+  // with no area has no pixels.
+  TEST_METHOD(FindsNothingAboveTheHorizonOrBehindTheEye)
+  {
+    constexpr Outpost::Viewport VIEWPORT{.widthPixels = 1920, .heightPixels = 1080};
+    Outpost::CameraSettings settings = RepositorySettings();
+    // Looking 10 degrees down with 30 degrees above the line of sight, the top of the screen looks 20 degrees above the horizon.
+    settings.pitchAtMinimumDegrees = 10.0f;
+    settings.pitchAtMaximumDegrees = 10.0f;
+    settings.verticalFieldOfViewDegrees = 60.0f;
+    const Outpost::Camera camera(settings);
+    Assert::AreEqual(Radians(10.0f), camera.PitchRadians(), TOLERANCE_RADIANS);
+    Assert::IsFalse(camera.GroundPoint(0.0f, 1.0f, WIDE_SCREEN).has_value());
+    Assert::IsFalse(camera.GroundPointAtPixel(960.0f, 0.0f, VIEWPORT).has_value());
+    Assert::IsTrue(camera.GroundPoint(0.0f, -1.0f, WIDE_SCREEN).has_value());
+
+    // The focus is the origin, so twice as far again from it as the eye stands is behind the eye, on the ground.
+    const DirectX::XMFLOAT3 eye = camera.EyePosition(VIEWPORT.AspectRatio());
+    const Outpost::PlanePosition behind{.xMeters = 3.0f * eye.x, .zMeters = 3.0f * eye.z};
+    Assert::IsFalse(camera.PixelOf(behind, VIEWPORT).has_value());
+    Assert::IsFalse(camera.MetersPerPixelAt(behind, VIEWPORT).has_value());
+    Assert::IsTrue(camera.PixelOf({}, VIEWPORT).has_value());
+
+    Assert::IsFalse(camera.GroundPointAtPixel(0.0f, 0.0f, {.widthPixels = 0, .heightPixels = 1080}).has_value());
+    Assert::IsFalse(camera.GroundPointAtPixel(0.0f, 0.0f, {.widthPixels = 1920, .heightPixels = 0}).has_value());
+    Assert::IsFalse(camera.MetersPerPixelAt({}, {.widthPixels = 1920, .heightPixels = 0}).has_value());
+  }
 };
 } // namespace GameAppTests

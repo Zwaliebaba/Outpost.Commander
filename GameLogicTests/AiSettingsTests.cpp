@@ -186,5 +186,58 @@ public:
               "{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }, \"answer\": { \"hull\": 3, \"drive\": 2, \"weapon\": 1 } }"),
       "counters[2]: the same answer to the same design as counters[1]");
   }
+
+  // The game reads each difficulty's settings from the package's Assets folder (ADR-065), Opponent.json when it names none.
+  TEST_METHOD(LoadsEachPackagedFile)
+  {
+    const ScopedHomeDirectory home(RepositoryHome());
+    for (const std::wstring_view file : {Outpost::NORMAL_AI_SETTINGS, Outpost::EASY_AI_SETTINGS, Outpost::HARD_AI_SETTINGS})
+    {
+      const Outpost::AiSettings packaged = Outpost::LoadPackagedAiSettings(file);
+      const Outpost::AiSettings expected = Outpost::LoadAiSettings(ReadRepositoryData(winrt::to_string(file)));
+      const std::wstring name(file);
+      Assert::AreEqual(expected.constructors, packaged.constructors, name.c_str());
+      Assert::AreEqual(expected.reviewIntervalSeconds, packaged.reviewIntervalSeconds, name.c_str());
+      Assert::AreEqual(expected.raidShips, packaged.raidShips, name.c_str());
+    }
+    const Outpost::AiSettings normal = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    Assert::AreEqual(normal.constructors, Outpost::LoadPackagedAiSettings().constructors);
+    Assert::AreEqual(normal.reviewIntervalSeconds, Outpost::LoadPackagedAiSettings().reviewIntervalSeconds);
+  }
+
+  TEST_METHOD(RefusesAPackagedFileThatIsMissing)
+  {
+    const TemporaryHomeDirectory home(L"AiSettingsTests");
+    try
+    {
+      (void)Outpost::LoadPackagedAiSettings(Outpost::HARD_AI_SETTINGS);
+    }
+    catch (const Neuron::Exception& error)
+    {
+      Assert::AreEqual(std::string("The game data file Assets\\OpponentHard.json is missing or cannot be read."),
+                       std::string(error.what()));
+      return;
+    }
+    Assert::Fail(L"a missing file loaded");
+  }
+
+  // A packaged file that does not load is named before what is wrong with it.
+  TEST_METHOD(NamesAPackagedFileThatIsInvalid)
+  {
+    const TemporaryHomeDirectory home(L"AiSettingsTests");
+    home.WriteAsset(Outpost::NORMAL_AI_SETTINGS, Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [0, 2,"));
+    try
+    {
+      (void)Outpost::LoadPackagedAiSettings();
+    }
+    catch (const Neuron::Exception& error)
+    {
+      const std::string message = error.what();
+      Assert::IsTrue(message.starts_with("Opponent.json: ") && message.find("researchOrder[0]") != std::string::npos,
+                     Widen(message).c_str());
+      return;
+    }
+    Assert::Fail(L"an invalid file loaded");
+  }
 };
 } // namespace GameLogicTests
