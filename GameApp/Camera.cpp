@@ -16,7 +16,7 @@ constexpr float INITIAL_YAW_RADIANS = std::numbers::pi_v<float> / 2.0f;
 // corner from any focus inside the limit.
 constexpr float NEAR_PLANE_SHARE_OF_DISTANCE = 0.01f;
 constexpr float MINIMUM_NEAR_PLANE_METERS = 1.0f;
-constexpr float FAR_PLANE_BEYOND_FOCUS_METERS = 4000.0f;
+constexpr float FAR_PLANE_BEYOND_FOCUS_METERS = 8000.0f;
 
 // The arrow keys pan: A and S are attack-move and stop (design §9), decided by the owner on 2026-09-30. The camera's keys
 // are KeyBindings.h's, which the Controls window lists (task 16.4).

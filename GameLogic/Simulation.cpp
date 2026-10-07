@@ -1805,6 +1805,13 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
   if (m_mapHalfSizeMeters > 0.0f && (std::abs(_position.xMeters) + _radiusMeters > m_mapHalfSizeMeters ||
                                      std::abs(_position.zMeters) + _radiusMeters > m_mapHalfSizeMeters))
     return CommandResult::InvalidPlacement;
+  // A Shipyard stands only in a sector its player holds, so that production follows territory (Phase 4 design §6).
+  if (_kind == StructureKind::Shipyard && HasTerritory())
+  {
+    const Sector* sector = SectorAt(_position);
+    if (sector == nullptr || sector->holder != _player)
+      return CommandResult::SectorNotHeld;
+  }
   for (const Entity& other : m_entities)
   {
     const bool blocks =

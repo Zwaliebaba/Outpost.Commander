@@ -337,6 +337,66 @@ public:
     }
   }
 
+  // ADR-054, Phase 4 plan task 28.0: a graph whose obstacles were taken away, one at a time or several together, from the
+  // map's or the structures', and some added in the same step, is brought up to date to the very graph a whole build over
+  // what is left makes, and finds the same paths.
+  TEST_METHOD(TakenAwayObstaclesReduceTheGraphsToWhatAWholeBuildMakes)
+  {
+    Neuron::Random random(71);
+    const auto meters = [&random](float _from, float _to) { return _from + (static_cast<float>(random.NextUnit()) * (_to - _from)); };
+    constexpr std::array<float, 3> CLEARANCES{8.0f, 14.0f, 24.0f};
+    constexpr float HALF_SIZE_METERS = 2500.0f;
+    constexpr std::size_t MAP_OBSTACLES = 40;
+    constexpr std::size_t STRUCTURES = 24;
+    constexpr std::size_t STEPS = 10;
+    for (int layout = 0; layout < 6; ++layout)
+    {
+      std::vector<Outpost::Obstacle> obstacles;
+      obstacles.reserve(MAP_OBSTACLES + STRUCTURES + STEPS);
+      for (std::size_t i = 0; i < MAP_OBSTACLES; ++i)
+        obstacles.push_back({.center = {meters(-2400.0f, 2400.0f), meters(-2400.0f, 2400.0f)}, .radiusMeters = meters(40.0f, 170.0f)});
+      // Every other layout packs its structures into a base, where a corner taken away is near many others.
+      const float spread = layout % 2 == 0 ? 2400.0f : 250.0f;
+      const Outpost::PlanePosition base =
+        layout % 2 == 0 ? Outpost::PlanePosition{} : Outpost::PlanePosition{meters(-2000.0f, 2000.0f), meters(-2000.0f, 2000.0f)};
+      for (std::size_t i = 0; i < STRUCTURES; ++i)
+        obstacles.push_back({.center = {base.xMeters + meters(-spread, spread), base.zMeters + meters(-spread, spread)},
+                             .radiusMeters = meters(20.0f, 45.0f)});
+      Outpost::Pathfinder reduced;
+      reduced.SetObstacles(obstacles, HALF_SIZE_METERS);
+      for (const float clearance : CLEARANCES)
+        reduced.Prepare(clearance);
+      for (std::size_t step = 0; step < STEPS; ++step)
+      {
+        // One to three taken away from anywhere in the list, and every other step one added at its end.
+        const std::uint32_t taken = 1 + random.NextBelow(3);
+        for (std::uint32_t i = 0; i < taken && obstacles.size() > 1; ++i)
+          obstacles.erase(obstacles.begin() + static_cast<std::ptrdiff_t>(random.NextBelow(static_cast<std::uint32_t>(obstacles.size()))));
+        if (step % 2 == 1)
+          obstacles.push_back({.center = {meters(-2400.0f, 2400.0f), meters(-2400.0f, 2400.0f)}, .radiusMeters = meters(20.0f, 45.0f)});
+        reduced.SetObstacles(obstacles, HALF_SIZE_METERS);
+        Outpost::Pathfinder whole;
+        whole.SetObstacles(obstacles, HALF_SIZE_METERS);
+        // Some graphs each step, so that the others catch up over several steps' changes at once.
+        for (std::size_t clearance = 0; clearance < CLEARANCES.size(); ++clearance)
+        {
+          if ((clearance + step) % 2 != 0)
+            continue;
+          ExpectSameGraph(whole.GraphFor(CLEARANCES[clearance]), reduced.GraphFor(CLEARANCES[clearance]));
+          for (int query = 0; query < 20; ++query)
+          {
+            const Outpost::PlanePosition start{meters(-2500.0f, 2500.0f), meters(-2500.0f, 2500.0f)};
+            const Outpost::PlanePosition goal{meters(-2500.0f, 2500.0f), meters(-2500.0f, 2500.0f)};
+            Assert::IsTrue(std::ranges::equal(whole.FindPath(start, goal, CLEARANCES[clearance]),
+                                              reduced.FindPath(start, goal, CLEARANCES[clearance]),
+                                              [](Outpost::PlanePosition _a, Outpost::PlanePosition _b) { return SameBits(_a, _b); }),
+                           L"a different path");
+          }
+        }
+      }
+    }
+  }
+
   TEST_METHOD(FindsAWayAcrossTheRepositoryMap)
   {
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());

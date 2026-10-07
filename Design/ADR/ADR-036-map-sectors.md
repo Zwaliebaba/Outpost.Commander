@@ -1,18 +1,18 @@
-# ADR-036 — The 5 km map names its sectors, nodes and adjacency, which Phase 1 does not read
+# ADR-036 — The map names its sectors, nodes and adjacency
 
 Status: **accepted** · 2026-10-03
 
 ## Context
 
-Phase 1 design §8 gives the 5 km map four rings of ore (owner, 2026-10-02, gate H3). On 2026-10-03 the owner decided that territory is Phase 2's, shaped now: the 5 km map is laid out in sectors with a node each, so that it is the first map Phase 2 plays (Phase 1 design §8; the Phase 2 draft, §4 and §11). Phase 2's rules for sectors are a draft: what a sector is has to be in the data before the rules that read it are decided. The map is data the game loads (ADR-008), checked by its loader and by `MapTests`.
+Phase 1 design §8 gave the 5 km map four rings of ore (owner, 2026-10-02, gate H3). On 2026-10-03 the owner decided that territory is Phase 2's, shaped now: the 5 km map is laid out in sectors with a node each, so that it is the first map Phase 2 plays (Phase 1 design §8; the Phase 2 draft, §4 and §11). Phase 2's rules for sectors are a draft: what a sector is has to be in the data before the rules that read it are decided. The map is data the game loads (ADR-008), checked by its loader and by `MapTests`.
 
 ## Decision
 
 1. **A sector is a rectangle with one node site and a list of the sectors it is adjacent to**, in `Map.json`'s optional `"sectors"`: an `"id"`, a `"name"`, `"minXMeters"`, `"maxXMeters"`, `"minZMeters"`, `"maxZMeters"`, a `"node"` position and `"adjacent"` identifiers. A rectangle, not a polygon: the first map's sectors are a 3 × 3 grid, and a polygon is the change to make when a map needs one.
 2. **The loader checks what one map file can get wrong on its own**: identifiers unique; each rectangle on the map, with its node inside it; each node the map's minimum gap clear of every asteroid and field, as a start is; each adjacency naming another sector, once, which names it back. **`MapTests` checks the repository map's layout**: its sectors tile the map without overlap; every asteroid and start lies in one; two sectors are adjacent exactly when they share a border; and every sector can be reached from both starts' sectors.
 3. **The rings are yields of their own**, `"home"`, `"near"`, `"contested"` and `"rich"`, each with its rate in `Tuning.json`'s rules, 3.5, 4, 5.5 and 6.5 Ore a second since Phase 4 lowered them by about a third (Phase 4 design §4).
-4. **The map**: 5,000 m a side, the starts at (−1,750, −1,750) and (1,750, 1,750). Nine sectors on a grid of thirds: each home in its corner with its three home asteroids, each player's two flanks with two of its near asteroids each, the six contested asteroids round the center, and two rich asteroids in each of the two empty corners, one nearer each start. Asteroid fields stand on the sector borders, leaving passages, and at the junctions. Each node is at its sector's center, the homes' at their starts.
-5. **The client follows the map's size**: the camera's focus may go 2,500 m from the center, and the ground's grid covers 5 km.
+4. **The map** is Phase 4's 10 km system (Phase 4 design §6, gate L3): 10,000 m a side, the starts at (−4,000, −4,000) and (4,000, 4,000). Twenty-five sectors of 2 km on a 5 × 5 grid, named by column A to E from west to east and row 1 to 5 from south to north, with their identifiers row by row from A1's 1 to E5's 25. Each home is in its corner with its three home asteroids. Player 1's asteroids, mirrored through the center for player 2's: two near asteroids in each of its flanks, B1 and A2, and one in each of C1, B2 and A3; one contested asteroid in each of D1, C2, B3 and A4, one in B4 and one in D2, which so hold one of each player's, and two in the center, C3; and two rich asteroids in the corner A5. That is 3 home, 7 near, 8 contested and 2 rich asteroids nearer each start, 459,000 Ore in all, the yields and reserves Phase 1's. Two asteroid fields stand on every border between two sectors, 470 m in from each end, so that each border has a passage at its middle and one at each corner. Each node is at its sector's center, the homes' at their starts. The map is point-symmetric about its center, and `Tools/MakeMap.py` writes it.
+5. **The client follows the map's size**: the camera's focus may go 5,000 m from the center, the ground's grid covers 10 km, and the far plane reaches 8,000 m beyond the focus (Phase 4 plan task 28.1).
 
 ## Consequences
 

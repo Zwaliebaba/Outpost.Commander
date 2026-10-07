@@ -163,15 +163,15 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
 TEST_CLASS(MapTests)
 {
 public:
-  // Phase 1 design §8: 5 km a side, the starts in opposite corners about 750 m in from the edges, and four rings of ore,
-  // each richer and further out than the last, 285,000 Ore in all.
-  TEST_METHOD(TheRepositoryMapHasPhaseOnesShape)
+  // Phase 4 design §6: 10 km a side, the starts in opposite corners 1 km in from the edges, and Phase 1's four rings of
+  // ore, each richer and further out than the last, 459,000 Ore in all.
+  TEST_METHOD(TheRepositoryMapHasPhaseFoursShape)
   {
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Assert::AreEqual(5000.0f, map.sizeMeters);
+    Assert::AreEqual(10000.0f, map.sizeMeters);
     Assert::AreEqual(size_t{2}, map.starts.size());
-    Assert::AreEqual(-1750.0f, map.starts[0].xMeters);
-    Assert::AreEqual(-1750.0f, map.starts[0].zMeters);
+    Assert::AreEqual(-4000.0f, map.starts[0].xMeters);
+    Assert::AreEqual(-4000.0f, map.starts[0].zMeters);
 
     // Each ring's count, by the start it is nearer, and its reserve.
     struct Ring
@@ -182,8 +182,8 @@ public:
       int reserveOre = 0;
     };
     std::array<Ring, 4> rings{{{Outpost::OreYield::Home, 3, 3, 7500},
-                               {Outpost::OreYield::Near, 4, 4, 9000},
-                               {Outpost::OreYield::Contested, 3, 3, 12000},
+                               {Outpost::OreYield::Near, 7, 7, 9000},
+                               {Outpost::OreYield::Contested, 8, 8, 12000},
                                {Outpost::OreYield::Rich, 2, 2, 24000}}};
     std::int64_t total = 0;
     for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
@@ -209,17 +209,17 @@ public:
       Assert::AreEqual(0, ring.nearFirst);
       Assert::AreEqual(0, ring.nearSecond);
     }
-    Assert::AreEqual(std::int64_t{285000}, total);
+    Assert::AreEqual(std::int64_t{459000}, total);
     Assert::IsFalse(map.asteroidFields.empty());
   }
 
-  // Phase 1 design §8, owner 2026-10-03: the map is laid out in sectors for Phase 2's territory. They tile the map, each
+  // Phase 4 design §6: the map is laid out in 25 sectors of 2 km for Phase 2's territory. They tile the map, each
   // holds its node, every asteroid and start lies in one, two are adjacent exactly when they share a border, and every
   // sector can be reached from both starts' sectors.
   TEST_METHOD(TheRepositoryMapIsLaidOutInSectors)
   {
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Assert::AreEqual(size_t{9}, map.sectors.size());
+    Assert::AreEqual(size_t{25}, map.sectors.size());
     double area = 0.0;
     for (const Outpost::SectorPlacement& sector : map.sectors)
       area += static_cast<double>(sector.maxXMeters - sector.minXMeters) * (sector.maxZMeters - sector.minZMeters);

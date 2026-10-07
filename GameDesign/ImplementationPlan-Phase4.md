@@ -29,10 +29,11 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | built, in milestone 27's PR |
 | 27.5 | Milestone 27 measured on today's map | 27.4 | — | measured in the container |
 | 27.6 | The rigs earn about a third less | 27.5 | owner, 2026-10-07 | built, in milestone 27's PR |
-| 28.1 | The client and the engine follow the map's size | — | L6 | todo |
-| 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | todo |
-| 28.3 | Production follows territory | — | L5 | todo |
-| 28.4 | The engine measured at 10 km (U7) | 28.2 | — | todo |
+| 28.0 | A destroyed structure is taken out of the path graphs in place | — | owner, 2026-10-07 | built, in milestone 28's PR |
+| 28.1 | The client and the engine follow the map's size | — | L6 | built, in milestone 28's PR; awaiting CI and the owner's run |
+| 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | built, in milestone 28's PR |
+| 28.3 | Production follows territory | — | L5 | built, in milestone 28's PR; the ghost's test awaits CI |
+| 28.4 | The engine measured at 10 km (U7) | 28.2 | — | measured in the container; U7 awaits the owner's run |
 | 29.1 | Placement from the seed | 28.2 | L10 | todo |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
 | 30.2 | The client draws pirates | 30.1 | L7 | todo |
@@ -104,11 +105,53 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 
 ---
 
-## Milestones 28 to 34
+## Milestone 28 — The 10 km map
+
+### 28.0 — A destroyed structure is taken out of the path graphs in place
+
+- **Asked:** before the map changed, AI-against-AI matches on a first 10 km map put the 99th percentile tick at about 20 ms, most of it whole builds of the path graphs a destroyed structure dropped (design §11). The owner chose to take the obstacle out of each graph in place, measured, and to path by sector only if that is not enough (owner, 2026-10-07). It is one PR with the rest of milestone 28.
+- **Scope:** `Pathfinder` keeps each graph across any change of the obstacles that keeps the map's edge, and brings it up to date when it is next needed: reduced by the obstacles taken away, then extended over those added, to the very graph a whole build makes, to the bit. Nothing a match does changes.
+- **ADR:** ADR-054 and ADR-010 edited in place.
+- **Acceptance:** `PathfinderTests.TakenAwayObstaclesReduceTheGraphsToWhatAWholeBuildMakes`; every other suite unchanged.
+- **Verify:** CI; the container's run of `GameLogicTests`; the same matches played before and after.
+- **As built:** recorded in ADR-054 decision 7. On the 10 km map, seeds 1 to 4 for up to 120 minutes, every match plays exactly as before, and the 99th percentile tick falls from 19–22 ms to about 2 ms, the slowest from 88–140 ms to 10–16 ms. A graph of about 2,060 corners loses a structure in under 2 ms, against 22 ms to build whole. Pathing by sector is not needed for this; U7 on the development machine (28.4) decides.
+
+### 28.1 — The client and the engine follow the map's size
+
+- **Gate:** L6, decided.
+- **Scope:** the fog's texture holds the 10 km map's 500 cells a side; the ground's grid and the camera's focus reach 5,000 m from the center, and the far plane 8,000 m past the focus; the widest view is 3,000 m (design §6, §11). The minimap and the fog's grid already take the map's size from the snapshot.
+- **ADR:** ADR-012, ADR-036 decision 5 and ADR-052 edited in place.
+- **Verify:** CI; **owner run**, at the widest view over the 10 km map.
+- **As built:** the fog texture is 512 × 512. **Not built or run in the container**: CI is its first build, and the owner's run its first look.
+
+### 28.2 — The 10 km map and its node caps
+
+- **Gates:** L3 and L4, decided.
+- **Scope:** `Map.json` is the 10 km map of design §6, written by `Tools/MakeMap.py`; the Command Station's `nodes` are 4, 7, 10, 13 and 16. The tests that stand on the 5 km map's sectors and positions move to the 10 km map's.
+- **ADR:** ADR-036 decision 4, ADR-057 and ADR-064 decision 11 edited in place, and ADR-056 where it quotes the panel.
+- **Acceptance:** `MapTests` hold the new map's shape, sectors and symmetry; every suite passes on it.
+- **Verify:** CI; the container's run of `GameLogicTests`.
+- **As built:** sectors are named by column and row, A1 to E5, A1 player 1's home. Each player has 3 home, 7 near, 8 contested and 2 rich asteroids nearer its start, 459,000 Ore in all, and two fields on every border leave three passages through it. `python Tools/MakeMap.py --check` says whether the committed map is what the script writes; CI does not run it. Domination's rule is unchanged, so a lead of one node of 25 takes 834 drains, 139 minutes, against 50 on nine (design §6 foresaw it; 28.4 measures what it does to a match). The stress scene's rally and structures stood a share of the way from each start to the middle, which on 10 km put the fleets 7.6 km apart and out of reach of each other in its minute; they now stand 1,650 m and 1,100 m from the middle, where they stood on the 5 km map. Tests moved: `TerritoryTests`, `DominationTests`, `StandingOrderTests` and `AiPlayerTests` to the new sectors and positions; `UpgradesItsStationBeforeItsFirstClaim` becomes `…BeforeItsSecondClaim`, since level 1's four nodes now take a claim beyond the flanks; and three AI economy tests are re-timed, its rigs away from home being further out: two Shipyards by nine minutes rather than seven, and six rigs with ore by sixteen minutes rather than fourteen.
+
+### 28.3 — Production follows territory
+
+- **Gate:** L5, decided.
+- **Scope:** on a map with sectors, a Shipyard is built only in a sector its player holds: the server refuses it as `SectorNotHeld`, the ghost is red, and the AI looks for its Shipyards' places only in sectors it holds. The Repair Bay takes the rule with milestone 32, which builds it.
+- **ADR:** ADR-056 decisions 5 and 12 edited in place.
+- **Acceptance:** `TerritoryTests.AShipyardNeedsAHeldSector`, `PlacementTests.AShipyardNeedsAHeldSector` and `AiPlayerTests.BuildsItsShipyardsInItsTerritory`.
+- **Verify:** CI; the container's run of `GameLogicTests`.
+- **As built:** a Shipyard in a sector its player later loses keeps working; only its placement is ruled. The server's test fails with the rule taken out. `PlacementTests` is `GameAppTests`', which the container does not build: its calls were checked against `PlaceGhost` in a program of the container's own, and CI is its first run. The placing hint does not say why a Shipyard's ghost is red, as it does not for a rig's; the design asks for neither.
+
+### 28.4 — The engine measured at 10 km (U7)
+
+- **Scope:** AI-against-AI matches over seeds 1–40 on the 10 km map, as 27.5 measured them: the ticks, the fleets, the Ore, the match's length and how it ended. Recorded in design §2. U7 itself, the 99th percentile tick and frame on the development machine in Release, is the owner's run.
+- **Verify:** the container's figures, stated as such; **owner run** of `--measure` and of a match at the widest view.
+- **As built:** recorded in design §2: all 40 end, all by domination, at a median of 2:09; the median side peaks at 25.5 warships; every side's station is at level 5, a cap of 50 points, by minute 20, and the median side holds 18,236 Ore at minute 30; the median match's 99th percentile tick is 2.5 ms in the container. The 40 matches took 16 minutes of processor time, 4:45 on four threads. That the matches are twice as long, all by domination, with the Ore piling up behind the cap, is for the owner before milestone 29.
+
+## Milestones 29 to 34
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
 
-- **28 — The 10 km map** (design §6, §11): the fog grid and its texture, the camera's focus and widest view, and the minimap follow the map's size; the 25-sector map and its node caps; Shipyards and Repair Bays only in held sectors; U7 measured.
 - **29 — Placement from the seed** (design §7).
 - **30 — Pirates** (design §8): the neutral owner, its outposts and their guarding rule, and how the client draws them.
 - **31 — Derelicts** (design §9): salvage, its Ore and its research.

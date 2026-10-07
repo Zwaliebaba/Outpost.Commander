@@ -11,7 +11,8 @@ namespace
 constexpr Outpost::PlayerId BLUE = TerritoryMatch::BLUE;
 constexpr Outpost::PlayerId RED = TerritoryMatch::RED;
 constexpr std::uint32_t TICKS_PER_SECOND = TerritoryMatch::TICKS_PER_SECOND;
-constexpr std::int32_t SOUTH = 2;
+// The repository map's sector east of Blue's home (ADR-036).
+constexpr std::int32_t B1 = 2;
 
 // Warships of Blue's in a row of _count, 30 m apart, at _position.
 std::vector<Outpost::EntityId> Group(TerritoryMatch& _match, std::size_t _count, Outpost::PlanePosition _position)
@@ -50,16 +51,16 @@ public:
   TEST_METHOD(AGroupHoldsItsSector)
   {
     TerritoryMatch match;
-    (void)match.Relay(BLUE, SOUTH);
-    const Outpost::PlanePosition node = match.Placement(SOUTH).node;
-    const std::vector<Outpost::EntityId> ships = Group(match, 4, {.xMeters = -1500.0f, .zMeters = -1500.0f});
-    Assert::IsTrue(Give(match, Outpost::HoldSectorCommand{.ships = ships, .position = {.xMeters = 300.0f, .zMeters = -1200.0f}}) ==
+    (void)match.Relay(BLUE, B1);
+    const Outpost::PlanePosition node = match.Placement(B1).node;
+    const std::vector<Outpost::EntityId> ships = Group(match, 4, {.xMeters = -3300.0f, .zMeters = -3700.0f});
+    Assert::IsTrue(Give(match, Outpost::HoldSectorCommand{.ships = ships, .position = {.xMeters = -1700.0f, .zMeters = -4300.0f}}) ==
                    Outpost::CommandResult::Applied);
     match.Run(40 * TICKS_PER_SECOND);
     Assert::IsTrue(Outpost::Distance(CenterOf(match, ships), node) < 150.0f, L"the group went to the sector's node");
 
     // An enemy in the far corner of the sector, seen through the Relay's sector and out of its reach of suppression.
-    const Outpost::EntityId enemy = match.Warship(RED, {.xMeters = 650.0f, .zMeters = -950.0f});
+    const Outpost::EntityId enemy = match.Warship(RED, {.xMeters = -1350.0f, .zMeters = -3300.0f});
     for (std::uint32_t tick = 0; tick < 90 * TICKS_PER_SECOND && match.World().FindEntity(enemy) != nullptr; ++tick)
       match.Run(1);
     Assert::IsNull(match.World().FindEntity(enemy), L"the group never answered the enemy in its sector");
@@ -82,8 +83,8 @@ public:
   TEST_METHOD(AGroupPatrolsBetweenTwoPoints)
   {
     TerritoryMatch match;
-    const Outpost::PlanePosition from{.xMeters = -1300.0f, .zMeters = -1000.0f};
-    const Outpost::PlanePosition to{.xMeters = -1300.0f, .zMeters = -300.0f};
+    const Outpost::PlanePosition from{.xMeters = -600.0f, .zMeters = -600.0f};
+    const Outpost::PlanePosition to{.xMeters = -600.0f, .zMeters = 100.0f};
     const std::vector<Outpost::EntityId> ships = Group(match, 3, {.xMeters = from.xMeters - 30.0f, .zMeters = from.zMeters});
     Assert::IsTrue(Give(match, Outpost::PatrolCommand{.ships = ships, .destination = to}) == Outpost::CommandResult::Applied);
     bool reachedTo = false;
@@ -108,7 +109,7 @@ public:
   {
     TerritoryMatch match;
     const std::vector<Outpost::EntityId> constructors = match.Constructors(BLUE);
-    Assert::IsTrue(Give(match, Outpost::HoldSectorCommand{.ships = constructors, .position = match.Placement(SOUTH).node}) ==
+    Assert::IsTrue(Give(match, Outpost::HoldSectorCommand{.ships = constructors, .position = match.Placement(B1).node}) ==
                    Outpost::CommandResult::NoShips);
     Assert::IsTrue(Give(match, Outpost::PatrolCommand{.ships = constructors, .destination = {}}) == Outpost::CommandResult::NoShips);
 

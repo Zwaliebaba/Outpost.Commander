@@ -64,6 +64,26 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Ore no longer piles up in the median match.** At Phase 3's income the median side held 8,823 Ore at minute 20 that its capped fleet could not use; with the income lowered by about a third it holds 733. A quarter of the sides still hold over 2,000, mostly the side ahead.
 - **Halving the income instead** was measured too: the median side peaks at 21 warships and builds 47.5, the first shot comes at 4:03, three of the 40 end by production, and the median side holds 421 Ore at minute 20. It is the stronger brake on the opening, and it is not what is built.
 
+**Where they stand on 2026-10-07, after milestone 28, on the 10 km map** (plan task 28.4). The same harness and seeds, with each match played for up to four hours. The map is empty of pirates and derelicts until milestones 29 to 31, and the AI does not yet play Phase 4 (milestone 33).
+
+| Over seeds 1–40 | 5 km, after milestone 27 | 10 km, after milestone 28 |
+|---|---|---|
+| Most warships a side has at once, median of the 80 sides (largest) | 21 (38) | 25.5 (50) |
+| Sides over 40 warships at once | 0 of 80 | 14 of 80 |
+| Warships a side has at minute 20, median; sides with 20 or more | 15; 8 of 80 | 13; 0 of 80 |
+| Warships a side builds in a match, median | 66 | 129.5 |
+| First shot, median | 3:14 | 4:42 |
+| Match length, median (shortest–longest) | 1:01:05 (46:10–1:31:10) | 2:08:55 (1:40:30–3:04:20) |
+| Endings | 40 domination | 40 domination |
+| Ore a side holds at minute 20, median; sides over 2,000 | 733; 19 of 80 | 2,625; 50 of 80 |
+| Ore a side holds at minute 30, median | — | 18,236 |
+
+- **U2, the swarm: met in the median**, as on the 5 km map: the median side peaks at 25.5 warships and has 13 at minute 20. But 14 of the 80 sides go over 40 at some point, all late in a long match, filling the cap of 50 points with Small hulls.
+- **U5, every match ends: yes, by domination only, and in about two hours.** No AI takes the other's base on the bigger map either. Domination is the slow part: its rule carries over unchanged (§6), so a lead of one node of 25 takes 139 minutes where one of nine took 50.
+- **Ore piles up again.** Every side's Command Station is at level 5, its cap 50 points, by minute 20, and every side fills that cap at some point in its match; with more sectors to mine, the median side holds 18,236 Ore at minute 30 that it has nothing to spend on.
+- **The first shot comes at 4:42 in every match,** the scouts meeting at the enemy's flank: there is nothing yet to find on the way (U1 waits for milestones 29 to 31).
+- **The engine, in the container:** the median match's 99th percentile tick is 2.5 ms, and the worst match's 4.2 ms, under U7's 5 ms; the slowest single tick is 20 ms in the median match and 39 ms at worst. U7 itself is the owner's run in Release.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06
@@ -192,7 +212,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 
 ## 11. The engine at 10 km
 
-- **Path graphs.** The visibility graph covers the whole map (ADR-010), and line tests use ADR-054's grid. At four times the area, with roughly four times the obstacles, a full graph build grows faster than the area does. U7 measures it. Pathing by sector (Phase 2 §7) is built only if U7 misses, and that is a decision recorded in an ADR.
+- **Path graphs.** The visibility graph covers the whole map (ADR-010), and line tests use ADR-054's grid. At four times the area, with roughly four times the obstacles, a full graph build grows faster than the area does. U7 measures it. A destroyed structure, which used to make every graph be built whole, is now taken out of each in place (plan task 28.0, ADR-054, owner, 2026-10-07): in the container, on the 10 km map, that took the 99th percentile tick from about 20 ms to 2 ms. Pathing by sector (Phase 2 §7) is built only if U7 misses, and that is a decision recorded in an ADR.
 - **Fog.** The 20 m grid becomes 500×500 cells, and the fog texture grows from 256×256 to 512×512 (ADR-052). It follows the map's size instead of being fixed.
 - **The minimap** shows four times the area at the same size, so a mark covers less, and its marks are checked at U8.
 - **Snapshots** carry more asteroids, derelicts and pirates, and far fewer ships. Their size is recorded.

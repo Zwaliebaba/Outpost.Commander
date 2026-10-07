@@ -17,7 +17,7 @@ The shades change only when a player's entity moves into a new 20 m cell. The se
 1. **`FogOfWar` is brought up to date once a snapshot, not once a frame.** `GameClient` updates it when the newest snapshot's tick changes, from that frame's entities.
    - `Update` reuses its own storage.
    - `FogOfWar::Revision` moves on whenever `Reset` or `Update` changes a shade, and only then.
-2. **The shades are an `R8_UNORM` texture of 256 × 256 texels, owned by `GroundMaskPipeline`.**
+2. **The shades are an `R8_UNORM` texture of 512 × 512 texels, owned by `GroundMaskPipeline`**, room for the 10 km map's 500 cells a side (Phase 4 design §11).
    - Cell (x, z) is texel (x, z), and its byte is the shade × 255, rounded. A shade of 0.55 becomes 140/255, a change of 0.001.
    - The row and the column just past the grid repeat its last cells, so sampling at the grid's far edge blends nothing else in.
    - `SetShades` writes the bytes into this frame's slot of an upload buffer and records a copy into the frame's command list, between barriers. `GameClient` calls it only when the revision differs from the one the texture holds.
@@ -33,4 +33,4 @@ The shades change only when a player's entity moves into a new 20 m cell. The se
 - **A frame no longer uploads the fog.** When the fog does change, the upload is 64 KB of bytes, not 250 KB of floats. The ground's pixels read a texture in video memory. The minimap's fog is one quad instead of hundreds, so it no longer competes with text for the interface's quads.
 - **The minimap's fog is now smooth, as the ground's always was.** At its size, a cell is about a pixel, so the runs' hard edges were not visible there either.
 - **A cell is cleared up to one snapshot later than before.** At 20 m a cell, that is not visible.
-- **Forecloses** a grid larger than 256 cells a side, `GroundMaskPipeline::TEXTURE_SIDE`, which was already the grid's limit.
+- **Forecloses** a grid larger than 512 cells a side, `GroundMaskPipeline::TEXTURE_SIDE`, which was already the grid's limit: a map over 10,240 m a side at 20 m a cell.

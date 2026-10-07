@@ -17,7 +17,7 @@ struct VertexOut
 };
 
 // Cell (x, z) at texel (x, z), its shade in red (ADR-052). Must match GroundMaskPipeline::TEXTURE_SIDE.
-static const float TEXTURE_SIDE = 256.0f;
+static const float TEXTURE_SIDE = 512.0f;
 Texture2D<float> shades : register(t0);
 SamplerState shadesSampler : register(s0);
 
