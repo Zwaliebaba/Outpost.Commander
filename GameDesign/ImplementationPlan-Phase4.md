@@ -43,7 +43,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 31.2 | The client shows derelicts and salvage | 31.1 | L8 | done; the owner's run accepted on 2026-10-07 |
 | 32.1 | The Repair Bay and retreat, on the server | — | L9 | done |
 | 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | done; the owner's run accepted on 2026-10-07 |
-| 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | — | todo |
+| 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | owner, 2026-10-07 | done |
 | 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | todo |
 | 34.2 | U1–U8 | 33.1, 34.1 | — | todo |
 
@@ -296,9 +296,33 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
   - `DesignerTests`, `AlertsTests`, `PlacementTests` and `ModelCatalogTests` ran in the container against stand-ins.
   - `Hud`, `PlayerControls` and `GameClient` need the window's and the fonts' headers, so CI is their first build.
 
-## Milestones 33 and 34
+## Milestone 33 — The AI plays Phase 4
 
-Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
+**Asked before 33.1** (owner, 2026-10-07):
 
-- **33 — The AI plays Phase 4** (design §12).
-- **34 — Measuring Phase 4** (design §2): the match log and U1–U8.
+- Pirates are cleared by a detachment of the reserve that outweighs the outpost in Ore by a margin in `Opponent.json`: 1.5 for Normal, 2.0 for Easy, 1.2 for Hard. A camp is cleared once it is next to the AI's territory, and a stronghold only when no free sector is left to claim and the AI is not at its node cap.
+- One Constructor at a time salvages, near the AI's territory, once its home rigs stand.
+- One Repair Bay at the front, built anew when the front moves.
+- The match log records Phase 4's events in the client and in the harness (milestone 34).
+
+**Asked during 33.1**, after the first measurement: the scout explores its own half before it goes round the enemy's flanks, for U1; U5's single ending is recorded, not tuned; and U3 is accepted as measured.
+
+### 33.1 — The AI plays Phase 4
+
+- **Gate:** design §12; the owner's answers above.
+- **Scope:**
+  - What the AI has seen of each pirate outpost, and a detachment that outweighs it, sent once the outpost is next to its territory.
+  - A scout that explores its own half for the first ten minutes, and looks at each outpost there from outside its reach.
+  - One salvage trip at a time, once its home rigs stand.
+  - A Repair Bay behind its front.
+  - `pirateMargin` and `scoutOwnHalfSeconds` in the three difficulty files.
+- **ADR:** a new one, ADR-076: the AI plays Phase 4. ADR-020, ADR-073, ADR-074 and ADR-075 edited in place.
+- **Acceptance:** `AiPlayerTests.PlaysPhaseFoursOpening` (salvage, a detachment and a Repair Bay in a half-hour match); `AiPlayerTests.SendsAScoutRoundTheEnemysFlanks` for the scout's own half; `AiPlayerTests.LeavesASectorWithPiratesAlone`; `AiSettingsTests.LoadsThePiratesPlay`.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
+- **As built:** recorded in [ADR-076](../Design/ADR/ADR-076-ai-plays-phase-4.md) and design §2.
+  - The AI knows an outpost only as far as it has seen it, and its scout first skipped the guarded sectors, so the first version saw no camp next to its land and sent no detachment. The scout now looks at each from a lookout outside the pirates' reach.
+  - Over seeds 1–40, U1 and U4 are met. U2 is met at its peak and missed at minute 20, where the median side has 20 warships: the salvaged Ore fills the cap sooner. U3's share and U5's single ending are recorded.
+
+## Milestone 34 — Measuring Phase 4
+
+Scoped in detail when it becomes the next milestone, from design §2. Its tasks are on the board above.

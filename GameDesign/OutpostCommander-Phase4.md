@@ -148,6 +148,31 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **The matches are about as long**, and as often level at three hours: the fall-back counts a ship that turns for home as lost, so an attack still falls back once 15% of it has gone.
 - **The engine:** the median match's 99th percentile tick is 1.5 ms in the container, the worst match's 2.9 ms. One match's slowest tick took 76 ms; the median match's slowest is 16 ms.
 
+**After milestone 33** (plan task 33.1): the AI salvages, clears pirates by detachment and builds a Repair Bay at its front, and its scout explores its own half for the first ten minutes (§12). The same harness and seeds, each match played for up to three hours.
+
+| Over seeds 1–40 | After milestone 32 | After milestone 33 |
+|---|---|---|
+| Match length, median (shortest–longest) | 1:35:08 (34:25–2:46:42) | 1:39:42 (52:00–2:30:18) |
+| Endings; won by player 1 | 35 domination, 1 production, 4 not ended at 3 hours; 16 | 40 domination; 22 |
+| The players' first shot at each other, median (earliest–latest); between minute 8 and 20 | — | 11:38 (10:20–21:11); 39 of 40 |
+| Derelicts a side salvages before it, median; in the match | none | 3; 8 |
+| Pirate outposts a side fights before it, median; detachments it sends in the match | — | 2; 4 |
+| Most warships a side has at once, median (largest); sides over 40 | 16 (43); — | 21 (44); 1 of 80 |
+| Warships a side has at minute 20, median; sides with 20 or more | — | 20; 42 of 80 |
+| Warships a side builds in a match, median; loses | 35.5; 20.5 | 41.5; 23.5 |
+| Ore a side holds at minute 20, median | 4,636 | 8,159 |
+| Ships a side turns for home, median (warships); repaired whole; warships that fight again | 55.5; 40%; — | 75 (69); 55%; 17 |
+| Engagements before minute 40, median, in a median of sectors | — | 7, in 4.5 |
+| Pirate structures and ships left at the end, median; derelicts | — | 4 of 10, 8 of 24; 0 |
+
+- **U1, the opening: met.** Before the players first fire on each other, the median side has salvaged 3 derelicts and fought 2 pirate outposts, and in all 40 matches both sides have salvaged 2 or more. The first shot between them comes between minute 8 and minute 20 in 39 of the 40. The scout exploring its own half is what moved it: without that it came at a median of 6:55, before any salvage.
+- **U2, the swarm: met at its peak, missed at minute 20.** The median side's most warships at once is 21, and one side of the 80 goes over 40. But at minute 20 the median side has 20, where U2 asks for fewer: the Ore the AI now salvages, from the 12 derelicts and the wrecks of the outposts it clears, fills its 50-point cap sooner. Its fleet is full for 69% of the match at the median.
+- **U3, a ship worth keeping: met in number, missed in share.** A side turns a median of 69 warships for home, and 55% of the ships it turns for home are repaired whole, against 40% before the Repair Bays. 17 warships fire again, a quarter of those turned for home, where U3 asks for half. The owner accepted U3 as measured and recorded (2026-10-07).
+- **U4, skirmishes: met.** A median of 7 engagements before minute 40, in a median of 4.5 sectors; 33 of the 40 meet five in three.
+- **U5, every match ends: all 40 do, by domination only.** Recorded rather than tuned (owner, 2026-10-07).
+- **The outposts fall.** The AI sends a median of 4 detachments a side, the first at a median of 8:48, and the median match ends with 4 of the 10 pirate structures standing and no derelict left.
+- **The engine:** ENGINE_33
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06

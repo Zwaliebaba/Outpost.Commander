@@ -37,7 +37,15 @@ What the design leaves open: how the AI learns an outpost's strength under fog o
 ## Consequences
 
 - **The AI plays Phase 4's opening** (`AiPlayerTests.PlaysPhaseFoursOpening`): in a half-hour match on seed 3 it salvages two derelicts or more with one Constructor at a time, sends a detachment at an outpost, and builds a Repair Bay. `SendsAScoutRoundTheEnemysFlanks` checks the scout's own half and that it keeps out of the pirates' reach; `LeavesASectorWithPiratesAlone` still holds before a detachment; `AiSettingsTests.LoadsThePiratesPlay` loads the new settings.
-- MEASUREMENTS
+- **AI against AI over seeds 1–40, measured in the Linux container** (design §2), with Normal on both sides and each match played for up to three hours:
+  - **U1 is met.** The players' first shot at each other comes at a median of 11:38, between minute 8 and minute 20 in 39 of the 40. Before it the median side has salvaged 3 derelicts and fought 2 pirate outposts, and both sides have salvaged 2 or more in all 40.
+  - **The outposts fall.** A side sends a median of 4 detachments, the first at a median of 8:48. The median match ends with 4 of the 10 pirate structures standing and every derelict salvaged.
+  - **U2 is met at its peak and missed at minute 20.** The median side has 21 warships at most, and 1 side of 80 goes over 40. At minute 20 it has 20, where U2 asks for fewer, holding 8,159 Ore against 4,636 after milestone 32: the salvage fills its cap sooner.
+  - **U3:** a side turns a median of 69 warships for home, 55% of the ships it turns for home are repaired whole, against 40% after milestone 32, and 17 warships fight again, a quarter of those turned for home. The owner accepted it as measured (2026-10-07).
+  - **U4 is met:** a median of 7 engagements before minute 40, in 4.5 sectors.
+  - **U5:** all 40 end, all by domination, at a median of 1:39:42. Recorded rather than tuned (owner, 2026-10-07).
+  - ENGINE_33
+- **Two versions were set aside.** The first, whose scout went straight for the enemy's flanks, met the enemy at a median of 6:55 over the 40 seeds, with a median of one derelict salvaged before it, and so missed U1. The second explored its own half but skipped the guarded sectors, and so never saw the camp next to its land: in `PlaysPhaseFoursOpening`'s match it sent no detachment in half an hour. It was not measured over the 40 seeds.
 
 ## What this forecloses
 
