@@ -248,6 +248,8 @@ public:
     std::string armor;
     std::string perShip;
     std::string perShipChange;
+    // How many ships of a formation of the hull one hit reaches, "×5 ships", for a splash that reaches more than its target.
+    std::string reach;
     std::string perOre;
     float share = 0.0f;
     Rating rating = Rating::Poor;

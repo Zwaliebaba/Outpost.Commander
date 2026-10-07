@@ -38,11 +38,11 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 29.1 | Placement from the seed | 28.2 | L10 | done |
 | 29.2 | The fog works out only what changed | 28.1 | owner, 2026-10-07 | done |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | done |
-| 30.2 | The client draws pirates | 30.1 | L7 | merged; awaiting the owner's run |
-| 31.1 | Derelicts and salvage | 29.1 | L8 | built, in milestone 31's PR |
-| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | built, in milestone 31's PR; awaiting the owner's run |
-| 32.1 | The Repair Bay and retreat, on the server | — | L9 | built, in milestone 32's PR |
-| 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | built, in milestone 32's PR; awaiting CI and the owner's run |
+| 30.2 | The client draws pirates | 30.1 | L7 | done; the owner's run accepted on 2026-10-07 |
+| 31.1 | Derelicts and salvage | 29.1 | L8 | done |
+| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | done; the owner's run accepted on 2026-10-07 |
+| 32.1 | The Repair Bay and retreat, on the server | — | L9 | done |
+| 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | done; the owner's run accepted on 2026-10-07 |
 | 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | — | todo |
 | 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | todo |
 | 34.2 | U1–U8 | 33.1, 34.1 | — | todo |
