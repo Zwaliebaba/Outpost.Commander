@@ -174,6 +174,19 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **The outposts fall.** The AI sends a median of 4 detachments a side, the first at a median of 8:48, and the median match ends with 4 of the 10 pirate structures standing and no derelict left.
 - **The engine:** the median match's 99th percentile tick is 1.4 ms in the container, the worst match's 3.3 ms. One match's slowest tick took 68 ms; the median match's slowest is 14 ms. Each match ran alone on one core while the other three ran the balance check.
 
+**Where Phase 4 stands after milestone 34** (plan task 34.2). U1–U5 are the measurement after milestone 33, which milestone 34 does not change; the client's match log now records them too, and `Tools/MatchLog.py --ai-matches` scores them.
+
+| # | Answer |
+|---|---|
+| U1 | Met: the players' first shot at a median of 11:38, between minute 8 and 20 in 39 of 40, after 3 derelicts salvaged and 2 pirate outposts fought by the median side. |
+| U2 | Met at its peak, 21 warships for the median side and 1 side of 80 over 40; missed at minute 20, where the median side has 20. |
+| U3 | Met in number, short in share: 33.5 warships turned for home and 45% of them fighting again, where half is asked. Accepted as measured (owner, 2026-10-07). |
+| U4 | Met: 7 engagements before minute 40, in 4.5 sectors. |
+| U5 | Every match ends, by domination only. Recorded, not tuned (owner, 2026-10-07). |
+| U6 | Met: the balance check of MVP §3 passes all four criteria at budgets of 6,000 to 36,000 Ore. The Missile Rack is among the designs worth building at most budgets from 9,000 Ore. |
+| U7 | Awaits the owner's run in Release. In the container the median match's 99th percentile tick is 1.4 ms and the worst 3.3 ms, under the 5 ms asked. |
+| U8 | Awaits the owner's play. |
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06

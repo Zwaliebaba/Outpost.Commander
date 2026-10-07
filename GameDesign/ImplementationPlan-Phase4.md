@@ -45,7 +45,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | done; the owner's run accepted on 2026-10-07 |
 | 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | owner, 2026-10-07 | done |
 | 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | done |
-| 34.2 | U1–U8 | 33.1, 34.1 | — | U1–U5 measured in the container; U6 BALANCE_STATUS; U7 and U8 await the owner |
+| 34.2 | U1–U8 | 33.1, 34.1 | — | U1–U5 measured in the container; U6 passes; U7 and U8 await the owner |
 
 ### Milestone order
 
@@ -351,4 +351,4 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
   - **U7, owner run:** in Release, `--measure` on an AI-against-AI match for the 99th percentile tick, and a frame capture zoomed out over the largest fight at 1920×1080.
   - **U8, owner run:** a match against the AI, judging whether the opening feels like exploring, and whether a 10 km map can be followed with the camera, the minimap and the alerts.
   - The owner's own AI-against-AI figures: `OutpostCommander.exe --ai-matches --matches 40 --limit-minutes 180`, then `python Tools/MatchLog.py --ai-matches`. MSVC's build may play the seeds differently from clang's (ADR-009).
-- **As built:** see design §2.
+- **As built:** see design §2. U6's check passes all four criteria; it ran 1 hour 43 minutes in the container, built by clang at `-O2`, beside other work.
