@@ -49,7 +49,7 @@ What the design leaves open: which four a repairer takes when more are near, wha
 9. **The AI** ([ADR-020](ADR-020-ai-and-match-flow.md), [ADR-041](ADR-041-ai-plays-a-longer-match.md)):
    - Its designs keep the default, so its ships retreat at a quarter.
    - It takes a retreating ship out of every order it gives, since any order would end the retreat.
-   - A retreating ship leaves its attack group or raid, as a lost one does, and rejoins the reserve once it is whole. A retreat so counts toward a group's fall-back.
+   - A retreating ship leaves its attack group or raid, as a lost one does, and rejoins the reserve once it is whole. A retreat so counts toward a group's fall-back (owner, 2026-10-07, after the measurement below).
    - A retreating Constructor leaves its crew, and is not idle until it is whole, so the AI neither waits on it nor gives it work.
    - It builds no Repair Bay until milestone 33.
 10. **The client** (design §13):

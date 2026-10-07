@@ -279,7 +279,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
   - Over seeds 1–40, 36 matches end at a median of 1:35:08, and four are level at three hours.
   - A side loses a median of 20.5 warships, against 52.5 after milestone 31, and builds about half as many. Its fleet is full about as often as before, and the Ore it no longer spends on replacements piles up.
   - The AI's first version took a retreating Constructor as idle, which held its production back; it now leaves it out of its crews until it is whole.
-  - Keeping retreating ships in their attack group, so that a retreat does not count toward the fall-back, left 17 of the 40 level at three hours, and was set aside.
+  - Keeping retreating ships in their attack group, so that a retreat does not count toward the fall-back, left 17 of the 40 level at three hours; the owner kept a retreat counting toward the fall-back (2026-10-07).
 
 ### 32.2 — The client sets retreat and draws the Repair Bay
 
