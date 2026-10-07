@@ -21,9 +21,9 @@ constexpr std::int32_t NORTHEAST = 9;
 // A near asteroid in the south, and a rich one in the northwest.
 constexpr Outpost::PlanePosition SOUTH_ASTEROID{.xMeters = -420.0f, .zMeters = -1350.0f};
 constexpr Outpost::PlanePosition NORTHWEST_ASTEROID{.xMeters = -1900.0f, .zMeters = 1500.0f};
-// Income in hundredths of an Ore a second: a near rig's 6, a rich rig's 10.
-constexpr std::int32_t NEAR_INCOME = 600;
-constexpr std::int32_t RICH_INCOME = 1000;
+// Income in hundredths of an Ore a second: a near rig's 4, a rich rig's 6.5 (Phase 4 design §4).
+constexpr std::int32_t NEAR_INCOME = 400;
+constexpr std::int32_t RICH_INCOME = 650;
 
 std::wstring Widen(std::string_view _text)
 {

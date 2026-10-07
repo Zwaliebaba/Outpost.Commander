@@ -38,8 +38,8 @@ Every verdict is taken with a 95% confidence interval (Wilson). A win rate whose
 run again with --max-seeds battles, and if it still straddles it, the verdict is UNSURE, which fails the check.
 
 The balance check (§3) runs at the stages of Phase 1 design §7: the starting components (those no research topic unlocks), at
-2,000-4,500 Ore; tier 1's, the MVP's every component, at 2,000-12,000; tier 2's at 4,500-12,000; and tier 3's at
-6,000-12,000. It passes when, at every budget of every stage and in both fire modes:
+6,000-13,500 Ore; tier 1's, the MVP's every component, at 6,000-36,000; tier 2's at 13,500-36,000; and tier 3's at
+18,000-36,000: three times the MVP's budgets, since Phase 4 tripled every component's cost (Phase 4 design §4). It passes when, at every budget of every stage and in both fire modes:
   (a) every design has a counter that beats it at least 80% of the time,
   (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon of the stage at
       one budget of the stage or more, in each fire mode (owner, 2026-10-01): a heavy hull need not pay at the
@@ -773,13 +773,13 @@ def run(args):
 def main():
   parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
   parser.add_argument("--tuning", type=Path, default=TUNING_DEFAULT, help="the tuning data to read (ADR-008)")
-  parser.add_argument("--budgets", default="2000,3000,4500,6000,9000,12000",
+  parser.add_argument("--budgets", default="6000,9000,13500,18000,27000,36000",
                       help="Ore per side for tier 1's components, the MVP's every component, comma-separated")
-  parser.add_argument("--early-budgets", default="2000,3000,4500",
+  parser.add_argument("--early-budgets", default="6000,9000,13500",
                       help="Ore per side for the starting components and tier 1's research check (d)")
-  parser.add_argument("--tier-two-budgets", default="4500,6000,9000,12000",
+  parser.add_argument("--tier-two-budgets", default="13500,18000,27000,36000",
                       help="Ore per side for tier 2's components and research (Phase 1 design §7)")
-  parser.add_argument("--tier-three-budgets", default="6000,9000,12000",
+  parser.add_argument("--tier-three-budgets", default="18000,27000,36000",
                       help="Ore per side for tier 3's components and research (Phase 1 design §7)")
   parser.add_argument("--last-tier", type=int, default=3, help="the last research tier to check; 1 is the MVP's check")
   parser.add_argument("--seeds", type=int, default=60, help="battles per pairing for the matrices")

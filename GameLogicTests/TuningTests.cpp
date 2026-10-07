@@ -211,17 +211,18 @@ public:
     for (size_t i = 0; i < hulls.size(); ++i)
     {
       const Outpost::HullTuning& hull = tuning.hulls[i];
-      ExpectSame(hulls[i],
-                 {{"id", Number(hull.id.value)},
-                  {"name", hull.name},
-                  {"hitPoints", Number(hull.hitPoints)},
-                  {"armor", Number(hull.armor)},
-                  {"speedMetersPerSecond", hull.speedMetersPerSecond},
-                  {"cost", Number(hull.cost)},
-                  {"buildSeconds", hull.buildSeconds},
-                  {"footprintRadiusMeters", hull.footprintRadiusMeters},
-                  {"turnRateDegreesPerSecond", hull.turnRateDegreesPerSecond}},
-                 std::format("hulls[{}]", i));
+      std::vector<LoadedField> fields = {{"id", Number(hull.id.value)},
+                                         {"name", hull.name},
+                                         {"hitPoints", Number(hull.hitPoints)},
+                                         {"armor", Number(hull.armor)},
+                                         {"speedMetersPerSecond", hull.speedMetersPerSecond},
+                                         {"cost", Number(hull.cost)},
+                                         {"buildSeconds", hull.buildSeconds},
+                                         {"footprintRadiusMeters", hull.footprintRadiusMeters},
+                                         {"turnRateDegreesPerSecond", hull.turnRateDegreesPerSecond}};
+      if (hull.commandPoints > 0)
+        fields.push_back({"commandPoints", Number(hull.commandPoints)});
+      ExpectSame(hulls[i], fields, std::format("hulls[{}]", i));
     }
 
     const Neuron::JsonValue::Array& drives = json.Find("drives")->AsArray();
@@ -316,6 +317,8 @@ public:
         fields.push_back({"nodes", Number(structure.nodes)});
       if (structure.guns > 0)
         fields.push_back({"guns", Number(structure.guns)});
+      if (structure.commandPoints > 0)
+        fields.push_back({"commandPoints", Number(structure.commandPoints)});
       const std::string path = std::format("structures[{}]", i);
       // A list of hulls, or none, as the file holds it.
       const auto expectHulls = [](const Neuron::JsonValue& _json, const std::vector<Outpost::HullId>& _hulls, const std::string& _path)
@@ -345,6 +348,8 @@ public:
             levelFields.push_back({"nodes", Number(loaded.nodes)});
           if (loaded.guns > 0)
             levelFields.push_back({"guns", Number(loaded.guns)});
+          if (loaded.commandPoints > 0)
+            levelFields.push_back({"commandPoints", Number(loaded.commandPoints)});
           size_t levelElsewhere = expectHulls(levels[j], loaded.hulls, levelPath + ".hulls");
           if (const Neuron::JsonValue* required = levels[j].Find("requires"))
           {
@@ -519,7 +524,13 @@ public:
       Assert::AreEqual(std::array{1, 1, 2, 2, 3}[static_cast<size_t>(level - 1)],
                        Outpost::StationGuns(repository, Outpost::StructureKind::CommandStation, level));
       Assert::AreEqual(1, Outpost::StationGuns(repository, Outpost::StructureKind::DefensePlatform, level));
+      // The fleet cap at each level (Phase 4 design §5, gate L2).
+      Assert::AreEqual(std::array{12, 20, 30, 40, 50}[static_cast<size_t>(level - 1)], Outpost::FleetCap(repository, level));
     }
+    // What each hull takes of it: Small 1, Medium 2, Large 4.
+    Assert::AreEqual(1, repository.hulls[0].commandPoints);
+    Assert::AreEqual(2, repository.hulls[1].commandPoints);
+    Assert::AreEqual(4, repository.hulls[2].commandPoints);
   }
 
   TEST_METHOD(RejectsBrokenLevels)
@@ -555,6 +566,15 @@ public:
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
                             "\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1, \"guns\": 0 },"),
                     "structures[0].guns");
+    // The fleet cap (Phase 4 design §5): a Command Station's, at least one point, and at least one a hull.
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
+                            "\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"commandPoints\": 20 } ]"),
+                    "structures[1].levels[0].commandPoints");
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
+                            "\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1, \"commandPoints\": 0 },"),
+                    "structures[0].commandPoints");
+    ExpectLoadError(Replace("\"turnRateDegreesPerSecond\": 180 }", "\"turnRateDegreesPerSecond\": 180, \"commandPoints\": 0 }"),
+                    "hulls[0].commandPoints");
     // A kind the owner gave no levels to (Phase 3 design §11).
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40 }",
                             "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40, \"levels\": [] }"),

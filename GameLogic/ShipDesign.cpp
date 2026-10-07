@@ -46,7 +46,8 @@ Outpost::HullView Outpost::ViewOf(const HullTuning& _hull, const Upgrades& _upgr
           .footprintRadiusMeters = _hull.footprintRadiusMeters,
           .cost = _hull.cost,
           .buildSeconds = _hull.buildSeconds,
-          .available = _available};
+          .available = _available,
+          .commandPoints = _hull.commandPoints};
 }
 
 Outpost::DriveView Outpost::ViewOf(const DriveTuning& _drive, bool _available)

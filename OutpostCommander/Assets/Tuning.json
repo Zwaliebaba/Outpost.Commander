@@ -3,34 +3,34 @@
     "tickHz": 20,
     "startingOre": 1000,
     "startingConstructors": 2,
-    "miningRigOrePerSecondHome": 5,
-    "miningRigOrePerSecondNear": 6,
-    "miningRigOrePerSecondContested": 8,
-    "miningRigOrePerSecondRich": 10,
+    "miningRigOrePerSecondHome": 3.5,
+    "miningRigOrePerSecondNear": 4,
+    "miningRigOrePerSecondContested": 5.5,
+    "miningRigOrePerSecondRich": 6.5,
     "exhaustedYieldPercent": 20,
     "levelHitPointsPercent": 20
   },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 10, "drainTicketsPerNodeDifference": 30 },
   "hulls": [
-    { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10, "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 },
-    { "id": 2, "name": "Medium", "hitPoints": 500, "armor": 8, "speedMetersPerSecond": 40, "cost": 110, "buildSeconds": 20, "footprintRadiusMeters": 14, "turnRateDegreesPerSecond": 120 },
-    { "id": 3, "name": "Large", "hitPoints": 1200, "armor": 14, "speedMetersPerSecond": 25, "cost": 300, "buildSeconds": 40, "footprintRadiusMeters": 24, "turnRateDegreesPerSecond": 60 }
+    { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 96, "buildSeconds": 30, "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180, "commandPoints": 1 },
+    { "id": 2, "name": "Medium", "hitPoints": 500, "armor": 8, "speedMetersPerSecond": 40, "cost": 330, "buildSeconds": 60, "footprintRadiusMeters": 14, "turnRateDegreesPerSecond": 120, "commandPoints": 2 },
+    { "id": 3, "name": "Large", "hitPoints": 1200, "armor": 14, "speedMetersPerSecond": 25, "cost": 900, "buildSeconds": 120, "footprintRadiusMeters": 24, "turnRateDegreesPerSecond": 60, "commandPoints": 4 }
   ],
   "drives": [
-    { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 },
-    { "id": 2, "name": "Fusion", "speedFactor": 0.8, "hitPointsFactor": 1.4, "turnRateFactor": 0.8, "cost": 80 },
-    { "id": 3, "name": "Pulse", "speedFactor": 1.6, "hitPointsFactor": 0.75, "turnRateFactor": 1.5, "cost": 40 }
+    { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 60 },
+    { "id": 2, "name": "Fusion", "speedFactor": 0.8, "hitPointsFactor": 1.4, "turnRateFactor": 0.8, "cost": 240 },
+    { "id": 3, "name": "Pulse", "speedFactor": 1.6, "hitPointsFactor": 0.75, "turnRateFactor": 1.5, "cost": 120 }
   ],
   "weapons": [
-    { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120, "splashRadiusMeters": 0, "cost": 35 },
-    { "id": 2, "name": "Lance", "damage": 95, "fireIntervalSeconds": 2.7, "rangeMeters": 220, "splashRadiusMeters": 0, "cost": 85 },
-    { "id": 3, "name": "Missile Rack", "damage": 30, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 130 },
-    { "id": 4, "name": "Flak Battery", "damage": 20, "fireIntervalSeconds": 0.5, "rangeMeters": 200, "splashRadiusMeters": 26, "cost": 60 },
-    { "id": 5, "name": "Rail Cannon", "damage": 320, "fireIntervalSeconds": 6.0, "rangeMeters": 240, "splashRadiusMeters": 0, "cost": 150 }
+    { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120, "splashRadiusMeters": 0, "cost": 105 },
+    { "id": 2, "name": "Lance", "damage": 95, "fireIntervalSeconds": 2.7, "rangeMeters": 220, "splashRadiusMeters": 0, "cost": 255 },
+    { "id": 3, "name": "Missile Rack", "damage": 30, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 390 },
+    { "id": 4, "name": "Flak Battery", "damage": 20, "fireIntervalSeconds": 0.5, "rangeMeters": 200, "splashRadiusMeters": 26, "cost": 180 },
+    { "id": 5, "name": "Rail Cannon", "damage": 320, "fireIntervalSeconds": 6.0, "rangeMeters": 240, "splashRadiusMeters": 0, "cost": 450 }
   ],
   "modules": [
-    { "id": 1, "name": "Sensor Array", "sightMeters": 700, "speedFactor": 0.9, "cost": 40 }
+    { "id": 1, "name": "Sensor Array", "sightMeters": 700, "speedFactor": 0.9, "cost": 120 }
   ],
   "constructor": { "hitPoints": 300, "armor": 2, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15, "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5, "repairPercentPerSecond": 2 },
   "structureWeapons": [
@@ -38,12 +38,12 @@
   ],
   "structures": [
     { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45, "structureWeapon": 1,
-      "nodes": 3, "guns": 1,
+      "nodes": 3, "guns": 1, "commandPoints": 12,
       "levels": [
-        { "cost": 300, "buildSeconds": 45, "nodes": 4 },
-        { "cost": 500, "buildSeconds": 60, "nodes": 5, "guns": 2 },
-        { "cost": 700, "buildSeconds": 75, "nodes": 6 },
-        { "cost": 900, "buildSeconds": 90, "nodes": 7, "guns": 3 }
+        { "cost": 300, "buildSeconds": 45, "nodes": 4, "commandPoints": 20 },
+        { "cost": 500, "buildSeconds": 60, "nodes": 5, "guns": 2, "commandPoints": 30 },
+        { "cost": 700, "buildSeconds": 75, "nodes": 6, "commandPoints": 40 },
+        { "cost": 900, "buildSeconds": 90, "nodes": 7, "guns": 3, "commandPoints": 50 }
       ] },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40,
       "hulls": [1],
@@ -58,7 +58,7 @@
         { "cost": 800, "buildSeconds": 120, "researchSlots": 2 }
       ] },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50, "buildConstructorSeconds": 10 },
-    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 },
+    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 450, "buildConstructorSeconds": 20, "structureWeapon": 1 },
     { "kind": "Relay", "name": "Relay", "hitPoints": 3000, "armor": 10, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 40 }
   ],
   "research": [

@@ -499,6 +499,12 @@ private:
   // cap. And the nodes it holds or has taken with a Relay under construction.
   [[nodiscard]] std::int32_t NodeCapOf(PlayerId _player) const noexcept;
   [[nodiscard]] std::int32_t NodesTaken(PlayerId _player) const noexcept;
+  // The command points _player's warships may take (Phase 4 design §5): its Command Station's level's, or level 1's without
+  // one; zero for no cap. And what they take: every warship's, and every warship job a producer of its has started.
+  [[nodiscard]] std::int32_t FleetCapOf(PlayerId _player) const noexcept;
+  [[nodiscard]] std::int32_t CommandPointsOf(PlayerId _player) const noexcept;
+  // What one warship of _hull takes; zero for an unknown hull.
+  [[nodiscard]] std::int32_t CommandPointsOfHull(HullId _hull) const noexcept;
   // The share of its income a rig earns where it stands: none outside a sector its owner holds or in a suppressed one,
   // the tuning data's share in one cut off, and all of it otherwise or without territory (Phase 2 design §4–§6).
   [[nodiscard]] double TerritoryShare(const Entity& _rig) const noexcept;

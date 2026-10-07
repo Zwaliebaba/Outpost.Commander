@@ -92,6 +92,8 @@ Outpost::HullTuning ReadHull(ObjectReader& _reader)
   hull.buildSeconds = _reader.Number("buildSeconds", JsonBound::Positive);
   hull.footprintRadiusMeters = _reader.Number("footprintRadiusMeters", JsonBound::Positive);
   hull.turnRateDegreesPerSecond = _reader.Number("turnRateDegreesPerSecond", JsonBound::Positive);
+  if (_reader.Optional("commandPoints") != nullptr)
+    hull.commandPoints = _reader.Integer("commandPoints", 1);
   return hull;
 }
 
@@ -223,12 +225,13 @@ void ReadLabLevel(ObjectReader& _reader, const Outpost::StructureTuning& _struct
     _level.researchSlots = _reader.Integer("researchSlots", 2);
 }
 
-// A Command Station's cap on nodes and its Defence guns, at level 1 or at one of its levels (Phase 3 design §7): each
-// optional, and neither another kind's.
-void ReadStationNumbers(ObjectReader& _reader, const Outpost::StructureTuning& _structure, std::int32_t& _nodes, std::int32_t& _guns)
+// A Command Station's cap on nodes, its Defence guns (Phase 3 design §7) and its fleet cap (Phase 4 design §5), at level 1
+// or at one of its levels: each optional, and none another kind's.
+void ReadStationNumbers(ObjectReader& _reader, const Outpost::StructureTuning& _structure, std::int32_t& _nodes, std::int32_t& _guns,
+                        std::int32_t& _commandPoints)
 {
   const bool station = _structure.kind == Outpost::StructureKind::CommandStation;
-  for (const std::string_view name : {"nodes", "guns"})
+  for (const std::string_view name : {"nodes", "guns", "commandPoints"})
   {
     if (!station && _reader.Optional(name) != nullptr)
       Neuron::JsonFail(_reader.PathOf(name), std::format("are a Command Station's, not a {}'s", _structure.name));
@@ -239,6 +242,8 @@ void ReadStationNumbers(ObjectReader& _reader, const Outpost::StructureTuning& _
     _nodes = _reader.Integer("nodes", 1);
   if (_reader.Optional("guns") != nullptr)
     _guns = _reader.Integer("guns", 1);
+  if (_reader.Optional("commandPoints") != nullptr)
+    _commandPoints = _reader.Integer("commandPoints", 1);
 }
 
 Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
@@ -287,12 +292,13 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
       structure.levels.push_back({.cost = level.Integer("cost", 0), .buildSeconds = level.Number("buildSeconds", JsonBound::Positive)});
       structure.levels.back().hulls = ReadHulls(level, structure);
       ReadLabLevel(level, structure, structure.levels.back());
-      ReadStationNumbers(level, structure, structure.levels.back().nodes, structure.levels.back().guns);
+      ReadStationNumbers(level, structure, structure.levels.back().nodes, structure.levels.back().guns,
+                         structure.levels.back().commandPoints);
       level.Finish();
     }
   }
   structure.hulls = ReadHulls(_reader, structure);
-  ReadStationNumbers(_reader, structure, structure.nodes, structure.guns);
+  ReadStationNumbers(_reader, structure, structure.nodes, structure.guns, structure.commandPoints);
   return structure;
 }
 
@@ -647,6 +653,17 @@ std::int32_t Outpost::NodeCap(const Tuning& _tuning, std::int32_t _level) noexce
   for (size_t level = 0; level < station->levels.size() && std::cmp_less(level + 1, _level); ++level)
     nodes = std::max(nodes, station->levels[level].nodes);
   return nodes;
+}
+
+std::int32_t Outpost::FleetCap(const Tuning& _tuning, std::int32_t _level) noexcept
+{
+  const auto station = std::ranges::find(_tuning.structures, StructureKind::CommandStation, &StructureTuning::kind);
+  if (station == _tuning.structures.end())
+    return 0;
+  std::int32_t points = station->commandPoints;
+  for (size_t level = 0; level < station->levels.size() && std::cmp_less(level + 1, _level); ++level)
+    points = std::max(points, station->levels[level].commandPoints);
+  return points;
 }
 
 std::int32_t Outpost::StationGuns(const Tuning& _tuning, StructureKind _kind, std::int32_t _level) noexcept

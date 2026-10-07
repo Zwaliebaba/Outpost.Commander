@@ -142,6 +142,9 @@ private:
   // research order reaches a tier the Lab has not opened (§6), paying from _ore. Each says whether one waits for Ore.
   [[nodiscard]] bool UpgradeShipyards(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
   [[nodiscard]] bool UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
+  // Upgrades its Command Station when the fleet cap would hold back its Shipyards' next round of warships (Phase 4 design
+  // §12), paying from _ore, unless the station's next level is already ordered. Says whether it waits for Ore.
+  [[nodiscard]] bool UpgradeStationForFleet(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
   // Its Command Station, when it can be upgraded now; nullptr otherwise. Build upgrades it in place of a Relay its cap holds
   // back (§7).
   [[nodiscard]] const EntityView* UpgradableStation(const Snapshot& _snapshot) const;

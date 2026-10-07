@@ -65,6 +65,8 @@ struct HullTuning
   double footprintRadiusMeters = 0.0;
   // How fast the hull turns before its drive's factor (design §7); final, like the radius (owner, 2026-10-01).
   double turnRateDegreesPerSecond = 0.0;
+  // What a warship of this hull takes of its player's fleet cap (Phase 4 design §5); 0 when the data sets none.
+  std::int32_t commandPoints = 0;
 };
 
 struct DriveTuning
@@ -143,9 +145,11 @@ struct StructureLevelTuning
   std::vector<ResearchTopicId> prerequisites;
   std::int32_t researchSlots = 0;
   // A Command Station's (Phase 3 design §7): the nodes its player may hold from this level on, home included, and the
-  // Defence guns it carries; 0 where the level does not change them.
+  // Defence guns it carries; 0 where the level does not change them. And the command points its player's warships may
+  // take from this level on (Phase 4 design §5), 0 where the level does not change them.
   std::int32_t nodes = 0;
   std::int32_t guns = 0;
+  std::int32_t commandPoints = 0;
 };
 
 // The most levels a structure has: the owner's models have five (ADR-045).
@@ -171,9 +175,11 @@ struct StructureTuning
   // (Phase 3 design §5).
   std::vector<HullId> hulls;
   // A Command Station's at level 1 (Phase 3 design §7): the nodes its player may hold, home included, 0 for no cap; and
-  // the Defence guns it carries, 1 when it names none.
+  // the Defence guns it carries, 1 when it names none. And the command points its player's warships may take, 0 for no
+  // cap (Phase 4 design §5).
   std::int32_t nodes = 0;
   std::int32_t guns = 0;
+  std::int32_t commandPoints = 0;
 
   // The highest level it reaches.
   [[nodiscard]] std::int32_t TopLevel() const noexcept
@@ -282,6 +288,10 @@ struct Tuning
 // The nodes a player whose Command Station is at _level may hold, home included (Phase 3 design §7, gate K4); level 1's
 // for a player without a station. Zero when the data sets no cap.
 [[nodiscard]] std::int32_t NodeCap(const Tuning& _tuning, std::int32_t _level) noexcept;
+
+// The command points the warships of a player whose Command Station is at _level may take (Phase 4 design §5, gate L2);
+// level 1's for a player without a station. Zero when the data sets no cap.
+[[nodiscard]] std::int32_t FleetCap(const Tuning& _tuning, std::int32_t _level) noexcept;
 
 // The Defence guns a structure of _kind carries at _level (Phase 3 design §7, gate K6): a Command Station's from its
 // levels, and one for any other armed structure.

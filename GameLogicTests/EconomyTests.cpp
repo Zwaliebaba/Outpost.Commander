@@ -69,15 +69,15 @@ public:
     MatchArena arena;
     const std::int64_t start = arena.World().OreHundredths(BLUE);
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
-    arena.Run(1);
-    Assert::AreEqual(start + 25, arena.World().OreHundredths(BLUE), L"a twentieth of 5 Ore");
-    arena.Run(19);
-    Assert::AreEqual(start + 500, arena.World().OreHundredths(BLUE));
+    arena.Run(2);
+    Assert::AreEqual(start + 35, arena.World().OreHundredths(BLUE), L"a tenth of 3.5 Ore");
+    arena.Run(18);
+    Assert::AreEqual(start + 350, arena.World().OreHundredths(BLUE));
 
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::CONTESTED_ASTEROID);
     arena.Run(20);
-    Assert::AreEqual(start + 500 + 1300, arena.World().OreHundredths(BLUE), L"5 and 8 Ore a second");
-    Assert::AreEqual(1300, arena.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
+    Assert::AreEqual(start + 350 + 900, arena.World().OreHundredths(BLUE), L"3.5 and 5.5 Ore a second");
+    Assert::AreEqual(900, arena.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
     Assert::AreEqual(0, arena.World().BuildSnapshot(RED).oreIncomeHundredthsPerSecond);
   }
 
@@ -85,23 +85,23 @@ public:
   // trickle, a fifth of its rate, for the rest of the match. Its asteroid's reserve is in the snapshot, the rig's too.
   TEST_METHOD(AnAsteroidRunsDryToATrickle)
   {
-    // 50 Ore: ten seconds of a home rig.
-    MatchArena arena(50);
+    // 35 Ore: ten seconds of a home rig.
+    MatchArena arena(35);
     const std::int64_t start = arena.World().OreHundredths(BLUE);
     const Outpost::EntityId rig = arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
-    Assert::AreEqual(std::int64_t{5000}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
+    Assert::AreEqual(std::int64_t{3500}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
     arena.Run(100);
-    Assert::AreEqual(std::int64_t{2500}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
+    Assert::AreEqual(std::int64_t{1750}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
     arena.Run(100);
     Assert::AreEqual(std::int64_t{0}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
-    Assert::AreEqual(start + 5000, arena.World().OreHundredths(BLUE), L"all 50 Ore");
+    Assert::AreEqual(start + 3500, arena.World().OreHundredths(BLUE), L"all 35 Ore");
 
     const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
-    Assert::AreEqual(100, snapshot.oreIncomeHundredthsPerSecond, L"a fifth of 5 Ore a second");
+    Assert::AreEqual(70, snapshot.oreIncomeHundredthsPerSecond, L"a fifth of 3.5 Ore a second");
     const auto rigView = std::ranges::find(snapshot.entities, rig, &Outpost::EntityView::id);
     Assert::AreEqual(std::int64_t{0}, rigView->oreReserveHundredths.value_or(-1));
     arena.Run(20);
-    Assert::AreEqual(start + 5100, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start + 3570, arena.World().OreHundredths(BLUE));
     Assert::AreEqual(std::int64_t{0}, ReserveAt(arena, MatchArena::HOME_ASTEROID), L"a trickle draws nothing");
 
     // An asteroid the map gave no reserve never runs out.
@@ -109,7 +109,7 @@ public:
     (void)endless.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     endless.Run(400);
     Assert::IsFalse(AsteroidAt(endless, MatchArena::HOME_ASTEROID).oreReserveHundredths.has_value());
-    Assert::AreEqual(500, endless.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
+    Assert::AreEqual(350, endless.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
   }
 
   // Phase 1 design §8: Improved Extraction draws the reserve as fast as it earns, so the reserve lasts a fifth less, and
@@ -129,16 +129,16 @@ public:
       return before - ReserveAt(arena, _asteroid);
     };
 
-    Assert::AreEqual(std::int64_t{500}, drain(MatchArena::HOME_ASTEROID));
+    Assert::AreEqual(std::int64_t{350}, drain(MatchArena::HOME_ASTEROID));
     ResearchAll(arena, BLUE, lab, {IMPROVED_EXTRACTION});
-    Assert::AreEqual(std::int64_t{625}, drain(MatchArena::HOME_ASTEROID), L"6.25 Ore a second");
-    Assert::AreEqual(std::int64_t{800}, drain(MatchArena::CONTESTED_ASTEROID), L"Red's rig, without research");
+    Assert::AreEqual(std::int64_t{438}, drain(MatchArena::HOME_ASTEROID), L"4.38 Ore a second");
+    Assert::AreEqual(std::int64_t{550}, drain(MatchArena::CONTESTED_ASTEROID), L"Red's rig, without research");
 
     ResearchAll(arena, BLUE, lab, {HULL_PLATING, DEEP_CORE_SURVEY});
     const std::int64_t ore = arena.World().OreHundredths(BLUE);
-    Assert::AreEqual(std::int64_t{481}, drain(MatchArena::HOME_ASTEROID), L"6.25 Ore a second over 1.3");
-    Assert::AreEqual(ore + 625, arena.World().OreHundredths(BLUE), L"the income is the same");
-    Assert::AreEqual(std::int64_t{800}, drain(MatchArena::CONTESTED_ASTEROID), L"only for the player who researched it");
+    Assert::AreEqual(std::int64_t{337}, drain(MatchArena::HOME_ASTEROID), L"4.38 Ore a second over 1.3");
+    Assert::AreEqual(ore + 438, arena.World().OreHundredths(BLUE), L"the income is the same");
+    Assert::AreEqual(std::int64_t{550}, drain(MatchArena::CONTESTED_ASTEROID), L"only for the player who researched it");
   }
 
   // Phase 1 design §8, ADR-024: under fog of war a player sees the Ore left in an asteroid it can see, and remembers the

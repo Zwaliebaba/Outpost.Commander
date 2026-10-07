@@ -102,6 +102,17 @@ public:
     Assert::AreEqual(500.0, settings.attackLevelMeters);
   }
 
+  // Task 27.4: the fleet cap's play (Phase 4 design §12). Its main attack goes once its reserve fills 80% of the room the cap
+  // leaves it, at most a share of 1; the Easy AI waits for a full cap.
+  TEST_METHOD(LoadsTheFleetCapPlay)
+  {
+    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    Assert::AreEqual(0.8, settings.attackCapShare);
+    Assert::AreEqual(1.0, Outpost::LoadAiSettings(ReadRepositoryData("OpponentEasy.json")).attackCapShare);
+    ExpectLoadError(Replace("\"attackCapShare\": 0.8", "\"attackCapShare\": 0"), "attackCapShare");
+    ExpectLoadError(Replace("\"attackCapShare\": 0.8", "\"attackCapShare\": 1.5"), "attackCapShare");
+  }
+
   // ADR-065: the Easy and Hard AIs' files load, and differ from the Normal one where their difficulty says: Easy builds a
   // smaller economy, fewer Shipyards, never raids or claims beyond its rigs, reviews its answer less often and attacks later;
   // Hard keeps more Constructors, reviews its answer more often, raids with more ships, and claims at least as much.
