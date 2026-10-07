@@ -352,6 +352,7 @@ public:
     for (int layout = 0; layout < 6; ++layout)
     {
       std::vector<Outpost::Obstacle> obstacles;
+      obstacles.reserve(MAP_OBSTACLES + STRUCTURES + STEPS);
       for (std::size_t i = 0; i < MAP_OBSTACLES; ++i)
         obstacles.push_back({.center = {meters(-2400.0f, 2400.0f), meters(-2400.0f, 2400.0f)}, .radiusMeters = meters(40.0f, 170.0f)});
       // Every other layout packs its structures into a base, where a corner taken away is near many others.
