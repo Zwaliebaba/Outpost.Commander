@@ -97,8 +97,10 @@ struct ModelCatalog
 {
   std::vector<ModelSet> sets;
   std::vector<PlayerModels> players;
-  // The set the pirates are drawn with (ADR-073); none when the data names none, and they are not drawn.
+  // The set the pirates are drawn with (ADR-073), and the set the derelicts are, each by its hull's model (ADR-074); none
+  // when the data names none, and they are not drawn.
   std::string pirates;
+  std::string derelicts;
   std::vector<HullModel> hulls;
   // One per kind of structure, and the model a Constructor is drawn with; the same names are in every player's set.
   std::vector<StructureModel> structures;
@@ -115,6 +117,8 @@ struct ModelCatalog
   [[nodiscard]] const ModelSet& Set(std::string_view _name) const;
   // The set a player's ships are drawn with, or the pirates' for PIRATES; nullptr for a player the data does not name.
   [[nodiscard]] const ModelSet* SetForPlayer(PlayerId _player) const noexcept;
+  // The set derelicts are drawn with, or nullptr when the data names none.
+  [[nodiscard]] const ModelSet* SetForDerelicts() const noexcept;
   // The model a hull is drawn with, or nullptr for a hull the data does not name.
   [[nodiscard]] const std::string* ModelForHull(HullId _hull) const noexcept;
   // How a kind of structure is drawn, or nullptr for one the data does not name.
@@ -134,7 +138,8 @@ struct ModelCatalog
 // names within a set, that a set that borrows another's meshes names one that has meshes of its own, that each player,
 // hull, drive, weapon's shot and kind of structure is listed once and every kind is, and that every hull's, structure's
 // and the Constructor's model is in every player's set and the pirates' set. A hull's "bank" and the "constructorBank"
-// are optional; without one, those ships fly level. The pirates' set is optional. A model's "levels" is optional, from 1
+// are optional; without one, those ships fly level. The pirates' set and the derelicts' are optional, and the derelicts'
+// has every hull's model. A model's "levels" is optional, from 1
 // to MAXIMUM_MODEL_LEVELS; without it, the model does not grow.
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);
 

@@ -31,6 +31,16 @@ std::string ReadDataFile(std::string_view _fileName)
   return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
 
+// The research topics a derelict may name: every one of the tuning data's, in its order (ADR-074).
+std::vector<Outpost::ResearchTopicId> TopicsOf(const Outpost::Tuning& _tuning)
+{
+  std::vector<Outpost::ResearchTopicId> topics;
+  topics.reserve(_tuning.research.size());
+  for (const Outpost::ResearchTopicTuning& topic : _tuning.research)
+    topics.push_back(topic.id);
+  return topics;
+}
+
 // Match setup on a server just made: the map is placed, and now every player's starting base (ADR-016), and the load a
 // measurement run asks for.
 std::unique_ptr<Outpost::Server> SetUpMatch(std::unique_ptr<Outpost::InProcessServer> _server, const Outpost::ServerDesc& _desc)
@@ -66,7 +76,7 @@ std::vector<Outpost::Snapshot> Outpost::LoopbackTransport::Receive()
 
 Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc)
   : m_tuning(std::move(_tuning)),
-    m_map(PlaceContent(std::move(_map), _desc.seed)),
+    m_map(PlaceContent(std::move(_map), _desc.seed, TopicsOf(m_tuning))),
     m_tickHost(static_cast<std::uint32_t>(m_tuning.rules.tickHz), MAX_TICKS_PER_ADVANCE),
     m_simulation(_desc.seed, static_cast<std::uint32_t>(m_tuning.rules.tickHz))
 {
@@ -91,10 +101,13 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
     m_simulation.AddPlayer(id, m_tuning.rules.startingOre);
     m_simulation.SaveStartingDesigns(id, m_tuning);
   }
-  // The pirates' outposts the seed placed, after the players, so that each player's designs are numbered as before. A
+  // The pirates' outposts and the derelicts the seed placed, after the players, so that each player's designs are numbered as before. A
   // measurement run is not a match, and its scenes stay as they were measured.
   if (!_desc.measurementLoad && !_desc.stressLoad)
+  {
     m_simulation.PlacePirates(m_map);
+    m_simulation.PlaceDerelicts(m_map);
+  }
   // Last, since a client may connect as soon as it listens.
   if (_desc.quic)
   {

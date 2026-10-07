@@ -674,9 +674,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     m_controls.Update(input, m_knownEntities, m_view.Newest().player, m_camera, m_viewport);
     const DirectX::XMFLOAT2 cursor{static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels)};
-    m_hovered = m_hudLayout.Covers(cursor.x, cursor.y) ? std::nullopt
-                                                       : PickEntity(m_entities, m_camera, m_viewport, cursor, [](const EntityView& _entity)
-                                                                    { return _entity.kind == EntityKind::Structure; });
+    m_hovered = m_hudLayout.Covers(cursor.x, cursor.y)
+                  ? std::nullopt
+                  : PickEntity(m_entities, m_camera, m_viewport, cursor, [](const EntityView& _entity)
+                               { return _entity.kind == EntityKind::Structure || _entity.kind == EntityKind::Derelict; });
     const std::vector<PlanePosition> view = ViewOnGround();
     // Selecting a Shipyard while the designer is open aims it there, and a producer while the production window is open
     // shows it (Phase 1 design §11, §12).
@@ -696,6 +697,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     Hud::Content content =
       Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr, hovered);
     content.fog = m_fog.CellsPerSide() > 0;
+    // What a derelict under the pointer holds (Phase 4 design §13), unless a placement's hint says more.
+    if (const auto derelict = std::ranges::find(m_entities, m_hovered.value_or(EntityId{}), &EntityView::id);
+        content.hint.empty() && derelict != m_entities.end() && derelict->kind == EntityKind::Derelict)
+      content.hint = Hud::DescribeDerelict(m_view.Newest(), *derelict);
     for (const Alerts::Alert& alert : m_alerts.Shown(m_view.Newest().tick, m_ticksPerSecond))
       content.alerts.emplace_back(alert.text, alert.position);
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
@@ -1383,6 +1388,13 @@ void Outpost::GameClient::QueueEntity(const EntityView& _entity)
     }
     break;
   }
+  case EntityKind::Derelict:
+  {
+    // A wreck is drawn with its hull's model across its radius, in the derelicts' gray (ADR-074).
+    if (const std::optional<PlacedModel> placed = PlaceModel(_entity))
+      QueueModel(placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color, FILL_SHADE, placed->level);
+    break;
+  }
   case EntityKind::Structure:
   default:
     QueueStructure(_entity);
@@ -1462,6 +1474,18 @@ void Outpost::GameClient::DrawShards(ID3D12GraphicsCommandList* _commandList)
 
 std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(const EntityView& _entity) const
 {
+  if (_entity.kind == EntityKind::Derelict)
+  {
+    const ModelSet* wrecks = m_catalog.SetForDerelicts();
+    const std::string* model = wrecks != nullptr ? m_catalog.ModelForHull(_entity.hull) : nullptr;
+    if (model == nullptr)
+      return std::nullopt;
+    return PlacedModel{.set = wrecks,
+                       .model = model,
+                       .pose = {.position = _entity.position,
+                                .headingRadians = _entity.headingRadians,
+                                .scale = 2.0f * _entity.radiusMeters / wrecks->Model(*model).lengthMeters}};
+  }
   const ModelSet* set = m_catalog.SetForPlayer(_entity.owner);
   if (set == nullptr)
     return std::nullopt;

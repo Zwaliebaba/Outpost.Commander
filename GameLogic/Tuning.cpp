@@ -159,6 +159,11 @@ Outpost::OutpostTuning ReadOutpost(ObjectReader& _reader)
   outpost.name = _reader.String("name");
   outpost.defensePlatforms = _reader.Integer("defensePlatforms", 0);
   outpost.ships = Neuron::ReadJsonList<Outpost::PirateShipsTuning>(_reader, "ships", ReadPirateShips);
+  ObjectReader wreck(_reader.Required("wreck"), _reader.PathOf("wreck"));
+  outpost.wreck = {.ore = wreck.Integer("ore", 1),
+                   .hull = wreck.Identifier<Outpost::HullId>("hull"),
+                   .radiusMeters = wreck.Number("radiusMeters", JsonBound::Positive)};
+  wreck.Finish();
   return outpost;
 }
 
@@ -622,6 +627,7 @@ void CheckPirates(const Outpost::Tuning& _tuning)
       CheckExists(_tuning.drives, ships.drive, std::format("{}.drive", shipsPath), "drive");
       CheckExists(_tuning.weapons, ships.weapon, std::format("{}.weapon", shipsPath), "weapon");
     }
+    CheckExists(_tuning.hulls, outposts[i].wreck.hull, std::format("{}.wreck.hull", path), "hull");
   }
 }
 
@@ -657,6 +663,15 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   {
     ObjectReader reader(*pirates, "pirates");
     tuning.pirates = ReadPirates(reader);
+    reader.Finish();
+  }
+  if (const JsonValue* salvage = root.Optional("salvage"))
+  {
+    ObjectReader reader(*salvage, "salvage");
+    tuning.salvage = Outpost::SalvageTuning{.workSeconds = reader.Number("workSeconds", JsonBound::Positive),
+                                            .recoveryPercent = reader.Integer("recoveryPercent", 0)};
+    if (tuning.salvage->recoveryPercent > 100)
+      Neuron::JsonFail(reader.PathOf("recoveryPercent"), std::format("is at most 100, found {}", tuning.salvage->recoveryPercent));
     reader.Finish();
   }
   root.Finish();

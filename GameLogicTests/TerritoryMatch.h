@@ -5,7 +5,7 @@
 namespace GameLogicTests
 {
 // A match on the repository's map and data, with both bases placed and fog of war, as the game plays it but for the
-// pirates, which a test asks for (Phase 2 design §4–§8): Blue's home in the southwest and Red's in the northeast. A
+// pirates and derelicts, which a test asks for (Phase 2 design §4–§8): Blue's home in the southwest and Red's in the northeast. A
 // warship is of the starting design Small+Ion+Mass Driver.
 class TerritoryMatch
 {
@@ -13,20 +13,23 @@ public:
   static constexpr Outpost::PlayerId BLUE{1};
   static constexpr Outpost::PlayerId RED{2};
   static constexpr std::uint32_t TICKS_PER_SECOND = 20;
-  // With _pirates, the seed places the pirates' outposts as in a match (ADR-073); without, every sector is free, as the tests
-  // of the territory rules want it.
-  explicit TerritoryMatch(bool _pirates = false)
-    : m_map(MapFor(_pirates)),
+  // With _content, the seed places the pirates' outposts and the derelicts as in a match (ADR-073, ADR-074); without, every
+  // sector is free and empty, as the tests of the territory rules want it.
+  explicit TerritoryMatch(bool _content = false)
+    : m_map(MapFor(_content)),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = 3})
   {
     World().PlaceStartingBases(m_server.MapData());
   }
 
-  [[nodiscard]] static Outpost::Map MapFor(bool _pirates)
+  [[nodiscard]] static Outpost::Map MapFor(bool _content)
   {
     Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    if (!_pirates)
+    if (!_content)
+    {
       map.outpostRules.clear();
+      map.derelictRules.clear();
+    }
     return map;
   }
 

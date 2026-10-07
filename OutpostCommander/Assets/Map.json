@@ -161,5 +161,12 @@
     { "outpost": "stronghold", "kind": "rich", "count": 1 },
     { "outpost": "stronghold", "kind": "center", "count": 1 }
   ],
+  "derelicts": [
+    { "kind": "flank", "count": 1, "ore": 300, "hull": 1, "radiusMeters": 20 },
+    { "kind": "near", "count": 2, "ore": 450, "hull": 2, "radiusMeters": 25 },
+    { "kind": "contested", "count": 2, "ore": 600, "hull": 3, "radiusMeters": 30 },
+    { "kind": "between", "count": 1, "ore": 750, "hull": 3, "radiusMeters": 30 }
+  ],
+  "derelictResearchPercent": 33,
   "placement": { "borderMeters": 250, "nodeClearanceMeters": 350, "oreSpacingMeters": 500 }
 }

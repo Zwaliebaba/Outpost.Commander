@@ -96,6 +96,33 @@ struct OutpostPlacement
   friend bool operator==(const OutpostPlacement&, const OutpostPlacement&) = default;
 };
 
+// Derelicts that the seed places in sectors of one kind (Phase 4 design §9, ADR-074): count pairs of sectors across the
+// center from each other, a sector that is its own mirror counting as a pair; each pays this Ore when salvaged, and is
+// drawn as a wreck of this hull, this radius.
+struct DerelictRule
+{
+  std::string kind;
+  std::int32_t count = 0;
+  std::int32_t ore = 0;
+  HullId hull;
+  float radiusMeters = 0.0f;
+
+  friend bool operator==(const DerelictRule&, const DerelictRule&) = default;
+};
+
+// A derelict the seed placed, or a cleared outpost left: where it lies, what it pays, the topic whose time it recovers if
+// any, and how it is drawn.
+struct DerelictPlacement
+{
+  PlanePosition position;
+  std::int32_t ore = 0;
+  ResearchTopicId topic;
+  HullId hull;
+  float radiusMeters = 0.0f;
+
+  friend bool operator==(const DerelictPlacement&, const DerelictPlacement&) = default;
+};
+
 // How far what the seed places keeps from its sector's borders, from the sector's node, and an ore asteroid's center from
 // another's, on top of the map's minimum gap between obstacles (ADR-072).
 struct PlacementRules
@@ -125,6 +152,12 @@ struct Map
   // outposts it placed, in the order drawn, each followed by its mirror's (ADR-072).
   std::vector<OutpostRule> outpostRules;
   std::vector<OutpostPlacement> outposts;
+  // The derelicts the seed places, by the sectors' kinds, which the file calls "derelicts", and the percentage of their
+  // pairs that also name a research topic; and once PlaceContent has, the derelicts it placed, each followed by its mirror
+  // (ADR-074).
+  std::vector<DerelictRule> derelictRules;
+  std::int32_t derelictResearchPercent = 0;
+  std::vector<DerelictPlacement> derelicts;
 };
 
 // Reads the text of OutpostCommander/Assets/Map.json. Throws Neuron::Exception on the first problem, naming where it is,
@@ -135,7 +168,8 @@ struct Map
 // other.
 // Its sector kinds are checked too: each named once, each sector's kind one of them, and the map's kinds point-symmetric,
 // the sector across the center from each being of the same kind, with an even count of each yield in a sector that is
-// its own mirror. Its outposts are of known kinds, and no kind has more of them than it has pairs of sectors.
+// its own mirror. Its outposts and derelicts are of known kinds, and no kind has more of either than it has pairs of
+// sectors.
 [[nodiscard]] Map LoadMap(std::string_view _json);
 
 // _map with the ore asteroids its sector kinds place, drawn from _seed (Phase 4 design §7, ADR-072). Each pair of sectors
@@ -145,6 +179,8 @@ struct Map
 // clearance from its node, the minimum gap from every obstacle and start, and the ore spacing from every ore asteroid. The
 // same map and seed place the same asteroids on the same build (ADR-009). Throws Neuron::Exception when a sector has no
 // room for what its kind places. Then it draws which sectors of each outpost's kind get it, a pair at a time, each sector at
-// most one outpost. A map without sector kinds comes back as it is.
-[[nodiscard]] Map PlaceContent(Map _map, std::uint64_t _seed);
+// most one outpost. Last it draws the derelicts likewise, each sector at most one, inside it as an asteroid is, and the
+// map's share of their pairs that name one of _topics, a topic drawn for each; with no topics, none names one. A map
+// without sector kinds comes back as it is.
+[[nodiscard]] Map PlaceContent(Map _map, std::uint64_t _seed, std::span<const ResearchTopicId> _topics = {});
 } // namespace Outpost

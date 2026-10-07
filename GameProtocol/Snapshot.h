@@ -13,7 +13,10 @@ enum class EntityKind : std::uint8_t
   // An ore asteroid: a Mining Rig can be built on it.
   Asteroid,
   // A non-mineable asteroid field: only an obstacle (design §4).
-  AsteroidField
+  AsteroidField,
+  // A wreck of the old fleet, which a Constructor salvages for Ore and research (Phase 4 design §9, ADR-074). It blocks no
+  // path, but no structure stands on it.
+  Derelict
 };
 
 // What a ship is for. A warship is of a saved design; a Constructor is the one fixed design, which builds and repairs and
@@ -112,6 +115,11 @@ struct EntityView
   // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
   // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
   std::optional<std::int64_t> oreReserveHundredths;
+  // A derelict's: the Ore it pays, the topic whose time it recovers if any, and how far its salvage has come, in
+  // thousandths (ADR-074). Whoever sees it sees them, and remembers them under fog of war as a structure is remembered.
+  std::int32_t salvageOre = 0;
+  ResearchTopicId salvageTopic;
+  std::int32_t salvagePermille = 0;
 
   friend bool operator==(const EntityView&, const EntityView&) = default;
 };
@@ -192,6 +200,8 @@ struct ResearchTopicView
   WeaponId unlocksWeapon;
   // Its tier (Phase 1 design §6), which a level of the Research Lab opens (Phase 3 design §6).
   std::int32_t tier = 1;
+  // A derelict the player salvaged recovered part of its time, which the topic takes off when it starts (ADR-074).
+  bool recovered = false;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.

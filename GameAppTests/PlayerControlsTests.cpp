@@ -390,6 +390,38 @@ public:
     Assert::AreEqual(size_t{2}, Only<Outpost::MoveCommand>(commands)->ships.size(), L"a whole structure is a destination");
   }
 
+  // ADR-074: selected Constructors right-clicked on a derelict salvage it, and the warships with them go there; warships
+  // alone only go there.
+  TEST_METHOD(ConstructorsSalvageADerelict)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    driver.WorldView().push_back({.id = Outpost::EntityId{40},
+                                  .kind = Outpost::EntityKind::Derelict,
+                                  .hull = Outpost::HullId{2},
+                                  .position = {.xMeters = 150.0f, .zMeters = -150.0f},
+                                  .radiusMeters = 25.0f,
+                                  .salvageOre = 450});
+    const Outpost::EntityView derelict = driver.WorldView().back();
+    driver.Click(driver.WorldView()[5]);
+    driver.Click(driver.WorldView()[0], VK_LBUTTON, true);
+    (void)driver.Controls().TakeCommands();
+    driver.Click(derelict, VK_RBUTTON);
+    std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{2}, commands.size());
+    const auto* salvage = Only<Outpost::SalvageCommand>(commands);
+    Assert::IsTrue(salvage->derelict == Outpost::EntityId{40});
+    Assert::IsTrue(salvage->constructors == std::vector{Outpost::EntityId{CONSTRUCTOR}});
+    Assert::IsTrue(Only<Outpost::MoveCommand>(commands, 1)->ships == std::vector{Outpost::EntityId{1}});
+
+    driver.Click(driver.WorldView()[0]);
+    (void)driver.Controls().TakeCommands();
+    driver.Click(derelict, VK_RBUTTON);
+    commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{1}, commands.size());
+    Assert::IsNotNull(Only<Outpost::MoveCommand>(commands), L"a warship is no salvager");
+  }
+
   TEST_METHOD(RightClickAttacksAnEnemyStructure)
   {
     Driver driver;

@@ -66,7 +66,7 @@ What the design leaves open: how the neutral owner is represented, how an outpos
     - On the minimap their ships and structures are violet, and so are the wash and the outline of a guarded sector. A guarded sector counts for neither side.
     - An alert names pirate ships as pirates.
     - The match log leaves out every shot by or at a pirate, so that its contacts and engagements stay the players' until milestone 34 counts the pirates.
-11. **A cleared outpost leaves nothing yet.** The derelict comes with milestone 31 (owner, 2026-10-07).
+11. **A cleared outpost leaves a derelict** where its last Defence Platform fell: 600 Ore for a camp and 1,200 for a stronghold, no topic. A camp's covers its node until it is salvaged ([ADR-074](ADR-074-salvage.md), which owns the detail).
 
 ## Consequences
 

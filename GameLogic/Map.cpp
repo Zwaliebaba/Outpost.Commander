@@ -71,6 +71,15 @@ Outpost::OutpostRule ReadOutpostRule(JsonObjectReader& _reader)
   return {.outpost = _reader.String("outpost"), .kind = _reader.String("kind"), .count = _reader.Integer("count", 1)};
 }
 
+Outpost::DerelictRule ReadDerelictRule(JsonObjectReader& _reader)
+{
+  return {.kind = _reader.String("kind"),
+          .count = _reader.Integer("count", 1),
+          .ore = _reader.Integer("ore", 1),
+          .hull = _reader.Identifier<Outpost::HullId>("hull"),
+          .radiusMeters = static_cast<float>(_reader.Number("radiusMeters", JsonBound::Positive))};
+}
+
 Outpost::PlacementRules ReadPlacementRules(JsonObjectReader& _reader)
 {
   return {.borderMeters = static_cast<float>(_reader.Number("borderMeters", JsonBound::NotNegative)),
@@ -271,6 +280,26 @@ void CheckOutposts(const Outpost::Map& _map)
   }
 }
 
+void CheckDerelicts(const Outpost::Map& _map)
+{
+  for (size_t i = 0; i < _map.derelictRules.size(); ++i)
+  {
+    const Outpost::DerelictRule& rule = _map.derelictRules[i];
+    const std::string path = Neuron::JsonElementPath("derelicts", i);
+    if (std::ranges::find(_map.sectorKinds, rule.kind, &Outpost::SectorKind::name) == _map.sectorKinds.end())
+      Neuron::JsonFail(path + ".kind", std::format("\"{}\" is not one of the sector kinds", rule.kind));
+    std::int32_t wanted = 0;
+    for (const Outpost::DerelictRule& other : _map.derelictRules)
+      wanted += other.kind == rule.kind ? other.count : 0;
+    const size_t pairs = DrawingSectors(_map, rule.kind).size();
+    if (std::cmp_greater(wanted, pairs))
+      Neuron::JsonFail(path + ".count",
+                       std::format("asks for {} derelicts in \"{}\" sectors, which have room for {}", wanted, rule.kind, pairs));
+  }
+  if (_map.derelictResearchPercent > 100)
+    Neuron::JsonFail("derelictResearchPercent", std::format("is at most 100, found {}", _map.derelictResearchPercent));
+}
+
 Outpost::Map ReadMap(std::string_view _json)
 {
   const Neuron::JsonValue document = Neuron::ParseJson(_json);
@@ -292,6 +321,11 @@ Outpost::Map ReadMap(std::string_view _json)
     placement.Finish();
     if (root.Optional("outposts") != nullptr)
       map.outpostRules = Neuron::ReadJsonList<Outpost::OutpostRule>(root, "outposts", ReadOutpostRule);
+    if (root.Optional("derelicts") != nullptr)
+    {
+      map.derelictRules = Neuron::ReadJsonList<Outpost::DerelictRule>(root, "derelicts", ReadDerelictRule);
+      map.derelictResearchPercent = root.Integer("derelictResearchPercent", 0);
+    }
   }
   root.Finish();
 
@@ -301,6 +335,7 @@ Outpost::Map ReadMap(std::string_view _json)
   CheckSectors(map);
   CheckSectorKinds(map);
   CheckOutposts(map);
+  CheckDerelicts(map);
   return map;
 }
 } // namespace
@@ -316,7 +351,7 @@ Outpost::Map Outpost::LoadMap(std::string_view _json)
     throw Neuron::Exception(std::format("Map: {}", error.what()));
   }
 }
-Outpost::Map Outpost::PlaceContent(Map _map, std::uint64_t _seed)
+Outpost::Map Outpost::PlaceContent(Map _map, std::uint64_t _seed, std::span<const ResearchTopicId> _topics)
 {
   if (_map.sectorKinds.empty())
     return _map;
@@ -401,6 +436,73 @@ Outpost::Map Outpost::PlaceContent(Map _map, std::uint64_t _seed)
       _map.outposts.push_back({.sector = sector.id, .outpost = rule.outpost});
       if (const SectorPlacement& mirror = *MirrorOf(_map, sector); mirror.id != sector.id)
         _map.outposts.push_back({.sector = mirror.id, .outpost = rule.outpost});
+    }
+  }
+
+  // Last the derelicts, so that a seed places the same asteroids and outposts whatever derelicts the map has (ADR-074).
+  // Each rule draws its pairs as the outposts' do, and each derelict its place as an asteroid does: inside its sector by
+  // the border and its radius, clear of the node, and the minimum gap from every obstacle, start and other derelict, it
+  // and its mirror. Then the map's share of the pairs, drawn, each name a topic, drawn, both of the pair the same one.
+  std::vector<std::int32_t> salvaged;
+  const auto isClearOfAll = [&](PlanePosition _position, float _radiusMeters)
+  {
+    if (EdgeClearance(_map, _position) - _radiusMeters < gap)
+      return false;
+    const auto apart = [&](PlanePosition _other, float _otherRadius)
+    { return Distance(_position, _other) - _radiusMeters - _otherRadius >= gap; };
+    return std::ranges::all_of(_map.oreAsteroids,
+                               [&](const OreAsteroidPlacement& _asteroid) { return apart(_asteroid.position, _asteroid.radiusMeters); }) &&
+           std::ranges::all_of(_map.asteroidFields,
+                               [&](const AsteroidFieldPlacement& _field) { return apart(_field.position, _field.radiusMeters); }) &&
+           std::ranges::all_of(_map.derelicts,
+                               [&](const DerelictPlacement& _derelict) { return apart(_derelict.position, _derelict.radiusMeters); }) &&
+           std::ranges::all_of(_map.starts, [&](PlanePosition _start) { return apart(_start, 0.0f); });
+  };
+  std::vector<size_t> pairs;
+  for (const DerelictRule& rule : _map.derelictRules)
+  {
+    std::vector<const SectorPlacement*> free = DrawingSectors(_map, rule.kind);
+    std::erase_if(free, [&salvaged](const SectorPlacement* _sector) { return std::ranges::find(salvaged, _sector->id) != salvaged.end(); });
+    if (std::cmp_less(free.size(), rule.count))
+      throw Neuron::Exception(std::format("Map: too few \"{}\" sectors are left for the derelicts it places", rule.kind));
+    for (std::int32_t draw = 0; draw < rule.count; ++draw)
+    {
+      const auto index = static_cast<std::ptrdiff_t>(random.NextBelow(static_cast<std::uint32_t>(free.size())));
+      const SectorPlacement& sector = *free[static_cast<size_t>(index)];
+      free.erase(free.begin() + index);
+      salvaged.push_back(sector.id);
+      const float inset = rules.borderMeters + rule.radiusMeters;
+      const float widthMeters = sector.maxXMeters - sector.minXMeters - (2.0f * inset);
+      const float depthMeters = sector.maxZMeters - sector.minZMeters - (2.0f * inset);
+      bool placed = false;
+      for (int attempt = 0; attempt < PLACEMENT_ATTEMPTS && !placed && widthMeters > 0.0f && depthMeters > 0.0f; ++attempt)
+      {
+        const PlanePosition position{.xMeters = sector.minXMeters + inset + (static_cast<float>(random.NextUnit()) * widthMeters),
+                                     .zMeters = sector.minZMeters + inset + (static_cast<float>(random.NextUnit()) * depthMeters)};
+        const PlanePosition across{.xMeters = -position.xMeters, .zMeters = -position.zMeters};
+        if (Distance(position, sector.node) < rules.nodeClearanceMeters || !isClearOfAll(position, rule.radiusMeters) ||
+            Distance(position, across) - (2.0f * rule.radiusMeters) < gap || !isClearOfAll(across, rule.radiusMeters))
+          continue;
+        pairs.push_back(_map.derelicts.size());
+        for (const PlanePosition at : {position, across})
+          _map.derelicts.push_back({.position = at, .ore = rule.ore, .hull = rule.hull, .radiusMeters = rule.radiusMeters});
+        placed = true;
+      }
+      if (!placed)
+        throw Neuron::Exception(std::format("Map: sector {} has no room for its derelict", sector.name));
+    }
+  }
+  if (!_topics.empty())
+  {
+    const auto researching = static_cast<size_t>(std::lround(static_cast<double>(pairs.size()) * _map.derelictResearchPercent / 100.0));
+    for (size_t draw = 0; draw < researching; ++draw)
+    {
+      const auto index = static_cast<std::ptrdiff_t>(random.NextBelow(static_cast<std::uint32_t>(pairs.size())));
+      const size_t first = pairs[static_cast<size_t>(index)];
+      pairs.erase(pairs.begin() + index);
+      const ResearchTopicId topic = _topics[random.NextBelow(static_cast<std::uint32_t>(_topics.size()))];
+      _map.derelicts[first].topic = topic;
+      _map.derelicts[first + 1].topic = topic;
     }
   }
   return _map;
