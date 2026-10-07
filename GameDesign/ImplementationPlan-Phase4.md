@@ -40,9 +40,9 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | done |
 | 30.2 | The client draws pirates | 30.1 | L7 | merged; awaiting the owner's run |
 | 31.1 | Derelicts and salvage | 29.1 | L8 | built, in milestone 31's PR |
-| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | built, in milestone 31's PR; awaiting CI and the owner's run |
-| 32.1 | The Repair Bay and retreat, on the server | — | L9 | todo |
-| 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | todo |
+| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | built, in milestone 31's PR; awaiting the owner's run |
+| 32.1 | The Repair Bay and retreat, on the server | — | L9 | built, in milestone 32's PR |
+| 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | built, in milestone 32's PR; awaiting CI and the owner's run |
 | 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | — | todo |
 | 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | todo |
 | 34.2 | U1–U8 | 33.1, 34.1 | — | todo |
@@ -253,10 +253,49 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
   - `PlacementTests` and `ModelCatalogTests` ran in the container against stand-ins.
   - `PlayerControls`, `Hud` and `GameClient` need the window's headers, so CI is their first build.
 
-## Milestones 32 to 34
+## Milestone 32 — The Repair Bay and retreat
+
+**Asked before 32.1** (owner, 2026-10-07):
+
+- The Command Station and the Shipyards repair a ship that retreats to them as a Repair Bay does.
+- Any order the player gives a retreating ship ends its retreat, and the next hit below its threshold starts it again.
+- Every ship retreats and is repaired, Constructors included.
+- Until milestone 33 the AI's ships retreat at the default, a quarter, and the AI builds no Repair Bay.
+
+### 32.1 — The Repair Bay and retreat, on the server
+
+- **Gate:** L9, decided; the base's repair, orders during a retreat, Constructors and the AI by the owner on 2026-10-07.
+- **Scope:**
+  - The Repair Bay, built only in a held sector.
+  - `Tuning.json`'s repair at a base: four ships within 150 m, 3% a second.
+  - A retreat threshold on each design and ship, 25% by default, and an order that sets it.
+  - A hit below the threshold sends a ship to the nearest Repair Bay, else the Command Station, else a Shipyard; once whole it waits, or its standing order takes it back.
+  - The AI leaving a retreating ship alone.
+- **ADR:** a new one, ADR-075: repair and retreat. ADR-016, ADR-041, ADR-056, ADR-059 and ADR-073 edited in place.
+- **Acceptance:** `RetreatTests` (where a ship goes, its repair, never and a quarter, an order ending a retreat and a hit starting it again, a standing order waiting, four ships at a time, a design's retreat); `TerritoryTests.AShipyardNeedsAHeldSector` for the Bay; `TuningTests` and `WireFormatTests` for the data and the protocol.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
+- **As built:** recorded in [ADR-075](../Design/ADR/ADR-075-repair-and-retreat.md) and design §2.
+  - Three tests of a fight to the end now set their ships never to retreat: the camp's balance, a camp attacking an intruder, and a group holding its sector.
+  - MEASURED_PLAN
+
+### 32.2 — The client sets retreat and draws the Repair Bay
+
+- **Gate:** L9.
+- **Scope:**
+  - The Repair Bay in the build menu, its ghost green only in a held sector, drawn with the Shipyard's model, darker.
+  - The selection panel's retreat button, and a line for the ships retreating.
+  - The designer's retreat.
+  - The alerts §13 adds: a ship retreating, and pirates cleared, which milestone 30 left out.
+- **ADR:** ADR-075; ADR-056 and ADR-059 edited in place.
+- **Acceptance:** `HudTests.SetsTheSelectionsRetreat` and the designer's retreat in `HudTests.DescribesTheDesignerAfterTheMockup`; `DesignerTests.SetsTheDesignsRetreat`; `AlertsTests.AlertsToARetreatAndPiratesCleared`; `PlayerControlsTests.SetsTheSelectionsRetreatFromTheHud`; `PlacementTests.AShipyardNeedsAHeldSector` for the Bay; the Bay's model in `ModelCatalogTests`.
+- **Verify:** CI; **owner run**: a Repair Bay built at the front, a ship hit below a quarter going to it and coming back whole, the selection's retreat stepped, and a design saved with a retreat.
+- **As built:**
+  - `DesignerTests`, `AlertsTests`, `PlacementTests` and `ModelCatalogTests` ran in the container against stand-ins.
+  - `Hud`, `PlayerControls` and `GameClient` need the window's and the fonts' headers, so CI is their first build.
+
+## Milestones 33 and 34
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
 
-- **32 — The Repair Bay and retreat** (design §10).
 - **33 — The AI plays Phase 4** (design §12).
 - **34 — Measuring Phase 4** (design §2): the match log and U1–U8.

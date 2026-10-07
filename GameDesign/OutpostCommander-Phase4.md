@@ -268,6 +268,14 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **A retreat threshold per ship:** never, at 50% or at 25% of hit points. It is set in the designer for a design, carried by every ship built to it, and changed on a selection. Below its threshold a ship drops its order and goes to the nearest Repair Bay, else the Command Station, else a Shipyard, and is repaired there. Once whole it goes back to its standing order (ADR-059) if it had one, and otherwise waits there.
 - **The simulation runs it, not the client**, so it works while nobody is looking. That is what an absent player's fleet needs on the horizon (Horizon §5).
 - **The default is 25%.** With dear ships, a fight to the last ship should be a choice the player makes, not something that happens by default. The AI's group fall-back (ADR-041) is unchanged, and the AI's ships use the per-ship threshold too.
+- **As built** (plan tasks 32.1 and 32.2, [ADR-075](../Design/ADR/ADR-075-repair-and-retreat.md)):
+  - The Command Station and every Shipyard repair as a Repair Bay does, so a retreat always ends in a repair (owner, 2026-10-07).
+  - Each repairer takes the four most damaged ships in its reach; two side by side take eight.
+  - "Nearest" is the straight distance. A ship with nowhere to go fights on.
+  - Any order the player gives a retreating ship ends its retreat, and the next hit below its threshold starts it again (owner, 2026-10-07).
+  - Constructors retreat and are repaired too, their retreat set on a selection (owner, 2026-10-07).
+  - The AI's ships retreat at a quarter, and the AI gives a retreating ship no order. A ship that turns for home leaves its attack group as a lost one does, so a retreat counts toward the fall-back's 15%. The AI builds no Repair Bay until milestone 33.
+  - The Repair Bay is drawn with the Shipyard's model, darker.
 
 ---
 
