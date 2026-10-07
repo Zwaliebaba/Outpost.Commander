@@ -172,8 +172,8 @@ public:
     MatchArena arena;
     (void)arena.Structure(BLUE, Outpost::StructureKind::RepairBay, BAY);
     const Outpost::EntityId ship = UnderFire(arena, Outpost::RetreatThreshold::Half);
-    const Outpost::PlanePosition far{.xMeters = 100.0f, .zMeters = 0.0f};
-    Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::PatrolCommand{.ships = {ship}, .destination = far})})[0] ==
+    const Outpost::PlanePosition patrolEnd{.xMeters = 100.0f, .zMeters = 0.0f};
+    Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::PatrolCommand{.ships = {ship}, .destination = patrolEnd})})[0] ==
                    Outpost::CommandResult::Applied);
     Assert::IsTrue(RunUntilRetreating(arena, ship));
     Assert::IsTrue(arena.Get(ship).standing == Outpost::StandingOrder::Patrol, L"kept while it goes back");

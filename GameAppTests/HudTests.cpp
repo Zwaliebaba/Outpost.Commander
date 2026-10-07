@@ -1861,7 +1861,8 @@ public:
     content = Outpost::Hud::Describe(Newest(), entities, selected);
     Assert::AreEqual(std::string("Retreat: mixed"), content.buttons.back().label);
     entities[0].retreat = Outpost::RetreatThreshold::Never;
-    content = Outpost::Hud::Describe(Newest(), entities, {Outpost::EntityId{9}});
+    const std::vector<Outpost::EntityId> alone{Outpost::EntityId{9}};
+    content = Outpost::Hud::Describe(Newest(), entities, alone);
     Assert::AreEqual(std::string("Never retreat"), content.buttons.back().label);
     Assert::IsTrue(content.buttons.back().action.retreat == Outpost::RetreatThreshold::Quarter, L"round to a quarter");
   }

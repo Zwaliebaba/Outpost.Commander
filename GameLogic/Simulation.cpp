@@ -2495,21 +2495,21 @@ void Outpost::Simulation::RepairShips()
     {
       if (!IsRepairer(repairer))
         continue;
-      std::vector<Entity*> near;
+      std::vector<Entity*> inReach;
       for (Entity& ship : m_entities)
       {
         if (ship.kind == EntityKind::Ship && ship.owner == repairer.owner && ship.hitPointsHundredths < ship.maxHitPointsHundredths &&
             IsInRepairRange(ship, repairer, repair.rangeMeters) && std::ranges::find(repaired, ship.id) == repaired.end())
-          near.push_back(&ship);
+          inReach.push_back(&ship);
       }
-      std::ranges::stable_sort(near,
+      std::ranges::stable_sort(inReach,
                                [](const Entity* _a, const Entity* _b)
                                {
                                  return std::int64_t{_a->hitPointsHundredths} * _b->maxHitPointsHundredths <
                                         std::int64_t{_b->hitPointsHundredths} * _a->maxHitPointsHundredths;
                                });
-      near.resize(std::min(near.size(), static_cast<std::size_t>(repair.ships)));
-      for (Entity* ship : near)
+      inReach.resize(std::min(inReach.size(), static_cast<std::size_t>(repair.ships)));
+      for (Entity* ship : inReach)
       {
         const auto hundredths = static_cast<std::int32_t>(
           std::llround(static_cast<double>(ship->maxHitPointsHundredths) * repair.percentPerSecond / 100.0 / m_ticksPerSecond));
