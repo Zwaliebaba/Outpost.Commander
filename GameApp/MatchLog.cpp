@@ -2,6 +2,7 @@
 #include "MatchLog.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -11,6 +12,14 @@ constexpr std::uint64_t FLEET_SAMPLE_SECONDS = 30;
 // the gap (Phase 2 design §2, S2).
 constexpr std::uint64_t ENGAGEMENT_WINDOW_SECONDS = 10;
 constexpr std::uint64_t ENGAGEMENT_GAP_SECONDS = 30;
+// A Constructor this far beyond its footprint and a derelict's is at the derelict: the server's reach for work, 20 m, and a
+// margin, since the log reads positions a snapshot old (ADR-074).
+constexpr float SALVAGE_CREW_METERS = 30.0f;
+
+float Distance(Outpost::PlanePosition _a, Outpost::PlanePosition _b) noexcept
+{
+  return std::hypot(_a.xMeters - _b.xMeters, _a.zMeters - _b.zMeters);
+}
 
 // A structure kind as the log writes it, one word.
 std::string_view KindWord(Outpost::StructureKind _kind) noexcept
@@ -149,16 +158,27 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
     if (std::ranges::find(m_shotsCounted, key) != m_shotsCounted.end())
       continue;
     m_shotsCounted.push_back(key);
-    // The log is of the players' fights; the pirates' are left out until milestone 34 counts them (ADR-073).
-    if (ownerOf(shot.shooter) == PIRATES || ownerOf(shot.target) == PIRATES)
-      continue;
-    PlayerId side = ownerOf(shot.shooter);
-    if (!side.IsValid())
+    // A repaired warship fights again once it fires, at a player or the pirates (Phase 4 U3).
+    if (const auto repaired = m_repaired.find(shot.shooter); repaired != m_repaired.end())
     {
-      const PlayerId target = ownerOf(shot.target);
-      if (target.value == 1 || target.value == 2)
-        side = PlayerId{3 - target.value};
+      *m_out << std::format("again {} player {} ship {}\n", _snapshot.tick, repaired->second.value, shot.shooter.value);
+      m_repaired.erase(repaired);
     }
+    // A fight with the pirates is recorded once a player and sector, in the sector of the pirates' end of the shot (U1). The
+    // contact and the engagements are of the players' fights, so it counts toward neither.
+    const PlayerId shooterOwner = ownerOf(shot.shooter);
+    const PlayerId targetOwner = ownerOf(shot.target);
+    if (shooterOwner == PIRATES || targetOwner == PIRATES)
+    {
+      const PlayerId player = shooterOwner == PIRATES ? targetOwner : shooterOwner;
+      const SectorView* sector = FindSector(_snapshot.sectors, shooterOwner == PIRATES ? shot.from : shot.to);
+      if ((player.value == 1 || player.value == 2) && sector != nullptr && m_piratesFought.insert({player, sector->id}).second)
+        *m_out << std::format("pirates {} player {} sector {}\n", _snapshot.tick, player.value, sector->id);
+      continue;
+    }
+    PlayerId side = shooterOwner;
+    if (!side.IsValid() && (targetOwner.value == 1 || targetOwner.value == 2))
+      side = PlayerId{3 - targetOwner.value};
     // A structure above level 1 under fire, once a structure and level (Phase 3 T4).
     if (const auto target = std::ranges::find(_snapshot.entities, shot.target, &EntityView::id);
         target != _snapshot.entities.end() && target->kind == EntityKind::Structure && target->level > 1 &&
@@ -199,16 +219,84 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
   }
 }
 
+// A warship's retreat and repair are its owner's to see (ADR-075). A retreat that ends with the ship whole is a repair; one
+// that ends by an order is neither.
+void Outpost::MatchLog::RecordRetreats(const Snapshot& _snapshot)
+{
+  for (const EntityView& ship : _snapshot.entities)
+  {
+    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Warship || ship.owner != _snapshot.player || ship.remembered)
+      continue;
+    bool& retreating = m_retreating[ship.id];
+    if (ship.retreating && !retreating)
+      *m_out << std::format("retreat {} player {} ship {}\n", _snapshot.tick, ship.owner.value, ship.id.value);
+    if (!ship.retreating && retreating && ship.hitPointsHundredths == ship.maxHitPointsHundredths)
+    {
+      *m_out << std::format("repaired {} player {} ship {}\n", _snapshot.tick, ship.owner.value, ship.id.value);
+      m_repaired[ship.id] = ship.owner;
+    }
+    retreating = ship.retreating;
+  }
+  for (const DestroyedView& destroyed : _snapshot.destroyed)
+  {
+    m_retreating.erase(destroyed.id);
+    m_repaired.erase(destroyed.id);
+  }
+}
+
+// A derelict leaves only by its salvage (ADR-074), so one the player's own Constructors were at that is gone from the
+// player's next snapshot was salvaged by them: while they are there, the player sees it.
+void Outpost::MatchLog::RecordSalvage(const Snapshot& _snapshot)
+{
+  const auto present = [&_snapshot](EntityId _id)
+  { return std::ranges::any_of(_snapshot.entities, [_id](const EntityView& _entity) { return _entity.id == _id; }); };
+  for (auto salvage = m_salvage.begin(); salvage != m_salvage.end();)
+  {
+    if (salvage->player != _snapshot.player)
+    {
+      ++salvage;
+      continue;
+    }
+    if (!present(salvage->derelict))
+      *m_out << std::format("salvaged {} player {} derelict {} ore {}\n", _snapshot.tick, salvage->player.value, salvage->derelict.value,
+                            salvage->ore);
+    salvage = m_salvage.erase(salvage);
+  }
+  for (const EntityView& derelict : _snapshot.entities)
+  {
+    if (derelict.kind != EntityKind::Derelict)
+      continue;
+    const bool crewed = std::ranges::any_of(_snapshot.entities,
+                                            [&](const EntityView& _ship)
+                                            {
+                                              return _ship.kind == EntityKind::Ship && _ship.role == ShipRole::Constructor &&
+                                                     _ship.owner == _snapshot.player && !_ship.remembered &&
+                                                     Distance(_ship.position, derelict.position) <=
+                                                       _ship.radiusMeters + derelict.radiusMeters + SALVAGE_CREW_METERS;
+                                            });
+    if (crewed)
+      m_salvage.push_back({.player = _snapshot.player, .derelict = derelict.id, .ore = derelict.salvageOre});
+  }
+}
+
 void Outpost::MatchLog::Record(const Snapshot& _snapshot)
 {
   m_lastTick = std::max(m_lastTick, _snapshot.tick);
   RecordShots(_snapshot);
   RecordUpgrades(_snapshot);
   RecordStall(_snapshot);
+  RecordRetreats(_snapshot);
+  RecordSalvage(_snapshot);
 
-  // Who holds each sector, which both players see alike (ADR-056).
+  // Who holds each sector, which both players see alike (ADR-056), and which the pirates guard (ADR-073).
   for (const SectorView& sector : _snapshot.sectors)
   {
+    auto guarded = std::ranges::find(m_guarded, sector.id, &std::pair<std::int32_t, bool>::first);
+    if (guarded == m_guarded.end())
+      guarded = m_guarded.insert(m_guarded.end(), {sector.id, sector.guarded});
+    if (guarded->second && !sector.guarded)
+      *m_out << std::format("cleared {} sector {}\n", _snapshot.tick, sector.id);
+    guarded->second = sector.guarded;
     auto known = std::ranges::find(m_holders, sector.id, &std::pair<std::int32_t, PlayerId>::first);
     if (known == m_holders.end())
       known = m_holders.insert(m_holders.end(), {sector.id, PlayerId{}});
