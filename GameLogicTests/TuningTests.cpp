@@ -60,6 +60,8 @@ std::string_view KindName(Outpost::StructureKind _kind)
     return "DefensePlatform";
   case Outpost::StructureKind::Relay:
     return "Relay";
+  case Outpost::StructureKind::RepairBay:
+    return "RepairBay";
   }
   return {};
 }
@@ -120,7 +122,9 @@ constexpr std::string_view MINIMAL_TUNING = R"({
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20,
       "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 },
     { "kind": "Relay", "name": "Relay", "hitPoints": 3000, "armor": 10, "footprintRadiusMeters": 30, "cost": 200,
-      "buildConstructorSeconds": 40 }
+      "buildConstructorSeconds": 40 },
+    { "kind": "RepairBay", "name": "Repair Bay", "hitPoints": 2000, "armor": 5, "footprintRadiusMeters": 30,
+      "cost": 300, "buildConstructorSeconds": 40 }
   ],
   "research": [
     { "id": 1, "name": "Hull Plating", "tier": 1, "cost": 150, "researchSeconds": 60, "requires": [],
@@ -442,6 +446,13 @@ public:
     const Outpost::SalvageTuning loaded = tuning.salvage.value_or(Outpost::SalvageTuning{});
     Assert::AreEqual(salvage.Find("workSeconds")->AsNumber(), loaded.workSeconds);
     Assert::IsTrue(salvage.Find("recoveryPercent")->AsNumber() == Number(loaded.recoveryPercent));
+
+    // ADR-075: repair at a base.
+    Assert::IsTrue(tuning.shipRepair.has_value());
+    const Outpost::ShipRepairTuning repair = tuning.shipRepair.value_or(Outpost::ShipRepairTuning{});
+    ExpectSame(*json.Find("shipRepair"),
+               {{"ships", Number(repair.ships)}, {"rangeMeters", repair.rangeMeters}, {"percentPerSecond", repair.percentPerSecond}},
+               "shipRepair");
   }
 
   // ADR-073: pirates are optional; an outpost is named once, its ships' components exist, and its chase reaches as far as
@@ -468,6 +479,10 @@ public:
                     "pirates.outposts[0].wreck.hull");
     ExpectLoadError(replaced("\"recoveryPercent\": 50", "\"recoveryPercent\": 101"), "salvage.recoveryPercent");
     Assert::IsFalse(Outpost::LoadTuning(MINIMAL_TUNING).salvage.has_value(), L"salvage is optional");
+    // ADR-075: a base repairs at least one ship, over a reach and at a rate above zero.
+    ExpectLoadError(replaced("\"ships\": 4,", "\"ships\": 0,"), "shipRepair.ships");
+    ExpectLoadError(replaced("\"percentPerSecond\": 3", "\"percentPerSecond\": 0"), "shipRepair.percentPerSecond");
+    Assert::IsFalse(Outpost::LoadTuning(MINIMAL_TUNING).shipRepair.has_value(), L"repair at a base is optional");
   }
 
   // ADR-069: a starting design's name is optional, and one that is given names components that exist and no research
@@ -500,7 +515,7 @@ public:
     Assert::AreEqual(2, tuning.rules.startingConstructors);
     Assert::AreEqual(0.5, tuning.constructor.extraConstructorBuildShare);
     Assert::AreEqual(45.0, tuning.structures[0].footprintRadiusMeters);
-    Assert::AreEqual(size_t{6}, tuning.structures.size());
+    Assert::AreEqual(size_t{7}, tuning.structures.size());
     Assert::IsFalse(tuning.structures[0].cost.has_value());
     Assert::IsTrue(tuning.structures[1].cost == 300);
     Assert::IsTrue(tuning.structures[0].structureWeapon == Outpost::StructureWeaponId{1});
@@ -551,6 +566,8 @@ public:
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"Factory\""), "structures[1].kind");
     // Phase 2 design §5: the Relay is a structure kind like the others, which the file must have.
     ExpectLoadError(Replace("\"kind\": \"Relay\"", "\"kind\": \"Shipyard\""), "structures[5].kind");
+    // Phase 4 design §10: so is the Repair Bay.
+    ExpectLoadError(Replace("\"kind\": \"RepairBay\"", "\"kind\": \"Relay\""), "structures[6].kind");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
                             "\"footprintRadiusMeters\": 45, \"structureWeapon\": 2 },"),
                     "structures[0].structureWeapon");

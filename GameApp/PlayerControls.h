@@ -46,6 +46,8 @@ public:
   void Upgrade(EntityId _structure);
   // From the designer: a new design, or a new name for a saved one (task 5.2).
   void SaveDesign(SaveDesignCommand _save);
+  // From the selection panel: the selected ships' retreat (Phase 4 design §10).
+  void SetRetreat(RetreatThreshold _retreat, std::span<const EntityView> _entities);
   // From the minimap: the selected ships move to a point.
   void MoveTo(PlanePosition _destination, std::span<const EntityView> _entities);
 

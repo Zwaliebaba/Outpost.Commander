@@ -29,6 +29,8 @@ std::string_view KindWord(Outpost::StructureKind _kind) noexcept
     return "platform";
   case Outpost::StructureKind::Relay:
     return "relay";
+  case Outpost::StructureKind::RepairBay:
+    return "bay";
   }
   return "structure";
 }

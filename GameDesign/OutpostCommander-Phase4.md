@@ -130,6 +130,24 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Nothing is salvaged:** the median match ends with 14 derelicts, the 12 placed and the wrecks of the outposts the fleets cleared on their way.
 - **The engine:** the median match's 99th percentile tick is 1.9 ms in the container, against 1.7 ms after milestone 30, and the worst match's 2.9 ms; every derelict is in each player's vision pass.
 
+**After milestone 32** (plan task 32.1): every ship retreats at a quarter of its hit points to a Repair Bay, the Command Station or a Shipyard, and the AI builds no Repair Bay until milestone 33. The same harness and seeds, each match played for up to three hours.
+
+| Over seeds 1–40 | After milestone 31 | After milestone 32 |
+|---|---|---|
+| Match length, median of those that end (shortest–longest) | 1:32:57 (43:27–2:47:15) | 1:35:08 (34:25–2:46:42) |
+| Endings; won by player 1 | 36 domination, 1 production, 3 not ended at 3 hours; 21 | 35 domination, 1 production, 4 not ended at 3 hours; 16 |
+| Warships a side loses in a match, median | 52.5 | 20.5 |
+| Warships a side builds in a match, median | 69.5 | 35.5 |
+| Most warships a side has at once, median (largest) | 21 (50) | 16 (43) |
+| Share of the match a side's fleet has no room for one more ship, median | 61% | 64% |
+| Ore a side holds at minute 20, median | 2,474 | 4,636 |
+| Ships a side turns for home, median; of them repaired whole | — | 55.5; 40% |
+
+- **Fleets last.** A side loses well under half as many warships, so it builds half as many. Its fleet is full about as often as before, and the Ore it no longer spends replacing ships piles up, for milestone 33's Repair Bays and milestone 34 to measure.
+- **Most retreats do not end in a repair:** six in ten ships turned for home are lost on the way, on a map where home can be 10 km off, or the match ends first. A Repair Bay at the front is what milestone 33 is for.
+- **The matches are about as long**, and as often level at three hours: the fall-back counts a ship that turns for home as lost, so an attack still falls back once 15% of it has gone.
+- **The engine:** the median match's 99th percentile tick is 1.5 ms in the container, the worst match's 2.9 ms. One match's slowest tick took 76 ms; the median match's slowest is 16 ms.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06
@@ -268,6 +286,14 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **A retreat threshold per ship:** never, at 50% or at 25% of hit points. It is set in the designer for a design, carried by every ship built to it, and changed on a selection. Below its threshold a ship drops its order and goes to the nearest Repair Bay, else the Command Station, else a Shipyard, and is repaired there. Once whole it goes back to its standing order (ADR-059) if it had one, and otherwise waits there.
 - **The simulation runs it, not the client**, so it works while nobody is looking. That is what an absent player's fleet needs on the horizon (Horizon §5).
 - **The default is 25%.** With dear ships, a fight to the last ship should be a choice the player makes, not something that happens by default. The AI's group fall-back (ADR-041) is unchanged, and the AI's ships use the per-ship threshold too.
+- **As built** (plan tasks 32.1 and 32.2, [ADR-075](../Design/ADR/ADR-075-repair-and-retreat.md)):
+  - The Command Station and every Shipyard repair as a Repair Bay does, so a retreat always ends in a repair (owner, 2026-10-07).
+  - Each repairer takes the four most damaged ships in its reach; two side by side take eight.
+  - "Nearest" is the straight distance. A ship with nowhere to go fights on.
+  - Any order the player gives a retreating ship ends its retreat, and the next hit below its threshold starts it again (owner, 2026-10-07).
+  - Constructors retreat and are repaired too, their retreat set on a selection (owner, 2026-10-07).
+  - The AI's ships retreat at a quarter, and the AI gives a retreating ship no order. A ship that turns for home leaves its attack group as a lost one does, so a retreat counts toward the fall-back's 15% (owner, 2026-10-07). The fall-back's numbers are unchanged. The AI builds no Repair Bay until milestone 33.
+  - The Repair Bay is drawn with the Shipyard's model, darker.
 
 ---
 

@@ -18,7 +18,8 @@ It leaves open where each lives, how a group acts as one, what ends a standing o
    - **Relay suppressed**, when a sector the player holds becomes suppressed;
    - **Relay under attack**, when a shot's target is one of the player's Relays;
    - **Mining Rig lost**, when one of the player's rigs is among a tick's destructions, for which `DestroyedView` now carries the structure's kind;
-   - **Enemy ships in** a sector, when the player sees an enemy warship in a sector it holds, and saw none there in the snapshot before.
+   - **Enemy ships in** a sector, when the player sees an enemy warship in a sector it holds, and saw none there in the snapshot before;
+   - **Ship retreating**, when one of the player's ships starts going back to be repaired, and **Pirates cleared**, when a sector the pirates guarded no longer is (Phase 4 design §13, [ADR-075](ADR-075-repair-and-retreat.md)).
 
    Each names its sector and keeps where it happened. One kind in one sector is not raised again within 20 seconds.
 2. **The HUD lists the alerts** of the last 8 seconds under the territory panel, at most four, newest first, the newest in the warning's color. It marks each place on the minimap with an outlined square in that color, drawn over the fog. **Space moves the camera to the newest alert.**
@@ -30,7 +31,7 @@ It leaves open where each lives, how a group acts as one, what ends a standing o
 4. **A standing order is given to a group, which acts as one.** The ships share a group number, `Simulation::m_lastStandingGroup` counting them, and keep the order's sector, or its two ends, on themselves. Once a second, each group, in the order it was given, acts with the group orders the game already has: attack-moves, laid as a formation (ADR-010, ADR-047). A group still planning a large order's paths waits for them (ADR-032).
    - **A hold** first attack-moves to the sector's node. It then attack-moves on the nearest enemy ship its player sees in the sector, unless it is already headed within 150 m of it or a ship of it is firing. Once no enemy is left, and it stands idle more than 200 m from the node, it attack-moves back to the node. A held sector is seen whole (ADR-056), so a group holding its own sector sees all of it.
    - **A patrol** attack-moves to its destination. Each time the whole group stands idle at one end, it attack-moves to the other.
-5. **Any other order the player gives a ship ends its standing order**: a move, an attack-move, an attack or a stop. The group orders a standing order gives do not end it. The order is state, so it replays (ADR-009).
+5. **Any other order the player gives a ship ends its standing order**: a move, an attack-move, an attack or a stop. The group orders a standing order gives do not end it. The order is state, so it replays (ADR-009). A ship retreating to be repaired keeps its standing order, and its group goes on without it until it is whole ([ADR-075](ADR-075-repair-and-retreat.md)).
 6. **Only the owner sees a ship's standing order** (`EntityView::standing`). The selection panel says "Holding a sector" or "On patrol".
 7. **Keys:** H, then a left-click, holds the sector clicked in. T, then a left-click, patrols to the point clicked. Escape or a right-click cancels either, and A, H or T replaces the other. P is taken by the production window, so patrol is T.
 

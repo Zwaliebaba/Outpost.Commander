@@ -61,6 +61,7 @@ public:
 
     // An enemy in the far corner of the sector, seen through the Relay's sector and out of its reach of suppression.
     const Outpost::EntityId enemy = match.Warship(RED, {.xMeters = -1350.0f, .zMeters = -3300.0f});
+    match.FightToTheEnd(RED, {enemy});
     for (std::uint32_t tick = 0; tick < 90 * TICKS_PER_SECOND && match.World().FindEntity(enemy) != nullptr; ++tick)
       match.Run(1);
     Assert::IsNull(match.World().FindEntity(enemy), L"the group never answered the enemy in its sector");

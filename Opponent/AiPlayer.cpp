@@ -193,6 +193,48 @@ auto ComponentOrder(const Outpost::DesignComponents& _design) noexcept
 {
   return std::tuple(_design.hull, _design.drive, _design.weapon);
 }
+
+// A ship of _player's going back to be repaired is left to it, since any order would end its retreat (ADR-075): it is
+// taken out of every order, and an order left with no ship is dropped.
+void LeaveRetreatsAlone(const Snapshot& _snapshot, Outpost::PlayerId _player, std::vector<Outpost::Command>& _orders)
+{
+  std::vector<EntityId> retreating;
+  for (const EntityView& entity : _snapshot.entities)
+  {
+    if (entity.owner == _player && entity.retreating)
+      retreating.push_back(entity.id);
+  }
+  if (retreating.empty())
+    return;
+  const auto isRetreating = [&retreating](EntityId _id) { return std::ranges::find(retreating, _id) != retreating.end(); };
+  for (Outpost::Command& command : _orders)
+  {
+    std::visit(
+      [&isRetreating](auto& _order)
+      {
+        if constexpr (requires { _order.ships; })
+          std::erase_if(_order.ships, isRetreating);
+        else if constexpr (requires { _order.constructors; })
+          std::erase_if(_order.constructors, isRetreating);
+      },
+      command.order);
+  }
+  std::erase_if(_orders,
+                [](const Outpost::Command& _command)
+                {
+                  return std::visit(
+                    [](const auto& _order)
+                    {
+                      if constexpr (requires { _order.ships; })
+                        return _order.ships.empty();
+                      else if constexpr (requires { _order.constructors; })
+                        return _order.constructors.empty();
+                      else
+                        return false;
+                    },
+                    _command.order);
+                });
+}
 } // namespace
 
 Outpost::DesignComponents Outpost::ChooseAnswer(const AiSettings& _settings, const Snapshot& _snapshot)
@@ -388,6 +430,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   Produce(_snapshot, structureWaiting || upgradeWaiting, _orders);
   CommandFleet(_snapshot, _orders);
   CommandScouts(_snapshot, _orders);
+  LeaveRetreatsAlone(_snapshot, m_player, _orders);
 }
 
 // The plan of the base (owner, 2026-10-01): rigs on the home asteroids; a Shipyard, a Research Lab and a Defence Platform
@@ -776,7 +819,13 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
   std::erase_if(m_work,
                 [&](Work& _work)
                 {
-                  std::erase_if(_work.constructors, [&_snapshot](EntityId _id) { return FindEntity(_snapshot, _id) == nullptr; });
+                  // A Constructor gone, or going back to be repaired, which ended its work order, leaves the crew (ADR-075).
+                  std::erase_if(_work.constructors,
+                                [&_snapshot](EntityId _id)
+                                {
+                                  const EntityView* constructor = FindEntity(_snapshot, _id);
+                                  return constructor == nullptr || constructor->retreating;
+                                });
                   if (_work.constructors.empty())
                     return true;
                   if (!_work.target.IsValid() && _work.slot.has_value())
@@ -798,7 +847,8 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
 
   for (const EntityView& ship : _snapshot.entities)
   {
-    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Constructor || ship.owner != m_player)
+    // One going back to be repaired is left to it until it is whole.
+    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Constructor || ship.owner != m_player || ship.retreating)
       continue;
     const bool busy = std::ranges::any_of(m_work, [&ship](const Work& _work)
                                           { return std::ranges::find(_work.constructors, ship.id) != _work.constructors.end(); });
@@ -1198,18 +1248,24 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
 // group, which attack-moves on the enemy's production first, the nearest of it, and then on the next structure.
 void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
-  // Its scouts go their own way (CommandScouts).
+  // Its scouts go their own way (CommandScouts). A ship going back to be repaired leaves its group, and rejoins the reserve
+  // once it is whole (ADR-075).
   std::vector<const EntityView*> warships;
   for (const EntityView& ship : _snapshot.entities)
   {
-    if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner == m_player && !IsScout(ship))
+    if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner == m_player && !IsScout(ship) && !ship.retreating)
       warships.push_back(&ship);
   }
-  std::erase_if(m_attackGroup, [&_snapshot](EntityId _id) { return FindEntity(_snapshot, _id) == nullptr; });
+  const auto gone = [&_snapshot](EntityId _id)
+  {
+    const EntityView* ship = FindEntity(_snapshot, _id);
+    return ship == nullptr || ship->retreating;
+  };
+  std::erase_if(m_attackGroup, gone);
 
   // A raid ends once its sector is no longer the enemy's, or once it has lost the settings' share of its ships; its ships
   // then rejoin the reserve, and the next raid waits (ADR-020 decision 13).
-  std::erase_if(m_raidGroup, [&_snapshot](EntityId _id) { return FindEntity(_snapshot, _id) == nullptr; });
+  std::erase_if(m_raidGroup, gone);
   if (!m_raidGroup.empty())
   {
     const SectorView* sector = FindSectorById(_snapshot, m_raidSector);

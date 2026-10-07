@@ -76,8 +76,12 @@ std::pair<bool, std::size_t> Assault(TerritoryMatch& _match, std::int32_t _secto
     std::erase_if(ships, [&_match](Outpost::EntityId _ship) { return _match.World().FindEntity(_ship) == nullptr; });
     if (ships.empty())
       break;
-    // Sent again every five seconds, as a player would, since an attack-move ends where it was aimed.
+    // Sent again every five seconds, as a player would, since an attack-move ends where it was aimed. They fight to the
+    // end, as the camp's balance was measured (ADR-073), rather than going back to be repaired (ADR-075).
     std::vector<Outpost::Command> commands;
+    if (tick == 0)
+      commands.push_back(
+        {.player = BLUE, .order = Outpost::SetRetreatCommand{.ships = ships, .retreat = Outpost::RetreatThreshold::Never}});
     if (tick % (5 * TICKS_PER_SECOND) == 0)
       commands.push_back({.player = BLUE, .order = Outpost::AttackMoveCommand{.ships = ships, .destination = node}});
     (void)_match.World().Tick(commands);
@@ -141,6 +145,7 @@ public:
     TerritoryMatch match(true);
     const std::int32_t sector = OutpostOf(match, "camp").sector;
     const Outpost::EntityId intruder = match.Warship(BLUE, TowardBlue(match, sector, GUARD_METERS - 100.0f));
+    match.FightToTheEnd(BLUE, {intruder});
     match.Run(40 * TICKS_PER_SECOND);
     Assert::IsNull(match.World().FindEntity(intruder), L"the camp destroyed it");
     match.Run(30 * TICKS_PER_SECOND);

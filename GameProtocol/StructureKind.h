@@ -11,7 +11,9 @@ enum class StructureKind : std::uint8_t
   MiningRig,
   DefensePlatform,
   // Holds the sector whose node it stands on (Phase 2 design §5, ADR-056).
-  Relay
+  Relay,
+  // Repairs the player's ships near it, for nothing (Phase 4 design §10, ADR-075).
+  RepairBay
 };
 
 // A Mining Rig ordered onto an ore asteroid, or within this of its edge, snaps to the asteroid's center (design §6). The

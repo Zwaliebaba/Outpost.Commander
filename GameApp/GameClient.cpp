@@ -870,6 +870,12 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     m_firstTopic = Hud::StepTopics(m_firstTopic, _action.kind == Hud::ActionKind::NextTopics ? 1 : -1,
                                    Hud::DescribeResearch(m_view.Newest(), m_entities, m_firstTopic).topics.size());
     break;
+  case Hud::ActionKind::StepRetreat:
+    m_designer.StepRetreat(m_view.Newest());
+    break;
+  case Hud::ActionKind::SetRetreat:
+    m_controls.SetRetreat(_action.retreat, m_entities);
+    break;
   }
 }
 

@@ -99,6 +99,11 @@ struct Entity
   PlanePosition standingFrom;
   PlanePosition standingTo;
   bool standingOutward = true;
+  // A ship's retreat (Phase 4 design §10, ADR-075), and while it goes back to be repaired, the structure it goes to. Its
+  // standing order waits until it is whole.
+  RetreatThreshold retreat = RetreatThreshold::Never;
+  bool retreating = false;
+  EntityId repairer;
 
   // A structure's construction, in thousandths of a tick of one Constructor's work: built once the two are equal. Both
   // are zero for a structure placed whole (ADR-016).
@@ -295,7 +300,8 @@ public:
 
   // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer sends a
   // command (task 5.2).
-  DesignId SaveDesign(PlayerId _owner, std::string _name, const DesignComponents& _components, const DesignStats& _stats);
+  DesignId SaveDesign(PlayerId _owner, std::string _name, const DesignComponents& _components, const DesignStats& _stats,
+                      RetreatThreshold _retreat = DEFAULT_RETREAT);
 
   // Match setup: saves every starting design for _owner (design §7). Throws Neuron::Exception when the tuning data has
   // none.
@@ -564,6 +570,16 @@ private:
   CommandResult Apply(PlayerId _player, const PatrolCommand& _patrol);
   CommandResult Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade);
   CommandResult Apply(PlayerId _player, const SalvageCommand& _salvage);
+  CommandResult Apply(PlayerId _player, const SetRetreatCommand& _retreat);
+  // Whether _entity is a structure of its player's that repairs its ships near it (ADR-075).
+  [[nodiscard]] bool IsRepairer(const Entity& _entity) const noexcept;
+  // Sends each of _ships back to the repairer the design's order picks for it, as a group with the others going to the same
+  // one, and ends the retreat of a ship with none to go to (ADR-075).
+  void Retreat(const std::vector<EntityId>& _ships);
+  // Once a second, a retreating ship whose repairer fell goes to another, and one that stopped short sets out again.
+  void KeepRetreats();
+  // Every repairer repairs the ships near it, and a retreating ship once whole stops retreating.
+  void RepairShips();
   // Places a derelict, out of combat and blocking no path (ADR-074).
   void SpawnDerelict(const DerelictPlacement& _derelict);
   // _player salvaged a derelict: it is paid its Ore, and the topic it names recovers the tuning data's share of its time.

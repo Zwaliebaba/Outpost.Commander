@@ -45,5 +45,6 @@
     <ClCompile Include="FleetCapTests.cpp" />
     <ClCompile Include="PirateTests.cpp" />
     <ClCompile Include="SalvageTests.cpp" />
+    <ClCompile Include="RetreatTests.cpp" />
   </ItemGroup>
 </Project>

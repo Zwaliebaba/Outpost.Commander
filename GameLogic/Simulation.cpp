@@ -85,6 +85,9 @@ constexpr float BASE_ROW_SPACING_METERS = 10.0f;
 // apart, and its ships in a ring this far round the node (ADR-073).
 constexpr float PIRATE_PLATFORM_SPACING_METERS = 140.0f;
 constexpr float PIRATE_RING_METERS = 120.0f;
+// How far beyond its repairer's footprint a retreating ship stops: well within the repair's reach, so that ships making
+// room for each other stay in it (ADR-075).
+constexpr float REPAIR_STANDOFF_METERS = 40.0f;
 
 // A starting Command Station or Constructor must stay inside the map and clear of every obstacle. A base too large for its
 // start is a data error, reported rather than overlapped.
@@ -503,10 +506,11 @@ const Outpost::StructureTuning* Outpost::Simulation::StructureTuningFor(Structur
 }
 
 Outpost::DesignId Outpost::Simulation::SaveDesign(PlayerId _owner, std::string _name, const DesignComponents& _components,
-                                                  const DesignStats& _stats)
+                                                  const DesignStats& _stats, RetreatThreshold _retreat)
 {
   const DesignId id{++m_lastDesignId};
-  m_designs.push_back({.id = id, .owner = _owner, .name = std::move(_name), .components = _components, .stats = _stats});
+  m_designs.push_back(
+    {.id = id, .owner = _owner, .name = std::move(_name), .components = _components, .stats = _stats, .retreat = _retreat});
   return id;
 }
 
@@ -547,6 +551,7 @@ Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _desi
   ship.hitPointsHundredths = design->stats.hitPointsHundredths;
   ship.maxHitPointsHundredths = design->stats.hitPointsHundredths;
   ship.armorHundredths = design->stats.armorHundredths;
+  ship.retreat = design->retreat;
   // A new ship's weapon is cold: its first shot comes at a random moment once it finds a target (Fight).
   ship.reloadMilliticks = std::numeric_limits<std::int32_t>::min() / 2;
   return id;
@@ -581,6 +586,7 @@ Outpost::EntityId Outpost::Simulation::SpawnConstructor(PlayerId _owner, PlanePo
   const EntityId id = SpawnShip(_owner, DesignId{}, movement, _position, HullId{}, _headingRadians);
   Entity& ship = m_entities.back();
   ship.role = ShipRole::Constructor;
+  ship.retreat = DEFAULT_RETREAT;
   ship.hitPointsHundredths = constructor.hitPoints * HUNDREDTHS;
   ship.maxHitPointsHundredths = ship.hitPointsHundredths;
   ship.armorHundredths = constructor.armor * HUNDREDTHS;
@@ -729,9 +735,10 @@ void Outpost::Simulation::PlacePirates(const Map& _map)
     {
       const DesignComponents components{group.hull, group.drive, group.weapon};
       const ShipDesign* saved = FindDesign(PIRATES, components);
-      const DesignId design = saved != nullptr
-                                ? saved->id
-                                : SaveDesign(PIRATES, DesignName(*m_tuning, components), components, DesignStatsFor(*m_tuning, components));
+      // Pirates guard their place and have nowhere to be repaired, so they never retreat (ADR-075).
+      const DesignId design = saved != nullptr ? saved->id
+                                               : SaveDesign(PIRATES, DesignName(*m_tuning, components), components,
+                                                            DesignStatsFor(*m_tuning, components), RetreatThreshold::Never);
       for (std::int32_t count = 0; count < group.count; ++count)
       {
         const float angle =
@@ -830,6 +837,25 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
                 std::erase_if(m_plannedOrders[index].members, [&_order](const PlannedOrder::Member& _member)
                               { return std::ranges::find(_order.ships, _member.ship) != _order.ships.end(); });
             }
+            // Any order a player gives a ship ends its retreat; a hit below its threshold starts it again (ADR-075).
+            if constexpr (!std::is_same_v<OrderType, SetRetreatCommand>)
+            {
+              const auto endRetreat = [this](const std::vector<EntityId>& _ships)
+              {
+                for (const EntityId id : _ships)
+                {
+                  if (Entity* ship = FindMutableEntity(id))
+                  {
+                    ship->retreating = false;
+                    ship->repairer = {};
+                  }
+                }
+              };
+              if constexpr (requires { _order.ships; })
+                endRetreat(_order.ships);
+              if constexpr (requires { _order.constructors; })
+                endRetreat(_order.constructors);
+            }
             // Any other order a player gives a ship ends its standing order (ADR-059).
             if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
                           std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
@@ -857,6 +883,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   {
     const ObservedPart part(m_observer, TickPart::Targets);
     DecideMatch();
+    KeepRetreats();
     KeepStandingOrders();
     GuardOutposts();
     ChaseTargets();
@@ -866,6 +893,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   {
     const ObservedPart part(m_observer, TickPart::Economy);
     Work();
+    RepairShips();
     BuildLevels();
     Produce();
     Research();
@@ -942,7 +970,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                   .drive = design.components.drive,
                                   .weapon = design.components.weapon,
                                   .module = design.components.module,
-                                  .cost = design.stats.cost});
+                                  .cost = design.stats.cost,
+                                  .retreat = design.retreat});
     }
   }
   snapshot.mapSizeMeters = 2.0f * m_mapHalfSizeMeters;
@@ -1045,7 +1074,11 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     if (m_fog && entity.owner == _player)
       view.sightMeters = SightMetersOf(entity);
     if (entity.owner == _player)
+    {
       view.standing = entity.standing;
+      view.retreat = entity.retreat;
+      view.retreating = entity.retreating;
+    }
     // An ore asteroid's Ore left, and a rig's asteroid's, as far as the player knows it (Phase 1 design §8).
     if (entity.kind == EntityKind::Asteroid)
       view.oreReserveHundredths = ReserveKnownTo(_player, entity.id);
@@ -1536,8 +1569,23 @@ void Outpost::Simulation::Fight()
     target.hitPointsHundredths -= hit.hundredths;
     anyDestroyed |= target.hitPointsHundredths <= 0;
   }
+  // A ship that survives a hit that leaves it below its threshold goes back to be repaired, unless it is already going
+  // (Phase 4 design §10, ADR-075).
+  std::vector<EntityId> retreats;
+  for (const Hit& hit : hits)
+  {
+    const Entity& target = *FindEntity(hit.target);
+    const std::int64_t thresholdHundredths = std::int64_t{target.maxHitPointsHundredths} * RetreatPercent(target.retreat);
+    if (target.kind == EntityKind::Ship && !target.retreating && target.hitPointsHundredths > 0 &&
+        std::int64_t{target.hitPointsHundredths} * 100 < thresholdHundredths && std::ranges::find(retreats, target.id) == retreats.end())
+      retreats.push_back(target.id);
+  }
+  std::ranges::sort(retreats);
   if (!anyDestroyed)
+  {
+    Retreat(retreats);
     return;
+  }
 
   const auto isDestroyed = [](const Entity& _entity) { return _entity.maxHitPointsHundredths > 0 && _entity.hitPointsHundredths <= 0; };
   for (const Entity& entity : m_entities)
@@ -1574,6 +1622,7 @@ void Outpost::Simulation::Fight()
   if (blockerDestroyed)
     UpdateObstacles();
   LeaveWrecks();
+  Retreat(retreats);
 }
 
 // Phase 4 design §8: a cleared outpost leaves a derelict where its largest structure stood. Its Defence Platforms are all
@@ -1954,8 +2003,9 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
   if (m_mapHalfSizeMeters > 0.0f && (std::abs(_position.xMeters) + _radiusMeters > m_mapHalfSizeMeters ||
                                      std::abs(_position.zMeters) + _radiusMeters > m_mapHalfSizeMeters))
     return CommandResult::InvalidPlacement;
-  // A Shipyard stands only in a sector its player holds, so that production follows territory (Phase 4 design §6).
-  if (_kind == StructureKind::Shipyard && HasTerritory())
+  // A Shipyard or a Repair Bay stands only in a sector its player holds, so that production follows territory (Phase 4
+  // design §6, §10).
+  if ((_kind == StructureKind::Shipyard || _kind == StructureKind::RepairBay) && HasTerritory())
   {
     const Sector* sector = SectorAt(_position);
     if (sector == nullptr || sector->holder != _player)
@@ -2349,6 +2399,134 @@ void Outpost::Simulation::Salvage(PlayerState& _player, const Entity& _derelict)
   }
   if (std::ranges::find(_player.recovered, topic) == _player.recovered.end())
     _player.recovered.push_back(topic);
+}
+
+// Phase 4 design §10: a ship's retreat is set on a selection, and a ship set never to retreat stops going back.
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SetRetreatCommand& _retreat)
+{
+  if (const CommandResult result = ValidateShips(_player, _retreat.ships); result != CommandResult::Applied)
+    return result;
+  for (const EntityId id : _retreat.ships)
+  {
+    Entity& ship = *FindMutableEntity(id);
+    ship.retreat = _retreat.retreat;
+    if (_retreat.retreat == RetreatThreshold::Never)
+    {
+      ship.retreating = false;
+      ship.repairer = {};
+    }
+  }
+  return CommandResult::Applied;
+}
+
+bool Outpost::Simulation::IsRepairer(const Entity& _entity) const noexcept
+{
+  const bool repairs = _entity.structure == StructureKind::RepairBay || _entity.structure == StructureKind::CommandStation ||
+                       _entity.structure == StructureKind::Shipyard;
+  return m_tuning && m_tuning->shipRepair.has_value() && _entity.kind == EntityKind::Structure && repairs && _entity.owner.IsValid() &&
+         _entity.owner != PIRATES && _entity.maxHitPointsHundredths > 0 && _entity.IsBuilt();
+}
+
+namespace
+{
+// Whether _ship's footprint is within _rangeMeters of _repairer's.
+bool IsInRepairRange(const Outpost::Entity& _ship, const Outpost::Entity& _repairer, double _rangeMeters) noexcept
+{
+  return Outpost::Distance(_ship.position, _repairer.position) - _ship.radiusMeters - _repairer.radiusMeters <= _rangeMeters;
+}
+} // namespace
+
+// Phase 4 design §10: the nearest Repair Bay, else the Command Station, else the nearest Shipyard. Each ship goes on its
+// own, to the side of its repairer it comes from, so that every one of them stops within reach of the repair.
+void Outpost::Simulation::Retreat(const std::vector<EntityId>& _ships)
+{
+  const auto rank = [](StructureKind _kind) {
+    return _kind == StructureKind::RepairBay ? 0 : _kind == StructureKind::CommandStation ? 1 : 2;
+  };
+  for (const EntityId id : _ships)
+  {
+    Entity& ship = *FindMutableEntity(id);
+    const Entity* best = nullptr;
+    for (const Entity& other : m_entities)
+    {
+      if (other.owner != ship.owner || !IsRepairer(other))
+        continue;
+      if (best == nullptr || rank(other.structure) < rank(best->structure) ||
+          (rank(other.structure) == rank(best->structure) &&
+           Distance(other.position, ship.position) < Distance(best->position, ship.position)))
+        best = &other;
+    }
+    ship.repairer = best != nullptr ? best->id : EntityId{};
+    ship.retreating = best != nullptr;
+    if (best == nullptr)
+      continue;
+    ship.attackTarget = {};
+    ship.workTarget = {};
+    for (PlannedOrder& planned : m_plannedOrders)
+      std::erase_if(planned.members, [id](const PlannedOrder::Member& _member) { return _member.ship == id; });
+    const PlaneVector away = Normalized(ship.position - best->position, {1.0f, 0.0f});
+    const PlanePosition stop = best->position + away * (best->radiusMeters + ship.radiusMeters + REPAIR_STANDOFF_METERS);
+    (void)OrderMove(ship.owner, {id}, stop, ShipOrder::Move);
+  }
+}
+
+void Outpost::Simulation::KeepRetreats()
+{
+  if (m_tick % m_ticksPerSecond != 0)
+    return;
+  std::vector<EntityId> again;
+  for (const Entity& ship : m_entities)
+  {
+    if (ship.retreating && FindEntity(ship.repairer) == nullptr)
+      again.push_back(ship.id);
+  }
+  Retreat(again);
+}
+
+// Phase 4 design §10: each repairer, in identifier order, repairs the most damaged of its player's ships in its reach that
+// no earlier one has repaired this tick, as many as the tuning data says.
+void Outpost::Simulation::RepairShips()
+{
+  if (m_tuning->shipRepair.has_value())
+  {
+    const ShipRepairTuning repair = m_tuning->shipRepair.value_or(ShipRepairTuning{});
+    std::vector<EntityId> repaired;
+    for (const Entity& repairer : m_entities)
+    {
+      if (!IsRepairer(repairer))
+        continue;
+      std::vector<Entity*> inReach;
+      for (Entity& ship : m_entities)
+      {
+        if (ship.kind == EntityKind::Ship && ship.owner == repairer.owner && ship.hitPointsHundredths < ship.maxHitPointsHundredths &&
+            IsInRepairRange(ship, repairer, repair.rangeMeters) && std::ranges::find(repaired, ship.id) == repaired.end())
+          inReach.push_back(&ship);
+      }
+      std::ranges::stable_sort(inReach,
+                               [](const Entity* _a, const Entity* _b)
+                               {
+                                 return std::int64_t{_a->hitPointsHundredths} * _b->maxHitPointsHundredths <
+                                        std::int64_t{_b->hitPointsHundredths} * _a->maxHitPointsHundredths;
+                               });
+      inReach.resize(std::min(inReach.size(), static_cast<std::size_t>(repair.ships)));
+      for (Entity* ship : inReach)
+      {
+        const auto hundredths = static_cast<std::int32_t>(
+          std::llround(static_cast<double>(ship->maxHitPointsHundredths) * repair.percentPerSecond / 100.0 / m_ticksPerSecond));
+        ship->hitPointsHundredths = std::min(ship->maxHitPointsHundredths, ship->hitPointsHundredths + hundredths);
+        repaired.push_back(ship->id);
+      }
+    }
+  }
+  // Whole again, it waits where it is, or its standing order takes it back (ADR-059).
+  for (Entity& ship : m_entities)
+  {
+    if (ship.retreating && ship.hitPointsHundredths >= ship.maxHitPointsHundredths)
+    {
+      ship.retreating = false;
+      ship.repairer = {};
+    }
+  }
 }
 
 // A structure being upgraded builds its next level itself, a tick of the level's time each tick, which no Constructor
@@ -2953,10 +3131,11 @@ void Outpost::Simulation::KeepStandingOrders()
 {
   if (m_tick % m_ticksPerSecond != 0)
     return;
+  // A retreating ship's group goes on without it until it is whole (ADR-075).
   std::vector<std::uint32_t> groups;
   for (const Entity& ship : m_entities)
   {
-    if (ship.standing != StandingOrder::None && std::ranges::find(groups, ship.standingGroup) == groups.end())
+    if (ship.standing != StandingOrder::None && !ship.retreating && std::ranges::find(groups, ship.standingGroup) == groups.end())
       groups.push_back(ship.standingGroup);
   }
   std::ranges::sort(groups);
@@ -2967,7 +3146,7 @@ void Outpost::Simulation::KeepStandingOrders()
     PlaneVector sum{};
     for (const Entity& ship : m_entities)
     {
-      if (ship.standing != StandingOrder::None && ship.standingGroup == group)
+      if (ship.standing != StandingOrder::None && !ship.retreating && ship.standingGroup == group)
       {
         ships.push_back(ship.id);
         sum = sum + (ship.position - PlanePosition{});
@@ -3121,6 +3300,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
     if (design->components != components)
       return CommandResult::ComponentsFixed;
     design->name = _save.nameUtf8;
+    design->retreat = _save.retreat;
     return CommandResult::Applied;
   }
 
@@ -3130,7 +3310,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
     return CommandResult::ComponentLocked;
   if (FindDesign(_player, components) != nullptr)
     return CommandResult::DuplicateDesign;
-  (void)SaveDesign(_player, _save.nameUtf8, components, DesignStatsFor(*m_tuning, components, EffectsOf(_player).upgrades));
+  (void)SaveDesign(_player, _save.nameUtf8, components, DesignStatsFor(*m_tuning, components, EffectsOf(_player).upgrades), _save.retreat);
   return CommandResult::Applied;
 }
 

@@ -87,6 +87,29 @@ public:
   }
 
   // ADR-073: pirates in a held sector, as the ships an outpost has left once the player has claimed it, are named so.
+  // Phase 4 design §13: one of the player's ships going back to be repaired, as it starts, and a sector the pirates guarded
+  // cleared of them.
+  TEST_METHOD(AlertsToARetreatAndPiratesCleared)
+  {
+    Outpost::Alerts alerts;
+    Outpost::Snapshot before = At(1);
+    before.sectors[1].guarded = true;
+    Outpost::EntityView ship{
+      .id = Outpost::EntityId{30}, .kind = Outpost::EntityKind::Ship, .owner = PLAYER, .position = {.zMeters = -700.0f}};
+    before.entities.push_back(ship);
+    alerts.Observe(before, TICKS_PER_SECOND);
+    Assert::IsTrue(Texts(alerts, 1).empty());
+
+    Outpost::Snapshot after = At(2);
+    ship.retreating = true;
+    after.entities.push_back(ship);
+    alerts.Observe(after, TICKS_PER_SECOND);
+    Assert::IsTrue(Texts(alerts, 2) == std::vector<std::string>{"Pirates cleared: North", "Ship retreating: South"});
+    after.tick = 3;
+    alerts.Observe(after, TICKS_PER_SECOND);
+    Assert::AreEqual(size_t{2}, Texts(alerts, 3).size(), L"once each");
+  }
+
   TEST_METHOD(AlertsToPirateShipsByName)
   {
     Outpost::Alerts alerts;

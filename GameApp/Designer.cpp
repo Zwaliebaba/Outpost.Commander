@@ -99,7 +99,32 @@ void Outpost::Designer::Load(const DesignView& _design) noexcept
   m_weapon = _design.weapon;
   m_module = _design.module;
   m_typed.reset();
+  m_retreat.reset();
   m_editing = false;
+}
+
+Outpost::RetreatThreshold Outpost::Designer::Retreat(const Snapshot& _newest) const noexcept
+{
+  if (m_retreat.has_value())
+    return *m_retreat;
+  const DesignView* match = Match(_newest);
+  return match != nullptr ? match->retreat : DEFAULT_RETREAT;
+}
+
+void Outpost::Designer::StepRetreat(const Snapshot& _newest) noexcept
+{
+  switch (Retreat(_newest))
+  {
+  case RetreatThreshold::Quarter:
+    m_retreat = RetreatThreshold::Half;
+    break;
+  case RetreatThreshold::Half:
+    m_retreat = RetreatThreshold::Never;
+    break;
+  case RetreatThreshold::Never:
+    m_retreat = RetreatThreshold::Quarter;
+    break;
+  }
 }
 
 const Outpost::DesignView* Outpost::Designer::Match(const Snapshot& _newest) const noexcept
@@ -148,19 +173,21 @@ std::optional<Outpost::SaveDesignCommand> Outpost::Designer::SaveCommand(const S
   const std::string name = Name(_newest);
   if (!IsValidDesignName(name) || !Stats(_newest).has_value())
     return std::nullopt;
+  const RetreatThreshold retreat = Retreat(_newest);
   if (const DesignView* match = Match(_newest))
   {
-    if (match->nameUtf8 == name)
+    if (match->nameUtf8 == name && match->retreat == retreat)
       return std::nullopt;
     return SaveDesignCommand{
-      .design = match->id, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon, .module = m_module};
+      .design = match->id, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon, .module = m_module, .retreat = retreat};
   }
   const ModuleView* module = Find(_newest.modules, m_module);
   const bool available = Find(_newest.hulls, m_hull)->available && Find(_newest.drives, m_drive)->available &&
                          Find(_newest.weapons, m_weapon)->available && (module == nullptr || module->available);
   if (!available)
     return std::nullopt;
-  return SaveDesignCommand{.design = {}, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon, .module = m_module};
+  return SaveDesignCommand{
+    .design = {}, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon, .module = m_module, .retreat = retreat};
 }
 
 std::optional<Outpost::SaveDesignCommand> Outpost::Designer::SaveAndQueue(EntityId _producer, const Snapshot& _newest, std::uint32_t _count)

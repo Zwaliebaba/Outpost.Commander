@@ -84,8 +84,8 @@ inline constexpr size_t DESIGN_NAME_LIMIT = 32;
 }
 
 // Saves a design from the Shipyard panel's designer (design §7, §9). An invalid design identifier saves a new design of
-// components the player has, and the server assigns its identifier. A valid one renames that design: a saved design's
-// components never change, so that the ships already built of it stay what they are (ADR-017).
+// components the player has, and the server assigns its identifier. A valid one renames that design and sets its retreat:
+// a saved design's components never change, so that the ships already built of it stay what they are (ADR-017).
 struct SaveDesignCommand
 {
   DesignId design;
@@ -95,6 +95,8 @@ struct SaveDesignCommand
   WeaponId weapon;
   // None for a design without a module (Phase 2 design §10).
   ModuleId module;
+  // What every ship built to it from now on starts with (Phase 4 design §10, ADR-075).
+  RetreatThreshold retreat = DEFAULT_RETREAT;
 };
 
 // A standing order (Phase 2 design §9, ADR-059): the warships hold the sector that holds the point, answering any enemy
@@ -129,9 +131,17 @@ struct SalvageCommand
   EntityId derelict;
 };
 
-using Order =
-  std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand, QueueShipCommand,
-               StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand, UpgradeStructureCommand, SalvageCommand>;
+// Sets the ships' retreat (Phase 4 design §10, ADR-075). It gives them no order: a ship retreating goes on, unless it is
+// set never to retreat.
+struct SetRetreatCommand
+{
+  std::vector<EntityId> ships;
+  RetreatThreshold retreat = DEFAULT_RETREAT;
+};
+
+using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand,
+                           QueueShipCommand, StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand,
+                           UpgradeStructureCommand, SalvageCommand, SetRetreatCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
 // arrived on; what a client puts there is never trusted (ADR-002).

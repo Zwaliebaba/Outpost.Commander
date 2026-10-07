@@ -134,7 +134,10 @@ public:
     PreviousTopics,
     NextTopics,
     // Upgrades the selected structure by one level (Phase 3 design §4, §9).
-    Upgrade
+    Upgrade,
+    // The designer's retreat steps to the next, and a selection of ships is set to one (Phase 4 design §10, §13).
+    StepRetreat,
+    SetRetreat
   };
 
   struct Action
@@ -154,6 +157,8 @@ public:
     std::uint32_t count = 1;
     // The AI a skirmish is against (ADR-065).
     Difficulty difficulty = Difficulty::Normal;
+    // What SetRetreat sets the selected ships to.
+    RetreatThreshold retreat = DEFAULT_RETREAT;
 
     friend bool operator==(const Action&, const Action&) = default;
   };
@@ -275,6 +280,8 @@ public:
     // SAVE for a new design, SAVED when the name and the parts are a saved design; RENAME for a saved design's new name.
     Button save;
     Button rename;
+    // The design's retreat, which steps to the next when pressed (Phase 4 design §10).
+    Button retreat;
     // The saved designs, and the first shown of those that do not all fit.
     std::vector<DesignChip> chips;
     std::size_t firstChip = 0;

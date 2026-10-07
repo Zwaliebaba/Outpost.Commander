@@ -532,7 +532,7 @@ public:
 
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::AreEqual(std::string("Constructor"), content.selection.front());
-    Assert::AreEqual(size_t{3}, content.buttons.size());
+    Assert::AreEqual(size_t{4}, content.buttons.size(), L"the three it builds, and its retreat");
     Assert::AreEqual(std::string("Shipyard|300"), content.buttons[0].label);
     Assert::IsFalse(content.buttons[0].enabled, L"250 Ore does not buy a Shipyard");
     Assert::IsTrue(content.buttons[1].enabled);
@@ -567,11 +567,11 @@ public:
     constructor.role = Outpost::ShipRole::Constructor;
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}};
-    Assert::AreEqual(size_t{1}, Outpost::Hud::Describe(newest, entities, selected).buttons.size());
+    Assert::AreEqual(size_t{2}, Outpost::Hud::Describe(newest, entities, selected).buttons.size(), L"the Shipyard, and its retreat");
 
     newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
     const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{2}, content.buttons.size());
+    Assert::AreEqual(size_t{3}, content.buttons.size());
     Assert::IsTrue(content.buttons[1].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
   }
@@ -834,7 +834,7 @@ public:
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{constructor.id};
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{1}, content.buttons.size());
+    Assert::AreEqual(size_t{2}, content.buttons.size(), L"the Relay, and its retreat");
     Assert::IsFalse(content.buttons[0].enabled);
     Assert::AreEqual(std::string("NODE CAP"), content.buttons[0].note);
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
@@ -1118,6 +1118,17 @@ public:
     Assert::AreEqual(std::string("SAVED"), panel.save.label);
     Assert::IsTrue(panel.save.selected && !panel.save.enabled);
     Assert::IsFalse(panel.rename.enabled, L"the name has not changed");
+    // Phase 4 design §10: the design's retreat, which a press steps; a saved design's new retreat is an update.
+    Assert::AreEqual(std::string("RETREAT AT 25%"), panel.retreat.label);
+    Assert::IsTrue(panel.retreat.action.kind == Outpost::Hud::ActionKind::StepRetreat);
+    {
+      Outpost::Designer stepped = designer;
+      stepped.StepRetreat(newest);
+      const Outpost::Hud::DesignerPanel changed = DesignerOf(newest, stepped);
+      Assert::AreEqual(std::string("RETREAT AT 50%"), changed.retreat.label);
+      Assert::IsTrue(changed.rename.enabled);
+      Assert::AreEqual(std::string("UPDATE"), changed.rename.label);
+    }
 
     Assert::AreEqual(size_t{1}, panel.chips.size());
     Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD"), panel.chips[0].code);
@@ -1827,6 +1838,33 @@ public:
     newest.winner = PLAYER;
     newest.ending = Outpost::MatchEnding::Domination;
     Assert::AreEqual(std::string("By domination. Match length 6:13"), outcome().detail);
+  }
+
+  // Phase 4 design §10, §13: a selection's retreat is the last button, which steps it for every ship from the first one's,
+  // and a ship going back to be repaired says so.
+  TEST_METHOD(SetsTheSelectionsRetreat)
+  {
+    Outpost::EntityView first = Ship(9, SWARM, 30000, 30000);
+    first.retreat = Outpost::RetreatThreshold::Half;
+    Outpost::EntityView second = Ship(10, SWARM, 3000, 30000);
+    second.retreat = Outpost::RetreatThreshold::Half;
+    second.retreating = true;
+    std::vector<Outpost::EntityView> entities{first, second};
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}, Outpost::EntityId{10}};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
+    Assert::AreEqual(std::string("Retreat at 50%"), content.buttons.back().label);
+    Assert::IsTrue(content.buttons.back().action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::SetRetreat, .retreat = Outpost::RetreatThreshold::Never});
+    Assert::AreEqual(std::string("1 retreating to be repaired"), content.selection.back());
+
+    entities[1].retreat = Outpost::RetreatThreshold::Quarter;
+    content = Outpost::Hud::Describe(Newest(), entities, selected);
+    Assert::AreEqual(std::string("Retreat: mixed"), content.buttons.back().label);
+    entities[0].retreat = Outpost::RetreatThreshold::Never;
+    const std::vector<Outpost::EntityId> alone{Outpost::EntityId{9}};
+    content = Outpost::Hud::Describe(Newest(), entities, alone);
+    Assert::AreEqual(std::string("Never retreat"), content.buttons.back().label);
+    Assert::IsTrue(content.buttons.back().action.retreat == Outpost::RetreatThreshold::Quarter, L"round to a quarter");
   }
 
   // ADR-059: a selection on a standing order says so.

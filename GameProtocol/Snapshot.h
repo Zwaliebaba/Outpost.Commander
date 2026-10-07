@@ -112,6 +112,9 @@ struct EntityView
   float sightMeters = 0.0f;
   // A ship's standing order, which only its owner sees (ADR-059).
   StandingOrder standing = StandingOrder::None;
+  // A ship's retreat, and whether it is going back to be repaired now (Phase 4 design §10, ADR-075); its owner's only.
+  RetreatThreshold retreat = RetreatThreshold::Never;
+  bool retreating = false;
   // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
   // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
   std::optional<std::int64_t> oreReserveHundredths;
@@ -216,6 +219,8 @@ struct DesignView
   ModuleId module;
   // In whole Ore, paid when a Shipyard starts building one (design §5).
   std::int32_t cost = 0;
+  // What a ship built to it starts with (Phase 4 design §10, ADR-075).
+  RetreatThreshold retreat = DEFAULT_RETREAT;
 };
 
 // What the client needs to know of a kind of structure to name it, draw it and place it (design §6).

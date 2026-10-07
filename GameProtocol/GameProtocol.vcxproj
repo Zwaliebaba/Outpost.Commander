@@ -79,6 +79,7 @@
     <ClInclude Include="Id.h" />
     <ClInclude Include="PlanePosition.h" />
     <ClInclude Include="StructureKind.h" />
+    <ClInclude Include="RetreatThreshold.h" />
     <ClInclude Include="Command.h" />
     <ClInclude Include="Snapshot.h" />
     <ClInclude Include="DesignStats.h" />

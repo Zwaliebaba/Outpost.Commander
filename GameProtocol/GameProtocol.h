@@ -20,6 +20,7 @@
 #include "Id.h"
 #include "PlanePosition.h"
 #include "StructureKind.h"
+#include "RetreatThreshold.h"
 #include "Command.h"
 #include "Snapshot.h"
 #include "DesignStats.h"

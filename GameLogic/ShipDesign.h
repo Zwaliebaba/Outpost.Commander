@@ -30,6 +30,8 @@ struct ShipDesign
   std::string name;
   DesignComponents components;
   DesignStats stats;
+  // What every ship built to it starts with (Phase 4 design §10, ADR-075).
+  RetreatThreshold retreat = DEFAULT_RETREAT;
 
   friend bool operator==(const ShipDesign&, const ShipDesign&) = default;
 };

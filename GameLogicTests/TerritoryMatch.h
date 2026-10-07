@@ -129,6 +129,13 @@ public:
       (void)World().Tick({});
   }
 
+  // Sets _ships never to retreat (ADR-075), for a test of a fight to the end. It takes a tick.
+  void FightToTheEnd(Outpost::PlayerId _owner, std::vector<Outpost::EntityId> _ships)
+  {
+    (void)World().Tick(
+      {{.player = _owner, .order = Outpost::SetRetreatCommand{.ships = std::move(_ships), .retreat = Outpost::RetreatThreshold::Never}}});
+  }
+
 private:
   Outpost::Map m_map;
   Outpost::InProcessServer m_server;

@@ -67,7 +67,8 @@
     { "structure": "ResearchLab", "model": "ResearchLab" },
     { "structure": "MiningRig", "model": "MiningRig" },
     { "structure": "DefensePlatform", "model": "DefensePlatform" },
-    { "structure": "Relay", "model": "ResearchLab", "tint": 1.6 }
+    { "structure": "Relay", "model": "ResearchLab", "tint": 1.6 },
+    { "structure": "RepairBay", "model": "Shipyard", "tint": 0.6 }
   ],
   "constructor": "Constructor",
   "constructorBank": { "maxDegrees": 30, "fullAtMetersPerSecondSquared": 55, "settleSeconds": 0.3 },
