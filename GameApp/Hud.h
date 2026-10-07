@@ -607,6 +607,10 @@ public:
   // first, nor past where the last row is shown.
   [[nodiscard]] static std::size_t StepTopics(std::size_t _firstTopic, int _step, std::size_t _topics) noexcept;
 
+  // What a derelict holds, as the hint under the pointer shows it (Phase 4 design §9, §13): its Ore, the topic whose time
+  // it recovers, if any, and how far its salvage has come.
+  [[nodiscard]] static std::string DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict);
+
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
 

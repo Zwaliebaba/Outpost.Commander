@@ -578,6 +578,23 @@ public:
 
   // ADR-073: a sector the pirates guard is shown as theirs on the minimap, and counts for neither side; their ships and
   // structures are marked in their color.
+  // ADR-074: a derelict under the pointer says what it holds, and a topic recovered by salvage says so on its card.
+  TEST_METHOD(DescribesADerelict)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.research = {{.id = Outpost::ResearchTopicId{5}, .nameUtf8 = "Fusion Drive", .recovered = true}};
+    Outpost::EntityView derelict{.id = Outpost::EntityId{40}, .kind = Outpost::EntityKind::Derelict, .salvageOre = 1200};
+    Assert::AreEqual(std::string("Derelict: 1,200 Ore"), Outpost::Hud::DescribeDerelict(newest, derelict));
+    derelict.salvageTopic = Outpost::ResearchTopicId{5};
+    derelict.salvagePermille = 333;
+    derelict.remembered = true;
+    Assert::AreEqual(std::string("Derelict: 1,200 Ore, and part of Fusion Drive's research time \xC2\xB7 salvaged 33% (as last seen)"),
+                     Outpost::Hud::DescribeDerelict(newest, derelict));
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector<Outpost::EntityView>{derelict}, {});
+    Assert::IsTrue(content.marks.front().kind == Outpost::EntityKind::Derelict &&
+                   content.marks.front().side == Outpost::Hud::Side::Neutral);
+  }
+
   TEST_METHOD(ShowsThePirates)
   {
     Outpost::Snapshot newest = Newest();

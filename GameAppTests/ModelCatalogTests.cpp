@@ -64,6 +64,10 @@ public:
     Assert::AreEqual(tarkan.models.size(), pirate.models.size());
     Assert::IsFalse(pirate.color.x == tarkan.color.x && pirate.color.y == tarkan.color.y && pirate.color.z == tarkan.color.z);
     Assert::AreEqual(std::wstring(L"Models\\Tarkan\\Small.nmf"), Outpost::ModelFileName(pirate, pirate.Model("Small")));
+    // The derelicts draw with the Human set's meshes in gray, by their hull's model (ADR-074).
+    const Outpost::ModelSet& wrecks = *catalog.SetForDerelicts();
+    Assert::AreEqual(std::string("Human"), wrecks.meshes);
+    Assert::IsTrue(wrecks.color.x == wrecks.color.y, L"gray");
     const std::string* smallModel = catalog.ModelForHull(Outpost::HullId{1});
     Assert::IsNotNull(smallModel);
     Assert::AreEqual(std::string("Small"), *smallModel);

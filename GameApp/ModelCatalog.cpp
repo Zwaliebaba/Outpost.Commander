@@ -199,6 +199,8 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   catalog.players = Neuron::ReadJsonList<PlayerModels>(reader, "players", ReadPlayer);
   if (reader.Optional("pirates") != nullptr)
     catalog.pirates = reader.String("pirates");
+  if (reader.Optional("derelicts") != nullptr)
+    catalog.derelicts = reader.String("derelicts");
   catalog.hulls = Neuron::ReadJsonList<HullModel>(reader, "hulls", ReadHull);
   catalog.structures = Neuron::ReadJsonList<StructureModel>(reader, "structures", ReadStructure);
   catalog.constructor = reader.String("constructor");
@@ -227,13 +229,18 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   }
   if (!catalog.pirates.empty() && std::ranges::find(catalog.sets, catalog.pirates, &ModelSet::name) == catalog.sets.end())
     Neuron::JsonFail("pirates", std::format("there is no set \"{}\"", catalog.pirates));
+  if (!catalog.derelicts.empty() && std::ranges::find(catalog.sets, catalog.derelicts, &ModelSet::name) == catalog.sets.end())
+    Neuron::JsonFail("derelicts", std::format("there is no set \"{}\"", catalog.derelicts));
   // The sets that draw a side: every player's, and the pirates'.
   std::vector<std::string> sides;
-  sides.reserve(catalog.players.size() + 1);
+  sides.reserve(catalog.players.size() + 2);
   for (const PlayerModels& player : catalog.players)
     sides.push_back(player.set);
   if (!catalog.pirates.empty())
     sides.push_back(catalog.pirates);
+  // A derelict is drawn by its hull's model, so the derelicts' set is checked for every hull's, as a side's is.
+  if (!catalog.derelicts.empty())
+    sides.push_back(catalog.derelicts);
 
   for (size_t i = 0; i < catalog.players.size(); ++i)
   {
@@ -305,6 +312,12 @@ const Outpost::ModelSet* Outpost::ModelCatalog::SetForPlayer(PlayerId _player) c
   }
   const auto set = std::ranges::find(sets, *name, &ModelSet::name);
   return set == sets.end() ? nullptr : &*set;
+}
+
+const Outpost::ModelSet* Outpost::ModelCatalog::SetForDerelicts() const noexcept
+{
+  const auto set = std::ranges::find(sets, derelicts, &ModelSet::name);
+  return derelicts.empty() || set == sets.end() ? nullptr : &*set;
 }
 
 const std::string* Outpost::ModelCatalog::ModelForHull(HullId _hull) const noexcept

@@ -26,6 +26,8 @@ constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
 constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 ENEMY_COLOR{1.0f, 0.38f, 0.25f, 1.0f};
 constexpr DirectX::XMFLOAT4 PIRATE_COLOR{0.78f, 0.45f, 1.0f, 1.0f};
+// A derelict, light gray, a filled square like a structure's, whoever's it was (ADR-074).
+constexpr DirectX::XMFLOAT4 DERELICT_COLOR{0.62f, 0.62f, 0.66f, 1.0f};
 constexpr DirectX::XMFLOAT4 NEUTRAL_COLOR{0.45f, 0.42f, 0.4f, 1.0f};
 constexpr DirectX::XMFLOAT4 ORE_ASTEROID_COLOR{0.42f, 0.23f, 0.02f, 1.0f};
 // An ore asteroid that has run out: darker than one with ore, and warmed toward rust, at 3:1 against the map (ADR-068).
@@ -1756,6 +1758,18 @@ std::string Outpost::MinutesAndSeconds(std::uint64_t _seconds)
   return hours > 0 ? std::format("{}:{:02}:{:02}", hours, minutes, seconds) : std::format("{}:{:02}", minutes, seconds);
 }
 
+std::string Hud::DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict)
+{
+  std::string text = std::format("Derelict: {} Ore", WithThousands(_derelict.salvageOre));
+  if (_derelict.salvageTopic.IsValid())
+    text += std::format(", and part of {}'s research time", TopicNameOf(_newest, _derelict.salvageTopic));
+  if (_derelict.salvagePermille > 0)
+    text += std::format("{}salvaged {}%", DOT, _derelict.salvagePermille / 10);
+  if (_derelict.remembered)
+    text += " (as last seen)";
+  return text;
+}
+
 std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
 {
   if (!_newest.matchOver)
@@ -2305,7 +2319,8 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
       {.name = topic.nameUtf8,
        .effect = topic.effectUtf8,
        .cost = topic.cost,
-       .time = std::format("TIER {}{}{} s", topic.tier, DOT, Tenths(topic.researchSeconds)),
+       .time = std::format("TIER {}{}{} s{}", topic.tier, DOT, Tenths(topic.researchSeconds),
+                           topic.recovered ? std::format("{}SALVAGED", DOT) : ""),
        .needs = std::move(needs),
        .action = {.kind = ActionKind::Research, .producer = found != nullptr ? found->id : EntityId{}, .topic = topic.id},
        .enabled = enabled,
@@ -2632,6 +2647,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
                                        : mark.side == Side::Own                 ? OWN_COLOR
                                        : mark.side == Side::Enemy               ? ENEMY_COLOR
                                        : mark.side == Side::Pirate              ? PIRATE_COLOR
+                                       : mark.kind == EntityKind::Derelict      ? DERELICT_COLOR
                                        : mark.kind == EntityKind::AsteroidField ? ASTEROID_FIELD_COLOR
                                        : mark.kind == EntityKind::Asteroid      ? ORE_ASTEROID_COLOR
                                                                                 : NEUTRAL_COLOR;

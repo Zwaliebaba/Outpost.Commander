@@ -758,16 +758,17 @@ void Outpost::Simulation::SpawnDerelict(const DerelictPlacement& _derelict)
 {
   // A wreck lies as it fell, facing away from the map's center, so that a derelict and its mirror lie alike.
   const PlaneVector out = Normalized(_derelict.position - PlanePosition{}, {1.0f, 0.0f});
-  m_entities.push_back({.id = EntityId{++m_lastEntityId},
-                        .kind = EntityKind::Derelict,
-                        .hull = _derelict.hull,
-                        .position = _derelict.position,
-                        .headingRadians = std::atan2(out.zMeters, out.xMeters),
-                        .radiusMeters = _derelict.radiusMeters,
-                        .salvageOre = _derelict.ore,
-                        .salvageTopic = _derelict.topic,
-                        .salvageWorkNeeded = std::max(1, static_cast<std::int32_t>(std::llround(m_tuning->salvage->workSeconds *
-                                                                                                m_ticksPerSecond * MILLITICKS_PER_TICK)))});
+  m_entities.push_back(
+    {.id = EntityId{++m_lastEntityId},
+     .kind = EntityKind::Derelict,
+     .hull = _derelict.hull,
+     .position = _derelict.position,
+     .headingRadians = std::atan2(out.zMeters, out.xMeters),
+     .radiusMeters = _derelict.radiusMeters,
+     .salvageOre = _derelict.ore,
+     .salvageTopic = _derelict.topic,
+     .salvageWorkNeeded = std::max(1, static_cast<std::int32_t>(std::llround(m_tuning->salvage.value_or(SalvageTuning{}).workSeconds *
+                                                                             m_ticksPerSecond * MILLITICKS_PER_TICK)))});
 }
 
 std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands, TickObserver* _observer)
@@ -2328,8 +2329,8 @@ void Outpost::Simulation::Salvage(PlayerState& _player, const Entity& _derelict)
   const auto tuning = std::ranges::find(m_tuning->research, topic, &ResearchTopicTuning::id);
   if (tuning == m_tuning->research.end())
     return;
-  const auto recovered = static_cast<std::int32_t>(
-    std::llround(tuning->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK * m_tuning->salvage->recoveryPercent / 100.0));
+  const auto recovered = static_cast<std::int32_t>(std::llround(tuning->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK *
+                                                                m_tuning->salvage.value_or(SalvageTuning{}).recoveryPercent / 100.0));
   for (Entity& lab : m_entities)
   {
     if (lab.kind != EntityKind::Structure || lab.owner != _player.id || lab.researchQueue.empty())

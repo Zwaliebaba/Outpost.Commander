@@ -36,6 +36,11 @@
       "meshes": "Tarkan"
     },
     {
+      "name": "Wreck",
+      "color": { "red": 0.4, "green": 0.4, "blue": 0.42 },
+      "meshes": "Human"
+    },
+    {
       "name": "Asteroids",
       "color": { "red": 0.35, "green": 0.32, "blue": 0.3 },
       "models": [
@@ -50,6 +55,7 @@
     { "player": 2, "set": "Tarkan" }
   ],
   "pirates": "Pirate",
+  "derelicts": "Wreck",
   "hulls": [
     { "hull": 1, "model": "Small", "bank": { "maxDegrees": 50, "fullAtMetersPerSecondSquared": 60, "settleSeconds": 0.25 } },
     { "hull": 2, "model": "Medium", "bank": { "maxDegrees": 45, "fullAtMetersPerSecondSquared": 26, "settleSeconds": 0.3 } },

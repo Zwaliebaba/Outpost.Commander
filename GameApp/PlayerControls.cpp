@@ -268,8 +268,8 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
   const auto y = static_cast<float>(_event.yPixels);
   const PlayerId player = _frame.player;
 
-  // Constructors repair, or build, one of the player's own ships or structures that needs it; the rest of the selection
-  // goes there.
+  // Constructors repair, or build, one of the player's own ships or structures that needs it, or salvage a derelict; the
+  // rest of the selection goes there.
   std::vector<EntityId> constructors = SelectedConstructors(_frame.entities);
   if (!constructors.empty())
   {
@@ -285,6 +285,17 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
       std::erase_if(ships, [&constructors](EntityId _id) { return std::ranges::find(constructors, _id) != constructors.end(); });
       Give(RepairCommand{.constructors = std::move(constructors), .target = *friendly});
       if (const EntityView* target = Find(_frame.entities, *friendly); target != nullptr && !ships.empty())
+        Give(MoveCommand{.ships = std::move(ships), .destination = target->position});
+      return;
+    }
+    // A derelict under the cursor is salvaged, the rest of the selection going there too (Phase 4 design §9, ADR-074).
+    const std::optional<EntityId> derelict = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
+                                                        [](const EntityView& _entity) { return _entity.kind == EntityKind::Derelict; });
+    if (derelict.has_value())
+    {
+      std::erase_if(ships, [&constructors](EntityId _id) { return std::ranges::find(constructors, _id) != constructors.end(); });
+      Give(SalvageCommand{.constructors = std::move(constructors), .derelict = *derelict});
+      if (const EntityView* target = Find(_frame.entities, *derelict); target != nullptr && !ships.empty())
         Give(MoveCommand{.ships = std::move(ships), .destination = target->position});
       return;
     }

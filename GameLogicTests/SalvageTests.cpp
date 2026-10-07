@@ -61,7 +61,7 @@ public:
     Assert::AreEqual(before, arena.World().OreHundredths(BLUE));
     arena.Run(1);
     Assert::IsNull(arena.World().FindEntity(derelict));
-    Assert::AreEqual(before + (450 * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(before + (std::int64_t{450} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
     Assert::IsTrue(arena.Get(constructor).order == Outpost::ShipOrder::None, L"the order ends");
   }
 
@@ -110,7 +110,7 @@ public:
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {.xMeters = 600.0f, .zMeters = -600.0f});
     const std::int64_t before = arena.World().OreHundredths(BLUE);
     (void)arena.Tick({Order(BLUE, Outpost::StartResearchCommand{.lab = lab, .topic = IMPROVED_EXTRACTION})});
-    Assert::AreEqual(before - (150 * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE), L"the full cost");
+    Assert::AreEqual(before - (std::int64_t{150} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE), L"the full cost");
     Assert::IsFalse(recovered(), L"taken off once it starts");
     arena.Run((30 * TICKS_PER_SECOND) - 1);
     Assert::IsTrue(HasResearched(arena, IMPROVED_EXTRACTION), L"in half its 60 s");
@@ -142,7 +142,7 @@ public:
     const std::int64_t before = arena.World().OreHundredths(BLUE);
     (void)arena.Tick({Salvage({constructor}, derelict)});
     arena.Run(SALVAGE_TICKS);
-    Assert::AreEqual(before + (450 * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(before + (std::int64_t{450} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
     const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
     Assert::IsTrue(std::ranges::none_of(snapshot.research, &Outpost::ResearchTopicView::recovered));
   }
@@ -163,13 +163,15 @@ public:
     Assert::IsFalse(view(BLUE).has_value(), L"unseen");
     const Outpost::EntityId scout = arena.Ship(BLUE, Outpost::HullId{1}, Outpost::WeaponId{1}, BESIDE);
     arena.Run(1);
-    Assert::IsTrue(view(BLUE).has_value() && !view(BLUE)->remembered);
-    Assert::AreEqual(450, view(BLUE)->salvageOre);
-    Assert::AreEqual(IMPROVED_EXTRACTION.value, view(BLUE)->salvageTopic.value);
+    const Outpost::EntityView seen = view(BLUE).value_or(Outpost::EntityView{});
+    Assert::IsTrue(seen.id == derelict && !seen.remembered);
+    Assert::AreEqual(450, seen.salvageOre);
+    Assert::AreEqual(IMPROVED_EXTRACTION.value, seen.salvageTopic.value);
     (void)arena.Tick({Order(BLUE, Outpost::MoveCommand{.ships = {scout}, .destination = {.xMeters = 900.0f, .zMeters = -900.0f}})});
     arena.Run(40 * TICKS_PER_SECOND);
-    Assert::IsTrue(view(BLUE).has_value() && view(BLUE)->remembered, L"remembered");
-    Assert::AreEqual(450, view(BLUE)->salvageOre, L"with what it holds");
+    const Outpost::EntityView remembered = view(BLUE).value_or(Outpost::EntityView{});
+    Assert::IsTrue(remembered.id == derelict && remembered.remembered, L"remembered");
+    Assert::AreEqual(450, remembered.salvageOre, L"with what it holds");
     Assert::IsFalse(view(RED).has_value(), L"Red never saw it");
   }
 
@@ -196,9 +198,13 @@ public:
     std::vector<Outpost::EntityId> fleet;
     fleet.reserve(16);
     for (int i = 0; i < 16; ++i)
+    {
+      const int column = i % 4;
+      const int row = i / 4;
       fleet.push_back(match.World().SpawnShip(
         TerritoryMatch::BLUE, lancer,
-        sector.node + Outpost::PlaneVector{-300.0f + (40.0f * static_cast<float>(i % 4)), -300.0f - (40.0f * static_cast<float>(i / 4))}));
+        sector.node + Outpost::PlaneVector{-300.0f + (40.0f * static_cast<float>(column)), -300.0f - (40.0f * static_cast<float>(row))}));
+    }
     for (int second = 0; second < 180 && !platforms().empty(); ++second)
     {
       std::erase_if(fleet, [&match](Outpost::EntityId _ship) { return match.World().FindEntity(_ship) == nullptr; });

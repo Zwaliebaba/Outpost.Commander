@@ -173,6 +173,18 @@ public:
     Assert::AreEqual(40.0f, ghost.radiusMeters);
   }
 
+  // ADR-074: no structure stands on a derelict, though it blocks no path.
+  TEST_METHOD(AStructureStandsClearOfADerelict)
+  {
+    std::vector<Outpost::EntityView> world = World();
+    world.push_back({.id = Outpost::EntityId{9},
+                     .kind = Outpost::EntityKind::Derelict,
+                     .position = {.xMeters = 0.0f, .zMeters = 300.0f},
+                     .radiusMeters = 25.0f});
+    Assert::IsFalse(Outpost::PlaceGhost(Shipyard(), {0.0f, 330.0f}, world, MAP_SIZE_METERS).valid);
+    Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), {0.0f, 400.0f}, world, MAP_SIZE_METERS).valid);
+  }
+
   // Design §6: a Mining Rig snaps to a free ore asteroid within reach of the cursor, and covers it.
   TEST_METHOD(ARigSnapsToAFreeAsteroid)
   {
