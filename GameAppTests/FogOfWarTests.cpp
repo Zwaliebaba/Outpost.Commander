@@ -107,6 +107,49 @@ public:
     Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, fog.ShadeAt({.xMeters = -990.0f, .zMeters = 990.0f}));
   }
 
+  // ADR-052: an update works out again only what moved, so a cell another entity or a held sector still sees stays clear
+  // when one that saw it moves away or goes.
+  TEST_METHOD(KeepsWhatIsStillSeen)
+  {
+    Outpost::FogOfWar fog;
+    fog.Reset(2000.0f);
+    std::vector<Outpost::EntityView> entities{Seer(PLAYER, {}, 100.0f), Seer(PLAYER, {.xMeters = 50.0f}, 100.0f)};
+    entities[0].id = Outpost::EntityId{1};
+    entities[1].id = Outpost::EntityId{2};
+    const std::vector<Outpost::SectorView> sectors{
+      {.id = 1, .minXMeters = -1000.0f, .maxXMeters = -500.0f, .minZMeters = -1000.0f, .maxZMeters = 1000.0f, .holder = PLAYER}};
+    fog.Update(entities, PLAYER, sectors);
+    entities[0].position = {.xMeters = -600.0f};
+    fog.Update(entities, PLAYER, sectors);
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_SHADE, fog.ShadeAt({.xMeters = 10.0f}), L"the other still sees it");
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_BEFORE_SHADE, fog.ShadeAt({.xMeters = -80.0f}), L"left behind");
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_SHADE, fog.ShadeAt({.xMeters = -550.0f}), L"in sight and in the sector");
+
+    entities.erase(entities.begin());
+    fog.Update(entities, PLAYER, sectors);
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_SHADE, fog.ShadeAt({.xMeters = -550.0f}), L"the sector still sees it");
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_SHADE, fog.ShadeAt({.xMeters = 10.0f}));
+    fog.Update(entities, PLAYER, {});
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_BEFORE_SHADE, fog.ShadeAt({.xMeters = -550.0f}), L"the sector lost");
+  }
+
+  // ADR-052: the rows whose shades changed are flagged, so that only they are copied to the GPU; a new grid flags every row.
+  TEST_METHOD(SaysWhichRowsChanged)
+  {
+    Outpost::FogOfWar fog;
+    fog.Reset(2000.0f);
+    Assert::AreEqual(size_t{100}, fog.ChangedRows().size());
+    Assert::IsTrue(std::ranges::all_of(fog.ChangedRows(), [](std::uint8_t _row) { return _row != 0; }), L"a new grid");
+    fog.ClearChangedRows();
+    // 100 m of sight at the center reaches rows 45 to 54, of 20 m each from -1,000 m.
+    fog.Update(std::vector{Seer(PLAYER, {}, 100.0f)}, PLAYER);
+    for (size_t row = 0; row < 100; ++row)
+      Assert::AreEqual(row >= 45 && row <= 54, fog.ChangedRows()[row] != 0, std::to_wstring(row).c_str());
+    fog.ClearChangedRows();
+    fog.Update(std::vector{Seer(PLAYER, {}, 100.0f)}, PLAYER);
+    Assert::IsTrue(std::ranges::none_of(fog.ChangedRows(), [](std::uint8_t _row) { return _row != 0; }), L"nothing changed");
+  }
+
   // ADR-046: the player has seen an asteroid once it has seen any of it, and stays so; without fog it has seen the map.
   TEST_METHOD(SaysWhetherAnyOfACircleWasSeen)
   {

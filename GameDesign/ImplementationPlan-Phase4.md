@@ -36,6 +36,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 28.4 | The engine measured at 10 km (U7) | 28.2 | — | measured in the container; U7 awaits the owner's run |
 | 29.0 | A lead of one node takes 50 minutes on any map | 28.4 | owner, 2026-10-07 | built, in milestone 29's PR |
 | 29.1 | Placement from the seed | 28.2 | L10 | built, in milestone 29's PR |
+| 29.2 | The fog works out only what changed | 28.1 | owner, 2026-10-07 | built, in milestone 29's PR; awaiting CI and the owner's run |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
 | 30.2 | The client draws pirates | 30.1 | L7 | todo |
 | 31.1 | Derelicts and salvage | 29.1 | L8 | todo |
@@ -169,6 +170,15 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Acceptance:** `MapTests` cover the shape and the Ore over twelve seeds, symmetry, reachability, the same seed placing the same map and every asteroid keeping the placement's rules, and the loader's refusals of broken kinds.
 - **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
 - **As built:** recorded in [ADR-072](../Design/ADR/ADR-072-seeded-placement.md) and design §2. Seeds 1 to 2,000 all place the map, at about 10 µs each. `Tools/MakeMap.py` writes the kinds. The tests that named an asteroid's place find one the seed placed (`TerritoryMatch::AsteroidIn`), and the fixtures place their bases and loads on the server's placed map; no AI test needed re-timing. Over seeds 1–40 the median match is 1:37, every match ends by domination, and each player wins 20.
+
+### 29.2 — The fog works out only what changed
+
+- **Asked:** the owner, playing a Debug build on the 10 km map, found the ships stuttering and the controls lagging (2026-10-07), and chose to make the fog's update incremental. Measured in the container, the client's fog update of the whole 250,000-cell grid took about 40 ms a snapshot unoptimized, 2 ms optimized, and every changed fog texture was converted and copied whole.
+- **Scope:** `FogOfWar` keeps a count per cell of the entities and the held sectors that see it, and an update counts again only the sectors that changed and the entities that appeared, went or moved, a moved circle only where its rows' runs differ. It flags the rows whose shades changed, and `GroundMaskPipeline::SetShades` writes and copies only those. The shades are those the whole update gave.
+- **ADR:** ADR-052 edited in place.
+- **Acceptance:** `FogOfWarTests`, with `KeepsWhatIsStillSeen` and `SaysWhichRowsChanged` new.
+- **Verify:** CI; **owner run**, in Debug, on the 10 km map.
+- **As built:** checked against the earlier code cell for cell over 1,200 random updates; on 120 entities, half of them moving, an update takes 2.5 ms unoptimized and 0.4 ms optimized, against 40 ms and 1.1 ms. `FogOfWarTests` ran in the container against a stand-in for the test framework; `GroundMaskPipeline` is not built there, and CI is its first build.
 
 ## Milestones 30 to 34
 

@@ -1090,10 +1090,12 @@ void Outpost::GameClient::DrawFog(const Neuron::Renderer& _renderer, ID3D12Graph
                                                              .originZMeters = origin.zMeters,
                                                              .cellMeters = FogOfWar::CELL_METERS,
                                                              .cellsPerSide = m_fog.CellsPerSide()};
-  // The shades go to the GPU only when they change; the minimap samples the same texture (ADR-052).
+  // The shades go to the GPU only when they change, and only the rows that did; the minimap samples the same texture
+  // (ADR-052).
   if (m_fogRevisionShown != m_fog.Revision())
   {
-    m_groundMask.SetShades(_commandList, _renderer.FrameIndex(), m_fog.Shades(), m_fog.CellsPerSide());
+    m_groundMask.SetShades(_commandList, _renderer.FrameIndex(), m_fog.Shades(), m_fog.CellsPerSide(), m_fog.ChangedRows());
+    m_fog.ClearChangedRows();
     m_fogRevisionShown = m_fog.Revision();
   }
   m_groundMask.Draw(_commandList, constants);
