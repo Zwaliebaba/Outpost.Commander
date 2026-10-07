@@ -129,6 +129,7 @@
     <ClCompile Include="StandingOrderTests.cpp" />
     <ClCompile Include="UpgradeTests.cpp" />
     <ClCompile Include="FleetCapTests.cpp" />
+    <ClCompile Include="PirateTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

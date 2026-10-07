@@ -4,20 +4,30 @@
 
 namespace GameLogicTests
 {
-// A match on the repository's map and data, with both bases placed and fog of war, as the game plays it (Phase 2 design
-// §4–§8): Blue's home in the southwest and Red's in the northeast. A warship is of the starting design Small+Ion+Mass
-// Driver.
+// A match on the repository's map and data, with both bases placed and fog of war, as the game plays it but for the
+// pirates, which a test asks for (Phase 2 design §4–§8): Blue's home in the southwest and Red's in the northeast. A
+// warship is of the starting design Small+Ion+Mass Driver.
 class TerritoryMatch
 {
 public:
   static constexpr Outpost::PlayerId BLUE{1};
   static constexpr Outpost::PlayerId RED{2};
   static constexpr std::uint32_t TICKS_PER_SECOND = 20;
-  TerritoryMatch()
-    : m_map(Outpost::LoadMap(ReadRepositoryMap())),
+  // With _pirates, the seed places the pirates' outposts as in a match (ADR-073); without, every sector is free, as the tests
+  // of the territory rules want it.
+  explicit TerritoryMatch(bool _pirates = false)
+    : m_map(MapFor(_pirates)),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = 3})
   {
     World().PlaceStartingBases(m_server.MapData());
+  }
+
+  [[nodiscard]] static Outpost::Map MapFor(bool _pirates)
+  {
+    Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
+    if (!_pirates)
+      map.outpostRules.clear();
+    return map;
   }
 
   [[nodiscard]] Outpost::Simulation& World() noexcept
@@ -39,6 +49,17 @@ public:
                                             { return sector.Contains(_asteroid.position); });
     Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(found != asteroids.end(), L"no asteroid in the sector");
     return found->position;
+  }
+
+  [[nodiscard]] const Outpost::Tuning& TuningData() const noexcept
+  {
+    return m_server.TuningData();
+  }
+
+  // The pirates' outposts the match's seed placed, if it has pirates (ADR-073).
+  [[nodiscard]] const std::vector<Outpost::OutpostPlacement>& Outposts() const noexcept
+  {
+    return m_server.MapData().outposts;
   }
 
   // A finished structure of the tuning data's numbers.

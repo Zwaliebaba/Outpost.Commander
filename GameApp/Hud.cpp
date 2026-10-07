@@ -19,12 +19,13 @@ constexpr DirectX::XMFLOAT4 DISABLED_BUTTON_COLOR{0.05f, 0.06f, 0.08f, 0.85f};
 // A designer's name the server would refuse, and an income of nothing.
 constexpr DirectX::XMFLOAT4 WARNING_COLOR{1.0f, 0.5f, 0.35f, 1.0f};
 // The minimap: the map's square, and its marks in the side's color, an ore asteroid in Ore's gold, darkened, so that the
-// map reads without a legend: blue is the player's, red the enemy's, and gold is ore (ADR-043). An ore asteroid's mark is
-// an outlined square, so that it differs from an enemy's filled one in shape as well as in brightness (ADR-068). The
-// camera's view is a light outline.
+// map reads without a legend: blue is the player's, red the enemy's, violet the pirates' (ADR-073), and gold is ore
+// (ADR-043). An ore asteroid's mark is an outlined square, so that it differs from an enemy's filled one in shape as well
+// as in brightness (ADR-068). The camera's view is a light outline.
 constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
 constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 ENEMY_COLOR{1.0f, 0.38f, 0.25f, 1.0f};
+constexpr DirectX::XMFLOAT4 PIRATE_COLOR{0.78f, 0.45f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 NEUTRAL_COLOR{0.45f, 0.42f, 0.4f, 1.0f};
 constexpr DirectX::XMFLOAT4 ORE_ASTEROID_COLOR{0.42f, 0.23f, 0.02f, 1.0f};
 // An ore asteroid that has run out: darker than one with ore, and warmed toward rust, at 3:1 against the map (ADR-068).
@@ -1889,7 +1890,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.designer = DescribeDesigner(_newest, *_designer, _hovered);
 
   const auto sideOf = [&_newest](PlayerId _owner) {
-    return !_owner.IsValid() ? Side::Neutral : _owner == _newest.player ? Side::Own : Side::Enemy;
+    return !_owner.IsValid() ? Side::Neutral : _owner == _newest.player ? Side::Own : _owner == PIRATES ? Side::Pirate : Side::Enemy;
   };
   if (!_newest.sectors.empty())
   {
@@ -1897,7 +1898,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.sectors.reserve(_newest.sectors.size());
     for (const SectorView& sector : _newest.sectors)
     {
-      const Side side = sideOf(sector.holder);
+      // A sector the pirates guard is held by no one, and shown as theirs (ADR-073).
+      const Side side = sector.guarded && !sector.holder.IsValid() ? Side::Pirate : sideOf(sector.holder);
       territory.ownNodes += side == Side::Own ? 1 : 0;
       territory.enemyNodes += side == Side::Enemy ? 1 : 0;
       content.sectors.push_back({.minXMeters = sector.minXMeters,
@@ -2597,7 +2599,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     };
     const auto sideColor = [](Side _side, float _alpha)
     {
-      DirectX::XMFLOAT4 color = _side == Side::Own ? OWN_COLOR : ENEMY_COLOR;
+      DirectX::XMFLOAT4 color = _side == Side::Own ? OWN_COLOR : _side == Side::Pirate ? PIRATE_COLOR : ENEMY_COLOR;
       color.w = _alpha;
       return color;
     };
@@ -2629,6 +2631,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       const DirectX::XMFLOAT4& color = mark.dry                                 ? DRY_COLOR
                                        : mark.side == Side::Own                 ? OWN_COLOR
                                        : mark.side == Side::Enemy               ? ENEMY_COLOR
+                                       : mark.side == Side::Pirate              ? PIRATE_COLOR
                                        : mark.kind == EntityKind::AsteroidField ? ASTEROID_FIELD_COLOR
                                        : mark.kind == EntityKind::Asteroid      ? ORE_ASTEROID_COLOR
                                                                                 : NEUTRAL_COLOR;
@@ -2654,7 +2657,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
         {layout.minimap.left, layout.minimap.top, layout.minimap.width, layout.minimap.height, {0.0f, 0.0f, 0.0f, 1.0f}, Fill::Fog});
     }
 
-    // Over the fog, since both sides know who holds what: each held sector's outline, and stripes over a suppressed one.
+    // Over the fog, since both sides know who holds what and where the pirates are: each held or guarded sector's outline,
+    // and stripes over a suppressed one.
     const float sectorLine = SECTOR_LINE_UNITS * scale;
     for (const SectorMark& sector : _content.sectors)
     {

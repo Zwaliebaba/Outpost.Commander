@@ -81,6 +81,10 @@ constexpr float NODE_REACH_METERS = 1.0f;
 // The starting Constructors stand in a row this far in front of the Command Station's footprint, this far apart.
 constexpr float BASE_ROW_GAP_METERS = 25.0f;
 constexpr float BASE_ROW_SPACING_METERS = 10.0f;
+// A pirate outpost's Defence Platforms stand in a row through its node, across the line to the map's center, this far
+// apart, and its ships in a ring this far round the node (ADR-073).
+constexpr float PIRATE_PLATFORM_SPACING_METERS = 140.0f;
+constexpr float PIRATE_RING_METERS = 120.0f;
 
 // A starting Command Station or Constructor must stay inside the map and clear of every obstacle. A base too large for its
 // start is a data error, reported rather than overlapped.
@@ -664,6 +668,73 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
   }
 }
 
+// Each outpost is laid out facing the map's center, so that an outpost and its mirror's are the same turned half a turn
+// (ADR-073). Its designs are saved once, at the base level, as a player's starting designs are.
+void Outpost::Simulation::PlacePirates(const Map& _map)
+{
+  if (_map.outposts.empty())
+    return;
+  const StructureTuning* platform = StructureTuningFor(StructureKind::DefensePlatform);
+  if (platform == nullptr)
+    throw Neuron::Exception("PlacePirates: the simulation has no tuning data");
+  const PirateTuning& pirates = m_tuning->pirates;
+  const auto platformRadius = static_cast<float>(platform->footprintRadiusMeters);
+  const auto chase = static_cast<float>(pirates.chaseMeters);
+  for (const OutpostPlacement& placed : _map.outposts)
+  {
+    const auto size = std::ranges::find(pirates.outposts, placed.outpost, &OutpostTuning::name);
+    if (size == pirates.outposts.end())
+      throw Neuron::Exception(std::format("PlacePirates: the tuning data has no pirate outpost \"{}\"", placed.outpost));
+    const Sector* sector = SectorById(placed.sector);
+    if (sector == nullptr)
+      throw Neuron::Exception(std::format("PlacePirates: the map has no sector {}", placed.sector));
+    const SectorPlacement& where = sector->placement;
+    const PlanePosition node = where.node;
+    // The ships never leave their sector (Phase 4 design §8), which holds when the chase does.
+    if (node.xMeters - chase < where.minXMeters || node.xMeters + chase > where.maxXMeters || node.zMeters - chase < where.minZMeters ||
+        node.zMeters + chase > where.maxZMeters)
+      throw Neuron::Exception(std::format("PlacePirates: an outpost's ships would chase out of sector {}", where.name));
+
+    const PlaneVector toward = Normalized(PlanePosition{} - node, {1.0f, 0.0f});
+    const PlaneVector across = Perpendicular(toward);
+    for (std::int32_t index = 0; index < size->defensePlatforms; ++index)
+    {
+      const float offset =
+        (static_cast<float>(index) - (static_cast<float>(size->defensePlatforms - 1) / 2.0f)) * PIRATE_PLATFORM_SPACING_METERS;
+      const PlanePosition at = node + across * offset;
+      if (m_pathfinder.OverlapsObstacle(at, platformRadius))
+        throw Neuron::Exception(
+          std::format("PlacePirates: a Defence Platform of the outpost in sector {} would overlap an obstacle", where.name));
+      (void)SpawnStructure(PIRATES, StructureKind::DefensePlatform, at, platformRadius, StructureHitPoints(PIRATES, *platform),
+                           platform->armor * HUNDREDTHS);
+    }
+
+    PirateOutpost outpost{.sector = where.id, .node = node};
+    std::int32_t ships = 0;
+    for (const PirateShipsTuning& group : size->ships)
+      ships += group.count;
+    const float facing = std::atan2(toward.zMeters, toward.xMeters);
+    for (const PirateShipsTuning& group : size->ships)
+    {
+      const DesignComponents components{group.hull, group.drive, group.weapon};
+      const ShipDesign* saved = FindDesign(PIRATES, components);
+      const DesignId design = saved != nullptr
+                                ? saved->id
+                                : SaveDesign(PIRATES, DesignName(*m_tuning, components), components, DesignStatsFor(*m_tuning, components));
+      for (std::int32_t count = 0; count < group.count; ++count)
+      {
+        const float angle =
+          facing + (2.0f * std::numbers::pi_v<float> * static_cast<float>(outpost.ships.size()) / static_cast<float>(ships));
+        const PlaneVector out{std::cos(angle), std::sin(angle)};
+        outpost.ships.push_back(SpawnShip(PIRATES, design, node + out * PIRATE_RING_METERS, angle));
+      }
+    }
+    m_outposts.push_back(std::move(outpost));
+  }
+  // Their sectors are guarded from the first tick.
+  UpdateTerritory();
+}
+
 std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands, TickObserver* _observer)
 {
   // The observer watches this tick only, so that it is never left behind in a copy, even when the tick throws.
@@ -751,6 +822,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     const ObservedPart part(m_observer, TickPart::Targets);
     DecideMatch();
     KeepStandingOrders();
+    GuardOutposts();
     ChaseTargets();
     ApproachWork();
   }
@@ -913,7 +985,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                 .adjacent = placement.adjacent,
                                 .holder = sector.holder,
                                 .suppressed = sector.suppressed,
-                                .cutOff = sector.cutOff});
+                                .cutOff = sector.cutOff,
+                                .guarded = sector.guarded});
   }
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
@@ -1774,6 +1847,8 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
     if (relaySector == nullptr)
       return CommandResult::InvalidPlacement;
     _position = relaySector->placement.node;
+    if (relaySector->guarded)
+      return CommandResult::Guarded;
   }
   if (_kind == StructureKind::MiningRig)
   {
@@ -2288,7 +2363,7 @@ const Outpost::Simulation::Sector* Outpost::Simulation::SectorById(std::int32_t 
 // nothing yet. A Relay is suppressed while an enemy warship is within the tuning data's radius of it and none of its
 // owner's is; a Command Station never is. A held sector is linked when its holder holds a path of adjacent sectors to one
 // of its home sectors, the ones its Command Station holds, suppressed ones included; one that is not is cut off (Phase 2
-// design §4–§6, ADR-056).
+// design §4–§6, ADR-056). A sector a pirate structure stands in is guarded, and cannot be claimed (ADR-073).
 void Outpost::Simulation::UpdateTerritory()
 {
   if (!HasTerritory())
@@ -2300,6 +2375,7 @@ void Outpost::Simulation::UpdateTerritory()
     sector.home = false;
     sector.suppressed = false;
     sector.cutOff = false;
+    sector.guarded = false;
     const auto onNode = std::ranges::find_if(m_entities,
                                              [&sector](const Entity& _entity)
                                              {
@@ -2325,6 +2401,15 @@ void Outpost::Simulation::UpdateTerritory()
       (ship.owner == sector.holder ? ownNear : enemyNear) = true;
     }
     sector.suppressed = enemyNear && !ownNear;
+  }
+
+  // A sector a pirate structure stands in is guarded (ADR-073).
+  for (const Entity& entity : m_entities)
+  {
+    if (entity.kind != EntityKind::Structure || entity.owner != PIRATES)
+      continue;
+    for (Sector& sector : m_sectors)
+      sector.guarded = sector.guarded || sector.placement.Contains(entity.position);
   }
 
   // Outward from each home sector through the sectors its holder holds.
@@ -2718,11 +2803,7 @@ void Outpost::Simulation::KeepStandingOrders()
       groups.push_back(ship.standingGroup);
   }
   std::ranges::sort(groups);
-  const auto planning = [this](EntityId _ship)
-  {
-    return std::ranges::any_of(m_plannedOrders, [_ship](const PlannedOrder& _order)
-                               { return std::ranges::find(_order.members, _ship, &PlannedOrder::Member::ship) != _order.members.end(); });
-  };
+  const auto planning = [this](EntityId _ship) { return IsPlanning(_ship); };
   for (const std::uint32_t group : groups)
   {
     std::vector<EntityId> ships;
@@ -2783,6 +2864,81 @@ void Outpost::Simulation::KeepStandingOrders()
     }
     else if (idle && Distance(center, sector->placement.node) > HOLD_RETURN_METERS)
       (void)OrderMove(first.owner, ships, sector->placement.node, ShipOrder::AttackMove);
+  }
+}
+
+bool Outpost::Simulation::IsPlanning(EntityId _ship) const noexcept
+{
+  return std::ranges::any_of(m_plannedOrders, [_ship](const PlannedOrder& _order)
+                             { return std::ranges::find(_order.members, _ship, &PlannedOrder::Member::ship) != _order.members.end(); });
+}
+
+// Phase 4 design §8: once a second, each outpost's ships go after the nearest of the players' ships and structures within
+// the guard of its node, and stay after it while it stays within the chase; with none, they go back to the node. They
+// never raid and never leave their sector. They see through fog of war, as a Defence gun does: pirates are a rule the
+// simulation runs, not a player (ADR-073).
+void Outpost::Simulation::GuardOutposts()
+{
+  if (m_outposts.empty() || m_tick % m_ticksPerSecond != 0)
+    return;
+  const auto guard = static_cast<float>(m_tuning->pirates.guardMeters);
+  const auto chase = static_cast<float>(m_tuning->pirates.chaseMeters);
+  const auto isIntruder = [](const Entity& _entity)
+  {
+    return (_entity.kind == EntityKind::Ship || _entity.kind == EntityKind::Structure) && _entity.owner.IsValid() &&
+           _entity.owner != PIRATES && _entity.maxHitPointsHundredths > 0;
+  };
+  for (PirateOutpost& outpost : m_outposts)
+  {
+    std::erase_if(outpost.ships, [this](EntityId _id) { return FindEntity(_id) == nullptr; });
+    if (outpost.ships.empty())
+    {
+      outpost.quarry = {};
+      continue;
+    }
+    if (std::ranges::any_of(outpost.ships, [this](EntityId _id) { return IsPlanning(_id); }))
+      continue;
+
+    const Entity* quarry = FindEntity(outpost.quarry);
+    if (quarry != nullptr && (!isIntruder(*quarry) || Distance(quarry->position, outpost.node) > chase))
+      quarry = nullptr;
+    if (quarry == nullptr)
+    {
+      for (const Entity& other : m_entities)
+      {
+        const float meters = Distance(other.position, outpost.node);
+        if (isIntruder(other) && meters <= guard && (quarry == nullptr || meters < Distance(quarry->position, outpost.node)))
+          quarry = &other;
+      }
+    }
+    outpost.quarry = quarry != nullptr ? quarry->id : EntityId{};
+    if (quarry != nullptr)
+    {
+      const bool engaged =
+        std::ranges::any_of(outpost.ships,
+                            [&](EntityId _id)
+                            {
+                              const Entity& ship = *FindEntity(_id);
+                              return ship.target.IsValid() || (ship.order == ShipOrder::AttackMove && ship.destination.has_value() &&
+                                                               Distance(*ship.destination, quarry->position) <= STANDING_RESEND_METERS);
+                            });
+      if (!engaged)
+        (void)OrderMove(PIRATES, outpost.ships, quarry->position, ShipOrder::AttackMove);
+      continue;
+    }
+
+    PlaneVector sum{};
+    for (const EntityId id : outpost.ships)
+      sum = sum + (FindEntity(id)->position - PlanePosition{});
+    const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(outpost.ships.size()));
+    const bool homeward = std::ranges::all_of(outpost.ships,
+                                              [&](EntityId _id)
+                                              {
+                                                const Entity& ship = *FindEntity(_id);
+                                                return ship.destination.has_value() && *ship.destination == outpost.node;
+                                              });
+    if (!homeward && Distance(center, outpost.node) > HOLD_RETURN_METERS)
+      (void)OrderMove(PIRATES, outpost.ships, outpost.node, ShipOrder::Move);
   }
 }
 

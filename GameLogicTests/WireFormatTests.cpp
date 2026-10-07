@@ -141,7 +141,8 @@ Outpost::Snapshot FullSnapshot()
                               .adjacent = {93, 94},
                               .holder = Outpost::PlayerId{2},
                               .suppressed = true,
-                              .cutOff = true});
+                              .cutOff = true,
+                              .guarded = true});
   snapshot.tickets.push_back({.player = Outpost::PlayerId{1}, .tickets = 95});
   snapshot.startingTickets = 96;
   return snapshot;

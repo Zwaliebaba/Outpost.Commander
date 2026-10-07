@@ -103,6 +103,27 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Ore still piles up** behind the cap, as the owner expected, for Phase 4's later sinks to take (milestones 30 to 32) and milestone 34 to measure.
 - **The engine:** the median match's 99th percentile tick is 2.1 ms in the container, the worst match's 4.2 ms. One match's slowest tick took 72 ms, the most yet; the median match's slowest is 23 ms.
 
+**After milestone 30** (plan task 30.1): pirate outposts on seven nodes, and an AI that leaves them alone until milestone 33. The same harness and seeds, each match played for up to three hours. The first shot is now any shot, a pirate's included.
+
+| Over seeds 1–40 | 10 km, after milestone 29 | 10 km, after milestone 30 |
+|---|---|---|
+| Most warships a side has at once, median of the 80 sides (largest) | 21 (46) | 20 (47) |
+| Sides over 40 warships at once | 4 of 80 | 7 of 80 |
+| Warships a side has at minute 20, median; sides with 20 or more | 14; 12 of 80 | 13; 9 of 80 |
+| Warships a side builds in a match, median | 82 | 64 |
+| First shot, median (earliest–latest) | 4:42 (4:35–5:21) | 4:02 (4:01–5:21) |
+| Match length, median of those that end (shortest–longest) | 1:37:06 (54:09–2:30:39) | 1:31:42 (43:27–2:33:42) |
+| Endings; won by player 1 | 40 domination; 20 | 34 domination, 3 production, 3 not ended at 3 hours; 20 |
+| Ore a side holds at minute 20, median; sides over 2,000 | 1,777; 32 of 80 | 2,474; 44 of 80 |
+| Ore a side holds at minute 30, median | 17,135 | 18,754 |
+| Pirate structures and ships left at the end, median | — | 7.5 of 10; 14 of 24 |
+
+- **U5: both endings now happen, and not every match ends.** Three AIs took the other's base, the first on the 10 km map. Three matches are level at three hours: the AI attacks only with a lead in nodes, and the guarded sectors were the ones that broke a tie. Milestone 33 teaches it to clear them.
+- **The first shot comes 40 seconds sooner**, the scouts meeting a camp on the way. The players' own first shot is milestone 34's to record (U1).
+- **Most outposts outlast the match.** The AI fights them only when its fleets' way passes one, the center's stronghold most of all.
+- **Ore piles up a little more**, with seven of the 25 sectors closed to both sides until their outposts fall.
+- **The engine:** the median match's 99th percentile tick is 1.7 ms in the container, the worst match's 2.7 ms.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06
@@ -204,6 +225,13 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **No respawn.** A cleared outpost stays cleared. Pirates are the opening's content and the mid-game's obstacles, not a third side for the whole match.
 - **Cleared, an outpost leaves a derelict** where its largest structure stood (§9).
 - **Drawn** with one of the two existing mesh sets in a third color of their own, until there is art for them. Models.json already reuses a mesh with a tint for the Relay. Fog of war applies to pirates as it does to an enemy (ADR-024).
+- **As built** (plan tasks 30.1 and 30.2, [ADR-073](../Design/ADR/ADR-073-pirates.md)):
+  - On each side a camp stands in two of the four contested sectors, drawn by the seed, and a stronghold on both rich corners and the center (owner, 2026-10-07).
+  - Pirates fight at the base level, with no research.
+  - Every player sees which sectors the pirates guard, as it sees each sector's holder (owner, 2026-10-07). The pirates themselves stay under fog.
+  - They are drawn with the Tarkan set's meshes in violet.
+  - The derelict a cleared outpost leaves comes with milestone 31.
+  - A first fleet of four Pickets clears a camp and loses one, as above. Swarms need eight: a Mass Driver does a Defence Platform's armor little harm.
 
 ---
 

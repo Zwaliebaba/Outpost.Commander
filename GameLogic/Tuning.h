@@ -254,6 +254,33 @@ struct StartingDesignTuning
   std::string name;
 };
 
+// Ships of one design that a pirate outpost holds (Phase 4 design §8). Pirates fight at the base level, with no research
+// (owner, 2026-10-07), and any component will do: a pirate's design is not a player's, so nothing unlocks it.
+struct PirateShipsTuning
+{
+  HullId hull;
+  DriveId drive;
+  WeaponId weapon;
+  std::int32_t count = 0;
+};
+
+// One size of pirate outpost, named for the map to place it by (ADR-072): its Defence Platforms and its ships.
+struct OutpostTuning
+{
+  std::string name;
+  std::int32_t defensePlatforms = 0;
+  std::vector<PirateShipsTuning> ships;
+};
+
+// Pirates (Phase 4 design §8, ADR-073): an outpost's ships attack any player's ship or structure within guardMeters of its
+// node, chase it no further than chaseMeters from the node, and then go back to it. None when the file has none.
+struct PirateTuning
+{
+  double guardMeters = 0.0;
+  double chaseMeters = 0.0;
+  std::vector<OutpostTuning> outposts;
+};
+
 struct Tuning
 {
   RulesTuning rules;
@@ -270,6 +297,8 @@ struct Tuning
   std::vector<ResearchTopicTuning> research;
   // Optional in the file; none names no starting design.
   std::vector<StartingDesignTuning> startingDesigns;
+  // Optional in the file.
+  PirateTuning pirates;
 };
 
 // The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5, gate K1): the level that names it, or 1
@@ -304,6 +333,7 @@ struct Tuning
 // opened by one level of the Research Lab, in order (ADR-033). Only the Command Station, the
 // Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL (ADR-064), and a Shipyard that names the hulls
 // it builds names each once, at level 1 or at one of its levels. A member the loader does not know is
-// an error too, so that a misspelled optional member is not ignored.
+// an error too, so that a misspelled optional member is not ignored. Pirates are optional: an outpost's name is unique, its
+// ships' components exist, and its chase reaches at least as far as its guard.
 [[nodiscard]] Tuning LoadTuning(std::string_view _json);
 } // namespace Outpost

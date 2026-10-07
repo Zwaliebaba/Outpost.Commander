@@ -20,6 +20,9 @@ template <typename Tag> struct Id
 // A ship, a structure or an asteroid, for the whole match. The server assigns them and never reuses one.
 using EntityId = Id<struct EntityTag>;
 using PlayerId = Id<struct PlayerTag>;
+// The neutral owner of the pirates' outposts (Phase 4 design §8, ADR-073): the enemy of every player, and never a player
+// itself, so it has no Ore, no research and no snapshot. The largest identifier, so that no seat is ever given it.
+inline constexpr PlayerId PIRATES{0xFFFF'FFFFu};
 
 // A saved ship design (design §7). The server assigns them when a design is first saved.
 using DesignId = Id<struct DesignTag>;

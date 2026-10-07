@@ -156,5 +156,10 @@
     { "name": "center", "ore": [{ "yield": "contested", "count": 4, "radiusMeters": 45, "reserve": 12000 }] },
     { "name": "rich", "ore": [{ "yield": "rich", "count": 2, "radiusMeters": 60, "reserve": 24000 }] }
   ],
+  "outposts": [
+    { "outpost": "camp", "kind": "contested", "count": 2 },
+    { "outpost": "stronghold", "kind": "rich", "count": 1 },
+    { "outpost": "stronghold", "kind": "center", "count": 1 }
+  ],
   "placement": { "borderMeters": 250, "nodeClearanceMeters": 350, "oreSpacingMeters": 500 }
 }

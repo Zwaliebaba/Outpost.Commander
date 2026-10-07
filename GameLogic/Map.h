@@ -75,6 +75,27 @@ struct SectorKind
   friend bool operator==(const SectorKind&, const SectorKind&) = default;
 };
 
+// Pirate outposts of one size, as the tuning data names them, that the seed places on the nodes of sectors of one kind
+// (Phase 4 design §8, ADR-072): count pairs of sectors across the center from each other, a sector that is its own mirror
+// counting as a pair.
+struct OutpostRule
+{
+  std::string outpost;
+  std::string kind;
+  std::int32_t count = 0;
+
+  friend bool operator==(const OutpostRule&, const OutpostRule&) = default;
+};
+
+// A pirate outpost the seed placed: of this size, on the node of the sector with this identifier.
+struct OutpostPlacement
+{
+  std::int32_t sector = 0;
+  std::string outpost;
+
+  friend bool operator==(const OutpostPlacement&, const OutpostPlacement&) = default;
+};
+
 // How far what the seed places keeps from its sector's borders, from the sector's node, and an ore asteroid's center from
 // another's, on top of the map's minimum gap between obstacles (ADR-072).
 struct PlacementRules
@@ -100,6 +121,10 @@ struct Map
   // What the seed places, by the sectors' kinds; none in a map that lists every asteroid (ADR-072).
   std::vector<SectorKind> sectorKinds;
   PlacementRules placement;
+  // The outposts the seed places, by the sectors' kinds, which the file calls "outposts"; and once PlaceContent has, the
+  // outposts it placed, in the order drawn, each followed by its mirror's (ADR-072).
+  std::vector<OutpostRule> outpostRules;
+  std::vector<OutpostPlacement> outposts;
 };
 
 // Reads the text of OutpostCommander/Assets/Map.json. Throws Neuron::Exception on the first problem, naming where it is,
@@ -110,7 +135,7 @@ struct Map
 // other.
 // Its sector kinds are checked too: each named once, each sector's kind one of them, and the map's kinds point-symmetric,
 // the sector across the center from each being of the same kind, with an even count of each yield in a sector that is
-// its own mirror.
+// its own mirror. Its outposts are of known kinds, and no kind has more of them than it has pairs of sectors.
 [[nodiscard]] Map LoadMap(std::string_view _json);
 
 // _map with the ore asteroids its sector kinds place, drawn from _seed (Phase 4 design §7, ADR-072). Each pair of sectors
@@ -119,6 +144,7 @@ struct Map
 // mirrors. Each asteroid is drawn inside its sector, the placement's border and its radius in from the edges, the node
 // clearance from its node, the minimum gap from every obstacle and start, and the ore spacing from every ore asteroid. The
 // same map and seed place the same asteroids on the same build (ADR-009). Throws Neuron::Exception when a sector has no
-// room for what its kind places. A map without sector kinds comes back as it is.
+// room for what its kind places. Then it draws which sectors of each outpost's kind get it, a pair at a time, each sector at
+// most one outpost. A map without sector kinds comes back as it is.
 [[nodiscard]] Map PlaceContent(Map _map, std::uint64_t _seed);
 } // namespace Outpost

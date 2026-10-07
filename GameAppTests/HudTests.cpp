@@ -576,6 +576,23 @@ public:
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
   }
 
+  // ADR-073: a sector the pirates guard is shown as theirs on the minimap, and counts for neither side; their ships and
+  // structures are marked in their color.
+  TEST_METHOD(ShowsThePirates)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.mapSizeMeters = 3000.0f;
+    newest.sectors = {
+      {.id = 1, .minXMeters = -1500.0f, .maxXMeters = 0.0f, .minZMeters = -1500.0f, .maxZMeters = 1500.0f, .holder = PLAYER},
+      {.id = 2, .minXMeters = 0.0f, .maxXMeters = 1500.0f, .minZMeters = -1500.0f, .maxZMeters = 1500.0f, .guarded = true}};
+    const std::vector<Outpost::EntityView> entities{
+      {.id = Outpost::EntityId{40}, .kind = Outpost::EntityKind::Ship, .owner = Outpost::PIRATES, .position = {.xMeters = 700.0f}}};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, {});
+    Assert::IsTrue(content.sectors[1].side == Outpost::Hud::Side::Pirate);
+    Assert::AreEqual(0, content.territory.value_or(Outpost::Hud::Territory{}).enemyNodes);
+    Assert::IsTrue(content.marks.front().side == Outpost::Hud::Side::Pirate);
+  }
+
   // ADR-056: the minimap washes each held sector in its holder's color under the marks, outlines it over the fog, and
   // stripes a suppressed one; a panel beside the Ore counts the nodes each side holds.
   TEST_METHOD(ShowsTheTerritory)

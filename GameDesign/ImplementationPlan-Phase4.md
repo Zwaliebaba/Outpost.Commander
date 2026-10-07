@@ -23,22 +23,22 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 27.1 | Ships and the Defence Platform cost three times as much | — | L1 | built, in milestone 27's PR |
-| 27.2 | The fleet cap, on the server | — | L2 | built, in milestone 27's PR |
-| 27.3 | The client shows the fleet and its cap | 27.2 | L2 | built, in milestone 27's PR; awaiting CI and the owner's run |
-| 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | built, in milestone 27's PR |
-| 27.5 | Milestone 27 measured on today's map | 27.4 | — | measured in the container |
-| 27.6 | The rigs earn about a third less | 27.5 | owner, 2026-10-07 | built, in milestone 27's PR |
-| 28.0 | A destroyed structure is taken out of the path graphs in place | — | owner, 2026-10-07 | built, in milestone 28's PR |
-| 28.1 | The client and the engine follow the map's size | — | L6 | built, in milestone 28's PR; awaiting CI and the owner's run |
-| 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | built, in milestone 28's PR |
-| 28.3 | Production follows territory | — | L5 | built, in milestone 28's PR; the ghost's test awaits CI |
-| 28.4 | The engine measured at 10 km (U7) | 28.2 | — | measured in the container; U7 awaits the owner's run |
-| 29.0 | A lead of one node takes 50 minutes on any map | 28.4 | owner, 2026-10-07 | built, in milestone 29's PR |
-| 29.1 | Placement from the seed | 28.2 | L10 | built, in milestone 29's PR |
-| 29.2 | The fog works out only what changed | 28.1 | owner, 2026-10-07 | built, in milestone 29's PR; awaiting CI and the owner's run |
-| 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
-| 30.2 | The client draws pirates | 30.1 | L7 | todo |
+| 27.1 | Ships and the Defence Platform cost three times as much | — | L1 | done |
+| 27.2 | The fleet cap, on the server | — | L2 | done |
+| 27.3 | The client shows the fleet and its cap | 27.2 | L2 | done |
+| 27.4 | The AI plays within the cap | 27.1, 27.2 | L2 | done |
+| 27.5 | Milestone 27 measured on today's map | 27.4 | — | done, in the container |
+| 27.6 | The rigs earn about a third less | 27.5 | owner, 2026-10-07 | done |
+| 28.0 | A destroyed structure is taken out of the path graphs in place | — | owner, 2026-10-07 | done |
+| 28.1 | The client and the engine follow the map's size | — | L6 | done |
+| 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | done |
+| 28.3 | Production follows territory | — | L5 | done |
+| 28.4 | The engine measured at 10 km (U7) | 28.2 | — | done in the container; U7 awaits the owner's `--measure` run |
+| 29.0 | A lead of one node takes 50 minutes on any map | 28.4 | owner, 2026-10-07 | done |
+| 29.1 | Placement from the seed | 28.2 | L10 | done |
+| 29.2 | The fog works out only what changed | 28.1 | owner, 2026-10-07 | done |
+| 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | built, in milestone 30's PR |
+| 30.2 | The client draws pirates | 30.1 | L7 | built, in milestone 30's PR; awaiting CI and the owner's run |
 | 31.1 | Derelicts and salvage | 29.1 | L8 | todo |
 | 31.2 | The client shows derelicts and salvage | 31.1 | L8 | todo |
 | 32.1 | The Repair Bay and retreat, on the server | — | L9 | todo |
@@ -180,11 +180,38 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Verify:** CI; **owner run**, in Debug, on the 10 km map.
 - **As built:** checked against the earlier code cell for cell over 1,200 random updates; on 120 entities, half of them moving, an update takes 2.5 ms unoptimized and 0.4 ms optimized, against 40 ms and 1.1 ms. `FogOfWarTests` ran in the container against a stand-in for the test framework; `GroundMaskPipeline` is not built there, and CI is its first build.
 
-## Milestones 30 to 34
+## Milestone 30 — Pirates
+
+**Asked before 30.1** (owner, 2026-10-07): on each side a camp in two of the four contested sectors, drawn by the seed, and a stronghold on both rich corners and the center; pirates at the base level, with no research; the derelict a cleared outpost leaves waits for milestone 31; and until milestone 33 the AI skips the sectors pirates guard. **Asked during 30.1:** every player sees which sectors the pirates guard, as it sees each sector's holder, since a client is never told why an order was refused.
+
+### 30.1 — Pirates: the neutral owner and its outposts
+
+- **Gate:** L7, decided; the placement and the level by the owner on 2026-10-07.
+- **Scope:** the neutral owner `PIRATES`; `Map.json`'s outposts by sector kind, drawn from the seed after the asteroids; `Tuning.json`'s guard, chase and each size's platforms and ships; the outposts laid out round their nodes; the guarding rule once a second; a guarded sector refusing a Relay and shown to every player; measurement runs without pirates; the AI leaving guarded sectors and pirate fleets alone.
+- **ADR:** a new one, ADR-073: pirates. ADR-072, ADR-056, ADR-057, ADR-024, ADR-020 and ADR-038 edited in place.
+- **Acceptance:** `PirateTests` (the outposts on their nodes, mirrored and held for no one; the guard, the chase and the way back; a Relay refused until the outpost falls; a first fleet of four Pickets clearing a camp with losses; fog); `MapTests` and `TuningTests` for the data; `AiPlayerTests.LeavesASectorWithPiratesAlone`; `InProcessServerTests` replaying a match with pirates.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
+- **As built:** recorded in [ADR-073](../Design/ADR/ADR-073-pirates.md) and design §2.
+  - A first fleet of four Pickets clears a camp and loses one, as §8 asks. Swarms need eight, since a Mass Driver does a Defence Platform's armor little harm. That is for the owner, the numbers being starting values.
+  - With the AI unchanged, it ordered a Relay into a guarded sector every second; now it orders none.
+  - Over seeds 1–40, 37 matches end, 3 of them by production, and 3 stay level at three hours.
+  - `TerritoryMatch` plays without pirates unless a test asks for them.
+
+### 30.2 — The client draws pirates
+
+- **Gate:** L7.
+- **Scope:** the pirates drawn with the Tarkan set's meshes in violet; violet marks on the minimap, and a violet wash and outline on a guarded sector; a red Relay ghost in a guarded sector; an alert that names pirates; the match log leaving out shots by or at pirates until milestone 34.
+- **ADR:** ADR-073; ADR-011 edited in place.
+- **Acceptance:** `ModelCatalogTests`, `PlacementTests`, `HudTests`, `AlertsTests` and `MatchLogTests`, each with a pirate case.
+- **Verify:** CI; **owner run**: a camp seen and fought, on the screen and on the minimap.
+- **As built:**
+  - `ModelCatalogTests`, `PlacementTests`, `AlertsTests` and `MatchLogTests` ran in the container against stand-ins for DirectXMath and the mesh reader. The two catalog tests that read meshes need the real reader, and did not run there.
+  - `HudTests` and `Hud.cpp` need the window's headers, so CI is their first build.
+
+## Milestones 31 to 34
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
 
-- **30 — Pirates** (design §8): the neutral owner, its outposts and their guarding rule, and how the client draws them.
 - **31 — Derelicts** (design §9): salvage, its Ore and its research.
 - **32 — The Repair Bay and retreat** (design §10).
 - **33 — The AI plays Phase 4** (design §12).

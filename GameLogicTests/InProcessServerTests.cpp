@@ -159,6 +159,7 @@ public:
       replay.AddPlayer(player, server.TuningData().rules.startingOre);
       replay.SaveStartingDesigns(player, server.TuningData());
     }
+    replay.PlacePirates(server.MapData());
     (void)replay.SpawnShip(BLUE, SWARM, SMALL_ION, {});
     (void)replay.SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();

@@ -41,8 +41,9 @@ struct LoggedCommand
 class InProcessServer final : public Server
 {
 public:
-  // Places _map in a new simulation seeded from _desc. Throws Neuron::Exception when a hull's footprint is wider than the
-  // map's minimum gap, since such a ship could be walled off. It builds no pathfinding graph: match setup ends with
+  // Places _map in a new simulation seeded from _desc, with the pirates' outposts the seed placed unless _desc asks for a
+  // measurement or stress run (ADR-073). Throws Neuron::Exception when a hull's footprint is wider than the map's minimum
+  // gap, since such a ship could be walled off. It builds no pathfinding graph: match setup ends with
   // PreparePathfinding, and until then each graph is built by the first path that needs it.
   InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc);
 
