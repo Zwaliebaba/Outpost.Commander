@@ -37,10 +37,10 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 29.0 | A lead of one node takes 50 minutes on any map | 28.4 | owner, 2026-10-07 | done |
 | 29.1 | Placement from the seed | 28.2 | L10 | done |
 | 29.2 | The fog works out only what changed | 28.1 | owner, 2026-10-07 | done |
-| 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | built, in milestone 30's PR |
-| 30.2 | The client draws pirates | 30.1 | L7 | built, in milestone 30's PR; awaiting CI and the owner's run |
-| 31.1 | Derelicts and salvage | 29.1 | L8 | todo |
-| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | todo |
+| 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | done |
+| 30.2 | The client draws pirates | 30.1 | L7 | merged; awaiting the owner's run |
+| 31.1 | Derelicts and salvage | 29.1 | L8 | built, in milestone 31's PR |
+| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | built, in milestone 31's PR; awaiting CI and the owner's run |
 | 32.1 | The Repair Bay and retreat, on the server | — | L9 | todo |
 | 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | todo |
 | 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | — | todo |
@@ -208,11 +208,55 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
   - `ModelCatalogTests`, `PlacementTests`, `AlertsTests` and `MatchLogTests` ran in the container against stand-ins for DirectXMath and the mesh reader. The two catalog tests that read meshes need the real reader, and did not run there.
   - `HudTests` and `Hud.cpp` need the window's headers, so CI is their first build.
 
-## Milestones 31 to 34
+## Milestone 31 — Derelicts
+
+**Asked before 31.1** (owner, 2026-10-07):
+
+- Placement: on each side the seed picks one of the two flank sectors at 300 Ore, two of the three near at 450, two of the four contested at 600, and the between sector at 750.
+- Research: a third of the pairs name a topic, drawn from the whole research table.
+- Outpost wrecks: a cleared outpost's wreck blocks its node until it is salvaged.
+- AI: the AI leaves derelicts alone until milestone 33.
+
+### 31.1 — Derelicts and salvage
+
+- **Gate:** L8, decided; the placement, the topics and the wreck by the owner on 2026-10-07.
+- **Scope:**
+  - A derelict entity, blocking structures but no path.
+  - `Map.json`'s derelicts by sector kind, drawn after the outposts.
+  - `Tuning.json`'s salvage time and recovery, and each outpost's wreck.
+  - A salvage order, worked as a site is.
+  - The Ore paid, and half a topic's time recovered.
+  - Fog of war as for an enemy's structure.
+  - The AI ignoring derelicts.
+- **ADR:** a new one, ADR-074: salvage. ADR-072, ADR-073, ADR-016, ADR-024 and ADR-020 edited in place.
+- **Acceptance:** `SalvageTests` (time, a second Constructor, refusals, Ore, recovery of a topic not started, under way or researched already, fog, a stronghold's wreck); `PirateTests.ARelayWaitsForTheOutpostToFall` salvaging the camp's wreck before the Relay; `MapTests`, `TuningTests` and `WireFormatTests` for the data and the protocol.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
+- **As built:** recorded in [ADR-074](../Design/ADR/ADR-074-salvage.md) and design §2.
+  - Every salvage test passed on its first run.
+  - Over seeds 1–40 the AI salvages nothing, and 37 matches end as after milestone 30.
+  - The median match ends with 14 derelicts left.
+  - The 99th percentile tick at the median rose from 1.7 ms to 1.9 ms.
+
+### 31.2 — The client shows derelicts and salvage
+
+- **Gate:** L8.
+- **Scope:**
+  - Derelicts drawn with their hull's model in grey.
+  - A grey mark on the minimap.
+  - The pointer over one shows what it holds.
+  - Constructors right-clicked on one salvage it.
+  - A recovered topic's card says so.
+- **ADR:** ADR-074; ADR-011 edited in place.
+- **Acceptance:** `PlayerControlsTests.ConstructorsSalvageADerelict`, `HudTests.DescribesADerelict`, `PlacementTests.AStructureStandsClearOfADerelict`, and the derelicts' set in `ModelCatalogTests`.
+- **Verify:** CI; **owner run**: a derelict found, hovered and salvaged, and a camp's wreck salvaged before its Relay.
+- **As built:**
+  - `PlacementTests` and `ModelCatalogTests` ran in the container against stand-ins.
+  - `PlayerControls`, `Hud` and `GameClient` need the window's headers, so CI is their first build.
+
+## Milestones 32 to 34
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
 
-- **31 — Derelicts** (design §9): salvage, its Ore and its research.
 - **32 — The Repair Bay and retreat** (design §10).
 - **33 — The AI plays Phase 4** (design §12).
 - **34 — Measuring Phase 4** (design §2): the match log and U1–U8.

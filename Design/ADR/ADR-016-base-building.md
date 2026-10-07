@@ -21,7 +21,7 @@ Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Ri
    - **Limits.** A player may have one Research Lab, counting one under construction.
    - **Payment.** The cost is taken at once, and the order is rejected, costing nothing, when the player cannot pay.
    - **The site.** It appears at once, blocks movement from then on, and can be attacked. It starts with a tenth of its hit points.
-5. **Constructors build and repair on a work order.** A Constructor on a work order heads for its target. It works once its footprint is within 20 m of the target's, and stands while it does.
+5. **Constructors build and repair on a work order.** A Constructor on a work order heads for its target. It works once its footprint is within 20 m of the target's, and stands while it does. A derelict is salvaged on the same order and at the same rate ([ADR-074](ADR-074-salvage.md)).
    - **Building.** Each tick, one Constructor on a site does a tick of work, and each further one adds `extraConstructorBuildShare` of a tick: two build in two thirds of the time, three in half. Work is counted in thousandths of a tick (ADR-014). The site's hit points rise with the work, from a tenth to full, so damage taken while it is built stays taken.
    - **Repair.** Each Constructor restores `repairPercentPerSecond` of the target's maximum hit points each second, for nothing.
    - **Research.** Its player's research raises the building and the repair rates alike ([ADR-033](ADR-033-research-tiers.md) decision 4).

@@ -4,7 +4,7 @@ Status: **accepted** · 2026-10-07
 
 ## Context
 
-Phase 4 design §7 (gate L10) keeps the map's size, its sectors, the asteroid fields that bound them, the starts and each home's three asteroids in `Map.json`. The match's seed places every other ore asteroid, every pirate outpost (milestone 30), and later every derelict (milestone 31). The map stays point-symmetric, so both seats get the same map. Placement is deterministic, so a match still replays from its seed and command log (ADR-009). The owner decided on 2026-10-07 that each sector keeps the count and yields of asteroids it had when the 10 km map was laid out by hand (ADR-036 decision 4), at places the seed draws.
+Phase 4 design §7 (gate L10) keeps the map's size, its sectors, the asteroid fields that bound them, the starts and each home's three asteroids in `Map.json`. The match's seed places every other ore asteroid, every pirate outpost (milestone 30) and every derelict (milestone 31). The map stays point-symmetric, so both seats get the same map. Placement is deterministic, so a match still replays from its seed and command log (ADR-009). The owner decided on 2026-10-07 that each sector keeps the count and yields of asteroids it had when the 10 km map was laid out by hand (ADR-036 decision 4), at places the seed draws.
 
 What the design leaves open: how `Map.json` says what a sector gets, where in the code placement runs, and what keeps a drawn asteroid out of the way.
 
@@ -21,6 +21,12 @@ What the design leaves open: how `Map.json` says what a sector gets, where in th
    - The loader checks that each kind is known and has enough pairs for all the outposts that ask for it.
    - After every asteroid, the same generator draws each rule's pairs from those of its kind that no earlier rule took. The pair's sector with the lower identifier and its mirror both get the outpost. The asteroids are drawn first, so outposts change none of them.
    - The repository map has a camp in two of the four `contested` pairs, and a stronghold on the `rich` pair and on the `center` (owner, 2026-10-07).
+8. **The derelicts are drawn by kind last** ([ADR-074](ADR-074-salvage.md)).
+   - `Map.json`'s `"derelicts"` name, for a sector kind, a `count` of pairs, the Ore each pays, its hull and its radius. `"derelictResearchPercent"` gives the share of pairs that name a research topic.
+   - The loader checks them as it checks the outposts, and that the share is at most 100.
+   - After every outpost, the same generator draws each rule's pairs, one derelict a sector, and each derelict's place as an asteroid's is drawn: inside its sector by the border and its radius, clear of the node, and the minimum gap from every obstacle, start and other derelict, it and its mirror.
+   - Then it draws which pairs name a topic, and each one's topic from the topics `PlaceContent` is given; with none, none is named.
+   - The repository map has one derelict in a `flank` pair at 300 Ore, two in `near` pairs at 450, two in `contested` pairs at 600 and one in the `between` pair at 750, a third of the pairs naming a topic (owner, 2026-10-07).
 
 ## Consequences
 
@@ -29,7 +35,7 @@ What the design leaves open: how `Map.json` says what a sector gets, where in th
 - **Tests that named an asteroid's place now find it.** `TerritoryMatch::AsteroidIn` returns an asteroid the seed placed in a sector. The fixtures place their starting bases and loads on the server's placed map.
 - **Which start a contested asteroid of B4, D2 or the center lies nearer now varies by seed**, where the map laid out by hand gave each player one of each pair; the counts by sector do not vary.
 - **Which contested sectors hold a camp varies by seed** (decision 7). `MapTests` checks the outposts over seeds 1 to 12: seven a map, one a sector, each with its mirror, of the kinds their rules name, and not the same camps on every seed.
-- **Derelicts** are placed by the same kinds when milestone 31 adds them, and this ADR is edited then.
+- **Which sectors hold a derelict, where in them, and which topics they name vary by seed** (decision 8). `MapTests` checks them over seeds 1 to 12: twelve a map, one a sector, each with its mirror, at its kind's Ore and clear of the node, two pairs naming a topic, and the asteroids and outposts unchanged by them.
 
 ## What this forecloses
 

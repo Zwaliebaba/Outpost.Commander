@@ -124,6 +124,12 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Ore piles up a little more**, with seven of the 25 sectors closed to both sides until their outposts fall.
 - **The engine:** the median match's 99th percentile tick is 1.7 ms in the container, the worst match's 2.7 ms.
 
+**After milestone 31** (plan task 31.1): 12 derelicts a map, and a wreck for each outpost cleared. The AI does not salvage until milestone 33, so this measures only what the derelicts cost the engine and change by being there. The same harness and seeds.
+
+- **The matches are much as after milestone 30.** 37 end, 36 by domination and 1 by production, at a median of 1:32:57, and the same three are level at three hours. Each player wins about half.
+- **Nothing is salvaged:** the median match ends with 14 derelicts, the 12 placed and the wrecks of the outposts the fleets cleared on their way.
+- **The engine:** the median match's 99th percentile tick is 1.9 ms in the container, against 1.7 ms after milestone 30, and the worst match's 2.9 ms; every derelict is in each player's vision pass.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-06
@@ -230,7 +236,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
   - Pirates fight at the base level, with no research.
   - Every player sees which sectors the pirates guard, as it sees each sector's holder (owner, 2026-10-07). The pirates themselves stay under fog.
   - They are drawn with the Tarkan set's meshes in violet.
-  - The derelict a cleared outpost leaves comes with milestone 31.
+  - A cleared outpost leaves a derelict where its last platform fell, which on a camp covers the node until it is salvaged (milestone 31).
   - A first fleet of four Pickets clears a camp and loses one, as above. Swarms need eight: a Mass Driver does a Defence Platform's armor little harm.
 
 ---
@@ -244,6 +250,13 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **It pays Ore:** 300 near the homes, up to 900 in the far sectors. An outpost's derelict pays 600 for a camp and 1,200 for a stronghold.
 - **About one in three also pays research.** It names a research topic, and once salvaged it recovers half of that topic's research time for the salvaging player: half is taken off a topic under way, and a topic not yet started will take half its time when it is. Its Ore cost is unchanged. A topic of a tier the player's Lab has not opened is recovered all the same, and waits for the tier. This is "research is recovery" (MVP §2) made literal, and a first step towards Horizon §6.1.
 - **What a derelict holds is seen** once it is within a player's sight: its Ore, and the topic it names, if any. Under fog it is remembered as a structure is.
+- **As built** (plan tasks 31.1 and 31.2, [ADR-074](../Design/ADR/ADR-074-salvage.md)):
+  - On each side the seed picks one of the two flank sectors at 300 Ore, two of the three near sectors at 450, two of the four contested at 600 and the between sector at 750, mirrored. That is 12 a map (owner, 2026-10-07).
+  - A third of the pairs name a topic, any topic.
+  - A camp's wreck covers its node until it is salvaged.
+  - A derelict blocks no path, but no structure stands on one.
+  - It is drawn with its hull's model in grey.
+  - The AI leaves derelicts alone until milestone 33.
 
 ---
 
