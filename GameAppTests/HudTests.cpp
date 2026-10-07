@@ -834,7 +834,7 @@ public:
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{constructor.id};
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{1}, content.buttons.size());
+    Assert::AreEqual(size_t{2}, content.buttons.size(), L"the Relay, and its retreat");
     Assert::IsFalse(content.buttons[0].enabled);
     Assert::AreEqual(std::string("NODE CAP"), content.buttons[0].note);
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
