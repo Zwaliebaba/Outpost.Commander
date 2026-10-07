@@ -329,6 +329,16 @@ bool Outpost::Pathfinder::IsStraightPathClear(PlanePosition _a, PlanePosition _b
   return std::ranges::all_of(m_near, [&](std::uint32_t _obstacle) { return Passes(m_obstacles[_obstacle], segment, _clearanceMeters); });
 }
 
+bool Outpost::Pathfinder::OverlapsObstacle(PlanePosition _point, float _radiusMeters) const
+{
+  const auto overlaps = [&](const Obstacle& _obstacle)
+  { return Distance(_point, _obstacle.center) < _obstacle.radiusMeters + _radiusMeters; };
+  // A disc that overlaps an obstacle has the obstacle's square within its radius in both axes, so the grid finds it.
+  if (!GatherNear(_point, _point, _radiusMeters))
+    return std::ranges::any_of(m_obstacles, overlaps);
+  return std::ranges::any_of(m_near, [&](std::uint32_t _obstacle) { return overlaps(m_obstacles[_obstacle]); });
+}
+
 bool Outpost::Pathfinder::IsStraightPathClearOfEveryObstacle(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const
 {
   const Segment segment = SegmentOf(_a, _b);
