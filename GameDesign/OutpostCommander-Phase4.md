@@ -161,13 +161,14 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 | Warships a side has at minute 20, median; sides with 20 or more | — | 20; 42 of 80 |
 | Warships a side builds in a match, median; loses | 35.5; 20.5 | 41.5; 23.5 |
 | Ore a side holds at minute 20, median | 4,636 | 8,159 |
-| Ships a side turns for home, median (warships); repaired whole; warships that fight again | 55.5; 40%; — | 75 (69); 55%; 17 |
+| Ships a side turns for home, median; of them repaired whole | 55.5; 40% | 75; 55% |
+| Warships a side turns for home, each counted once, median; repaired; fight again | — | 33.5; 19.5; 17 |
 | Engagements before minute 40, median, in a median of sectors | — | 7, in 4.5 |
 | Pirate structures and ships left at the end, median; derelicts | — | 4 of 10, 8 of 24; 0 |
 
 - **U1, the opening: met.** Before the players first fire on each other, the median side has salvaged 3 derelicts and fought 2 pirate outposts, and in all 40 matches both sides have salvaged 2 or more. The first shot between them comes between minute 8 and minute 20 in 39 of the 40. The scout exploring its own half is what moved it: without that it came at a median of 6:55, before any salvage.
 - **U2, the swarm: met at its peak, missed at minute 20.** The median side's most warships at once is 21, and one side of the 80 goes over 40. But at minute 20 the median side has 20, where U2 asks for fewer: the Ore the AI now salvages, from the 12 derelicts and the wrecks of the outposts it clears, fills its 50-point cap sooner. Its fleet is full for 69% of the match at the median.
-- **U3, a ship worth keeping: met in number, missed in share.** A side turns a median of 69 warships for home, and 55% of the ships it turns for home are repaired whole, against 40% before the Repair Bays. 17 warships fire again, a quarter of those turned for home, where U3 asks for half. The owner accepted U3 as measured and recorded (2026-10-07).
+- **U3, a ship worth keeping: met in number, short in share.** The median side turns 33.5 warships for home, each counted once however often it goes, and 17 of them fire again after a repair: 45%, where U3 asks for half. 79 of the 80 sides send 10 or more back, and 28 see half of them fight again. Of the ships turned for home, 55% are repaired whole, against 40% before the Repair Bays. The owner accepted U3 as measured (2026-10-07).
 - **U4, skirmishes: met.** A median of 7 engagements before minute 40, in a median of 4.5 sectors; 33 of the 40 meet five in three.
 - **U5, every match ends: all 40 do, by domination only.** Recorded rather than tuned (owner, 2026-10-07).
 - **The outposts fall.** The AI sends a median of 4 detachments a side, the first at a median of 8:48, and the median match ends with 4 of the 10 pirate structures standing and no derelict left.

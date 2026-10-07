@@ -321,7 +321,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
 - **As built:** recorded in [ADR-076](../Design/ADR/ADR-076-ai-plays-phase-4.md) and design §2.
   - The AI knows an outpost only as far as it has seen it, and its scout first skipped the guarded sectors, so the first version saw no camp next to its land and sent no detachment. The scout now looks at each from a lookout outside the pirates' reach.
-  - Over seeds 1–40, U1 and U4 are met. U2 is met at its peak and missed at minute 20, where the median side has 20 warships: the salvaged Ore fills the cap sooner. U3's share and U5's single ending are recorded.
+  - Over seeds 1–40, U1 and U4 are met. U2 is met at its peak and missed at minute 20, where the median side has 20 warships: the salvaged Ore fills the cap sooner. U3 is met in number and short in share, 45% of the warships turned for home fighting again where it asks for half; it and U5's single ending are recorded.
 
 ## Milestone 34 — Measuring Phase 4
 
