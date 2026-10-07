@@ -439,8 +439,9 @@ public:
     // ADR-074: salvage.
     const Neuron::JsonValue& salvage = *json.Find("salvage");
     Assert::IsTrue(tuning.salvage.has_value());
-    Assert::AreEqual(salvage.Find("workSeconds")->AsNumber(), tuning.salvage->workSeconds);
-    Assert::IsTrue(salvage.Find("recoveryPercent")->AsNumber() == Number(tuning.salvage->recoveryPercent));
+    const Outpost::SalvageTuning loaded = tuning.salvage.value_or(Outpost::SalvageTuning{});
+    Assert::AreEqual(salvage.Find("workSeconds")->AsNumber(), loaded.workSeconds);
+    Assert::IsTrue(salvage.Find("recoveryPercent")->AsNumber() == Number(loaded.recoveryPercent));
   }
 
   // ADR-073: pirates are optional; an outpost is named once, its ships' components exist, and its chase reaches as far as
