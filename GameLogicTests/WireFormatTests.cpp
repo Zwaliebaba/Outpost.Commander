@@ -38,6 +38,8 @@ Outpost::Snapshot FullSnapshot()
      .remembered = true,
      .sightMeters = 30.5f,
      .standing = Outpost::StandingOrder::Patrol,
+     .retreat = Outpost::RetreatThreshold::Half,
+     .retreating = true,
      .oreReserveHundredths = -31'000'000'000ll,
      .salvageOre = 750,
      .salvageTopic = Outpost::ResearchTopicId{97},
@@ -66,7 +68,8 @@ Outpost::Snapshot FullSnapshot()
                               .drive = Outpost::DriveId{49},
                               .weapon = Outpost::WeaponId{50},
                               .module = Outpost::ModuleId{51},
-                              .cost = 52});
+                              .cost = 52,
+                              .retreat = Outpost::RetreatThreshold::Never});
   snapshot.mapSizeMeters = 5000.0f;
   snapshot.structureTypes.push_back({.structure = Outpost::StructureKind::DefensePlatform,
                                      .nameUtf8 = "Defense Platform",
@@ -183,11 +186,13 @@ public:
                                  .hull = Outpost::HullId{14},
                                  .drive = Outpost::DriveId{15},
                                  .weapon = Outpost::WeaponId{16},
-                                 .module = Outpost::ModuleId{17}},
+                                 .module = Outpost::ModuleId{17},
+                                 .retreat = Outpost::RetreatThreshold::Half},
       Outpost::HoldSectorCommand{.ships = ships, .position = {.xMeters = 18.0f}},
       Outpost::PatrolCommand{.ships = ships, .destination = {.zMeters = 19.0f}},
       Outpost::UpgradeStructureCommand{.structure = Outpost::EntityId{21}},
-      Outpost::SalvageCommand{.constructors = ships, .derelict = Outpost::EntityId{22}}};
+      Outpost::SalvageCommand{.constructors = ships, .derelict = Outpost::EntityId{22}},
+      Outpost::SetRetreatCommand{.ships = ships, .retreat = Outpost::RetreatThreshold::Quarter}};
     Assert::AreEqual(std::variant_size_v<Outpost::Order>, orders.size(), L"every alternative once");
     for (size_t i = 0; i < orders.size(); ++i)
     {
@@ -202,6 +207,7 @@ public:
     const auto& design = std::get<Outpost::SaveDesignCommand>(std::get<Outpost::Command>(save).order);
     Assert::AreEqual(std::string("Swarm"), design.nameUtf8);
     Assert::AreEqual(std::uint32_t{17}, design.module.value);
+    Assert::IsTrue(design.retreat == Outpost::RetreatThreshold::Half);
   }
 
   TEST_METHOD(CarriesEveryFieldOfASnapshot)
@@ -233,6 +239,8 @@ public:
     Assert::IsTrue(snapshot.entities[1].kind == Outpost::EntityKind::Derelict, L"the last kind of entity (ADR-074)");
     Assert::AreEqual(97u, snapshot.entities[0].salvageTopic.value);
     Assert::IsTrue(snapshot.research[0].recovered);
+    Assert::IsTrue(snapshot.entities[0].retreat == Outpost::RetreatThreshold::Half && snapshot.entities[0].retreating, L"ADR-075");
+    Assert::IsTrue(snapshot.designs[0].retreat == Outpost::RetreatThreshold::Never);
   }
 
   TEST_METHOD(CarriesHelloAndWelcome)
@@ -264,7 +272,7 @@ public:
     const std::vector<std::byte> build = Outpost::EncodeMessage(
       Outpost::Command{.order = Outpost::BuildStructureCommand{.structure = Outpost::StructureKind::Relay, .position = {.xMeters = 1.0f}}});
     Assert::AreEqual(size_t{1 + 4 + 1 + 4 + 1 + 8}, build.size());
-    Assert::IsTrue(build[10] == std::byte{5}, L"the Relay, the last structure");
+    Assert::IsTrue(build[10] == std::byte{5}, L"the Relay");
 
     const auto refused = [&build](size_t _offset, std::byte _value)
     {
@@ -273,9 +281,9 @@ public:
       Assert::ExpectException<Neuron::Exception>([&changed] { (void)Outpost::DecodeMessage(changed); });
     };
     refused(0, std::byte{4});    // a fifth kind of message
-    refused(5, std::byte{11});   // a twelfth order
+    refused(5, std::byte{14});   // a fifteenth order
     refused(6, std::byte{0xFF}); // more constructors than bytes
-    refused(10, std::byte{6});   // a structure past the Relay
+    refused(10, std::byte{7});   // a structure past the Repair Bay, the last
   }
 };
 } // namespace GameLogicTests

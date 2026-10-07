@@ -291,6 +291,16 @@ struct SalvageTuning
   std::int32_t recoveryPercent = 0;
 };
 
+// Repair at a base (Phase 4 design §10, ADR-075): each built Repair Bay, Command Station and Shipyard repairs up to ships
+// of its player's ships within rangeMeters of its footprint, each by percentPerSecond of the ship's full hit points a
+// second, for nothing. None when the file has none, and then only Constructors repair and no ship retreats.
+struct ShipRepairTuning
+{
+  std::int32_t ships = 0;
+  double rangeMeters = 0.0;
+  double percentPerSecond = 0.0;
+};
+
 // Pirates (Phase 4 design §8, ADR-073): an outpost's ships attack any player's ship or structure within guardMeters of its
 // node, chase it no further than chaseMeters from the node, and then go back to it. None when the file has none.
 struct PirateTuning
@@ -319,6 +329,7 @@ struct Tuning
   // Optional in the file.
   PirateTuning pirates;
   std::optional<SalvageTuning> salvage;
+  std::optional<ShipRepairTuning> shipRepair;
 };
 
 // The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5, gate K1): the level that names it, or 1

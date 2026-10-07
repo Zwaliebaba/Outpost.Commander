@@ -89,8 +89,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, SaveDesignCommand>
 auto Fields(Self& _value)
 {
-  auto& [design, nameUtf8, hull, drive, weapon, module] = _value;
-  return std::tie(design, nameUtf8, hull, drive, weapon, module);
+  auto& [design, nameUtf8, hull, drive, weapon, module, retreat] = _value;
+  return std::tie(design, nameUtf8, hull, drive, weapon, module, retreat);
 }
 
 template <typename Self>
@@ -126,6 +126,14 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, SetRetreatCommand>
+auto Fields(Self& _value)
+{
+  auto& [ships, retreat] = _value;
+  return std::tie(ships, retreat);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Command>
 auto Fields(Self& _value)
 {
@@ -147,11 +155,12 @@ auto Fields(Self& _value)
 {
   auto& [id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters, hitPointsHundredths,
          maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
-         secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths, salvageOre, salvageTopic, salvagePermille] = _value;
+         secondJobPermille, remembered, sightMeters, standing, retreat, retreating, oreReserveHundredths, salvageOre, salvageTopic,
+         salvagePermille] = _value;
   return std::tie(id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters,
                   hitPointsHundredths, maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue,
-                  research, jobPermille, secondJobPermille, remembered, sightMeters, standing, oreReserveHundredths, salvageOre,
-                  salvageTopic, salvagePermille);
+                  research, jobPermille, secondJobPermille, remembered, sightMeters, standing, retreat, retreating, oreReserveHundredths,
+                  salvageOre, salvageTopic, salvagePermille);
 }
 
 template <typename Self>
@@ -202,8 +211,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, DesignView>
 auto Fields(Self& _value)
 {
-  auto& [id, nameUtf8, hull, drive, weapon, module, cost] = _value;
-  return std::tie(id, nameUtf8, hull, drive, weapon, module, cost);
+  auto& [id, nameUtf8, hull, drive, weapon, module, cost, retreat] = _value;
+  return std::tie(id, nameUtf8, hull, drive, weapon, module, cost, retreat);
 }
 
 template <typename Self>
@@ -301,7 +310,12 @@ constexpr ShipRole LastOf(ShipRole) noexcept
 
 constexpr StructureKind LastOf(StructureKind) noexcept
 {
-  return StructureKind::Relay;
+  return StructureKind::RepairBay;
+}
+
+constexpr RetreatThreshold LastOf(RetreatThreshold) noexcept
+{
+  return RetreatThreshold::Quarter;
 }
 
 constexpr StandingOrder LastOf(StandingOrder) noexcept

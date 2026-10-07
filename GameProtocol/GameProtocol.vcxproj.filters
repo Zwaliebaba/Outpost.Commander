@@ -32,6 +32,9 @@
     <ClInclude Include="StructureKind.h">
       <Filter>Vocabulary</Filter>
     </ClInclude>
+    <ClInclude Include="RetreatThreshold.h">
+      <Filter>Vocabulary</Filter>
+    </ClInclude>
     <ClInclude Include="Command.h">
       <Filter>Commands</Filter>
     </ClInclude>

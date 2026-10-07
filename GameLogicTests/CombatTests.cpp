@@ -219,11 +219,12 @@ public:
     const Outpost::EntityId target = arena.World().SpawnConstructor(RED, {250.0f, 0.0f});
     const Outpost::EntityId beside = arena.World().SpawnConstructor(RED, {250.0f, 22.0f});
     const Outpost::EntityId beyond = arena.World().SpawnConstructor(RED, {250.0f, -40.0f});
-    // Small footprints, so that nothing is pushed apart before the first missile lands.
+    // Small footprints, so that nothing is pushed apart before the first missile lands; Research Labs, which repair no ship
+    // near them as a Shipyard does (ADR-075).
     const Outpost::EntityId armored =
-      arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {275.0f, 0.0f}, 5.0f, 1'000'000, 10 * Outpost::HUNDREDTHS);
+      arena.World().SpawnStructure(RED, Outpost::StructureKind::ResearchLab, {275.0f, 0.0f}, 5.0f, 1'000'000, 10 * Outpost::HUNDREDTHS);
     const Outpost::EntityId friendly =
-      arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {250.0f, -22.0f}, 5.0f, 1'000'000);
+      arena.World().SpawnStructure(BLUE, Outpost::StructureKind::ResearchLab, {250.0f, -22.0f}, 5.0f, 1'000'000);
 
     std::vector<Outpost::ShotView> shots;
     for (int tick = 0; tick < 3 * static_cast<int>(TICKS_PER_SECOND) && shots.empty(); ++tick)

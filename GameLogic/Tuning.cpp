@@ -206,13 +206,14 @@ Outpost::StructureWeaponTuning ReadStructureWeapon(ObjectReader& _reader)
 }
 
 // The file spells a kind as its enumerator.
-constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 6> STRUCTURE_KINDS = {{
+constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 7> STRUCTURE_KINDS = {{
   {"CommandStation", Outpost::StructureKind::CommandStation},
   {"Shipyard", Outpost::StructureKind::Shipyard},
   {"ResearchLab", Outpost::StructureKind::ResearchLab},
   {"MiningRig", Outpost::StructureKind::MiningRig},
   {"DefensePlatform", Outpost::StructureKind::DefensePlatform},
   {"Relay", Outpost::StructureKind::Relay},
+  {"RepairBay", Outpost::StructureKind::RepairBay},
 }};
 
 // The hulls a Shipyard, or one of its levels, builds: an optional list, which no other kind has (Phase 3 design §5).
@@ -672,6 +673,14 @@ Outpost::Tuning ReadTuning(std::string_view _json)
                                             .recoveryPercent = reader.Integer("recoveryPercent", 0)};
     if (tuning.salvage->recoveryPercent > 100)
       Neuron::JsonFail(reader.PathOf("recoveryPercent"), std::format("is at most 100, found {}", tuning.salvage->recoveryPercent));
+    reader.Finish();
+  }
+  if (const JsonValue* repair = root.Optional("shipRepair"))
+  {
+    ObjectReader reader(*repair, "shipRepair");
+    tuning.shipRepair = Outpost::ShipRepairTuning{.ships = reader.Integer("ships", 1),
+                                                  .rangeMeters = reader.Number("rangeMeters", JsonBound::Positive),
+                                                  .percentPerSecond = reader.Number("percentPerSecond", JsonBound::Positive)};
     reader.Finish();
   }
   root.Finish();

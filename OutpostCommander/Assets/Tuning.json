@@ -59,7 +59,8 @@
       ] },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50, "buildConstructorSeconds": 10 },
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 450, "buildConstructorSeconds": 20, "structureWeapon": 1 },
-    { "kind": "Relay", "name": "Relay", "hitPoints": 3000, "armor": 10, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 40 }
+    { "kind": "Relay", "name": "Relay", "hitPoints": 3000, "armor": 10, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 40 },
+    { "kind": "RepairBay", "name": "Repair Bay", "hitPoints": 2000, "armor": 5, "footprintRadiusMeters": 30, "cost": 300, "buildConstructorSeconds": 40 }
   ],
   "research": [
     { "id": 1, "name": "Improved Extraction", "tier": 1, "cost": 150, "researchSeconds": 60, "requires": [],
@@ -126,5 +127,6 @@
         "wreck": { "ore": 1200, "hull": 3, "radiusMeters": 40 } }
     ]
   },
-  "salvage": { "workSeconds": 30, "recoveryPercent": 50 }
+  "salvage": { "workSeconds": 30, "recoveryPercent": 50 },
+  "shipRepair": { "ships": 4, "rangeMeters": 150, "percentPerSecond": 3 }
 }
