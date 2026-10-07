@@ -20,10 +20,10 @@ constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
-// The grid covers the 5,000 m map (Phase 1 design §8) with a line every 100 m, each a pixel wide at any zoom, in the line art
+// The grid covers the 10,000 m map (Phase 4 design §6) with a line every 100 m, each a pixel wide at any zoom, in the line art
 // of the asteroids' ridges (ADR-028). It is a dim blue-gray, barely there, so the sky shows through (ADR-022) and the
 // ridges stand out above it, and it is what shows the ground moving when the view pans.
-constexpr float GRID_HALF_EXTENT_METERS = 2500.0f;
+constexpr float GRID_HALF_EXTENT_METERS = 5000.0f;
 constexpr float GRID_SPACING_METERS = 100.0f;
 constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
 

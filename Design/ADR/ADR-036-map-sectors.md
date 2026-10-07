@@ -12,7 +12,7 @@ Phase 1 design §8 gives the 5 km map four rings of ore (owner, 2026-10-02, gate
 2. **The loader checks what one map file can get wrong on its own**: identifiers unique; each rectangle on the map, with its node inside it; each node the map's minimum gap clear of every asteroid and field, as a start is; each adjacency naming another sector, once, which names it back. **`MapTests` checks the repository map's layout**: its sectors tile the map without overlap; every asteroid and start lies in one; two sectors are adjacent exactly when they share a border; and every sector can be reached from both starts' sectors.
 3. **The rings are yields of their own**, `"home"`, `"near"`, `"contested"` and `"rich"`, each with its rate in `Tuning.json`'s rules, 3.5, 4, 5.5 and 6.5 Ore a second since Phase 4 lowered them by about a third (Phase 4 design §4).
 4. **The map**: 5,000 m a side, the starts at (−1,750, −1,750) and (1,750, 1,750). Nine sectors on a grid of thirds: each home in its corner with its three home asteroids, each player's two flanks with two of its near asteroids each, the six contested asteroids round the center, and two rich asteroids in each of the two empty corners, one nearer each start. Asteroid fields stand on the sector borders, leaving passages, and at the junctions. Each node is at its sector's center, the homes' at their starts.
-5. **The client follows the map's size**: the camera's focus may go 2,500 m from the center, and the ground's grid covers 5 km.
+5. **The client follows the map's size**: the camera's focus may go 5,000 m from the center, the ground's grid covers 10 km, and the far plane reaches 8,000 m beyond the focus (Phase 4 plan task 28.1).
 
 ## Consequences
 

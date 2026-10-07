@@ -76,8 +76,8 @@ constexpr float BUTTON_INSET = 12.0f;
 constexpr float BUTTON_BAR_UNITS = 3.0f;
 constexpr float BUTTON_BAR_INSET = 2.0f;
 
-// The minimap, a square anchored to the bottom-left corner, with the map drawn inside its padding: about 18 m a unit on the
-// 5 km map (ADR-068).
+// The minimap, a square anchored to the bottom-left corner, with the map drawn inside its padding: about 36 m a unit on the
+// 10 km map (ADR-068).
 constexpr float MINIMAP_SIZE = 300.0f;
 constexpr float MINIMAP_PADDING = 8.0f;
 // The smallest a mark is drawn, and how wide the view's outline is, so that both stay visible. An ore asteroid's is the

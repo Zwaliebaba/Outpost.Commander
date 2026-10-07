@@ -23,9 +23,9 @@ public:
     UINT cellsPerSide;
   };
 
-  // The shades' texture is this many texels a side, so a grid may have at most this many cells a side. Must match
-  // TEXTURE_SIDE in Shader/GroundMaskPS.hlsl.
-  static constexpr UINT TEXTURE_SIDE = 256;
+  // The shades' texture is this many texels a side, so a grid may have at most this many cells a side: 500 of 20 m on the
+  // 10 km map (ADR-052). Must match TEXTURE_SIDE in Shader/GroundMaskPS.hlsl.
+  static constexpr UINT TEXTURE_SIDE = 512;
 
   // Builds the root signature and the pipeline state for the renderer's formats, and the shades' texture with its view.
   // Throws winrt::hresult_error on failure.

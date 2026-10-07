@@ -1,11 +1,11 @@
 {
   "defaultViewWidthMeters": 500,
   "minimumViewWidthMeters": 150,
-  "maximumViewWidthMeters": 1600,
+  "maximumViewWidthMeters": 3000,
   "pitchAtMinimumDegrees": 40,
   "pitchAtMaximumDegrees": 70,
   "verticalFieldOfViewDegrees": 45,
-  "focusLimitMeters": 2500,
+  "focusLimitMeters": 5000,
   "panViewWidthsPerSecond": 0.8,
   "edgeScrollMarginPixels": 4,
   "zoomFactorPerNotch": 1.15,

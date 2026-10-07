@@ -10,14 +10,14 @@ Design §4 gives the camera. It pans by edge scroll, the arrow keys and middle-d
 
 1. **The zoom is a view width: how much ground lies across the middle of the screen at the focus point.** The camera's distance follows from it and the horizontal field of view, `distance = width / (2 tan(hfov / 2))`. So the default 500 m is 500 m on any screen shape, and the test measures exactly that, by casting rays through the screen's left and right edges to the ground.
 2. **The pitch follows the view width in a straight line**, from `pitchAtMinimumDegrees` fully zoomed in to `pitchAtMaximumDegrees` fully zoomed out. Zooming out looks down more steeply.
-3. **The numbers are data, in `OutpostCommander/Assets/Camera.json`.** The view width's limits are gate G3's, final since 2026-10-01, and kept on the 5 km map (gate H8):
+3. **The numbers are data, in `OutpostCommander/Assets/Camera.json`.** The view width's limits are gate G3's, final since 2026-10-01, kept on the 5 km map (gate H8), with the widest raised for the 10 km map (Phase 4 gate L6):
 
    | Setting | Value |
    |---|---|
-   | View width | 500 m by default, from 150 m to 1,600 m |
+   | View width | 500 m by default, from 150 m to 3,000 m |
    | Pitch | 40° to 70° |
    | Vertical field of view | 45° |
-   | Focus limit | ±2,500 m, the map's edge ([ADR-036](ADR-036-map-sectors.md)) |
+   | Focus limit | ±5,000 m, the map's edge ([ADR-036](ADR-036-map-sectors.md)) |
    | Pan speed | 0.8 view widths per second |
    | Edge-scroll margin | 4 pixels |
    | Zoom per wheel notch | a factor of 1.15 |
