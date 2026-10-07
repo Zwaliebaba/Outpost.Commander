@@ -217,6 +217,8 @@ enum class CommandResult : std::uint8_t
   LevelTooLow,
   // A Relay would take the player past the nodes its Command Station's level lets it hold (Phase 3 design §7).
   CapReached,
+  // A Relay ordered in a sector whose pirate outpost still has a structure standing (Phase 4 design §8).
+  Guarded,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -321,6 +323,12 @@ public:
   // finished Shipyard loses the match (Phase 1 design §4).
   void PlaceStartingBases(const Map& _map);
 
+  // Match setup, after PlaceMap and UseTuning: the pirates' outposts the map's seed placed (Phase 4 design §8, ADR-073),
+  // each on its sector's node, with the tuning data's Defence Platforms and ships of the outpost's size, all owned by
+  // PIRATES at the base level. Throws Neuron::Exception when an outpost's size is not in the tuning data, its chase would
+  // leave its sector, or a structure of it would overlap an obstacle.
+  void PlacePirates(const Map& _map);
+
   // Whether a player has lost its Command Station and its last finished Shipyard, or on a map with territory has run out
   // of tickets, which ends the match (Phase 1 design §4, Phase 2 design §8); the player who still stands won, or nobody
   // when both fell in the same tick. Only a match whose bases were placed can end.
@@ -379,7 +387,8 @@ public:
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
            _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_ending == _b.m_ending && _a.m_fog == _b.m_fog &&
-           _a.m_plannedOrders == _b.m_plannedOrders && _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors;
+           _a.m_plannedOrders == _b.m_plannedOrders && _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors &&
+           _a.m_outposts == _b.m_outposts;
   }
 
   // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
@@ -450,6 +459,18 @@ private:
     bool cutOff = false;
 
     friend bool operator==(const Sector&, const Sector&) = default;
+  };
+
+  // A pirate outpost (ADR-073): its sector and node, the ships that guard it, and the player's ship or structure they are
+  // after, if any.
+  struct PirateOutpost
+  {
+    std::int32_t sector = 0;
+    PlanePosition node;
+    std::vector<EntityId> ships;
+    EntityId quarry;
+
+    friend bool operator==(const PirateOutpost&, const PirateOutpost&) = default;
   };
 
   // What an entity fires: a warship's design's weapon, or a built structure's Defence gun.
@@ -525,6 +546,12 @@ private:
   [[nodiscard]] std::vector<EntityId> WarshipsOf(const std::vector<EntityId>& _ships) const;
   // Once a second, every group on a standing order moves as its order says (ADR-059).
   void KeepStandingOrders();
+  // Whether _ship is in a group order whose paths are being planned (ADR-032).
+  [[nodiscard]] bool IsPlanning(EntityId _ship) const noexcept;
+  // Once a second, each outpost's ships go after a player's ship or structure near its node, and back to it (ADR-073).
+  void GuardOutposts();
+  // Whether a pirate structure stands in _sector.
+  [[nodiscard]] bool IsGuarded(const Sector& _sector) const noexcept;
   void OrderWork(const std::vector<EntityId>& _constructors, EntityId _target);
   // The map's obstacles and every structure but the Mining Rigs, which stand on asteroids; and ships whose way a new
   // structure blocks look for another.
@@ -633,6 +660,8 @@ private:
   float m_mapHalfSizeMeters = 0.0f;
   // The map's sectors, in its order; none on a map without them.
   std::vector<Sector> m_sectors;
+  // The pirates' outposts, in the map's order (ADR-073).
+  std::vector<PirateOutpost> m_outposts;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.
   std::shared_ptr<const Tuning> m_tuning;
   // What the tuning data gives a player who has researched nothing, as a player not added has; none before UseTuning.

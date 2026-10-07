@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace
 {
@@ -63,6 +64,11 @@ Outpost::SectorKind ReadSectorKind(JsonObjectReader& _reader)
   kind.name = _reader.String("name");
   kind.ore = Neuron::ReadJsonList<Outpost::OreRule>(_reader, "ore", ReadOreRule);
   return kind;
+}
+
+Outpost::OutpostRule ReadOutpostRule(JsonObjectReader& _reader)
+{
+  return {.outpost = _reader.String("outpost"), .kind = _reader.String("kind"), .count = _reader.Integer("count", 1)};
 }
 
 Outpost::PlacementRules ReadPlacementRules(JsonObjectReader& _reader)
@@ -234,6 +240,37 @@ void CheckSectorKinds(const Outpost::Map& _map)
   }
 }
 
+// The sectors of _kind that draw for themselves and their mirror: the one of each pair with the lower identifier, in the
+// map's order.
+std::vector<const Outpost::SectorPlacement*> DrawingSectors(const Outpost::Map& _map, std::string_view _kind)
+{
+  std::vector<const Outpost::SectorPlacement*> sectors;
+  for (const Outpost::SectorPlacement& sector : _map.sectors)
+  {
+    if (sector.kind == _kind && MirrorOf(_map, sector)->id >= sector.id)
+      sectors.push_back(&sector);
+  }
+  return sectors;
+}
+
+void CheckOutposts(const Outpost::Map& _map)
+{
+  for (size_t i = 0; i < _map.outpostRules.size(); ++i)
+  {
+    const Outpost::OutpostRule& rule = _map.outpostRules[i];
+    const std::string path = Neuron::JsonElementPath("outposts", i);
+    if (std::ranges::find(_map.sectorKinds, rule.kind, &Outpost::SectorKind::name) == _map.sectorKinds.end())
+      Neuron::JsonFail(path + ".kind", std::format("\"{}\" is not one of the sector kinds", rule.kind));
+    std::int32_t wanted = 0;
+    for (const Outpost::OutpostRule& other : _map.outpostRules)
+      wanted += other.kind == rule.kind ? other.count : 0;
+    const size_t pairs = DrawingSectors(_map, rule.kind).size();
+    if (std::cmp_greater(wanted, pairs))
+      Neuron::JsonFail(path + ".count",
+                       std::format("asks for {} outposts in \"{}\" sectors, which have room for {}", wanted, rule.kind, pairs));
+  }
+}
+
 Outpost::Map ReadMap(std::string_view _json)
 {
   const Neuron::JsonValue document = Neuron::ParseJson(_json);
@@ -253,6 +290,8 @@ Outpost::Map ReadMap(std::string_view _json)
     JsonObjectReader placement(root.Required("placement"), "placement");
     map.placement = ReadPlacementRules(placement);
     placement.Finish();
+    if (root.Optional("outposts") != nullptr)
+      map.outpostRules = Neuron::ReadJsonList<Outpost::OutpostRule>(root, "outposts", ReadOutpostRule);
   }
   root.Finish();
 
@@ -261,6 +300,7 @@ Outpost::Map ReadMap(std::string_view _json)
   CheckGaps(map);
   CheckSectors(map);
   CheckSectorKinds(map);
+  CheckOutposts(map);
   return map;
 }
 } // namespace
@@ -340,6 +380,27 @@ Outpost::Map Outpost::PlaceContent(Map _map, std::uint64_t _seed)
         if (!placed)
           throw Neuron::Exception(std::format("Map: sector {} has no room for all of its kind's asteroids", sector.name));
       }
+    }
+  }
+
+  // Then the outposts, after every asteroid, so that a seed places the same asteroids whatever outposts the map has. Each
+  // rule draws its pairs from those of its kind that no earlier rule took (CheckOutposts found enough).
+  std::vector<std::int32_t> taken;
+  for (const OutpostRule& rule : _map.outpostRules)
+  {
+    std::vector<const SectorPlacement*> free = DrawingSectors(_map, rule.kind);
+    std::erase_if(free, [&taken](const SectorPlacement* _sector) { return std::ranges::find(taken, _sector->id) != taken.end(); });
+    if (std::cmp_less(free.size(), rule.count))
+      throw Neuron::Exception(std::format("Map: too few \"{}\" sectors are left for the outposts it places", rule.kind));
+    for (std::int32_t draw = 0; draw < rule.count; ++draw)
+    {
+      const auto index = static_cast<std::ptrdiff_t>(random.NextBelow(static_cast<std::uint32_t>(free.size())));
+      const SectorPlacement& sector = *free[static_cast<size_t>(index)];
+      free.erase(free.begin() + index);
+      taken.push_back(sector.id);
+      _map.outposts.push_back({.sector = sector.id, .outpost = rule.outpost});
+      if (const SectorPlacement& mirror = *MirrorOf(_map, sector); mirror.id != sector.id)
+        _map.outposts.push_back({.sector = mirror.id, .outpost = rule.outpost});
     }
   }
   return _map;

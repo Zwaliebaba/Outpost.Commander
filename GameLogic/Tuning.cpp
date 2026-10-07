@@ -143,6 +143,37 @@ Outpost::StartingDesignTuning ReadStartingDesign(ObjectReader& _reader)
   return design;
 }
 
+Outpost::PirateShipsTuning ReadPirateShips(ObjectReader& _reader)
+{
+  Outpost::PirateShipsTuning ships;
+  ships.hull = _reader.Identifier<Outpost::HullId>("hull");
+  ships.drive = _reader.Identifier<Outpost::DriveId>("drive");
+  ships.weapon = _reader.Identifier<Outpost::WeaponId>("weapon");
+  ships.count = _reader.Integer("count", 1);
+  return ships;
+}
+
+Outpost::OutpostTuning ReadOutpost(ObjectReader& _reader)
+{
+  Outpost::OutpostTuning outpost;
+  outpost.name = _reader.String("name");
+  outpost.defensePlatforms = _reader.Integer("defensePlatforms", 0);
+  outpost.ships = Neuron::ReadJsonList<Outpost::PirateShipsTuning>(_reader, "ships", ReadPirateShips);
+  return outpost;
+}
+
+Outpost::PirateTuning ReadPirates(ObjectReader& _reader)
+{
+  Outpost::PirateTuning pirates;
+  pirates.guardMeters = _reader.Number("guardMeters", JsonBound::Positive);
+  pirates.chaseMeters = _reader.Number("chaseMeters", JsonBound::Positive);
+  if (pirates.chaseMeters < pirates.guardMeters)
+    Neuron::JsonFail(_reader.PathOf("chaseMeters"),
+                     std::format("is at least guardMeters, {}, found {}", pirates.guardMeters, pirates.chaseMeters));
+  pirates.outposts = Neuron::ReadJsonList<Outpost::OutpostTuning>(_reader, "outposts", ReadOutpost);
+  return pirates;
+}
+
 Outpost::ConstructorTuning ReadConstructor(ObjectReader& _reader)
 {
   Outpost::ConstructorTuning constructor;
@@ -571,6 +602,29 @@ void CheckStartingDesigns(const Outpost::Tuning& _tuning)
   }
 }
 
+// Each outpost is named once, and its ships are of components that exist.
+void CheckPirates(const Outpost::Tuning& _tuning)
+{
+  const std::vector<Outpost::OutpostTuning>& outposts = _tuning.pirates.outposts;
+  for (size_t i = 0; i < outposts.size(); ++i)
+  {
+    const std::string path = Neuron::JsonElementPath("pirates.outposts", i);
+    for (size_t j = 0; j < i; ++j)
+    {
+      if (outposts[j].name == outposts[i].name)
+        Neuron::JsonFail(std::format("{}.name", path), std::format("\"{}\" is listed twice", outposts[i].name));
+    }
+    for (size_t k = 0; k < outposts[i].ships.size(); ++k)
+    {
+      const Outpost::PirateShipsTuning& ships = outposts[i].ships[k];
+      const std::string shipsPath = Neuron::JsonElementPath(std::format("{}.ships", path), k);
+      CheckExists(_tuning.hulls, ships.hull, std::format("{}.hull", shipsPath), "hull");
+      CheckExists(_tuning.drives, ships.drive, std::format("{}.drive", shipsPath), "drive");
+      CheckExists(_tuning.weapons, ships.weapon, std::format("{}.weapon", shipsPath), "weapon");
+    }
+  }
+}
+
 Outpost::Tuning ReadTuning(std::string_view _json)
 {
   const JsonValue document = Neuron::ParseJson(_json);
@@ -599,6 +653,12 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   tuning.research = Neuron::ReadJsonList<Outpost::ResearchTopicTuning>(root, "research", ReadResearchTopic);
   if (root.Optional("startingDesigns") != nullptr)
     tuning.startingDesigns = Neuron::ReadJsonList<Outpost::StartingDesignTuning>(root, "startingDesigns", ReadStartingDesign);
+  if (const JsonValue* pirates = root.Optional("pirates"))
+  {
+    ObjectReader reader(*pirates, "pirates");
+    tuning.pirates = ReadPirates(reader);
+    reader.Finish();
+  }
   root.Finish();
 
   CheckUniqueIds(tuning.hulls, "hulls");
@@ -611,6 +671,7 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   CheckResearchIsAcyclic(tuning.research);
   CheckTiers(tuning);
   CheckStartingDesigns(tuning);
+  CheckPirates(tuning);
   return tuning;
 }
 } // namespace

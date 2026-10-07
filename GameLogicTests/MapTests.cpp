@@ -383,6 +383,76 @@ public:
     }
   }
 
+  // The seed places the pirates' outposts by sector kind (Phase 4 design §8, ADR-072): on each side a camp in two of the
+  // four contested sectors, and a stronghold on both rich corners and the center, each with its mirror.
+  TEST_METHOD(PlacesOutpostsFromTheSeed)
+  {
+    const Outpost::Map listed = Outpost::LoadMap(ReadRepositoryMap());
+    const auto kindOf = [&listed](std::int32_t _sector)
+    { return std::ranges::find(listed.sectors, _sector, &Outpost::SectorPlacement::id)->kind; };
+    std::vector<std::vector<Outpost::OutpostPlacement>> draws;
+    for (const std::uint64_t seed : SEEDS)
+    {
+      const Outpost::Map map = Outpost::PlaceContent(listed, seed);
+      Assert::AreEqual(size_t{7}, map.outposts.size());
+      std::vector<std::int32_t> sectors;
+      for (const Outpost::OutpostPlacement& outpost : map.outposts)
+      {
+        Assert::IsTrue(std::ranges::find(sectors, outpost.sector) == sectors.end(), L"one outpost a sector");
+        sectors.push_back(outpost.sector);
+        const std::string kind = kindOf(outpost.sector);
+        Assert::IsTrue(outpost.outpost == "camp" ? kind == "contested" : (kind == "rich" || kind == "center"));
+        // Its mirror has the same.
+        const Outpost::PlanePosition node = std::ranges::find(map.sectors, outpost.sector, &Outpost::SectorPlacement::id)->node;
+        const Outpost::SectorPlacement& mirror =
+          *std::ranges::find_if(map.sectors, [node](const Outpost::SectorPlacement& _sector)
+                                { return _sector.Contains({.xMeters = -node.xMeters, .zMeters = -node.zMeters}); });
+        Assert::IsTrue(std::ranges::any_of(map.outposts, [&](const Outpost::OutpostPlacement& _other)
+                                           { return _other.sector == mirror.id && _other.outpost == outpost.outpost; }));
+      }
+      Assert::AreEqual(std::ptrdiff_t{4}, std::ranges::count(map.outposts, std::string("camp"), &Outpost::OutpostPlacement::outpost));
+      draws.push_back(map.outposts);
+    }
+    Assert::IsTrue(std::ranges::any_of(draws, [&draws](const auto& _draw) { return _draw != draws.front(); }),
+                   L"the seed chooses the camps");
+    // The asteroids are drawn first, so the outposts change none of them.
+    Outpost::Map withoutOutposts = listed;
+    withoutOutposts.outpostRules.clear();
+    const Outpost::Map plain = Outpost::PlaceContent(withoutOutposts, 9);
+    const Outpost::Map full = Outpost::PlaceContent(listed, 9);
+    Assert::AreEqual(plain.oreAsteroids.size(), full.oreAsteroids.size());
+    for (size_t i = 0; i < plain.oreAsteroids.size(); ++i)
+      Assert::IsTrue(plain.oreAsteroids[i].position == full.oreAsteroids[i].position);
+  }
+
+  TEST_METHOD(RejectsBrokenOutposts)
+  {
+    constexpr std::string_view SECTORS = R"(], "sectors": [
+      { "id": 1, "name": "West", "minXMeters": -500, "maxXMeters": 0, "minZMeters": -500, "maxZMeters": 500,
+        "node": { "xMeters": -300, "zMeters": 300 }, "adjacent": [2], "kind": "wing" },
+      { "id": 2, "name": "East", "minXMeters": 0, "maxXMeters": 500, "minZMeters": -500, "maxZMeters": 500,
+        "node": { "xMeters": 300, "zMeters": -300 }, "adjacent": [1], "kind": "wing" } ],
+      "sectorKinds": [ { "name": "wing", "ore": [] } ],
+      "outposts": [ { "outpost": "camp", "kind": "wing", "count": 1 } ],
+      "placement": { "borderMeters": 30, "nodeClearanceMeters": 100, "oreSpacingMeters": 150 } })";
+    std::string text(MINIMAL_MAP);
+    text.replace(text.rfind(']'), std::string::npos, SECTORS);
+    const Outpost::Map placed = Outpost::PlaceContent(Outpost::LoadMap(text), 5);
+    Assert::AreEqual(size_t{2}, placed.outposts.size(), L"the pair's lower sector and its mirror");
+    Assert::AreEqual(1, placed.outposts[0].sector);
+    Assert::AreEqual(2, placed.outposts[1].sector);
+
+    const auto broken = [&text](std::string_view _from, std::string_view _to)
+    {
+      std::string changed = text;
+      changed.replace(changed.find(_from), _from.size(), _to);
+      return changed;
+    };
+    ExpectLoadError(broken("\"kind\": \"wing\", \"count\"", "\"kind\": \"wild\", \"count\""),
+                    "outposts[0].kind: \"wild\" is not one of the sector kinds");
+    ExpectLoadError(broken("\"count\": 1", "\"count\": 2"), "outposts[0].count: asks for 2 outposts");
+  }
+
   TEST_METHOD(LoadsAMinimalMap)
   {
     const Outpost::Map map = Outpost::LoadMap(MINIMAL_MAP);

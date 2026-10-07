@@ -4,8 +4,8 @@
 The map is 10 km a side: 25 sectors of 2 km on a 5 x 5 grid, named by column A to E from west to east and row 1 to 5 from
 south to north, the homes in the corners A1 and E5, point-symmetric about the center. Two asteroid fields stand on every
 border between two sectors, leaving a passage at its middle and one at each corner. The homes' asteroids are listed; every
-other asteroid is placed from the match's seed by its sector's kind (ADR-072), which is given here for player 1's half of
-the map and mirrored through the center for player 2's.
+other asteroid, and every pirate outpost, is placed from the match's seed by its sector's kind (ADR-072), which is given
+here for player 1's half of the map and mirrored through the center for player 2's.
 
   python Tools/MakeMap.py           rewrites the map
   python Tools/MakeMap.py --check   fails if the committed map is not what this writes
@@ -53,6 +53,9 @@ KIND_ORE = {
     "center": [("contested", 4)],
     "rich": [("rich", 2)],
 }
+# The pirates' outposts (Phase 4 design §8), as (outpost, kind, pairs of sectors): a camp in two of the four contested
+# sectors on each side, drawn by the seed, and a stronghold on both rich corners and the center (owner, 2026-10-07).
+OUTPOSTS = [("camp", "contested", 2), ("stronghold", "rich", 1), ("stronghold", "center", 1)]
 # How placed asteroids keep clear: of their sector's borders, where the fields stand; of the node, where a Relay and its
 # defenders stand; and of each other, so that each rig has room for a Defence Platform beside it.
 PLACEMENT = {"borderMeters": 250, "nodeClearanceMeters": 350, "oreSpacingMeters": 500}
@@ -133,6 +136,7 @@ def MapText():
     lines += Listed("sectors", sectors)
     kinds = [f"{{ \"name\": {json.dumps(kind['name'])}, \"ore\": [" + ", ".join(kind["ore"]) + "] }" for kind in SectorKinds()]
     lines += Listed("sectorKinds", kinds)
+    lines += Listed("outposts", [Inline({"outpost": outpost, "kind": kind, "count": count}) for outpost, kind, count in OUTPOSTS])
     lines.append(f"  \"placement\": {Inline(PLACEMENT)}")
     lines.append("}")
     # JSON in the repository is CRLF (.editorconfig).

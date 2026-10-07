@@ -407,6 +407,51 @@ public:
                   {"name", design.name}},
                  std::format("startingDesigns[{}]", i));
     }
+
+    // ADR-073: the pirates.
+    const Neuron::JsonValue& pirates = *json.Find("pirates");
+    Assert::AreEqual(pirates.Find("guardMeters")->AsNumber(), tuning.pirates.guardMeters);
+    Assert::AreEqual(pirates.Find("chaseMeters")->AsNumber(), tuning.pirates.chaseMeters);
+    const Neuron::JsonValue::Array& outposts = pirates.Find("outposts")->AsArray();
+    Assert::AreEqual(outposts.size(), tuning.pirates.outposts.size());
+    for (size_t i = 0; i < outposts.size(); ++i)
+    {
+      const Outpost::OutpostTuning& outpost = tuning.pirates.outposts[i];
+      Assert::AreEqual(outposts[i].Find("name")->AsString(), outpost.name);
+      Assert::IsTrue(outposts[i].Find("defensePlatforms")->AsNumber() == Number(outpost.defensePlatforms));
+      const Neuron::JsonValue::Array& ships = outposts[i].Find("ships")->AsArray();
+      Assert::AreEqual(ships.size(), outpost.ships.size());
+      for (size_t j = 0; j < ships.size(); ++j)
+      {
+        ExpectSame(ships[j],
+                   {{"hull", Number(outpost.ships[j].hull.value)},
+                    {"drive", Number(outpost.ships[j].drive.value)},
+                    {"weapon", Number(outpost.ships[j].weapon.value)},
+                    {"count", Number(outpost.ships[j].count)}},
+                   std::format("pirates.outposts[{}].ships[{}]", i, j));
+      }
+    }
+  }
+
+  // ADR-073: pirates are optional; an outpost is named once, its ships' components exist, and its chase reaches as far as
+  // its guard.
+  TEST_METHOD(RejectsBrokenPirates)
+  {
+    Assert::IsTrue(Outpost::LoadTuning(MINIMAL_TUNING).pirates.outposts.empty(), L"none");
+    const auto replaced = [](std::string_view _from, std::string_view _to)
+    {
+      std::string text = ReadRepositoryTuning();
+      const size_t at = text.find(_from);
+      Assert::IsTrue(at != std::string::npos && text.find(_from, at + 1) == std::string::npos, Widen(_from).c_str());
+      text.replace(at, _from.size(), _to);
+      return text;
+    };
+    ExpectLoadError(replaced("\"chaseMeters\": 900", "\"chaseMeters\": 500"), "pirates.chaseMeters: is at least guardMeters");
+    ExpectLoadError(replaced("\"name\": \"stronghold\"", "\"name\": \"camp\""), "pirates.outposts[1].name: \"camp\" is listed twice");
+    ExpectLoadError(
+      replaced("\"hull\": 2, \"drive\": 1, \"weapon\": 2, \"count\": 1", "\"hull\": 2, \"drive\": 1, \"weapon\": 9, \"count\": 1"),
+      "pirates.outposts[1].ships[1].weapon");
+    ExpectLoadError(replaced("\"guardMeters\": 600,", "\"guardMeters\": 600, \"raidMeters\": 1,"), "pirates.raidMeters");
   }
 
   // ADR-069: a starting design's name is optional, and one that is given names components that exist and no research

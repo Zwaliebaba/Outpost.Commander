@@ -91,6 +91,10 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
     m_simulation.AddPlayer(id, m_tuning.rules.startingOre);
     m_simulation.SaveStartingDesigns(id, m_tuning);
   }
+  // The pirates' outposts the seed placed, after the players, so that each player's designs are numbered as before. A
+  // measurement run is not a match, and its scenes stay as they were measured.
+  if (!_desc.measurementLoad && !_desc.stressLoad)
+    m_simulation.PlacePirates(m_map);
   // Last, since a client may connect as soon as it listens.
   if (_desc.quic)
   {

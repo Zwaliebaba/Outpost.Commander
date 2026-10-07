@@ -235,6 +235,7 @@ public:
   {
     Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
     map.sectors.clear();
+    map.outpostRules.clear();
     Outpost::InProcessServer server(Outpost::LoadTuning(ReadRepositoryTuning()), map, {.seed = 3});
     server.World().PlaceStartingBases(map);
     Assert::IsFalse(server.World().HasTerritory());
