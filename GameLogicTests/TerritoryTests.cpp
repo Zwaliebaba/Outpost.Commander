@@ -135,6 +135,25 @@ public:
     Assert::AreEqual(2 * NEAR_INCOME, match.Income(BLUE));
   }
 
+  // Phase 4 design §6, gate L5: a Shipyard may stand only in a sector its player holds, so that production follows the
+  // territory.
+  TEST_METHOD(AShipyardNeedsAHeldSector)
+  {
+    TerritoryMatch match;
+    match.Run(1);
+    const Outpost::PlanePosition free{.xMeters = -2000.0f, .zMeters = -4400.0f};
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Shipyard, free) == Outpost::CommandResult::SectorNotHeld);
+    (void)match.Relay(RED, B1);
+    match.Run(1);
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Shipyard, free) == Outpost::CommandResult::SectorNotHeld,
+                   L"the enemy's sector");
+    Assert::IsTrue(match.Build(RED, Outpost::StructureKind::Shipyard, free) == Outpost::CommandResult::Applied,
+                   L"a sector its Relay holds, however far from its home");
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Shipyard, {.xMeters = -3400.0f, .zMeters = -4400.0f}) ==
+                     Outpost::CommandResult::Applied,
+                   L"its home");
+  }
+
   // A rig in a sector held by the other player earns nothing, and draws nothing from its asteroid (Phase 2 design §4).
   TEST_METHOD(ARigInTheEnemysSectorEarnsNothing)
   {

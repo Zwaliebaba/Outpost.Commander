@@ -1081,6 +1081,24 @@ public:
     Assert::IsTrue(homePlatforms >= 1 + (2 * shipyards) - 2, L"the base is not fortified as its Shipyards grow");
   }
 
+  // Phase 4 design §6, gate L5: the AI looks for its Shipyards' places only in sectors it holds.
+  TEST_METHOD(BuildsItsShipyardsInItsTerritory)
+  {
+    AiMatch match;
+    match.Run(9.0 * 60.0);
+    const Outpost::Snapshot view = match.View(AI);
+    std::ptrdiff_t shipyards = 0;
+    for (const Outpost::EntityView* structure : match.Structures(view, AI))
+    {
+      if (structure->structure != Outpost::StructureKind::Shipyard)
+        continue;
+      ++shipyards;
+      const Outpost::SectorView* sector = Outpost::FindSector(view.sectors, structure->position);
+      Assert::IsTrue(sector != nullptr && sector->holder == AI, L"a Shipyard outside its territory");
+    }
+    Assert::IsTrue(shipyards >= 2, L"fewer Shipyards than nine minutes bring");
+  }
+
   // A structure under fire draws the reserve to it, and the reserve goes back once the shooting has stopped.
   TEST_METHOD(DefendsAStructureUnderFire)
   {

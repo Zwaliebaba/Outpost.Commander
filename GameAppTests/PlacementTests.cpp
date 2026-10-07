@@ -131,6 +131,23 @@ public:
     Assert::IsTrue(Outpost::PlaceGhost(Rig(), ASTEROID, world, MAP_SIZE_METERS).valid, L"without sectors, ore anywhere");
   }
 
+  // Phase 4 design §6, gate L5: on a map with sectors a Shipyard's ghost is green only in a sector the player holds.
+  TEST_METHOD(AShipyardNeedsAHeldSector)
+  {
+    constexpr Outpost::PlayerId PLAYER{1};
+    const std::vector<Outpost::EntityView> world = World();
+    std::vector<Outpost::SectorView> sectors = Sectors();
+    constexpr Outpost::PlanePosition WEST{.xMeters = -700.0f, .zMeters = 400.0f};
+    constexpr Outpost::PlanePosition EAST{.xMeters = 600.0f, .zMeters = 400.0f};
+    Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), WEST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"its own sector");
+    Assert::IsFalse(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a free sector");
+    sectors[2].holder = Outpost::PlayerId{2};
+    Assert::IsFalse(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"the enemy's sector");
+    sectors[2].holder = PLAYER;
+    Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a sector it took");
+    Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS).valid, L"without sectors, anywhere");
+  }
+
   // ADR-016's rules as the ghost shows them: inside the map, and overlapping no asteroid, field or structure.
   TEST_METHOD(AStructureStandsClearOfEverything)
   {

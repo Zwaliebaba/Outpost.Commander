@@ -32,7 +32,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 28.0 | A destroyed structure is taken out of the path graphs in place | — | owner, 2026-10-07 | built, in milestone 28's PR |
 | 28.1 | The client and the engine follow the map's size | — | L6 | built, in milestone 28's PR; awaiting CI and the owner's run |
 | 28.2 | The 10 km map and its node caps | 28.1 | L3, L4 | built, in milestone 28's PR |
-| 28.3 | Production follows territory | — | L5 | todo |
+| 28.3 | Production follows territory | — | L5 | built, in milestone 28's PR; the ghost's test awaits CI |
 | 28.4 | The engine measured at 10 km (U7) | 28.2 | — | todo |
 | 29.1 | Placement from the seed | 28.2 | L10 | todo |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | todo |
@@ -132,6 +132,15 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **Acceptance:** `MapTests` hold the new map's shape, sectors and symmetry; every suite passes on it.
 - **Verify:** CI; the container's run of `GameLogicTests`.
 - **As built:** sectors are named by column and row, A1 to E5, A1 player 1's home. Each player has 3 home, 7 near, 8 contested and 2 rich asteroids nearer its start, 459,000 Ore in all, and two fields on every border leave three passages through it. `python Tools/MakeMap.py --check` says whether the committed map is what the script writes; CI does not run it. Domination's rule is unchanged, so a lead of one node of 25 takes 834 drains, 139 minutes, against 50 on nine (design §6 foresaw it; 28.4 measures what it does to a match). The stress scene's rally and structures stood a share of the way from each start to the middle, which on 10 km put the fleets 7.6 km apart and out of reach of each other in its minute; they now stand 1,650 m and 1,100 m from the middle, where they stood on the 5 km map. Tests moved: `TerritoryTests`, `DominationTests`, `StandingOrderTests` and `AiPlayerTests` to the new sectors and positions; `UpgradesItsStationBeforeItsFirstClaim` becomes `…BeforeItsSecondClaim`, since level 1's four nodes now take a claim beyond the flanks; and three AI economy tests are re-timed, its rigs away from home being further out: two Shipyards by nine minutes rather than seven, and six rigs with ore by sixteen minutes rather than fourteen.
+
+### 28.3 — Production follows territory
+
+- **Gate:** L5, decided.
+- **Scope:** on a map with sectors, a Shipyard is built only in a sector its player holds: the server refuses it as `SectorNotHeld`, the ghost is red, and the AI looks for its Shipyards' places only in sectors it holds. The Repair Bay takes the rule with milestone 32, which builds it.
+- **ADR:** ADR-056 decisions 5 and 12 edited in place.
+- **Acceptance:** `TerritoryTests.AShipyardNeedsAHeldSector`, `PlacementTests.AShipyardNeedsAHeldSector` and `AiPlayerTests.BuildsItsShipyardsInItsTerritory`.
+- **Verify:** CI; the container's run of `GameLogicTests`.
+- **As built:** a Shipyard in a sector its player later loses keeps working; only its placement is ruled. The server's test fails with the rule taken out. `PlacementTests` is `GameAppTests`', which the container does not build: its calls were checked against `PlaceGhost` in a program of the container's own, and CI is its first run. The placing hint does not say why a Shipyard's ghost is red, as it does not for a rig's; the design asks for neither.
 
 ## Milestones 29 to 34
 
