@@ -101,4 +101,37 @@ struct DesignStats
     return 0.0;
   return static_cast<double>(HitHundredths(_stats.damageHundredths, _armorHundredths)) / HUNDREDTHS / _stats.fireIntervalSeconds;
 }
+
+// Room between neighbors in a formation, in footprint radii of the group's widest ship: two radii for the ships
+// themselves, one for the gap. Loose, as design §9 asks (ADR-010).
+inline constexpr float FORMATION_SPACING_RADII = 3.0f;
+
+// The ships of a formation of hulls of _radiusMeters that one hit with a splash of _splashRadiusMeters reaches, its target
+// included: the target and each neighbor of the formation's square grid whose center is within the splash (ADR-014).
+// One without splash. Ships pressed together in a fight stand closer, so a hit may reach more of them.
+[[nodiscard]] constexpr std::int32_t ShipsReached(float _splashRadiusMeters, float _radiusMeters) noexcept
+{
+  const float spacing = FORMATION_SPACING_RADII * _radiusMeters;
+  if (_splashRadiusMeters <= 0.0f || spacing <= 0.0f)
+    return 1;
+  const auto steps = static_cast<std::int32_t>(_splashRadiusMeters / spacing);
+  std::int32_t ships = 0;
+  for (std::int32_t row = -steps; row <= steps; ++row)
+  {
+    for (std::int32_t column = -steps; column <= steps; ++column)
+    {
+      const float across = static_cast<float>(column) * spacing;
+      const float along = static_cast<float>(row) * spacing;
+      ships += (across * across) + (along * along) <= _splashRadiusMeters * _splashRadiusMeters ? 1 : 0;
+    }
+  }
+  return ships;
+}
+
+// Damage per second against a formation of hulls of _armorHundredths and _radiusMeters: a ship's, for each ship a hit
+// reaches. What the designer's cards show, so that a splash weapon is rated by what it does to a formation.
+[[nodiscard]] inline double FormationDamagePerSecond(const DesignStats& _stats, std::int32_t _armorHundredths, float _radiusMeters) noexcept
+{
+  return DamagePerSecond(_stats, _armorHundredths) * ShipsReached(_stats.splashRadiusMeters, _radiusMeters);
+}
 } // namespace Outpost

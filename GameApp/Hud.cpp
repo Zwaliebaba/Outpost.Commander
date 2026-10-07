@@ -373,7 +373,9 @@ Best BestOfAll(const Outpost::Snapshot& _newest)
         best.cost = std::max(best.cost, static_cast<double>(stats.cost));
         best.build = std::max(best.build, stats.buildSeconds / _newest.shipyardBuildSpeedFactor);
         for (size_t i = 0; i < _newest.hulls.size(); ++i)
-          best.damage[i] = std::max(best.damage[i], Outpost::DamagePerSecond(stats, _newest.hulls[i].armorHundredths));
+          best.damage[i] =
+            std::max(best.damage[i], Outpost::FormationDamagePerSecond(stats, _newest.hulls[i].armorHundredths,
+                                                                       static_cast<float>(_newest.hulls[i].footprintRadiusMeters)));
       }
     }
   }
@@ -644,9 +646,12 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     panel.damage.reserve(_newest.hulls.size());
     for (size_t i = 0; i < _newest.hulls.size(); ++i)
     {
+      // Against a formation of the hull, so that a splash counts every ship it reaches (ADR-014).
       const Outpost::HullView& hull = _newest.hulls[i];
-      const double damage = Outpost::DamagePerSecond(shown, hull.armorHundredths);
-      const double current = Outpost::DamagePerSecond(*stats, hull.armorHundredths);
+      const auto radius = static_cast<float>(hull.footprintRadiusMeters);
+      const double damage = Outpost::FormationDamagePerSecond(shown, hull.armorHundredths, radius);
+      const double current = Outpost::FormationDamagePerSecond(*stats, hull.armorHundredths, radius);
+      const std::int32_t reached = Outpost::ShipsReached(shown.splashRadiusMeters, radius);
       const Hud::Change change = previewStats.has_value() ? ChangeOf(current, damage, false) : Hud::Change::Same;
       const float share = ShareOf(damage, best.damage[i]);
       // The change per ship to a tenth, as the figure is written: "+4.5" (task 15.3).
@@ -657,6 +662,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
                               .perShipChange = change == Hud::Change::Same
                                                  ? std::string()
                                                  : std::format("{}{:.1f}", damage < current ? '-' : '+', std::abs(tenths)),
+                              .reach = reached > 1 ? std::format("{}{} ships", TIMES, reached) : std::string(),
                               .perOre = std::format("{:.1f} / 100 ore", shown.cost > 0 ? damage * 100.0 / shown.cost : 0.0),
                               .share = share,
                               .rating = RatingOf(share),
@@ -1296,7 +1302,8 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
 
   // Damage per second after armor against each hull, a card for each.
   const float damageWidth = DESIGNER_WIDTH - DESIGNER_INSET - DAMAGE_LEFT;
-  paint.Text(std::format("DAMAGE / S AFTER ARMOR{}VS HULL", DOT), DAMAGE_LEFT, sections, LABEL_COLOR, Hud::Typeface::Label, tracking);
+  paint.Text(std::format("DAMAGE / S AFTER ARMOR{}VS A FORMATION", DOT), DAMAGE_LEFT, sections, LABEL_COLOR, Hud::Typeface::Label,
+             tracking);
   const auto cards = static_cast<float>(std::max<std::size_t>(1, _panel.damage.size()));
   const float cardWidth = (damageWidth - ((cards - 1.0f) * DAMAGE_CARD_GAP)) / cards;
   const float cardsTop = sections + SECTION_LABEL_HEIGHT;
@@ -1312,6 +1319,9 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     paint.RightText(card.armor, left + cardWidth - 8.0f, cardsTop + 11.0f, LABEL_COLOR, Hud::Typeface::Label);
     // Clear of the hull's line, which the name face sets about 19 units tall, at every scale's rounding.
     paint.Text(card.perShip, left + 10.0f, cardsTop + 30.0f, ChangeColor(card.change, TEXT_COLOR), Hud::Typeface::LargeFigure);
+    // How many ships a splash reaches, at the card's right above the change.
+    if (!card.reach.empty())
+      paint.RightText(card.reach, left + cardWidth - 8.0f, cardsTop + 28.0f, LABEL_COLOR, Hud::Typeface::Label);
     // A hovered part's change, at the card's right on the large figure's line (task 15.3).
     if (!card.perShipChange.empty())
     {
@@ -2294,7 +2304,9 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
       {
         option.strengths.push_back(
           {.hull = Abbreviation(_newest.hulls[i].nameUtf8),
-           .rating = RatingOf(ShareOf(DamagePerSecond(*stats, _newest.hulls[i].armorHundredths), best.damage[i]))});
+           .rating = RatingOf(ShareOf(
+             FormationDamagePerSecond(*stats, _newest.hulls[i].armorHundredths, static_cast<float>(_newest.hulls[i].footprintRadiusMeters)),
+             best.damage[i]))});
       }
     }
   }

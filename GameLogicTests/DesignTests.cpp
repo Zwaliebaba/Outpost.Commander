@@ -159,6 +159,26 @@ public:
     Assert::AreEqual(630, Outpost::HitHundredths(1470, 840));
   }
 
+  // ADR-014, ADR-010: a splash reaches the neighbors of a formation within its radius. Small hulls stand 24 m apart, so the
+  // Missile Rack's 30 m and the Flak Battery's 26 m reach the four nearest; Medium hulls stand 42 m apart and Large ones
+  // 72 m, beyond either. Without splash a hit reaches its target alone.
+  TEST_METHOD(ASplashReachesItsNeighborsInAFormation)
+  {
+    Assert::AreEqual(5, Outpost::ShipsReached(30.0f, 8.0f));
+    Assert::AreEqual(5, Outpost::ShipsReached(26.0f, 8.0f));
+    Assert::AreEqual(1, Outpost::ShipsReached(30.0f, 14.0f));
+    Assert::AreEqual(1, Outpost::ShipsReached(30.0f, 24.0f));
+    Assert::AreEqual(1, Outpost::ShipsReached(0.0f, 8.0f));
+    // The diagonal neighbors at 34 m join once the splash reaches them.
+    Assert::AreEqual(9, Outpost::ShipsReached(34.0f, 8.0f));
+
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const Outpost::DesignStats missiles = Outpost::DesignStatsFor(tuning, Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{3});
+    // 30 a hit every 2 s: 14 a second against one Small hull of armor 2, and 70 against a formation of them.
+    Assert::AreEqual(70.0, Outpost::FormationDamagePerSecond(missiles, 200, 8.0f), 1e-9);
+    Assert::AreEqual(Outpost::DamagePerSecond(missiles, 1400), Outpost::FormationDamagePerSecond(missiles, 1400, 24.0f), 1e-9);
+  }
+
   // Design §7: the first minutes are played with the four designs of the components no research unlocks. ADR-069: each is
   // saved under the short name the tuning data gives it, the MVP design's nicknames, and keeps its components' name besides.
   TEST_METHOD(StartingDesignsAreTheFourOfTheFirstMinutes)
