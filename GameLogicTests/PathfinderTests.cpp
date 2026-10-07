@@ -399,7 +399,7 @@ public:
 
   TEST_METHOD(FindsAWayAcrossTheRepositoryMap)
   {
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
+    const Outpost::Map map = Outpost::PlaceContent(Outpost::LoadMap(ReadRepositoryMap()), 1);
     Outpost::Pathfinder pathfinder;
     std::vector<Outpost::Obstacle> obstacles;
     obstacles.reserve(map.oreAsteroids.size() + map.asteroidFields.size());

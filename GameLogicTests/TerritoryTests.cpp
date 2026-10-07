@@ -20,9 +20,6 @@ constexpr std::int32_t A2 = 6;
 constexpr std::int32_t B2 = 7;
 constexpr std::int32_t A3 = 11;
 constexpr std::int32_t E5 = 25;
-// A near asteroid in B1, and one in A3.
-constexpr Outpost::PlanePosition B1_ASTEROID{.xMeters = -2350.0f, .zMeters = -3480.0f};
-constexpr Outpost::PlanePosition A3_ASTEROID{.xMeters = -3520.0f, .zMeters = -450.0f};
 // Income in hundredths of an Ore a second: a near rig's 4 (Phase 4 design §4).
 constexpr std::int32_t NEAR_INCOME = 400;
 
@@ -103,10 +100,10 @@ public:
   {
     TerritoryMatch match;
     match.Run(1);
-    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::MiningRig, B1_ASTEROID) == Outpost::CommandResult::SectorNotHeld);
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1)) == Outpost::CommandResult::SectorNotHeld);
     (void)match.Relay(BLUE, B1);
-    Assert::IsTrue(match.Build(RED, Outpost::StructureKind::MiningRig, B1_ASTEROID) == Outpost::CommandResult::SectorNotHeld);
-    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::MiningRig, B1_ASTEROID) == Outpost::CommandResult::Applied);
+    Assert::IsTrue(match.Build(RED, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1)) == Outpost::CommandResult::SectorNotHeld);
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1)) == Outpost::CommandResult::Applied);
   }
 
   // Phase 2 design §4, §6: a rig earns while its player holds its sector, and half while that sector is cut off from the
@@ -114,8 +111,8 @@ public:
   TEST_METHOD(ARigEarnsWhileItsSectorIsHeldAndHalfWhenCutOff)
   {
     TerritoryMatch match;
-    (void)match.Structure(BLUE, Outpost::StructureKind::MiningRig, B1_ASTEROID);
-    (void)match.Structure(BLUE, Outpost::StructureKind::MiningRig, A3_ASTEROID);
+    (void)match.Structure(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1));
+    (void)match.Structure(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(A3));
     match.Run(1);
     Assert::AreEqual(0, match.Income(BLUE), L"neither rig's sector is held");
 
@@ -158,7 +155,7 @@ public:
   TEST_METHOD(ARigInTheEnemysSectorEarnsNothing)
   {
     TerritoryMatch match;
-    const Outpost::EntityId rig = match.Structure(BLUE, Outpost::StructureKind::MiningRig, B1_ASTEROID);
+    const Outpost::EntityId rig = match.Structure(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1));
     (void)match.Relay(RED, B1);
     const auto reserve = [&match, rig]
     { return match.World().FindEntity(match.World().FindEntity(rig)->site)->oreReserveHundredths.value_or(-1); };
@@ -174,7 +171,7 @@ public:
   {
     TerritoryMatch match;
     (void)match.Relay(BLUE, B1);
-    (void)match.Structure(BLUE, Outpost::StructureKind::MiningRig, B1_ASTEROID);
+    (void)match.Structure(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1));
     const Outpost::PlanePosition node = match.Placement(B1).node;
     match.Run(1);
     Assert::AreEqual(NEAR_INCOME, match.Income(BLUE));
@@ -256,7 +253,8 @@ public:
     };
     Assert::IsTrue(build(Outpost::StructureKind::Relay, {.xMeters = -2000.0f, .zMeters = -4000.0f}) ==
                    Outpost::CommandResult::NotBuildable);
-    Assert::IsTrue(build(Outpost::StructureKind::MiningRig, B1_ASTEROID) == Outpost::CommandResult::Applied);
+    // A home asteroid: with no sectors, the seed places none of the others (ADR-072).
+    Assert::IsTrue(build(Outpost::StructureKind::MiningRig, server.MapData().oreAsteroids[0].position) == Outpost::CommandResult::Applied);
     Assert::IsTrue(server.World().BuildSnapshot(BLUE).sectors.empty());
   }
 

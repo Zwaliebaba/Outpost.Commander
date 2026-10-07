@@ -124,6 +124,14 @@ private:
   std::vector<bool> m_reached;
 };
 
+// The seeds the repository map's placement is checked over (ADR-072).
+constexpr std::array<std::uint64_t, 12> SEEDS{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
+std::wstring Widen(std::string_view _text)
+{
+  return {_text.begin(), _text.end()};
+}
+
 // A small map that loads, for the error cases to break one thing at a time.
 constexpr std::string_view MINIMAL_MAP = R"({
   "sizeMeters": 1000,
@@ -163,63 +171,76 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
 TEST_CLASS(MapTests)
 {
 public:
-  // Phase 4 design §6: 10 km a side, the starts in opposite corners 1 km in from the edges, and Phase 1's four rings of
-  // ore, each richer and further out than the last, 459,000 Ore in all.
+  // Phase 4 design §6, §7: 10 km a side, the starts in opposite corners 1 km in from the edges, and Phase 1's four rings of
+  // ore, each richer and further out than the last: each home's three asteroids fixed, and the rest placed from the seed,
+  // as many of each yield in each sector as its kind names, 459,000 Ore in all whatever the seed.
   TEST_METHOD(TheRepositoryMapHasPhaseFoursShape)
   {
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Assert::AreEqual(10000.0f, map.sizeMeters);
-    Assert::AreEqual(size_t{2}, map.starts.size());
-    Assert::AreEqual(-4000.0f, map.starts[0].xMeters);
-    Assert::AreEqual(-4000.0f, map.starts[0].zMeters);
+    const Outpost::Map listed = Outpost::LoadMap(ReadRepositoryMap());
+    Assert::AreEqual(10000.0f, listed.sizeMeters);
+    Assert::AreEqual(size_t{2}, listed.starts.size());
+    Assert::AreEqual(-4000.0f, listed.starts[0].xMeters);
+    Assert::AreEqual(-4000.0f, listed.starts[0].zMeters);
+    Assert::AreEqual(size_t{6}, listed.oreAsteroids.size(), L"the homes' asteroids are listed");
+    for (const Outpost::OreAsteroidPlacement& asteroid : listed.oreAsteroids)
+    {
+      Assert::IsTrue(asteroid.yield == Outpost::OreYield::Home);
+      Assert::IsTrue(
+        std::ranges::any_of(listed.starts, [&](Outpost::PlanePosition _start) { return Distance(asteroid.position, _start) < 300.0f; }));
+    }
+    Assert::IsFalse(listed.asteroidFields.empty());
 
-    // Each ring's count, by the start it is nearer, and its reserve.
-    struct Ring
+    for (const std::uint64_t seed : SEEDS)
     {
-      Outpost::OreYield yield;
-      int nearFirst = 0;
-      int nearSecond = 0;
-      int reserveOre = 0;
-    };
-    std::array<Ring, 4> rings{{{Outpost::OreYield::Home, 3, 3, 7500},
-                               {Outpost::OreYield::Near, 7, 7, 9000},
-                               {Outpost::OreYield::Contested, 8, 8, 12000},
-                               {Outpost::OreYield::Rich, 2, 2, 24000}}};
-    std::int64_t total = 0;
-    for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
-    {
-      Ring& ring = *std::ranges::find(rings, asteroid.yield, &Ring::yield);
-      Assert::AreEqual(ring.reserveOre, asteroid.reserveOre.value_or(0));
-      total += asteroid.reserveOre.value_or(0);
-      const float first = Distance(asteroid.position, map.starts[0]);
-      const float second = Distance(asteroid.position, map.starts[1]);
-      // A contested or rich asteroid as far from one start as from the other counts for neither.
-      if (first < second - 1.0f)
-        --ring.nearFirst;
-      else if (second < first - 1.0f)
-        --ring.nearSecond;
-      else
+      const Outpost::Map map = Outpost::PlaceContent(listed, seed);
+      // Each yield's count, its reserve, and its asteroids' radius.
+      struct Ring
       {
-        --ring.nearFirst;
-        --ring.nearSecond;
+        Outpost::OreYield yield;
+        int count = 0;
+        int reserveOre = 0;
+        float radiusMeters = 0.0f;
+      };
+      std::array<Ring, 4> rings{{{Outpost::OreYield::Home, 6, 7500, 45.0f},
+                                 {Outpost::OreYield::Near, 14, 9000, 45.0f},
+                                 {Outpost::OreYield::Contested, 16, 12000, 45.0f},
+                                 {Outpost::OreYield::Rich, 4, 24000, 60.0f}}};
+      std::int64_t total = 0;
+      for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
+      {
+        Ring& ring = *std::ranges::find(rings, asteroid.yield, &Ring::yield);
+        Assert::AreEqual(ring.reserveOre, asteroid.reserveOre.value_or(0));
+        Assert::AreEqual(ring.radiusMeters, asteroid.radiusMeters);
+        total += asteroid.reserveOre.value_or(0);
+        --ring.count;
+      }
+      for (const Ring& ring : rings)
+        Assert::AreEqual(0, ring.count);
+      Assert::AreEqual(std::int64_t{459000}, total);
+
+      // Each sector holds what its kind places, the homes their listed three.
+      for (const Outpost::SectorPlacement& sector : map.sectors)
+      {
+        const Outpost::SectorKind& kind = *std::ranges::find(map.sectorKinds, sector.kind, &Outpost::SectorKind::name);
+        for (const Outpost::OreYield yield : {Outpost::OreYield::Near, Outpost::OreYield::Contested, Outpost::OreYield::Rich})
+        {
+          const auto rule = std::ranges::find(kind.ore, yield, &Outpost::OreRule::yield);
+          const auto placed = std::ranges::count_if(map.oreAsteroids, [&](const Outpost::OreAsteroidPlacement& _asteroid)
+                                                    { return _asteroid.yield == yield && sector.Contains(_asteroid.position); });
+          Assert::AreEqual(rule != kind.ore.end() ? std::ptrdiff_t{rule->count} : std::ptrdiff_t{0}, placed, Widen(sector.name).c_str());
+        }
       }
     }
-    for (const Ring& ring : rings)
-    {
-      Assert::AreEqual(0, ring.nearFirst);
-      Assert::AreEqual(0, ring.nearSecond);
-    }
-    Assert::AreEqual(std::int64_t{459000}, total);
-    Assert::IsFalse(map.asteroidFields.empty());
   }
 
-  // Phase 4 design §6: the map is laid out in 25 sectors of 2 km for Phase 2's territory. They tile the map, each
-  // holds its node, every asteroid and start lies in one, two are adjacent exactly when they share a border, and every
-  // sector can be reached from both starts' sectors.
+  // Phase 4 design §6: the map is laid out in 25 sectors of 2 km for Phase 2's territory, each of a kind. They tile the
+  // map, each holds its node, every asteroid and start lies in one, two are adjacent exactly when they share a border, and
+  // every sector can be reached from both starts' sectors.
   TEST_METHOD(TheRepositoryMapIsLaidOutInSectors)
   {
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
+    const Outpost::Map map = Outpost::PlaceContent(Outpost::LoadMap(ReadRepositoryMap()), SEEDS[0]);
     Assert::AreEqual(size_t{25}, map.sectors.size());
+    Assert::IsTrue(std::ranges::none_of(map.sectors, [](const Outpost::SectorPlacement& _sector) { return _sector.kind.empty(); }));
     double area = 0.0;
     for (const Outpost::SectorPlacement& sector : map.sectors)
       area += static_cast<double>(sector.maxXMeters - sector.minXMeters) * (sector.maxZMeters - sector.minZMeters);
@@ -269,44 +290,96 @@ public:
     }
   }
 
-  // Neither start is favored: turning the map half a turn about its center gives the same map, with the starts swapped.
+  // Neither start is favored: turning the map half a turn about its center gives the same map, with the starts swapped,
+  // whatever the seed placed.
   TEST_METHOD(TheRepositoryMapIsPointSymmetric)
   {
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    auto mirrored = [](Outpost::PlanePosition _position) { return Outpost::PlanePosition{-_position.xMeters, -_position.zMeters}; };
+    for (const std::uint64_t seed : SEEDS)
+    {
+      const Outpost::Map map = Outpost::PlaceContent(Outpost::LoadMap(ReadRepositoryMap()), seed);
+      auto mirrored = [](Outpost::PlanePosition _position) { return Outpost::PlanePosition{-_position.xMeters, -_position.zMeters}; };
 
-    Assert::IsTrue(mirrored(map.starts[0]) == map.starts[1]);
-    for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
-    {
-      Assert::IsTrue(std::ranges::any_of(map.oreAsteroids,
-                                         [&](const Outpost::OreAsteroidPlacement& _other)
-                                         {
-                                           return _other.position == mirrored(asteroid.position) &&
-                                                  _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.yield &&
-                                                  _other.reserveOre == asteroid.reserveOre;
-                                         }));
-    }
-    for (const Outpost::AsteroidFieldPlacement& field : map.asteroidFields)
-    {
-      Assert::IsTrue(
-        std::ranges::any_of(map.asteroidFields, [&](const Outpost::AsteroidFieldPlacement& _other)
-                            { return _other.position == mirrored(field.position) && _other.radiusMeters == field.radiusMeters; }));
+      Assert::IsTrue(mirrored(map.starts[0]) == map.starts[1]);
+      for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
+      {
+        Assert::IsTrue(std::ranges::any_of(map.oreAsteroids,
+                                           [&](const Outpost::OreAsteroidPlacement& _other)
+                                           {
+                                             return _other.position == mirrored(asteroid.position) &&
+                                                    _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.yield &&
+                                                    _other.reserveOre == asteroid.reserveOre;
+                                           }));
+      }
+      for (const Outpost::AsteroidFieldPlacement& field : map.asteroidFields)
+      {
+        Assert::IsTrue(
+          std::ranges::any_of(map.asteroidFields, [&](const Outpost::AsteroidFieldPlacement& _other)
+                              { return _other.position == mirrored(field.position) && _other.radiusMeters == field.radiusMeters; }));
+      }
     }
   }
 
   // A ship as wide as the narrowest passage the map promises gets from either start to the side of every asteroid and
-  // every field (plan task 2.3).
+  // every field (plan task 2.3), on maps the seed placed.
   TEST_METHOD(EveryAsteroidCanBeReachedFromBothStarts)
   {
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    // Just under half the minimum gap, so that a passage exactly as wide as the gap still lets the disc through on the grid.
-    const double clearance = map.minimumGapMeters / 2.0 - ReachabilityGrid::CELL_METERS;
-    ReachabilityGrid grid(map, clearance);
-    for (const Outpost::PlanePosition start : map.starts)
+    for (const std::uint64_t seed : std::span(SEEDS).first(3))
     {
-      Assert::IsTrue(grid.FloodFrom(start), L"a start is blocked");
-      for (const Obstacle& obstacle : Obstacles(map))
-        Assert::IsTrue(grid.Reached(obstacle, clearance + 2.0 * ReachabilityGrid::CELL_METERS));
+      const Outpost::Map map = Outpost::PlaceContent(Outpost::LoadMap(ReadRepositoryMap()), seed);
+      // Just under half the minimum gap, so that a passage exactly as wide as the gap still lets the disc through on the
+      // grid.
+      const double clearance = map.minimumGapMeters / 2.0 - ReachabilityGrid::CELL_METERS;
+      ReachabilityGrid grid(map, clearance);
+      for (const Outpost::PlanePosition start : map.starts)
+      {
+        Assert::IsTrue(grid.FloodFrom(start), L"a start is blocked");
+        for (const Obstacle& obstacle : Obstacles(map))
+          Assert::IsTrue(grid.Reached(obstacle, clearance + 2.0 * ReachabilityGrid::CELL_METERS));
+      }
+    }
+  }
+
+  // ADR-072: the same seed places the same asteroids, another seed others, and every placed asteroid keeps the placement's
+  // rules: inside its sector by the border, clear of the node, the minimum gap from every obstacle and start, and the
+  // spacing from every other ore asteroid.
+  TEST_METHOD(PlacementFollowsTheSeed)
+  {
+    const Outpost::Map listed = Outpost::LoadMap(ReadRepositoryMap());
+    const auto positions = [](const Outpost::Map& _map)
+    {
+      std::vector<Outpost::PlanePosition> placed;
+      placed.reserve(_map.oreAsteroids.size());
+      for (const Outpost::OreAsteroidPlacement& asteroid : _map.oreAsteroids)
+        placed.push_back(asteroid.position);
+      return placed;
+    };
+    Assert::IsTrue(positions(Outpost::PlaceContent(listed, 7)) == positions(Outpost::PlaceContent(listed, 7)));
+    Assert::IsFalse(positions(Outpost::PlaceContent(listed, 7)) == positions(Outpost::PlaceContent(listed, 8)));
+
+    for (const std::uint64_t seed : SEEDS)
+    {
+      const Outpost::Map map = Outpost::PlaceContent(listed, seed);
+      const Outpost::PlacementRules& rules = map.placement;
+      for (size_t i = listed.oreAsteroids.size(); i < map.oreAsteroids.size(); ++i)
+      {
+        const Outpost::OreAsteroidPlacement& asteroid = map.oreAsteroids[i];
+        const Outpost::SectorPlacement& sector =
+          *std::ranges::find_if(map.sectors, [&](const Outpost::SectorPlacement& _sector) { return _sector.Contains(asteroid.position); });
+        const float inset = rules.borderMeters + asteroid.radiusMeters;
+        Assert::IsTrue(asteroid.position.xMeters >= sector.minXMeters + inset && asteroid.position.xMeters <= sector.maxXMeters - inset &&
+                         asteroid.position.zMeters >= sector.minZMeters + inset && asteroid.position.zMeters <= sector.maxZMeters - inset,
+                       L"inside its sector by the border");
+        Assert::IsTrue(Distance(asteroid.position, sector.node) >= rules.nodeClearanceMeters, L"clear of the node");
+        for (const Outpost::PlanePosition start : map.starts)
+          Assert::IsTrue(Distance(asteroid.position, start) - asteroid.radiusMeters >= map.minimumGapMeters);
+        for (const Outpost::AsteroidFieldPlacement& field : map.asteroidFields)
+          Assert::IsTrue(Distance(asteroid.position, field.position) - asteroid.radiusMeters - field.radiusMeters >= map.minimumGapMeters);
+        for (size_t j = 0; j < map.oreAsteroids.size(); ++j)
+        {
+          if (j != i)
+            Assert::IsTrue(Distance(asteroid.position, map.oreAsteroids[j].position) >= rules.oreSpacingMeters, L"spaced");
+        }
+      }
     }
   }
 
@@ -364,6 +437,54 @@ public:
     ExpectLoadError(broken("\"adjacent\": [1]", "\"adjacent\": []"), "sectors[0].adjacent");
     ExpectLoadError(broken("\"adjacent\": [2]", "\"adjacent\": [3]"), "sectors[0].adjacent");
     ExpectLoadError(broken("\"maxXMeters\": 500", "\"maxXMeters\": 600"), "sectors[1]: is not a rectangle");
+  }
+
+  // The loader's checks of the sector kinds, and placement that finds no room (ADR-072). The two sectors are each other's
+  // mirror.
+  TEST_METHOD(RejectsBrokenSectorKinds)
+  {
+    constexpr std::string_view SECTORS = R"(], "sectors": [
+      { "id": 1, "name": "West", "minXMeters": -500, "maxXMeters": 0, "minZMeters": -500, "maxZMeters": 500,
+        "node": { "xMeters": -300, "zMeters": 300 }, "adjacent": [2], "kind": "wing" },
+      { "id": 2, "name": "East", "minXMeters": 0, "maxXMeters": 500, "minZMeters": -500, "maxZMeters": 500,
+        "node": { "xMeters": 300, "zMeters": -300 }, "adjacent": [1], "kind": "wing" } ],
+      "sectorKinds": [ { "name": "wing", "ore": [ { "yield": "near", "count": 1, "radiusMeters": 20, "reserve": 9000 } ] } ],
+      "placement": { "borderMeters": 30, "nodeClearanceMeters": 100, "oreSpacingMeters": 150 } })";
+    std::string text(MINIMAL_MAP);
+    text.replace(text.rfind(']'), std::string::npos, SECTORS);
+    const Outpost::Map map = Outpost::LoadMap(text);
+    Assert::AreEqual(std::string("wing"), map.sectors[1].kind);
+    const Outpost::Map placed = Outpost::PlaceContent(map, 5);
+    Assert::AreEqual(map.oreAsteroids.size() + 2, placed.oreAsteroids.size(), L"one in each sector");
+    Assert::IsTrue(placed.oreAsteroids.back().position ==
+                   Outpost::PlanePosition{-placed.oreAsteroids[placed.oreAsteroids.size() - 2].position.xMeters,
+                                          -placed.oreAsteroids[placed.oreAsteroids.size() - 2].position.zMeters});
+
+    const auto broken = [&text](std::string_view _from, std::string_view _to)
+    {
+      std::string changed = text;
+      changed.replace(changed.find(_from), _from.size(), _to);
+      return changed;
+    };
+    ExpectLoadError(broken("\"adjacent\": [2], \"kind\": \"wing\"", "\"adjacent\": [2], \"kind\": \"wild\""),
+                    "sectors[0].kind: \"wild\" is not one of the sector kinds");
+    ExpectLoadError(broken("\"adjacent\": [1], \"kind\": \"wing\"", "\"adjacent\": [1]"),
+                    "sectors[0].kind: is not the kind of the sector across");
+    ExpectLoadError(broken("\"ore\": [ {", "\"ore\": [] }, { \"name\": \"wing\", \"ore\": [ {"), "sectorKinds[1].name");
+    ExpectLoadError(broken("\"placement\"", "\"placements\""), "has no \"placement\"");
+    Assert::ExpectException<Neuron::Exception>(
+      [&] { (void)Outpost::PlaceContent(Outpost::LoadMap(broken("\"borderMeters\": 30", "\"borderMeters\": 400")), 5); },
+      L"no room inside the border");
+
+    // A sector that is its own mirror places its asteroids in pairs.
+    constexpr std::string_view WHOLE = R"(], "sectors": [
+      { "id": 1, "name": "All", "minXMeters": -500, "maxXMeters": 500, "minZMeters": -500, "maxZMeters": 500,
+        "node": { "xMeters": 0, "zMeters": 300 }, "adjacent": [], "kind": "middle" } ],
+      "sectorKinds": [ { "name": "middle", "ore": [ { "yield": "near", "count": 1, "radiusMeters": 20, "reserve": 9000 } ] } ],
+      "placement": { "borderMeters": 30, "nodeClearanceMeters": 100, "oreSpacingMeters": 150 } })";
+    std::string whole(MINIMAL_MAP);
+    whole.replace(whole.rfind(']'), std::string::npos, WHOLE);
+    ExpectLoadError(whole, "sectors[0].kind: places an odd count");
   }
 
   TEST_METHOD(ThePlacedMapIsInTheSnapshot)

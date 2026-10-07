@@ -42,8 +42,9 @@ public:
   TEST_METHOD(KeepsTwoHundredShipsFighting)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Outpost::InProcessServer server(tuning, map, {.seed = 3, .stressLoad = true});
+    Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 3, .stressLoad = true});
+    // The map as the server placed it from its seed (ADR-072).
+    const Outpost::Map& map = server.MapData();
     server.World().PlaceStartingBases(map);
     server.StartStressLoad();
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});

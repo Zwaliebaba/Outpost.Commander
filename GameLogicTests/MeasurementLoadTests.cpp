@@ -13,8 +13,9 @@ public:
   TEST_METHOD(PlacesTwoHundredShipsAndFortyStructures)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Outpost::InProcessServer server(tuning, map, {.seed = 1});
+    Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
+    // The map as the server placed it from its seed (ADR-072).
+    const Outpost::Map& map = server.MapData();
     server.World().PlaceStartingBases(map);
     Outpost::PlaceMeasurementLoad(server.World(), map, tuning);
 
@@ -48,8 +49,9 @@ public:
   TEST_METHOD(ReportsOneDurationPerTick)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Outpost::InProcessServer server(tuning, map, {.seed = 1});
+    Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
+    // The map as the server placed it from its seed (ADR-072).
+    const Outpost::Map& map = server.MapData();
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});
     server.Advance(150ms);
     const std::vector<Outpost::TickTiming> timings = server.TakeTickTimings();
@@ -70,8 +72,9 @@ public:
   TEST_METHOD(TimesTheOrdersOfATick)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Outpost::InProcessServer server(tuning, map, {.seed = 1});
+    Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
+    // The map as the server placed it from its seed (ADR-072).
+    const Outpost::Map& map = server.MapData();
     server.World().PlaceStartingBases(map);
     Outpost::PlaceMeasurementLoad(server.World(), map, tuning);
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});

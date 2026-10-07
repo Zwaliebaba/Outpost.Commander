@@ -168,6 +168,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **Point-symmetric.** One half of the map is drawn from the seed and the other half mirrors it through the center, so both seats get the same map. The center sector is its own mirror, and its content is placed symmetrically within it.
 - **Deterministic.** Placement uses `Neuron::Random` seeded from the match's seed, inside `Simulation`'s setup, so a match still replays from its seed and command log on the same build (ADR-009).
 - **The proposed rule by distance from the homes:** pirate camps one sector beyond the flanks, pirate strongholds on the rich sectors and in the center, and derelicts in roughly every other sector, richer the further out they lie.
+- **As built** (plan task 29.1, ADR-072): each sector of `Map.json` names a kind, and each kind the asteroids it gets, today's count and yields in each sector (owner, 2026-10-07). The seed draws their places inside the sector, clear of its borders, its node and each other.
 
 ---
 
