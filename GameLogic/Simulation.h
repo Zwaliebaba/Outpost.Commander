@@ -337,9 +337,8 @@ public:
     return m_ending;
   }
 
-  // A player's tickets in shares of a ticket, one ticket being as many shares as the map has nodes, so that domination's
-  // drain is whole (ADR-057); zero for a player not added or without territory.
-  [[nodiscard]] std::int64_t TicketShares(PlayerId _player) const noexcept;
+  // A player's tickets (ADR-057); zero for a player not added or without territory.
+  [[nodiscard]] std::int32_t Tickets(PlayerId _player) const noexcept;
 
   // How every ship picks its target. Only the balance check's headless battles change it (task 3.4).
   void SetTargetRule(TargetRule _rule) noexcept
@@ -425,8 +424,8 @@ private:
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
     // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
     std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
-    // Its tickets on a map with territory, in shares of a ticket (ADR-057).
-    std::int64_t ticketShares = 0;
+    // Its tickets on a map with territory (ADR-057).
+    std::int32_t tickets = 0;
     ResearchEffects researchEffects;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;

@@ -291,7 +291,7 @@ enum class MatchEnding : std::uint8_t
   Domination
 };
 
-// One player's tickets, whole, rounded up so that a player shows none only once it has lost by them (ADR-057).
+// One player's tickets (ADR-057).
 struct TicketsView
 {
   PlayerId player;

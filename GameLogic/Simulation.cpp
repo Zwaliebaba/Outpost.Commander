@@ -653,14 +653,13 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
       (void)SpawnConstructor(owner, start + forward * (stationRadius + BASE_ROW_GAP_METERS + constructorRadius) + across * offset, heading);
     }
   }
-  // On a map with territory every player starts with its tickets, counted in shares of a ticket, as many to a ticket as the
-  // map has nodes (ADR-057).
+  // On a map with territory every player starts with its tickets (ADR-057).
   if (HasTerritory())
   {
     for (const PlayerId owner : m_basePlayers)
     {
       if (PlayerState* player = FindPlayer(owner))
-        player->ticketShares = std::int64_t{m_tuning->territory.tickets} * static_cast<std::int64_t>(m_sectors.size());
+        player->tickets = m_tuning->territory.tickets;
     }
   }
 }
@@ -895,10 +894,9 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   }
   if (HasTerritory() && !m_basePlayers.empty())
   {
-    const auto nodes = static_cast<std::int64_t>(m_sectors.size());
     snapshot.startingTickets = m_tuning->territory.tickets;
     for (const PlayerId player : m_basePlayers)
-      snapshot.tickets.push_back({.player = player, .tickets = static_cast<std::int32_t>((TicketShares(player) + nodes - 1) / nodes)});
+      snapshot.tickets.push_back({.player = player, .tickets = Tickets(player)});
   }
   snapshot.fogOfWar = m_fog;
   snapshot.sectors.reserve(m_sectors.size());
@@ -2840,10 +2838,9 @@ void Outpost::Simulation::DecideMatch()
     EndMatch(standing, MatchEnding::LostProduction);
 }
 
-// Phase 2 design §8: every drain interval, a player that holds fewer nodes than the most any player holds loses the
-// tuning data's tickets for each node it is behind, divided by the map's nodes; a suppressed Relay counts for its owner,
-// and a free node for no one. Tickets are kept in shares, as many to a ticket as the map has nodes, so the drain is whole
-// and a lead of one node on nine drains a side in exactly 50 minutes (ADR-057). A player out of tickets loses.
+// Phase 2 design §8, as Phase 4 amends it: every drain interval, a player that holds fewer nodes than the most any player
+// holds loses the tuning data's tickets for each node it is behind, whatever the map's size; a suppressed Relay counts for
+// its owner, and a free node for no one. A player out of tickets loses (ADR-057).
 void Outpost::Simulation::Dominate()
 {
   if (m_matchOver || m_basePlayers.empty() || !HasTerritory())
@@ -2864,9 +2861,9 @@ void Outpost::Simulation::Dominate()
     if (player != nullptr)
     {
       const std::int64_t drain = std::int64_t{m_tuning->territory.drainTicketsPerNodeDifference} * (most - nodes[index]);
-      player->ticketShares = std::max<std::int64_t>(0, player->ticketShares - drain);
+      player->tickets = static_cast<std::int32_t>(std::max<std::int64_t>(0, player->tickets - drain));
     }
-    if (player == nullptr || player->ticketShares > 0)
+    if (player == nullptr || player->tickets > 0)
       standing.push_back(m_basePlayers[index]);
   }
   if (standing.size() < m_basePlayers.size())
@@ -2881,8 +2878,8 @@ void Outpost::Simulation::EndMatch(const std::vector<PlayerId>& _standing, Match
   m_ending = _ending;
 }
 
-std::int64_t Outpost::Simulation::TicketShares(PlayerId _player) const noexcept
+std::int32_t Outpost::Simulation::Tickets(PlayerId _player) const noexcept
 {
   const PlayerState* player = FindPlayer(_player);
-  return player != nullptr ? player->ticketShares : 0;
+  return player != nullptr ? player->tickets : 0;
 }

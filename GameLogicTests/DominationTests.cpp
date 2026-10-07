@@ -13,12 +13,11 @@ constexpr Outpost::PlayerId RED = TerritoryMatch::RED;
 constexpr std::int32_t B1 = 2;
 constexpr std::int32_t A2 = 6;
 constexpr std::int32_t B2 = 7;
-// The repository's tuning data (Phase 2 design §8): 1,000 tickets, and every 10 seconds 30 for each node behind, over the
-// map's 25 nodes, kept as 25 shares to a ticket (ADR-057).
-constexpr std::int64_t NODES = 25;
-constexpr std::int64_t STARTING_SHARES = 1000 * NODES;
-constexpr std::int64_t DRAIN_PER_NODE = 30;
-constexpr std::uint32_t DRAIN_TICKS = 10 * TerritoryMatch::TICKS_PER_SECOND;
+// The repository's tuning data (Phase 2 design §8, as Phase 4 amends it): 1,000 tickets, and every 3 seconds one for each
+// node behind, whatever the map's nodes (ADR-057).
+constexpr std::int32_t STARTING_TICKETS = 1000;
+constexpr std::int32_t DRAIN_PER_NODE = 1;
+constexpr std::uint32_t DRAIN_TICKS = 3 * TerritoryMatch::TICKS_PER_SECOND;
 } // namespace
 
 TEST_CLASS(DominationTests)
@@ -28,8 +27,8 @@ public:
   TEST_METHOD(EachPlayerStartsWithItsTickets)
   {
     TerritoryMatch match;
-    Assert::AreEqual(STARTING_SHARES, match.World().TicketShares(BLUE));
-    Assert::AreEqual(STARTING_SHARES, match.World().TicketShares(RED));
+    Assert::AreEqual(STARTING_TICKETS, match.World().Tickets(BLUE));
+    Assert::AreEqual(STARTING_TICKETS, match.World().Tickets(RED));
     const Outpost::Snapshot red = match.World().BuildSnapshot(RED);
     Assert::AreEqual(1000, red.startingTickets);
     Assert::IsTrue(red.tickets == std::vector<Outpost::TicketsView>{{.player = BLUE, .tickets = 1000}, {.player = RED, .tickets = 1000}});
@@ -40,23 +39,22 @@ public:
   {
     TerritoryMatch match;
     match.Run(6 * DRAIN_TICKS);
-    Assert::AreEqual(STARTING_SHARES, match.World().TicketShares(BLUE));
-    Assert::AreEqual(STARTING_SHARES, match.World().TicketShares(RED));
+    Assert::AreEqual(STARTING_TICKETS, match.World().Tickets(BLUE));
+    Assert::AreEqual(STARTING_TICKETS, match.World().Tickets(RED));
   }
 
-  // Every 10 seconds the side behind loses 30 tickets for each node it is behind, divided by the map's 25; a suppressed
+  // Every 3 seconds the side behind loses a ticket for each node it is behind; a suppressed
   // Relay counts for its owner.
   TEST_METHOD(TheSideBehindLosesTicketsEveryTenSeconds)
   {
     TerritoryMatch match;
     (void)match.Relay(BLUE, B1);
     match.Run(DRAIN_TICKS - 1);
-    Assert::AreEqual(STARTING_SHARES, match.World().TicketShares(RED), L"not before ten seconds");
+    Assert::AreEqual(STARTING_TICKETS, match.World().Tickets(RED), L"not before three seconds");
     match.Run(1);
-    Assert::AreEqual(STARTING_SHARES - DRAIN_PER_NODE, match.World().TicketShares(RED));
-    Assert::AreEqual(STARTING_SHARES, match.World().TicketShares(BLUE));
-    Assert::IsTrue(match.World().BuildSnapshot(BLUE).tickets[1] == Outpost::TicketsView{.player = RED, .tickets = 999},
-                   L"998 and four fifths, shown rounded up");
+    Assert::AreEqual(STARTING_TICKETS - DRAIN_PER_NODE, match.World().Tickets(RED));
+    Assert::AreEqual(STARTING_TICKETS, match.World().Tickets(BLUE));
+    Assert::IsTrue(match.World().BuildSnapshot(BLUE).tickets[1] == Outpost::TicketsView{.player = RED, .tickets = 999});
 
     (void)match.Relay(BLUE, A2);
     (void)match.Relay(BLUE, B2);
@@ -64,17 +62,18 @@ public:
     (void)match.Warship(RED, {.xMeters = node.xMeters + 200.0f, .zMeters = node.zMeters});
     match.Run(DRAIN_TICKS);
     Assert::IsTrue(match.Sector(BLUE, B2).suppressed);
-    Assert::AreEqual(STARTING_SHARES - DRAIN_PER_NODE - (3 * DRAIN_PER_NODE), match.World().TicketShares(RED),
+    Assert::AreEqual(STARTING_TICKETS - DRAIN_PER_NODE - (3 * DRAIN_PER_NODE), match.World().Tickets(RED),
                      L"three behind, the suppressed B2 included");
   }
 
-  // Phase 2 design §8: a lead of one node of 25 drains the other side's 25,000 shares 30 at a time, in 834 drains of ten
-  // seconds, 139 minutes (Phase 4 design §6), and the match ends by domination.
-  TEST_METHOD(ALeadOfOneNodeWinsIn139Minutes)
+  // Phase 2 design §8, as Phase 4 amends it: a lead of one node drains the other side in 50 minutes on any map, 1,000
+  // drains of three seconds on the 10 km map's 25 nodes as on nine, and the match ends by domination.
+  TEST_METHOD(ALeadOfOneNodeWinsInFiftyMinutes)
   {
     TerritoryMatch match;
     (void)match.Relay(BLUE, B1);
-    constexpr std::uint32_t DRAINED = 834 * DRAIN_TICKS;
+    constexpr std::uint32_t DRAINED = 50 * 60 * TerritoryMatch::TICKS_PER_SECOND;
+    static_assert(DRAINED == STARTING_TICKETS * DRAIN_TICKS);
     match.Run(DRAINED - 1);
     Assert::IsFalse(match.World().MatchOver());
     match.Run(1);
@@ -88,7 +87,7 @@ public:
 
     // The outcome stands, and the tickets drain no further.
     match.Run(DRAIN_TICKS);
-    Assert::AreEqual(std::int64_t{0}, match.World().TicketShares(RED));
+    Assert::AreEqual(0, match.World().Tickets(RED));
     Assert::AreEqual(std::uint64_t{DRAINED}, match.World().BuildSnapshot(BLUE).matchEndedTick);
   }
 
@@ -100,7 +99,7 @@ public:
     Outpost::InProcessServer server(Outpost::LoadTuning(ReadRepositoryTuning()), map, {.seed = 3});
     server.World().PlaceStartingBases(map);
     Assert::IsTrue(server.World().BuildSnapshot(BLUE).tickets.empty());
-    Assert::AreEqual(std::int64_t{0}, server.World().TicketShares(BLUE));
+    Assert::AreEqual(0, server.World().Tickets(BLUE));
   }
 };
 } // namespace GameLogicTests

@@ -41,7 +41,7 @@ struct SightTuning
 // How territory plays on a map with sectors (Phase 2 design §5, §6, §8, ADR-056, ADR-057): what share of its income a
 // sector cut off from its holder's home sector earns, in percent, and how near an enemy warship has to be to suppress a
 // Relay. Domination: the tickets each player starts with, and every drainIntervalSeconds, the tickets a player who holds
-// fewer nodes loses for each node it is behind, times the map's nodes: drainTicketsPerNodeDifference × difference ÷ nodes.
+// fewer nodes loses for each node it is behind: drainTicketsPerNodeDifference × difference, whatever the map's nodes.
 struct TerritoryTuning
 {
   std::int32_t cutOffIncomePercent = 0;

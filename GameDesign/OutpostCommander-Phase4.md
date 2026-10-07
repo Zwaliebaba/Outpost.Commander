@@ -153,7 +153,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
   | Medium+Ion | 52 m/s | 3:38 | 1:35 |
   | Large+Fusion | 20 m/s | 9:26 | 4:08 |
 
-- **Node caps for 25 nodes** (gate L4): 4, 7, 10, 13 and 16 at Command Station levels 1–5 (§5's table). The reasoning is Phase 3 §7's, scaled up. From level 4, two caps add up to more than the map's 25 nodes, so both sides cannot sit at their cap at once and domination can decide. Domination's drain is proportional to the share of nodes held (Phase 2 §8), so its numbers carry over unchanged.
+- **Node caps for 25 nodes** (gate L4): 4, 7, 10, 13 and 16 at Command Station levels 1–5 (§5's table). The reasoning is Phase 3 §7's, scaled up. From level 4, two caps add up to more than the map's 25 nodes, so both sides cannot sit at their cap at once and domination can decide. Domination's drain no longer divides by the map's nodes: a lead of one node takes 50 minutes on any map, as it did on the 5 km map's nine (owner, 2026-10-07, after plan task 28.4 found it took 139 minutes on 25; ADR-057).
 - **Production follows territory** (gate L5). Today only Mining Rigs and Relays need a held sector (ADR-056). A Shipyard can stand anywhere a Constructor reaches, which on a 10 km map makes a Shipyard hidden next to the enemy's base the cheapest attack. In Phase 4, a Shipyard and a Repair Bay may be built only in a sector the player holds. Pushing the front forward is then how production moves forward. Relay jumps stay with the horizon, as travel between systems (Horizon O8).
 - **The camera** (gate L6). The widest view is 1,600 m today (ADR-012, gate H8), a sixth of the map. The proposal raises it to 3,000 m, and U7's frame figure is measured at that view. The strategic view stays out (Phase 2 gate J5) unless U8 asks for it.
 
@@ -248,7 +248,7 @@ The three difficulty files (ADR-065) carry the new numbers. Normal is tuned agai
 ## 14. What changes elsewhere
 
 - **Phase 1:** accepted risk 2, that there is no unit cap, ends (§5).
-- **Phase 2:** S1 and S4 are retired for Phase 4 (§2). The map of §4 is replaced by §6's, and domination is unchanged.
+- **Phase 2:** S1 and S4 are retired for Phase 4 (§2). The map of §4 is replaced by §6's, and §8's drain takes its tickets for each node behind without dividing by the map's nodes (§6).
 - **Phase 3 §7:** the node caps are rescaled for 25 nodes (§6), as its own §7 foresaw.
 - **MVP §3:** the Q2 check's budgets scale with §4's factor.
 - **The horizon:** O8 records that a system is 10 km a side and that Phase 4's map is the first one (§3). O2's bound is proposed here as a cap bought with Command Station levels (§5). Derelicts that pay research are a first step towards §6.1.
