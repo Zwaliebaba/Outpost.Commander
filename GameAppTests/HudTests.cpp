@@ -2417,7 +2417,7 @@ public:
       }
     }
     Assert::AreEqual(size_t{9}, segments);
-    Assert::AreEqual(size_t{6}, lit, L"three, two and one");
+    Assert::AreEqual(size_t{5}, lit, L"two, two and one");
 
     // The Constructor's card.
     newest.constructorBuildSeconds = 15.0;
