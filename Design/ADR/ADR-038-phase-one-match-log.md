@@ -25,6 +25,7 @@ Three things stand in the way:
    Phase 2 adds five more, for S1 to S3:
    - `contact <tick> sector <id>`: the match's first shot, in the sector it was fired from, or 0 for none.
    - `engagement <tick> sector <id>`: ships of both sides fired in one sector within 10 seconds of each other. Another engagement there counts only after 30 seconds without a shot in it. A shot is shown to each player who sees its shooter or its target (ADR-024), so a tick's shots are counted once by shooter and target. The side that fired is the shooter's owner, or the side its target is not on when the snapshot does not show the shooter.
+   - A shot by or at a pirate is neither a contact nor part of an engagement, which are the players' ([ADR-073](ADR-073-pirates.md)); milestone 34 adds records of the pirates.
    - `sector <tick> sector <id> holder <player or 0>`: a sector's holder changed, the homes' at the start included. Both players see the territory alike (ADR-056 decision 10).
    - `tickets <tick> player <player> tickets <count>`: with each `fleet` record, on a map with territory.
    - `ending <tick> <production or domination>`: how the match ended (ADR-057 decision 6), just before `end`.
