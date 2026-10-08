@@ -30,6 +30,7 @@
 #include "Simulation.h"
 #include "WorldState.h"
 #include "WorldFolder.h"
+#include "WorldSettings.h"
 #include "StressLoad.h"
 #include "InProcessServer.h"
 #include "MeasurementLoad.h"

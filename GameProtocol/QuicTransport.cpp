@@ -22,7 +22,7 @@ Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _p
                                             .applicationProtocol = std::string(QUIC_APPLICATION_PROTOCOL),
                                             .serverCertificate = _address.certificate}))
 {
-  m_channel->Send(EncodeMessage(HelloMessage{.player = _player}));
+  m_channel->Send(EncodeMessage(HelloMessage{.player = _player, .token = _address.token}));
 
   // A server that refuses the seat closes the connection, and Receive throws saying so.
   const auto deadline = std::chrono::steady_clock::now() + WELCOME_TIMEOUT;
@@ -32,7 +32,7 @@ Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _p
     const auto left = std::chrono::ceil<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now());
     if (left.count() <= 0)
       throw Neuron::Exception(std::format("The server did not seat player {} within {} ms.", _player.value, WELCOME_TIMEOUT.count()));
-    messages = m_channel->Receive(left);
+    messages = ReceiveFromChannel(left);
   }
 
   const Message first = DecodeMessage(messages.front());
@@ -51,7 +51,24 @@ void Outpost::QuicTransport::Send(Command _command)
 std::vector<Outpost::Snapshot> Outpost::QuicTransport::Receive()
 {
   std::vector<Snapshot> snapshots = std::exchange(m_early, {});
-  for (const std::vector<std::byte>& message : m_channel->Receive())
+  for (const std::vector<std::byte>& message : ReceiveFromChannel())
     snapshots.push_back(ToSnapshot(DecodeMessage(message)));
   return snapshots;
+}
+
+std::vector<std::vector<std::byte>> Outpost::QuicTransport::ReceiveFromChannel(std::chrono::milliseconds _wait)
+{
+  try
+  {
+    return m_channel->Receive(_wait);
+  }
+  catch (const Neuron::Exception&)
+  {
+    // The server's own reason, when it closed the connection with one.
+    const std::optional<std::uint64_t> code = m_channel->PeerErrorCode();
+    const std::optional<std::string_view> reason = code.has_value() ? DescribeClose(*code) : std::nullopt;
+    if (!reason.has_value())
+      throw;
+    throw Neuron::Exception(std::string(*reason));
+  }
 }

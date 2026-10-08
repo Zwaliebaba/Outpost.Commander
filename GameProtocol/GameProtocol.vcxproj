@@ -86,6 +86,8 @@
     <ClInclude Include="Placement.h" />
     <ClInclude Include="Transport.h" />
     <ClInclude Include="QuicTransport.h" />
+    <ClInclude Include="SeatToken.h" />
+    <ClInclude Include="JoinTicket.h" />
     <ClInclude Include="WireFormat.h" />
     <ClInclude Include="WireFields.h" />
     <ClInclude Include="ByteFormat.h" />
@@ -98,6 +100,8 @@
     </ClCompile>
     <ClCompile Include="Placement.cpp" />
     <ClCompile Include="QuicTransport.cpp" />
+    <ClCompile Include="SeatToken.cpp" />
+    <ClCompile Include="JoinTicket.cpp" />
     <ClCompile Include="WireFormat.cpp" />
   </ItemGroup>
   <ItemGroup>

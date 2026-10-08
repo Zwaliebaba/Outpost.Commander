@@ -60,15 +60,15 @@ W1, W4 and W6 are the owner's week. W2's tick figure is the owner's run in Relea
 
 *Decided (gate H1).*
 
-- **`OutpostServer` is a console executable** that links `GameLogic`, `NeuronServer`, `GameProtocol`, `NeuronCore` and `Opponent`, and none of the client libraries. ADR-002 foresaw it. It links `Opponent` for its deputies and AI empires (§6), whose own files still include only `GameProtocol`. It is not packaged as MSIX: a server is run from a folder.
+- **`OutpostServer` is a console executable** that links `GameLogic`, `NeuronServer`, `GameProtocol` and `NeuronCore`, and none of the client libraries. ADR-002 foresaw it. With milestone 37 it links `Opponent` too, for its deputies and AI empires (§6), whose own files still include only `GameProtocol`. It is not packaged as MSIX: a server is run from a folder.
 - **A world is a folder:** its settings, its saves and its command log (§5). `OutpostServer --new-world <folder>` makes one, with a seed and the seats, and `OutpostServer <folder>` runs it.
 - **It binds the address and port the world's settings give**, not only `127.0.0.1` (ADR-060 decision 8 binds the loopback).
 - **Its certificate and key are kept with the world,** so a client pins the certificate once. Today the listener makes a new one every time and deletes its key when it goes (ADR-060 decision 6).
 - **A seat is taken with its token as well as its player.** The server makes a 128-bit token for each seat when the world is made. Today the first hello for an open seat takes it.
 - **A seat can be taken again while the world runs.** Today a hello after `Start` is refused (ADR-060 decision 5). A player whose connection dropped takes its seat again with its token. A snapshot is whole, so the first one after it shows everything the player sees and remembers; the shots and destructions of the ticks it missed are lost, which is presentation.
 - **The server writes a join file for each seat:** the address, the port, the certificate's hash, the player and the token. The owner hands it to the friend.
-- **The client's menu gains "Join world"** when a join file is in the game's local folder, and `--join <file>` joins from the command line. This changes the menu, which gate K4 kept as it was (owner, 2026-10-05).
-- **A lost connection takes a client back to the menu,** saying why, where today it is reported as an error.
+- **The client's menu gains "Join world"** when a join file is in the player's documents, as `Outpost Commander\Join.json`, and `--join <file>` joins from the command line. The documents rather than the game's own folder, which Windows redirects for a packaged game ([ADR-078](../Design/ADR/ADR-078-dedicated-server.md)). This changes the menu, which gate K4 kept as it was (owner, 2026-10-05).
+- **A lost connection takes a client back to the menu,** saying why, in the server's words when the server closed it, where it was reported as an error that closed the game.
 
 ---
 

@@ -22,6 +22,17 @@ void Refuse(Neuron::QuicChannel& _channel, Outpost::CloseReason _reason) noexcep
   _channel.Shutdown(static_cast<std::uint64_t>(_reason));
 }
 
+// The host a seat's player reaches a server listening on _address at, from the same machine: the loopback address for
+// the loopback itself or every interface, and otherwise the address it listens on.
+std::string ListenHost(std::string_view _address)
+{
+  if (_address.empty() || _address == "0.0.0.0")
+    return std::string(LOOPBACK_HOST);
+  if (_address == "::")
+    return "::1";
+  return std::string(_address);
+}
+
 std::string ReadDataFile(std::string_view _fileName)
 {
   // The names above are ASCII, so widening them character by character is exact.
@@ -109,6 +120,7 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   : m_tuning(std::move(_tuning)),
     m_map(PlaceContent(std::move(_map), _desc.seed, TopicsOf(m_tuning))),
     m_seed(_desc.seed),
+    m_isWorld(!_desc.world.empty()),
     m_tickHost(static_cast<std::uint32_t>(m_tuning.rules.tickHz), MAX_TICKS_PER_ADVANCE),
     m_simulation(_desc.seed, static_cast<std::uint32_t>(m_tuning.rules.tickHz))
 {
@@ -143,9 +155,14 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   // Last, since a client may connect as soon as it listens.
   if (_desc.quic)
   {
+    // A world keeps its certificate in its folder, so that a player pins it once (ADR-078).
     m_listener =
-      std::make_unique<Neuron::QuicListener>(Neuron::QuicListener::Desc{.applicationProtocol = std::string(QUIC_APPLICATION_PROTOCOL)},
+      std::make_unique<Neuron::QuicListener>(Neuron::QuicListener::Desc{.applicationProtocol = std::string(QUIC_APPLICATION_PROTOCOL),
+                                                                        .address = _desc.quicAddress,
+                                                                        .port = _desc.quicPort,
+                                                                        .identity = _desc.world},
                                              [this](const std::shared_ptr<Neuron::QuicChannel>& _channel) { return Admit(_channel); });
+    m_listenHost = ListenHost(_desc.quicAddress);
   }
 }
 
@@ -157,7 +174,7 @@ void Outpost::InProcessServer::PreparePathfinding()
   m_simulation.PreparePathfinding(static_cast<float>(m_tuning.constructor.footprintRadiusMeters));
 }
 
-std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::AddConnection(PlayerId _player, bool _seat)
+std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::AddConnection(PlayerId _player, bool _seat, const SeatToken& _token)
 {
   if (!_player.IsValid())
     throw Neuron::Exception("InProcessServer: a connection needs a player");
@@ -168,7 +185,7 @@ std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::AddConnectio
     throw Neuron::Exception(std::format("InProcessServer: player {} is already connected", _player.value));
 
   auto channel = std::make_shared<LoopbackChannel>();
-  m_connections.push_back({.player = _player, .channel = channel, .seat = _seat});
+  m_connections.push_back({.player = _player, .channel = channel, .seat = _seat, .token = _token});
   return channel;
 }
 
@@ -177,23 +194,33 @@ std::unique_ptr<Outpost::Transport> Outpost::InProcessServer::Connect(PlayerId _
   return std::make_unique<LoopbackTransport>(AddConnection(_player, false));
 }
 
-Outpost::ServerAddress Outpost::InProcessServer::OpenSeat(PlayerId _player)
+Outpost::ServerAddress Outpost::InProcessServer::OpenSeat(PlayerId _player, const SeatToken& _token)
 {
   if (!m_listener)
     throw Neuron::Exception("InProcessServer: this server does not take players over QUIC");
-  AddConnection(_player, true);
-  return {.host = std::string(LOOPBACK_HOST), .port = m_listener->Port(), .certificate = m_listener->Certificate()};
+  AddConnection(_player, true, _token);
+  return {.host = m_listenHost, .port = m_listener->Port(), .certificate = m_listener->Certificate(), .token = _token};
 }
 
 Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel)
 {
   // MsQuic hands the receiver one message at a time, so what it keeps between them needs no lock: the connection it
   // serves, and the queue its commands go to once its hello has taken a seat.
-  return [this, connection = std::weak_ptr(_channel),
-          commands = std::shared_ptr<LoopbackChannel>()](Neuron::QuicChannel& _peer, std::vector<std::byte> _message) mutable
+  return [this, connection = std::weak_ptr(_channel), commands = std::shared_ptr<LoopbackChannel>(),
+          seated = PlayerId()](Neuron::QuicChannel& _peer, std::vector<std::byte> _message) mutable
   {
     try
     {
+      // A hello of another version may not decode at all, so its version is read first (ADR-060).
+      if (!commands)
+      {
+        const std::optional<std::uint32_t> version = PeekHelloVersion(_message);
+        if (version.has_value() && *version != PROTOCOL_VERSION)
+        {
+          Refuse(_peer, CloseReason::WrongVersion);
+          return;
+        }
+      }
       Message message = DecodeMessage(_message);
       if (commands)
       {
@@ -203,6 +230,9 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
           Refuse(_peer, CloseReason::MalformedMessage);
           return;
         }
+        // A connection the seat was taken from sends nothing more to the world (ADR-078).
+        if (!HoldsSeat(seated, &_peer))
+          return;
         // The player is set from the seat when the tick takes the command; what the client wrote is never trusted
         // (ADR-002).
         const std::scoped_lock lock(commands->mutex);
@@ -221,12 +251,13 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
         Refuse(_peer, CloseReason::WrongVersion);
         return;
       }
-      commands = TakeSeat(hello->player, connection.lock());
+      commands = TakeSeat(hello->player, hello->token, connection.lock());
       if (!commands)
       {
         Refuse(_peer, CloseReason::SeatRefused);
         return;
       }
+      seated = hello->player;
       _peer.Send(EncodeMessage(WelcomeMessage{.player = hello->player}));
     }
     catch (const Neuron::Exception&)
@@ -236,17 +267,36 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
   };
 }
 
-std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::TakeSeat(PlayerId _player,
+std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::TakeSeat(PlayerId _player, const SeatToken& _token,
                                                                              std::shared_ptr<Neuron::QuicChannel> _channel)
 {
+  std::shared_ptr<Neuron::QuicChannel> replaced;
+  std::shared_ptr<LoopbackChannel> commands;
+  {
+    const std::scoped_lock lock(m_seatMutex);
+    // A match's seats are taken before it starts; a world's at any time (ADR-078).
+    if ((m_started && !m_isWorld) || !_channel)
+      return nullptr;
+    const auto seat =
+      std::ranges::find_if(m_connections, [_player](const Connection& _connection) { return _connection.player == _player; });
+    if (seat == m_connections.end() || !seat->seat || seat->token != _token)
+      return nullptr;
+    // The player's newest connection holds the seat, so that one whose connection dropped without the server knowing yet
+    // takes it back.
+    replaced = std::exchange(seat->quic, std::move(_channel));
+    commands = seat->channel;
+  }
+  // The connection it had is told why it goes, outside the lock, which its own callbacks take.
+  if (replaced)
+    replaced->Shutdown(static_cast<std::uint64_t>(CloseReason::SeatTaken));
+  return commands;
+}
+
+bool Outpost::InProcessServer::HoldsSeat(PlayerId _player, const Neuron::QuicChannel* _channel)
+{
   const std::scoped_lock lock(m_seatMutex);
-  if (m_started || !_channel)
-    return nullptr;
   const auto seat = std::ranges::find_if(m_connections, [_player](const Connection& _connection) { return _connection.player == _player; });
-  if (seat == m_connections.end() || !seat->seat || seat->quic)
-    return nullptr;
-  seat->quic = std::move(_channel);
-  return seat->channel;
+  return seat != m_connections.end() && seat->quic.get() == _channel;
 }
 
 void Outpost::InProcessServer::Advance(std::chrono::nanoseconds _elapsedWallTime)
@@ -271,9 +321,10 @@ void Outpost::InProcessServer::Start()
     const std::scoped_lock lock(m_seatMutex);
     if (m_started)
       throw Neuron::Exception("InProcessServer: the server has started already");
+    // A world starts with its seats open, for its players to take when they come (ADR-078).
     for (const Connection& connection : m_connections)
     {
-      if (connection.seat && !connection.quic)
+      if (connection.seat && !connection.quic && !m_isWorld)
         throw Neuron::Exception(std::format("InProcessServer: player {} has not taken its seat", connection.player.value));
     }
     m_started = true;

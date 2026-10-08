@@ -90,6 +90,7 @@
     <ClInclude Include="StressLoad.h" />
     <ClInclude Include="WorldState.h" />
     <ClInclude Include="WorldFolder.h" />
+    <ClInclude Include="WorldSettings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -107,6 +108,7 @@
     <ClCompile Include="StressLoad.cpp" />
     <ClCompile Include="WorldState.cpp" />
     <ClCompile Include="WorldFolder.cpp" />
+    <ClCompile Include="WorldSettings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

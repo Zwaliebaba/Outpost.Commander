@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <shellapi.h>
+#include <shlobj.h>
 
 #include "AiMatches.h"
 
@@ -46,6 +47,11 @@ constexpr std::wstring_view AI_MATCHES_SWITCH = L"--ai-matches";
 // With --ai-matches, for a script such as Tools/SelfPlay.py: no message. The exit code says how the run went, and a
 // failure's message goes to standard error (ADR-063).
 constexpr std::wstring_view QUIET_SWITCH = L"--quiet";
+// Phase 5's switch: --join <file> joins the world a dedicated server's join file names, rather than showing the menu
+// (ADR-078). Without it, the menu offers to join the world of the join file in the player's documents, when there is one.
+constexpr std::wstring_view JOIN_SWITCH = L"--join";
+constexpr auto JOIN_FOLDER = L"Outpost Commander";
+constexpr auto JOIN_FILE = L"Join.json";
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -99,6 +105,29 @@ void ReportFailure(std::wstring_view _message, bool _quiet)
   (void)WriteFile(standardError, text.data(), static_cast<DWORD>(text.size()), &written, nullptr);
 }
 
+// Where the menu looks for a join file: Outpost Commander\Join.json in the player's documents, which a packaged game reads
+// as any program does, where its own application data is redirected (ADR-078). Empty when Windows does not say where the
+// documents are.
+std::filesystem::path DocumentsJoinFile()
+{
+  PWSTR documents = nullptr;
+  const HRESULT found = SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_DEFAULT, nullptr, &documents);
+  std::filesystem::path path;
+  if (SUCCEEDED(found))
+    path = std::filesystem::path(documents) / JOIN_FOLDER / JOIN_FILE;
+  CoTaskMemFree(documents);
+  return path;
+}
+
+// The join file at _path. Throws Neuron::Exception when it cannot be read or is not one.
+Outpost::JoinTicket ReadJoinFile(const std::filesystem::path& _path)
+{
+  std::ifstream file(_path, std::ios::binary);
+  if (!file)
+    throw Neuron::Exception(std::format("The join file {} cannot be read.", winrt::to_string(_path.wstring())));
+  return Outpost::ReadJoinTicket(std::string(std::istreambuf_iterator<char>(file), {}));
+}
+
 // A seed for one match (ADR-009), logged so that the match can be reproduced from it and its command log.
 std::uint64_t NewSeed()
 {
@@ -133,7 +162,8 @@ template <typename Fn> auto PrepareAsync(Fn _make)
                     });
 }
 
-// One match: its server, the human's connection, the other player's with whatever drives it, and its log.
+// One match: its server, the human's connection, the other player's with whatever drives it, and its log. A world joined on
+// a dedicated server has the human's connection alone (ADR-078).
 struct Match
 {
   std::unique_ptr<Outpost::Server> server;
@@ -187,6 +217,16 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
                                                options.desc.matches, seconds, ended, options.desc.limitMinutes, options.log.wstring());
       MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONINFORMATION);
       return EXIT_SUCCESS;
+    }
+    // --join names its file in the next argument.
+    std::optional<std::filesystem::path> joinOnStart;
+    if (commandLine.find(JOIN_SWITCH) != std::wstring_view::npos)
+    {
+      const std::vector<std::wstring> arguments = CommandLineArguments();
+      const auto join = std::ranges::find(arguments, JOIN_SWITCH);
+      if (join == arguments.end() || join + 1 == arguments.end())
+        throw Neuron::Exception("--join needs the join file a dedicated server wrote.");
+      joinOnStart = *(join + 1);
     }
     const bool measure = commandLine.find(MEASURE_SWITCH) != std::wstring_view::npos;
     const bool stress = commandLine.find(STRESS_SWITCH) != std::wstring_view::npos;
@@ -262,10 +302,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       match.emplace();
       match->server = std::move(nextServer);
       // Each player takes a seat over QUIC, and the server welcomes it before the match starts (ADR-060).
-      match->player = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(HUMAN_PLAYER), HUMAN_PLAYER);
+      match->player =
+        std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(HUMAN_PLAYER, Outpost::NewSeatToken()), HUMAN_PLAYER);
       // The rival always connects, so that the server builds both players' snapshots as in a match against the AI. Under
       // load the rival's ships are kept moving through it; the stress scene orders its own; otherwise it is the AI.
-      match->rival = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(RIVAL_PLAYER), RIVAL_PLAYER);
+      match->rival = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(RIVAL_PLAYER, Outpost::NewSeatToken()), RIVAL_PLAYER);
       if (!load && !stress)
       {
         match->ai.emplace(aiSettings[static_cast<std::size_t>(client.RequestedDifficulty())], ticksPerSecond);
@@ -277,7 +318,31 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       client.StartMatch();
       lastFrame = std::chrono::steady_clock::now();
     };
-    if (skipMenu)
+    // A world on a dedicated server: the player's connection alone, to the seat its join file names (ADR-078). A join that
+    // fails goes back to the menu, saying why.
+    const std::filesystem::path documentsJoinFile = DocumentsJoinFile();
+    const auto offerWorld = [&] { client.OfferWorld(!documentsJoinFile.empty() && std::filesystem::exists(documentsJoinFile)); };
+    const auto joinWorld = [&](const std::filesystem::path& _joinFile)
+    {
+      try
+      {
+        const Outpost::JoinTicket ticket = ReadJoinFile(_joinFile);
+        match.emplace();
+        match->player = std::make_unique<Outpost::QuicTransport>(ticket.address, ticket.player);
+        client.StartMatch();
+        lastFrame = std::chrono::steady_clock::now();
+      }
+      catch (const std::exception& error)
+      {
+        match.reset();
+        offerWorld();
+        client.ShowMenu(std::format("Could not join the world: {}", error.what()));
+      }
+    };
+    offerWorld();
+    if (joinOnStart)
+      joinWorld(*joinOnStart);
+    else if (skipMenu)
       startMatch();
     UINT loggedWidthPixels = 0;
     UINT loggedHeightPixels = 0;
@@ -300,11 +365,13 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       const auto now = std::chrono::steady_clock::now();
       const auto elapsed = now - lastFrame;
       lastFrame = now;
+      // A connection that goes takes the player back to the menu, saying why (ADR-078).
+      std::optional<std::string> connectionLost;
       if (match)
       {
         // Taken every frame, logged or not, so that they do not pile up. This is also where a failure on the server's thread
-        // reaches this one.
-        for (const Outpost::TickTiming& tick : match->server->TakeTickTimings())
+        // reaches this one. A world on a dedicated server has no server here.
+        for (const Outpost::TickTiming& tick : match->server ? match->server->TakeTickTimings() : std::vector<Outpost::TickTiming>())
         {
           if (!measure)
             continue;
@@ -314,7 +381,15 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           measurements << '\n';
         }
 
-        std::vector<Outpost::Snapshot> snapshots = match->player->Receive();
+        std::vector<Outpost::Snapshot> snapshots;
+        try
+        {
+          snapshots = match->player->Receive();
+        }
+        catch (const Neuron::Exception& error)
+        {
+          connectionLost = error.what();
+        }
         if (load)
         {
           for (const Outpost::Snapshot& snapshot : snapshots)
@@ -324,7 +399,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           }
         }
         // The AI plays as a client: its snapshots in, its orders out, as the human's (ADR-002).
-        for (const Outpost::Snapshot& snapshot : match->rival->Receive())
+        for (const Outpost::Snapshot& snapshot : match->rival ? match->rival->Receive() : std::vector<Outpost::Snapshot>())
         {
           if (match->log)
             match->log->Record(snapshot);
@@ -346,6 +421,19 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         }
         // The client draws only what the snapshots say, interpolated (ADR-002 decision 5, ADR-013).
         client.Receive(std::move(snapshots));
+      }
+      if (connectionLost)
+      {
+        if (match->log)
+          match->log->Finish();
+        match.reset();
+        offerWorld();
+        client.ShowMenu(std::format("The connection to the server was lost: {}", *connectionLost));
+        if (!nextServer)
+        {
+          seed = NewSeed();
+          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true});
+        }
       }
 
       // Read every loop, minimized too, so that the cursor is let go as soon as the game loses the foreground (ADR-012).
@@ -374,9 +462,18 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           if (match && match->log)
             match->log->Finish();
           match.reset();
+          offerWorld();
           client.ShowMenu();
-          seed = NewSeed();
-          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true});
+          // A world joined on a dedicated server left the next skirmish's server unused.
+          if (!nextServer)
+          {
+            seed = NewSeed();
+            nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true});
+          }
+          break;
+        case Outpost::GameClient::Request::JoinWorld:
+          if (!match)
+            joinWorld(documentsJoinFile);
           break;
         case Outpost::GameClient::Request::Quit:
           PostQuitMessage(0);

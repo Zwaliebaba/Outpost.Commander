@@ -58,6 +58,9 @@ public:
   // Starts closing the connection, with an error code the peer sees, and returns at once. A Receiver may call it.
   void Shutdown(std::uint64_t _errorCode) noexcept;
 
+  // The error code the peer closed the connection with, once it has; none while it is open, or when it went otherwise.
+  [[nodiscard]] std::optional<std::uint64_t> PeerErrorCode() const;
+
   // Closes the connection and waits for MsQuic's last callback for it. Never from a Receiver. The destructor closes a
   // channel that is still open.
   void Close() noexcept;
@@ -66,16 +69,21 @@ private:
   std::unique_ptr<State> m_state;
 };
 
-// A QUIC server: it listens on the loopback address and makes a QuicChannel of every client that connects. It presents a
-// self-signed certificate of its own, which a client pins (ADR-060).
+// A QUIC server: it listens on an address and makes a QuicChannel of every client that connects. It presents a self-signed
+// certificate, which a client pins (ADR-060): one of its own, or one it keeps in a folder from one run to the next (ADR-078).
 class QuicListener : NonCopyable
 {
 public:
   struct Desc
   {
     std::string applicationProtocol;
+    // The IPv4 or IPv6 address to listen on, such as "0.0.0.0" for every interface; empty for 127.0.0.1 only (ADR-060).
+    std::string address;
     // Zero lets the system choose one; Port says which.
     std::uint16_t port = 0;
+    // A folder the listener keeps its certificate in, so that it presents the same one each time it is made there and a
+    // client pins it once (ADR-078); empty for a certificate of its own that goes with it.
+    std::filesystem::path identity;
   };
 
   // What the listener does with a client that has connected, on MsQuic's thread: given its channel, it returns the
@@ -84,7 +92,7 @@ public:
 
   struct State;
 
-  // Listens on 127.0.0.1 only. Throws Neuron::Exception when it cannot.
+  // Listens on _desc's address. Throws Neuron::Exception when it cannot, or when the address is not one.
   QuicListener(const Desc& _desc, Accept _accept);
   // Stops listening and closes every channel it made, waiting for their last callbacks.
   ~QuicListener();

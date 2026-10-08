@@ -437,3 +437,28 @@ Neuron::JsonValue Neuron::ParseJson(std::string_view _text)
 {
   return Parser(_text).ParseDocument();
 }
+
+std::string Neuron::QuoteJson(std::string_view _text)
+{
+  std::string quoted = "\"";
+  for (const char character : _text)
+  {
+    switch (character)
+    {
+    case '"':
+      quoted += "\\\"";
+      break;
+    case '\\':
+      quoted += "\\\\";
+      break;
+    default:
+      if (static_cast<unsigned char>(character) < 0x20)
+        quoted += std::format("\\u{:04x}", static_cast<unsigned char>(character));
+      else
+        quoted += character;
+      break;
+    }
+  }
+  quoted += '"';
+  return quoted;
+}

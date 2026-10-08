@@ -1835,26 +1835,38 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
   return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
 }
 
-Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor)
+Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor,
+                         const MenuState& _state)
 {
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
-  // A skirmish at each difficulty (ADR-065), then Quit.
-  const std::array<Button, 4> buttons{
-    {{.label = "Easy skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Easy}},
-     {.label = "Normal skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Normal}},
-     {.label = "Hard skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Hard}},
-     {.label = "Quit", .action = {.kind = ActionKind::Quit}}}};
+  // A skirmish at each difficulty (ADR-065), a world to join when there is one (ADR-078), then Quit.
+  std::vector<Button> buttons{{.label = "Easy skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Easy}},
+                              {.label = "Normal skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Normal}},
+                              {.label = "Hard skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Hard}}};
+  if (_state.joinWorld)
+    buttons.push_back({.label = "Join world", .action = {.kind = ActionKind::JoinWorld}});
+  buttons.push_back({.label = "Quit", .action = {.kind = ActionKind::Quit}});
+  // The notice, such as why the last game ended, wrapped to the menu's width under its subtitle.
+  const std::vector<std::string> notice =
+    _state.notice.empty() ? std::vector<std::string>() : _metrics.Wrap(Typeface::Name, _state.notice, MENU_WIDTH - (2.0f * PADDING));
+  const auto noticeUnits = static_cast<float>(notice.size()) * NAME_LINE_UNITS;
   const auto count = static_cast<float>(buttons.size());
-  const float heightUnits =
-    (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
+  const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + noticeUnits + BUTTON_GAP + (count * BUTTON_HEIGHT) +
+                            ((count - 1.0f) * BUTTON_GAP);
   const WindowManager::Point corner{.xUnits = (static_cast<float>(_widthPixels) / scale / 2.0f) - (MENU_WIDTH / 2.0f),
                                     .yUnits = (static_cast<float>(_heightPixels) / scale / 2.0f) - (heightUnits / 2.0f)};
   (void)Frame(layout, corner.xUnits * scale, corner.yUnits * scale, MENU_WIDTH * scale, heightUnits * scale, scale);
   Painter paint(layout, _metrics, corner, scale);
   paint.Text("Outpost Commander", PADDING, PADDING, GOLD_COLOR, Typeface::Title);
   paint.Text("A skirmish against the AI", PADDING, PADDING + TITLE_LINE_UNITS, DIM_TEXT_COLOR, Typeface::Name);
-  float top = PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP;
+  float top = PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS;
+  for (const std::string& line : notice)
+  {
+    paint.Text(line, PADDING, top, WARNING_COLOR, Typeface::Name);
+    top += NAME_LINE_UNITS;
+  }
+  top += BUTTON_GAP;
   for (const Button& button : buttons)
   {
     AddButton(layout, _metrics, scale, paint.Area(PADDING, top, MENU_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT, CARD_COLOR), button);
