@@ -44,9 +44,10 @@ Outpost::Hud::Layout Lay(const Outpost::Hud::Content& _content, std::uint32_t _w
                            _factor);
 }
 
-Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f)
+Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f,
+                             const Outpost::Hud::MenuState& _state = {})
 {
-  return Outpost::Hud::LayMenu(MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _factor);
+  return Outpost::Hud::LayMenu(MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _factor, _state);
 }
 
 Outpost::Snapshot Newest()
@@ -1977,6 +1978,37 @@ public:
       Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Outpost Commander"; }));
       Assert::IsFalse(layout.minimap.width > 0.0f);
     }
+  }
+
+  // ADR-078: with a join file, the menu offers to join its world, between the skirmishes and Quit; and it says, in the
+  // warning's color, wrapped to its width, why the last game ended.
+  TEST_METHOD(OffersAWorldAndSaysWhyTheLastGameEnded)
+  {
+    const std::string notice = "The connection to the server was lost: The seat was taken by another connection with its token.";
+    const Outpost::Hud::Layout layout = LayMenu(1920, 1080, 1.0f, {.joinWorld = true, .notice = notice});
+    Assert::AreEqual(size_t{5}, layout.actions.size());
+    Assert::IsTrue(layout.actions[3].second.kind == Outpost::Hud::ActionKind::JoinWorld, L"Join world after the skirmishes");
+    Assert::IsTrue(layout.actions[4].second.kind == Outpost::Hud::ActionKind::Quit, L"and Quit last");
+    Assert::IsTrue(layout.actions[3].first.top > layout.actions[2].first.top && layout.actions[4].first.top > layout.actions[3].first.top);
+
+    std::vector<const Outpost::Hud::Text*> lines;
+    for (const Outpost::Hud::Text& text : layout.texts)
+    {
+      if (notice.find(text.text) != std::string::npos && !text.text.empty() && text.text != "Outpost Commander")
+        lines.push_back(&text);
+    }
+    Assert::IsTrue(lines.size() >= 2, L"the notice wraps");
+    std::string joined;
+    for (const Outpost::Hud::Text* line : lines)
+    {
+      joined += (joined.empty() ? "" : " ") + line->text;
+      Assert::IsTrue(line->color.x == 1.0f && line->color.y == 0.5f, L"in the warning's color");
+      Assert::IsTrue(line->top < layout.actions[0].first.top, L"above the buttons");
+    }
+    Assert::AreEqual(notice, joined, L"every word of it");
+
+    const Outpost::Hud::Layout plain = LayMenu(1920, 1080);
+    Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join world");
   }
   // ADR-066: under the Ore, a line for the Research Lab once the player has a finished one, and one for the Shipyards once
   // the first is finished: what the Lab researches and how far it has come, that it waits for Ore, or that it is idle; and

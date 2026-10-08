@@ -41,7 +41,7 @@ public:
 
   // Throws Neuron::Exception once the server has started.
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
-  [[nodiscard]] ServerAddress OpenSeat(PlayerId _player) override;
+  [[nodiscard]] ServerAddress OpenSeat(PlayerId _player, const SeatToken& _token) override;
   // Throws Neuron::Exception when it has started already, or when a seat has not been taken.
   void Start() override;
   void Step() override;
@@ -109,24 +109,36 @@ private:
     PlayerId player;
     std::shared_ptr<LoopbackChannel> channel;
     bool seat = false;
-    // Guarded by m_seatMutex: MsQuic's thread sets it when the player's hello takes the seat.
+    // What a hello shows to take the seat (ADR-078).
+    SeatToken token{};
+    // Guarded by m_seatMutex: MsQuic's thread sets it when the player's hello takes the seat, and again when a newer
+    // connection takes it.
     std::shared_ptr<Neuron::QuicChannel> quic;
   };
 
   // Adds a connection for _player, unless the server has started or the player has one already.
-  std::shared_ptr<LoopbackChannel> AddConnection(PlayerId _player, bool _seat);
+  std::shared_ptr<LoopbackChannel> AddConnection(PlayerId _player, bool _seat, const SeatToken& _token = {});
 
   // What the listener does with a client that has connected over QUIC: its first message is a hello that takes a seat,
   // and every message after it a command (ADR-060). Called on MsQuic's thread.
   [[nodiscard]] Neuron::QuicChannel::Receiver Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel);
 
-  // Gives _player's open seat to _channel, and returns where the seat's commands go; none when there is no such seat, it
-  // is taken, or the server has started. Called on MsQuic's thread.
-  [[nodiscard]] std::shared_ptr<LoopbackChannel> TakeSeat(PlayerId _player, std::shared_ptr<Neuron::QuicChannel> _channel);
+  // Gives _player's seat to _channel, which showed _token, and returns where the seat's commands go; none when there is
+  // no such seat, the token is not the seat's, or a match has started. A connection that held the seat is closed with
+  // CloseReason::SeatTaken: the player's newest connection holds it (ADR-078). Called on MsQuic's thread.
+  [[nodiscard]] std::shared_ptr<LoopbackChannel> TakeSeat(PlayerId _player, const SeatToken& _token,
+                                                          std::shared_ptr<Neuron::QuicChannel> _channel);
+
+  // Whether _channel holds _player's seat now, which a connection the seat was taken from no longer does. Called on
+  // MsQuic's thread.
+  [[nodiscard]] bool HoldsSeat(PlayerId _player, const Neuron::QuicChannel* _channel);
 
   Tuning m_tuning;
   Map m_map;
   std::uint64_t m_seed = 0;
+  // Whether the server is a world's (ServerDesc::world), which its seats may be taken in while it runs. Set when it is
+  // made, and only read after, by any thread.
+  bool m_isWorld = false;
   Neuron::TickHost m_tickHost;
   Simulation m_simulation;
   std::vector<Connection> m_connections;
@@ -146,6 +158,8 @@ private:
   // Where players connect over QUIC, when the server takes them (ServerDesc::quic). Destroyed after the thread and before
   // the connections, so that no callback of MsQuic's outlives what it touches.
   std::unique_ptr<Neuron::QuicListener> m_listener;
+  // The host OpenSeat names for the listener, set with it.
+  std::string m_listenHost;
   // A world's folder and which world it is, once UseWorld has made the server a world's. Destroyed after the thread, so
   // that the saves it was handed are written before the server goes.
   std::unique_ptr<WorldFolder> m_world;

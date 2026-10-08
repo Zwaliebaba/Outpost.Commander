@@ -480,12 +480,14 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
 void Outpost::GameClient::StartMatch()
 {
   ClearMatch();
+  m_menuNotice.clear();
   m_screen = Screen::Match;
 }
 
-void Outpost::GameClient::ShowMenu()
+void Outpost::GameClient::ShowMenu(std::string _notice)
 {
   ClearMatch();
+  m_menuNotice = std::move(_notice);
   m_screen = Screen::Menu;
 }
 
@@ -569,7 +571,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   if (m_screen == Screen::Menu)
   {
     // The menu is all there is: a press on its buttons, and nothing for the camera or the controls.
-    m_hudLayout = Hud::LayMenu(metrics, _viewportWidthPixels, _viewportHeightPixels, m_interfaceFactor);
+    m_hudLayout = Hud::LayMenu(metrics, _viewportWidthPixels, _viewportHeightPixels, m_interfaceFactor,
+                               {.joinWorld = m_offerWorld, .notice = m_menuNotice});
     if (!_input.active)
       return;
     for (const Neuron::InputEvent& event : _input.events)
@@ -832,6 +835,9 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::BackToMenu:
     m_request = Request::BackToMenu;
+    break;
+  case Hud::ActionKind::JoinWorld:
+    m_request = Request::JoinWorld;
     break;
   case Hud::ActionKind::OpenDesigner:
     m_designer.SetTarget(_action.producer, m_view.Newest());

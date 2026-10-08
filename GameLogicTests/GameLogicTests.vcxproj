@@ -130,6 +130,7 @@
     <ClCompile Include="RetreatTests.cpp" />
     <ClCompile Include="WorldStateTests.cpp" />
     <ClCompile Include="WorldFolderTests.cpp" />
+    <ClCompile Include="WorldSettingsTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

@@ -77,4 +77,8 @@ struct JsonMember
 // comments, no trailing commas, no NaN or infinity, and nothing after the value but whitespace. A leading UTF-8 byte
 // order mark is skipped. The bytes of a string are kept as they are, apart from escapes, which become UTF-8.
 [[nodiscard]] JsonValue ParseJson(std::string_view _text);
+
+// _text as a JSON string, quoted, with its quotes, backslashes and control characters escaped, which ParseJson reads back
+// as _text. Its other bytes are written as they are, so UTF-8 stays UTF-8.
+[[nodiscard]] std::string QuoteJson(std::string_view _text);
 } // namespace Neuron

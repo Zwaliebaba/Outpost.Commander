@@ -127,8 +127,9 @@ struct Neuron::QuicChannel::State
   std::vector<std::vector<std::byte>> messages;
   bool connected = false;
   bool closedHere = false;
-  // Why the connection went, once it has.
+  // Why the connection went, once it has, and the code the peer closed it with, when it was the peer.
   std::string failure;
+  std::optional<std::uint64_t> peerErrorCode;
 
   // Keeps the first reason the connection went, which is the one that explains the rest.
   void Fail(std::string _why)
@@ -266,6 +267,10 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnConnection([[maybe_unused]] H
       state.Fail(std::format("The QUIC connection failed with status {}.", StatusText(_event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status)));
       break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_PEER:
+    {
+      const std::scoped_lock lock(state.mutex);
+      state.peerErrorCode = _event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode;
+    }
       state.Fail(std::format("The peer closed the QUIC connection with error code {}.", _event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode));
       break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
@@ -428,6 +433,12 @@ void Neuron::QuicChannel::Shutdown(std::uint64_t _errorCode) noexcept
   m_state->ShutdownConnection(_errorCode);
 }
 
+std::optional<std::uint64_t> Neuron::QuicChannel::PeerErrorCode() const
+{
+  const std::scoped_lock lock(m_state->mutex);
+  return m_state->peerErrorCode;
+}
+
 void Neuron::QuicChannel::Close() noexcept
 {
   State& state = *m_state;
@@ -459,6 +470,11 @@ void Neuron::QuicChannel::Close() noexcept
 
 struct Neuron::QuicListener::State
 {
+  explicit State(const std::filesystem::path& _identity)
+    : certificate(_identity)
+  {
+  }
+
   std::shared_ptr<QuicRuntime> runtime;
   ServerCertificate certificate;
   HQUIC configuration = nullptr;
@@ -524,7 +540,7 @@ QUIC_STATUS QUIC_API Neuron::QuicListener::State::OnListener([[maybe_unused]] HQ
 }
 
 Neuron::QuicListener::QuicListener(const Desc& _desc, Accept _accept)
-  : m_state(std::make_unique<State>())
+  : m_state(std::make_unique<State>(_desc.identity))
 {
   State& state = *m_state;
   state.runtime = std::make_shared<QuicRuntime>();
@@ -544,9 +560,19 @@ Neuron::QuicListener::QuicListener(const Desc& _desc, Accept _accept)
   state.configuration = OpenConfiguration(*state.runtime, _desc.applicationProtocol, settings, credential);
 
   Check(api.ListenerOpen(state.runtime->Registration(), &State::OnListener, &state, &state.listener), "ListenerOpen");
+  // The loopback address, unless _desc names another, as an IPv4 or IPv6 literal.
   QUIC_ADDR address{};
-  QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_INET);
-  address.Ipv4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  if (_desc.address.empty())
+  {
+    QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_INET);
+    address.Ipv4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  }
+  else if (inet_pton(AF_INET, _desc.address.c_str(), &address.Ipv4.sin_addr) == 1)
+    QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_INET);
+  else if (inet_pton(AF_INET6, _desc.address.c_str(), &address.Ipv6.sin6_addr) == 1)
+    QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_INET6);
+  else
+    throw Exception(std::format("QuicListener: '{}' is not an IPv4 or IPv6 address to listen on.", _desc.address));
   QuicAddrSetPort(&address, _desc.port);
   std::string protocolName = _desc.applicationProtocol;
   const QUIC_BUFFER protocol = ProtocolBuffer(protocolName);

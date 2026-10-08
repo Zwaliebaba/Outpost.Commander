@@ -111,10 +111,11 @@ public:
     // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
     SaveAndQueue,
     // The main menu's and the match end's (task 6.2): start a match against the AI at a difficulty (ADR-065), leave the
-    // game, or leave the match.
+    // game, or leave the match; and the menu's join of a world on another machine (ADR-078).
     StartSkirmish,
     Quit,
     BackToMenu,
+    JoinWorld,
     // The designer's window (Phase 1 design §11): open it aimed at a Shipyard, step its target Shipyard, ask for fewer or
     // more ships, load a saved design, and scroll the saved designs.
     OpenDesigner,
@@ -623,10 +624,25 @@ public:
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
 
-  // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, and buttons to start a
-  // skirmish against the AI and to quit (task 6.2). _factor is the interface's own scale (ADR-070).
+  // What the main menu offers and says besides its skirmishes (ADR-078): a world to join, when a join file is there, and a
+  // notice, such as why the last game ended.
+  struct MenuState
+  {
+    bool joinWorld = false;
+    std::string notice;
+  };
+
+  // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, a notice in the
+  // warning's color when _state has one, and buttons to start a skirmish against the AI, to join a world when _state
+  // offers one, and to quit (task 6.2). _factor is the interface's own scale (ADR-070). The plain menu is an overload rather
+  // than a default argument, which could not use MenuState's member initializers before Hud is complete.
   [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                                      float _factor = 1.0f);
+                                      float _factor = 1.0f)
+  {
+    return LayMenu(_metrics, _widthPixels, _heightPixels, _factor, MenuState{});
+  }
+  [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor,
+                                      const MenuState& _state);
 
   // Where everything goes on a back buffer of this size, its text measured with _metrics, which are the fonts at this
   // size's scale. _view is the ground the camera shows, its corners in order, outlined on the minimap; empty when the

@@ -52,7 +52,9 @@ public:
   {
     StartSkirmish,
     Quit,
-    BackToMenu
+    BackToMenu,
+    // Join the world the player's join file names (ADR-078).
+    JoinWorld
   };
 
   // Builds the pipelines and uploads _assets and _interface, which LoadClientAssets and RasterizeInterface made, in the
@@ -64,8 +66,15 @@ public:
   // the effects is gone, and the camera centers again on the player's fleet.
   void StartMatch();
 
-  // Shows the main menu, and nothing of the match that was.
-  void ShowMenu();
+  // Shows the main menu, and nothing of the match that was; with _notice, saying it, such as why the last game ended
+  // (ADR-078).
+  void ShowMenu(std::string _notice = {});
+
+  // Whether the menu offers to join a world: whether the player has a join file (ADR-078).
+  void OfferWorld(bool _available) noexcept
+  {
+    m_offerWorld = _available;
+  }
 
   // What the player asked for since the last call, if anything.
   // The difficulty of the last skirmish the player asked for (ADR-065).
@@ -247,6 +256,9 @@ private:
 
   Screen m_screen = Screen::Menu;
   std::optional<Request> m_request;
+  // What the menu says and offers besides its skirmishes (ADR-078).
+  std::string m_menuNotice;
+  bool m_offerWorld = false;
   Difficulty m_difficulty = Difficulty::Normal;
   std::uint32_t m_ticksPerSecond = 0;
   ModelCatalog m_catalog;

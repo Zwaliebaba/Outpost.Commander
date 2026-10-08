@@ -56,6 +56,12 @@
     <ClInclude Include="QuicTransport.h">
       <Filter>Connection</Filter>
     </ClInclude>
+    <ClInclude Include="SeatToken.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="JoinTicket.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
     <ClInclude Include="WireFormat.h">
       <Filter>Connection</Filter>
     </ClInclude>
@@ -72,6 +78,12 @@
       <Filter>Placement</Filter>
     </ClCompile>
     <ClCompile Include="QuicTransport.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="SeatToken.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="JoinTicket.cpp">
       <Filter>Connection</Filter>
     </ClCompile>
     <ClCompile Include="WireFormat.cpp">

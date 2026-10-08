@@ -19,6 +19,7 @@
 #include <variant>
 
 #include "Id.h"
+#include "SeatToken.h"
 #include "PlanePosition.h"
 #include "StructureKind.h"
 #include "RetreatThreshold.h"
@@ -29,4 +30,5 @@
 #include "Transport.h"
 #include "WireFormat.h"
 #include "QuicTransport.h"
+#include "JoinTicket.h"
 #include "Server.h"

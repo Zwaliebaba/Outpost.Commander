@@ -280,8 +280,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, HelloMessage>
 auto Fields(Self& _value)
 {
-  auto& [protocolVersion, player] = _value;
-  return std::tie(protocolVersion, player);
+  auto& [protocolVersion, player, token] = _value;
+  return std::tie(protocolVersion, player, token);
 }
 
 template <typename Self>

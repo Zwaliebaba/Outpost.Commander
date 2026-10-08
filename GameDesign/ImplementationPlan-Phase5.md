@@ -23,11 +23,11 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 35.1 | A world's state saved and loaded | — | H8 | built, in milestone 35's PR |
-| 35.2 | The world's folder: saves, the command log and recovery | 35.1 | H7 | built, in milestone 35's PR |
-| 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | todo |
-| 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | todo |
-| 36.3 | The client joins a world | 36.2 | H1 | todo |
+| 35.1 | A world's state saved and loaded | — | H8 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
+| 35.2 | The world's folder: saves, the command log and recovery | 35.1 | H7 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
+| 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
+| 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, in milestone 36's PR |
+| 36.3 | The client joins a world | 36.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
 | 37.1 | The AI starts from any state | — | — | todo |
 | 37.2 | Clients on the server's thread | 35.2 | — | todo |
 | 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | todo |
@@ -79,11 +79,50 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
   - The folder's and the server's tests ran under ThreadSanitizer (g++ 13) with no report.
   - The shell does not make a world yet: `ServerDesc::world` is empty for every match it starts. `OutpostServer` is milestone 36.
 
-## Milestones 36 to 39
+## Milestone 36 — The dedicated server
+
+### 36.1 — `OutpostServer` and a world's settings
+
+- **Gate:** H1, decided.
+- **Scope:** a console executable, `OutpostServer`, in the solution and ADR-002's table. `--new-world <folder>` writes a world's settings, `World.json`: the address and port it listens on, the host its players reach it at, the seed and a seat with a token for each of the map's starts. `OutpostServer <folder>` runs the world until Ctrl+C or a close of its console, and leaves it saved.
+- **ADR:** a new one, ADR-078: the dedicated server and its seats. ADR-002 edited in place.
+- **Acceptance:** `WorldSettingsTests`: settings and join files read back as written, and are refused when they are not.
+- **Verify:** the container's run of `GameLogicTests`, and of `OutpostServer --new-world`; CI's build; **owner run**: a world made and run on the development machine, and stopped with Ctrl+C.
+
+### 36.2 — Seats with tokens, taken again, and a kept certificate
+
+- **Gate:** H1, decided.
+- **Scope:**
+  - A seat's token in the hello and the address, with `PROTOCOL_VERSION` 11.
+  - A world's seats taken at any time, the newest connection holding a seat, and a replaced connection closed with `SeatTaken`.
+  - A hello of another version refused as `WrongVersion` before it is decoded.
+  - The listener's address and port from the world's settings.
+  - A world's certificate kept in its folder.
+  - Join files written by the server.
+- **ADR:** ADR-078; ADR-060 edited in place.
+- **Acceptance:** `QuicTransportTests`: another token, an unopened seat and another certificate refused, saying why; a world's seat taken after it starts and taken again; a world's certificate the same when it runs again; the listen address; a hello of another version.
+- **Verify:** CI, since QUIC does not run in the container.
+
+### 36.3 — The client joins a world
+
+- **Gate:** H1, decided.
+- **Scope:** `--join <file>`; the menu's "Join world" when the player's documents hold `Outpost Commander\Join.json`; a lost connection back to the menu with the reason in the warning's color.
+- **ADR:** ADR-078.
+- **Acceptance:** `HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`.
+- **Verify:** CI; **owner run**: the game on a second machine joins the owner's world with its join file, plays, loses its connection when the server stops, and joins again when it runs.
+
+### As built
+
+Recorded in [ADR-078](../Design/ADR/ADR-078-dedicated-server.md).
+
+- **Run in the container.** `GameLogicTests` and `OutpostServer` built there against stand-ins for the Windows headers and MsQuic's posix header. `GameLogicTests` passes apart from `QuicTransportTests`. `--new-world` and its refusals were run. Running a world needs QUIC, and MsQuic's Linux build opens IPv6 sockets, which the container's kernel lacks.
+- **Run in CI.** Debug|x64 on Windows passes all 582 tests, among them every `QuicTransportTests` case and `HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`. That includes `AWorldKeepsItsCertificate`: the kept CNG key and certificate, written without Windows, are what Schannel uses when the world runs again.
+- **The owner's runs** remain: a world run end to end on the development machine (36.1), and joined from a second machine (36.3).
+
+## Milestones 37 to 39
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name.
 
-- **36 — The dedicated server** (design §4).
 - **37 — Deputies** (design §6).
 - **38 — Orders that run while away** (design §7).
 - **39 — A world without an end, the world log and the week** (design §8–§10).

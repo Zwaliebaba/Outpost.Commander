@@ -11,11 +11,17 @@ struct ServerDesc
   bool measurementLoad = false;
   // A measurement run, not a match: task 3.7's stress scene, 200 ships and 40 structures in combat, kept at full size.
   bool stressLoad = false;
-  // The server also takes players over QUIC, on the loopback address, through OpenSeat (ADR-060).
+  // The server also takes players over QUIC, through OpenSeat (ADR-060): on the loopback address and a port the system
+  // chooses, unless the two below say otherwise (ADR-078).
   bool quic = false;
+  // The IPv4 or IPv6 address the server listens on, such as "0.0.0.0" for every interface; empty for the loopback.
+  std::string quicAddress;
+  // The port it listens on; zero lets the system choose one.
+  std::uint16_t quicPort = 0;
   // A world rather than a match (Phase 5 design §5, ADR-077): the folder its saves and command log are kept in. A folder
   // that holds a save of the world comes back as the world it saved, whatever the seed above; one that holds none starts a
-  // new world from the seed. Empty for a match.
+  // new world from the seed. Empty for a match. A world's server keeps its QUIC certificate in the folder too, so that a
+  // player pins it once (ADR-078).
   std::filesystem::path world;
 };
 
@@ -69,14 +75,16 @@ public:
   // A connection for one player, the human or the AI. The server keeps the other end.
   [[nodiscard]] virtual std::unique_ptr<Transport> Connect(PlayerId _player) = 0;
 
-  // A seat for one player, which a QuicTransport takes at the address returned (ADR-060). Every seat is taken before the
-  // server starts. Throws Neuron::Exception when the server was not made to listen over QUIC (ServerDesc::quic), once it
-  // has started, or when the player already has a connection or a seat.
-  [[nodiscard]] virtual ServerAddress OpenSeat(PlayerId _player) = 0;
+  // A seat for one player, which a QuicTransport takes at the address returned, with _token, which the address carries
+  // (ADR-060, ADR-078). A match's seats are each taken before it starts; a world's may be taken at any time, and taken
+  // again with the token by the player's newest connection. Throws Neuron::Exception when the server was not made to
+  // listen over QUIC (ServerDesc::quic), once it has started, or when the player already has a connection or a seat.
+  [[nodiscard]] virtual ServerAddress OpenSeat(PlayerId _player, const SeatToken& _token) = 0;
 
   // Starts the server's ticks on a thread of its own, at its fixed rate whatever the client's frame rate (ADR-025). Each
   // tick applies the commands that have arrived and sends each connected player a snapshot. Connect every player first.
-  // The thread stops when the server is destroyed. Throws Neuron::Exception when a seat has not been taken.
+  // The thread stops when the server is destroyed. Throws Neuron::Exception when a match's seat has not been taken; a
+  // world starts with its seats open.
   virtual void Start() = 0;
 
   // Runs one tick now, on the caller's thread, applying the commands that have arrived and sending each connected player

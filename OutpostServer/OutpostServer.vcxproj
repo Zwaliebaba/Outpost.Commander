@@ -21,13 +21,13 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{ee8bc7b5-0fc3-4a72-83d1-4e4d85afe7a2}</ProjectGuid>
-    <RootNamespace>GameProtocol</RootNamespace>
+    <ProjectGuid>{a86f2020-d6a2-4dd1-9c2d-0d9debae7963}</ProjectGuid>
+    <RootNamespace>OutpostServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -59,54 +59,61 @@
       <FloatingPointModel>Precise</FloatingPointModel>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='ARM64'">CPUExtensionRequirementsARMv80</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;$(SolutionDir)NeuronServer;$(SolutionDir)GameProtocol;$(SolutionDir)GameLogic;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="GameProtocol.h" />
-    <ClInclude Include="Id.h" />
-    <ClInclude Include="PlanePosition.h" />
-    <ClInclude Include="StructureKind.h" />
-    <ClInclude Include="RetreatThreshold.h" />
-    <ClInclude Include="Command.h" />
-    <ClInclude Include="Snapshot.h" />
-    <ClInclude Include="DesignStats.h" />
-    <ClInclude Include="Placement.h" />
-    <ClInclude Include="Transport.h" />
-    <ClInclude Include="QuicTransport.h" />
-    <ClInclude Include="SeatToken.h" />
-    <ClInclude Include="JoinTicket.h" />
-    <ClInclude Include="WireFormat.h" />
-    <ClInclude Include="WireFields.h" />
-    <ClInclude Include="ByteFormat.h" />
-    <ClInclude Include="Server.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ServerConsole.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Placement.cpp" />
-    <ClCompile Include="QuicTransport.cpp" />
-    <ClCompile Include="SeatToken.cpp" />
-    <ClCompile Include="JoinTicket.cpp" />
-    <ClCompile Include="WireFormat.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ServerConsole.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\OutpostCommander\Assets\Tuning.json">
+      <Link>Assets\Tuning.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\OutpostCommander\Assets\Map.json">
+      <Link>Assets\Map.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
       <Project>{ea9ed838-5d41-4e78-a994-0d527f7e3980}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\NeuronServer\NeuronServer.vcxproj">
+      <Project>{f7cc3693-bdd2-4a1d-bf6e-db9b8e8ab2a1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\GameProtocol\GameProtocol.vcxproj">
+      <Project>{ee8bc7b5-0fc3-4a72-83d1-4e4d85afe7a2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\GameLogic\GameLogic.vcxproj">
+      <Project>{35102b85-540a-4f45-819b-dc192c057115}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
