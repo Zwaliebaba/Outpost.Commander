@@ -92,6 +92,8 @@
     <ClInclude Include="WorldFolder.h" />
     <ClInclude Include="SeatController.h" />
     <ClInclude Include="AwayReports.h" />
+    <ClInclude Include="WorldLog.h" />
+    <ClInclude Include="WorldRun.h" />
     <ClInclude Include="WorldSettings.h" />
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +114,8 @@
     <ClCompile Include="WorldFolder.cpp" />
     <ClCompile Include="SeatController.cpp" />
     <ClCompile Include="AwayReports.cpp" />
+    <ClCompile Include="WorldLog.cpp" />
+    <ClCompile Include="WorldRun.cpp" />
     <ClCompile Include="WorldSettings.cpp" />
   </ItemGroup>
   <ItemGroup>

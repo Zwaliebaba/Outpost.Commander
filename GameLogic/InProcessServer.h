@@ -105,6 +105,11 @@ public:
   // Neuron::Exception when the save is of another world, or once the server has started.
   void UseWorld(const std::filesystem::path& _folder, std::uint64_t _dataHash, std::optional<WorldFolder::Recovery> _recovery);
 
+  // For the world run's straight-through world (ADR-082): _player's hosted player is replaced by _hosted, and the orders
+  // the old one sent for the next tick are dropped, as a server killed between two ticks and made afresh from its folder
+  // has them. Throws Neuron::Exception once the server has started, or when the player is not hosted.
+  void ReplaceHosted(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted);
+
 private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
   // them, and then a snapshot for every connected player. A world's tick logs its commands and saves when a save is due.
@@ -187,7 +192,13 @@ private:
   // that the saves it was handed are written before the server goes.
   std::unique_ptr<WorldFolder> m_world;
   WorldIdentity m_identity;
+  // The world's log, beside its saves (ADR-082), and the file it writes to.
+  std::ofstream m_logFile;
+  std::optional<WorldLog> m_log;
   // Last, so that it is destroyed first: the thread stops and is joined before anything it uses goes.
   std::jthread m_thread;
 };
+// A server as CreateInProcessServer makes it, as its own type, for what needs more of it than Server shows: the world run
+// (ADR-082).
+[[nodiscard]] std::unique_ptr<InProcessServer> CreateWorldServer(const ServerDesc& _desc);
 } // namespace Outpost

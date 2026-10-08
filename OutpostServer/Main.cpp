@@ -19,6 +19,9 @@ constexpr std::wstring_view ADDRESS_OPTION = L"--address";
 constexpr std::wstring_view PORT_OPTION = L"--port";
 constexpr std::wstring_view SEED_OPTION = L"--seed";
 constexpr std::wstring_view AI_OPTION = L"--ai";
+constexpr std::wstring_view WORLD_RUN_SWITCH = L"--world-run";
+constexpr std::wstring_view HOURS_OPTION = L"--hours";
+constexpr std::wstring_view KILLS_OPTION = L"--kills";
 constexpr std::string_view USAGE = "Outpost Commander's dedicated server.\n"
                                    "\n"
                                    "  OutpostServer --new-world <folder> [--host <name>] [--address <ip>] [--port <n>] [--seed <n>]\n"
@@ -31,7 +34,13 @@ constexpr std::string_view USAGE = "Outpost Commander's dedicated server.\n"
                                    "  OutpostServer <folder>\n"
                                    "      Runs the world in <folder>, coming back from its newest save, and writes a join file for\n"
                                    "      each player's seat there. Hand each player its file. A deputy keeps a player's empire\n"
-                                   "      running from a minute after the player leaves. Ctrl+C saves and stops it.";
+                                   "      running from a minute after the player leaves. Ctrl+C saves and stops it.\n"
+                                   "\n"
+                                   "  OutpostServer --world-run <folder> [--seed <n>] [--hours <n>] [--kills <n>] [--ai Easy|Normal|Hard]\n"
+                                   "      Plays a world with an AI empire in every seat as fast as it can, 24 hours of it unless\n"
+                                   "      --hours says, killing it at 10 random ticks unless --kills says and bringing it back from\n"
+                                   "      its folder each time; then plays the same world straight through, and says whether the\n"
+                                   "      two ended the same. Both worlds and their logs are kept in <folder>, which must be new.";
 // How often the main thread looks at the server, which is where a failure on its thread reaches it (ADR-025).
 constexpr std::chrono::milliseconds CHECK_INTERVAL{1'000};
 
@@ -200,6 +209,53 @@ int RunWorld(const std::filesystem::path& _folder)
   return EXIT_SUCCESS;
 }
 
+// --world-run (ADR-082): the world run of _folder, with the options after it.
+int WorldRun(const std::filesystem::path& _folder, std::span<const std::wstring> _options)
+{
+  Outpost::WorldRunDesc desc{.seed = 1, .folder = _folder, .ticks = 0, .kills = 10};
+  std::uint64_t hours = 24;
+  std::string difficulty = "Normal";
+  for (std::size_t index = 0; index < _options.size(); index += 2)
+  {
+    const std::wstring_view option = _options[index];
+    if (index + 1 >= _options.size())
+      throw Neuron::Exception(std::format("{} takes a value.", Utf8(option)));
+    const std::wstring_view value = _options[index + 1];
+    if (option == SEED_OPTION)
+      desc.seed = NumberOption<std::uint64_t>(option, value, 1);
+    else if (option == HOURS_OPTION)
+      hours = NumberOption<std::uint64_t>(option, value, 1);
+    else if (option == KILLS_OPTION)
+      desc.kills = NumberOption<std::uint32_t>(option, value, 0);
+    else if (option == AI_OPTION && std::ranges::contains(Outpost::AI_DIFFICULTIES, Utf8(value)))
+      difficulty = Utf8(value);
+    else
+      throw Neuron::Exception(std::format("{} {} is not an option of --world-run.", Utf8(option), Utf8(value)));
+  }
+  const Outpost::AiSettings settings = Outpost::LoadPackagedAiSettings(AiSettingsFile(difficulty));
+  const std::uint32_t ticksPerSecond = Outpost::CreateWorldServer({.seed = desc.seed})->TicksPerSecond();
+  desc.ticks = hours * 3600 * ticksPerSecond;
+  desc.makePlayer = [&settings, ticksPerSecond](Outpost::PlayerId)
+  { return std::make_unique<Outpost::AiEmpire>(settings, ticksPerSecond); };
+  const auto started = std::chrono::steady_clock::now();
+  desc.progress = [ticksPerSecond, started](std::string_view _world, std::uint64_t _tick)
+  {
+    const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - started).count();
+    Outpost::ServerConsole::Print(
+      std::format("The {} world is at hour {}, {} s in.", _world, _tick / (std::uint64_t{3600} * ticksPerSecond), seconds));
+  };
+  const Outpost::WorldRunResult result = Outpost::RunWorlds(desc);
+  const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - started).count();
+  std::string kills;
+  for (std::size_t kill = 0; kill < result.killTicks.size(); ++kill)
+    kills += std::format("{}{} (back at {})", kill == 0 ? "" : ", ", result.killTicks[kill], result.recoveredTicks[kill]);
+  Outpost::ServerConsole::Print(std::format("{} hours of world, {} ticks, twice, in {} s, the {} AI in every seat. Killed after ticks {}.",
+                                            hours, desc.ticks, seconds, difficulty, kills.empty() ? std::string("none") : kills));
+  Outpost::ServerConsole::Print(result.same ? "The killed world ended the same as the world run straight through."
+                                            : "The killed world ended NOT the same as the world run straight through.");
+  return result.same ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
 // The server's run, a failure reported on standard error.
 int Run()
 {
@@ -213,6 +269,8 @@ int Run()
     const std::vector<std::wstring> arguments = CommandLineArguments();
     if (arguments.size() >= 2 && arguments[0] == NEW_WORLD_SWITCH)
       return MakeWorld(arguments[1], std::span(arguments).subspan(2));
+    if (arguments.size() >= 2 && arguments[0] == WORLD_RUN_SWITCH)
+      return WorldRun(arguments[1], std::span(arguments).subspan(2));
     if (arguments.size() == 1 && !arguments[0].starts_with(L"--"))
       return RunWorld(arguments[0]);
     Outpost::ServerConsole::PrintError(USAGE);

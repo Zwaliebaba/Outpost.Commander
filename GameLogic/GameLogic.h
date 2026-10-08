@@ -33,6 +33,8 @@
 #include "WorldSettings.h"
 #include "SeatController.h"
 #include "AwayReports.h"
+#include "WorldLog.h"
 #include "StressLoad.h"
 #include "InProcessServer.h"
+#include "WorldRun.h"
 #include "MeasurementLoad.h"
