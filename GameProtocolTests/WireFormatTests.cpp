@@ -152,6 +152,13 @@ Outpost::Snapshot FullSnapshot()
                               .guarded = true});
   snapshot.tickets.push_back({.player = Outpost::PlayerId{1}, .tickets = 95});
   snapshot.startingTickets = 96;
+  // The last kind of event (ADR-080), with every field set.
+  snapshot.events.push_back({.kind = Outpost::EventKind::SectorLost,
+                             .sector = 98,
+                             .position = {.xMeters = 9.5f, .zMeters = -9.5f},
+                             .subject = Outpost::EntityId{99},
+                             .structure = Outpost::StructureKind::RepairBay,
+                             .other = Outpost::PIRATES});
   return snapshot;
 }
 
@@ -219,6 +226,7 @@ public:
     Assert::IsTrue(expected.entities == snapshot.entities, L"entities, with their queues and research");
     Assert::IsTrue(expected.sectors == snapshot.sectors);
     Assert::IsTrue(expected.tickets == snapshot.tickets);
+    Assert::IsTrue(expected.events == snapshot.events, L"the tick's events");
     Assert::IsTrue(snapshot.entities[0].oreReserveHundredths == std::optional<std::int64_t>{-31'000'000'000ll});
     Assert::IsFalse(snapshot.entities[1].oreReserveHundredths.has_value());
     Assert::IsTrue(snapshot.entities[0].upgradePermille == std::optional<std::int32_t>{417});

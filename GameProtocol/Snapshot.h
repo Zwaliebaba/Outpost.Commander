@@ -366,6 +366,47 @@ struct DestroyedView
   float radiusMeters = 0.0f;
 };
 
+// What happened to a player in a tick, which the server raises and the player's snapshot of that tick carries (Phase 5
+// design §7, ADR-080). Its alerts are read from them, and a scheduled order's trigger is one of them.
+enum class EventKind : std::uint8_t
+{
+  // A Relay of the player's suppressed, or hit by an enemy's shot (ADR-059).
+  RelaySuppressed,
+  RelayAttacked,
+  // Enemy or pirate warships the player sees in a sector it holds that held none it saw in the tick before.
+  EnemyEntered,
+  // A ship of the player's starts going back to be repaired (ADR-075).
+  ShipRetreating,
+  // A sector the pirates guarded no longer is (ADR-073); every player hears of it.
+  PiratesCleared,
+  // A ship or structure of the player's finished, or destroyed.
+  ShipBuilt,
+  StructureBuilt,
+  ShipLost,
+  StructureLost,
+  // A sector the player came to hold, or no longer holds.
+  SectorGained,
+  SectorLost
+};
+
+// One event, for the player whose snapshot carries it.
+struct EventView
+{
+  EventKind kind = EventKind::RelaySuppressed;
+  // The sector it happened in; zero for none, as on a map without sectors.
+  std::int32_t sector = 0;
+  // Where it happened: the Relay, the ship, the structure, the first enemy warship seen, or the sector's node.
+  PlanePosition position;
+  // The ship or structure it is about, if any.
+  EntityId subject;
+  // A structure's kind, for a structure built or lost.
+  StructureKind structure = StructureKind::CommandStation;
+  // Whose warships entered, or whose shot hit the Relay: an enemy, or the pirates.
+  PlayerId other;
+
+  friend bool operator==(const EventView&, const EventView&) = default;
+};
+
 // The world as one player may see it after one tick (ADR-002 decision 4). Under fog of war it holds the player's own
 // entities, the asteroids and fields, the enemy entities the player sees and the enemy structures it remembers, and the
 // shots and destructions it sees (ADR-024).
@@ -377,6 +418,8 @@ struct Snapshot
   // What happened in this tick that the entities alone do not show.
   std::vector<ShotView> shots;
   std::vector<DestroyedView> destroyed;
+  // The player's events of this tick, in the order the server raised them (ADR-080).
+  std::vector<EventView> events;
   // The player's own: its Ore, whole, what its Mining Rigs earn each second in hundredths of an Ore, and its saved
   // designs.
   std::int32_t ore = 0;

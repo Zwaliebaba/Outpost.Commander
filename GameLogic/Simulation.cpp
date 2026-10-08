@@ -350,6 +350,48 @@ void Outpost::Simulation::UpdateVision()
   }
 }
 
+void Outpost::Simulation::Raise(PlayerId _player, EventView _event)
+{
+  if (FindPlayer(_player) == nullptr)
+    return;
+  if (_event.sector == 0)
+  {
+    if (const Sector* sector = SectorAt(_event.position))
+      _event.sector = sector->placement.id;
+  }
+  m_events.emplace_back(_player, _event);
+}
+
+void Outpost::Simulation::RaiseSightings()
+{
+  for (PlayerState& player : m_players)
+  {
+    // The sectors the player holds where it sees an enemy or pirate warship, each with the first of them, in identifier
+    // order.
+    std::vector<std::pair<std::int32_t, const Entity*>> sightings;
+    for (const Entity& ship : m_entities)
+    {
+      if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Warship || !ship.owner.IsValid() || ship.owner == player.id ||
+          !Sees(player.id, ship))
+        continue;
+      const Sector* sector = SectorAt(ship.position);
+      if (sector == nullptr || sector->holder != player.id ||
+          std::ranges::find(sightings, sector->placement.id, &std::pair<std::int32_t, const Entity*>::first) != sightings.end())
+        continue;
+      sightings.emplace_back(sector->placement.id, &ship);
+    }
+    std::vector<std::int32_t> sectors;
+    for (const auto& [sector, ship] : sightings)
+    {
+      sectors.push_back(sector);
+      if (std::ranges::find(player.enemySectors, sector) == player.enemySectors.end())
+        Raise(player.id,
+              {.kind = EventKind::EnemyEntered, .sector = sector, .position = ship->position, .subject = ship->id, .other = ship->owner});
+    }
+    player.enemySectors = std::move(sectors);
+  }
+}
+
 std::vector<Outpost::PlayerId> Outpost::Simulation::PlayersWithoutStation() const
 {
   std::vector<PlayerId> players;
@@ -802,6 +844,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   results.reserve(_commands.size());
   m_shots.clear();
   m_destroyed.clear();
+  m_events.clear();
   {
     const ObservedPart part(m_observer, TickPart::Commands);
     // The large orders of the last tick plan the rest of their paths and set off before this tick's orders, which may
@@ -913,6 +956,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     const ObservedPart part(m_observer, TickPart::Vision);
     UpdateVision();
   }
+  RaiseSightings();
   // A tick that planned no paths builds again one graph the obstacles' last change dropped, so that the next order finds
   // it built (ADR-032). The graphs are a cache: when they are built changes no path.
   if (!m_plannedThisTick)
@@ -951,6 +995,11 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   {
     snapshot.shots = m_shots;
     snapshot.destroyed = m_destroyed;
+  }
+  for (const auto& [player, event] : m_events)
+  {
+    if (player == _player)
+      snapshot.events.push_back(event);
   }
   if (const auto state = std::ranges::find(m_players, _player, &PlayerState::id); state != m_players.end())
     snapshot.ore = static_cast<std::int32_t>(state->oreHundredths / HUNDREDTHS);
@@ -1468,6 +1517,8 @@ void Outpost::Simulation::Fight()
     std::int32_t hundredths = 0;
   };
   std::vector<Hit> hits;
+  // The Relays an enemy's shot hit this tick, each once, with whose shot hit it first (ADR-080).
+  std::vector<std::pair<EntityId, PlayerId>> relaysHit;
 
   // One gun of _shooter: it reloads, waits while it has no target, and fires at _target when it is ready (ADR-014). The
   // shot names the gun, so that the client draws a structure's guns from their own hardpoints (ADR-064).
@@ -1507,6 +1558,9 @@ void Outpost::Simulation::Fight()
                        .to = target.position,
                        .splashRadiusMeters = _armament.splashRadiusMeters,
                        .gun = _gun});
+    if (target.kind == EntityKind::Structure && target.structure == StructureKind::Relay && target.owner != _shooter.owner &&
+        std::ranges::find(relaysHit, target.id, &std::pair<EntityId, PlayerId>::first) == relaysHit.end())
+      relaysHit.emplace_back(target.id, _shooter.owner);
     // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
     // after its own armor. Never the shooter's own side (ADR-014).
     if (_armament.splashRadiusMeters > 0.0f)
@@ -1559,6 +1613,13 @@ void Outpost::Simulation::Fight()
     }
   }
 
+  for (const auto& [relay, shooter] : relaysHit)
+  {
+    const Entity& hit = *FindEntity(relay);
+    Raise(hit.owner,
+          {.kind = EventKind::RelayAttacked, .position = hit.position, .subject = hit.id, .structure = hit.structure, .other = shooter});
+  }
+
   bool anyDestroyed = false;
   for (const Hit& hit : hits)
   {
@@ -1597,6 +1658,13 @@ void Outpost::Simulation::Fight()
                              .position = entity.position,
                              .headingRadians = entity.headingRadians,
                              .radiusMeters = entity.radiusMeters});
+      if (entity.kind == EntityKind::Ship || entity.kind == EntityKind::Structure)
+      {
+        Raise(entity.owner, {.kind = entity.kind == EntityKind::Ship ? EventKind::ShipLost : EventKind::StructureLost,
+                             .position = entity.position,
+                             .subject = entity.id,
+                             .structure = entity.structure});
+      }
     }
   }
   const bool blockerDestroyed = std::ranges::any_of(
@@ -2341,6 +2409,11 @@ void Outpost::Simulation::Work()
       const std::int32_t done = std::min(target.buildWorkNeeded, target.buildWorkDone + work);
       target.hitPointsHundredths += static_cast<std::int32_t>(granted(done) - granted(target.buildWorkDone));
       target.buildWorkDone = done;
+      if (target.IsBuilt())
+      {
+        Raise(target.owner,
+              {.kind = EventKind::StructureBuilt, .position = target.position, .subject = target.id, .structure = target.structure});
+      }
       if (target.IsBuilt() && target.hitPointsHundredths >= target.maxHitPointsHundredths)
         finished.push_back(id);
       continue;
@@ -2453,10 +2526,13 @@ void Outpost::Simulation::Retreat(const std::vector<EntityId>& _ships)
            Distance(other.position, ship.position) < Distance(best->position, ship.position)))
         best = &other;
     }
+    const bool wasRetreating = ship.retreating;
     ship.repairer = best != nullptr ? best->id : EntityId{};
     ship.retreating = best != nullptr;
     if (best == nullptr)
       continue;
+    if (!wasRetreating)
+      Raise(ship.owner, {.kind = EventKind::ShipRetreating, .position = ship.position, .subject = ship.id});
     ship.attackTarget = {};
     ship.workTarget = {};
     for (PlannedOrder& planned : m_plannedOrders)
@@ -2636,10 +2712,9 @@ void Outpost::Simulation::Produce()
                                                                     : FindDesign(delivery.job.design)->stats.movement.radiusMeters;
     const PlanePosition position =
       m_pathfinder.Clear(delivery.producerPosition + out * (delivery.producerRadiusMeters + radius + SPAWN_GAP_METERS), radius);
-    if (delivery.job.role == ShipRole::Constructor)
-      (void)SpawnConstructor(delivery.owner, position, heading);
-    else
-      (void)SpawnShip(delivery.owner, delivery.job.design, position, heading);
+    const EntityId built = delivery.job.role == ShipRole::Constructor ? SpawnConstructor(delivery.owner, position, heading)
+                                                                      : SpawnShip(delivery.owner, delivery.job.design, position, heading);
+    Raise(delivery.owner, {.kind = EventKind::ShipBuilt, .position = position, .subject = built});
   }
 }
 
@@ -2693,6 +2768,8 @@ void Outpost::Simulation::UpdateTerritory()
 {
   if (!HasTerritory())
     return;
+  // How each sector stood before, which tells what changed (ADR-080).
+  const std::vector<Sector> before = m_sectors;
   const auto suppressionRadius = static_cast<float>(m_tuning->territory.suppressionRadiusMeters);
   for (Sector& sector : m_sectors)
   {
@@ -2766,6 +2843,25 @@ void Outpost::Simulation::UpdateTerritory()
   }
   for (size_t index = 0; index < m_sectors.size(); ++index)
     m_sectors[index].cutOff = m_sectors[index].holder.IsValid() && linked[index] == 0;
+
+  for (size_t index = 0; index < m_sectors.size(); ++index)
+  {
+    const Sector& was = before[index];
+    const Sector& now = m_sectors[index];
+    const EventView about{.sector = now.placement.id, .position = now.placement.node};
+    if (was.holder != now.holder)
+    {
+      Raise(was.holder, {.kind = EventKind::SectorLost, .sector = about.sector, .position = about.position});
+      Raise(now.holder, {.kind = EventKind::SectorGained, .sector = about.sector, .position = about.position});
+    }
+    if (now.suppressed && !(was.suppressed && was.holder == now.holder))
+      Raise(now.holder, {.kind = EventKind::RelaySuppressed, .sector = about.sector, .position = about.position});
+    if (was.guarded && !now.guarded)
+    {
+      for (const PlayerState& player : m_players)
+        Raise(player.id, {.kind = EventKind::PiratesCleared, .sector = about.sector, .position = about.position});
+    }
+  }
 }
 
 std::int32_t Outpost::Simulation::NodeCapOf(PlayerId _player) const noexcept

@@ -457,6 +457,9 @@ private:
     std::vector<ResearchTopicId> recovered;
     // Its tickets on a map with territory (ADR-057).
     std::int32_t tickets = 0;
+    // The sectors it holds in which it saw an enemy or pirate warship at the end of the last tick, which tells the next
+    // tick's sightings from new ones (ADR-080).
+    std::vector<std::int32_t> enemySectors;
     ResearchEffects researchEffects;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
@@ -468,9 +471,9 @@ private:
     friend auto Fields(Self& _value)
     {
       [[maybe_unused]] auto& [id, oreHundredths, oreRemainder, researched, shipyardsFinished, seen, remembered, revealedUntil,
-                              knownReserves, recovered, tickets, researchEffects] = _value;
+                              knownReserves, recovered, tickets, enemySectors, researchEffects] = _value;
       return std::tie(id, oreHundredths, oreRemainder, researched, shipyardsFinished, seen, remembered, revealedUntil, knownReserves,
-                      recovered, tickets);
+                      recovered, tickets, enemySectors);
     }
   };
 
@@ -558,6 +561,11 @@ private:
   // At the end of each tick under fog of war: what each player sees and remembers, and attack orders on ships that went
   // out of sight end.
   void UpdateVision();
+  // Raises an event for _player, which its snapshot of this tick carries (ADR-080); none for the pirates or a player not
+  // added. _position's sector is the event's unless it names one.
+  void Raise(PlayerId _player, EventView _event);
+  // At the end of each tick: each player's enemy warships seen in a sector it holds that held none it saw the tick before.
+  void RaiseSightings();
   // The players whose base was placed and whose Command Station has fallen.
   [[nodiscard]] std::vector<PlayerId> PlayersWithoutStation() const;
   // Under fog of war, the side a shot hits sees its shooter for the tuning data's time.
@@ -777,8 +785,9 @@ private:
   std::uint64_t m_matchEndedTick = 0;
   MatchEnding m_ending = MatchEnding::LostProduction;
   bool m_fog = false;
-  // What the last tick did, for the snapshots built after it.
+  // What the last tick did, for the snapshots built after it: its shots, its destructions, and each player's events.
   std::vector<ShotView> m_shots;
   std::vector<DestroyedView> m_destroyed;
+  std::vector<std::pair<PlayerId, EventView>> m_events;
 };
 } // namespace Outpost

@@ -123,6 +123,7 @@
     <ClCompile Include="TerritoryTests.cpp" />
     <ClCompile Include="DominationTests.cpp" />
     <ClCompile Include="StandingOrderTests.cpp" />
+    <ClCompile Include="EventTests.cpp" />
     <ClCompile Include="UpgradeTests.cpp" />
     <ClCompile Include="FleetCapTests.cpp" />
     <ClCompile Include="PirateTests.cpp" />

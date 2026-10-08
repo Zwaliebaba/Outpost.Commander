@@ -187,11 +187,12 @@ template <typename Self, typename Parts> auto Outpost::Simulation::SavedFields(S
   // Not saved: the tick rate and what follows from it, which the world's identity names; the pathfinder, whose obstacles
   // are saved in _parts and whose graphs follow from them; the observer, which is null between ticks; whether this tick
   // planned paths, which is false between ticks; the tuning data, which the save names by its hash, and what it gives a
-  // player who has researched nothing; and the last tick's shots and destructions, which only that tick's snapshots show.
+  // player who has researched nothing; and the last tick's shots, destructions and events, which only that tick's
+  // snapshots show.
   [[maybe_unused]] auto& [ticksPerSecond, secondsPerTick, stallLimitTicks, tick, entities, lastEntityId, designs, lastDesignId, players,
                           targetRule, random, pathfinder, observer, plannedOrders, plannedThisTick, lastStandingGroup, mapObstacles,
                           mapHalfSizeMeters, sectors, outposts, tuning, unresearched, basePlayers, matchOver, winner, matchEndedTick,
-                          ending, fog, shots, destroyed] = _simulation;
+                          ending, fog, shots, destroyed, events] = _simulation;
   return std::tie(tick, entities, lastEntityId, designs, lastDesignId, players, targetRule, _parts.random, _parts.obstacles, plannedOrders,
                   lastStandingGroup, mapObstacles, mapHalfSizeMeters, sectors, outposts, basePlayers, matchOver, winner, matchEndedTick,
                   ending, fog);
@@ -219,6 +220,7 @@ void Outpost::Simulation::LoadState(ByteReader& _reader)
   m_plannedThisTick = false;
   m_shots.clear();
   m_destroyed.clear();
+  m_events.clear();
 }
 
 std::string Outpost::Simulation::StateLayout()

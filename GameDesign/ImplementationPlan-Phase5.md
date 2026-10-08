@@ -31,7 +31,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 37.1 | The AI starts from any state | — | — | done, in milestone 37's PR |
 | 37.2 | Clients on the server's thread | 35.2 | — | done, in milestone 37's PR |
 | 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | built, in milestone 37's PR; awaiting the owner's run |
-| 38.1 | The server's events, and alerts read from them | — | H4 | todo |
+| 38.1 | The server's events, and alerts read from them | — | H4 | done, in milestone 38's PR |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | todo |
 | 38.3 | The client's orders window | 38.2 | H5 | todo |
 | 39.1 | A world without an end | 37.3 | H6 | todo |
@@ -165,9 +165,37 @@ Recorded in [ADR-079](../Design/ADR/ADR-079-seat-controller-and-deputy.md) and A
 - **Run in CI.** Debug|x64 on Windows passes all 602 tests, among them `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`, the hand-over over a real connection. Its W3 test measured the same there as in the container: the deputy's Shipyards idle 0.8% of the time, the AI's 0.0%.
 - **Not in this milestone.** The client's panel saying what happened while the player was away (design §11) needs the server's events, so it comes with milestone 38. A hand-over is logged with the world log, at milestone 39.
 
-## Milestones 38 and 39
+## Milestone 38 — Orders that run while away
 
-Each is scoped in detail when it becomes the next milestone, from the design section its tasks name.
+Design §7 and §11, gates H4 and H5. The owner decided on 2026-10-08 what the design left open:
 
-- **38 — Orders that run while away** (design §7), and the client's panel of what happened while away (design §11), read from the server's events.
+- **A time of day is the player's clock.** The client turns the hour and minute the player picks into the next such moment on the player's own clock, and sends it as UTC; the host turns that into a tick as the command arrives (design §7).
+- **An event trigger watches one sector the player picks,** and the action's target is fixed when the order is given.
+- **The panel of what happened while away survives a restart:** the server keeps each seat's report and saves it with the world.
+
+### 38.1 — The server's events, and alerts read from them
+
+*Gate H4.* The simulation raises each player's events in the tick they happen, and the player's snapshot of that tick carries them: a Relay suppressed, a Relay under attack, enemy warships seen entering a sector the player holds, a ship of its going back to be repaired, a sector the pirates guarded cleared, a ship or structure of its built or lost, a sector gained or lost, and a scheduled order fired. The client's alerts read them instead of comparing snapshots, which overrules ADR-059 decision 1.
+
+- **Done when:** `EventTests` raise each event once, in its tick, for its player only; a world with events replays from its log; `AlertsTests` raise each alert from its event.
+
+### 38.2 — Scheduled orders
+
+*Gates H4, H5.* `ScheduleOrderCommand` gives a selection one trigger, one action and at most one condition (design §7). The server keeps it as a standing order is kept, fires it at the end of the tick its trigger's event is raised, and drops it. Any other order to one of its ships takes that ship out of it. A player's snapshot shows its scheduled orders, and which order each of its ships waits on.
+
+- The host turns a time of day into a tick as the command arrives, so the log holds the tick and the world replays.
+- The deputy leaves alone a ship that waits on a scheduled order.
+- The host keeps each seat's report while its deputy plays, from the events of the deputy's snapshots, saves it with the world, and hands it to the player with the first snapshot after the player takes the seat again.
+- **Done when:** `ScheduledOrderTests` fire each trigger, action and condition on its tick and as written (W5); `InProcessServerTests` turn a time of day into its tick and hand over the report; `WorldStateTests` bring the report back from a save; `DeputyTests` leave a waiting ship alone.
+
+### 38.3 — The client's orders window
+
+*Gate H5.* The orders window (O) lists the seat's scheduled orders and gives a new one to the selection: its trigger, a time or a sector, its action and the condition. The selection's panel names a ship's pending order, and a panel says what happened while the player was away when it takes its seat again (design §11).
+
+- **Done when:** `HudTests` lay out the window, the pending order and the report; `PlayerControlsTests` open the window and send the order. *Owner run:* a 02:00 attack, in play (W5).
+
+## Milestone 39
+
+Scoped in detail when it becomes the next milestone, from the design section its tasks name.
+
 - **39 — A world without an end, the world log and the week** (design §8–§10).

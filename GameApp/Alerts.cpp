@@ -12,10 +12,6 @@ constexpr std::size_t KEPT_ALERTS = 16;
 void Outpost::Alerts::Reset() noexcept
 {
   m_alerts.clear();
-  m_suppressed.clear();
-  m_entered.clear();
-  m_retreating.clear();
-  m_guarded.clear();
 }
 
 void Outpost::Alerts::Raise(Kind _kind, std::string _text, PlanePosition _position, std::int32_t _sector, std::uint64_t _tick,
@@ -33,89 +29,43 @@ void Outpost::Alerts::Raise(Kind _kind, std::string _text, PlanePosition _positi
 
 void Outpost::Alerts::Observe(const Snapshot& _snapshot, std::uint32_t _ticksPerSecond)
 {
-  const PlayerId player = _snapshot.player;
-  const auto sectorOf = [&_snapshot](PlanePosition _position) { return FindSector(_snapshot.sectors, _position); };
-  const auto sectorName = [](const SectorView* _sector) { return _sector != nullptr ? _sector->nameUtf8 : std::string("the field"); };
-  const auto sectorId = [](const SectorView* _sector) { return _sector != nullptr ? _sector->id : 0; };
-
-  // A Relay of the player's newly suppressed.
-  std::vector<std::int32_t> suppressed;
-  for (const SectorView& sector : _snapshot.sectors)
+  for (const EventView& event : _snapshot.events)
   {
-    if (sector.holder != player || !sector.suppressed)
-      continue;
-    suppressed.push_back(sector.id);
-    if (std::ranges::find(m_suppressed, sector.id) == m_suppressed.end())
-      Raise(Kind::RelaySuppressed, std::format("Relay suppressed: {}", sector.nameUtf8), sector.node, sector.id, _snapshot.tick,
-            _ticksPerSecond);
-  }
-  m_suppressed = std::move(suppressed);
-
-  // A Relay of the player's hit by an enemy's shot.
-  for (const ShotView& shot : _snapshot.shots)
-  {
-    const auto target = std::ranges::find(_snapshot.entities, shot.target, &EntityView::id);
-    if (target == _snapshot.entities.end() || target->owner != player || target->kind != EntityKind::Structure ||
-        target->structure != StructureKind::Relay)
-      continue;
-    const SectorView* sector = sectorOf(target->position);
-    Raise(Kind::RelayAttacked, std::format("Relay under attack: {}", sectorName(sector)), target->position, sectorId(sector),
-          _snapshot.tick, _ticksPerSecond);
-  }
-
-  // A Mining Rig of the player's destroyed.
-  for (const DestroyedView& destroyed : _snapshot.destroyed)
-  {
-    if (destroyed.owner != player || destroyed.kind != EntityKind::Structure || destroyed.structure != StructureKind::MiningRig)
-      continue;
-    const SectorView* sector = sectorOf(destroyed.position);
-    Raise(Kind::RigLost, std::format("Mining Rig lost: {}", sectorName(sector)), destroyed.position, sectorId(sector), _snapshot.tick,
-          _ticksPerSecond);
-  }
-
-  // Enemy or pirate warships in a sector the player holds that had none it saw the snapshot before.
-  std::vector<std::int32_t> entered;
-  for (const EntityView& ship : _snapshot.entities)
-  {
-    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Warship || !ship.owner.IsValid() || ship.owner == player)
-      continue;
-    const SectorView* sector = sectorOf(ship.position);
-    if (sector == nullptr || sector->holder != player || std::ranges::find(entered, sector->id) != entered.end())
-      continue;
-    entered.push_back(sector->id);
-    if (std::ranges::find(m_entered, sector->id) == m_entered.end())
-      Raise(Kind::EnemyEntered, std::format("{} ships in {}", ship.owner == PIRATES ? "Pirate" : "Enemy", sector->nameUtf8), ship.position,
-            sector->id, _snapshot.tick, _ticksPerSecond);
-  }
-  m_entered = std::move(entered);
-
-  // A ship of the player's that has started going back to be repaired (ADR-075).
-  std::vector<EntityId> retreating;
-  for (const EntityView& ship : _snapshot.entities)
-  {
-    if (ship.kind != EntityKind::Ship || ship.owner != player || !ship.retreating)
-      continue;
-    retreating.push_back(ship.id);
-    if (std::ranges::find(m_retreating, ship.id) == m_retreating.end())
+    const auto sector = std::ranges::find(_snapshot.sectors, event.sector, &SectorView::id);
+    const std::string where = sector != _snapshot.sectors.end() ? sector->nameUtf8 : std::string("the field");
+    const auto raise = [&](Kind _kind, std::string _text)
+    { Raise(_kind, std::move(_text), event.position, event.sector, _snapshot.tick, _ticksPerSecond); };
+    switch (event.kind)
     {
-      const SectorView* sector = sectorOf(ship.position);
-      Raise(Kind::ShipRetreating, std::format("Ship retreating: {}", sectorName(sector)), ship.position, sectorId(sector), _snapshot.tick,
-            _ticksPerSecond);
+    case EventKind::RelaySuppressed:
+      raise(Kind::RelaySuppressed, std::format("Relay suppressed: {}", where));
+      break;
+    case EventKind::RelayAttacked:
+      raise(Kind::RelayAttacked, std::format("Relay under attack: {}", where));
+      break;
+    case EventKind::StructureLost:
+      if (event.structure == StructureKind::MiningRig)
+        raise(Kind::RigLost, std::format("Mining Rig lost: {}", where));
+      break;
+    case EventKind::EnemyEntered:
+      raise(Kind::EnemyEntered, std::format("{} ships in {}", event.other == PIRATES ? "Pirate" : "Enemy", where));
+      break;
+    case EventKind::ShipRetreating:
+      raise(Kind::ShipRetreating, std::format("Ship retreating: {}", where));
+      break;
+    case EventKind::PiratesCleared:
+      raise(Kind::PiratesCleared, std::format("Pirates cleared: {}", where));
+      break;
+    // What the player built and lost, and the sectors it gained and lost, go to its report of a time away (design §11),
+    // not to an alert.
+    case EventKind::ShipBuilt:
+    case EventKind::StructureBuilt:
+    case EventKind::ShipLost:
+    case EventKind::SectorGained:
+    case EventKind::SectorLost:
+      break;
     }
   }
-  m_retreating = std::move(retreating);
-
-  // A sector the pirates guarded that they guard no longer, which every player sees (ADR-073).
-  std::vector<std::int32_t> guarded;
-  for (const SectorView& sector : _snapshot.sectors)
-  {
-    if (sector.guarded)
-      guarded.push_back(sector.id);
-    else if (std::ranges::find(m_guarded, sector.id) != m_guarded.end())
-      Raise(Kind::PiratesCleared, std::format("Pirates cleared: {}", sector.nameUtf8), sector.node, sector.id, _snapshot.tick,
-            _ticksPerSecond);
-  }
-  m_guarded = std::move(guarded);
 }
 
 std::vector<Outpost::Alerts::Alert> Outpost::Alerts::Shown(std::uint64_t _tick, std::uint32_t _ticksPerSecond) const

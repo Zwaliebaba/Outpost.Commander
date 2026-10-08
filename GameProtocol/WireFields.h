@@ -264,16 +264,24 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, EventView>
+auto Fields(Self& _value)
+{
+  auto& [kind, sector, position, subject, structure, other] = _value;
+  return std::tie(kind, sector, position, subject, structure, other);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Snapshot>
 auto Fields(Self& _value)
 {
-  auto& [tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
+  auto& [tick, player, entities, shots, destroyed, events, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
          constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier,
          nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
-  return std::tie(tick, player, entities, shots, destroyed, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-                  constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor,
-                  researchTier, nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets,
-                  startingTickets);
+  return std::tie(tick, player, entities, shots, destroyed, events, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters,
+                  structureTypes, constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research,
+                  shipyardBuildSpeedFactor, researchTier, nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending,
+                  fogOfWar, sectors, tickets, startingTickets);
 }
 
 template <typename Self>
@@ -327,5 +335,10 @@ constexpr StandingOrder LastOf(StandingOrder) noexcept
 constexpr MatchEnding LastOf(MatchEnding) noexcept
 {
   return MatchEnding::Domination;
+}
+
+constexpr EventKind LastOf(EventKind) noexcept
+{
+  return EventKind::SectorLost;
 }
 } // namespace Outpost

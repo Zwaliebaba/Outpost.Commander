@@ -12,7 +12,8 @@ using Bytes = std::vector<std::byte>;
 
 // The layout of each state version's save, as the hash of Simulation::StateLayout (AGENTS.md R18). A change to what
 // Simulation holds changes the layout: raise WORLD_STATE_VERSION and record the new version's hash here, below the old.
-constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 2> LAYOUTS{{{1, 0x5EB85327A281B46Cull}, {2, 0x8F33507C8E312761ull}}};
+constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 3> LAYOUTS{
+  {{1, 0x5EB85327A281B46Cull}, {2, 0x8F33507C8E312761ull}, {3, 0x4D954F637F96B5C2ull}}};
 
 std::uint64_t LayoutHash()
 {
@@ -148,13 +149,13 @@ public:
     }
   }
 
-  // The layout follows the field lists: an entity is saved with every one of its sixty fields, and a player with all but
-  // its research effects.
+  // The layout follows the field lists: an entity is saved with every one of its sixty fields, and a player with its twelve,
+  // all but its research effects.
   TEST_METHOD(TheLayoutNamesEveryField)
   {
     const std::string layout = Outpost::Simulation::StateLayout();
     Assert::IsTrue(layout.find("v(r60{") != std::string::npos, L"the entities, sixty fields each");
-    Assert::IsTrue(layout.find("v(r11{") != std::string::npos, L"the players, eleven fields each");
+    Assert::IsTrue(layout.find("v(r12{") != std::string::npos, L"the players, twelve fields each");
   }
 };
 } // namespace GameLogicTests

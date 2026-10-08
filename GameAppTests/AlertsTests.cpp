@@ -39,9 +39,11 @@ Outpost::Snapshot At(std::uint64_t _tick)
   return snapshot;
 }
 
-Outpost::EntityView EnemyWarship(std::uint32_t _id, Outpost::PlanePosition _position)
+// _snapshot with _event among its events.
+Outpost::Snapshot With(Outpost::Snapshot _snapshot, Outpost::EventView _event)
 {
-  return {.id = Outpost::EntityId{_id}, .kind = Outpost::EntityKind::Ship, .owner = ENEMY, .position = _position};
+  _snapshot.events.push_back(_event);
+  return _snapshot;
 }
 
 std::vector<std::string> Texts(const Outpost::Alerts& _alerts, std::uint64_t _tick)
@@ -53,7 +55,7 @@ std::vector<std::string> Texts(const Outpost::Alerts& _alerts, std::uint64_t _ti
 }
 } // namespace
 
-// Phase 2 design §9, ADR-059: the alerts the client makes from its snapshots.
+// Phase 2 design §9, ADR-059: the alerts the client reads from the events the server raises (ADR-080).
 TEST_CLASS(AlertsTests)
 {
 public:
@@ -63,90 +65,96 @@ public:
     alerts.Observe(At(1), TICKS_PER_SECOND);
     Assert::IsNull(alerts.Newest());
 
-    Outpost::Snapshot entered = At(2);
-    entered.entities.push_back(EnemyWarship(20, {.xMeters = 300.0f, .zMeters = -800.0f}));
-    entered.entities.push_back(EnemyWarship(21, {.xMeters = 310.0f, .zMeters = -800.0f}));
-    // An enemy in its own sector alerts nothing.
-    entered.entities.push_back(EnemyWarship(22, {.xMeters = 0.0f, .zMeters = 600.0f}));
-    alerts.Observe(entered, TICKS_PER_SECOND);
+    const Outpost::EventView entered{.kind = Outpost::EventKind::EnemyEntered,
+                                     .sector = 2,
+                                     .position = {.xMeters = 300.0f, .zMeters = -800.0f},
+                                     .subject = Outpost::EntityId{20},
+                                     .other = ENEMY};
+    alerts.Observe(With(At(2), entered), TICKS_PER_SECOND);
     Assert::IsTrue(Texts(alerts, 2) == std::vector<std::string>{"Enemy ships in South"});
     Assert::IsNotNull(alerts.Newest());
     Assert::IsTrue(alerts.Newest()->position == Outpost::PlanePosition{.xMeters = 300.0f, .zMeters = -800.0f});
 
-    // Still there: no new alert. Gone, and back soon after: none either, within the repeat time.
-    entered.tick = 3;
-    alerts.Observe(entered, TICKS_PER_SECOND);
-    alerts.Observe(At(4), TICKS_PER_SECOND);
-    entered.tick = 5;
-    alerts.Observe(entered, TICKS_PER_SECOND);
+    // Raised again soon after, as when they leave and come back: no new alert within the repeat time.
+    alerts.Observe(At(3), TICKS_PER_SECOND);
+    alerts.Observe(With(At(5), entered), TICKS_PER_SECOND);
     Assert::AreEqual(size_t{1}, alerts.Shown(5, TICKS_PER_SECOND).size());
 
     // It shows for eight seconds.
     Assert::AreEqual(size_t{1}, alerts.Shown(2 + (8 * TICKS_PER_SECOND) - 1, TICKS_PER_SECOND).size());
     Assert::IsTrue(alerts.Shown(2 + (8 * TICKS_PER_SECOND), TICKS_PER_SECOND).empty());
+
+    // Once the repeat time is up, it is raised again.
+    const std::uint64_t later = 2 + (std::uint64_t{Outpost::Alerts::REPEAT_SECONDS} * TICKS_PER_SECOND);
+    alerts.Observe(With(At(later), entered), TICKS_PER_SECOND);
+    Assert::AreEqual(size_t{1}, alerts.Shown(later, TICKS_PER_SECOND).size());
   }
 
   // ADR-073: pirates in a held sector, as the ships an outpost has left once the player has claimed it, are named so.
-  // Phase 4 design §13: one of the player's ships going back to be repaired, as it starts, and a sector the pirates guarded
-  // cleared of them.
+  // Phase 4 design §13: one of the player's ships going back to be repaired, and a sector the pirates guarded cleared of
+  // them.
   TEST_METHOD(AlertsToARetreatAndPiratesCleared)
   {
     Outpost::Alerts alerts;
-    Outpost::Snapshot before = At(1);
-    before.sectors[1].guarded = true;
-    Outpost::EntityView ship{
-      .id = Outpost::EntityId{30}, .kind = Outpost::EntityKind::Ship, .owner = PLAYER, .position = {.zMeters = -700.0f}};
-    before.entities.push_back(ship);
-    alerts.Observe(before, TICKS_PER_SECOND);
-    Assert::IsTrue(Texts(alerts, 1).empty());
-
-    Outpost::Snapshot after = At(2);
-    ship.retreating = true;
-    after.entities.push_back(ship);
+    Outpost::Snapshot after = With(At(2), {.kind = Outpost::EventKind::PiratesCleared, .sector = 8, .position = {.zMeters = 500.0f}});
+    after = With(
+      after, {.kind = Outpost::EventKind::ShipRetreating, .sector = 2, .position = {.zMeters = -700.0f}, .subject = Outpost::EntityId{30}});
     alerts.Observe(after, TICKS_PER_SECOND);
-    Assert::IsTrue(Texts(alerts, 2) == std::vector<std::string>{"Pirates cleared: North", "Ship retreating: South"});
-    after.tick = 3;
-    alerts.Observe(after, TICKS_PER_SECOND);
-    Assert::AreEqual(size_t{2}, Texts(alerts, 3).size(), L"once each");
+    Assert::IsTrue(Texts(alerts, 2) == std::vector<std::string>{"Ship retreating: South", "Pirates cleared: North"});
   }
 
   TEST_METHOD(AlertsToPirateShipsByName)
   {
     Outpost::Alerts alerts;
-    Outpost::Snapshot entered = At(2);
-    Outpost::EntityView pirate = EnemyWarship(20, {.xMeters = 300.0f, .zMeters = -800.0f});
-    pirate.owner = Outpost::PIRATES;
-    entered.entities.push_back(pirate);
-    alerts.Observe(entered, TICKS_PER_SECOND);
+    alerts.Observe(With(At(2), {.kind = Outpost::EventKind::EnemyEntered,
+                                .sector = 2,
+                                .position = {.xMeters = 300.0f, .zMeters = -800.0f},
+                                .other = Outpost::PIRATES}),
+                   TICKS_PER_SECOND);
     Assert::IsTrue(Texts(alerts, 2) == std::vector<std::string>{"Pirate ships in South"});
   }
 
   TEST_METHOD(AlertsToARelaySuppressedOrHitAndARigLost)
   {
     Outpost::Alerts alerts;
-    alerts.Observe(At(1), TICKS_PER_SECOND);
-    Outpost::Snapshot hit = At(2);
-    hit.shots = {{.shooter = Outpost::EntityId{30}, .target = RELAY}};
-    alerts.Observe(hit, TICKS_PER_SECOND);
-    Outpost::Snapshot suppressed = At(3);
-    suppressed.sectors[0].suppressed = true;
-    alerts.Observe(suppressed, TICKS_PER_SECOND);
-    Outpost::Snapshot lost = At(4);
-    lost.destroyed = {{.id = Outpost::EntityId{40},
-                       .kind = Outpost::EntityKind::Structure,
-                       .structure = Outpost::StructureKind::MiningRig,
-                       .owner = PLAYER,
-                       .position = {.xMeters = -200.0f, .zMeters = -900.0f}},
-                      {.id = Outpost::EntityId{41},
-                       .kind = Outpost::EntityKind::Structure,
-                       .structure = Outpost::StructureKind::MiningRig,
-                       .owner = ENEMY,
-                       .position = {.xMeters = 0.0f, .zMeters = 900.0f}}};
+    alerts.Observe(With(At(2), {.kind = Outpost::EventKind::RelayAttacked,
+                                .sector = 2,
+                                .position = {.zMeters = -500.0f},
+                                .subject = RELAY,
+                                .structure = Outpost::StructureKind::Relay,
+                                .other = ENEMY}),
+                   TICKS_PER_SECOND);
+    alerts.Observe(With(At(3), {.kind = Outpost::EventKind::RelaySuppressed, .sector = 2, .position = {.zMeters = -500.0f}}),
+                   TICKS_PER_SECOND);
+    Outpost::Snapshot lost = With(At(4), {.kind = Outpost::EventKind::StructureLost,
+                                          .sector = 2,
+                                          .position = {.xMeters = -200.0f, .zMeters = -900.0f},
+                                          .subject = Outpost::EntityId{40},
+                                          .structure = Outpost::StructureKind::MiningRig});
+    // A rig in no sector is lost in the field.
+    lost = With(lost, {.kind = Outpost::EventKind::StructureLost,
+                       .position = {.xMeters = 4000.0f},
+                       .subject = Outpost::EntityId{41},
+                       .structure = Outpost::StructureKind::MiningRig});
     alerts.Observe(lost, TICKS_PER_SECOND);
-    Assert::IsTrue(Texts(alerts, 4) ==
-                   std::vector<std::string>{"Mining Rig lost: South", "Relay suppressed: South", "Relay under attack: South"});
+    Assert::IsTrue(Texts(alerts, 4) == std::vector<std::string>{"Mining Rig lost: the field", "Mining Rig lost: South",
+                                                                "Relay suppressed: South", "Relay under attack: South"});
 
     alerts.Reset();
+    Assert::IsNull(alerts.Newest());
+  }
+
+  // What the player built and lost, other than a rig, and the sectors it gained and lost, are for its report of a time
+  // away (design §11), not alerts.
+  TEST_METHOD(RaisesNoAlertForWhatTheReportTells)
+  {
+    Outpost::Alerts alerts;
+    Outpost::Snapshot snapshot = At(2);
+    for (const Outpost::EventKind kind : {Outpost::EventKind::ShipBuilt, Outpost::EventKind::StructureBuilt, Outpost::EventKind::ShipLost,
+                                          Outpost::EventKind::SectorGained, Outpost::EventKind::SectorLost})
+      snapshot = With(snapshot, {.kind = kind, .sector = 2});
+    snapshot = With(snapshot, {.kind = Outpost::EventKind::StructureLost, .sector = 2, .structure = Outpost::StructureKind::Shipyard});
+    alerts.Observe(snapshot, TICKS_PER_SECOND);
     Assert::IsNull(alerts.Newest());
   }
 };
