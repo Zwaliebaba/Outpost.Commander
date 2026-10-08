@@ -743,10 +743,10 @@ public:
     for (int pixel = 1; high.y + static_cast<float>(pixel) < low.y - 1.0f; ++pixel)
     {
       const float y = high.y + static_cast<float>(pixel);
-      const bool own = std::ranges::any_of(
+      const bool outlined = std::ranges::any_of(
         layout.panels, [&](const Outpost::Hud::Rect& _panel)
         { return _panel.color.x == 0.35f && _panel.color.z == 1.0f && _panel.width <= 2.5f && _panel.Contains(low.x + 0.5f, y); });
-      (own ? covered : open) += 1;
+      (outlined ? covered : open) += 1;
     }
     Assert::IsTrue(covered > 0 && open > 0, L"dashed, not whole");
   }
