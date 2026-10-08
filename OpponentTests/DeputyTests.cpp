@@ -275,6 +275,9 @@ public:
     empire.Get(holding).standing = Outpost::StandingOrder::HoldSector;
     const Outpost::EntityId retreating = empire.Ship(Outpost::ShipRole::Warship, {200.0f, 100.0f});
     empire.Get(retreating).retreating = true;
+    // One that waits on a scheduled order of its player's, which an order of the deputy's would take it out of (ADR-080).
+    const Outpost::EntityId waiting = empire.Ship(Outpost::ShipRole::Warship, {250.0f, 100.0f});
+    empire.Get(waiting).scheduledOrder = 1;
     Outpost::Deputy deputy(RepositorySettings(), TICKS_PER_SECOND);
     Assert::IsTrue(OrdersOf<Outpost::AttackMoveCommand>(deputy.Play(empire.Now())).empty(), L"nothing to answer");
 
@@ -285,7 +288,7 @@ public:
     Assert::AreEqual(size_t{1}, sent.size());
     Assert::IsTrue(sent.front().destination == attack, L"at the enemy in its sector, not the one beyond it");
     Assert::IsTrue(std::ranges::contains(sent.front().ships, first) && std::ranges::contains(sent.front().ships, second));
-    Assert::AreEqual(size_t{2}, sent.front().ships.size(), L"its idle warships only");
+    Assert::AreEqual(size_t{2}, sent.front().ships.size(), L"its idle warships only, not one that waits on an order");
 
     empire.Remove(raider);
     empire.Get(first).position = attack;

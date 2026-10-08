@@ -321,6 +321,20 @@ bool Outpost::InProcessServer::HoldsSeat(PlayerId _player, const Neuron::QuicCha
   return seat != m_connections.end() && seat->quic.get() == _channel;
 }
 
+std::uint64_t Outpost::TickOfMoment(std::int64_t _utcSeconds, std::chrono::system_clock::time_point _now, std::uint64_t _tick,
+                                    std::uint32_t _ticksPerSecond) noexcept
+{
+  constexpr std::int64_t WEEK_SECONDS = std::int64_t{7} * 24 * 60 * 60;
+  const std::int64_t nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(_now.time_since_epoch()).count();
+  // How far ahead the moment is, in milliseconds, between none and a week, so that no far moment overflows.
+  const std::int64_t aheadMilliseconds =
+    std::clamp(_utcSeconds, (nowMilliseconds / 1000) - 1, (nowMilliseconds / 1000) + WEEK_SECONDS) * 1000 - nowMilliseconds;
+  if (aheadMilliseconds <= 0)
+    return _tick;
+  // The first tick at or after it: rounded up.
+  return _tick + static_cast<std::uint64_t>(((aheadMilliseconds * _ticksPerSecond) + 999) / 1000);
+}
+
 void Outpost::InProcessServer::Advance(std::chrono::nanoseconds _elapsedWallTime)
 {
   if (m_thread.joinable())
@@ -425,8 +439,15 @@ void Outpost::InProcessServer::RunTick()
     const std::scoped_lock lock(connection.channel->mutex);
     for (Command& command : connection.channel->commands)
     {
-      // The connection says who sent it; what the client wrote there is never trusted (ADR-002).
+      // The connection says who sent it; what the client wrote there is never trusted (ADR-002). Nor is the tick of a
+      // scheduled order's time of day, which the host makes of its moment here (ADR-080).
       command.player = connection.player;
+      if (auto* schedule = std::get_if<ScheduleOrderCommand>(&command.order);
+          schedule != nullptr && schedule->trigger.kind == ScheduledTriggerKind::TimeOfDay)
+      {
+        schedule->trigger.tick =
+          TickOfMoment(schedule->trigger.utcSeconds, std::chrono::system_clock::now(), m_simulation.CurrentTick(), TicksPerSecond());
+      }
       commands.push_back(std::move(command));
     }
     connection.channel->commands.clear();
@@ -473,15 +494,20 @@ void Outpost::InProcessServer::RunTick()
           quic = connection.quic;
           takings = connection.takings;
         }
-        if (quic)
-          quic->Send(EncodeMessage(snapshot));
-        // A seat's deputy comes with the controller that says when it plays (Host).
-        if (connection.hosted && connection.control.has_value())
+        // A seat's deputy comes with the controller that says when it plays (Host). While it does, the seat's report of what
+        // its player misses grows, and the player's first snapshot once it plays again carries it (ADR-080).
+        const bool deputy = connection.hosted && connection.control.has_value();
+        bool plays = false;
+        if (deputy)
         {
           const bool gone = quic && quic->HasGone();
-          const bool plays = connection.control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
-          turns.push_back({.connection = &connection, .snapshot = std::move(snapshot), .plays = plays});
+          plays = connection.control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
+          m_away.Take(snapshot, plays);
         }
+        if (quic)
+          quic->Send(EncodeMessage(snapshot));
+        if (deputy)
+          turns.push_back({.connection = &connection, .snapshot = std::move(snapshot), .plays = plays});
         continue;
       }
       if (connection.hosted)
@@ -521,7 +547,7 @@ void Outpost::InProcessServer::UseWorld(const std::filesystem::path& _folder, st
   m_identity = {.seed = m_seed, .ticksPerSecond = TicksPerSecond(), .dataHash = _dataHash};
   if (_recovery)
   {
-    DecodeWorld(_recovery->save, m_identity, m_simulation);
+    m_away.Restore(DecodeWorld(_recovery->save, m_identity, m_simulation));
     m_commandLog.clear();
     // The commands logged since the save, each at the tick it was applied at, as the world that ran applied them.
     auto next = _recovery->commands.begin();
@@ -545,7 +571,7 @@ void Outpost::InProcessServer::UseWorld(const std::filesystem::path& _folder, st
 
 void Outpost::InProcessServer::SaveWorld()
 {
-  m_world->Save(m_simulation.CurrentTick(), EncodeWorld(m_simulation, m_identity));
+  m_world->Save(m_simulation.CurrentTick(), EncodeWorld(m_simulation, m_identity, m_away.Reports()));
   // The world's folder keeps the commands from here on.
   m_commandLog.clear();
 }

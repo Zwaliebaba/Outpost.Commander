@@ -9,6 +9,41 @@ namespace
 constexpr std::size_t KEPT_ALERTS = 16;
 } // namespace
 
+std::string Outpost::DescribeScheduledAction(ScheduledActionKind _action, std::string_view _where)
+{
+  switch (_action)
+  {
+  case ScheduledActionKind::Move:
+    return std::format("move to {}", _where);
+  case ScheduledActionKind::AttackMove:
+    return std::format("attack-move to {}", _where);
+  case ScheduledActionKind::Attack:
+    return std::format("attack in {}", _where);
+  case ScheduledActionKind::HoldSector:
+    return std::format("hold {}", _where);
+  case ScheduledActionKind::Patrol:
+    return std::format("patrol to {}", _where);
+  case ScheduledActionKind::BuildRig:
+    return std::format("Mining Rig in {}", _where);
+  }
+  return std::string(_where);
+}
+
+std::string Outpost::DescribeFiredOrder(const EventView& _event, std::string_view _where)
+{
+  const std::string action = DescribeScheduledAction(_event.action, _where);
+  switch (_event.outcome)
+  {
+  case OrderOutcome::HeldInstead:
+    return std::format("Order held back: {}", action);
+  case OrderOutcome::Refused:
+    return std::format("Order refused: {}", action);
+  case OrderOutcome::AsGiven:
+    break;
+  }
+  return std::format("Order fired: {}", action);
+}
+
 void Outpost::Alerts::Reset() noexcept
 {
   m_alerts.clear();
@@ -18,8 +53,11 @@ void Outpost::Alerts::Raise(Kind _kind, std::string _text, PlanePosition _positi
                             std::uint32_t _ticksPerSecond)
 {
   const std::uint64_t repeatTicks = std::uint64_t{REPEAT_SECONDS} * _ticksPerSecond;
-  const bool repeated = std::ranges::any_of(
-    m_alerts, [&](const Alert& _alert) { return _alert.kind == _kind && _alert.sector == _sector && _tick < _alert.tick + repeatTicks; });
+  // Every order fired is told, however close together.
+  const bool repeated =
+    _kind != Kind::OrderFired &&
+    std::ranges::any_of(m_alerts, [&](const Alert& _alert)
+                        { return _alert.kind == _kind && _alert.sector == _sector && _tick < _alert.tick + repeatTicks; });
   if (repeated)
     return;
   m_alerts.push_back({.kind = _kind, .text = std::move(_text), .position = _position, .sector = _sector, .tick = _tick});
@@ -55,6 +93,9 @@ void Outpost::Alerts::Observe(const Snapshot& _snapshot, std::uint32_t _ticksPer
       break;
     case EventKind::PiratesCleared:
       raise(Kind::PiratesCleared, std::format("Pirates cleared: {}", where));
+      break;
+    case EventKind::OrderFired:
+      raise(Kind::OrderFired, DescribeFiredOrder(event, where));
       break;
     // What the player built and lost, and the sectors it gained and lost, go to its report of a time away (design §11),
     // not to an alert.

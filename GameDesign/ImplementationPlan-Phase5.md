@@ -32,7 +32,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 37.2 | Clients on the server's thread | 35.2 | — | done, in milestone 37's PR |
 | 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | built, in milestone 37's PR; awaiting the owner's run |
 | 38.1 | The server's events, and alerts read from them | — | H4 | done, in milestone 38's PR |
-| 38.2 | Scheduled orders | 38.1 | H4, H5 | todo |
+| 38.2 | Scheduled orders | 38.1 | H4, H5 | done, in milestone 38's PR |
 | 38.3 | The client's orders window | 38.2 | H5 | todo |
 | 39.1 | A world without an end | 37.3 | H6 | todo |
 | 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | todo |

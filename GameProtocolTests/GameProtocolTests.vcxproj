@@ -94,6 +94,7 @@
     <ClCompile Include="WireFormatTests.cpp" />
     <ClCompile Include="IdTests.cpp" />
     <ClCompile Include="PlacementTests.cpp" />
+    <ClCompile Include="AwayReportTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

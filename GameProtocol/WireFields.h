@@ -134,6 +134,30 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, ScheduledTrigger>
+auto Fields(Self& _value)
+{
+  auto& [kind, sector, utcSeconds, tick] = _value;
+  return std::tie(kind, sector, utcSeconds, tick);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, ScheduledAction>
+auto Fields(Self& _value)
+{
+  auto& [kind, position, target] = _value;
+  return std::tie(kind, position, target);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, ScheduleOrderCommand>
+auto Fields(Self& _value)
+{
+  auto& [ships, trigger, action, unlessCommandPoints] = _value;
+  return std::tie(ships, trigger, action, unlessCommandPoints);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Command>
 auto Fields(Self& _value)
 {
@@ -155,11 +179,11 @@ auto Fields(Self& _value)
 {
   auto& [id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters, hitPointsHundredths,
          maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
-         secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating, oreReserveHundredths, salvageOre, salvageTopic,
-         salvagePermille] = _value;
+         secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating, scheduledOrder, oreReserveHundredths, salvageOre,
+         salvageTopic, salvagePermille] = _value;
   return std::tie(id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters,
                   hitPointsHundredths, maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue,
-                  research, jobPermille, secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating,
+                  research, jobPermille, secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating, scheduledOrder,
                   oreReserveHundredths, salvageOre, salvageTopic, salvagePermille);
 }
 
@@ -267,19 +291,36 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, EventView>
 auto Fields(Self& _value)
 {
-  auto& [kind, sector, position, subject, structure, other] = _value;
-  return std::tie(kind, sector, position, subject, structure, other);
+  auto& [kind, sector, position, subject, structure, other, order, action, outcome] = _value;
+  return std::tie(kind, sector, position, subject, structure, other, order, action, outcome);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, ScheduledOrderView>
+auto Fields(Self& _value)
+{
+  auto& [id, ships, trigger, action, unlessCommandPoints] = _value;
+  return std::tie(id, ships, trigger, action, unlessCommandPoints);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, AwayReport>
+auto Fields(Self& _value)
+{
+  auto& [sinceTick, shipsBuilt, structuresBuilt, shipsLost, structuresLost, sectorsGained, sectorsLost, ordersFired] = _value;
+  return std::tie(sinceTick, shipsBuilt, structuresBuilt, shipsLost, structuresLost, sectorsGained, sectorsLost, ordersFired);
 }
 
 template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Snapshot>
 auto Fields(Self& _value)
 {
-  auto& [tick, player, entities, shots, destroyed, events, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters, structureTypes,
-         constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor, researchTier,
-         nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets, startingTickets] = _value;
-  return std::tie(tick, player, entities, shots, destroyed, events, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters,
-                  structureTypes, constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research,
+  auto& [tick, player, entities, shots, destroyed, events, scheduled, away, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters,
+         structureTypes, constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor,
+         researchTier, nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets,
+         startingTickets] = _value;
+  return std::tie(tick, player, entities, shots, destroyed, events, scheduled, away, ore, oreIncomeHundredthsPerSecond, designs,
+                  mapSizeMeters, structureTypes, constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research,
                   shipyardBuildSpeedFactor, researchTier, nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending,
                   fogOfWar, sectors, tickets, startingTickets);
 }
@@ -339,6 +380,21 @@ constexpr MatchEnding LastOf(MatchEnding) noexcept
 
 constexpr EventKind LastOf(EventKind) noexcept
 {
-  return EventKind::SectorLost;
+  return EventKind::OrderFired;
+}
+
+constexpr OrderOutcome LastOf(OrderOutcome) noexcept
+{
+  return OrderOutcome::Refused;
+}
+
+constexpr ScheduledTriggerKind LastOf(ScheduledTriggerKind) noexcept
+{
+  return ScheduledTriggerKind::RigLost;
+}
+
+constexpr ScheduledActionKind LastOf(ScheduledActionKind) noexcept
+{
+  return ScheduledActionKind::BuildRig;
 }
 } // namespace Outpost

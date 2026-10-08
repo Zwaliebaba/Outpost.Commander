@@ -50,10 +50,12 @@ bool IsWarship(const EntityView& _entity, Outpost::PlayerId _player) noexcept
   return _entity.kind == EntityKind::Ship && _entity.role == Outpost::ShipRole::Warship && _entity.owner == _player;
 }
 
-// A ship with nothing to do: no order, no standing order, and not going back to be repaired (ADR-075).
+// A ship with nothing to do: no order, no standing order, not going back to be repaired (ADR-075), and waiting on no
+// scheduled order of its player's, which an order of the deputy's would take it out of (ADR-080).
 bool IsIdle(const EntityView& _ship) noexcept
 {
-  return _ship.order == Outpost::ShipOrder::None && _ship.standing == Outpost::StandingOrder::None && !_ship.retreating;
+  return _ship.order == Outpost::ShipOrder::None && _ship.standing == Outpost::StandingOrder::None && !_ship.retreating &&
+         _ship.scheduledOrder == 0;
 }
 
 const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureKind _kind) noexcept

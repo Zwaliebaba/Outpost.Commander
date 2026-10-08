@@ -106,10 +106,12 @@ W1, W4 and W6 are the owner's week. W2's tick figure is the owner's run in Relea
 
 - **A scheduled order is one trigger, one action and at most one condition,** given to a selection, and kept by the server as a standing order is (ADR-059 decision 3). It fires once and is gone. Any other order to its ships ends it, as it ends a standing order.
 - **Triggers:**
-  - a time of day;
+  - a time of day, on the player's own clock (owner, 2026-10-08);
   - enemy ships in a sector the player holds;
   - a Relay of the player's suppressed, or under attack;
   - a Mining Rig of the player's lost.
+
+  Each event trigger watches one sector the player picks, and the action's target is fixed when the order is given (owner, 2026-10-08).
 - **Actions:** move, attack-move, attack, hold a sector, patrol, and build a Mining Rig on an asteroid, which is how "mine this field at 03:00" is given.
 - **The condition:** "unless the enemy warships the player sees in the action's sector take more than a number of command points the player sets; then hold the sector the ships are in". No nesting, no variables, and a new trigger or action only when a missing case keeps coming up in play (horizon §5).
 - **A time of day becomes a tick in the server's host,** when the command arrives: the host is where wall time is allowed (ADR-009 decision 3), so `Simulation` keeps the tick as its only clock, and the log replays. An order for 02:00 that a pause has pushed past fires late, at its tick.
@@ -150,7 +152,7 @@ Phase 4's economy is unchanged: its costs, income, cap, pirates, derelicts and r
 - A lost connection back to the menu (§4).
 - An orders window, and a ship's pending order on its panel (§7).
 - Alerts read from the server's events (§7).
-- **On taking its seat again,** a panel says what happened while the player was away: what the deputy built and lost, sectors gained and lost, and the orders that fired.
+- **On taking its seat again,** a panel says what happened while the player was away: what the deputy built and lost, sectors gained and lost, and the orders that fired. The server keeps it with the world, so a restart while the player is away loses none of it (owner, 2026-10-08).
 
 ---
 

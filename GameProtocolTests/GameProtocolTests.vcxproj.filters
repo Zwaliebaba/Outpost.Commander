@@ -8,5 +8,6 @@
     <ClCompile Include="WireFormatTests.cpp" />
     <ClCompile Include="IdTests.cpp" />
     <ClCompile Include="PlacementTests.cpp" />
+    <ClCompile Include="AwayReportTests.cpp" />
   </ItemGroup>
 </Project>

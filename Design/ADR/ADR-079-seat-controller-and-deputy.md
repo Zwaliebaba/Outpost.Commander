@@ -27,7 +27,7 @@ The design leaves two things open, which the owner decided on 2026-10-08: how ma
    - **Rigs.** It rebuilds a Mining Rig it saw stand, on an asteroid that still holds ore, in a sector its player holds and the pirates do not guard, with the two nearest idle Constructors.
    - **Repairs.** Each damaged structure, and each site with nobody on it, gets the nearest idle Constructor.
    - **Defence.** What draws its idle warships is enemy warships, the pirates' among them, in a sector its player holds, taking the sector with the most of them; or whatever fires on one of its player's structures in such a sector. Idle means no order, no standing order and not retreating. They attack-move there. The defence ends `defenseHoldSeconds` (10 s) after the attack was last seen, or at once when the sector is lost, and each defender then moves back to where it stood (owner, 2026-10-08).
-   - **What it never does.** It never attacks, raids, claims a sector, clears pirates or salvages. It leaves alone a ship that retreats, or that has an order or a standing order.
+   - **What it never does.** It never attacks, raids, claims a sector, clears pirates or salvages, except by a scheduled order its player gave, which the server fires whoever plays the seat ([ADR-080](ADR-080-events-and-scheduled-orders.md)). It leaves alone a ship that retreats, that has an order or a standing order, or that waits on a scheduled order.
    - **Each turn starts afresh.** Its Constructor count, repairs and defenders belong to the turn. What it learned while watching, each Shipyard's last design and where the rigs stood, it keeps.
 7. **`OutpostServer` hosts them.**
    - A seat in `World.json` is a player's, with a token, or an AI empire's, with its difficulty: Easy, Normal or Hard (ADR-065). `--new-world --ai <player>[:<difficulty>]` makes one.
@@ -54,11 +54,11 @@ The design leaves two things open, which the owner decided on 2026-10-08: how ma
   The figure that counts, Release on the development machine, is the owner's run at milestone 39.
 - **A deputy's defence is blunt.** Any enemy warship in a held sector, a passing scout among them, draws every idle warship, so one sector may be stripped to answer another. Whether that is good enough is the owner's week to judge.
 - **A Shipyard idle at a restart builds the fleet's commonest design**, since the deputy learns a Shipyard's last design only from its queue, and nothing of it is saved.
-- **A hand-over is not reported yet.** The world log, at milestone 39, records each one, and the client's panel saying what happened while the player was away needs the server's events of milestone 38.
+- **What happened while the player was away** is the host's report, kept from the events of the snapshots the deputy plays and handed to the player when it takes the seat again ([ADR-080](ADR-080-events-and-scheduled-orders.md)). A hand-over itself is logged by the world log, at milestone 39.
 - **An AI empire made afresh plays on, but not as it would have.** A world with AI empires replays from its log, not from its AIs.
 
 ## What this forecloses
 
-- A deputy that attacks, raids, claims or clears pirates without a scheduled order (milestone 38).
+- A deputy that attacks, raids, claims or clears pirates without a scheduled order of its player's.
 - Hosted players off the server's thread, or answering a tick before every player has been sent its snapshot.
 - A hosted player's state in a save.

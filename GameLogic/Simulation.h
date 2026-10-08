@@ -219,6 +219,8 @@ enum class CommandResult : std::uint8_t
   Guarded,
   // A salvage order's target is not a derelict (Phase 4 design §9).
   NotSalvageable,
+  // A scheduled order's condition sets fewer than no command points (ADR-080).
+  InvalidCondition,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -393,7 +395,8 @@ public:
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
            _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_ending == _b.m_ending && _a.m_fog == _b.m_fog &&
            _a.m_plannedOrders == _b.m_plannedOrders && _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors &&
-           _a.m_outposts == _b.m_outposts;
+           _a.m_outposts == _b.m_outposts && _a.m_scheduledOrders == _b.m_scheduledOrders &&
+           _a.m_lastScheduledOrder == _b.m_lastScheduledOrder;
   }
 
   // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
@@ -533,6 +536,28 @@ private:
     }
   };
 
+  // A scheduled order the server keeps until it fires (ADR-080): whose it is, as given, and the ships still waiting on it.
+  struct ScheduledOrder
+  {
+    std::uint32_t id = 0;
+    PlayerId player;
+    std::vector<EntityId> ships;
+    ScheduledTrigger trigger;
+    ScheduledAction action;
+    std::optional<std::int32_t> unlessCommandPoints;
+
+    friend bool operator==(const ScheduledOrder&, const ScheduledOrder&) = default;
+
+    // Its fields as a save holds them (ADR-077).
+    template <typename Self>
+      requires std::same_as<std::remove_const_t<Self>, ScheduledOrder>
+    friend auto Fields(Self& _value)
+    {
+      auto& [id, player, ships, trigger, action, unlessCommandPoints] = _value;
+      return std::tie(id, player, ships, trigger, action, unlessCommandPoints);
+    }
+  };
+
   // What an entity fires: a warship's design's weapon, or a built structure's Defence gun.
   struct Armament
   {
@@ -610,6 +635,16 @@ private:
   CommandResult Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade);
   CommandResult Apply(PlayerId _player, const SalvageCommand& _salvage);
   CommandResult Apply(PlayerId _player, const SetRetreatCommand& _retreat);
+  CommandResult Apply(PlayerId _player, const ScheduleOrderCommand& _schedule);
+  // Applies one order as a player gives it, with what any order of a player's does besides: its ships leave the group they
+  // were planning with, end their retreat, and, for an order that gives them something to do, leave their standing and
+  // scheduled orders (ADR-032, ADR-059, ADR-075, ADR-080).
+  CommandResult ApplyOrder(PlayerId _player, const Order& _order);
+  // _ships wait on no scheduled order any more; an order none waits on is dropped.
+  void LeaveScheduledOrders(const std::vector<EntityId>& _ships);
+  // At the end of each tick, once its events are raised: each scheduled order whose trigger this tick fired gives its ships
+  // its action, or holds them, and is dropped; and an order whose ships are all gone is dropped (ADR-080).
+  void FireScheduledOrders();
   // Whether _entity is a structure of its player's that repairs its ships near it (ADR-075).
   [[nodiscard]] bool IsRepairer(const Entity& _entity) const noexcept;
   // Sends each of _ships back to the repairer the design's order picks for it, as a group with the others going to the same
@@ -768,6 +803,9 @@ private:
   bool m_plannedThisTick = false;
   // The last group a standing order was given to (ADR-059).
   std::uint32_t m_lastStandingGroup = 0;
+  // The scheduled orders not yet fired, in the order they were given, and the last one's identifier (ADR-080).
+  std::vector<ScheduledOrder> m_scheduledOrders;
+  std::uint32_t m_lastScheduledOrder = 0;
   std::vector<Obstacle> m_mapObstacles;
   float m_mapHalfSizeMeters = 0.0f;
   // The map's sectors, in its order; none on a map without them.

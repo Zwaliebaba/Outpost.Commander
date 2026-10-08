@@ -10,14 +10,15 @@ namespace
 {
 using Bytes = std::vector<std::byte>;
 
-// The layout of each state version's save, as the hash of Simulation::StateLayout (AGENTS.md R18). A change to what
-// Simulation holds changes the layout: raise WORLD_STATE_VERSION and record the new version's hash here, below the old.
-constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 3> LAYOUTS{
-  {{1, 0x5EB85327A281B46Cull}, {2, 0x8F33507C8E312761ull}, {3, 0x4D954F637F96B5C2ull}}};
+// The layout of each state version's save, as the hash of SaveLayout (AGENTS.md R18): the simulation's state, and from
+// version 4 the seats' reports beside it. A change to either changes the layout: raise WORLD_STATE_VERSION and record the
+// new version's hash here, below the old.
+constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 4> LAYOUTS{
+  {{1, 0x5EB85327A281B46Cull}, {2, 0x8F33507C8E312761ull}, {3, 0x4D954F637F96B5C2ull}, {4, 0xA1F1A0DC52EC7069ull}}};
 
 std::uint64_t LayoutHash()
 {
-  const std::string layout = Outpost::Simulation::StateLayout();
+  const std::string layout = Outpost::SaveLayout();
   const std::array<std::string_view, 1> texts{layout};
   return Outpost::DataHash(texts);
 }
@@ -72,6 +73,27 @@ public:
     Assert::IsTrue(loaded == world, L"the loaded world compares equal");
     Assert::IsTrue(Outpost::EncodeWorld(loaded, match.Identity()) == saved, L"and saves to the same bytes");
     Assert::IsTrue(NextSnapshots(loaded) == NextSnapshots(world), L"and shows the players the same");
+  }
+
+  // Design §11 (ADR-080): a save keeps each seat's report of a time away beside the state, and gives them back.
+  TEST_METHOD(KeepsTheSeatsReports)
+  {
+    WorldMatch match(5);
+    match.Run(1.0);
+    const Outpost::SeatReports reports{
+      {Outpost::PlayerId{2},
+       {.sinceTick = 7,
+        .shipsLost = 3,
+        .sectorsGained = {4},
+        .ordersFired = {{.kind = Outpost::EventKind::OrderFired, .order = 9, .outcome = Outpost::OrderOutcome::HeldInstead}}}},
+      {Outpost::PlayerId{1}, {.sinceTick = 8, .structuresBuilt = 1}}};
+    const Bytes saved = Outpost::EncodeWorld(match.Server().World(), match.Identity(), reports);
+    Outpost::Simulation loaded = match.Blank();
+    Assert::IsTrue(Outpost::DecodeWorld(saved, match.Identity(), loaded) == reports);
+    Assert::IsTrue(loaded == match.Server().World());
+    Outpost::Simulation again = match.Blank();
+    Assert::IsTrue(Outpost::DecodeWorld(Outpost::EncodeWorld(match.Server().World(), match.Identity()), match.Identity(), again).empty(),
+                   L"a world with none keeps none");
   }
 
   // Design §5: a world loaded from a save and given the commands the running world applied after it is, ticks later, the

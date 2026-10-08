@@ -139,9 +139,71 @@ struct SetRetreatCommand
   RetreatThreshold retreat = DEFAULT_RETREAT;
 };
 
+// What fires a scheduled order (Phase 5 design §7, ADR-080): a time of day, or one of the player's events in the sector the
+// trigger watches.
+enum class ScheduledTriggerKind : std::uint8_t
+{
+  TimeOfDay,
+  // Enemy or pirate warships seen entering the sector, which the player holds.
+  EnemyInSector,
+  // A Relay of the player's in the sector suppressed, or under attack.
+  RelayThreatened,
+  // A Mining Rig of the player's in the sector lost.
+  RigLost
+};
+
+struct ScheduledTrigger
+{
+  ScheduledTriggerKind kind = ScheduledTriggerKind::TimeOfDay;
+  // The sector an event trigger watches.
+  std::int32_t sector = 0;
+  // A time of day's moment, in seconds since 1970 UTC, as the player's clock picked it (owner, 2026-10-08); and the tick the
+  // server's host makes of it as the command arrives, which is what the simulation fires on and the log keeps (ADR-009).
+  std::int64_t utcSeconds = 0;
+  std::uint64_t tick = 0;
+
+  friend bool operator==(const ScheduledTrigger&, const ScheduledTrigger&) = default;
+};
+
+// What a scheduled order does when it fires (Phase 5 design §7): the orders of the same names, its ships given them as the
+// player gives them; and a Mining Rig built on the asteroid at its point by its Constructors.
+enum class ScheduledActionKind : std::uint8_t
+{
+  Move,
+  AttackMove,
+  Attack,
+  HoldSector,
+  Patrol,
+  BuildRig
+};
+
+struct ScheduledAction
+{
+  ScheduledActionKind kind = ScheduledActionKind::Move;
+  // Where it goes, the sector it holds, the far end of its patrol, or the asteroid its rig stands on.
+  PlanePosition position;
+  // An attack's target.
+  EntityId target;
+
+  friend bool operator==(const ScheduledAction&, const ScheduledAction&) = default;
+};
+
+// A scheduled order (Phase 5 design §7, ADR-080): its ships do its action once, when its trigger fires, unless its condition
+// says the enemy is too strong, and then they hold the sector they are in. Warships take part, or for a rig Constructors. The
+// server keeps it as it keeps a standing order, and any other order to one of its ships takes that ship out of it.
+struct ScheduleOrderCommand
+{
+  std::vector<EntityId> ships;
+  ScheduledTrigger trigger;
+  ScheduledAction action;
+  // The condition, if any: the most command points the enemy warships the player sees in the action's sector may take for
+  // the action to go ahead.
+  std::optional<std::int32_t> unlessCommandPoints;
+};
+
 using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand,
                            QueueShipCommand, StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand,
-                           UpgradeStructureCommand, SalvageCommand, SetRetreatCommand>;
+                           UpgradeStructureCommand, SalvageCommand, SetRetreatCommand, ScheduleOrderCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
 // arrived on; what a client puts there is never trusted (ADR-002).
