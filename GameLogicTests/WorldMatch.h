@@ -18,10 +18,19 @@ public:
   TemporaryFolder(const TemporaryFolder&) = delete;
   TemporaryFolder& operator=(const TemporaryFolder&) = delete;
 
+  // A destructor throws nothing: a folder that cannot be removed is left behind for the system to clear, and the test's log
+  // says so.
   ~TemporaryFolder()
   {
-    std::error_code ignored;
-    std::filesystem::remove_all(m_path, ignored);
+    try
+    {
+      std::error_code ignored;
+      std::filesystem::remove_all(m_path, ignored);
+    }
+    catch (...)
+    {
+      Microsoft::VisualStudio::CppUnitTestFramework::Logger::WriteMessage("A test's temporary folder could not be removed.");
+    }
   }
 
   [[nodiscard]] const std::filesystem::path& Path() const noexcept
