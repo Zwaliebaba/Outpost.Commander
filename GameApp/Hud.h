@@ -634,9 +634,15 @@ public:
 
   // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, a notice in the
   // warning's color when _state has one, and buttons to start a skirmish against the AI, to join a world when _state
-  // offers one, and to quit (task 6.2). _factor is the interface's own scale (ADR-070).
+  // offers one, and to quit (task 6.2). _factor is the interface's own scale (ADR-070). The plain menu is an overload rather
+  // than a default argument, which could not use MenuState's member initializers before Hud is complete.
   [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                                      float _factor = 1.0f, const MenuState& _state = {});
+                                      float _factor = 1.0f)
+  {
+    return LayMenu(_metrics, _widthPixels, _heightPixels, _factor, MenuState{});
+  }
+  [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor,
+                                      const MenuState& _state);
 
   // Where everything goes on a back buffer of this size, its text measured with _metrics, which are the fonts at this
   // size's scale. _view is the ground the camera shows, its corners in order, outlined on the minimap; empty when the

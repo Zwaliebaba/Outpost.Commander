@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <shellapi.h>
+
 #include "ServerConsole.h"
 
 #include <charconv>
@@ -39,6 +41,24 @@ std::string Utf8(const std::filesystem::path& _path)
 std::string Utf8(std::wstring_view _text)
 {
   return winrt::to_string(_text);
+}
+
+// The command line's arguments after the program's name, split by Windows' rules for quotes and backslashes, as the
+// game's shell reads its own: main's narrow arguments would lose a folder named outside the system's code page.
+std::vector<std::wstring> CommandLineArguments()
+{
+  struct LocalFreer
+  {
+    void operator()(LPWSTR* _arguments) const noexcept
+    {
+      (void)LocalFree(static_cast<HLOCAL>(_arguments));
+    }
+  };
+
+  int count = 0;
+  const std::unique_ptr<LPWSTR, LocalFreer> arguments(winrt::check_pointer(CommandLineToArgvW(GetCommandLineW(), &count)));
+  const std::span<const LPWSTR> all(arguments.get(), static_cast<size_t>(std::max(count, 0)));
+  return all.empty() ? std::vector<std::wstring>() : std::vector<std::wstring>(all.begin() + 1, all.end());
 }
 
 std::string ReadText(const std::filesystem::path& _path)
@@ -141,7 +161,7 @@ int RunWorld(const std::filesystem::path& _folder)
 }
 } // namespace
 
-int wmain(int _argc, wchar_t* _argv[])
+int main()
 {
   try
   {
@@ -150,7 +170,7 @@ int wmain(int _argc, wchar_t* _argv[])
     (void)GetModuleFileNameW(nullptr, filename.data(), static_cast<DWORD>(filename.size()));
     Neuron::FileSys::SetHomeDirectory(std::filesystem::path(filename.data()).parent_path().wstring());
 
-    const std::vector<std::wstring> arguments(_argv + std::min(_argc, 1), _argv + _argc);
+    const std::vector<std::wstring> arguments = CommandLineArguments();
     if (arguments.size() >= 2 && arguments[0] == NEW_WORLD_SWITCH)
       return MakeWorld(arguments[1], std::span(arguments).subspan(2));
     if (arguments.size() == 1 && !arguments[0].starts_with(L"--"))
