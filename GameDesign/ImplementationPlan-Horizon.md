@@ -1,6 +1,6 @@
 # Outpost Commander — Horizon Plan: From Phase 4 to a Galaxy That Keeps Running
 
-Status: **draft, proposed, nothing decided** · Started 2026-10-07, at the owner's request for a plan to build [the horizon](OutpostCommander-Horizon.md) once Phase 4 is done · Derived from the horizon, [the Phase 4 design](OutpostCommander-Phase4.md) and the code on `main` at that date
+Status: **draft, proposed, nothing decided** · Started 2026-10-07, at the owner's request for a plan to build [the horizon](OutpostCommander-Horizon.md) once Phase 4 is done · Derived from the horizon, [the Phase 4 design](Archive/OutpostCommander-Phase4.md) and the code on `main` at that date · Brought up to date on 2026-10-08, when Phase 4 closed
 
 The horizon says where the game goes in the long run and decides almost nothing. This plan proposes how to get there: four phases, each of which becomes a phase design of its own, with its gates, before any of its code is written (horizon §11, AGENTS.md). It is not an authority, and it binds nothing until the owner accepts a phase design built from it. Where it disagrees with the horizon, §2 says so and why.
 
@@ -8,11 +8,12 @@ The horizon says where the game goes in the long run and decides almost nothing.
 
 ## 1. Before Phase 5 starts
 
-Phase 4 is open: milestones 33 (the AI plays Phase 4) and 34 (U1–U8) are `todo`, and the owner's runs of 27.3, 28.1, 28.4, 29.2, 30.2, 31.2 and 32.2, and of the Interface plan's 14–17, are outstanding. Phase 5 should not start before 34.2, for three reasons:
+Phase 4 closed on 2026-10-08: every task done, U1–U6 answered, and U7 and U8 awaiting the owner's runs (Phase 4 §2). The Interface plan's owner runs, 14–17, are also outstanding. Phase 5 should not start before U7 and U8 are answered, and what Phase 4 found shapes it:
 
-- **The deputy is milestone 33's AI.** Everything §4 asks of a deputy is built on the AI that plays Phase 4's rules: pirates, salvage, the Repair Bay and the cap.
-- **U5 and the Ore that piles up decide the economy a world inherits.** After milestone 32 the median side holds 4,636 Ore at minute 20, and after milestone 28 every station had reached the cap of 50 points by then (Phase 4 §2). A world that runs for weeks multiplies whatever milestone 34 finds.
-- **U7 is the tick budget.** Phase 5 adds deputies and saves to the server's thread, and Phase 6 adds systems. Both are measured against U7's figure on the development machine, which does not exist yet.
+- **The deputy is milestone 33's AI** ([ADR-076](../Design/ADR/ADR-076-ai-plays-phase-4.md)). It salvages, clears pirates by detachment, builds a Repair Bay at its front and explores with its scout. Everything §4 asks of a deputy is built on it, and its cold start (§2.5) is the change it still needs.
+- **The Ore piles up more, not less.** After milestone 33 the median side holds 8,159 Ore at minute 20, against 4,636 after milestone 32, and its fleet is full for 69% of the match: salvage fills the cap sooner. A world that runs for weeks multiplies that (§2.8).
+- **No base falls.** All 40 matches end by domination, and none by taking a base (U5). With domination off in a world (§2.7), nothing else ends a stalemate, so a front that does not move is the likely failure of Phase 5's week, and W6 is where it shows.
+- **U7 is the tick budget.** Phase 5 adds deputies and saves to the server's thread, and Phase 6 adds systems. Both are measured against U7's figure on the development machine, which is the owner's run still to come. In the container the median match's 99th percentile tick is 1.4 ms and the worst 3.3 ms.
 
 ---
 
@@ -148,7 +149,7 @@ Outlined for its design; nothing here is scoped.
 - **46 — The AI plays a galaxy**, deputies and AI empires alike.
 - **47 — Measured:** a 30-system world's tick at U7's percentile, with every seat an AI; a two-week world run headlessly by `--world-run`, logging when each system is first reached, held and drained, the banks, and the share of the world where nothing happens.
 
-**The engineering risk is the tick.** Horizon §3 estimates 0.6 of a core for 30 systems from the MVP's 0.88 ms mean. Phase 4's container figures are a 99th percentile of 1.5–2.9 ms per system, so 30 busy systems on one thread can miss 50 ms. Most systems will be quiet most of the time, and an empty system's tick costs little, but that is to be measured in 47, not assumed. If it misses, systems tick in parallel with an empire ledger merged between ticks, and that is an ADR.
+**The engineering risk is the tick.** Horizon §3 estimates 0.6 of a core for 30 systems from the MVP's 0.88 ms mean. Phase 4's container figures, after milestone 33, are a 99th percentile of 1.4 ms per system in the median match and 3.3 ms in the worst, so 30 busy systems on one thread can miss 50 ms. Most systems will be quiet most of the time, and an empty system's tick costs little, but that is to be measured in 47, not assumed. If it misses, systems tick in parallel with an empire ledger merged between ticks, and that is an ADR.
 
 ---
 
