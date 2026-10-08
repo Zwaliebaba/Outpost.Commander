@@ -1,9 +1,9 @@
 #include "pch.h"
-#include "RepositoryData.h"
+#include "TemporaryHomeDirectory.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace NeuronCoreTests
 {
 namespace
 {
@@ -78,4 +78,4 @@ public:
     Assert::IsTrue(bytes == Neuron::BinaryFile::ReadFile(L"Shared.json"));
   }
 };
-} // namespace GameLogicTests
+} // namespace NeuronCoreTests

@@ -2,6 +2,7 @@
 #include "RepositoryAssets.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <numbers>
 
@@ -36,6 +37,16 @@ constexpr std::string_view GOOD_COLOR = R"({ "red": 0.5, "green": 0.5, "blue": 0
 void ExpectRejected(const std::string& _json)
 {
   Assert::ExpectException<Neuron::Exception>([&] { (void)Outpost::LoadModelCatalog(_json); });
+}
+
+size_t LineCount(const Neuron::MeshData& _lines)
+{
+  return _lines.indices.size() / 2;
+}
+
+float Degrees(float _degrees)
+{
+  return _degrees * std::numbers::pi_v<float> / 180.0f;
 }
 } // namespace
 
@@ -358,6 +369,107 @@ public:
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(OneModel("Human", GOOD_MODEL, GOOD_COLOR));
     Assert::AreEqual(20.0f, catalog.Set("Human").Model("Small").lengthMeters);
+  }
+
+  TEST_METHOD(ReadsEveryModelTheGameShips)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    size_t models = 0;
+    for (const Outpost::ModelSet& set : catalog.sets)
+    {
+      for (const Outpost::ModelEntry& model : set.models)
+      {
+        const Neuron::MeshData mesh = ReadRepositoryModel(set, model);
+        Assert::IsFalse(mesh.indices.empty());
+        Assert::AreEqual(size_t{0}, mesh.indices.size() % 3);
+        for (const std::uint32_t index : mesh.indices)
+          Assert::IsTrue(index < mesh.vertices.size());
+        // A set that borrows another's meshes, as the pirates' does, ships no files of its own (ADR-073).
+        if (set.meshes == set.name)
+          ++models;
+      }
+    }
+    // Nine models in each ship set, three hulls, the Constructor and the five structures, and the three rocks (design §11).
+    Assert::AreEqual(size_t{21}, models);
+  }
+
+  // The baker turns the source's right-handed triangles into the game's left-handed ones (ADR-018): seen from its front,
+  // where its normals point, a triangle winds clockwise, so the pipeline does not cull it. A triangle or two that a
+  // modeler wound against its own normals is allowed; a model turned inside out is not.
+  TEST_METHOD(EveryShippedModelWindsClockwiseFromItsFront)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    for (const Outpost::ModelSet& set : catalog.sets)
+    {
+      for (const Outpost::ModelEntry& model : set.models)
+      {
+        const Neuron::MeshData mesh = ReadRepositoryModel(set, model);
+        size_t facingNormals = 0;
+        for (size_t i = 0; i < mesh.indices.size(); i += 3)
+        {
+          const Neuron::MeshVertex& a = mesh.vertices[mesh.indices[i]];
+          const Neuron::MeshVertex& b = mesh.vertices[mesh.indices[i + 1]];
+          const Neuron::MeshVertex& c = mesh.vertices[mesh.indices[i + 2]];
+          const DirectX::XMVECTOR face =
+            DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&b.position), DirectX::XMLoadFloat3(&a.position)),
+                                    DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&c.position), DirectX::XMLoadFloat3(&a.position)));
+          const DirectX::XMVECTOR normals = DirectX::XMVectorAdd(
+            DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&a.normal), DirectX::XMLoadFloat3(&b.normal)), DirectX::XMLoadFloat3(&c.normal));
+          if (DirectX::XMVectorGetX(DirectX::XMVector3Dot(face, normals)) > 0.0f)
+            ++facingNormals;
+        }
+        const size_t triangles = mesh.indices.size() / 3;
+        // The loader allows only ASCII letters and digits in names, so widening them character by character is exact.
+        const std::wstring name =
+          std::wstring(set.name.begin(), set.name.end()) + L"/" + std::wstring(model.name.begin(), model.name.end());
+        Assert::IsTrue(facingNormals * 100 >= triangles * 99, name.c_str());
+      }
+    }
+  }
+
+  // The owner's Research Labs have a moving part at every level (2026-10-03, ADR-045): the game draws at least one.
+  TEST_METHOD(EachResearchLabHasASpinningPart)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    for (const Outpost::PlayerModels& player : catalog.players)
+    {
+      const Outpost::ModelSet& set = catalog.Set(player.set);
+      const Neuron::MeshData lab = ReadRepositoryModel(set, set.Model("ResearchLab"));
+      Assert::IsFalse(lab.parts.empty(), std::wstring(set.name.begin(), set.name.end()).c_str());
+    }
+  }
+
+  // The owner's low-poly rocks (2026-10-02, ADR-027): each is closed, has few and so big
+  // facets, shows most of its edges as ridges at GameClient's CREASE_DEGREES of 10, and fits inside its radius,
+  // which is half its length once fitted, since the game blocks that circle.
+  TEST_METHOD(TheRocksAreLowPolyAndShowTheirRidges)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    const Outpost::ModelSet& set = catalog.Set("Asteroids");
+    Assert::AreEqual(size_t{3}, set.models.size());
+    for (const Outpost::ModelEntry& model : set.models)
+    {
+      const Neuron::MeshData rock = ReadRepositoryModel(set, model);
+      const std::wstring name(model.name.begin(), model.name.end());
+      const size_t triangles = rock.indices.size() / 3;
+      Assert::IsTrue(triangles <= 100, name.c_str());
+      // Nothing folds by 179 degrees, so the only lines left are open edges, and a closed rock has none.
+      Assert::AreEqual(size_t{0}, LineCount(Neuron::BuildCreaseLines(rock, Degrees(179.0f))), name.c_str());
+      // A closed mesh has one and a half edges per triangle; at least half of them are ridges.
+      const size_t creases = LineCount(Neuron::BuildCreaseLines(rock, Degrees(10.0f)));
+      Assert::IsTrue(creases * 4 >= triangles * 3, name.c_str());
+
+      const float half = rock.Extents().x / 2.0f;
+      const DirectX::XMFLOAT3 center{(rock.boundsMin.x + rock.boundsMax.x) / 2.0f, (rock.boundsMin.y + rock.boundsMax.y) / 2.0f,
+                                     (rock.boundsMin.z + rock.boundsMax.z) / 2.0f};
+      for (const Neuron::MeshVertex& vertex : rock.vertices)
+      {
+        const float dx = vertex.position.x - center.x;
+        const float dy = vertex.position.y - center.y;
+        const float dz = vertex.position.z - center.z;
+        Assert::IsTrue(std::sqrt((dx * dx) + (dy * dy) + (dz * dz)) <= half * 1.01f, name.c_str());
+      }
+    }
   }
 };
 } // namespace GameAppTests

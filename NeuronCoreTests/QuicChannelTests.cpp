@@ -5,7 +5,7 @@
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::chrono_literals;
 
-namespace GameLogicTests
+namespace NeuronCoreTests
 {
 namespace
 {
@@ -199,4 +199,4 @@ public:
     Assert::IsTrue(std::chrono::steady_clock::now() - started < PATIENCE, L"it gave up in time");
   }
 };
-} // namespace GameLogicTests
+} // namespace NeuronCoreTests

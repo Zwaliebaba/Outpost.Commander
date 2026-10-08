@@ -8,7 +8,6 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="CameraTests.cpp" />
     <ClCompile Include="LoadDriverTests.cpp" />
-    <ClCompile Include="MeshDataTests.cpp" />
     <ClCompile Include="ModelCatalogTests.cpp" />
     <ClCompile Include="HardpointsTests.cpp" />
     <ClCompile Include="PlayerControlsTests.cpp" />
@@ -23,11 +22,8 @@
     <ClCompile Include="StarfieldTests.cpp" />
     <ClCompile Include="FogOfWarTests.cpp" />
     <ClCompile Include="AlertsTests.cpp" />
-    <ClCompile Include="TextureDataTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />
     <ClCompile Include="DesignerTests.cpp" />
-    <ClCompile Include="GlyphAtlasTests.cpp" />
-    <ClCompile Include="PlacementTests.cpp" />
   </ItemGroup>
 </Project>

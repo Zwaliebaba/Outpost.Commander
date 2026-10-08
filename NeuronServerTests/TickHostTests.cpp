@@ -3,7 +3,7 @@
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::chrono_literals;
 
-namespace GameLogicTests
+namespace NeuronServerTests
 {
 TEST_CLASS(TickHostTests)
 {
@@ -67,4 +67,4 @@ public:
     Assert::ExpectException<Neuron::Exception>([] { Neuron::TickHost host(1'000'000, 5); });
   }
 };
-} // namespace GameLogicTests
+} // namespace NeuronServerTests

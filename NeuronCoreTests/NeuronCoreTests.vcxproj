@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{84716b71-d3f7-449f-8814-14c118932e6c}</ProjectGuid>
-    <RootNamespace>GameLogicTests</RootNamespace>
+    <ProjectGuid>{ffba1856-7925-4f98-99d8-30febae7993f}</ProjectGuid>
+    <RootNamespace>NeuronCoreTests</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectSubType>NativeUnitTestProject</ProjectSubType>
   </PropertyGroup>
@@ -60,7 +60,7 @@
       <FloatingPointModel>Precise</FloatingPointModel>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='ARM64'">CPUExtensionRequirementsARMv80</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(SolutionDir)NeuronCore;$(SolutionDir)NeuronServer;$(SolutionDir)GameProtocol;$(SolutionDir)GameLogic;$(SolutionDir)Opponent;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(SolutionDir)NeuronCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseFullPaths>true</UseFullPaths>
     </ClCompile>
     <Link>
@@ -86,62 +86,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="RepositoryData.h" />
-    <ClInclude Include="BalanceCheck.h" />
-    <ClInclude Include="MatchArena.h" />
-    <ClInclude Include="TerritoryMatch.h" />
+    <ClInclude Include="TemporaryHomeDirectory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="TuningTests.cpp" />
-    <ClCompile Include="SimulationTests.cpp" />
-    <ClCompile Include="InProcessServerTests.cpp" />
-    <ClCompile Include="PackagedServerTests.cpp" />
-    <ClCompile Include="QuicTransportTests.cpp" />
-    <ClCompile Include="MapTests.cpp" />
-    <ClCompile Include="MeasurementLoadTests.cpp" />
-    <ClCompile Include="MovementTests.cpp" />
-    <ClCompile Include="PathfinderTests.cpp" />
-    <ClCompile Include="DesignTests.cpp" />
-    <ClCompile Include="ResearchTests.cpp" />
-    <ClCompile Include="SaveDesignTests.cpp" />
-    <ClCompile Include="MatchOutcomeTests.cpp" />
-    <ClCompile Include="AiPlayerTests.cpp" />
-    <ClCompile Include="CombatTests.cpp" />
-    <ClCompile Include="BalanceCheck.cpp" />
-    <ClCompile Include="BalanceCheckTests.cpp" />
-    <ClCompile Include="StressLoadTests.cpp" />
-    <ClCompile Include="EconomyTests.cpp" />
-    <ClCompile Include="ConstructionTests.cpp" />
-    <ClCompile Include="ProductionTests.cpp" />
-    <ClCompile Include="DefenseTests.cpp" />
-    <ClCompile Include="FogTests.cpp" />
-    <ClCompile Include="HandCheckTests.cpp" />
-    <ClCompile Include="TerritoryTests.cpp" />
-    <ClCompile Include="DominationTests.cpp" />
-    <ClCompile Include="StandingOrderTests.cpp" />
-    <ClCompile Include="UpgradeTests.cpp" />
-    <ClCompile Include="FleetCapTests.cpp" />
-    <ClCompile Include="PirateTests.cpp" />
-    <ClCompile Include="SalvageTests.cpp" />
+    <ClCompile Include="JsonTests.cpp" />
+    <ClCompile Include="JsonReaderTests.cpp" />
+    <ClCompile Include="FileSysTests.cpp" />
+    <ClCompile Include="ServerCertificateTests.cpp" />
+    <ClCompile Include="QuicChannelTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
       <Project>{ea9ed838-5d41-4e78-a994-0d527f7e3980}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\NeuronServer\NeuronServer.vcxproj">
-      <Project>{f7cc3693-bdd2-4a1d-bf6e-db9b8e8ab2a1}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\GameProtocol\GameProtocol.vcxproj">
-      <Project>{ee8bc7b5-0fc3-4a72-83d1-4e4d85afe7a2}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\GameLogic\GameLogic.vcxproj">
-      <Project>{35102b85-540a-4f45-819b-dc192c057115}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Opponent\Opponent.vcxproj">
-      <Project>{ad65d4ba-b5a9-49c0-b7ab-60c3a138d585}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

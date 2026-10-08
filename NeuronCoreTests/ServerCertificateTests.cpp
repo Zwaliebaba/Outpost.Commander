@@ -12,7 +12,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace NeuronCoreTests
 {
 namespace
 {
@@ -132,4 +132,4 @@ public:
     Assert::IsFalse(KeyIsInTheStore(keyName), keyName.c_str());
   }
 };
-} // namespace GameLogicTests
+} // namespace NeuronCoreTests

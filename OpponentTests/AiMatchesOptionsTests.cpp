@@ -2,7 +2,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace OpponentTests
 {
 namespace
 {
@@ -151,4 +151,4 @@ public:
                      RefusalOf({L"--ai1", L"a.json", L"--matches", L"many", L"--bogus", L"1", L"--ai1", L"b.json"}));
   }
 };
-} // namespace GameLogicTests
+} // namespace OpponentTests

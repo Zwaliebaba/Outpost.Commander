@@ -6,7 +6,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameAppTests
+namespace NeuronClientTests
 {
 namespace
 {
@@ -268,4 +268,4 @@ public:
     Assert::AreEqual(std::string("the file ends early."), ReasonRejected(withLevels));
   }
 };
-} // namespace GameAppTests
+} // namespace NeuronClientTests

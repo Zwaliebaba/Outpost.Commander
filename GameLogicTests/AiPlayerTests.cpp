@@ -268,6 +268,11 @@ Outpost::SectorView& SectorOf(Outpost::Snapshot& _snapshot, std::int32_t _id)
 {
   return *std::ranges::find(_snapshot.sectors, _id, &Outpost::SectorView::id);
 }
+
+template <typename Element, typename IdType> bool Exists(const std::vector<Element>& _list, IdType _id)
+{
+  return std::ranges::any_of(_list, [_id](const Element& _element) { return _element.id == _id; });
+}
 } // namespace
 
 TEST_CLASS(AiPlayerTests)
@@ -1274,6 +1279,33 @@ public:
     Assert::IsTrue(match.World().MatchOver(), L"the AI has not won in 25 minutes");
     Assert::IsTrue(match.World().Winner() == AI);
     Logger::WriteMessage(std::format("The AI won at tick {}.\n", match.View(AI).matchEndedTick).c_str());
+  }
+
+  // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
+  // component and topic it names exists, and every topic comes after its prerequisites.
+  TEST_METHOD(NamesOnlyWhatTheTuningDataHas)
+  {
+    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    std::vector<Outpost::DesignComponents> designs{settings.defaultDesign, settings.scoutDesign};
+    Assert::IsTrue(Exists(tuning.modules, settings.scoutDesign.module), L"the scout's module");
+    for (const Outpost::CounterRule& rule : settings.counters)
+    {
+      designs.push_back(rule.enemy);
+      designs.push_back(rule.answer);
+    }
+    for (const Outpost::DesignComponents& design : designs)
+      Assert::IsTrue(Exists(tuning.hulls, design.hull) && Exists(tuning.drives, design.drive) && Exists(tuning.weapons, design.weapon));
+    for (size_t i = 0; i < settings.researchOrder.size(); ++i)
+    {
+      const auto topic = std::ranges::find(tuning.research, settings.researchOrder[i], &Outpost::ResearchTopicTuning::id);
+      Assert::IsTrue(topic != tuning.research.end());
+      for (const Outpost::ResearchTopicId prerequisite : topic->prerequisites)
+      {
+        const auto before = settings.researchOrder.begin() + static_cast<std::ptrdiff_t>(i);
+        Assert::IsTrue(std::find(settings.researchOrder.begin(), before, prerequisite) != before, L"a topic before its prerequisite");
+      }
+    }
   }
 };
 } // namespace GameLogicTests

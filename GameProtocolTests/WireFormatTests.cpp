@@ -2,7 +2,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace GameProtocolTests
 {
 namespace
 {
@@ -278,4 +278,4 @@ public:
     refused(10, std::byte{6});   // a structure past the Relay
   }
 };
-} // namespace GameLogicTests
+} // namespace GameProtocolTests

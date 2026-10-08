@@ -2,7 +2,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace NeuronServerTests
 {
 // The draws of a seeded generator are pinned: every recorded replay depends on them (ADR-009). The expected values come
 // from an independent Python implementation of SplitMix64 and xoshiro256** 1.0, checked against the published vector
@@ -62,4 +62,4 @@ public:
     Assert::IsFalse(Neuron::Random(5) == Neuron::Random(6));
   }
 };
-} // namespace GameLogicTests
+} // namespace NeuronServerTests

@@ -4,7 +4,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameAppTests
+namespace NeuronClientTests
 {
 namespace
 {
@@ -177,4 +177,4 @@ public:
     Assert::ExpectException<Neuron::Exception>([&] { (void)Neuron::RasterizeFont(font, 16.0f); });
   }
 };
-} // namespace GameAppTests
+} // namespace NeuronClientTests

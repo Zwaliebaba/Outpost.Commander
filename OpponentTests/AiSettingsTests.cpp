@@ -3,7 +3,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace OpponentTests
 {
 namespace
 {
@@ -36,11 +36,6 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
     return;
   }
   Assert::Fail(Widen(std::format("loaded, but {} is wrong", _where)).c_str());
-}
-
-template <typename Element, typename IdType> bool Exists(const std::vector<Element>& _list, IdType _id)
-{
-  return std::ranges::any_of(_list, [_id](const Element& _element) { return _element.id == _id; });
 }
 } // namespace
 
@@ -131,33 +126,6 @@ public:
     Assert::IsTrue(hard.raidShips > normal.raidShips && hard.claimSectors >= normal.claimSectors);
   }
 
-  // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
-  // component and topic it names exists, and every topic comes after its prerequisites.
-  TEST_METHOD(NamesOnlyWhatTheTuningDataHas)
-  {
-    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
-    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    std::vector<Outpost::DesignComponents> designs{settings.defaultDesign, settings.scoutDesign};
-    Assert::IsTrue(Exists(tuning.modules, settings.scoutDesign.module), L"the scout's module");
-    for (const Outpost::CounterRule& rule : settings.counters)
-    {
-      designs.push_back(rule.enemy);
-      designs.push_back(rule.answer);
-    }
-    for (const Outpost::DesignComponents& design : designs)
-      Assert::IsTrue(Exists(tuning.hulls, design.hull) && Exists(tuning.drives, design.drive) && Exists(tuning.weapons, design.weapon));
-    for (size_t i = 0; i < settings.researchOrder.size(); ++i)
-    {
-      const auto topic = std::ranges::find(tuning.research, settings.researchOrder[i], &Outpost::ResearchTopicTuning::id);
-      Assert::IsTrue(topic != tuning.research.end());
-      for (const Outpost::ResearchTopicId prerequisite : topic->prerequisites)
-      {
-        const auto before = settings.researchOrder.begin() + static_cast<std::ptrdiff_t>(i);
-        Assert::IsTrue(std::find(settings.researchOrder.begin(), before, prerequisite) != before, L"a topic before its prerequisite");
-      }
-    }
-  }
-
   TEST_METHOD(RejectsAMissingOrUnknownMember)
   {
     ExpectLoadError(Replace("\"attackGroupShips\": 25,", ""), "has no \"attackGroupShips\"");
@@ -240,4 +208,4 @@ public:
     Assert::Fail(L"an invalid file loaded");
   }
 };
-} // namespace GameLogicTests
+} // namespace OpponentTests

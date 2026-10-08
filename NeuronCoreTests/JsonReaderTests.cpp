@@ -2,7 +2,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace NeuronCoreTests
 {
 namespace
 {
@@ -184,4 +184,4 @@ public:
     Assert::AreEqual(std::string("widgets[0].id: expected at least 1, found 0"), FailureOf([&] { (void)readIds(zero); }));
   }
 };
-} // namespace GameLogicTests
+} // namespace NeuronCoreTests

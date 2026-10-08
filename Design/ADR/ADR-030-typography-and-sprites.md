@@ -21,7 +21,7 @@ Phase 1 brings the ship designer to the owner's mockup (Phase 1 design §11, `Ga
 - **The atlas is larger:** seven fonts of 97 characters and three sprites, against one font of 95. At the reference scale it is a texture of a few hundred texels a side, measured as 512×128 for two fonts in a test; it grows with the scale at 2880×1920. It is uploaded at startup and again only on a resize.
 - **Bahnschrift and Segoe UI must be installed**, as they are on Windows 11. The game stops with a message if one is not, rather than drawing the interface in the wrong face.
 - **The shader samples the atlas with `SampleLevel`**, since a branch may not take derivatives; the atlas has no mipmaps, so nothing changes.
-- **`GameAppTests` checks it without a GPU:** packing several fonts and sprites without overlap, UTF-8 and the fallback, tracking, the sprites' shapes, rasterizing Segoe UI with its ×, and a font list falling back to its second family, or failing with none installed. The HUD test checks the typefaces' order. The look is the owner's run.
+- **`NeuronClientTests` checks it without a GPU:** packing several fonts and sprites without overlap, UTF-8 and the fallback, tracking, the sprites' shapes, rasterizing Segoe UI with its ×, and a font list falling back to its second family, or failing with none installed. The HUD test in `GameAppTests` checks the typefaces' order. The look is the owner's run.
 
 ## What this forecloses
 
