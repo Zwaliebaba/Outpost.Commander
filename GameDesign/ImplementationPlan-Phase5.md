@@ -34,10 +34,10 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 38.1 | The server's events, and alerts read from them | — | H4 | done, in milestone 38's PR |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | done, in milestone 38's PR |
 | 38.3 | The client's orders window | 38.2 | H5 | built, in milestone 38's PR; awaiting the owner's run |
-| 39.1 | A world without an end | 37.3 | H6 | todo |
-| 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | todo |
-| 39.3 | The battle matchups | — | — | todo |
-| 39.4 | W1–W6 | all above | — | todo |
+| 39.1 | A world without an end | 37.3 | H6 | done, in milestone 39's PR |
+| 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | done, in milestone 39's PR |
+| 39.3 | The battle matchups | — | — | built, in milestone 39's PR; awaiting the owner's run |
+| 39.4 | W1–W6 | all above | — | the container's part done, in milestone 39's PR; awaiting the owner's week |
 
 ### Milestone order
 
@@ -233,3 +233,18 @@ Horizon §9: a matchups file of fleets on each side, played without bases on the
 ### 39.4 — W1–W6
 
 The container measures W2 with the deputies in, W3 again and the length of a world run; the owner's week is W1, W4 and W6, and W2's tick in Release.
+
+### As built
+
+Recorded in [ADR-081](../Design/ADR/ADR-081-world-without-an-end.md), [ADR-082](../Design/ADR/ADR-082-world-log-and-world-run.md) and [ADR-083](../Design/ADR/ADR-083-battle-matchups.md); ADR-037, ADR-057, ADR-077, ADR-079 and ADR-080 edited in place. The protocol is at version 14 and a world's state at version 5.
+
+- **Run in the container.** `GameLogicTests` passes, 332 tests, apart from the 8 `QuicTransportTests`, which need QUIC; `GameAppTests` 165, `OpponentTests` 32 and `GameProtocolTests` 19 pass. clang-tidy 18 with the repository's checks is clean over the changed files.
+- **Each new test was checked against a broken build,** as the three ADRs' consequences list. Two breaks are not caught: dropping a replaced AI's waiting orders in the world run, since none waits at the ticks it is replaced (ADR-082), and the same line through a matchup's field on every seed, since the seed still picks the sector (ADR-083).
+- **A day of world, killed 10 times,** ended equal to the world run straight through: 1,728,000 ticks twice in 615 s, the Normal AI in both seats (ADR-082). A week of world is about 50 minutes of the container's processor.
+- **W2 in the container.** The day's 1,451 saves were 46–81 KB and took a median 0.30 ms of the server's thread, the longest 6.03 ms, against the 50 ms the design allows. With Blue's seat played by its deputy and Red's by the Normal AI for an hour (`InProcessServerTests.MeasuresTheHostedPlayersTicks`, run with a `Deputy` in Blue's seat), a tick's 99th percentile was 0.22–0.25 ms and the hosted players' 0.05–0.06 ms over seeds 1 to 3, against U7's 5 ms. The longest tick was 6.30–17.07 ms, of which the hosted players took at most 2.53 ms.
+- **W3 again,** with milestone 39's AI: over minutes 10 to 20 the deputy's Shipyards stood idle with Ore to spend 0.8% of their time and its Lab 0.2%, against the AI's 0.0% and 0.2%, as at milestone 37.
+- **The bank, as design §9 asked it recorded.** In the day of world both seats had researched every topic by hour 1 and kept their fleets at the cap all day. Blue's bank reached 513,829 Ore at hour 23, on an income that fell from 40 Ore a second to 10. That is gate G3's question for Phase 6.
+- **A restarted seat is taken again at once.** In the same day Red lost its base 11 times and restarted 11 times, each on the hour, never waiting, because enemy warships on a start do not keep it from being free. Seven of those bases fell 12–14.5 s after their restart (ADR-081). Whether a start with enemy warships on it is free, or a restarted base is spared for a while, is the owner's to decide on gate H6.
+- **The matchups' baseline,** 40 seeds each, side 1 first (ADR-083): the mirror 25 to 15, the swarm against the line 0 to 40, Flak against the swarm 40 to 0, the heavy line 19 to 21 and the Missiles against the Lances 0 to 40, with medians of 9 to 41 s. Over 200 seeds the mirror went 114 to 86 for side 1, a p of about 0.06; and three of the five stayed one-sided.
+- **The client, in part.** The container builds the banner's and the endings' words in `Hud`, `MatchLog` and their tests over stand-in glyphs; it does not build `GameClient` or `WinMain`, where `--matchup` starts a battle. CI checks those.
+- **Awaiting the owner:** the week (W1, W4 and W6); W2's tick in Release; the matchups played live with `--matchup <n>` (W4); the banner and an AI empire that plans afresh round its new station, in play; and the decision on a start that enemy warships hold.

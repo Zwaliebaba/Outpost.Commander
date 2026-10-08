@@ -33,7 +33,7 @@ Phase 5 design §8 (gate H6) takes away a world's end. Domination ([ADR-057](ADR
   - `HudTests` lay out the banner. `WireFormatTests` carry the restart's tick and the last kind of event. `WorldStateTests` record the layout of version 5.
 - **Each test was run against a deliberately broken build and failed:** a restart without the hour, a start always free, the bank reset to the starting Ore, no top-up, the lost tick not saved, and domination on in a world.
 - **A home sector held by the other player keeps the seat waiting for as long as it is held.** Phase 4's map has two starts, one a seat, so there is no other start to restart at (design §8). The world log records how long a seat waits (ADR-082).
-- **Enemy ships on the start do not keep it from being free:** the base is placed among them.
+- **Enemy ships on the start do not keep it from being free:** the base is placed among them, and in the world run they take it again at once. In `--world-run`'s day of world (ADR-082), seed 1, the Normal AI in both seats, Red lost its base first at hour 7 and then 10 more times, and restarted 11 times, each exactly on the hour, never waiting. Seven of those bases fell 12–14.5 s after their restart, to the warships that had taken the one before; three stood 27, 27 and 74 minutes, and the last to the end of the day. Whether a start with enemy warships on it is free is the owner's to decide (gate H6).
 - **Not run in play.** The banner, and an AI empire laying its plan afresh round its new station in a running world, are the owner's week to judge, and the world run's to log.
 
 ## What this forecloses

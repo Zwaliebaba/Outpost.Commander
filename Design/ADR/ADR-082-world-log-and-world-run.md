@@ -45,6 +45,10 @@ Phase 5 design §10 asks for two instruments for the owner's week and for every 
   - Killed after ticks 19,465, 40,664 and 52,866, it came back at 19,462, 40,404 and 52,800, and ended equal.
   - Its 64 saves were 82–83 KB and took 0.21–0.50 ms to encode, median 0.32 ms.
   - At hour 1 the two seats banked 122,715 and 63,703 Ore, each fleet at its cap of 50 (design §9).
+- **A day of world**, `--world-run` with `--hours 24`, seed 1, the Normal AI in both seats and the default 10 kills:
+  - The two worlds, 1,728,000 ticks each, took 615 s together. Killed after ticks 148,264, 157,123, 189,738, 591,824, 752,200, 754,665, 862,814, 989,411, 1,455,187 and 1,613,540, it came back at 148,242, 157,104, 189,726, 591,600, 751,200, 754,142, 862,800, 988,800, 1,454,400 and 1,612,800, and ended equal. Recovery goes back as far as 1,000 ticks, because a tick without a command writes nothing to the command log and the folder comes back from its last save and the log after it.
+  - Its 1,451 saves were 46–81 KB and took a median 0.30 ms to encode, the longest 6.03 ms.
+  - Both seats had researched all 23 topics by hour 1 and kept their fleets at the cap of 50 all day. Blue's bank grew to 513,829 Ore by hour 23, its income falling from 40 Ore a second at hour 1 to 10 at hour 23 while it held 9 nodes throughout; the straight world's log holds 405 battles. The bank is recorded and nothing changes it (design §9); whether it needs a sink is Phase 6's gate G3.
 - **A kill in the world run is the server destroyed between ticks,** with the folder's writer finishing the save it was handed. A process killed while a save is written loses that save, and recovery comes back from the one before. `WorldFolderTests` cover that path, and the run does not.
 - **The world log is not saved:** a recovery writes `start ... recovered`, and a battle the server did not see begin is not one it records.
 
