@@ -36,6 +36,8 @@ A world is today's match that does not stop. It runs on a server the owner keeps
 
 W1, W4 and W6 are the owner's week. W2's tick figure is the owner's run in Release, as U7 was; the container measures the rest.
 
+**Where W2 stands after milestone 35** (plan task 35.2). In the Linux container, the server built by clang 18 at `-O2` against a stand-in for the Windows headers: a save of a world at minute 60 of two Normal AIs on the 10 km map holds 274–293 entities in 75–78 KB, and encodes in 0.36–0.38 ms of the server's thread, over seeds 1 to 3. The deputies, which also run on that thread, come with milestone 37.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-08

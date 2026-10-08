@@ -13,6 +13,10 @@ struct ServerDesc
   bool stressLoad = false;
   // The server also takes players over QUIC, on the loopback address, through OpenSeat (ADR-060).
   bool quic = false;
+  // A world rather than a match (Phase 5 design §5, ADR-077): the folder its saves and command log are kept in. A folder
+  // that holds a save of the world comes back as the world it saved, whatever the seed above; one that holds none starts a
+  // new world from the seed. Empty for a match.
+  std::filesystem::path world;
 };
 
 // The parts of a tick the server times for measurement (task 8.1, Phase 1 design §10). They nest: Commands holds each

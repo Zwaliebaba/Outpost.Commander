@@ -21,7 +21,7 @@ The owner answered on 2026-09-30: the same build on the same platform.
 
 ## Consequences
 
-- **A bug report needs the seed, the command log and the build.** The log lives in the server's memory. Writing it to a file comes when a bug first needs it; until then, the seed in the debugger output and a test that replays the scenario do the job.
+- **A bug report needs the seed, the command log and the build.** A match's log lives in the server's memory; the seed in the debugger output and a test that replays the scenario do the job. A world's log is written to its folder as each tick applies it, from its last save on, and the save and that log bring the world back ([ADR-077](ADR-077-world-state-on-disk.md)).
 - **A replay made on the owner's ARM64 machine cannot be checked on CI's x64.** A replay test has to run the match and its replay in the same test run, as `ReplaysFromItsCommandLog` does.
 - **A rejected command is invisible to the client.** `Simulation::Tick` returns a result per command, but the protocol has no message for it. A task that needs the player to see a rejection adds one.
 - **A simulation without the tuning data,** as the movement and combat tests run, rejects the base's, research's and the designer's orders as not yet supported (ADR-016).

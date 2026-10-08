@@ -6,6 +6,7 @@
     <ClInclude Include="BalanceCheck.h" />
     <ClInclude Include="MatchArena.h" />
     <ClInclude Include="TerritoryMatch.h" />
+    <ClInclude Include="WorldMatch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -46,5 +47,7 @@
     <ClCompile Include="PirateTests.cpp" />
     <ClCompile Include="SalvageTests.cpp" />
     <ClCompile Include="RetreatTests.cpp" />
+    <ClCompile Include="WorldStateTests.cpp" />
+    <ClCompile Include="WorldFolderTests.cpp" />
   </ItemGroup>
 </Project>

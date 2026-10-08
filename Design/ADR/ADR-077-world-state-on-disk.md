@@ -1,0 +1,48 @@
+# ADR-077 — A world is saved whole every minute, logs every command, and comes back from its newest save and the log since
+
+Status: **accepted** · 2026-10-08
+
+## Context
+
+Phase 5 design §5 (gates H7 and H8) makes a match into a world that keeps running and survives a restart. Until now a match lived only in memory: ADR-009 keeps its command log there, and Phase 1's accepted risk 3 is that there is no save. The design asks for:
+
+- the whole of `Simulation`'s state saved every 60 s of ticks, without a stall on the server's thread;
+- the command log written to the world's folder as each tick applies it;
+- on start, the newest save and the commands since it, so that a world comes back to where it was;
+- a save pinned to a state version, not a build, so that a fix that changes nothing the world holds loads the world it crashed in;
+- a world that pauses while its server is down.
+
+The decisions left to this ADR are the format, where the field lists live, how a version is kept honest, and the folder's layout.
+
+## Decision
+
+1. **A save is written as the wire writes a message.** The wire format's writer and reader, and the field lists and enumerations' last values of the protocol's types, move out of `WireFormat.cpp` into `GameProtocol`'s `ByteFormat.h` (`ByteWriter`, `ByteReader`, the `Record` concept) and `WireFields.h`, unchanged in what they write: integers little-endian in their own width, floats as their bits, counts before strings and vectors, a flag before an optional, an index before a variant's alternative (ADR-060 decision 4). `ByteReader` names its source in a refusal: "A message from the network" or "A saved world". The reader also reads a `std::pair` and a `std::array`, which the state holds.
+2. **Every type the state holds lists its fields with a structured binding,** so a field added to it and not to its list does not compile. The protocol's types list theirs in `WireFields.h`; the server's public types (`Entity`, `ShipDesign`, `Obstacle`, `GroupRoutes::Route` and `Band`, `SectorPlacement`, `DerelictPlacement`, and the design's components and stats) in `WorldState.cpp`; and `Simulation`'s private types (`PlayerState`, `Sector`, `PirateOutpost`, `PlannedOrder` and its `Member`) as friends beside their fields in `Simulation.h`. `ByteWriter` finds each by argument-dependent lookup.
+3. **`Simulation::SavedFields` names every member of `Simulation` in one structured binding,** and returns the ones a save holds. A member added to `Simulation` therefore does not compile until it is either saved or named as one that is not. A save holds the tick, the entities, the designs, the players, the target rule, the PRNG's state, the pathfinder's obstacles, the planned group orders, the standing groups' counter, the map's obstacles, size and sectors, the outposts, and how the match stands. It does not hold what follows from those or what is not state: the tick rate (the world's identity holds it), the path graphs, the observer, the tuning data and what it gives a player with no research, each player's research effects, and the last tick's shots and destructions.
+4. **Loading builds again what is not saved.** `Simulation::LoadState` runs on a simulation made with the save's seed and tick rate and given its tuning data. It sets the PRNG's state (`Neuron::Random::SetState`), gives a new pathfinder the saved obstacles, whose graphs are built whole when next needed, and works out each player's research effects. A graph built whole is the graph the running world had kept up to date, to the bit (ADR-054 decision 7), so a loaded world runs on as the saved one would have.
+5. **A save is a header, the state and a checksum.** The header is the save's kind (`OCWORLD` and a zero byte), `WORLD_STATE_VERSION`, the world's identity (its seed, its tick rate, and `DataHash` of the tuning data's and the map's files) and the tick. A 64-bit FNV-1a of everything before it ends the save. A save is refused when its checksum does not match, it is not of the version this build reads, it is of another world, or it does not read exactly to its end.
+6. **`WORLD_STATE_VERSION` is kept honest by its layout's hash.** `ByteLayout` describes how `ByteWriter` lays a type out, as text: each value's kind and width, in order, through every record, vector, optional and variant, but no value. `Simulation::StateLayout` describes the state a save holds, and `WorldStateTests.TheLayoutIsTheVersions` holds its hash to the one recorded for the version. A field added, taken away, reordered or given another type changes the hash, and the test fails until the version is raised and its layout recorded (AGENTS.md R18). An enumerator added to the end does not change the layout, and an old save still loads.
+7. **A world is a folder.** `ServerDesc::world` names it. `InProcessServer::UseWorld`, at the end of setup, makes the server a world's:
+   - every tick's commands are appended to the folder's log before the tick applies them, and handed to the system before the next (`std::ofstream::flush`);
+   - every `WORLD_SAVE_SECONDS` (60) of ticks the server encodes the state between two ticks, on its own thread, and hands the bytes to the folder;
+   - a thread of the folder's own writes each save to `World-<tick>.save.partial` and renames it to `World-<tick>.save`, and keeps the newest `SAVES_KEPT` (3);
+   - each save begins a new log, `Commands-<tick>.log`; the logs from the oldest kept save on are kept. Ticks are written out to twenty digits, so that names sort in tick order.
+   - A log record is the tick, the length of the command's bytes and the bytes, which are the wire's `EncodeMessage`.
+   - Once a world is the server's, its in-memory `CommandLog` holds the commands since its last save; the folder has the rest.
+8. **A world comes back from its newest save that reads whole.** `WorldFolder::Recover` reads the saves from the newest back, passes over one that is cut short or altered, and gathers the commands logged from its tick on, through every newer log. A record cut short at the end of the newest log, which only a killed process leaves, is passed over; one anywhere else is a broken log and refused. A folder whose saves all fail to read is refused, never started anew. The server's factory makes the server with the save's seed, skips the starting bases, and `UseWorld` loads the save and applies the logged commands tick by tick, which brings the world to the tick after the last command it logged. It then saves at once, so that its log begins anew there; a save of a tick the folder holds already is not written again.
+9. **A world pauses while its server is down.** The tick host is unchanged: a world that comes back starts its ticks from where it left off, and does not run the hours it missed (ADR-009 decision 4).
+
+## Consequences
+
+- **What a killed process keeps.** Every save renamed into place, and the log of every tick that ran up to the last that applied a command. The ticks after that one that applied nothing are lost, at most those since the last save. Nothing is forced to the disk, so a lost machine or power keeps only what the system had written.
+- **On another build of the same state version,** a world comes back from its save and applies its logged commands, and reaches a world that follows the same orders. It is not promised to be the same to the bit, since floats replay only on the same binary (ADR-009 decision 1), and no player can tell: the server holds the only copy.
+- **Every change to what `Simulation` holds now carries a cost:** the field list, the version and the recorded layout. That is the price of loading a world in a later build at all; upgrade steps between versions, so that a world survives a change of layout, are Phase 8's (horizon §7).
+- **Measured.** In the Linux container, with the server built by clang 18 at `-O2` against a stand-in for the Windows headers, a save of a world at minute 60 of two Normal AIs on the 10 km map holds 274–293 entities in 75–78 KB and encodes in 0.36–0.38 ms, averaged over 20 encodings for each of seeds 1 to 3 (`WorldFolderTests.MeasuresALateSave`, run with `OUTPOST_WORLD_MEASURE`). Phase 5's W2 asks for under 50 ms of the server's thread. The figure on the development machine in Release is the owner's run.
+- **Tests.** `WorldStateTests`: a world at minute 15 loads equal, saves to the same bytes and shows both players the same snapshot a tick on; worlds saved at minutes 6, 12 and 18 and loaded, given the commands the running world applied, equal it at minute 24; a save cut short, altered, of another world, of other data, of another version or not a save at all is refused; and the layout's hash is the one recorded. With the PRNG's state not restored, or the path graphs built over the map's obstacles alone, those tests fail. `WorldFolderTests`: a new world is saved at once; a world left after 5.5 minutes and opened again, with any seed, equals the world that ran; the newest three saves and their logs are kept; a broken newest save falls back to the one before; a last record cut short is passed over and one in an older log is refused; and a folder of other data, or with no save that reads, is refused. All ran in the Linux container, on clang 18 and on g++ 13, and the folder's and the server's tests under ThreadSanitizer (g++ 13) with no report. CI's Debug|x64 run is their first under MSVC.
+
+## What this forecloses
+
+- **Pinning a world to a build.** A world is pinned to its state version; a build of the same version loads it.
+- **Saving the path graphs,** or anything else that follows from the state.
+- **A world that catches up the time its server was down,** without a new decision.
+- **A change to what `Simulation` holds without raising `WORLD_STATE_VERSION`.**

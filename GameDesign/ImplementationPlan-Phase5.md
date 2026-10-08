@@ -23,8 +23,8 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 35.1 | A world's state saved and loaded | — | H8 | todo |
-| 35.2 | The world's folder: saves, the command log and recovery | 35.1 | H7 | todo |
+| 35.1 | A world's state saved and loaded | — | H8 | built, in milestone 35's PR |
+| 35.2 | The world's folder: saves, the command log and recovery | 35.1 | H7 | built, in milestone 35's PR |
 | 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | todo |
 | 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | todo |
 | 36.3 | The client joins a world | 36.2 | H1 | todo |
@@ -57,6 +57,10 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 - **ADR:** a new one, ADR-077: a world's state on disk. ADR-060 decision 4 edited in place for the shared field lists.
 - **Acceptance:** `WorldStateTests`: a world saved and loaded compares equal and builds the same snapshots; a world loaded and run on compares equal with one that never stopped, over AI-against-AI play on the 10 km map; a save of another version, other data, or cut short or altered is refused; the layout's hash is the one recorded for the version. `WireFormatTests` unchanged.
 - **Verify:** the container's run of `GameLogicTests`; CI.
+- **As built:** recorded in [ADR-077](../Design/ADR/ADR-077-world-state-on-disk.md); AGENTS.md gains R18.
+  - Worlds saved at minutes 6, 12 and 18 of two AIs on the 10 km map, loaded and given the commands the running world applied, equal it at minute 24, to the bit: the path graphs built again are the graphs the world had kept up to date. Every test passed on its first run, so each was checked against a broken load: with the PRNG's state not restored, or the graphs built over the map's obstacles alone, they fail.
+  - The wire's bytes are unchanged: `WireFormatTests` and `InProcessServerTests` pass as they were.
+  - The container has no `ExcludeHeaderFilterRegex` in its clang-tidy 18, so `RunClangTidy.py` did not run there; clang-tidy ran with the repository's checks over the changed files, against the stand-in, and its findings are fixed. CI's run is the first under MSVC.
 
 ### 35.2 — The world's folder: saves, the command log and recovery
 
@@ -68,6 +72,12 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 - **ADR:** ADR-077; ADR-009 and ADR-025 edited in place.
 - **Acceptance:** `WorldFolderTests`: a world stepped, dropped and opened again compares equal with one that never stopped; a cut-off log's last record is ignored; a save cut short falls back to the one before; the newest three are kept; a folder for other data is refused.
 - **Verify:** the container's run of `GameLogicTests`, including the save's time and size on a late 10 km world (W2); CI.
+- **As built:** recorded in ADR-077; ADR-009 and ADR-025 edited in place, and ADR-060 for the field lists' new home.
+  - A world opened again comes back at the tick after the last command it logged, and saves there at once, so its log begins anew. A save of a tick the folder holds already is not written again.
+  - A cut log is passed over only at the end of the newest log; an older log cut short is refused, which matters only when the newest save is broken too.
+  - W2 in the container: a save at minute 60 holds 274–293 entities in 75–78 KB and encodes in 0.36–0.38 ms (`MeasuresALateSave`, with `OUTPOST_WORLD_MEASURE`). On the development machine in Release, with the deputies in, it is the owner's run at milestone 39.
+  - The folder's and the server's tests ran under ThreadSanitizer (g++ 13) with no report.
+  - The shell does not make a world yet: `ServerDesc::world` is empty for every match it starts. `OutpostServer` is milestone 36.
 
 ## Milestones 36 to 39
 
