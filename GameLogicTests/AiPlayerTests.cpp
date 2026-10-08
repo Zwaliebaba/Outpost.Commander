@@ -518,8 +518,28 @@ public:
     Assert::IsTrue(scout != view.entities.end(), L"no scout in the first three minutes");
     const Outpost::EntityId id = scout->id;
 
-    // The enemy's home is A1, beside B1 and A2, as far from the AI's. Player 1's scout would go to E4 first, A2's mirror.
-    Outpost::AiPlayer ai(settings, 20);
+    // Phase 4 design §2 U1 (ADR-076): for the opening it moves through its own half, nearer its base than the enemy's,
+    // without seeking a fight: out of the pirates' reach, 600 m from an outpost's node.
+    {
+      Outpost::AiPlayer explorer(settings, 20);
+      const std::vector<Outpost::Command> orders = explorer.Update(view);
+      const std::vector<Outpost::MoveCommand> moves = OrdersOf<Outpost::MoveCommand>(orders);
+      const auto own = std::ranges::find_if(moves, [id](const Outpost::MoveCommand& _order)
+                                            { return _order.ships == std::vector<Outpost::EntityId>{id}; });
+      Assert::IsTrue(own != moves.end(), L"the scout was not sent to explore");
+      const Outpost::PlanePosition home = match.Start(AI);
+      const Outpost::PlanePosition enemy = match.Start(HUMAN);
+      Assert::IsTrue(Outpost::Distance(own->destination, home) < Outpost::Distance(own->destination, enemy), L"in its own half");
+      Assert::IsTrue(std::ranges::none_of(match.MapData().outposts, [&](const Outpost::OutpostPlacement& _outpost)
+                                          { return Outpost::Distance(own->destination, match.Node(_outpost.sector)) <= 600.0f; }),
+                     L"out of the pirates' reach");
+    }
+
+    // Then it goes round the enemy's flanks. The enemy's home is A1, beside B1 and A2, as far from the AI's. Player 1's scout
+    // would go to E4 first, A2's mirror.
+    Outpost::AiSettings flanks = settings;
+    flanks.scoutOwnHalfSeconds = 0.0;
+    Outpost::AiPlayer ai(flanks, 20);
     const auto sentTo = [&ai, &view, id]() -> std::optional<Outpost::PlanePosition>
     {
       for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(view)))
@@ -566,8 +586,8 @@ public:
     Assert::IsTrue(relays(0).empty(), L"a claim with none in the settings");
   }
 
-  // Until milestone 33 it leaves pirates alone: it orders no Relay in a sector they guard, and claims others in its place
-  // (ADR-073).
+  // It orders no Relay in a sector the pirates guard, and claims others in its place while they do (ADR-073); a detachment
+  // clears them first (ADR-076).
   TEST_METHOD(LeavesASectorWithPiratesAlone)
   {
     Outpost::AiSettings settings = RepositorySettings();
@@ -591,6 +611,40 @@ public:
     // Measured: 145 Relays ordered and 7 sectors held by an AI that tried them, 0 and 9 by this one.
     Assert::AreEqual(size_t{0}, orders, L"a Relay ordered where the pirates guard");
     Assert::IsTrue(held >= 8, L"it claimed no other sectors in their place");
+  }
+
+  // Task 33.1 (Phase 4 design §12, ADR-076): within its first half hour it salvages derelicts by its territory with one
+  // Constructor, sends a detachment at a pirate outpost next to its territory, and builds a Repair Bay behind its front.
+  TEST_METHOD(PlaysPhaseFoursOpening)
+  {
+    AiMatch match;
+    const auto derelicts = [&match]
+    { return std::ranges::count(match.World().Entities(), Outpost::EntityKind::Derelict, &Outpost::Entity::kind); };
+    const auto placed = derelicts();
+    match.Run(30 * 60.0);
+    std::size_t salvages = 0;
+    std::size_t detachments = 0;
+    for (const Outpost::LoggedCommand& logged : match.CommandLog())
+    {
+      if (logged.command.player != AI)
+        continue;
+      if (const auto* salvage = std::get_if<Outpost::SalvageCommand>(&logged.command.order))
+        salvages += salvage->constructors.size() == 1 ? 1 : 0;
+      if (const auto* attack = std::get_if<Outpost::AttackMoveCommand>(&logged.command.order))
+      {
+        detachments += std::ranges::any_of(match.MapData().outposts, [&](const Outpost::OutpostPlacement& _outpost)
+                                           { return Outpost::Distance(attack->destination, match.Node(_outpost.sector)) < 1.0f; })
+                         ? 1
+                         : 0;
+      }
+    }
+    Assert::IsTrue(salvages >= 2, L"one Constructor at a time, to more than one derelict");
+    Assert::IsTrue(derelicts() < placed, L"it salvaged one");
+    Assert::IsTrue(detachments > 0, L"a detachment sent at a pirate outpost");
+    const Outpost::Snapshot view = match.View(AI);
+    Assert::IsTrue(std::ranges::any_of(match.Structures(view, AI), [](const Outpost::EntityView* _structure)
+                                       { return _structure->structure == Outpost::StructureKind::RepairBay; }),
+                   L"a Repair Bay");
   }
 
   // Task 18.1: a sector it holds next to one the enemy holds is its front, and gets the settings' Defence Platform by its

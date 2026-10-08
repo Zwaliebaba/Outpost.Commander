@@ -82,6 +82,13 @@ struct AiSettings
   // cap lets it have of its production design's hull, when that is fewer than attackGroupShips asks, so that the cap never
   // keeps it from attacking. A share of 1 waits for a full cap.
   double attackCapShare = 1.0;
+
+  // Pirates (Phase 4 design §12, ADR-076): a detachment of its reserve goes at a pirate outpost once the detachment's Ore is
+  // at least this many times the outpost's, as far as it has seen the outpost.
+  double pirateMargin = 1.0;
+  // Its scouts explore its own half of the map for this long, moving through the sectors the pirates do not guard, before
+  // they go round the enemy's flanks (Phase 4 design §2 U1, ADR-076).
+  double scoutOwnHalfSeconds = 0.0;
 };
 
 // Reads the text of OutpostCommander/Assets/Opponent.json. Throws Neuron::Exception on the first problem, naming where it

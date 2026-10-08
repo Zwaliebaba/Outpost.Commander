@@ -11,7 +11,7 @@ The owner decided on 2026-10-07:
 - On each side, a camp goes in two of the four contested sectors, drawn by the seed. A stronghold goes on both rich corners and on the center.
 - Pirates fight at the base level, with no research.
 - The derelict a cleared outpost leaves waits for milestone 31.
-- Until milestone 33, the AI leaves pirate sectors alone.
+- Until milestone 33, the AI leaves pirate sectors alone; milestone 33 has it clear them ([ADR-076](ADR-076-ai-plays-phase-4.md)).
 - Every player sees which sectors are guarded (decision 7).
 
 What the design leaves open: how the neutral owner is represented, how an outpost stands round its node, what the guarding rule does tick by tick, how a client learns that a sector cannot be claimed, and what the client and the AI do in the meantime.
@@ -57,9 +57,9 @@ What the design leaves open: how the neutral owner is represented, how an outpos
    - A Relay's ghost is red in a guarded sector.
    - `PROTOCOL_VERSION` goes from 7 to 8.
 8. **A measurement or stress run places no pirates.** It is not a match, and its scenes stay as they were measured (task 2.7, task 3.7).
-9. **Until milestone 33, the AI leaves pirates alone** ([ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
+9. **The AI leaves pirates alone but for a detachment sent to clear an outpost** ([ADR-076](ADR-076-ai-plays-phase-4.md) decision 2; [ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
    - It neither plans nor claims a Relay or a rig in a guarded sector, and a claim that is guarded is dropped and another made in its place.
-   - It counts no pirate warship as the enemy's fleet to answer, and picks no pirate structure to attack.
+   - It counts no pirate warship as the enemy's fleet to answer, and its main attack picks no pirate structure to attack.
    - Its fleets are not routed round the outposts, so a group whose way passes within 600 m of a node fights the outpost there.
 10. **The client draws them in violet** ([ADR-011](ADR-011-meshes-and-shading.md)).
     - `Models.json`'s `"Pirate"` set names `"meshes": "Tarkan"`: it borrows that set's meshes and models in a color of its own. `"pirates"` names it as the set the pirates are drawn with.

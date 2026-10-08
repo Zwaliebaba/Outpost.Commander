@@ -17,7 +17,7 @@ The owner decided on 2026-10-07:
 - **The Command Station and the Shipyards repair as a Bay does.** A retreat always ends in a repair, and a Bay's worth is that it stands near the front.
 - **Any order the player gives a retreating ship ends its retreat.** The next hit that leaves it below its threshold starts it again.
 - **Every ship, Constructors included,** retreats and is repaired. A Constructor has no design, so its retreat is set on a selection.
-- **Until milestone 33 the AI's ships retreat at the default**, and the AI builds no Repair Bay.
+- **Until milestone 33 the AI's ships retreat at the default**, and the AI builds no Repair Bay. Milestone 33 has it build one at its front ([ADR-076](ADR-076-ai-plays-phase-4.md)).
 
 What the design leaves open: which four a repairer takes when more are near, what "nearest" means, when a retreat starts and ends, how the tuning data, the protocol and the AI carry it, and how the client shows it.
 
@@ -51,7 +51,7 @@ What the design leaves open: which four a repairer takes when more are near, wha
    - It takes a retreating ship out of every order it gives, since any order would end the retreat.
    - A retreating ship leaves its attack group or raid, as a lost one does, and rejoins the reserve once it is whole. A retreat so counts toward a group's fall-back (owner, 2026-10-07, after the measurement below).
    - A retreating Constructor leaves its crew, and is not idle until it is whole, so the AI neither waits on it nor gives it work.
-   - It builds no Repair Bay until milestone 33.
+   - It builds a Repair Bay behind its front ([ADR-076](ADR-076-ai-plays-phase-4.md) decision 6).
 10. **The client** (design §13):
     - The build menu offers the Repair Bay, and its ghost is green only in a sector the player holds. It is drawn with the Shipyard's model, darker (`tint` 0.6 in `Models.json`), until it has a model of its own.
     - The selection panel's last button shows the selection's retreat, or "mixed", and a press sets every selected ship to the next one after the first ship's: from 25% to 50% to never, and round. A line counts the ships retreating to be repaired.

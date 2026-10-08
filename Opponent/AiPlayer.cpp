@@ -39,8 +39,24 @@ constexpr float HOME_PLATFORM_RING_STEP_METERS = 70.0f;
 constexpr std::array<float, 5> HOME_PLATFORM_TURNS_RADIANS{0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
 // A scout this close to its waypoint goes on to the next (ADR-020 decision 13).
 constexpr float SCOUT_ARRIVED_METERS = 150.0f;
+// While it explores its own half, a scout looks at each pirate outpost from this far from its node, toward its base: outside
+// the 600 m in which the pirates attack, within its Sensor Array's 700 m sight. It goes on from there once this close
+// (ADR-076).
+constexpr float PIRATE_LOOKOUT_METERS = 650.0f;
+constexpr float LOOKOUT_ARRIVED_METERS = 30.0f;
+// The room a lookout keeps clear of asteroids and structures.
+constexpr float LOOKOUT_CLEAR_METERS = 20.0f;
+constexpr std::array<float, 5> LOOKOUT_TURNS_RADIANS{0.0f, 0.35f, -0.35f, 0.7f, -0.7f};
 // An enemy sector is raided only when the AI sees no enemy warship this close to its node (ADR-020 decision 13).
 constexpr float RAID_GUARD_METERS = 600.0f;
+// A detachment sent at a pirate outpost is ordered on to its node this often, since an attack-move ends where it was aimed
+// (ADR-076).
+constexpr std::uint64_t PIRATE_RESEND_SECONDS = 10;
+// A Constructor sent to salvage that has not finished in this long gives the derelict up: the order was refused, or the
+// way is blocked.
+constexpr std::uint64_t SALVAGE_GIVE_UP_SECONDS = 300;
+// A Repair Bay stands this far behind its front sector's node, toward the base, past the Relay's Defence Platforms.
+constexpr float BAY_BEHIND_METERS = 220.0f;
 
 float Distance(PlanePosition _a, PlanePosition _b) noexcept
 {
@@ -192,6 +208,20 @@ const Outpost::DesignView* FindDesignOf(const Snapshot& _snapshot, const Outpost
 auto ComponentOrder(const Outpost::DesignComponents& _design) noexcept
 {
   return std::tuple(_design.hull, _design.drive, _design.weapon);
+}
+
+// The cost of the component of _id in _views, or 0 for none.
+template <typename View, typename IdType> std::int32_t CostOf(const std::vector<View>& _views, IdType _id)
+{
+  const auto found = std::ranges::find(_views, _id, &View::id);
+  return found != _views.end() ? found->cost : 0;
+}
+
+// What a warship is worth in Ore: its components', as the snapshot prices them (ADR-076).
+std::int32_t ShipOre(const Snapshot& _snapshot, const EntityView& _ship)
+{
+  return CostOf(_snapshot.hulls, _ship.hull) + CostOf(_snapshot.drives, _ship.drive) + CostOf(_snapshot.weapons, _ship.weapon) +
+         CostOf(_snapshot.modules, _ship.module);
 }
 
 // A ship of _player's going back to be repaired is left to it, since any order would end its retreat (ADR-075): it is
@@ -348,6 +378,8 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   FollowOre(_snapshot);
   ClaimTerritory(_snapshot);
   FortifyFront(_snapshot);
+  PlanRepairBay(_snapshot);
+  WatchPirates(_snapshot);
   if (_snapshot.tick >= m_nextReviewTick)
   {
     // What it has seen since the last review; with nothing seen it keeps the design it has.
@@ -399,6 +431,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
 
   std::vector<EntityId> idle;
   TendWork(_snapshot, idle, _orders);
+  SendSalvage(_snapshot, idle, _orders);
   const PlanOre plan = Build(_snapshot, idle, _orders);
   const bool structureWaiting = plan.waiting;
   // An upgrade it wants and cannot yet pay for holds production back, as a structure does, so that the Ore gathers for
@@ -732,14 +765,14 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
   if (_slot.besideRig.has_value())
     return IsBlocked(m_slots[*_slot.besideRig], _snapshot);
   // A rig or Relay in a sector the enemy holds waits for the enemy to lose it, and one the pirates guard waits for them
-  // to fall: milestone 33 teaches it to clear them (ADR-073).
+  // to fall, which a detachment of its reserve brings about (ADR-073, ADR-076).
   if (_slot.structure == StructureKind::MiningRig || _slot.structure == StructureKind::Relay)
   {
     const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
     if (sector != nullptr && ((sector->holder.IsValid() && sector->holder != m_player) || sector->guarded))
       return true;
   }
-  // A Relay whose node a wreck covers waits for it to be salvaged (ADR-074), which the AI leaves until milestone 33.
+  // A Relay whose node a wreck covers waits for it to be salvaged (ADR-074), which its salvage crew does (ADR-076).
   if (_slot.structure == StructureKind::Relay && std::ranges::any_of(_snapshot.entities,
                                                                      [&](const EntityView& _entity) {
                                                                        return _entity.kind == EntityKind::Derelict &&
@@ -747,6 +780,12 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
                                                                                 _entity.radiusMeters + _slot.radiusMeters;
                                                                      }))
     return true;
+  // A Repair Bay stands only in a sector it holds (Phase 4 design §10); one whose sector it lost waits to hold it again.
+  if (_slot.structure == StructureKind::RepairBay && !_snapshot.sectors.empty())
+  {
+    const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
+    return sector == nullptr || sector->holder != m_player;
+  }
   if (_slot.structure != StructureKind::MiningRig)
     return false;
   return std::ranges::any_of(_snapshot.entities,
@@ -848,7 +887,8 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
   for (const EntityView& ship : _snapshot.entities)
   {
     // One going back to be repaired is left to it until it is whole.
-    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Constructor || ship.owner != m_player || ship.retreating)
+    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Constructor || ship.owner != m_player || ship.retreating ||
+        ship.id == m_salvager)
       continue;
     const bool busy = std::ranges::any_of(m_work, [&ship](const Work& _work)
                                           { return std::ranges::find(_work.constructors, ship.id) != _work.constructors.end(); });
@@ -1219,12 +1259,57 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
   const SectorView* enemyHome = FindSector(_snapshot.sectors, {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters});
   if (enemyHome == nullptr || enemyHome->adjacent.empty())
     return;
-  std::vector<PlanePosition> waypoints;
-  for (const std::int32_t id : enemyHome->adjacent)
+  // For the opening it explores its own half, moving from node to node of the sectors nearer its base than the enemy's,
+  // its home aside, so that it finds derelicts and outposts without seeking a fight: it looks at a sector the pirates guard
+  // from a lookout outside their reach, so that it learns what a detachment must outweigh. Then it goes round the enemy's
+  // flanks (Phase 4 design §2 U1, ADR-076).
+  const bool ownHalf = _snapshot.tick < static_cast<std::uint64_t>(std::llround(m_settings.scoutOwnHalfSeconds * m_ticksPerSecond));
+  if (!ownHalf && !m_scoutsOnFlanks)
   {
-    if (const SectorView* sector = FindSectorById(_snapshot, id))
-      waypoints.push_back(sector->node);
+    m_scoutsOnFlanks = true;
+    m_scoutWaypoints.clear();
   }
+  const PlanePosition enemyBase{.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters};
+  std::vector<PlanePosition> waypoints;
+  std::vector<PlanePosition> lookouts;
+  if (ownHalf)
+  {
+    const StructureTypeView spot{.structure = StructureKind::DefensePlatform, .radiusMeters = LOOKOUT_CLEAR_METERS};
+    const std::span<const EntityView> blockers = Blockers(_snapshot, std::nullopt);
+    for (const SectorView& sector : _snapshot.sectors)
+    {
+      if (sector.Contains(m_home) || Distance(sector.node, m_home) >= Distance(sector.node, enemyBase))
+        continue;
+      if (!sector.guarded)
+      {
+        waypoints.push_back(sector.node);
+        continue;
+      }
+      const float toHome = std::max(Distance(sector.node, m_home), 1.0f);
+      const float homeAngle = std::atan2(m_home.zMeters - sector.node.zMeters, m_home.xMeters - sector.node.xMeters);
+      for (const float turn : LOOKOUT_TURNS_RADIANS)
+      {
+        const PlanePosition lookout =
+          Along(sector.node, std::cos(homeAngle + turn), std::sin(homeAngle + turn), std::min(PIRATE_LOOKOUT_METERS, toHome));
+        if (PlaceGhost(spot, lookout, blockers, _snapshot.mapSizeMeters).valid)
+        {
+          waypoints.push_back(lookout);
+          lookouts.push_back(lookout);
+          break;
+        }
+      }
+    }
+  }
+  else
+  {
+    for (const std::int32_t id : enemyHome->adjacent)
+    {
+      if (const SectorView* sector = FindSectorById(_snapshot, id))
+        waypoints.push_back(sector->node);
+    }
+  }
+  if (waypoints.empty())
+    return;
   std::ranges::sort(waypoints, [this](PlanePosition _a, PlanePosition _b) { return IsNearer(_a, _b, m_home); });
   std::erase_if(m_scoutWaypoints, [&_snapshot](const auto& _entry) { return FindEntity(_snapshot, _entry.first) == nullptr; });
   for (const EntityView& ship : _snapshot.entities)
@@ -1233,14 +1318,19 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
       continue;
     const auto known = m_scoutWaypoints.find(ship.id);
     size_t next = known != m_scoutWaypoints.end() ? known->second : 0;
-    const bool arrived =
-      known != m_scoutWaypoints.end() && Distance(ship.position, waypoints[next % waypoints.size()]) <= SCOUT_ARRIVED_METERS;
+    const PlanePosition waypoint = waypoints[next % waypoints.size()];
+    const float arrivedMeters = std::ranges::contains(lookouts, waypoint) ? LOOKOUT_ARRIVED_METERS : SCOUT_ARRIVED_METERS;
+    const bool arrived = known != m_scoutWaypoints.end() && Distance(ship.position, waypoint) <= arrivedMeters;
     if (known != m_scoutWaypoints.end() && !arrived)
       continue;
     if (arrived)
       next = (next + 1) % waypoints.size();
     m_scoutWaypoints[ship.id] = next;
-    _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = {ship.id}, .destination = waypoints[next % waypoints.size()]}));
+    const PlanePosition destination = waypoints[next % waypoints.size()];
+    if (ownHalf)
+      _orders.push_back(MakeCommand(m_player, MoveCommand{.ships = {ship.id}, .destination = destination}));
+    else
+      _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = {ship.id}, .destination = destination}));
   }
 }
 
@@ -1266,6 +1356,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
   // A raid ends once its sector is no longer the enemy's, or once it has lost the settings' share of its ships; its ships
   // then rejoin the reserve, and the next raid waits (ADR-020 decision 13).
   std::erase_if(m_raidGroup, gone);
+  std::erase_if(m_pirateGroup, gone);
   if (!m_raidGroup.empty())
   {
     const SectorView* sector = FindSectorById(_snapshot, m_raidSector);
@@ -1305,7 +1396,12 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       }
     }
   }
-  std::erase_if(warships, [this](const EntityView* _ship) { return std::ranges::find(m_raidGroup, _ship->id) != m_raidGroup.end(); });
+  std::erase_if(warships,
+                [this](const EntityView* _ship)
+                {
+                  return std::ranges::find(m_raidGroup, _ship->id) != m_raidGroup.end() ||
+                         std::ranges::find(m_pirateGroup, _ship->id) != m_pirateGroup.end();
+                });
   // An attack that has lost the settings' share of the ships it set out with falls back to the rally, out of the fight,
   // and rejoins the reserve, which waits before it attacks again (task 12.2): a lost battle costs part of a fleet, not
   // all of it.
@@ -1372,6 +1468,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_raidGroup, .destination = raided->node}));
     }
   }
+  CommandPirates(_snapshot, reserve, _orders);
 
   const EntityView* target = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget);
   bool grown = false;
@@ -1537,4 +1634,208 @@ const Outpost::SectorView* Outpost::AiPlayer::FrontSector(const Snapshot& _snaps
     return front;
   const SectorView* rally = FindSector(_snapshot.sectors, m_rally);
   return rally != nullptr && rally->holder == m_player ? rally : nullptr;
+}
+
+// What it sees of each pirate outpost, kept at the most it has seen: its ships' Ore and its Defence Platforms', and the
+// platforms' count, which tells a stronghold from a camp (ADR-076). A sector no longer guarded is forgotten.
+void Outpost::AiPlayer::WatchPirates(const Snapshot& _snapshot)
+{
+  const StructureTypeView* platform = FindType(_snapshot, StructureKind::DefensePlatform);
+  for (const SectorView& sector : _snapshot.sectors)
+  {
+    if (!sector.guarded)
+    {
+      m_pirateOre.erase(sector.id);
+      m_piratePlatforms.erase(sector.id);
+      continue;
+    }
+    std::int32_t ore = 0;
+    std::int32_t platforms = 0;
+    for (const EntityView& entity : _snapshot.entities)
+    {
+      if (entity.owner != PIRATES || !sector.Contains(entity.position))
+        continue;
+      if (entity.kind == EntityKind::Structure)
+      {
+        ++platforms;
+        ore += platform != nullptr ? platform->cost : 0;
+      }
+      else if (entity.kind == EntityKind::Ship)
+        ore += ShipOre(_snapshot, entity);
+    }
+    m_pirateOre[sector.id] = std::max(m_pirateOre[sector.id], ore);
+    m_piratePlatforms[sector.id] = std::max(m_piratePlatforms[sector.id], platforms);
+  }
+}
+
+// Phase 4 design §12: a detachment of its reserve clears a pirate outpost that it outweighs by the settings' margin in Ore,
+// as far as it has seen the outpost: a camp next to its territory, or a stronghold there once no free sector is left to
+// claim. It attack-moves on the node, ordered on every few seconds, until the sector is no longer guarded, and its ships
+// then rejoin the reserve. One that has lost the raids' share of its ships falls back to the rally, and the next waits the
+// raids' interval (ADR-076).
+void Outpost::AiPlayer::CommandPirates(const Snapshot& _snapshot, std::vector<const EntityView*>& _reserve, std::vector<Command>& _orders)
+{
+  if (!m_pirateGroup.empty())
+  {
+    const SectorView* sector = FindSectorById(_snapshot, m_pirateSector);
+    const bool lost = m_settings.raidLossShare > 0.0 &&
+                      static_cast<double>(m_pirateGroup.size()) <= static_cast<double>(m_pirateLaunch) * (1.0 - m_settings.raidLossShare);
+    if (sector == nullptr || !sector->guarded || lost)
+    {
+      if (lost)
+      {
+        _orders.push_back(MakeCommand(m_player, MoveCommand{.ships = m_pirateGroup, .destination = m_rally}));
+        m_nextPirateTick = _snapshot.tick + static_cast<std::uint64_t>(std::llround(m_settings.raidIntervalSeconds * m_ticksPerSecond));
+      }
+      m_pirateGroup.clear();
+    }
+    else if (_snapshot.tick >= m_pirateResendTick)
+    {
+      _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_pirateGroup, .destination = sector->node}));
+      m_pirateResendTick = _snapshot.tick + (PIRATE_RESEND_SECONDS * m_ticksPerSecond);
+    }
+    return;
+  }
+  if (_snapshot.tick < m_nextPirateTick || _reserve.empty())
+    return;
+
+  const auto nextToItsLand = [&](const SectorView& _sector)
+  {
+    return std::ranges::any_of(_sector.adjacent,
+                               [&](std::int32_t _id)
+                               {
+                                 const SectorView* other = FindSectorById(_snapshot, _id);
+                                 return other != nullptr && other->holder == m_player;
+                               });
+  };
+  const bool freeToClaim = std::ranges::any_of(_snapshot.sectors, [&](const SectorView& _sector)
+                                               { return !_sector.holder.IsValid() && !_sector.guarded && nextToItsLand(_sector); });
+  const bool wantsMore = !freeToClaim && !AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
+  const SectorView* target = nullptr;
+  for (const SectorView& sector : _snapshot.sectors)
+  {
+    const auto seen = m_pirateOre.find(sector.id);
+    if (!sector.guarded || seen == m_pirateOre.end() || seen->second <= 0 || !nextToItsLand(sector))
+      continue;
+    const bool stronghold = m_piratePlatforms[sector.id] > 1;
+    if (stronghold && !wantsMore)
+      continue;
+    if (target == nullptr || IsNearer(sector.node, target->node, m_home))
+      target = &sector;
+  }
+  if (target == nullptr)
+    return;
+
+  // The detachment: ships of the reserve, nearest the outpost first, until their Ore reaches the margin.
+  const double needed = m_settings.pirateMargin * m_pirateOre[target->id];
+  std::vector<const EntityView*> nearest = _reserve;
+  std::ranges::sort(nearest,
+                    [target](const EntityView* _a, const EntityView* _b)
+                    {
+                      const float a = Distance(_a->position, target->node);
+                      const float b = Distance(_b->position, target->node);
+                      return a != b ? a < b : _a->id < _b->id;
+                    });
+  double ore = 0.0;
+  std::vector<EntityId> detachment;
+  for (const EntityView* ship : nearest)
+  {
+    if (ore >= needed)
+      break;
+    detachment.push_back(ship->id);
+    ore += ShipOre(_snapshot, *ship);
+  }
+  if (ore < needed)
+    return;
+  std::erase_if(_reserve, [&detachment](const EntityView* _ship) { return std::ranges::find(detachment, _ship->id) != detachment.end(); });
+  m_pirateGroup = detachment;
+  m_pirateSector = target->id;
+  m_pirateLaunch = detachment.size();
+  m_pirateResendTick = _snapshot.tick + (PIRATE_RESEND_SECONDS * m_ticksPerSecond);
+  _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = std::move(detachment), .destination = target->node}));
+}
+
+// Phase 4 design §12: once its home rigs stand, one Constructor at a time salvages the nearest derelict it knows in a
+// sector it holds, or in a free one next to its territory, ahead of the contested rigs of its plan; never in a sector the
+// enemy holds or the pirates guard (ADR-076).
+void Outpost::AiPlayer::SendSalvage(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
+{
+  if (m_salvager.IsValid())
+  {
+    const EntityView* crew = FindEntity(_snapshot, m_salvager);
+    const EntityView* derelict = FindEntity(_snapshot, m_salvageTarget);
+    const bool overdue = _snapshot.tick > m_salvageTick + (SALVAGE_GIVE_UP_SECONDS * m_ticksPerSecond);
+    if (crew != nullptr && !crew->retreating && derelict != nullptr && !overdue)
+      return;
+    if (overdue && derelict != nullptr)
+      m_abandonedDerelicts.push_back(m_salvageTarget);
+    m_salvager = {};
+    m_salvageTarget = {};
+  }
+  if (_idle.empty() || _snapshot.sectors.empty())
+    return;
+  const auto rigs = std::ranges::count_if(_snapshot.entities, [this](const EntityView& _entity)
+                                          { return IsStructure(_entity, StructureKind::MiningRig) && _entity.owner == m_player; });
+  if (rigs < m_settings.homeAsteroids)
+    return;
+
+  const EntityView* best = nullptr;
+  for (const EntityView& derelict : _snapshot.entities)
+  {
+    if (derelict.kind != EntityKind::Derelict || std::ranges::find(m_abandonedDerelicts, derelict.id) != m_abandonedDerelicts.end())
+      continue;
+    const SectorView* sector = FindSector(_snapshot.sectors, derelict.position);
+    if (sector == nullptr || sector->guarded)
+      continue;
+    const bool reachable = sector->holder == m_player ||
+                           (!sector->holder.IsValid() && std::ranges::any_of(sector->adjacent,
+                                                                             [&](std::int32_t _id)
+                                                                             {
+                                                                               const SectorView* other = FindSectorById(_snapshot, _id);
+                                                                               return other != nullptr && other->holder == m_player;
+                                                                             }));
+    if (reachable && (best == nullptr || IsNearer(derelict.position, best->position, m_home)))
+      best = &derelict;
+  }
+  if (best == nullptr)
+    return;
+  // The idle Constructor nearest it.
+  const auto crew = std::ranges::min_element(_idle,
+                                             [&](EntityId _a, EntityId _b)
+                                             {
+                                               const float a = Distance(FindEntity(_snapshot, _a)->position, best->position);
+                                               const float b = Distance(FindEntity(_snapshot, _b)->position, best->position);
+                                               return a != b ? a < b : _a < _b;
+                                             });
+  m_salvager = *crew;
+  m_salvageTarget = best->id;
+  m_salvageTick = _snapshot.tick;
+  _idle.erase(crew);
+  _orders.push_back(MakeCommand(m_player, SalvageCommand{.constructors = {m_salvager}, .derelict = m_salvageTarget}));
+}
+
+// Phase 4 design §12: once it has a Shipyard, a Repair Bay behind its front, the sector its reserve holds, toward its base;
+// a new one each time the front moves, and the old ones stay (ADR-076).
+void Outpost::AiPlayer::PlanRepairBay(const Snapshot& _snapshot)
+{
+  const bool shipyard =
+    std::ranges::any_of(_snapshot.entities, [this](const EntityView& _entity)
+                        { return IsStructure(_entity, StructureKind::Shipyard) && _entity.owner == m_player && IsBuilt(_entity); });
+  const SectorView* front = shipyard ? FrontSector(_snapshot) : nullptr;
+  if (front == nullptr || std::ranges::find(m_bayed, front->id) != m_bayed.end())
+    return;
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::RepairBay);
+  if (type == nullptr || !type->buildable)
+    return;
+  m_bayed.push_back(front->id);
+  const float toHome = std::max(Distance(front->node, m_home), 1.0f);
+  const float meters = std::min(BAY_BEHIND_METERS, toHome);
+  const PlanePosition preferred =
+    Along(front->node, (m_home.xMeters - front->node.xMeters) / toHome, (m_home.zMeters - front->node.zMeters) / toHome, meters);
+  Slot slot{.structure = StructureKind::RepairBay, .radiusMeters = type->radiusMeters, .besideRig = std::nullopt};
+  const std::optional<PlanePosition> place =
+    FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot, static_cast<float>(m_settings.structureGapMeters));
+  slot.position = place.value_or(preferred);
+  slot.abandoned = !place.has_value();
+  m_slots.push_back(slot);
 }
