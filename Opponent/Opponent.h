@@ -6,6 +6,8 @@
 #include "GameProtocol.h"
 
 #include <array>
+// AiMatchesOptions.h names the AI-against-AI matches' settings and log by path (ADR-063).
+#include <filesystem>
 #include <limits>
 #include <map>
 #include <optional>
@@ -14,3 +16,4 @@
 
 #include "AiSettings.h"
 #include "AiPlayer.h"
+#include "AiMatchesOptions.h"

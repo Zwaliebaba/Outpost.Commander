@@ -1,6 +1,6 @@
 #pragma once
 
-// Used by QuicChannel.cpp only, so NeuronCore.h does not include it.
+// Used by QuicChannel.cpp and its tests only, so NeuronCore.h does not include it.
 
 namespace Neuron
 {

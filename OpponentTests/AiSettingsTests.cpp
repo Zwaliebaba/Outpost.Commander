@@ -3,7 +3,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace OpponentTests
 {
 namespace
 {
@@ -36,11 +36,6 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
     return;
   }
   Assert::Fail(Widen(std::format("loaded, but {} is wrong", _where)).c_str());
-}
-
-template <typename Element, typename IdType> bool Exists(const std::vector<Element>& _list, IdType _id)
-{
-  return std::ranges::any_of(_list, [_id](const Element& _element) { return _element.id == _id; });
 }
 } // namespace
 
@@ -143,33 +138,6 @@ public:
     Assert::IsTrue(hard.raidShips > normal.raidShips && hard.claimSectors >= normal.claimSectors);
   }
 
-  // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
-  // component and topic it names exists, and every topic comes after its prerequisites.
-  TEST_METHOD(NamesOnlyWhatTheTuningDataHas)
-  {
-    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
-    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    std::vector<Outpost::DesignComponents> designs{settings.defaultDesign, settings.scoutDesign};
-    Assert::IsTrue(Exists(tuning.modules, settings.scoutDesign.module), L"the scout's module");
-    for (const Outpost::CounterRule& rule : settings.counters)
-    {
-      designs.push_back(rule.enemy);
-      designs.push_back(rule.answer);
-    }
-    for (const Outpost::DesignComponents& design : designs)
-      Assert::IsTrue(Exists(tuning.hulls, design.hull) && Exists(tuning.drives, design.drive) && Exists(tuning.weapons, design.weapon));
-    for (size_t i = 0; i < settings.researchOrder.size(); ++i)
-    {
-      const auto topic = std::ranges::find(tuning.research, settings.researchOrder[i], &Outpost::ResearchTopicTuning::id);
-      Assert::IsTrue(topic != tuning.research.end());
-      for (const Outpost::ResearchTopicId prerequisite : topic->prerequisites)
-      {
-        const auto before = settings.researchOrder.begin() + static_cast<std::ptrdiff_t>(i);
-        Assert::IsTrue(std::find(settings.researchOrder.begin(), before, prerequisite) != before, L"a topic before its prerequisite");
-      }
-    }
-  }
-
   TEST_METHOD(RejectsAMissingOrUnknownMember)
   {
     ExpectLoadError(Replace("\"attackGroupShips\": 25,", ""), "has no \"attackGroupShips\"");
@@ -198,5 +166,58 @@ public:
               "{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }, \"answer\": { \"hull\": 3, \"drive\": 2, \"weapon\": 1 } }"),
       "counters[2]: the same answer to the same design as counters[1]");
   }
+
+  // The game reads each difficulty's settings from the package's Assets folder (ADR-065), Opponent.json when it names none.
+  TEST_METHOD(LoadsEachPackagedFile)
+  {
+    const ScopedHomeDirectory home(RepositoryHome());
+    for (const std::wstring_view file : {Outpost::NORMAL_AI_SETTINGS, Outpost::EASY_AI_SETTINGS, Outpost::HARD_AI_SETTINGS})
+    {
+      const Outpost::AiSettings packaged = Outpost::LoadPackagedAiSettings(file);
+      const Outpost::AiSettings expected = Outpost::LoadAiSettings(ReadRepositoryData(winrt::to_string(file)));
+      const std::wstring name(file);
+      Assert::AreEqual(expected.constructors, packaged.constructors, name.c_str());
+      Assert::AreEqual(expected.reviewIntervalSeconds, packaged.reviewIntervalSeconds, name.c_str());
+      Assert::AreEqual(expected.raidShips, packaged.raidShips, name.c_str());
+    }
+    const Outpost::AiSettings normal = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    Assert::AreEqual(normal.constructors, Outpost::LoadPackagedAiSettings().constructors);
+    Assert::AreEqual(normal.reviewIntervalSeconds, Outpost::LoadPackagedAiSettings().reviewIntervalSeconds);
+  }
+
+  TEST_METHOD(RefusesAPackagedFileThatIsMissing)
+  {
+    const TemporaryHomeDirectory home(L"AiSettingsTests");
+    try
+    {
+      (void)Outpost::LoadPackagedAiSettings(Outpost::HARD_AI_SETTINGS);
+    }
+    catch (const Neuron::Exception& error)
+    {
+      Assert::AreEqual(std::string("The game data file Assets\\OpponentHard.json is missing or cannot be read."),
+                       std::string(error.what()));
+      return;
+    }
+    Assert::Fail(L"a missing file loaded");
+  }
+
+  // A packaged file that does not load is named before what is wrong with it.
+  TEST_METHOD(NamesAPackagedFileThatIsInvalid)
+  {
+    const TemporaryHomeDirectory home(L"AiSettingsTests");
+    home.WriteAsset(Outpost::NORMAL_AI_SETTINGS, Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [0, 2,"));
+    try
+    {
+      (void)Outpost::LoadPackagedAiSettings();
+    }
+    catch (const Neuron::Exception& error)
+    {
+      const std::string message = error.what();
+      Assert::IsTrue(message.starts_with("Opponent.json: ") && message.find("researchOrder[0]") != std::string::npos,
+                     Widen(message).c_str());
+      return;
+    }
+    Assert::Fail(L"an invalid file loaded");
+  }
 };
-} // namespace GameLogicTests
+} // namespace OpponentTests

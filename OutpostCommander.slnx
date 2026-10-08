@@ -10,6 +10,11 @@
   <Project Path="Opponent/Opponent.vcxproj" Id="ad65d4ba-b5a9-49c0-b7ab-60c3a138d585" />
   <Project Path="GameLogic/GameLogic.vcxproj" Id="35102b85-540a-4f45-819b-dc192c057115" />
   <Folder Name="/Tests/">
+    <Project Path="GameProtocolTests/GameProtocolTests.vcxproj" Id="86163856-1407-4c50-bf2b-74e08608d8a4" />
+    <Project Path="NeuronClientTests/NeuronClientTests.vcxproj" Id="cdac461e-dc73-4ae7-b077-d2b1bfa77788" />
+    <Project Path="NeuronCoreTests/NeuronCoreTests.vcxproj" Id="ffba1856-7925-4f98-99d8-30febae7993f" />
+    <Project Path="NeuronServerTests/NeuronServerTests.vcxproj" Id="cb833cc9-9ed1-48b2-ac2b-61294f610399" />
+    <Project Path="OpponentTests/OpponentTests.vcxproj" Id="dc151b5a-1c3a-45c1-a85d-17eb692e9da9" />
     <Project Path="GameAppTests/GameAppTests.vcxproj" Id="5b3e8f41-6a2d-4c97-b1e0-8d4f72a6c913" />
     <Project Path="GameLogicTests/GameLogicTests.vcxproj" Id="84716b71-d3f7-449f-8814-14c118932e6c" />
   </Folder>

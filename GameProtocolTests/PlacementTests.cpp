@@ -2,7 +2,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameAppTests
+namespace GameProtocolTests
 {
 namespace
 {
@@ -211,4 +211,4 @@ public:
     Assert::IsFalse(Outpost::PlaceGhost(Rig(), beside, world, MAP_SIZE_METERS).valid, L"taken");
   }
 };
-} // namespace GameAppTests
+} // namespace GameProtocolTests
