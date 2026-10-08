@@ -61,10 +61,10 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| UI1.1 | Sectors and nodes in the world | — | V2 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI1.2 | Memories that look like memories | — | V3 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI1.3 | Sight that shows | UI1.2 | V2 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI1.1 | Sectors and nodes in the world | — | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
+| UI1.2 | Memories that look like memories | — | V3 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
+| UI1.3 | Sight that shows | UI1.2 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
+| UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI2.1 | A warning is a chip | — | V4 | todo |
 | UI2.2 | Build progress in a neutral color | — | V4 | todo |
 | UI2.3 | The blast and Ore's glyph | — | V4 | todo |
@@ -185,7 +185,7 @@ Each is an owner decision, proposed here and in the task it gates. All eight wer
 - **Verify:** CI; run, measuring the grid's brightness in and out of sight as the review measured it; **owner run.**
 - **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md).
   - The ground mask's shader maps the stored shade through a knee that `GroundMaskPipeline::FrameConstants` carries: 0.55 to 0.8, with never seen kept at 0.9. The minimap reads the texture without it.
-  - The shaders and the pipeline are CI's first build. Not yet seen on screen.
+  - CI built the shaders and the pipeline, Debug|x64. Not yet seen on screen.
 
 ### UI1.4 — The minimap's territory
 
@@ -205,7 +205,8 @@ Each is an owner decision, proposed here and in the task it gates. All eight wer
   - The lattice is (0.11, 0.13, 0.17) linear, 2.06:1 against the map as the contrast test computes it.
   - A node is a dot of 4 units, and a node the player could claim has a 12-unit outline round it.
   - A cut-off sector's outline is in dashes of 6 units with gaps of 4.
-  - The HUD's tests ran in the Linux container with substitute fonts. Not yet seen on screen.
+  - ADR-068's minimap stands as written: a seen enemy is still a filled square, and nothing else it says changed.
+  - The HUD's tests ran in the Linux container with substitute fonts, and in CI with DirectWrite's own. Not yet seen on screen.
 
 ---
 

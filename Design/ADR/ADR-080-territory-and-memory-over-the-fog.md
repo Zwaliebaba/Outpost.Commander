@@ -55,7 +55,7 @@ The owner accepted the plan's gates on 2026-10-08, V1 to V8 as proposed. Milesto
     - `DrawsTheTerritoryOnTheMinimap`, with the border's contrast.
   - `FogOfWarTests.DarkensWhatWasSeenBeforeOnTheGround`.
 - **Run in the Linux container** against a stand-in for the Windows headers and the test framework, with substitute fonts: GameProtocolTests 17, GameLogicTests 292 (all but `QuicTransportTests`), OpponentTests 31, and the GameAppTests of the HUD, the fog, the territory, the alerts, the designer, the production target and the window manager, 110.
-- **Not built or run in the container:** `GameClient`, `MeshPipeline`, the ground mask's shaders and the pipeline's constants need D3D12 and fxc, so CI is their first build. The look is the owner's run: the lattice's and outlines' strengths, the 4 m inset, the dashes and dots, the memory's shade and the ground's 0.8.
+- **Built only in CI:** `GameClient`, `MeshPipeline`, the ground mask's shaders and the pipeline's constants need D3D12 and fxc, so CI's Debug|x64 build is their only one. Every suite above also passes there. The look is the owner's run: the lattice's and outlines' strengths, the 4 m inset, the dashes and dots, the memory's shade and the ground's 0.8.
 - **Every line and ring is an instance** of the frame's 16,384 (`MeshPipeline::MAX_FRAME_INSTANCES`). On the 10 km map's 25 sectors that is at most 60 lattice sides, 100 outline sides and 50 rings.
 
 ## What this forecloses
