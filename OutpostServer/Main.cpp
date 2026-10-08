@@ -159,9 +159,9 @@ int RunWorld(const std::filesystem::path& _folder)
   Outpost::ServerConsole::Print("Stopped.");
   return EXIT_SUCCESS;
 }
-} // namespace
 
-int main()
+// The server's run, a failure reported on standard error.
+int Run()
 {
   try
   {
@@ -188,6 +188,20 @@ int main()
   {
     // Neuron::Exception carries UTF-8, such as a loader's report of a bad file (ADR-008).
     Outpost::ServerConsole::PrintError(error.what());
+    return EXIT_FAILURE;
+  }
+}
+} // namespace
+
+// main throws nothing: a failure while reporting a failure ends the process with the exit code alone.
+int main()
+{
+  try
+  {
+    return Run();
+  }
+  catch (...)
+  {
     return EXIT_FAILURE;
   }
 }
