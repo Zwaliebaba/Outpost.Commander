@@ -29,6 +29,9 @@
     <ClInclude Include="Deputy.h">
       <Filter>Deputy</Filter>
     </ClInclude>
+    <ClInclude Include="MatchupPlayer.h">
+      <Filter>Player</Filter>
+    </ClInclude>
     <ClInclude Include="AiMatchesOptions.h">
       <Filter>Matches</Filter>
     </ClInclude>
@@ -43,6 +46,9 @@
     </ClCompile>
     <ClCompile Include="Deputy.cpp">
       <Filter>Deputy</Filter>
+    </ClCompile>
+    <ClCompile Include="MatchupPlayer.cpp">
+      <Filter>Player</Filter>
     </ClCompile>
     <ClCompile Include="AiMatchesOptions.cpp">
       <Filter>Matches</Filter>

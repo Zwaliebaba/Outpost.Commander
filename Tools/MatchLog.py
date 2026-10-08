@@ -8,6 +8,7 @@ switch writes ten seeded AI-against-AI matches to OutpostCommander-ai-matches.lo
 every time in ticks:
 
   match seed <seed> ticks_per_second <rate>                       a match starts
+  matchup <number>                                                the match is that battle matchup, from 1 (ADR-083)
   research <tick> player <player> topic <id> <name>               a player finished a research topic
   tier <tick> player <player> tier <tier>                         a player's Research Lab opened a tier (Phase 3 design §6)
   built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared; a module ends its name
@@ -28,7 +29,8 @@ every time in ticks:
   retreat <tick> player <player> ship <id>                        a player's warship turned for home to be repaired
   repaired <tick> player <player> ship <id>                       a warship that turned for home stopped, whole
   again <tick> player <player> ship <id>                          a repaired warship fired, the first time since its repair
-  ending <tick> <production or domination>                        how the match ended
+  ending <tick> <production, domination, fleet or time>           how the match ended; a battle matchup's by a fleet destroyed
+                                                                  or its time run out (ADR-083)
   end <tick> winner <player, or 0 for a draw>                     the match ended
   left <tick>                                                     the match was left before it ended
 
@@ -123,6 +125,7 @@ class Match:
     self.end_tick = None
     self.winner = None
     self.left_tick = None
+    self.matchup = None
 
   def seconds(self, tick):
     return tick / self.ticks_per_second
@@ -268,6 +271,8 @@ def read_matches(path):
           match.winner = int(words[3])
         elif words[0] == "left":
           match.left_tick = int(words[1])
+        elif words[0] == "matchup":
+          match.matchup = int(words[1])
         else:
           raise ValueError(f"unknown record {words[0]!r}")
       except (IndexError, ValueError) as error:
@@ -418,6 +423,12 @@ def summarize(matches):
   lengths = sorted(match.seconds(match.end_tick) for match in matches if match.end_tick is not None)
   unfinished = len(matches) - len(lengths)
   lines = [f"{len(matches)} matches, {len(lengths)} ended"]
+  # The owner's battle matchups (ADR-083): how often the owner, player 1, won each, against OutpostServer --matchups'
+  # baseline.
+  for number in sorted({match.matchup for match in matches if match.matchup is not None}):
+    fought = [match for match in matches if match.matchup == number and match.end_tick is not None]
+    won = sum(1 for match in fought if match.winner == 1)
+    lines.append(f"  Matchup {number}: player 1 won {won} of {len(fought)} fought to an end")
   if lengths:
     low, high = P1_MINUTES
     within = sum(1 for length in lengths if low * 60 <= length <= high * 60)

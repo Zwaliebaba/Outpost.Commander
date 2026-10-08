@@ -22,6 +22,7 @@
 
 #include "Tuning.h"
 #include "Map.h"
+#include "Matchup.h"
 #include "PlaneVector.h"
 #include "TickObserver.h"
 #include "Pathfinder.h"

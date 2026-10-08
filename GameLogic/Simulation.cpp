@@ -85,6 +85,11 @@ constexpr float PIRATE_RING_METERS = 120.0f;
 // room for each other stay in it (ADR-075).
 constexpr float REPAIR_STANDOFF_METERS = 40.0f;
 
+// A battle matchup's fleet stands in rows of this many ships, this far apart, which leaves room between the Large hull's
+// footprints (ADR-083).
+constexpr std::size_t MATCHUP_ROW_SHIPS = 5;
+constexpr float MATCHUP_SPACING_METERS = 60.0f;
+
 // A start's base faces the map's center; a start at the center faces along +x.
 Outpost::PlaneVector StartForward(PlanePosition _start) noexcept
 {
@@ -737,6 +742,62 @@ void Outpost::Simulation::PlaceStartingBase(PlayerId _owner, PlanePosition _star
       (static_cast<float>(i) - (static_cast<float>(constructors - 1) / 2.0f)) * ((2.0f * constructorRadius) + BASE_ROW_SPACING_METERS);
     (void)SpawnConstructor(_owner, _start + forward * (stationRadius + BASE_ROW_GAP_METERS + constructorRadius) + across * offset, heading);
   }
+}
+
+void Outpost::Simulation::PlaceMatchup(const Matchup& _matchup)
+{
+  if (!m_tuning)
+    throw Neuron::Exception("PlaceMatchup: the simulation has no tuning data");
+  // Where the fleets meet, and along which line, as the seed picks them.
+  const PlanePosition center =
+    m_sectors.empty() ? PlanePosition{} : m_sectors[m_random.NextBelow(static_cast<std::uint32_t>(m_sectors.size()))].placement.node;
+  const auto angle = static_cast<float>(m_random.NextUnit() * 2.0 * std::numbers::pi);
+  const PlaneVector line{std::cos(angle), std::sin(angle)};
+  const PlaneVector across{line.zMeters, -line.xMeters};
+  for (std::size_t side = 0; side < _matchup.sides.size(); ++side)
+  {
+    const PlayerId owner{static_cast<std::uint32_t>(side + 1)};
+    // Each side's front row faces the other across the distance; its rows run back from it.
+    const PlaneVector forward = side == 0 ? line : line * -1.0f;
+    const PlanePosition front = center - forward * (_matchup.distanceMeters / 2.0f);
+    const float heading = std::atan2(forward.zMeters, forward.xMeters);
+    std::size_t placed = 0;
+    for (const MatchupGroup& group : _matchup.sides[side])
+    {
+      const DesignComponents components{.hull = group.hull, .drive = group.drive, .weapon = group.weapon, .module = group.module};
+      const ShipDesign* saved = FindDesign(owner, components);
+      const DesignId design = saved != nullptr
+                                ? saved->id
+                                : SaveDesign(owner, std::format("Matchup design {}", placed + 1), components,
+                                             DesignStatsFor(*m_tuning, components, EffectsOf(owner).upgrades), RetreatThreshold::Never);
+      for (std::int32_t ship = 0; ship < group.count; ++ship, ++placed)
+      {
+        const auto row = static_cast<float>(placed / MATCHUP_ROW_SHIPS);
+        const float column = static_cast<float>(placed % MATCHUP_ROW_SHIPS) - (static_cast<float>(MATCHUP_ROW_SHIPS - 1) / 2.0f);
+        const PlanePosition position = front - forward * (row * MATCHUP_SPACING_METERS) + across * (column * MATCHUP_SPACING_METERS);
+        // A matchup is fought to its end: no ship goes back for repair, as there is nothing to repair it (ADR-075).
+        FindMutableEntity(SpawnShip(owner, design, position, heading))->retreat = RetreatThreshold::Never;
+      }
+    }
+  }
+  m_matchupEnd = m_tick + (std::uint64_t{MATCHUP_SECONDS} * m_ticksPerSecond);
+}
+
+void Outpost::Simulation::DecideMatchup()
+{
+  if (m_matchOver)
+    return;
+  std::vector<PlayerId> standing;
+  for (const PlayerId player : {PlayerId{1}, PlayerId{2}})
+  {
+    if (std::ranges::any_of(m_entities, [player](const Entity& _entity)
+                            { return _entity.owner == player && _entity.kind == EntityKind::Ship && _entity.role == ShipRole::Warship; }))
+      standing.push_back(player);
+  }
+  if (standing.size() < 2)
+    EndMatch(standing, MatchEnding::FleetDestroyed);
+  else if (m_tick + 1 >= *m_matchupEnd)
+    EndMatch(standing, MatchEnding::TimeLimit);
 }
 
 // Each outpost is laid out facing the map's center, so that an outpost and its mirror's are the same turned half a turn
@@ -3615,6 +3676,11 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
 // §4, ADR-037). The match ends then, once: the world runs on, but the outcome stands (owner, 2026-10-01).
 void Outpost::Simulation::DecideMatch()
 {
+  if (m_matchupEnd.has_value())
+  {
+    DecideMatchup();
+    return;
+  }
   if (m_matchOver || m_basePlayers.empty())
     return;
   std::vector<PlayerId> standing;

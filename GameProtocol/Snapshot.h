@@ -322,11 +322,14 @@ struct SectorView
 }
 
 // How a match ended (Phase 2 design §8): a player lost its Command Station and every finished Shipyard (Phase 1 design
-// §4), or a player's tickets ran out because it held fewer nodes (ADR-057).
+// §4), or a player's tickets ran out because it held fewer nodes (ADR-057); or, in a battle matchup (ADR-083), a side's
+// warships were all destroyed, or its time ran out.
 enum class MatchEnding : std::uint8_t
 {
   LostProduction,
-  Domination
+  Domination,
+  FleetDestroyed,
+  TimeLimit
 };
 
 // One player's tickets (ADR-057).

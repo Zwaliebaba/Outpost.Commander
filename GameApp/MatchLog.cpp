@@ -43,6 +43,22 @@ std::string_view KindWord(Outpost::StructureKind _kind) noexcept
   }
   return "structure";
 }
+// How a match ended, as its ending line says it.
+std::string_view EndingWord(Outpost::MatchEnding _ending) noexcept
+{
+  switch (_ending)
+  {
+  case Outpost::MatchEnding::Domination:
+    return "domination";
+  case Outpost::MatchEnding::FleetDestroyed:
+    return "fleet";
+  case Outpost::MatchEnding::TimeLimit:
+    return "time";
+  case Outpost::MatchEnding::LostProduction:
+    break;
+  }
+  return "production";
+}
 } // namespace
 
 Outpost::MatchLog::MatchLog(std::ostream& _out, std::uint64_t _seed, std::uint32_t _ticksPerSecond)
@@ -52,6 +68,11 @@ Outpost::MatchLog::MatchLog(std::ostream& _out, std::uint64_t _seed, std::uint32
     m_gapTicks(ENGAGEMENT_GAP_SECONDS * _ticksPerSecond)
 {
   *m_out << std::format("match seed {} ticks_per_second {}\n", _seed, _ticksPerSecond);
+}
+
+void Outpost::MatchLog::Matchup(std::uint32_t _number)
+{
+  *m_out << std::format("matchup {}\n", _number);
 }
 
 void Outpost::MatchLog::Finish()
@@ -367,8 +388,7 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
   {
     m_ended = true;
     WriteTotals();
-    *m_out << std::format("ending {} {}\n", _snapshot.matchEndedTick,
-                          _snapshot.ending == MatchEnding::Domination ? "domination" : "production");
+    *m_out << std::format("ending {} {}\n", _snapshot.matchEndedTick, EndingWord(_snapshot.ending));
     *m_out << std::format("end {} winner {}\n", _snapshot.matchEndedTick, _snapshot.winner.value);
     m_out->flush();
   }

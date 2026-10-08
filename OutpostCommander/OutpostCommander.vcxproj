@@ -147,6 +147,9 @@
     <None Include="Assets\Map.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="Assets\Matchups.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Assets\Models\Human\Large.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>

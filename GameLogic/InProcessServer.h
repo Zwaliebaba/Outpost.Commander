@@ -201,4 +201,7 @@ private:
 // A server as CreateInProcessServer makes it, as its own type, for what needs more of it than Server shows: the world run
 // (ADR-082).
 [[nodiscard]] std::unique_ptr<InProcessServer> CreateWorldServer(const ServerDesc& _desc);
+
+// The battle matchups of the package's Matchups.json, as a server reads them (ADR-083).
+[[nodiscard]] std::vector<Matchup> ReadPackagedMatchups();
 } // namespace Outpost

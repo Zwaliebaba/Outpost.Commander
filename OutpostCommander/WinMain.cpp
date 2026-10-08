@@ -50,6 +50,9 @@ constexpr std::wstring_view QUIET_SWITCH = L"--quiet";
 // Phase 5's switch: --join <file> joins the world a dedicated server's join file names, rather than showing the menu
 // (ADR-078). Without it, the menu offers to join the world of the join file in the player's documents, when there is one.
 constexpr std::wstring_view JOIN_SWITCH = L"--join";
+// Phase 5's other switch: --matchup <n> makes every skirmish battle matchup n of Matchups.json, from 1, against the AI's
+// battle behavior, for the owner's half of horizon §9's measurement; the match log names the matchup (ADR-083).
+constexpr std::wstring_view MATCHUP_SWITCH = L"--matchup";
 constexpr auto JOIN_FOLDER = L"Outpost Commander";
 constexpr auto JOIN_FILE = L"Join.json";
 
@@ -170,6 +173,8 @@ struct Match
   std::unique_ptr<Outpost::Transport> player;
   std::unique_ptr<Outpost::Transport> rival;
   std::optional<Outpost::AiPlayer> ai;
+  // A battle matchup's rival, in place of the AI (ADR-083).
+  std::optional<Outpost::MatchupPlayer> battle;
   Outpost::LoadDriver playerLoad;
   Outpost::LoadDriver rivalLoad;
   // The log writes to the file, so it comes after it and is destroyed before it.
@@ -228,6 +233,18 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         throw Neuron::Exception("--join needs the join file a dedicated server wrote.");
       joinOnStart = *(join + 1);
     }
+    // --matchup names its number in the next argument.
+    std::optional<std::uint32_t> matchup;
+    if (commandLine.find(MATCHUP_SWITCH) != std::wstring_view::npos)
+    {
+      const std::vector<std::wstring> arguments = CommandLineArguments();
+      const auto named = std::ranges::find(arguments, MATCHUP_SWITCH);
+      const std::wstring number = named != arguments.end() && named + 1 != arguments.end() ? *(named + 1) : std::wstring();
+      if (number.empty() || number.size() > 3 ||
+          !std::ranges::all_of(number, [](wchar_t _digit) { return _digit >= L'0' && _digit <= L'9'; }) || std::stoul(number) == 0)
+        throw Neuron::Exception("--matchup needs the number of a battle matchup of Matchups.json, from 1.");
+      matchup = static_cast<std::uint32_t>(std::stoul(number) - 1);
+    }
     const bool measure = commandLine.find(MEASURE_SWITCH) != std::wstring_view::npos;
     const bool stress = commandLine.find(STRESS_SWITCH) != std::wstring_view::npos;
     const bool load = !stress && commandLine.find(LOAD_SWITCH) != std::wstring_view::npos;
@@ -258,7 +275,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // in, so that bad tuning, map or model data is still reported before the screen goes full screen. The next match's
     // server is made while the menu shows.
     // A match's players connect to its server over QUIC, as they will to a server of its own (ADR-060).
-    const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true};
+    const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true, .matchup = matchup};
     // The description is captured as a copy of its own rather than as the const it is here, so that moving the lambda moves
     // it, which cannot throw, where copying its path could.
     auto serverLoad = PrepareAsync(
@@ -311,9 +328,14 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       match->rival = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(RIVAL_PLAYER, Outpost::NewSeatToken()), RIVAL_PLAYER);
       if (!load && !stress)
       {
-        match->ai.emplace(aiSettings[static_cast<std::size_t>(client.RequestedDifficulty())], ticksPerSecond);
+        if (matchup.has_value())
+          match->battle.emplace(ticksPerSecond);
+        else
+          match->ai.emplace(aiSettings[static_cast<std::size_t>(client.RequestedDifficulty())], ticksPerSecond);
         match->logFile.open(std::filesystem::temp_directory_path() / MATCH_LOG, std::ios::app);
         match->log.emplace(match->logFile, seed, ticksPerSecond);
+        if (matchup.has_value())
+          match->log->Matchup(*matchup + 1);
       }
       // Its ticks run on the server's own thread from here, at their fixed rate whatever the frame rate (ADR-025).
       match->server->Start();
@@ -415,6 +437,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
             for (Outpost::Command& command : match->ai->Update(snapshot))
               match->rival->Send(std::move(command));
           }
+          else if (match->battle)
+          {
+            for (Outpost::Command& command : match->battle->Update(snapshot))
+              match->rival->Send(std::move(command));
+          }
         }
         if (match->log)
         {
@@ -434,7 +461,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         if (!nextServer)
         {
           seed = NewSeed();
-          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true});
+          nextServer =
+            Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true, .matchup = matchup});
         }
       }
 
@@ -470,7 +498,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           if (!nextServer)
           {
             seed = NewSeed();
-            nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true});
+            nextServer = Outpost::CreateInProcessServer(
+              {.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true, .matchup = matchup});
           }
           break;
         case Outpost::GameClient::Request::JoinWorld:

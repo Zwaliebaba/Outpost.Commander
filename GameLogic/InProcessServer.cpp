@@ -14,6 +14,7 @@ using HundredNanoseconds = std::chrono::duration<std::int64_t, std::ratio<1, 10'
 // Where the server finds its data, under the package's Assets folder (ADR-008).
 constexpr std::string_view TUNING_FILE = "Tuning.json";
 constexpr std::string_view MAP_FILE = "Map.json";
+constexpr std::string_view MATCHUPS_FILE = "Matchups.json";
 // Where a seat's player connects: the listener takes connections on the loopback address only (ADR-060).
 constexpr std::string_view LOOPBACK_HOST = "127.0.0.1";
 
@@ -87,7 +88,16 @@ std::unique_ptr<Outpost::InProcessServer> SetUpServer(const GameData& _data, Out
     // A world has no end, and a player who loses restarts (Phase 5 design §8); a save carries its rules with it.
     if (!_desc.world.empty())
       server->World().UseWorldRules();
-    server->World().PlaceStartingBases(server->MapData());
+    // A battle matchup's fleets fight with no bases (ADR-083).
+    if (_desc.matchup.has_value())
+    {
+      const std::vector<Outpost::Matchup> matchups = Outpost::LoadMatchups(ReadDataFile(MATCHUPS_FILE), server->TuningData());
+      if (*_desc.matchup >= matchups.size())
+        throw Neuron::Exception(std::format("Matchups.json has {} matchups, and no matchup {}.", matchups.size(), *_desc.matchup + 1));
+      server->World().PlaceMatchup(matchups[*_desc.matchup]);
+    }
+    else
+      server->World().PlaceStartingBases(server->MapData());
     if (_desc.measurementLoad)
       Outpost::PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
     if (_desc.stressLoad)
@@ -139,8 +149,9 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   }
   m_simulation.PlaceMap(m_map);
   m_simulation.UseTuning(m_tuning);
-  // Every match is played under fog of war (ADR-024).
-  m_simulation.UseFog();
+  // Every match is played under fog of war (ADR-024), and a battle matchup in the open (ADR-083).
+  if (!_desc.matchup.has_value())
+    m_simulation.UseFog();
   // One player per start, each with the starting Ore and the starting designs saved (design §5, §7).
   for (size_t player = 0; player < m_map.starts.size(); ++player)
   {
@@ -150,7 +161,7 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   }
   // The pirates' outposts and the derelicts the seed placed, after the players, so that each player's designs are numbered as before. A
   // measurement run is not a match, and its scenes stay as they were measured.
-  if (!_desc.measurementLoad && !_desc.stressLoad)
+  if (!_desc.measurementLoad && !_desc.stressLoad && !_desc.matchup.has_value())
   {
     m_simulation.PlacePirates(m_map);
     m_simulation.PlaceDerelicts(m_map);
@@ -649,6 +660,11 @@ std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc
 std::unique_ptr<Outpost::InProcessServer> Outpost::CreateWorldServer(const ServerDesc& _desc)
 {
   return SetUpServer(ReadGameData(), _desc);
+}
+
+std::vector<Outpost::Matchup> Outpost::ReadPackagedMatchups()
+{
+  return LoadMatchups(ReadDataFile(MATCHUPS_FILE), LoadTuning(ReadDataFile(TUNING_FILE)));
 }
 
 Outpost::ServerFactory Outpost::InProcessServerFactory()

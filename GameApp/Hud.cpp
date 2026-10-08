@@ -1921,8 +1921,23 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
     return std::nullopt;
   const std::string_view title = !_newest.winner.IsValid() ? "Draw" : _newest.winner == _newest.player ? "Victory" : "Defeat";
   const std::uint64_t seconds = _ticksPerSecond > 0 ? _newest.matchEndedTick / _ticksPerSecond : 0;
-  // A domination says so: the side that ran out of tickets held less of the map (Phase 2 design §8).
-  const std::string_view how = _newest.ending == MatchEnding::Domination ? "By domination. " : "";
+  // A domination says so: the side that ran out of tickets held less of the map (Phase 2 design §8); and so does a battle
+  // matchup's end (ADR-083).
+  std::string_view how;
+  switch (_newest.ending)
+  {
+  case MatchEnding::Domination:
+    how = "By domination. ";
+    break;
+  case MatchEnding::FleetDestroyed:
+    how = "A fleet destroyed. ";
+    break;
+  case MatchEnding::TimeLimit:
+    how = "Out of time. ";
+    break;
+  case MatchEnding::LostProduction:
+    break;
+  }
   return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
 }
 

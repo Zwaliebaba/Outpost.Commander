@@ -41,6 +41,9 @@
     <ClInclude Include="Map.h">
       <Filter>Map</Filter>
     </ClInclude>
+    <ClInclude Include="Matchup.h">
+      <Filter>Map</Filter>
+    </ClInclude>
     <ClInclude Include="Simulation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -93,6 +96,9 @@
       <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="Map.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClCompile Include="Matchup.cpp">
       <Filter>Map</Filter>
     </ClCompile>
     <ClCompile Include="Research.cpp">

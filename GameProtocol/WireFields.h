@@ -375,7 +375,7 @@ constexpr StandingOrder LastOf(StandingOrder) noexcept
 
 constexpr MatchEnding LastOf(MatchEnding) noexcept
 {
-  return MatchEnding::Domination;
+  return MatchEnding::TimeLimit;
 }
 
 constexpr EventKind LastOf(EventKind) noexcept

@@ -97,6 +97,24 @@ public:
   }
 
   // A match the player leaves before it ends says so, at the last tick it saw, once, after the peaks.
+  // ADR-083: a battle matchup is named after the match's line, and its end says how it ended.
+  TEST_METHOD(RecordsAMatchupAndHowItEnded)
+  {
+    std::ostringstream out;
+    Outpost::MatchLog log(out, 7, 20);
+    log.Matchup(3);
+    Outpost::Snapshot ended = SnapshotOf(HUMAN, 340);
+    ended.matchOver = true;
+    ended.winner = HUMAN;
+    ended.matchEndedTick = 340;
+    ended.ending = Outpost::MatchEnding::FleetDestroyed;
+    log.Record(ended);
+    const std::string text = out.str();
+    Assert::IsTrue(text.starts_with("match seed 7 ticks_per_second 20\nmatchup 3\n"));
+    Assert::IsTrue(text.contains("ending 340 fleet\n") && text.contains("end 340 winner 1\n"),
+                   std::wstring(text.begin(), text.end()).c_str());
+  }
+
   TEST_METHOD(RecordsAMatchLeftEarly)
   {
     std::ostringstream out;

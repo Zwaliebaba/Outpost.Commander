@@ -1910,6 +1910,12 @@ public:
     newest.winner = PLAYER;
     newest.ending = Outpost::MatchEnding::Domination;
     Assert::AreEqual(std::string("By domination. Match length 6:13"), outcome().detail);
+
+    // ADR-083: a battle matchup's end says how.
+    newest.ending = Outpost::MatchEnding::FleetDestroyed;
+    Assert::AreEqual(std::string("A fleet destroyed. Match length 6:13"), outcome().detail);
+    newest.ending = Outpost::MatchEnding::TimeLimit;
+    Assert::AreEqual(std::string("Out of time. Match length 6:13"), outcome().detail);
   }
 
   // Phase 5 design §8: in a world no match ends, and a player who has lost is told when its seat restarts at its start, or

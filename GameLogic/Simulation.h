@@ -341,6 +341,13 @@ public:
     return m_worldRules;
   }
   static constexpr std::uint32_t RESTART_SECONDS = 3600;
+
+  // A battle matchup's setup (horizon §9, ADR-083), after PlaceMap and UseTuning and in place of the bases: each player's
+  // fleet, of designs saved for it that never retreat, in rows facing the other's, the two _matchup's distance apart round a
+  // sector's node the seed picks, or the map's center without sectors. The battle ends once a side's warships are all
+  // destroyed, the other side winning, or as a draw after MATCHUP_SECONDS.
+  void PlaceMatchup(const Matchup& _matchup);
+  static constexpr std::uint32_t MATCHUP_SECONDS = 600;
   // Under a world's rules, the tick a lost player's seat restarts at, or has waited from for its start since; none while
   // it stands.
   [[nodiscard]] std::optional<std::uint64_t> RestartTick(PlayerId _player) const noexcept;
@@ -414,9 +421,9 @@ public:
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
            _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_ending == _b.m_ending && _a.m_fog == _b.m_fog &&
            _a.m_worldRules == _b.m_worldRules && _a.m_restartSeconds == _b.m_restartSeconds && _a.m_starts == _b.m_starts &&
-           _a.m_plannedOrders == _b.m_plannedOrders && _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors &&
-           _a.m_outposts == _b.m_outposts && _a.m_scheduledOrders == _b.m_scheduledOrders &&
-           _a.m_lastScheduledOrder == _b.m_lastScheduledOrder;
+           _a.m_matchupEnd == _b.m_matchupEnd && _a.m_plannedOrders == _b.m_plannedOrders &&
+           _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors && _a.m_outposts == _b.m_outposts &&
+           _a.m_scheduledOrders == _b.m_scheduledOrders && _a.m_lastScheduledOrder == _b.m_lastScheduledOrder;
   }
 
   // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
@@ -795,6 +802,8 @@ private:
   void DecideMatch();
   // Under a world's rules: tells a player that it lost, and restarts its seat on the hour once its start is free.
   void RestartLostPlayers(const std::vector<PlayerId>& _standing);
+  // A battle matchup ends when a side has no warship left, or at its last tick.
+  void DecideMatchup();
   [[nodiscard]] bool IsStartFree(PlayerId _player, PlanePosition _start) const noexcept;
   // A player's Command Station on _start, and the starting Constructors in front of it, facing the map's center.
   void PlaceStartingBase(PlayerId _owner, PlanePosition _start);
@@ -854,6 +863,8 @@ private:
   bool m_worldRules = false;
   std::uint32_t m_restartSeconds = RESTART_SECONDS;
   std::vector<std::pair<PlayerId, PlanePosition>> m_starts;
+  // A battle matchup's last tick, which ends it as a draw; none for a match (ADR-083).
+  std::optional<std::uint64_t> m_matchupEnd;
   // What the last tick did, for the snapshots built after it: its shots, its destructions, and each player's events.
   std::vector<ShotView> m_shots;
   std::vector<DestroyedView> m_destroyed;

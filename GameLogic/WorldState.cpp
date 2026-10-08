@@ -187,13 +187,13 @@ template <typename Self, typename Parts> auto Outpost::Simulation::SavedFields(S
   // Not saved: the tick rate and what follows from it, which the world's identity names; the pathfinder, whose obstacles
   // are saved in _parts and whose graphs follow from them; the observer, which is null between ticks; whether this tick
   // planned paths, which is false between ticks; the tuning data, which the save names by its hash, and what it gives a
-  // player who has researched nothing; and the last tick's shots, destructions and events, which only that tick's
-  // snapshots show.
+  // player who has researched nothing; a battle matchup's end, since a matchup is never a world (ADR-083); and the last
+  // tick's shots, destructions and events, which only that tick's snapshots show.
   [[maybe_unused]] auto& [ticksPerSecond, secondsPerTick, stallLimitTicks, tick, entities, lastEntityId, designs, lastDesignId, players,
                           targetRule, random, pathfinder, observer, plannedOrders, plannedThisTick, lastStandingGroup, scheduledOrders,
                           lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, tuning, unresearched, basePlayers,
-                          matchOver, winner, matchEndedTick, ending, fog, worldRules, restartSeconds, starts, shots, destroyed, events] =
-    _simulation;
+                          matchOver, winner, matchEndedTick, ending, fog, worldRules, restartSeconds, starts, matchupEnd, shots, destroyed,
+                          events] = _simulation;
   return std::tie(tick, entities, lastEntityId, designs, lastDesignId, players, targetRule, _parts.random, _parts.obstacles, plannedOrders,
                   lastStandingGroup, scheduledOrders, lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, basePlayers,
                   matchOver, winner, matchEndedTick, ending, fog, worldRules, restartSeconds, starts);

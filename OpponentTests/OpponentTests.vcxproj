@@ -95,6 +95,7 @@
     <ClCompile Include="AiSettingsTests.cpp" />
     <ClCompile Include="AiMatchesOptionsTests.cpp" />
     <ClCompile Include="DeputyTests.cpp" />
+    <ClCompile Include="MatchupPlayerTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

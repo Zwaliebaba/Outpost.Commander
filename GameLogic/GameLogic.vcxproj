@@ -79,6 +79,7 @@
     <ClInclude Include="InProcessServer.h" />
     <ClInclude Include="TickObserver.h" />
     <ClInclude Include="Map.h" />
+    <ClInclude Include="Matchup.h" />
     <ClInclude Include="MeasurementLoad.h" />
     <ClInclude Include="Pathfinder.h" />
     <ClInclude Include="PlaneVector.h" />
@@ -103,6 +104,7 @@
     <ClCompile Include="InProcessServer.cpp" />
     <ClCompile Include="TickObserver.cpp" />
     <ClCompile Include="Map.cpp" />
+    <ClCompile Include="Matchup.cpp" />
     <ClCompile Include="MeasurementLoad.cpp" />
     <ClCompile Include="Pathfinder.cpp" />
     <ClCompile Include="Research.cpp" />

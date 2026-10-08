@@ -101,6 +101,10 @@
       <Link>Assets\Map.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\OutpostCommander\Assets\Matchups.json">
+      <Link>Assets\Matchups.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\OutpostCommander\Assets\Opponent.json">
       <Link>Assets\Opponent.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
