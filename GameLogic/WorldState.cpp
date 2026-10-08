@@ -187,14 +187,15 @@ template <typename Self, typename Parts> auto Outpost::Simulation::SavedFields(S
   // Not saved: the tick rate and what follows from it, which the world's identity names; the pathfinder, whose obstacles
   // are saved in _parts and whose graphs follow from them; the observer, which is null between ticks; whether this tick
   // planned paths, which is false between ticks; the tuning data, which the save names by its hash, and what it gives a
-  // player who has researched nothing; and the last tick's shots and destructions, which only that tick's snapshots show.
+  // player who has researched nothing; and the last tick's shots, destructions and events, which only that tick's
+  // snapshots show.
   [[maybe_unused]] auto& [ticksPerSecond, secondsPerTick, stallLimitTicks, tick, entities, lastEntityId, designs, lastDesignId, players,
-                          targetRule, random, pathfinder, observer, plannedOrders, plannedThisTick, lastStandingGroup, mapObstacles,
-                          mapHalfSizeMeters, sectors, outposts, tuning, unresearched, basePlayers, matchOver, winner, matchEndedTick,
-                          ending, fog, shots, destroyed] = _simulation;
+                          targetRule, random, pathfinder, observer, plannedOrders, plannedThisTick, lastStandingGroup, scheduledOrders,
+                          lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, tuning, unresearched, basePlayers,
+                          matchOver, winner, matchEndedTick, ending, fog, shots, destroyed, events] = _simulation;
   return std::tie(tick, entities, lastEntityId, designs, lastDesignId, players, targetRule, _parts.random, _parts.obstacles, plannedOrders,
-                  lastStandingGroup, mapObstacles, mapHalfSizeMeters, sectors, outposts, basePlayers, matchOver, winner, matchEndedTick,
-                  ending, fog);
+                  lastStandingGroup, scheduledOrders, lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, basePlayers,
+                  matchOver, winner, matchEndedTick, ending, fog);
 }
 
 void Outpost::Simulation::SaveState(ByteWriter& _writer) const
@@ -219,6 +220,7 @@ void Outpost::Simulation::LoadState(ByteReader& _reader)
   m_plannedThisTick = false;
   m_shots.clear();
   m_destroyed.clear();
+  m_events.clear();
 }
 
 std::string Outpost::Simulation::StateLayout()
@@ -245,7 +247,7 @@ std::uint64_t Outpost::DataHash(std::span<const std::string_view> _texts) noexce
   return hash;
 }
 
-std::vector<std::byte> Outpost::EncodeWorld(const Simulation& _simulation, const WorldIdentity& _identity)
+std::vector<std::byte> Outpost::EncodeWorld(const Simulation& _simulation, const WorldIdentity& _identity, const SeatReports& _reports)
 {
   ByteWriter writer;
   writer.Put(SAVE_KIND);
@@ -255,6 +257,7 @@ std::vector<std::byte> Outpost::EncodeWorld(const Simulation& _simulation, const
   writer.Put(_identity.dataHash);
   writer.Put(_simulation.CurrentTick());
   _simulation.SaveState(writer);
+  writer.Put(_reports);
   std::vector<std::byte> bytes = writer.Take();
   const std::uint64_t checksum = Fnv1a(FNV_OFFSET, bytes);
   for (std::size_t i = 0; i < CHECKSUM_BYTES; ++i)
@@ -268,7 +271,7 @@ Outpost::SaveHeader Outpost::ReadSaveHeader(std::span<const std::byte> _bytes)
   return GetHeader(reader);
 }
 
-void Outpost::DecodeWorld(std::span<const std::byte> _bytes, const WorldIdentity& _identity, Simulation& _simulation)
+Outpost::SeatReports Outpost::DecodeWorld(std::span<const std::byte> _bytes, const WorldIdentity& _identity, Simulation& _simulation)
 {
   ByteReader reader(CheckedBody(_bytes), SAVE_SOURCE);
   const SaveHeader header = GetHeader(reader);
@@ -280,7 +283,18 @@ void Outpost::DecodeWorld(std::span<const std::byte> _bytes, const WorldIdentity
                                         _identity.seed, _identity.ticksPerSecond, _identity.dataHash));
   }
   _simulation.LoadState(reader);
+  SeatReports reports;
+  reader.Get(reports);
   reader.Finish();
   if (_simulation.CurrentTick() != header.tick)
     reader.Malformed(std::format("its header names tick {} and its state tick {}", header.tick, _simulation.CurrentTick()));
+  return reports;
+}
+
+std::string Outpost::SaveLayout()
+{
+  std::string layout = Simulation::StateLayout();
+  ByteLayout::Describe<SeatReports>(layout);
+  layout += ';';
+  return layout;
 }

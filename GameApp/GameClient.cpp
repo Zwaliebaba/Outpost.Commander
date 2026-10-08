@@ -366,6 +366,12 @@ DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, st
   const float shade = _tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
   return {std::min(1.0f, _setColor.x * shade), std::min(1.0f, _setColor.y * shade), std::min(1.0f, _setColor.z * shade), _setColor.w};
 }
+
+// The wall clock, to the second, which a scheduled order's time of day is counted from (Phase 5 design §7).
+std::chrono::sys_seconds WallClockNow() noexcept
+{
+  return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+}
 } // namespace
 
 Outpost::ClientAssets Outpost::LoadClientAssets()
@@ -512,6 +518,8 @@ void Outpost::GameClient::ClearMatch()
   m_soleSelected = EntityId{};
   m_production = ProductionTarget();
   m_firstTopic = 0;
+  m_orderForm = OrderForm();
+  m_away.reset();
   m_effectDraws.clear();
   m_entities.clear();
   m_previousEntities.clear();
@@ -533,6 +541,14 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
     m_effects.Receive(snapshot);
     Explode(snapshot);
     m_alerts.Observe(snapshot, m_ticksPerSecond);
+    // What happened while the player was away comes once, with its first snapshot after it takes its seat again (Phase 5
+    // design §11).
+    if (snapshot.away.has_value())
+    {
+      m_away = snapshot.away;
+      m_awayTick = snapshot.tick;
+      m_windows.Open(WindowKind::Away);
+    }
     m_view.Receive(std::move(snapshot));
   }
 
@@ -624,13 +640,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     m_designer.Update(m_view.Newest());
     m_production.Update(m_view.Newest());
+    m_orderForm.Update(m_view.Newest(), m_knownEntities);
     for (const QueueShipCommand& queue : m_designer.TakeQueueCommands(m_view.Newest()))
       m_controls.Queue(queue.producer, queue.design);
   }
   HandleTyping(input);
   // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12). D, P and R open or close
-  // the designer, the production window and the research window, and F1 the Controls window (task 16.4). Space moves the
-  // camera to the newest alert (ADR-059).
+  // the designer, the production window and the research window, F1 the Controls window (task 16.4), and O the orders
+  // window (Phase 5 design §11). Space moves the camera to the newest alert (ADR-059).
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
@@ -643,6 +660,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       toggled = WindowKind::Research;
     else if (keyDown && event->key == KEY_CONTROLS)
       toggled = WindowKind::Controls;
+    else if (keyDown && event->key == KEY_ORDERS)
+      toggled = WindowKind::Orders;
     if (keyDown && event->key == KEY_CANCEL && m_windows.CloseFront())
       event = input.events.erase(event);
     else if (keyDown && event->key == KEY_LATEST_ALERT)
@@ -715,6 +734,17 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_firstTopic = content.laboratory->firstTopic;
     }
     content.controls = m_windows.IsOpen(WindowKind::Controls);
+    if (m_windows.IsOpen(WindowKind::Orders))
+      content.orders = Hud::DescribeOrders(m_view.Newest(), m_knownEntities, selected, m_orderForm, m_clock, WallClockNow());
+    // The report goes once its window is closed.
+    if (m_away.has_value() && !m_windows.IsOpen(WindowKind::Away))
+      m_away.reset();
+    if (m_away.has_value())
+      content.away = Hud::DescribeAway(m_view.Newest(), *m_away, m_awayTick, m_ticksPerSecond);
+    // The scheduled order the selected ships wait on, on their panel (design §11).
+    if (std::optional<std::string> pending = PendingOrderLine(selected, m_entities, m_view.Newest(), m_clock);
+        pending.has_value() && !content.selection.empty())
+      content.selection.push_back(std::move(*pending));
     m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows, m_interfaceFactor);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
@@ -881,6 +911,12 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::SetRetreat:
     m_controls.SetRetreat(_action.retreat, m_entities);
+    break;
+  case Hud::ActionKind::StepOrder:
+    m_orderForm.Step(_action.field, _action.step, m_view.Newest(), m_knownEntities);
+    break;
+  case Hud::ActionKind::GiveOrder:
+    m_controls.Schedule(m_orderForm, WallClockNow(), m_clock, m_view.Newest(), m_knownEntities);
     break;
   }
 }

@@ -26,6 +26,12 @@ private:
   std::shared_ptr<LoopbackChannel> m_channel;
 };
 
+// The tick at which _utcSeconds comes, a moment the player's clock picked for a scheduled order (ADR-080), when the wall
+// clock reads _now and the next tick to run is _tick: the first tick at or after it at _ticksPerSecond, _tick for a moment
+// that has passed, and a week ahead at most. The server's host is where wall time becomes ticks (ADR-009).
+[[nodiscard]] std::uint64_t TickOfMoment(std::int64_t _utcSeconds, std::chrono::system_clock::time_point _now, std::uint64_t _tick,
+                                         std::uint32_t _ticksPerSecond) noexcept;
+
 // The server inside the client (ADR-002), and the dedicated server's (ADR-078). Started, it runs its ticks on a thread of its
 // own (ADR-025); a test may instead step it by hand with Advance, on the test's thread. Match setup, World and the command
 // log belong to whichever thread steps it, so a started server is touched only through its connections and
@@ -69,6 +75,13 @@ public:
   [[nodiscard]] const Map& MapData() const noexcept
   {
     return m_map;
+  }
+
+  // What each seat's player missed while away, which the server keeps while the seat's deputy plays and saves with the
+  // world (ADR-080).
+  [[nodiscard]] const AwayReports& Away() const noexcept
+  {
+    return m_away;
   }
 
   // The commands applied so far; for a world, since its last save, its folder keeping the rest.
@@ -168,6 +181,8 @@ private:
   std::unique_ptr<Neuron::QuicListener> m_listener;
   // The host OpenSeat names for the listener, set with it.
   std::string m_listenHost;
+  // Touched by the thread that steps the server only.
+  AwayReports m_away;
   // A world's folder and which world it is, once UseWorld has made the server a world's. Destroyed after the thread, so
   // that the saves it was handed are written before the server goes.
   std::unique_ptr<WorldFolder> m_world;

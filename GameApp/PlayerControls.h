@@ -50,6 +50,10 @@ public:
   void SetRetreat(RetreatThreshold _retreat, std::span<const EntityView> _entities);
   // From the minimap: the selected ships move to a point.
   void MoveTo(PlanePosition _destination, std::span<const EntityView> _entities);
+  // From the orders window: _form's scheduled order for the selection, when it can give one, its time of day the next
+  // moment after _now that _clock reads it (Phase 5 design §7).
+  void Schedule(const OrderForm& _form, std::chrono::sys_seconds _now, const PlayerClock& _clock, const Snapshot& _newest,
+                std::span<const EntityView> _entities);
 
   // In identifier order.
   [[nodiscard]] const std::vector<EntityId>& Selected() const noexcept

@@ -74,6 +74,9 @@
     <ClInclude Include="SeatController.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="AwayReports.h">
+      <Filter>Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -117,6 +120,9 @@
       <Filter>World</Filter>
     </ClCompile>
     <ClCompile Include="SeatController.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="AwayReports.cpp">
       <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>

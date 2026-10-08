@@ -293,6 +293,12 @@ private:
   // The producer the production window shows, and the first topic the research window shows (Phase 1 design §12).
   ProductionTarget m_production;
   std::size_t m_firstTopic = 0;
+  // The orders window's form, and the player's clock its times of day are read on; and what happened while the player was
+  // away, with the tick of the snapshot that told it, while the away window shows it (Phase 5 design §11).
+  OrderForm m_orderForm;
+  PlayerClock m_clock = PlayerClock::Local();
+  std::optional<AwayReport> m_away;
+  std::uint64_t m_awayTick = 0;
   // How far each ship leans into its turn as it is drawn, and this frame's targets, kept so that their storage is not
   // allocated every frame (ADR-029).
   ShipBanking m_banking;

@@ -28,6 +28,8 @@ inline constexpr std::uint8_t KEY_DESIGNER = 'D';
 inline constexpr std::uint8_t KEY_PRODUCTION = 'P';
 inline constexpr std::uint8_t KEY_RESEARCH = 'R';
 inline constexpr std::uint8_t KEY_CONTROLS = VK_F1;
+// The orders window, the seat's scheduled orders and the form that gives one (Phase 5 design §11).
+inline constexpr std::uint8_t KEY_ORDERS = 'O';
 // Closes the front window, and with none open cancels what the controls have armed.
 inline constexpr std::uint8_t KEY_CANCEL = VK_ESCAPE;
 // Moves the camera to the newest alert (ADR-059).
@@ -115,6 +117,7 @@ struct KeyBinding
     {.keys = KeyName(KEY_DESIGNER), .does = "Ship designer"},
     {.keys = KeyName(KEY_PRODUCTION), .does = "Production"},
     {.keys = KeyName(KEY_RESEARCH), .does = "Research"},
+    {.keys = KeyName(KEY_ORDERS), .does = "Scheduled orders"},
     {.keys = KeyName(KEY_CONTROLS), .does = "These controls"},
     {.keys = KeyName(KEY_CANCEL), .does = "Close the front window, or cancel an order"},
     {.keys = std::format("{}, held", KeyName(KEY_EVERY_HEALTH_BAR)), .does = "Every health bar"},

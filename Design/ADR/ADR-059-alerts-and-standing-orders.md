@@ -1,4 +1,4 @@
-# ADR-059 — Alerts come from the client's snapshots, and the server keeps two standing orders: hold a sector, and patrol
+# ADR-059 — Alerts, and two standing orders the server keeps: hold a sector, and patrol
 
 Status: **accepted** · 2026-10-03
 
@@ -14,11 +14,10 @@ It leaves open where each lives, how a group acts as one, what ends a standing o
 
 ## Decision
 
-1. **Alerts are the client's.** `Outpost::Alerts` in `GameApp` reads every snapshot as it arrives. A shot and a destruction are in the snapshot of their tick only, so it must see every one. It raises:
-   - **Relay suppressed**, when a sector the player holds becomes suppressed;
-   - **Relay under attack**, when a shot's target is one of the player's Relays;
-   - **Mining Rig lost**, when one of the player's rigs is among a tick's destructions, for which `DestroyedView` now carries the structure's kind;
-   - **Enemy ships in** a sector, when the player sees an enemy warship in a sector it holds, and saw none there in the snapshot before;
+1. **Alerts are read from the server's events** ([ADR-080](ADR-080-events-and-scheduled-orders.md), which owns the detail). `Outpost::Alerts` in `GameApp` reads every snapshot's events as it arrives, and raises:
+   - **Relay suppressed** and **Relay under attack**;
+   - **Mining Rig lost**;
+   - **Enemy ships in** a sector the player holds, or **Pirate ships in** it;
    - **Ship retreating**, when one of the player's ships starts going back to be repaired, and **Pirates cleared**, when a sector the pirates guarded no longer is (Phase 4 design §13, [ADR-075](ADR-075-repair-and-retreat.md)).
 
    Each names its sector and keeps where it happened. One kind in one sector is not raised again within 20 seconds.
@@ -39,10 +38,10 @@ It leaves open where each lives, how a group acts as one, what ends a standing o
 
 - **Tests.**
   - `StandingOrderTests`: a group holding its sector goes to the node, answers an enemy in the far corner, and comes back; a patrol reaches its point, returns and sets out again; another order ends a standing order; and the refusals.
-  - `AlertsTests`: each alert, once, its repeat time and how long it shows.
+  - `AlertsTests`: each alert from its event, its repeat time and how long it shows.
   - `PlayerControlsTests`: the keys. `HudTests`: the list, the minimap mark and the selection's line.
 - **Not built or run on Windows here.** The alerts, Space and the H and T keys are the owner's run.
 
 ## What this forecloses
 
-- Alerts made by the server, and standing orders kept by the client, without a new decision.
+- Standing orders kept by the client, without a new decision.

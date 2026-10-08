@@ -138,7 +138,10 @@ public:
     Upgrade,
     // The designer's retreat steps to the next, and a selection of ships is set to one (Phase 4 design §10, §13).
     StepRetreat,
-    SetRetreat
+    SetRetreat,
+    // The orders window's form steps a field, and gives its order to the selection (Phase 5 design §7).
+    StepOrder,
+    GiveOrder
   };
 
   struct Action
@@ -160,6 +163,9 @@ public:
     Difficulty difficulty = Difficulty::Normal;
     // What SetRetreat sets the selected ships to.
     RetreatThreshold retreat = DEFAULT_RETREAT;
+    // The field StepOrder steps, and which way: forward for a positive step.
+    OrderField field = OrderField::Trigger;
+    std::int32_t step = 0;
 
     friend bool operator==(const Action&, const Action&) = default;
   };
@@ -437,6 +443,41 @@ public:
     Action action;
   };
 
+  // A row of the orders window's form: what it sets, its value between the arrows that step it, and the field they step.
+  struct OrderRow
+  {
+    std::string label;
+    std::string value;
+    OrderField field = OrderField::Trigger;
+  };
+
+  // The orders window (Phase 5 design §7, §11, ADR-080): the seat's scheduled orders, the first ORDERS_SHOWN of them, each
+  // with how many ships still wait on it, and how many more there are; and the form that gives the selection a new one, its
+  // rows, the line that says when it fires, and the button that gives it, with why it cannot when it cannot.
+  struct OrdersPanel
+  {
+    std::vector<std::string> scheduled;
+    std::size_t more = 0;
+    std::vector<OrderRow> rows;
+    std::string fires;
+    Button give;
+  };
+
+  static constexpr std::size_t ORDERS_SHOWN = 6;
+  // The most rows the form has: the trigger, its hour and minute, the action, its sector and its target, and the condition.
+  static constexpr std::size_t ORDER_ROWS = 7;
+
+  // What happened while the player was away (Phase 5 design §11): how long the deputy played its seat, and a line for each
+  // of what was built and lost, the sectors gained and lost, and each order that fired.
+  struct AwayPanel
+  {
+    std::string since;
+    std::vector<std::string> lines;
+  };
+
+  // The away window's lines at most: built, lost, gained and lost sectors, and every order its report keeps.
+  static constexpr std::size_t AWAY_LINES = 4 + AwayReport::REPORTED_ORDERS;
+
   // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.
   struct Outcome
   {
@@ -465,6 +506,9 @@ public:
     std::optional<ResearchPanel> laboratory;
     // Whether the Controls window is open (task 16.4); its lines are KeyBindings'.
     bool controls = false;
+    // The orders window's content and the away window's, while they are open (Phase 5 design §11); GameClient fills them.
+    std::optional<OrdersPanel> orders;
+    std::optional<AwayPanel> away;
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
@@ -617,6 +661,17 @@ public:
   // first, nor past where the last row is shown.
   [[nodiscard]] static std::size_t StepTopics(std::size_t _firstTopic, int _step, std::size_t _topics) noexcept;
 
+  // The orders window's content (Phase 5 design §7): _newest's scheduled orders, and _form's rows for the ships of _selected
+  // among _entities, its time of day read on _clock and counted from _now.
+  [[nodiscard]] static OrdersPanel DescribeOrders(const Snapshot& _newest, std::span<const EntityView> _entities,
+                                                  std::span<const EntityId> _selected, const OrderForm& _form, const PlayerClock& _clock,
+                                                  std::chrono::sys_seconds _now);
+
+  // The away window's content (design §11): _report, which reached the player with the snapshot of _untilTick, its time
+  // counted at _ticksPerSecond and its sectors named from _newest.
+  [[nodiscard]] static AwayPanel DescribeAway(const Snapshot& _newest, const AwayReport& _report, std::uint64_t _untilTick,
+                                              std::uint32_t _ticksPerSecond);
+
   // What a derelict holds, as the hint under the pointer shows it (Phase 4 design §9, §13): its Ore, the topic whose time
   // it recovers, if any, and how far its salvage has come.
   [[nodiscard]] static std::string DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict);
@@ -664,9 +719,9 @@ public:
   // The interface's own scale steps, a factor on the screen's (ADR-070): Ctrl+= takes the next, and Ctrl+- the one before.
   static constexpr std::array<float, 6> INTERFACE_STEPS{1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f};
 
-  // Whether the windows of a fixed size, the designer laid out for _newest's components and the Controls window, fit a
-  // screen of this size between its margins at _factor (ADR-070). Without a snapshot, as on the menu, the Controls window
-  // alone.
+  // Whether the windows of a fixed size, the designer laid out for _newest's components, the Controls window, and the orders
+  // and away windows at their tallest, fit a screen of this size between its margins at _factor (ADR-070). Without a
+  // snapshot, as on the menu, the Controls window alone.
   [[nodiscard]] static bool WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor);
 
   // The step _step away from _factor among INTERFACE_STEPS, up for a positive _step and down for a negative one, as far as

@@ -71,9 +71,10 @@ std::wstring Wide(std::string_view _text)
 class Counter final : public Outpost::HostedPlayer
 {
 public:
-  [[nodiscard]] std::vector<Outpost::Command> Play([[maybe_unused]] const Outpost::Snapshot& _snapshot) override
+  [[nodiscard]] std::vector<Outpost::Command> Play(const Outpost::Snapshot& _snapshot) override
   {
     ++plays;
+    lastPlayed = _snapshot.tick;
     return {};
   }
 
@@ -84,6 +85,7 @@ public:
 
   std::uint64_t plays = 0;
   std::uint64_t watches = 0;
+  std::uint64_t lastPlayed = 0;
 };
 } // namespace
 
@@ -214,11 +216,17 @@ public:
     server->Host(BLUE, std::move(counter));
     server->Step();
     Assert::AreEqual(std::uint64_t{1}, deputy.plays, L"a seat nobody has taken is the deputy's");
+    const std::uint64_t firstPlayed = deputy.lastPlayed;
 
     {
       Outpost::QuicTransport blue(blueSeat, BLUE);
       server->Step();
       Assert::AreEqual(std::uint64_t{1}, deputy.watches, L"the player plays the seat it took");
+      // What happened in the tick the deputy played, which the player's first snapshot tells it (design §11, ADR-080).
+      const std::vector<Outpost::Snapshot> first = SnapshotsOf(blue, 1);
+      Assert::IsTrue(!first.empty() &&
+                       first.front().away.value_or(Outpost::AwayReport{.sinceTick = firstPlayed + 1}).sinceTick == firstPlayed,
+                     L"its first snapshot tells it what happened while the deputy played");
     }
     // The connection has gone; the server hears so on MsQuic's thread.
     std::this_thread::sleep_for(1s);
@@ -228,12 +236,19 @@ public:
     Assert::AreEqual(std::uint64_t{1}, deputy.plays, L"for a minute after the connection went, the seat is still the player's");
     server->Step();
     Assert::AreEqual(std::uint64_t{2}, deputy.plays, L"then the deputy's");
+    const std::uint64_t tookOver = deputy.lastPlayed;
 
     Outpost::QuicTransport again(blueSeat, BLUE);
     const std::uint64_t watched = deputy.watches;
     server->Step();
     Assert::AreEqual(std::uint64_t{2}, deputy.plays);
     Assert::AreEqual(watched + 1, deputy.watches, L"until the player takes it again");
+    const std::vector<Outpost::Snapshot> back = SnapshotsOf(again, 1);
+    Assert::IsTrue(!back.empty() && back.front().away.value_or(Outpost::AwayReport{.sinceTick = tookOver + 1}).sinceTick == tookOver,
+                   L"and the player is told what happened from the tick the deputy took the seat");
+    server->Step();
+    const std::vector<Outpost::Snapshot> next = SnapshotsOf(again, 1);
+    Assert::IsTrue(!next.empty() && !next.back().away.has_value(), L"once");
   }
 
   // ADR-078: a world's server keeps its certificate in the world's folder, so that a player pins it once.

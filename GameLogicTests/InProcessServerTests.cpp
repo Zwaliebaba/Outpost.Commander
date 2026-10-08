@@ -96,6 +96,42 @@ public:
     Assert::IsTrue(log[0].command.player == BLUE && log[1].command.player == BLUE);
   }
 
+  // ADR-080: a scheduled order's time of day becomes the first tick at or after its moment, as the host's wall clock reads
+  // now; a moment past is now, and one further than a week ahead a week ahead.
+  TEST_METHOD(MakesAMomentItsTick)
+  {
+    const std::chrono::system_clock::time_point now{std::chrono::seconds{1'000'000}};
+    Assert::AreEqual(std::uint64_t{205}, Outpost::TickOfMoment(1'000'010, now, 5, 20));
+    Assert::AreEqual(std::uint64_t{5}, Outpost::TickOfMoment(1'000'000, now, 5, 20), L"now");
+    Assert::AreEqual(std::uint64_t{5}, Outpost::TickOfMoment(999'000, now, 5, 20), L"past");
+    Assert::AreEqual(std::uint64_t{5 + 195}, Outpost::TickOfMoment(1'000'010, now + 260ms, 5, 20), L"9.74 s rounds up to 195 ticks");
+    const std::uint64_t week = std::uint64_t{7} * 24 * 60 * 60 * 20;
+    Assert::AreEqual(5 + week, Outpost::TickOfMoment(1'000'000 + (30 * 24 * 60 * 60), now, 5, 20), L"a week at most");
+  }
+
+  // The host makes the tick of a scheduled order's time of day as the command arrives: the client's own tick is never
+  // trusted, and the log keeps the host's, from which the world replays (ADR-009, ADR-080).
+  TEST_METHOD(MakesTheTickOfAScheduledOrdersTimeOfDayAsItArrives)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
+    const Outpost::EntityId ship = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    const std::int64_t sent =
+      std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 6;
+    blue->Send({.order = Outpost::ScheduleOrderCommand{
+                  .ships = {ship},
+                  .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = sent, .tick = 999'999},
+                  .action = {.kind = Outpost::ScheduledActionKind::Move, .position = {.xMeters = 100.0f}}}});
+    server.Step();
+    const std::vector<Outpost::ScheduledOrderView> scheduled = server.World().BuildSnapshot(BLUE).scheduled;
+    Assert::AreEqual(std::size_t{1}, scheduled.size());
+    // Between five and six seconds ahead of tick 0, at twenty ticks a second (100 to 120), whenever in its second the test began.
+    const std::uint64_t tick = scheduled[0].trigger.tick;
+    Assert::IsTrue(tick >= 100 && tick <= 120, std::format(L"tick {}", tick).c_str());
+    const auto& logged = std::get<Outpost::ScheduleOrderCommand>(server.CommandLog().front().command.order);
+    Assert::AreEqual(tick, logged.trigger.tick, L"the log keeps the host's tick");
+  }
+
   // ADR-009: a match reproduces from its seed and the server's command log, on the same build.
   // ADR-025: started, the server runs its own ticks on a thread of its own. Orders sent from this thread reach it, a
   // snapshot arrives for every tick in order, and destroying the server stops its thread. Stepping it by hand, or

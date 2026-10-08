@@ -15,8 +15,8 @@ namespace Outpost
 // - sends the player's idle warships at enemy warships in a sector the player holds, or at whatever fires on the player's
 //   structures, and moves them back to where they stood once the attack is over (owner, 2026-10-08).
 //
-// It never attacks, raids, claims a sector or clears pirates, and it leaves a ship that is retreating, or that has an order
-// or a standing order of the player's, alone.
+// It never attacks, raids, claims a sector or clears pirates, and it leaves a ship that is retreating, or that has an order,
+// a standing order or a scheduled order of the player's, alone (ADR-080).
 class Deputy final : public HostedPlayer
 {
 public:

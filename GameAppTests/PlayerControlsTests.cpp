@@ -606,6 +606,41 @@ public:
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
   }
 
+  // Phase 5 design §11: O is the orders window's, which GameClient opens, and not the controls'; the window's button gives
+  // the form's scheduled order to the selected warships, and nothing while none is selected.
+  TEST_METHOD(SchedulesTheOrdersWindowsOrderForTheSelection)
+  {
+    Driver driver;
+    Outpost::Snapshot newest{.tick = 10, .player = ME};
+    newest.sectors = {{.id = 1,
+                       .nameUtf8 = "North",
+                       .minXMeters = -500.0f,
+                       .maxXMeters = 500.0f,
+                       .minZMeters = -500.0f,
+                       .maxZMeters = 500.0f,
+                       .node = {.xMeters = 0.0f, .zMeters = 300.0f},
+                       .holder = ME}};
+    const Outpost::PlayerClock clock;
+    const std::chrono::sys_seconds now = std::chrono::sys_days{std::chrono::year{2026} / 10 / 8} + std::chrono::hours{1};
+    Outpost::OrderForm form;
+    form.Update(newest, driver.WorldView());
+    driver.Controls().Schedule(form, now, clock, newest, driver.WorldView());
+    Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"nothing selected");
+
+    driver.Click(driver.WorldView()[0]);
+    driver.Click(driver.WorldView()[1], VK_LBUTTON, true);
+    driver.Key(Outpost::KEY_ORDERS);
+    Assert::IsTrue(driver.Selected() == Ids{1, 2}, L"O leaves the selection");
+    Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"and orders nothing");
+    driver.Controls().Schedule(form, now, clock, newest, driver.WorldView());
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    const Outpost::ScheduleOrderCommand* order = Only<Outpost::ScheduleOrderCommand>(commands);
+    Assert::IsTrue(order->ships == std::vector<Outpost::EntityId>{Outpost::EntityId{1}, Outpost::EntityId{2}});
+    Assert::AreEqual((now + std::chrono::hours{1}).time_since_epoch().count(), order->trigger.utcSeconds, L"02:00 UTC, an hour on");
+    Assert::IsTrue(order->action.kind == Outpost::ScheduledActionKind::AttackMove);
+    Assert::AreEqual(300.0f, order->action.position.zMeters, L"to North's node");
+  }
+
   // A key the controls do not read, such as Z, changes nothing, with Ctrl or without.
   TEST_METHOD(IgnoresAKeyItDoesNotRead)
   {
