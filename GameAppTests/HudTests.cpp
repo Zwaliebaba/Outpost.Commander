@@ -2059,11 +2059,11 @@ public:
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{100}};
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, newest.entities, selected);
     Assert::IsFalse(content.selection.empty());
-    const std::optional<std::string> pending = Outpost::PendingOrderLine(selected, newest.entities, newest, Outpost::PlayerClock());
-    Assert::AreEqual(std::string("Scheduled: at 02:00, hold North"), pending.value_or(""));
-    content.selection.push_back(*pending);
+    const std::string pending = Outpost::PendingOrderLine(selected, newest.entities, newest, Outpost::PlayerClock()).value_or("");
+    Assert::AreEqual(std::string("Scheduled: at 02:00, hold North"), pending);
+    content.selection.push_back(pending);
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    Assert::IsTrue(std::ranges::find(layout.texts, *pending, &Outpost::Hud::Text::text) != layout.texts.end(), L"whole");
+    Assert::IsTrue(std::ranges::find(layout.texts, pending, &Outpost::Hud::Text::text) != layout.texts.end(), L"whole");
   }
 
   // Design §11: on taking its seat again the player is told what happened while it was away, in a window of its own: how
