@@ -121,11 +121,6 @@ constexpr OreYield LastOf(OreYield) noexcept
   return OreYield::Rich;
 }
 
-constexpr ShipOrder LastOf(ShipOrder) noexcept
-{
-  return ShipOrder::Work;
-}
-
 constexpr TargetRule LastOf(TargetRule) noexcept
 {
   return TargetRule::Weakest;

@@ -25,9 +25,13 @@ struct ServerDesc
   std::filesystem::path world;
 };
 
+// How long after a player's connection has gone its deputy takes the seat (Phase 5 design §6, gate H2, ADR-079).
+inline constexpr std::uint32_t DEPUTY_DELAY_SECONDS = 60;
+
 // The parts of a tick the server times for measurement (task 8.1, Phase 1 design §10). They nest: Commands holds each
 // order's GroupRoute and ShipPaths, and GraphBuild is counted wherever a path graph was built, inside whichever part needed
-// it. The rest follow the simulation's step in order, and Snapshots is the server building every player's snapshot.
+// it. The rest follow the simulation's step in order, Snapshots is the server building every player's snapshot, and Hosted
+// the players it plays itself deciding what to do (ADR-079).
 enum class TickPart : std::uint8_t
 {
   Commands,
@@ -40,16 +44,18 @@ enum class TickPart : std::uint8_t
   Move,
   Separate,
   Vision,
-  Snapshots
+  Snapshots,
+  Hosted
 };
 
-inline constexpr std::size_t TICK_PART_COUNT = 11;
+inline constexpr std::size_t TICK_PART_COUNT = 12;
 
 // A part's name in the measurement log.
 [[nodiscard]] constexpr std::string_view TickPartName(TickPart _part) noexcept
 {
-  constexpr std::array<std::string_view, TICK_PART_COUNT> NAMES{
-    "commands", "graph_build", "group_route", "ship_paths", "fight", "targets", "economy", "move", "separate", "vision", "snapshots"};
+  constexpr std::array<std::string_view, TICK_PART_COUNT> NAMES{"commands", "graph_build", "group_route", "ship_paths",
+                                                                "fight",    "targets",     "economy",     "move",
+                                                                "separate", "vision",      "snapshots",   "hosted"};
   return NAMES[static_cast<std::size_t>(_part)];
 }
 
@@ -80,6 +86,12 @@ public:
   // again with the token by the player's newest connection. Throws Neuron::Exception when the server was not made to
   // listen over QUIC (ServerDesc::quic), once it has started, or when the player already has a connection or a seat.
   [[nodiscard]] virtual ServerAddress OpenSeat(PlayerId _player, const SeatToken& _token) = 0;
+
+  // Has the server play _player itself, on its own thread (ADR-079). Without a seat opened for the player, _hosted is the
+  // player: a world's AI empire. With one, _hosted is the seat's deputy, which plays the seat until the player first takes
+  // it, and again from DEPUTY_DELAY_SECONDS after the player's connection has gone until the player takes it again. Throws
+  // Neuron::Exception once the server has started, or when the player is hosted already or has a connection of its own.
+  virtual void Host(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted) = 0;
 
   // Starts the server's ticks on a thread of its own, at its fixed rate whatever the client's frame rate (ADR-025). Each
   // tick applies the commands that have arrived and sends each connected player a snapshot. Connect every player first.

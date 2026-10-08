@@ -155,12 +155,12 @@ auto Fields(Self& _value)
 {
   auto& [id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters, hitPointsHundredths,
          maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
-         secondJobPermille, remembered, sightMeters, standing, retreat, retreating, oreReserveHundredths, salvageOre, salvageTopic,
+         secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating, oreReserveHundredths, salvageOre, salvageTopic,
          salvagePermille] = _value;
   return std::tie(id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters,
                   hitPointsHundredths, maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue,
-                  research, jobPermille, secondJobPermille, remembered, sightMeters, standing, retreat, retreating, oreReserveHundredths,
-                  salvageOre, salvageTopic, salvagePermille);
+                  research, jobPermille, secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating,
+                  oreReserveHundredths, salvageOre, salvageTopic, salvagePermille);
 }
 
 template <typename Self>
@@ -312,6 +312,11 @@ constexpr StructureKind LastOf(StructureKind) noexcept
 constexpr RetreatThreshold LastOf(RetreatThreshold) noexcept
 {
   return RetreatThreshold::Quarter;
+}
+
+constexpr ShipOrder LastOf(ShipOrder) noexcept
+{
+  return ShipOrder::Work;
 }
 
 constexpr StandingOrder LastOf(StandingOrder) noexcept

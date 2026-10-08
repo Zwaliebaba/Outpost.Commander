@@ -39,8 +39,9 @@ std::string Outpost::WriteWorldSettings(const WorldSettings& _settings)
   for (std::size_t i = 0; i < _settings.seats.size(); ++i)
   {
     const WorldSeat& seat = _settings.seats[i];
-    seats += std::format("    {{ \"player\": {}, \"token\": \"{}\" }}{}\n", seat.player.value, ToHex(seat.token),
-                         i + 1 < _settings.seats.size() ? "," : "");
+    const std::string which =
+      seat.ai.empty() ? std::format("\"token\": \"{}\"", ToHex(seat.token)) : std::format("\"ai\": {}", Neuron::QuoteJson(seat.ai));
+    seats += std::format("    {{ \"player\": {}, {} }}{}\n", seat.player.value, which, i + 1 < _settings.seats.size() ? "," : "");
   }
   return std::format("{{\n  \"address\": {},\n  \"port\": {},\n  \"host\": {},\n  \"seed\": \"{}\",\n  \"seats\": [\n{}  ]\n}}\n",
                      Neuron::QuoteJson(_settings.address), _settings.port, Neuron::QuoteJson(_settings.host), _settings.seed, seats);
@@ -59,15 +60,26 @@ Outpost::WorldSettings Outpost::ReadWorldSettings(std::string_view _text)
     if (settings.host.empty())
       Neuron::JsonFail(reader.PathOf("host"), "expected the name or address players reach the server at");
     settings.seed = ReadSeed(reader, "seed");
-    settings.seats = Neuron::ReadJsonList<WorldSeat>(reader, "seats",
-                                                     [](Neuron::JsonObjectReader& _seat)
-                                                     {
-                                                       WorldSeat seat{.player = _seat.Identifier<PlayerId>("player")};
-                                                       const std::string token = _seat.String("token");
-                                                       if (!FromHex(token, seat.token))
-                                                         Neuron::JsonFail(_seat.PathOf("token"), "expected 32 hexadecimal digits");
-                                                       return seat;
-                                                     });
+    settings.seats =
+      Neuron::ReadJsonList<WorldSeat>(reader, "seats",
+                                      [](Neuron::JsonObjectReader& _seat)
+                                      {
+                                        WorldSeat seat{.player = _seat.Identifier<PlayerId>("player")};
+                                        const bool ai = _seat.Optional("ai") != nullptr;
+                                        if (ai == (_seat.Optional("token") != nullptr))
+                                          Neuron::JsonFail(_seat.Where(), "expected a seat's token, or the AI that plays it");
+                                        if (ai)
+                                        {
+                                          seat.ai = _seat.String("ai");
+                                          if (!std::ranges::contains(AI_DIFFICULTIES, seat.ai))
+                                            Neuron::JsonFail(_seat.PathOf("ai"), "expected Easy, Normal or Hard");
+                                          return seat;
+                                        }
+                                        const std::string token = _seat.String("token");
+                                        if (!FromHex(token, seat.token))
+                                          Neuron::JsonFail(_seat.PathOf("token"), "expected 32 hexadecimal digits");
+                                        return seat;
+                                      });
     if (settings.seats.empty())
       Neuron::JsonFail(reader.PathOf("seats"), "expected a seat at least");
     for (std::size_t i = 1; i < settings.seats.size(); ++i)

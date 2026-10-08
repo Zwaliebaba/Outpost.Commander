@@ -29,6 +29,10 @@ namespace Outpost
 // each Relay on its front. It keeps a scout with a Sensor Array touring the enemy's flank sectors, raids an enemy sector
 // it sees no warship guarding with a few warships, holds its front with its reserve's standing order, and attacks in
 // force only with a lead in nodes or a larger reserve (ADR-041).
+//
+// It starts from any state of its player (Phase 5 design §6, ADR-020 decision 16): the structures its player already has
+// are taken into its plan, not built again beside it, and its player's ships join its reserve. So an AI empire plays on
+// from a world the server restored, which kept nothing of the AI.
 class AiPlayer
 {
 public:
@@ -104,7 +108,16 @@ private:
 
   void Watch(const Snapshot& _snapshot);
   void Decide(const Snapshot& _snapshot, std::vector<Command>& _orders);
+  // Lays the plan round _station, or round what stands in for a Command Station its player has lost.
   void Plan(const Snapshot& _snapshot, const EntityView& _station);
+  // What its plan is laid round when its player has no Command Station: the oldest of its Shipyards, else of its
+  // structures; nullptr when it has none.
+  [[nodiscard]] const EntityView* StandIn(const Snapshot& _snapshot) const;
+  // Where an own structure of _kind stands near _preferred that no slot of the plan holds, the nearest: one its player
+  // built, or the AI before it was made afresh, which a new slot takes as its own rather than building another beside it.
+  [[nodiscard]] std::optional<PlanePosition> Adoptable(const Snapshot& _snapshot, StructureKind _kind, PlanePosition _preferred) const;
+  // Takes the Relays of the sectors its player holds beyond its home, which no slot holds, into its plan as claims.
+  void AdoptClaims(const Snapshot& _snapshot);
   // Adds the next Shipyard to the plan once the income calls for it.
   void PlanShipyards(const Snapshot& _snapshot);
   // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (Phase 1 design §13).

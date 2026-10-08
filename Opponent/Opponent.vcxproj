@@ -78,6 +78,8 @@
     <ClInclude Include="Opponent.h" />
     <ClInclude Include="AiSettings.h" />
     <ClInclude Include="AiPlayer.h" />
+    <ClInclude Include="AiEmpire.h" />
+    <ClInclude Include="Deputy.h" />
     <ClInclude Include="AiMatchesOptions.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -87,6 +89,7 @@
     </ClCompile>
     <ClCompile Include="AiSettings.cpp" />
     <ClCompile Include="AiPlayer.cpp" />
+    <ClCompile Include="Deputy.cpp" />
     <ClCompile Include="AiMatchesOptions.cpp" />
   </ItemGroup>
   <ItemGroup>

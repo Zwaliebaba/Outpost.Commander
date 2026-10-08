@@ -31,4 +31,5 @@
 #include "WireFormat.h"
 #include "QuicTransport.h"
 #include "JoinTicket.h"
+#include "HostedPlayer.h"
 #include "Server.h"

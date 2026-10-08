@@ -5,22 +5,6 @@ namespace Outpost
 class ByteWriter;
 class ByteReader;
 
-// What a ship is doing because it was told to (design §7, §9). Firing is not an order: an armed ship fires at whatever its
-// targeting picks, whatever its order.
-enum class ShipOrder : std::uint8_t
-{
-  // Holding where it is.
-  None,
-  // Heading for a point, firing on the move.
-  Move,
-  // Heading for a point, and standing to fire while an enemy is in range.
-  AttackMove,
-  // Closing on one target and firing at it until it dies.
-  Attack,
-  // A Constructor's: heading for a structure or ship of its own side, and building or repairing it once in reach.
-  Work
-};
-
 // How a ship picks what to fire at. Nearest is the game's rule (design §7). The other two are the balance check's two
 // extremes, forced by its headless battles (task 3.4) and by nothing in a match.
 enum class TargetRule : std::uint8_t

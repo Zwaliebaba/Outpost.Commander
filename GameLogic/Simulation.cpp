@@ -1071,6 +1071,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
       view.sightMeters = SightMetersOf(entity);
     if (entity.owner == _player)
     {
+      view.order = entity.order;
       view.standing = entity.standing;
       view.retreat = entity.retreat;
       view.retreating = entity.retreating;

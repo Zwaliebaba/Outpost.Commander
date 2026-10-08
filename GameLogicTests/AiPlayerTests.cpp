@@ -113,9 +113,16 @@ public:
       m_server(_fleetCap ? Outpost::LoadTuning(ReadRepositoryTuning()) : UncappedTuning(), m_map, {.seed = _seed}),
       m_human(m_server.Connect(HUMAN)),
       m_aiConnection(m_server.Connect(AI)),
-      m_ai(_settings.has_value() ? std::move(*_settings) : RepositorySettings(), m_server.TicksPerSecond())
+      m_settings(_settings.has_value() ? std::move(*_settings) : RepositorySettings()),
+      m_ai(m_settings, m_server.TicksPerSecond())
   {
     m_server.World().PlaceStartingBases(m_server.MapData());
+  }
+
+  // The AI made afresh, as a server that restarted makes it: it kept nothing (Phase 5 design §6).
+  void RestartAi()
+  {
+    m_ai = Outpost::AiPlayer(m_settings, m_server.TicksPerSecond());
   }
 
   [[nodiscard]] Outpost::Simulation& World() noexcept
@@ -193,10 +200,28 @@ public:
   // A finished Relay of the tuning data's numbers on the sector's node.
   Outpost::EntityId Relay(Outpost::PlayerId _owner, std::int32_t _sector)
   {
-    const Outpost::StructureTuning& tuning =
-      *std::ranges::find(m_server.TuningData().structures, Outpost::StructureKind::Relay, &Outpost::StructureTuning::kind);
-    return World().SpawnStructure(_owner, Outpost::StructureKind::Relay, Node(_sector), static_cast<float>(tuning.footprintRadiusMeters),
+    return Structure(_owner, Outpost::StructureKind::Relay, Node(_sector));
+  }
+
+  // A finished structure of the tuning data's numbers.
+  Outpost::EntityId Structure(Outpost::PlayerId _owner, Outpost::StructureKind _kind, Outpost::PlanePosition _position)
+  {
+    const Outpost::StructureTuning& tuning = *std::ranges::find(m_server.TuningData().structures, _kind, &Outpost::StructureTuning::kind);
+    return World().SpawnStructure(_owner, _kind, _position, static_cast<float>(tuning.footprintRadiusMeters),
                                   tuning.hitPoints * Outpost::HUNDREDTHS, tuning.armor * Outpost::HUNDREDTHS);
+  }
+
+  // The structures of _kinds the AI ordered from tick _from on.
+  [[nodiscard]] size_t BuildOrders(std::uint64_t _from, std::initializer_list<Outpost::StructureKind> _kinds) const
+  {
+    return static_cast<size_t>(std::ranges::count_if(CommandLog(),
+                                                     [&](const Outpost::LoggedCommand& _logged)
+                                                     {
+                                                       const auto* build =
+                                                         std::get_if<Outpost::BuildStructureCommand>(&_logged.command.order);
+                                                       return _logged.tick >= _from && _logged.command.player == AI && build != nullptr &&
+                                                              std::ranges::contains(_kinds, build->structure);
+                                                     }));
   }
 
   [[nodiscard]] Outpost::PlanePosition Node(std::int32_t _sector) const
@@ -220,6 +245,7 @@ private:
   Outpost::InProcessServer m_server;
   std::unique_ptr<Outpost::Transport> m_human;
   std::unique_ptr<Outpost::Transport> m_aiConnection;
+  Outpost::AiSettings m_settings;
   Outpost::AiPlayer m_ai;
 };
 
@@ -1041,6 +1067,80 @@ public:
     Assert::IsTrue(std::ranges::all_of(queued, [](const Outpost::QueueShipCommand& _queue)
                                        { return _queue.producer == Outpost::EntityId{9001} && _queue.design.IsValid(); }),
                    L"something other than a warship was queued");
+  }
+
+  // Phase 5 design §6 (ADR-020 decision 16): made afresh for a player that has lost its Command Station, it lays its plan
+  // round the Shipyard it has left and keeps it building.
+  TEST_METHOD(PlaysAnEmpireWithoutAStationFromItsFirstSnapshot)
+  {
+    AiMatch match;
+    Outpost::Snapshot snapshot = match.View(AI);
+    std::erase_if(snapshot.entities,
+                  [](const Outpost::EntityView& _entity) { return _entity.owner == AI && _entity.kind == Outpost::EntityKind::Structure; });
+    const Outpost::PlanePosition home = match.Start(AI);
+    snapshot.entities.push_back({.id = Outpost::EntityId{9001},
+                                 .kind = Outpost::EntityKind::Structure,
+                                 .owner = AI,
+                                 .structure = Outpost::StructureKind::Shipyard,
+                                 .position = {home.xMeters + 150.0f, home.zMeters + 150.0f},
+                                 .radiusMeters = 40.0f,
+                                 .builtPermille = Outpost::PERMILLE,
+                                 .level = 3});
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    const std::vector<Outpost::QueueShipCommand> queued = OrdersOf<Outpost::QueueShipCommand>(ai.Update(snapshot));
+    Assert::IsTrue(
+      std::ranges::any_of(queued, [](const Outpost::QueueShipCommand& _queue) { return _queue.producer == Outpost::EntityId{9001}; }),
+      L"its Shipyard was given no work");
+  }
+
+  // Phase 5 design §6 (ADR-020 decision 16): made afresh in the middle of a match, as a server that restarted makes an AI
+  // empire, it takes the base it built into its plan and builds none of it again: it orders no more structures than the
+  // AI that never stopped.
+  TEST_METHOD(PicksUpItsOwnEmpireWhereItLeftOff)
+  {
+    AiMatch kept;
+    AiMatch restarted;
+    kept.Run(12.0 * 60.0);
+    restarted.Run(12.0 * 60.0);
+    restarted.RestartAi();
+    const std::uint64_t from = restarted.World().CurrentTick();
+    kept.Run(60.0);
+    restarted.Run(60.0);
+    const std::initializer_list<Outpost::StructureKind> base{Outpost::StructureKind::Shipyard, Outpost::StructureKind::ResearchLab,
+                                                             Outpost::StructureKind::DefensePlatform, Outpost::StructureKind::RepairBay};
+    const size_t again = restarted.BuildOrders(from, base);
+    Assert::IsTrue(
+      again <= kept.BuildOrders(from, base),
+      std::format(L"it ordered {} base structures, the AI that never stopped {}", again, kept.BuildOrders(from, base)).c_str());
+    Assert::IsTrue(std::ranges::any_of(restarted.CommandLog(), [from](const Outpost::LoggedCommand& _logged)
+                                       { return _logged.tick >= from && _logged.command.player == AI; }),
+                   L"and it plays on");
+  }
+
+  // Phase 5 design §6 (ADR-020 decision 16): a base it did not build is taken into its plan: a Shipyard standing near where
+  // the plan would put its first is that Shipyard.
+  TEST_METHOD(TakesOverABaseItDidNotBuild)
+  {
+    AiMatch untouched;
+    untouched.Run(150.0);
+    Assert::IsTrue(untouched.BuildOrders(0, {Outpost::StructureKind::Shipyard}) > 0, L"the AI builds its first Shipyard by then");
+
+    AiMatch match;
+    const Outpost::PlanePosition home = match.Start(AI);
+    // Toward the map's center from its Command Station, where its plan would put a Defence Platform, not a Shipyard.
+    const float fromCenter = std::hypot(home.xMeters, home.zMeters);
+    const Outpost::PlanePosition forward{home.xMeters - (home.xMeters / fromCenter * 220.0f),
+                                         home.zMeters - (home.zMeters / fromCenter * 220.0f)};
+    const Outpost::EntityId yard = match.Structure(AI, Outpost::StructureKind::Shipyard, forward);
+    match.Run(150.0);
+    Assert::AreEqual(size_t{0}, match.BuildOrders(0, {Outpost::StructureKind::Shipyard}), L"it built another Shipyard beside it");
+    Assert::IsTrue(std::ranges::any_of(match.CommandLog(),
+                                       [yard](const Outpost::LoggedCommand& _logged)
+                                       {
+                                         const auto* queue = std::get_if<Outpost::QueueShipCommand>(&_logged.command.order);
+                                         return queue != nullptr && queue->producer == yard;
+                                       }),
+                   L"and builds its warships there");
   }
 
   // Task 12.2: an attack group that has lost half the ships it set out with falls back, and the reserve waits the

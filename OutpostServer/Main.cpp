@@ -18,17 +18,20 @@ constexpr std::wstring_view HOST_OPTION = L"--host";
 constexpr std::wstring_view ADDRESS_OPTION = L"--address";
 constexpr std::wstring_view PORT_OPTION = L"--port";
 constexpr std::wstring_view SEED_OPTION = L"--seed";
+constexpr std::wstring_view AI_OPTION = L"--ai";
 constexpr std::string_view USAGE = "Outpost Commander's dedicated server.\n"
                                    "\n"
                                    "  OutpostServer --new-world <folder> [--host <name>] [--address <ip>] [--port <n>] [--seed <n>]\n"
+                                   "                [--ai <player>[:Easy|Normal|Hard]]\n"
                                    "      Makes a new world in <folder>: its settings, World.json, with a seat for each of the map's\n"
                                    "      starts. --host is the name or address players reach this machine at, localhost by\n"
                                    "      default; --address what the server listens on, 0.0.0.0 by default; --port its UDP port,\n"
-                                   "      45000 by default.\n"
+                                   "      45000 by default. --ai gives a seat to an AI empire, Normal unless named.\n"
                                    "\n"
                                    "  OutpostServer <folder>\n"
                                    "      Runs the world in <folder>, coming back from its newest save, and writes a join file for\n"
-                                   "      each seat there. Hand each player its file. Ctrl+C saves and stops it.";
+                                   "      each player's seat there. Hand each player its file. A deputy keeps a player's empire\n"
+                                   "      running from a minute after the player leaves. Ctrl+C saves and stops it.";
 // How often the main thread looks at the server, which is where a failure on its thread reaches it (ADR-025).
 constexpr std::chrono::milliseconds CHECK_INTERVAL{1'000};
 
@@ -90,6 +93,29 @@ template <std::unsigned_integral T> T NumberOption(std::wstring_view _option, st
   return value;
 }
 
+// The AI's settings file of a difficulty (ADR-065).
+std::wstring_view AiSettingsFile(std::string_view _difficulty)
+{
+  if (_difficulty == "Easy")
+    return Outpost::EASY_AI_SETTINGS;
+  return _difficulty == "Hard" ? Outpost::HARD_AI_SETTINGS : Outpost::NORMAL_AI_SETTINGS;
+}
+
+// --ai's value: a seat's player, and the difficulty after a colon, Normal when it names none.
+void GiveSeatToAi(Outpost::WorldSettings& _settings, std::wstring_view _value)
+{
+  const std::size_t colon = _value.find(L':');
+  const auto player = NumberOption<std::uint32_t>(AI_OPTION, _value.substr(0, colon), 1);
+  const std::string difficulty = colon == std::wstring_view::npos ? "Normal" : Utf8(_value.substr(colon + 1));
+  if (!std::ranges::contains(Outpost::AI_DIFFICULTIES, difficulty))
+    throw Neuron::Exception(std::format("{} takes a difficulty of Easy, Normal or Hard, not '{}'.", Utf8(AI_OPTION), difficulty));
+  const auto seat = std::ranges::find(_settings.seats, Outpost::PlayerId{player}, &Outpost::WorldSeat::player);
+  if (seat == _settings.seats.end())
+    throw Neuron::Exception(std::format("The map has no seat for player {}.", player));
+  seat->ai = difficulty;
+  seat->token = {};
+}
+
 // --new-world: the settings of a new world in _folder, written as its World.json.
 int MakeWorld(const std::filesystem::path& _folder, std::span<const std::wstring> _options)
 {
@@ -115,6 +141,8 @@ int MakeWorld(const std::filesystem::path& _folder, std::span<const std::wstring
       settings.port = NumberOption<std::uint16_t>(option, value, 1);
     else if (option == SEED_OPTION)
       settings.seed = NumberOption<std::uint64_t>(option, value, 0);
+    else if (option == AI_OPTION)
+      GiveSeatToAi(settings, value);
     else
       throw Neuron::Exception(std::format("{} is not an option of --new-world.", Utf8(option)));
   }
@@ -138,9 +166,21 @@ int RunWorld(const std::filesystem::path& _folder)
   const Outpost::WorldSettings settings = Outpost::ReadWorldSettings(ReadText(_folder / Outpost::WORLD_SETTINGS_FILE));
   std::unique_ptr<Outpost::Server> server = Outpost::CreateInProcessServer(
     {.seed = settings.seed, .quic = true, .quicAddress = settings.address, .quicPort = settings.port, .world = _folder});
+  // The players the server plays itself, on its thread (ADR-079): an AI empire for each AI seat, and for each player's seat
+  // a deputy that keeps the empire running while its player is away, playing it as the Normal AI researches and defends.
+  const std::uint32_t ticksPerSecond = server->TicksPerSecond();
+  const Outpost::AiSettings deputySettings = Outpost::LoadPackagedAiSettings(Outpost::NORMAL_AI_SETTINGS);
   for (const Outpost::WorldSeat& seat : settings.seats)
   {
+    if (!seat.ai.empty())
+    {
+      server->Host(seat.player,
+                   std::make_unique<Outpost::AiEmpire>(Outpost::LoadPackagedAiSettings(AiSettingsFile(seat.ai)), ticksPerSecond));
+      Outpost::ServerConsole::Print(std::format("Player {} is an AI empire, {}.", seat.player.value, seat.ai));
+      continue;
+    }
     const Outpost::ServerAddress address = server->OpenSeat(seat.player, seat.token);
+    server->Host(seat.player, std::make_unique<Outpost::Deputy>(deputySettings, ticksPerSecond));
     const std::filesystem::path joinFile = _folder / Outpost::JoinFileName(seat.player);
     WriteText(joinFile, Outpost::WriteJoinTicket(Outpost::TicketFor(settings, seat, address.certificate)));
     Outpost::ServerConsole::Print(std::format("Player {}'s join file: {}", seat.player.value, Utf8(joinFile)));

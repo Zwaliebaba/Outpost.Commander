@@ -22,6 +22,16 @@ Outpost::Map RepositoryMap()
 {
   return Outpost::LoadMap(ReadRepositoryMap());
 }
+
+// A hosted player that gives no order.
+class Idle final : public Outpost::HostedPlayer
+{
+public:
+  [[nodiscard]] std::vector<Outpost::Command> Play([[maybe_unused]] const Outpost::Snapshot& _snapshot) override
+  {
+    return {};
+  }
+};
 } // namespace
 
 TEST_CLASS(InProcessServerTests)
@@ -174,6 +184,97 @@ public:
     }
     Assert::AreEqual(log.size(), next);
     Assert::IsTrue(replay == server.World());
+  }
+
+  // ADR-079: a player the server hosts plays on the server's own thread, and its orders are applied at the next tick and
+  // logged as a connection's are, so that a world of two AI empires replays from its seed and its log without them.
+  TEST_METHOD(HostsAiEmpiresWhoseOrdersReplayFromTheLog)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 41});
+    server.World().PlaceStartingBases(server.MapData());
+    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    server.Host(BLUE, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
+    server.Host(RED, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
+    server.PreparePathfinding();
+    for (std::uint32_t tick = 0; tick < 3 * 60 * server.TicksPerSecond(); ++tick)
+      server.Step();
+    for (const Outpost::PlayerId player : {BLUE, RED})
+    {
+      Assert::IsTrue(std::ranges::any_of(server.CommandLog(),
+                                         [player](const Outpost::LoggedCommand& _logged) { return _logged.command.player == player; }),
+                     L"each empire played");
+    }
+
+    Outpost::InProcessServer replay(RepositoryTuning(), RepositoryMap(), {.seed = 41});
+    replay.World().PlaceStartingBases(replay.MapData());
+    replay.PreparePathfinding();
+    const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();
+    size_t next = 0;
+    while (replay.World().CurrentTick() < server.World().CurrentTick())
+    {
+      std::vector<Outpost::Command> commands;
+      for (; next < log.size() && log[next].tick == replay.World().CurrentTick(); ++next)
+        commands.push_back(log[next].command);
+      (void)replay.World().Tick(commands);
+    }
+    Assert::IsTrue(replay.World() == server.World());
+  }
+
+  // W2 (Phase 5 design §2): what two AI empires cost the server's thread over an hour of world, as the tick's 99th
+  // percentile and its longest, and the hosted players' part of them. Run on its own, with OUTPOST_WORLD_MEASURE set.
+  TEST_METHOD(MeasuresTheHostedPlayersTicks)
+  {
+    if (GetEnvironmentVariableW(L"OUTPOST_WORLD_MEASURE", nullptr, 0) == 0)
+    {
+      Logger::WriteMessage("Not run here: OUTPOST_WORLD_MEASURE runs it.");
+      return;
+    }
+    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    for (const std::uint64_t seed : {1, 2, 3})
+    {
+      Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = seed});
+      server.World().PlaceStartingBases(server.MapData());
+      server.Host(BLUE, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
+      server.Host(RED, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
+      server.PreparePathfinding();
+      std::vector<std::chrono::nanoseconds> totals;
+      std::vector<std::chrono::nanoseconds> hosted;
+      for (std::uint32_t minute = 0; minute < 60; ++minute)
+      {
+        for (std::uint32_t tick = 0; tick < 60 * server.TicksPerSecond(); ++tick)
+          server.Step();
+        for (const Outpost::TickTiming& timing : server.TakeTickTimings())
+        {
+          totals.push_back(timing.total);
+          hosted.push_back(timing.Part(Outpost::TickPart::Hosted));
+        }
+      }
+      const auto percentile = [](std::vector<std::chrono::nanoseconds> _values)
+      {
+        std::ranges::sort(_values);
+        return std::chrono::duration<double, std::milli>(_values[(_values.size() * 99) / 100]).count();
+      };
+      Logger::WriteMessage(std::format("seed {}: a tick's 99th percentile {:.2f} ms, longest {:.2f} ms; the hosted players' 99th "
+                                       "percentile {:.2f} ms, longest {:.2f} ms",
+                                       seed, percentile(totals),
+                                       std::chrono::duration<double, std::milli>(std::ranges::max(totals)).count(), percentile(hosted),
+                                       std::chrono::duration<double, std::milli>(std::ranges::max(hosted)).count())
+                             .c_str());
+    }
+  }
+
+  TEST_METHOD(HostsAPlayerOnceAndBeforeItStarts)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    Assert::ExpectException<Neuron::Exception>([&server] { server.Host(BLUE, std::make_unique<Idle>()); }, L"a player with a connection");
+    Assert::ExpectException<Neuron::Exception>([&server] { server.Host(RED, nullptr); }, L"nothing to play it");
+    server.Host(RED, std::make_unique<Idle>());
+    Assert::ExpectException<Neuron::Exception>([&server] { server.Host(RED, std::make_unique<Idle>()); }, L"a player hosted already");
+    Assert::ExpectException<Neuron::Exception>([&server] { (void)server.Connect(RED); }, L"and it connects no more");
+    server.Start();
+    Assert::ExpectException<Neuron::Exception>([&server] { server.Host(Outpost::PlayerId{3}, std::make_unique<Idle>()); },
+                                               L"once it has started");
   }
 
   // Design §6: every player starts with its Command Station on its start and the starting Constructors in front of it,
