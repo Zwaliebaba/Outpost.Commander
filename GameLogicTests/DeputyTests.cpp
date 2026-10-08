@@ -280,9 +280,9 @@ public:
     Empire empire;
     (void)empire.Add({.kind = Outpost::EntityKind::Asteroid, .position = ASTEROID, .radiusMeters = 30.0f, .oreReserveHundredths = 50'000});
     const Outpost::EntityId rig = empire.Structure(Outpost::StructureKind::MiningRig, ASTEROID);
-    const Outpost::EntityId near = empire.Ship(Outpost::ShipRole::Constructor, {300.0f, 0.0f});
-    const Outpost::EntityId nearer = empire.Ship(Outpost::ShipRole::Constructor, {350.0f, 0.0f});
-    const Outpost::EntityId far = empire.Ship(Outpost::ShipRole::Constructor, {-800.0f, 0.0f});
+    const Outpost::EntityId second = empire.Ship(Outpost::ShipRole::Constructor, {300.0f, 0.0f});
+    const Outpost::EntityId nearest = empire.Ship(Outpost::ShipRole::Constructor, {350.0f, 0.0f});
+    const Outpost::EntityId distant = empire.Ship(Outpost::ShipRole::Constructor, {-800.0f, 0.0f});
     Outpost::Deputy deputy(RepositorySettings(), TICKS_PER_SECOND);
     deputy.Watch(empire.Now());
 
@@ -290,8 +290,9 @@ public:
     const std::vector<Outpost::BuildStructureCommand> built = OrdersOf<Outpost::BuildStructureCommand>(deputy.Play(empire.After(1.0)));
     Assert::AreEqual(size_t{1}, built.size());
     Assert::IsTrue(built.front().structure == Outpost::StructureKind::MiningRig && built.front().position == ASTEROID);
-    Assert::IsTrue(std::ranges::contains(built.front().constructors, near) && std::ranges::contains(built.front().constructors, nearer) &&
-                     !std::ranges::contains(built.front().constructors, far),
+    Assert::IsTrue(std::ranges::contains(built.front().constructors, second) &&
+                     std::ranges::contains(built.front().constructors, nearest) &&
+                     !std::ranges::contains(built.front().constructors, distant),
                    L"the two nearest Constructors");
     Assert::IsTrue(OrdersOf<Outpost::BuildStructureCommand>(deputy.Play(empire.After(1.0))).empty(), L"once, while its site is due");
 
