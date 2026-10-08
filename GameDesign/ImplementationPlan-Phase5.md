@@ -149,7 +149,7 @@ Scoped from design §6. The owner decided two things the design left open (2026-
 - **ADR:** ADR-079; ADR-002, ADR-077 and ADR-078 edited in place.
 - **Acceptance:**
   - `SeatControllerTests`.
-  - `DeputyTests`: each keeper rule, a turn beginning afresh, and W3 over ten minutes of a real match.
+  - `DeputyTests` (`OpponentTests`): each keeper rule and a turn beginning afresh. `DeputyPlayTests` (`GameLogicTests`): W3 over ten minutes of a real match.
   - `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`.
   - `WorldSettingsTests` with AI seats.
 - **Verify:** the container's run of `GameLogicTests` and of `OutpostServer --new-world --ai`; CI for the hand-over over QUIC; **owner run**: a world with an AI empire, left for an hour, and the deputy's play judged on the player's return.

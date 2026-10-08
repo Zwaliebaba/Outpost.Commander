@@ -132,7 +132,7 @@
     <ClCompile Include="WorldFolderTests.cpp" />
     <ClCompile Include="WorldSettingsTests.cpp" />
     <ClCompile Include="SeatControllerTests.cpp" />
-    <ClCompile Include="DeputyTests.cpp" />
+    <ClCompile Include="DeputyPlayTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

@@ -8,5 +8,6 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="AiSettingsTests.cpp" />
     <ClCompile Include="AiMatchesOptionsTests.cpp" />
+    <ClCompile Include="DeputyTests.cpp" />
   </ItemGroup>
 </Project>
