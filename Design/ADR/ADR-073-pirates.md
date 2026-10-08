@@ -11,7 +11,7 @@ The owner decided on 2026-10-07:
 - On each side, a camp goes in two of the four contested sectors, drawn by the seed. A stronghold goes on both rich corners and on the center.
 - Pirates fight at the base level, with no research.
 - The derelict a cleared outpost leaves waits for milestone 31.
-- Until milestone 33, the AI leaves pirate sectors alone.
+- Until milestone 33, the AI leaves pirate sectors alone; milestone 33 has it clear them ([ADR-076](ADR-076-ai-plays-phase-4.md)).
 - Every player sees which sectors are guarded (decision 7).
 
 What the design leaves open: how the neutral owner is represented, how an outpost stands round its node, what the guarding rule does tick by tick, how a client learns that a sector cannot be claimed, and what the client and the AI do in the meantime.
@@ -57,9 +57,9 @@ What the design leaves open: how the neutral owner is represented, how an outpos
    - A Relay's ghost is red in a guarded sector.
    - `PROTOCOL_VERSION` goes from 7 to 8.
 8. **A measurement or stress run places no pirates.** It is not a match, and its scenes stay as they were measured (task 2.7, task 3.7).
-9. **Until milestone 33, the AI leaves pirates alone** ([ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
+9. **The AI leaves pirates alone but for a detachment sent to clear an outpost** ([ADR-076](ADR-076-ai-plays-phase-4.md) decision 2; [ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
    - It neither plans nor claims a Relay or a rig in a guarded sector, and a claim that is guarded is dropped and another made in its place.
-   - It counts no pirate warship as the enemy's fleet to answer, and picks no pirate structure to attack.
+   - It counts no pirate warship as the enemy's fleet to answer, and its main attack picks no pirate structure to attack.
    - Its fleets are not routed round the outposts, so a group whose way passes within 600 m of a node fights the outpost there.
 10. **The client draws them in violet** ([ADR-011](ADR-011-meshes-and-shading.md)).
     - `Models.json`'s `"Pirate"` set names `"meshes": "Tarkan"`: it borrows that set's meshes and models in a color of its own. `"pirates"` names it as the set the pirates are drawn with.
@@ -79,7 +79,7 @@ What the design leaves open: how the neutral owner is represented, how an outpos
   | Brawler, Medium Mass Driver | 3 lose; 4 clear it, 2 lost | 8 lose; 10 clear it, 5 lost |
   | Lancer, Medium Lance | 3 clear it, none lost | 3 lose; 4 clear it, 3 lost |
 
-  A Mass Driver's 14 damage does a Defence Platform, armor 10, 4 a hit. §8's "a first fleet of 4–6 Small ships clears it with losses" therefore holds for Pickets, not for Swarms. The numbers are starting values (L7). `PirateTests` keeps the Picket result. The ships fight to the end: since milestone 32 a ship turns for home below a quarter of its hit points unless set never to, and the test sets them so ([ADR-075](ADR-075-repair-and-retreat.md)). The pirates' own ships never retreat.
+  A Mass Driver's 14 damage does a Defence Platform, armor 10, 4 a hit. §8's "a first fleet of 4–6 Small ships clears it with losses" therefore holds for Pickets, not for Swarms. The owner kept the numbers and reworded §8 to say so (2026-10-07). `PirateTests` keeps the Picket result. The ships fight to the end: since milestone 32 a ship turns for home below a quarter of its hit points unless set never to, and the test sets them so ([ADR-075](ADR-075-repair-and-retreat.md)). The pirates' own ships never retreat.
 - **The AI no longer feeds Constructors to the camps.** In 25 minutes on seed 3, with eight claims allowed, an AI that tried the guarded sectors ordered 145 Relays there and held 7 sectors. This one orders none and holds 9.
 - **AI against AI over seeds 1–40** (design §2):
   - 37 matches end, 3 of them by production, the first such endings on the 10 km map. 3 are still level at three hours: the AI attacks only with a lead in nodes, and the guarded sectors were the ones that broke a tie.

@@ -27,10 +27,6 @@ constexpr float STALL_HEADING_RADIANS = std::numbers::pi_v<float> / 4.0f;
 // of the push left over sideways.
 constexpr float SIDESTEP_SHARE = 0.2f;
 
-// Room between neighbors in a formation, in footprint radii of the group's widest ship: two radii for the ships
-// themselves, one for the gap. Loose, as design §9 asks.
-constexpr float FORMATION_SPACING_RADII = 3.0f;
-
 // The component of kind T a research topic unlocks, or none.
 template <typename T> T UnlockedBy(const Outpost::ResearchTopicTuning& _topic) noexcept
 {

@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 4 Implementation Plan
 
-Status: **open** · Started 2026-10-06, when the owner accepted [the Phase 4 design](OutpostCommander-Phase4.md) with every gate decided as proposed and L11 waived · Derived from the Phase 4 design
+Status: **closed** · Started 2026-10-06, when the owner accepted [the Phase 4 design](OutpostCommander-Phase4.md) with every gate decided as proposed and L11 waived · Every milestone built and merged by 2026-10-08, #81 to #91 · U1–U6 answered; U7 and U8 await the owner's runs · Derived from the Phase 4 design
 
-The Phase 4 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 3 plan](Archive/ImplementationPlan-Phase3.md) is closed.
+The Phase 4 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 3 plan](ImplementationPlan-Phase3.md) is closed.
 
 ---
 
@@ -38,14 +38,14 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 29.1 | Placement from the seed | 28.2 | L10 | done |
 | 29.2 | The fog works out only what changed | 28.1 | owner, 2026-10-07 | done |
 | 30.1 | Pirates: the neutral owner and its outposts | 29.1 | L7 | done |
-| 30.2 | The client draws pirates | 30.1 | L7 | merged; awaiting the owner's run |
-| 31.1 | Derelicts and salvage | 29.1 | L8 | built, in milestone 31's PR |
-| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | built, in milestone 31's PR; awaiting the owner's run |
-| 32.1 | The Repair Bay and retreat, on the server | — | L9 | built, in milestone 32's PR |
-| 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | built, in milestone 32's PR; awaiting CI and the owner's run |
-| 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | — | todo |
-| 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | todo |
-| 34.2 | U1–U8 | 33.1, 34.1 | — | todo |
+| 30.2 | The client draws pirates | 30.1 | L7 | done; the owner's run accepted on 2026-10-07 |
+| 31.1 | Derelicts and salvage | 29.1 | L8 | done |
+| 31.2 | The client shows derelicts and salvage | 31.1 | L8 | done; the owner's run accepted on 2026-10-07 |
+| 32.1 | The Repair Bay and retreat, on the server | — | L9 | done |
+| 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | done; the owner's run accepted on 2026-10-07 |
+| 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | owner, 2026-10-07 | done |
+| 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | done |
+| 34.2 | U1–U8 | 33.1, 34.1 | — | done: U1–U6 answered; U7 and U8 await the owner's runs |
 
 ### Milestone order
 
@@ -74,7 +74,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** a new one, ADR-071: the fleet cap.
 - **Acceptance:** `FleetCapTests` cover a job waiting at the cap and starting once a ship is lost, jobs under way counted, a Constructor never counted, the cap rising with the station's level, level 1's cap without a station, and no cap without the data. `TuningTests` cover the new members and their refusals. `WireFormatTests` cover the new fields.
 - **Verify:** CI; the container's run of `GameLogicTests`.
-- **As built:** [ADR-071](../Design/ADR/ADR-071-fleet-cap.md); ADR-016 edited in place. `FleetCapTests` has a sixth test, that a Medium's two points do not fit where a Small's one would. The protocol's version is 7.
+- **As built:** [ADR-071](../../Design/ADR/ADR-071-fleet-cap.md); ADR-016 edited in place. `FleetCapTests` has a sixth test, that a Medium's two points do not fit where a Small's one would. The protocol's version is 7.
 
 ### 27.3 — The client shows the fleet and its cap
 
@@ -169,7 +169,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** a new one, ADR-072: seeded placement. ADR-036 decision 4 edited in place.
 - **Acceptance:** `MapTests` cover the shape and the Ore over twelve seeds, symmetry, reachability, the same seed placing the same map and every asteroid keeping the placement's rules, and the loader's refusals of broken kinds.
 - **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
-- **As built:** recorded in [ADR-072](../Design/ADR/ADR-072-seeded-placement.md) and design §2. Seeds 1 to 2,000 all place the map, at about 10 µs each. `Tools/MakeMap.py` writes the kinds. The tests that named an asteroid's place find one the seed placed (`TerritoryMatch::AsteroidIn`), and the fixtures place their bases and loads on the server's placed map; no AI test needed re-timing. Over seeds 1–40 the median match is 1:37, every match ends by domination, and each player wins 20.
+- **As built:** recorded in [ADR-072](../../Design/ADR/ADR-072-seeded-placement.md) and design §2. Seeds 1 to 2,000 all place the map, at about 10 µs each. `Tools/MakeMap.py` writes the kinds. The tests that named an asteroid's place find one the seed placed (`TerritoryMatch::AsteroidIn`), and the fixtures place their bases and loads on the server's placed map; no AI test needed re-timing. Over seeds 1–40 the median match is 1:37, every match ends by domination, and each player wins 20.
 
 ### 29.2 — The fog works out only what changed
 
@@ -191,7 +191,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** a new one, ADR-073: pirates. ADR-072, ADR-056, ADR-057, ADR-024, ADR-020 and ADR-038 edited in place.
 - **Acceptance:** `PirateTests` (the outposts on their nodes, mirrored and held for no one; the guard, the chase and the way back; a Relay refused until the outpost falls; a first fleet of four Pickets clearing a camp with losses; fog); `MapTests` and `TuningTests` for the data; `AiPlayerTests.LeavesASectorWithPiratesAlone`; `InProcessServerTests` replaying a match with pirates.
 - **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
-- **As built:** recorded in [ADR-073](../Design/ADR/ADR-073-pirates.md) and design §2.
+- **As built:** recorded in [ADR-073](../../Design/ADR/ADR-073-pirates.md) and design §2.
   - A first fleet of four Pickets clears a camp and loses one, as §8 asks. Swarms need eight, since a Mass Driver does a Defence Platform's armor little harm. That is for the owner, the numbers being starting values.
   - With the AI unchanged, it ordered a Relay into a guarded sector every second; now it orders none.
   - Over seeds 1–40, 37 matches end, 3 of them by production, and 3 stay level at three hours.
@@ -231,7 +231,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** a new one, ADR-074: salvage. ADR-072, ADR-073, ADR-016, ADR-024 and ADR-020 edited in place.
 - **Acceptance:** `SalvageTests` (time, a second Constructor, refusals, Ore, recovery of a topic not started, under way or researched already, fog, a stronghold's wreck); `PirateTests.ARelayWaitsForTheOutpostToFall` salvaging the camp's wreck before the Relay; `MapTests`, `TuningTests` and `WireFormatTests` for the data and the protocol.
 - **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
-- **As built:** recorded in [ADR-074](../Design/ADR/ADR-074-salvage.md) and design §2.
+- **As built:** recorded in [ADR-074](../../Design/ADR/ADR-074-salvage.md) and design §2.
   - Every salvage test passed on its first run.
   - Over seeds 1–40 the AI salvages nothing, and 37 matches end as after milestone 30.
   - The median match ends with 14 derelicts left.
@@ -274,7 +274,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 - **ADR:** a new one, ADR-075: repair and retreat. ADR-016, ADR-041, ADR-056, ADR-059 and ADR-073 edited in place.
 - **Acceptance:** `RetreatTests` (where a ship goes, its repair, never and a quarter, an order ending a retreat and a hit starting it again, a standing order waiting, four ships at a time, a design's retreat); `TerritoryTests.AShipyardNeedsAHeldSector` for the Bay; `TuningTests` and `WireFormatTests` for the data and the protocol.
 - **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
-- **As built:** recorded in [ADR-075](../Design/ADR/ADR-075-repair-and-retreat.md) and design §2.
+- **As built:** recorded in [ADR-075](../../Design/ADR/ADR-075-repair-and-retreat.md) and design §2.
   - Three tests of a fight to the end now set their ships never to retreat: the camp's balance, a camp attacking an intruder, and a group holding its sector.
   - Over seeds 1–40, 36 matches end at a median of 1:35:08, and four are level at three hours.
   - A side loses a median of 20.5 warships, against 52.5 after milestone 31, and builds about half as many. Its fleet is full about as often as before, and the Ore it no longer spends on replacements piles up.
@@ -296,9 +296,59 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
   - `DesignerTests`, `AlertsTests`, `PlacementTests` and `ModelCatalogTests` ran in the container against stand-ins.
   - `Hud`, `PlayerControls` and `GameClient` need the window's and the fonts' headers, so CI is their first build.
 
-## Milestones 33 and 34
+## Milestone 33 — The AI plays Phase 4
 
-Each is scoped in detail when it becomes the next milestone, from the design section its tasks name. Their tasks are on the board above.
+**Asked before 33.1** (owner, 2026-10-07):
 
-- **33 — The AI plays Phase 4** (design §12).
-- **34 — Measuring Phase 4** (design §2): the match log and U1–U8.
+- Pirates are cleared by a detachment of the reserve that outweighs the outpost in Ore by a margin in `Opponent.json`: 1.5 for Normal, 2.0 for Easy, 1.2 for Hard. A camp is cleared once it is next to the AI's territory, and a stronghold only when no free sector is left to claim and the AI is not at its node cap.
+- One Constructor at a time salvages, near the AI's territory, once its home rigs stand.
+- One Repair Bay at the front, built anew when the front moves.
+- The match log records Phase 4's events in the client and in the harness (milestone 34).
+
+**Asked during 33.1**, after the first measurement: the scout explores its own half before it goes round the enemy's flanks, for U1; U5's single ending is recorded, not tuned; and U3 is accepted as measured.
+
+### 33.1 — The AI plays Phase 4
+
+- **Gate:** design §12; the owner's answers above.
+- **Scope:**
+  - What the AI has seen of each pirate outpost, and a detachment that outweighs it, sent once the outpost is next to its territory.
+  - A scout that explores its own half for the first ten minutes, and looks at each outpost there from outside its reach.
+  - One salvage trip at a time, once its home rigs stand.
+  - A Repair Bay behind its front.
+  - `pirateMargin` and `scoutOwnHalfSeconds` in the three difficulty files.
+- **ADR:** a new one, ADR-076: the AI plays Phase 4. ADR-020, ADR-073, ADR-074 and ADR-075 edited in place.
+- **Acceptance:** `AiPlayerTests.PlaysPhaseFoursOpening` (salvage, a detachment and a Repair Bay in a half-hour match); `AiPlayerTests.SendsAScoutRoundTheEnemysFlanks` for the scout's own half; `AiPlayerTests.LeavesASectorWithPiratesAlone`; `AiSettingsTests.LoadsThePiratesPlay`.
+- **Verify:** CI; the container's run of `GameLogicTests`; seeds 1–40, AI against AI.
+- **As built:** recorded in [ADR-076](../../Design/ADR/ADR-076-ai-plays-phase-4.md) and design §2.
+  - The AI knows an outpost only as far as it has seen it, and its scout first skipped the guarded sectors, so the first version saw no camp next to its land and sent no detachment. The scout now looks at each from a lookout outside the pirates' reach.
+  - Over seeds 1–40, U1 and U4 are met. U2 is met at its peak and missed at minute 20, where the median side has 20 warships: the salvaged Ore fills the cap sooner. U3 is met in number and short in share, 45% of the warships turned for home fighting again where it asks for half; it and U5's single ending are recorded.
+
+## Milestone 34 — Measuring Phase 4
+
+**Asked before 34.1** (owner, 2026-10-07): the match log records Phase 4's events in the client, and the Linux harness measures U1–U5 over seeds 1–40.
+
+### 34.1 — The match log for Phase 4
+
+- **Gate:** design §2.
+- **Scope:**
+  - `MatchLog`'s records of each derelict salvaged, each pirate outpost fought and cleared, and each warship that turns for home, is repaired and fights again, read from snapshots as before.
+  - `Tools/MatchLog.py` scoring U1–U5 for a match and over many.
+- **ADR:** ADR-038 edited in place.
+- **Acceptance:** `MatchLogTests.RecordsThePiratesFightsApart` and `RecordsSalvageRetreatsAndRepairs`.
+- **Verify:** CI; the container's run of `MatchLogTests`; four AI-against-AI matches logged through `MatchLog` in the Linux harness and read by `Tools/MatchLog.py`.
+- **As built:** recorded in [ADR-038](../../Design/ADR/ADR-038-phase-one-match-log.md).
+  - The log works out who salvaged a derelict from the snapshots: one gone while the player's Constructors were at it.
+  - U3 counts each warship once however often it goes back, as the design words it; the harness had counted each retreat, which halved the share that fights again.
+  - `Tools/MatchLog.py` leaves the pirates out of the players; their warships had been listed as a player's since milestone 30.
+
+### 34.2 — U1–U8
+
+- **Gate:** design §2.
+- **Scope:** U1–U5 over seeds 1–40 in the container's harness; U6, the balance check of MVP §3 at Phase 4's budgets; U7 and U8, the owner's.
+- **Verify:**
+  - U1–U5: the Linux harness, recorded in design §2 after milestone 33; milestone 34 changes nothing the matches play.
+  - U6: `BalanceCheckTests.TheFullCheck` with `OUTPOST_BALANCE_FULL` set, run in the container.
+  - **U7, owner run:** in Release, `--measure` on an AI-against-AI match for the 99th percentile tick, and a frame capture zoomed out over the largest fight at 1920×1080.
+  - **U8, owner run:** a match against the AI, judging whether the opening feels like exploring, and whether a 10 km map can be followed with the camera, the minimap and the alerts.
+  - The owner's own AI-against-AI figures: `OutpostCommander.exe --ai-matches --matches 40 --limit-minutes 180`, then `python Tools/MatchLog.py --ai-matches`. MSVC's build may play the seeds differently from clang's (ADR-009).
+- **As built:** see design §2. U6's check passes all four criteria; it ran 1 hour 43 minutes in the container, built by clang at `-O2`, beside other work.

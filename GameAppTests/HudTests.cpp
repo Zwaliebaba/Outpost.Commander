@@ -1159,12 +1159,14 @@ public:
     }
     Assert::AreEqual(std::string("m/s"), panel.bars[2].unit);
 
-    // Against each hull, per ship and per 100 Ore, and rated against the best any design does to it: the Lance's 34.4 to
-    // the Small hull, 32.2 to the Medium and 30.0 to the Large.
+    // Against a formation of each hull, per ship and per 100 Ore, and rated against the best any design does to it: the
+    // Missile Rack's 14 a ship to the five Small hulls a hit reaches, 70 in all (ADR-014), and the Lance's 32.2 to the Medium
+    // and 30.0 to the Large, whose formations a splash does not reach past the target.
     Assert::AreEqual(size_t{3}, panel.damage.size());
     Assert::AreEqual(std::string("30.0"), panel.damage[0].perShip);
     Assert::AreEqual(std::string("34.5 / 100 ore"), panel.damage[0].perOre);
-    Assert::IsTrue(panel.damage[0].rating == Outpost::Hud::Rating::Good);
+    Assert::IsTrue(panel.damage[0].rating == Outpost::Hud::Rating::Fair);
+    Assert::IsTrue(panel.damage[0].reach.empty(), L"no splash");
     Assert::AreEqual(std::string("15.0"), panel.damage[1].perShip);
     Assert::IsTrue(panel.damage[1].rating == Outpost::Hud::Rating::Fair);
     Assert::AreEqual(std::string("8.8"), panel.damage[2].perShip);
@@ -1179,6 +1181,27 @@ public:
     Assert::AreEqual(87, panel.queueCost);
     Assert::AreEqual(std::string("8 s each"), panel.queueDetail);
     Assert::AreEqual(std::string("Hover any part to preview its effect."), panel.hint);
+  }
+
+  // ADR-014: a splash weapon's card counts every ship of a formation one hit reaches, and says how many. The Missile Rack's
+  // 30 m reaches five Small hulls standing 24 m apart, and no Medium or Large neighbor.
+  TEST_METHOD(CountsASplashAgainstAFormation)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot(true);
+    Outpost::Designer designer;
+    designer.Update(newest);
+    designer.PickHull(Outpost::HullId{1});
+    designer.PickDrive(Outpost::DriveId{1});
+    designer.PickWeapon(Outpost::WeaponId{3});
+    const Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer);
+    Assert::AreEqual(std::string("70.0"), panel.damage[0].perShip, L"14 a ship, five ships");
+    Assert::AreEqual(std::string("\xC3\x97"
+                                 "5 ships"),
+                     panel.damage[0].reach);
+    Assert::AreEqual(std::string("38.5 / 100 ore"), panel.damage[0].perOre);
+    Assert::IsTrue(panel.damage[0].rating == Outpost::Hud::Rating::Good);
+    Assert::AreEqual(std::string("11.0"), panel.damage[1].perShip);
+    Assert::IsTrue(panel.damage[1].reach.empty() && panel.damage[2].reach.empty());
   }
 
   // Phase 1 design §11: hovering a part previews the design it would make, and how each number changes; lower is better
@@ -2363,12 +2386,12 @@ public:
     Assert::AreEqual(size_t{3}, swarm.strengths.size());
     Assert::AreEqual(std::string("S"), swarm.strengths[0].hull);
     Assert::AreEqual(std::string("L"), swarm.strengths[2].hull);
-    Assert::IsTrue(swarm.strengths[0].rating == Rating::Good && swarm.strengths[1].rating == Rating::Fair &&
+    Assert::IsTrue(swarm.strengths[0].rating == Rating::Fair && swarm.strengths[1].rating == Rating::Fair &&
                    swarm.strengths[2].rating == Rating::Poor);
+    // The Lance does the most to a formation of Medium or Large hulls; the Missile Rack's splash does more to Small ones.
     const Outpost::Hud::QueueOption& lancer = panel.options[1];
-    Assert::IsTrue(
-      std::ranges::all_of(lancer.strengths, [](const Outpost::Hud::HullRating& _strength) { return _strength.rating == Rating::Good; }),
-      L"the Lance does the most to every hull");
+    Assert::IsTrue(lancer.strengths[0].rating == Rating::Fair && lancer.strengths[1].rating == Rating::Good &&
+                   lancer.strengths[2].rating == Rating::Good);
 
     // Laid out: the time, each hull's initial, and its lit segments.
     Outpost::Hud::Content content;
@@ -2394,7 +2417,7 @@ public:
       }
     }
     Assert::AreEqual(size_t{9}, segments);
-    Assert::AreEqual(size_t{6}, lit, L"three, two and one");
+    Assert::AreEqual(size_t{5}, lit, L"two, two and one");
 
     // The Constructor's card.
     newest.constructorBuildSeconds = 15.0;

@@ -52,5 +52,7 @@
   "claimSectors": 2,
   "secondSlotTier": 3,
   "attackLevelMeters": 500,
-  "attackCapShare": 0.8
+  "attackCapShare": 0.8,
+  "pirateMargin": 1.5,
+  "scoutOwnHalfSeconds": 600
 }

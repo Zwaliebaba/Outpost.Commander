@@ -18,7 +18,7 @@ The owner decided on 2026-10-07:
 - **Where and how many.** On each side, the seed picks one of the two flank sectors at 300 Ore, two of the three near sectors at 450, two of the four contested at 600, and the between sector at 750. That is six a side, mirrored. The rich corners and the center get none, since their strongholds leave a wreck.
 - **Research.** A third of the pairs name a topic, drawn from the whole research table.
 - **Outpost wrecks.** A cleared outpost's wreck blocks its node until it is salvaged.
-- **AI.** The AI leaves derelicts alone until milestone 33.
+- **AI.** The AI leaves derelicts alone until milestone 33, which has it salvage them ([ADR-076](ADR-076-ai-plays-phase-4.md)).
 
 What the design leaves open: how the map and the tuning data say all this, what a derelict is in the simulation, how its work and its research are counted, and how the client shows it.
 
@@ -50,7 +50,7 @@ What the design leaves open: how the map and the tuning data say all this, what 
    - On a camp, whose platform stands on the node, the wreck covers the node, so a Relay waits until it is salvaged.
 7. **Fog of war treats a derelict as an enemy's structure** ([ADR-024](ADR-024-fog-of-war.md)): seen within sight, remembered out of it with what it holds, and forgotten once its place is seen without it.
 8. **A measurement or stress run places none**, as it places no pirates.
-9. **The AI leaves derelicts alone until milestone 33.** It plans no Relay on a node a wreck covers, and otherwise salvages nothing. A derelict blocks its structures as it blocks the player's ghost.
+9. **The AI salvages with one Constructor at a time** ([ADR-076](ADR-076-ai-plays-phase-4.md) decision 5). It plans no Relay on a node a wreck covers. A derelict blocks its structures as it blocks the player's ghost.
 10. **The client** ([ADR-011](ADR-011-meshes-and-shading.md)):
     - draws a derelict with its hull's model across its radius, from a `"Wreck"` set that borrows the Human meshes in grey;
     - marks it light grey on the minimap;
