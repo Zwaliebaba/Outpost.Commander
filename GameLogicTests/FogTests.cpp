@@ -162,7 +162,8 @@ public:
     const Outpost::EntityId yard = arena.Structure(RED, Outpost::StructureKind::Shipyard, {.xMeters = -1500.0f, .zMeters = 1500.0f});
     const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1500.0f, .zMeters = 1350.0f});
     arena.World().UseFog();
-    const Outpost::EntityView* seen = FindView(arena.World().BuildSnapshot(BLUE), yard);
+    const Outpost::Snapshot first = arena.World().BuildSnapshot(BLUE);
+    const Outpost::EntityView* seen = FindView(first, yard);
     Assert::IsTrue(seen != nullptr && !seen->remembered);
     Assert::AreEqual(std::uint64_t{0}, seen->lastSeenTick, L"seen now, so no age");
 
@@ -175,7 +176,8 @@ public:
     }
     Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(yard)), L"the scout left it behind");
     Assert::IsTrue(lastSeen > 0);
-    const Outpost::EntityView* remembered = FindView(arena.World().BuildSnapshot(BLUE), yard);
+    const Outpost::Snapshot gone = arena.World().BuildSnapshot(BLUE);
+    const Outpost::EntityView* remembered = FindView(gone, yard);
     Assert::IsTrue(remembered != nullptr && remembered->remembered);
     Assert::AreEqual(lastSeen, remembered->lastSeenTick, L"the last snapshot that showed it");
 
