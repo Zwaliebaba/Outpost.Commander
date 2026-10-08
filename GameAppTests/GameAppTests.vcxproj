@@ -101,6 +101,8 @@
     <ClCompile Include="ShipBankingTests.cpp" />
     <ClCompile Include="WindowManagerTests.cpp" />
     <ClCompile Include="ProductionTargetTests.cpp" />
+    <ClCompile Include="OrderFormTests.cpp" />
+    <ClCompile Include="PlayerClockTests.cpp" />
     <ClCompile Include="CombatEffectsTests.cpp" />
     <ClCompile Include="ExplosionManagerTests.cpp" />
     <ClCompile Include="EffectRandomTests.cpp" />

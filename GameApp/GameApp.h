@@ -21,6 +21,8 @@
 #include "SnapshotInterpolator.h"
 #include "ShipBanking.h"
 #include "Picking.h"
+#include "PlayerClock.h"
+#include "OrderForm.h"
 #include "PlayerControls.h"
 #include "CombatEffects.h"
 #include "EffectRandom.h"

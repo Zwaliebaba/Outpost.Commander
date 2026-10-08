@@ -97,6 +97,8 @@
     <ClInclude Include="Alerts.h" />
     <ClInclude Include="Designer.h" />
     <ClInclude Include="ProductionTarget.h" />
+    <ClInclude Include="OrderForm.h" />
+    <ClInclude Include="PlayerClock.h" />
     <ClInclude Include="KeyBindings.h" />
     <ClInclude Include="Hud.h" />
   </ItemGroup>
@@ -123,6 +125,8 @@
     <ClCompile Include="Alerts.cpp" />
     <ClCompile Include="Designer.cpp" />
     <ClCompile Include="ProductionTarget.cpp" />
+    <ClCompile Include="OrderForm.cpp" />
+    <ClCompile Include="PlayerClock.cpp" />
     <ClCompile Include="Hud.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -117,6 +117,13 @@ void Outpost::PlayerControls::MoveTo(PlanePosition _destination, std::span<const
     Give(MoveCommand{.ships = std::move(ships), .destination = _destination});
 }
 
+void Outpost::PlayerControls::Schedule(const OrderForm& _form, std::chrono::sys_seconds _now, const PlayerClock& _clock,
+                                       const Snapshot& _newest, std::span<const EntityView> _entities)
+{
+  if (std::optional<ScheduleOrderCommand> order = _form.Command(m_selected, _now, _clock, _newest, _entities))
+    Give(std::move(*order));
+}
+
 std::vector<Outpost::EntityId> Outpost::PlayerControls::SelectedShips(std::span<const EntityView> _entities) const
 {
   std::vector<EntityId> ships;

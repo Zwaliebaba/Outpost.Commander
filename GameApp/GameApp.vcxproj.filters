@@ -86,6 +86,12 @@
     <ClInclude Include="ProductionTarget.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="OrderForm.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerClock.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
     <ClInclude Include="Designer.h">
       <Filter>Interface</Filter>
     </ClInclude>
@@ -150,6 +156,12 @@
       <Filter>Effects</Filter>
     </ClCompile>
     <ClCompile Include="ProductionTarget.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="OrderForm.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerClock.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="Designer.cpp">

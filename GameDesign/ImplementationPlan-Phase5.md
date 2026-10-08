@@ -33,7 +33,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | built, in milestone 37's PR; awaiting the owner's run |
 | 38.1 | The server's events, and alerts read from them | — | H4 | done, in milestone 38's PR |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | done, in milestone 38's PR |
-| 38.3 | The client's orders window | 38.2 | H5 | todo |
+| 38.3 | The client's orders window | 38.2 | H5 | built, in milestone 38's PR; awaiting the owner's run |
 | 39.1 | A world without an end | 37.3 | H6 | todo |
 | 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | todo |
 | 39.3 | W1–W6 | all above | — | todo |
@@ -193,6 +193,16 @@ Design §7 and §11, gates H4 and H5. The owner decided on 2026-10-08 what the d
 *Gate H5.* The orders window (O) lists the seat's scheduled orders and gives a new one to the selection: its trigger, a time or a sector, its action and the condition. The selection's panel names a ship's pending order, and a panel says what happened while the player was away when it takes its seat again (design §11).
 
 - **Done when:** `HudTests` lay out the window, the pending order and the report; `PlayerControlsTests` open the window and send the order. *Owner run:* a 02:00 attack, in play (W5).
+
+### As built
+
+Recorded in [ADR-080](../Design/ADR/ADR-080-events-and-scheduled-orders.md); ADR-009, ADR-031, ADR-059, ADR-077 and ADR-079 edited in place, and AGENTS.md R18 names what a save keeps beside the state.
+
+- **Run in the container.** `GameLogicTests` passes, 318 tests, apart from the 8 `QuicTransportTests`, which need QUIC; `GameAppTests` 155, `GameProtocolTests` 19, `OpponentTests` 31 and `NeuronServerTests` 11 pass. clang-tidy 18 with the repository's checks is clean over the changed files.
+- **Each server test was checked against a broken build** (ADR-080's consequences): an event raised again or not at all, an order fired a tick late or in another sector, the condition at its limit, a ship given another order kept in its order, a moment not rounded up, the client's tick trusted, a report handed over twice, and a deputy that sends a waiting ship. On the client: a moment now taken for the next, the later of a reading summer time repeats, every sector offered to watch, a ship's role ignored, and a dry asteroid offered for a rig.
+- **The client, in part.** The container builds `OrderForm`, `PlayerClock`, the HUD and the controls, and their tests, over stand-in glyphs of one width; it does not build `GameClient`, which opens the orders window on O and the away window when the report arrives. CI's build and its HUD tests, on the real fonts, check those.
+- **A time of day is the system's zone,** with summer time, from the standard library's database; the tests read Amsterdam's from it. Where the database cannot say the zone, the clock is UTC.
+- **Awaiting the owner's run:** a 02:00 attack given from the orders window, in play (W5).
 
 ## Milestone 39
 
