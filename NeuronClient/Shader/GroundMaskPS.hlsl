@@ -26,11 +26,11 @@ SamplerState shadesSampler : register(s0);
 
 // The opacity of a shade: in proportion up to the knee, where it reaches kneeOpacity, and the shade itself beyond it, but
 // never less than kneeOpacity. It rises with the shade, with no step at the knee, so the blend between cells stays smooth.
+// One expression, since fxc takes an early return for a result that may be left unset (X4000).
 float Opacity(float shade)
 {
-  if (kneeShade <= 0.0f)
-    return shade;
-  return shade <= kneeShade ? shade * (kneeOpacity / kneeShade) : max(kneeOpacity, shade);
+  const float belowKnee = shade * (kneeOpacity / max(kneeShade, 1e-6f));
+  return kneeShade <= 0.0f ? shade : (shade <= kneeShade ? belowKnee : max(kneeOpacity, shade));
 }
 
 float4 main(VertexOut input) : SV_Target
