@@ -475,7 +475,8 @@ void Outpost::InProcessServer::RunTick()
         }
         if (quic)
           quic->Send(EncodeMessage(snapshot));
-        if (connection.hosted)
+        // A seat's deputy comes with the controller that says when it plays (Host).
+        if (connection.hosted && connection.control.has_value())
         {
           const bool gone = quic && quic->HasGone();
           const bool plays = connection.control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
