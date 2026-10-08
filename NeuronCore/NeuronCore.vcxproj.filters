@@ -4,9 +4,6 @@
     <Filter Include="Network">
       <UniqueIdentifier>{7acd7121-7c3a-4d0a-b76b-63ee814d8765}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Package">
-      <UniqueIdentifier>{4719647a-0cc0-4b6a-aa99-b2bd423a2010}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -44,8 +41,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config">
-      <Filter>Package</Filter>
-    </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
