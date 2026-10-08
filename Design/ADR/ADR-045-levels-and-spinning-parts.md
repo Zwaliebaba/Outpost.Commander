@@ -51,7 +51,7 @@ The baker refused every animation, so none of these sources could be baked.
 
 - Each of the 45 sources bakes, and `--check` proves the 45 `.nmf` files current. The 15 models with no levels and no parts change only in their header: 4 bytes and the version.
 - Every Research Lab in a match spins in step with every other, on the one clock. A phase for each structure would need the entity in `DrawModel`, and no one has asked for it.
-- `GameAppTests` checks the version 2 reader and its refusals, `MeshPiece`, the sense and period of `PartWorld`, the level 1 file name, and that both players' Research Labs have a part. `BakeMeshes.py --self-test` checks that a part's corners turn in the game where glTF's animation turns them, a quarter turn in. It also checks that every new refusal fires.
+- `NeuronClientTests` checks the version 2 reader and its refusals, `MeshPiece`, and the sense and period of `PartWorld`. `GameAppTests` checks the level 1 file name, and that both players' Research Labs have a part. `BakeMeshes.py --self-test` checks that a part's corners turn in the game where glTF's animation turns them, a quarter turn in. It also checks that every new refusal fires.
 
 ## What this forecloses
 

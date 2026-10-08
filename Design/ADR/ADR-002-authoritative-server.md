@@ -48,7 +48,9 @@ OutpostCommander (exe, Win32)    ── the shell: WinMain, the window, MSIX pac
 OutpostServer (exe, console)     ── the dedicated server: runs a world from its folder ([ADR-078](ADR-078-dedicated-server.md)), its AI empires and deputies ([ADR-079](ADR-079-seat-controller-and-deputy.md)). → GameLogic, NeuronServer, Opponent
 GameLogicTests (test DLL)         ── drives GameLogic through GameProtocol. The Q2 battles run here from milestone 3, and
                                      the AI plays the real server here from milestone 6 (ADR-020)
-GameAppTests (test DLL)           ── drives GameApp's camera math and model data, and NeuronClient's mesh reader, without a GPU
+GameAppTests (test DLL)           ── drives GameApp's camera math, model data and interface without a GPU
+NeuronCoreTests, NeuronServerTests, NeuronClientTests, GameProtocolTests, OpponentTests (test DLLs)
+                                  ── each drives its own library, with only what that library builds on (ADR-075)
 ```
 
 Each library has a master header named after it, and its `pch.h` includes that header. `NeuronClient.h`, `NeuronServer.h` and `GameProtocol.h` include `NeuronCore.h`. `Opponent.h` includes `GameProtocol.h`. `GameLogic.h` includes `NeuronServer.h` and `GameProtocol.h`, and `GameApp.h` includes `NeuronClient.h` and `GameProtocol.h`.
@@ -70,6 +72,9 @@ Each library has a master header named after it, and its `pch.h` includes that h
 | OutpostServer | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent |
 | GameLogicTests | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent, and the unit-test framework's folder in the Visual Studio install | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent |
 | GameAppTests | NeuronCore, NeuronClient, GameProtocol, GameApp, and the unit-test framework's folder | NeuronCore, NeuronClient, GameProtocol, GameApp |
+| NeuronCoreTests | NeuronCore, and the unit-test framework's folder | NeuronCore |
+| NeuronServerTests, NeuronClientTests, GameProtocolTests | NeuronCore and its own library, and the unit-test framework's folder | the same |
+| OpponentTests | NeuronCore, GameProtocol, Opponent, and the unit-test framework's folder | the same |
 
 Neither `GameApp`, `Opponent` nor the executable lists `GameLogic` or `NeuronServer`, so a client or AI file that includes a server header does not compile. This was checked when the projects were created. Adding `#include "GameLogic.h"` to `GameApp` and to `Opponent` fails with C1083. A quoted include is also resolved relative to the including file, so `#include "../GameLogic/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Together, these make the build, not review, answer the design's Q5. The executable still links `GameLogic` and `NeuronServer`, because the in-process server has to be in the executable. It gets the server through the factory declared in `GameProtocol` and defined in `GameLogic`. A test project for `GameLogic` may list `GameLogic` as well, because it is a test and not a client. `GameLogicTests` also lists `Opponent`, so that the AI plays the real server headlessly (ADR-020), and so does `OutpostServer`, which hands the server its AI empires and deputies through `HostedPlayer`, declared in `GameProtocol` ([ADR-079](ADR-079-seat-controller-and-deputy.md)); the AI's own files still cannot include `GameLogic`, and `GameLogic` cannot include `Opponent`.
 

@@ -2,7 +2,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace GameProtocolTests
 {
 // An identifier of one kind cannot stand in for another kind's (ADR-002: entities cross the transport by identifier only).
 static_assert(!std::is_convertible_v<Outpost::EntityId, Outpost::PlayerId>);
@@ -31,4 +31,4 @@ public:
     Assert::IsTrue(Outpost::EntityId{7} < Outpost::EntityId{8});
   }
 };
-} // namespace GameLogicTests
+} // namespace GameProtocolTests

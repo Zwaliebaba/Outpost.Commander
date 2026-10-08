@@ -73,6 +73,28 @@ public:
     Frame({Event(Neuron::InputEventKind::ButtonUp, VK_LBUTTON, _x1, _y1)}, _x1, _y1);
   }
 
+  // A left drag a frame at a time, so that something can happen in between.
+  void Press(std::int32_t _x, std::int32_t _y)
+  {
+    Frame({Event(Neuron::InputEventKind::ButtonDown, VK_LBUTTON, _x, _y)}, _x, _y);
+  }
+
+  void Hover(std::int32_t _x, std::int32_t _y)
+  {
+    Frame({}, _x, _y);
+  }
+
+  void Release(std::int32_t _x, std::int32_t _y)
+  {
+    Frame({Event(Neuron::InputEventKind::ButtonUp, VK_LBUTTON, _x, _y)}, _x, _y);
+  }
+
+  // A frame with the window in the background, which reads no input at all.
+  void LoseFocus()
+  {
+    m_controls.Update(Neuron::InputState{}, m_world, ME, m_camera, VIEWPORT);
+  }
+
   void Key(std::uint8_t _key, bool _control = false)
   {
     Neuron::InputEvent event = Event(Neuron::InputEventKind::KeyDown, _key, 0, 0);
@@ -525,6 +547,78 @@ public:
     driver.WorldView().erase(driver.WorldView().begin());
     driver.Key('2');
     Assert::IsTrue(driver.Selected().empty());
+  }
+
+  // The research, production and designer windows order through the controls, which pass each order on as it was given
+  // and in the order given (tasks 5.1 and 5.2, Phase 3 design §4).
+  TEST_METHOD(PassesOnTheOrdersOfTheWindows)
+  {
+    Driver driver;
+    driver.Controls().Research(Outpost::EntityId{STATION}, Outpost::ResearchTopicId{3});
+    driver.Controls().Upgrade(Outpost::EntityId{STATION});
+    driver.Controls().SaveDesign(
+      {.design = Outpost::DesignId{4}, .nameUtf8 = "Lancer", .hull = MEDIUM, .drive = Outpost::DriveId{2}, .weapon = Outpost::WeaponId{3}});
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{3}, commands.size());
+
+    const auto* research = Only<Outpost::StartResearchCommand>(commands, 0);
+    Assert::IsTrue(research->lab == Outpost::EntityId{STATION} && research->topic == Outpost::ResearchTopicId{3});
+    Assert::IsTrue(Only<Outpost::UpgradeStructureCommand>(commands, 1)->structure == Outpost::EntityId{STATION});
+    const auto* save = Only<Outpost::SaveDesignCommand>(commands, 2);
+    Assert::IsTrue(save->design == Outpost::DesignId{4} && save->hull == MEDIUM && save->drive == Outpost::DriveId{2} &&
+                   save->weapon == Outpost::WeaponId{3});
+    Assert::AreEqual(std::string("Lancer"), save->nameUtf8);
+    Assert::IsFalse(save->module.IsValid());
+    Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"each order is taken once");
+  }
+
+  // A right-click on the minimap moves the selected ships there, and with none selected orders nothing.
+  TEST_METHOD(MovesTheSelectionFromTheMinimap)
+  {
+    Driver driver;
+    constexpr Outpost::PlanePosition THERE{.xMeters = 700.0f, .zMeters = -250.0f};
+    driver.Controls().MoveTo(THERE, driver.WorldView());
+    Assert::IsTrue(driver.Controls().TakeCommands().empty());
+
+    driver.Click(driver.WorldView()[1]);
+    driver.Click(driver.WorldView()[0], VK_LBUTTON, true);
+    (void)driver.Controls().TakeCommands();
+    driver.Controls().MoveTo(THERE, driver.WorldView());
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    const auto* move = Only<Outpost::MoveCommand>(commands);
+    Assert::IsTrue(move->destination == THERE);
+    Assert::IsTrue(move->ships == std::vector<Outpost::EntityId>{Outpost::EntityId{1}, Outpost::EntityId{2}});
+  }
+
+  // A drag cannot finish without its release, which the game does not see while its window is in the background: the box
+  // is dropped then, and a release after it selects nothing.
+  TEST_METHOD(DropsADragWhenTheWindowLosesFocus)
+  {
+    Driver driver;
+    driver.Press(0, 0);
+    driver.Hover(1919, 1079);
+    Assert::IsTrue(driver.Controls().DragBox().has_value());
+
+    driver.LoseFocus();
+    Assert::IsFalse(driver.Controls().DragBox().has_value());
+    driver.Release(1919, 1079);
+    Assert::IsTrue(driver.Selected().empty());
+    Assert::IsTrue(driver.Controls().TakeCommands().empty());
+  }
+
+  // A key the controls do not read, such as Z, changes nothing, with Ctrl or without.
+  TEST_METHOD(IgnoresAKeyItDoesNotRead)
+  {
+    Driver driver;
+    driver.Click(driver.WorldView()[0]);
+    const DirectX::XMFLOAT2 focus = driver.CameraView().Focus();
+    driver.Key('Z');
+    driver.Key('Z', true);
+    Assert::IsTrue(driver.Selected() == Ids{1});
+    Assert::IsTrue(driver.Controls().TakeCommands().empty());
+    Assert::IsFalse(driver.Controls().IsAttackMoveArmed());
+    Assert::AreEqual(focus.x, driver.CameraView().Focus().x);
+    Assert::AreEqual(focus.y, driver.CameraView().Focus().y);
   }
 };
 } // namespace GameAppTests

@@ -10,6 +10,9 @@
     <Filter Include="Deputy">
       <UniqueIdentifier>{5d0c7a41-8e2b-4f6a-9c13-2b7e4a91d6f0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Matches">
+      <UniqueIdentifier>{5e0b8c6d-3f1a-4b7e-9d24-8a61c0f3e9b2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -26,6 +29,9 @@
     <ClInclude Include="Deputy.h">
       <Filter>Deputy</Filter>
     </ClInclude>
+    <ClInclude Include="AiMatchesOptions.h">
+      <Filter>Matches</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -37,6 +43,9 @@
     </ClCompile>
     <ClCompile Include="Deputy.cpp">
       <Filter>Deputy</Filter>
+    </ClCompile>
+    <ClCompile Include="AiMatchesOptions.cpp">
+      <Filter>Matches</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

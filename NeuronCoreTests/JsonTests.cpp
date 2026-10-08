@@ -2,7 +2,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameLogicTests
+namespace NeuronCoreTests
 {
 namespace
 {
@@ -130,4 +130,4 @@ public:
     Assert::ExpectException<Neuron::Exception>([&value] { (void)value.Find("a"); });
   }
 };
-} // namespace GameLogicTests
+} // namespace NeuronCoreTests

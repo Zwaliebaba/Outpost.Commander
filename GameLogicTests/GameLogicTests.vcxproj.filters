@@ -10,15 +10,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="IdTests.cpp" />
-    <ClCompile Include="JsonTests.cpp" />
     <ClCompile Include="TuningTests.cpp" />
-    <ClCompile Include="TickHostTests.cpp" />
-    <ClCompile Include="RandomTests.cpp" />
     <ClCompile Include="SimulationTests.cpp" />
     <ClCompile Include="InProcessServerTests.cpp" />
+    <ClCompile Include="PackagedServerTests.cpp" />
     <ClCompile Include="QuicTransportTests.cpp" />
-    <ClCompile Include="WireFormatTests.cpp" />
     <ClCompile Include="MapTests.cpp" />
     <ClCompile Include="MeasurementLoadTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
@@ -37,7 +33,6 @@
     <ClCompile Include="ResearchTests.cpp" />
     <ClCompile Include="SaveDesignTests.cpp" />
     <ClCompile Include="MatchOutcomeTests.cpp" />
-    <ClCompile Include="AiSettingsTests.cpp" />
     <ClCompile Include="AiPlayerTests.cpp" />
     <ClCompile Include="TerritoryTests.cpp" />
     <ClCompile Include="DominationTests.cpp" />
