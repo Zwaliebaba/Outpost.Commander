@@ -88,6 +88,8 @@
     <ClInclude Include="Simulation.h" />
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="StressLoad.h" />
+    <ClInclude Include="WorldState.h" />
+    <ClInclude Include="WorldFolder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -103,6 +105,8 @@
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Tuning.cpp" />
     <ClCompile Include="StressLoad.cpp" />
+    <ClCompile Include="WorldState.cpp" />
+    <ClCompile Include="WorldFolder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

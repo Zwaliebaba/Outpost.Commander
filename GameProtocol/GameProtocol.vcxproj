@@ -87,6 +87,8 @@
     <ClInclude Include="Transport.h" />
     <ClInclude Include="QuicTransport.h" />
     <ClInclude Include="WireFormat.h" />
+    <ClInclude Include="WireFields.h" />
+    <ClInclude Include="ByteFormat.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

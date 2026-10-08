@@ -41,19 +41,50 @@ std::vector<Outpost::ResearchTopicId> TopicsOf(const Outpost::Tuning& _tuning)
   return topics;
 }
 
-// Match setup on a server just made: the map is placed, and now every player's starting base (ADR-016), and the load a
-// measurement run asks for.
-std::unique_ptr<Outpost::Server> SetUpMatch(std::unique_ptr<Outpost::InProcessServer> _server, const Outpost::ServerDesc& _desc)
+// The tuning data's and the map's files as read, and what they hold.
+struct GameData
 {
-  _server->World().PlaceStartingBases(_server->MapData());
-  if (_desc.measurementLoad)
-    Outpost::PlaceMeasurementLoad(_server->World(), _server->MapData(), _server->TuningData());
-  if (_desc.stressLoad)
-    _server->StartStressLoad();
+  Outpost::Tuning tuning;
+  Outpost::Map map;
+  // DataHash of the two files, which names them in a world's save (ADR-077).
+  std::uint64_t hash = 0;
+};
+
+GameData ReadGameData()
+{
+  const std::string tuning = ReadDataFile(TUNING_FILE);
+  const std::string map = ReadDataFile(MAP_FILE);
+  const std::array<std::string_view, 2> texts{tuning, map};
+  return {Outpost::LoadTuning(tuning), Outpost::LoadMap(map), Outpost::DataHash(texts)};
+}
+
+// A server for _desc, set up: a match's map is placed, and now every player's starting base (ADR-016), and the load a
+// measurement run asks for. A world whose folder holds a save comes back as that world instead, made with its seed
+// (ADR-077).
+std::unique_ptr<Outpost::Server> SetUpServer(const GameData& _data, Outpost::ServerDesc _desc)
+{
+  std::optional<Outpost::WorldFolder::Recovery> recovery;
+  if (!_desc.world.empty())
+  {
+    recovery = Outpost::WorldFolder::Recover(_desc.world);
+    if (recovery)
+      _desc.seed = recovery->header.identity.seed;
+  }
+  auto server = std::make_unique<Outpost::InProcessServer>(_data.tuning, _data.map, _desc);
+  if (!recovery)
+  {
+    server->World().PlaceStartingBases(server->MapData());
+    if (_desc.measurementLoad)
+      Outpost::PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
+    if (_desc.stressLoad)
+      server->StartStressLoad();
+  }
+  if (!_desc.world.empty())
+    server->UseWorld(_desc.world, _data.hash, std::move(recovery));
   // Match setup is over, and every structure it places stands: the graphs are built once, now, so that the first order of
   // the match does not pay for them (ADR-032).
-  _server->PreparePathfinding();
-  return _server;
+  server->PreparePathfinding();
+  return server;
 }
 } // namespace
 
@@ -77,6 +108,7 @@ std::vector<Outpost::Snapshot> Outpost::LoopbackTransport::Receive()
 Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc)
   : m_tuning(std::move(_tuning)),
     m_map(PlaceContent(std::move(_map), _desc.seed, TopicsOf(m_tuning))),
+    m_seed(_desc.seed),
     m_tickHost(static_cast<std::uint32_t>(m_tuning.rules.tickHz), MAX_TICKS_PER_ADVANCE),
     m_simulation(_desc.seed, static_cast<std::uint32_t>(m_tuning.rules.tickHz))
 {
@@ -336,8 +368,13 @@ void Outpost::InProcessServer::RunTick()
 
   for (const Command& command : commands)
     m_commandLog.push_back({m_simulation.CurrentTick(), command});
+  // A world's log keeps them before they are applied, so that a world killed after this tick comes back with them (ADR-077).
+  if (m_world)
+    m_world->Log(m_simulation.CurrentTick(), commands);
   // A rejected command changes nothing. The protocol cannot tell the client yet; that arrives with the task that needs it.
   (void)m_simulation.Tick(commands, &m_profiler);
+  if (m_world && m_simulation.CurrentTick() % (std::uint64_t{WORLD_SAVE_SECONDS} * TicksPerSecond()) == 0)
+    SaveWorld();
 
   {
     const ObservedPart part(&m_profiler, TickPart::Snapshots);
@@ -365,6 +402,43 @@ void Outpost::InProcessServer::RunTick()
   m_tickTimings.push_back(timing);
 }
 
+void Outpost::InProcessServer::UseWorld(const std::filesystem::path& _folder, std::uint64_t _dataHash,
+                                        std::optional<WorldFolder::Recovery> _recovery)
+{
+  if (m_thread.joinable())
+    throw Neuron::Exception("InProcessServer: a started server cannot become a world");
+  m_identity = {.seed = m_seed, .ticksPerSecond = TicksPerSecond(), .dataHash = _dataHash};
+  if (_recovery)
+  {
+    DecodeWorld(_recovery->save, m_identity, m_simulation);
+    m_commandLog.clear();
+    // The commands logged since the save, each at the tick it was applied at, as the world that ran applied them.
+    auto next = _recovery->commands.begin();
+    while (next != _recovery->commands.end())
+    {
+      const std::uint64_t tick = m_simulation.CurrentTick();
+      if (next->tick < tick)
+        throw Neuron::Exception(
+          std::format("The world in {} logged a command at tick {}, before its save's tick {}.", _folder.string(), next->tick, tick));
+      std::vector<Command> commands;
+      for (; next != _recovery->commands.end() && next->tick == tick; ++next)
+        commands.push_back(next->command);
+      for (const Command& command : commands)
+        m_commandLog.push_back({tick, command});
+      (void)m_simulation.Tick(commands);
+    }
+  }
+  m_world = std::make_unique<WorldFolder>(_folder);
+  SaveWorld();
+}
+
+void Outpost::InProcessServer::SaveWorld()
+{
+  m_world->Save(m_simulation.CurrentTick(), EncodeWorld(m_simulation, m_identity));
+  // The world's folder keeps the commands from here on.
+  m_commandLog.clear();
+}
+
 void Outpost::InProcessServer::StartStressLoad()
 {
   m_stressLoad.emplace(m_simulation, m_map, m_tuning);
@@ -372,18 +446,13 @@ void Outpost::InProcessServer::StartStressLoad()
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
-  return SetUpMatch(std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc),
-                    _desc);
+  return SetUpServer(ReadGameData(), _desc);
 }
 
 Outpost::ServerFactory Outpost::InProcessServerFactory()
 {
   // Read and checked as CreateInProcessServer reads them, but once. Every server is given copies, so that none shares state
   // with another, and the data itself is never written again.
-  auto data = std::make_shared<const std::pair<Tuning, Map>>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)));
-  return [data = std::move(data)](const ServerDesc& _desc)
-  {
-    const auto& [tuning, map] = *data;
-    return SetUpMatch(std::make_unique<InProcessServer>(tuning, map, _desc), _desc);
-  };
+  auto data = std::make_shared<const GameData>(ReadGameData());
+  return [data = std::move(data)](const ServerDesc& _desc) { return SetUpServer(*data, _desc); };
 }

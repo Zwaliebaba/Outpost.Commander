@@ -2,6 +2,9 @@
 
 namespace Outpost
 {
+class ByteWriter;
+class ByteReader;
+
 // What a ship is doing because it was told to (design §7, §9). Firing is not an order: an armed ship fires at whatever its
 // targeting picks, whatever its order.
 enum class ShipOrder : std::uint8_t
@@ -413,6 +416,20 @@ public:
   // second (ADR-032), so that no tick plans more than about half of a large order's searches.
   static constexpr std::size_t SPLIT_ORDER_SHIPS = 32;
 
+  // Writes the state a world's save holds, between two ticks (ADR-077): everything that compares equal above, and nothing
+  // that follows from it.
+  void SaveState(ByteWriter& _writer) const;
+
+  // Replaces the state with what SaveState wrote, and works out again what follows from it: the path graphs, which are
+  // built when next needed, and each player's research effects. The simulation is made with the save's seed and tick rate,
+  // and given the tuning data the save was made with (UseTuning). Throws Neuron::Exception when the bytes are not a state
+  // SaveState could have written.
+  void LoadState(ByteReader& _reader);
+
+  // How SaveState lays the state out, as ByteLayout describes it, which a test pins to WORLD_STATE_VERSION (AGENTS.md
+  // R18).
+  [[nodiscard]] static std::string StateLayout();
+
 private:
   // What a player's research makes of the tuning data: its upgrades, and the components and research topics its snapshots
   // show. Every tick asks for it, so it is worked out again only when the tuning data or the player's research changes
@@ -459,6 +476,18 @@ private:
     ResearchEffects researchEffects;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
+
+    // Its fields as a save holds them (ADR-077), which are all but its research effects: they follow from what it has
+    // researched.
+    template <typename Self>
+      requires std::same_as<std::remove_const_t<Self>, PlayerState>
+    friend auto Fields(Self& _value)
+    {
+      [[maybe_unused]] auto& [id, oreHundredths, oreRemainder, researched, shipyardsFinished, seen, remembered, revealedUntil,
+                              knownReserves, recovered, tickets, researchEffects] = _value;
+      return std::tie(id, oreHundredths, oreRemainder, researched, shipyardsFinished, seen, remembered, revealedUntil, knownReserves,
+                      recovered, tickets);
+    }
   };
 
   // One of a player's ships or structures, as far as it sees.
@@ -482,6 +511,15 @@ private:
     bool guarded = false;
 
     friend bool operator==(const Sector&, const Sector&) = default;
+
+    // Its fields as a save holds them (ADR-077).
+    template <typename Self>
+      requires std::same_as<std::remove_const_t<Self>, Sector>
+    friend auto Fields(Self& _value)
+    {
+      auto& [placement, holder, home, suppressed, cutOff, guarded] = _value;
+      return std::tie(placement, holder, home, suppressed, cutOff, guarded);
+    }
   };
 
   // A pirate outpost (ADR-073): its sector and node, the ships that guard it, and the player's ship or structure they are
@@ -497,6 +535,15 @@ private:
     bool wrecked = false;
 
     friend bool operator==(const PirateOutpost&, const PirateOutpost&) = default;
+
+    // Its fields as a save holds them (ADR-077).
+    template <typename Self>
+      requires std::same_as<std::remove_const_t<Self>, PirateOutpost>
+    friend auto Fields(Self& _value)
+    {
+      auto& [sector, node, ships, quarry, wreck, wrecked] = _value;
+      return std::tie(sector, node, ships, quarry, wreck, wrecked);
+    }
   };
 
   // What an entity fires: a warship's design's weapon, or a built structure's Defence gun.
@@ -616,6 +663,15 @@ private:
       std::optional<PlanePosition> laneEnd;
 
       friend bool operator==(const Member&, const Member&) = default;
+
+      // Its fields as a save holds them (ADR-077).
+      template <typename Self>
+        requires std::same_as<std::remove_const_t<Self>, Member>
+      friend auto Fields(Self& _value)
+      {
+        auto& [ship, goal, laneMeters, path, laneEnd] = _value;
+        return std::tie(ship, goal, laneMeters, path, laneEnd);
+      }
     };
 
     ShipOrder order = ShipOrder::Move;
@@ -629,7 +685,29 @@ private:
     std::vector<Member> members;
 
     friend bool operator==(const PlannedOrder&, const PlannedOrder&) = default;
+
+    // Its fields as a save holds them (ADR-077).
+    template <typename Self>
+      requires std::same_as<std::remove_const_t<Self>, PlannedOrder>
+    friend auto Fields(Self& _value)
+    {
+      auto& [order, destination, attackTarget, widestRadiusMeters, bandHalfWidthMeters, routes, members] = _value;
+      return std::tie(order, destination, attackTarget, widestRadiusMeters, bandHalfWidthMeters, routes, members);
+    }
   };
+
+  // What a save holds that lives inside a member which is not a record (ADR-077): the PRNG's state, and the pathfinder's
+  // obstacles, from which it builds its graphs again.
+  struct SavedParts
+  {
+    std::array<std::uint64_t, 4> random{};
+    std::vector<Obstacle> obstacles;
+  };
+
+  // The state a save holds, as one tuple of references into _simulation and _parts, which SaveState writes and LoadState
+  // reads. It names every member of the simulation in one structured binding, so a member added and not considered here
+  // does not compile (ADR-077).
+  template <typename Self, typename Parts> static auto SavedFields(Self& _simulation, Parts& _parts);
 
   // Plans the paths of _order's ships not planned yet, every _stride-th in its members' order, and keeps the routes they
   // found.

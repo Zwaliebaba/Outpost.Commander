@@ -26,14 +26,6 @@ private:
   std::shared_ptr<LoopbackChannel> m_channel;
 };
 
-// A command as the server applied it: the tick it was applied at the start of, and the order with its player as the
-// connection set it. A seed and this log reproduce the match on the same build (ADR-009).
-struct LoggedCommand
-{
-  std::uint64_t tick = 0;
-  Command command;
-};
-
 // The server inside the client (ADR-002). Started, it runs its ticks on a thread of its own (ADR-025); a test may instead
 // step it by hand with Advance, on the test's thread. Match setup, World and the command log belong to whichever thread
 // steps it, so a started server is touched only through its connections and TakeTickTimings. Made to, it also takes
@@ -77,6 +69,7 @@ public:
     return m_map;
   }
 
+  // The commands applied so far; for a world, since its last save, its folder keeping the rest.
   [[nodiscard]] const std::vector<LoggedCommand>& CommandLog() const noexcept
   {
     return m_commandLog;
@@ -89,10 +82,21 @@ public:
   // once every structure of the setup stands (ADR-032). Called once, after the bases and any load are placed.
   void PreparePathfinding();
 
+  // Match setup for a world (Phase 5 design §5, ADR-077), before PreparePathfinding: from here the server logs every tick's
+  // commands to _folder and saves the world there every WORLD_SAVE_SECONDS of ticks. With _recovery, which
+  // WorldFolder::Recover made of _folder, the simulation becomes the world it saved, and the commands logged since are
+  // applied to it, tick by tick, so that it comes back at the tick after the last of them. The world is saved at once,
+  // and its log begins anew there. _dataHash is DataHash of the tuning data's and the map's files. Throws
+  // Neuron::Exception when the save is of another world, or once the server has started.
+  void UseWorld(const std::filesystem::path& _folder, std::uint64_t _dataHash, std::optional<WorldFolder::Recovery> _recovery);
+
 private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
-  // them, and then a snapshot for every connected player.
+  // them, and then a snapshot for every connected player. A world's tick logs its commands and saves when a save is due.
   void RunTick();
+
+  // Hands a save of the world as it stands to its folder, which begins its log anew there (ADR-077).
+  void SaveWorld();
 
   // The started server's thread: it sleeps on a timer until the next tick is due (ADR-055), runs the ticks that are, and
   // stops when asked.
@@ -122,6 +126,7 @@ private:
 
   Tuning m_tuning;
   Map m_map;
+  std::uint64_t m_seed = 0;
   Neuron::TickHost m_tickHost;
   Simulation m_simulation;
   std::vector<Connection> m_connections;
@@ -141,6 +146,10 @@ private:
   // Where players connect over QUIC, when the server takes them (ServerDesc::quic). Destroyed after the thread and before
   // the connections, so that no callback of MsQuic's outlives what it touches.
   std::unique_ptr<Neuron::QuicListener> m_listener;
+  // A world's folder and which world it is, once UseWorld has made the server a world's. Destroyed after the thread, so
+  // that the saves it was handed are written before the server goes.
+  std::unique_ptr<WorldFolder> m_world;
+  WorldIdentity m_identity;
   // Last, so that it is destroyed first: the thread stops and is joined before anything it uses goes.
   std::jthread m_thread;
 };

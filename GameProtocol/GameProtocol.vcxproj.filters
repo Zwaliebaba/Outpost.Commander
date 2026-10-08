@@ -59,6 +59,12 @@
     <ClInclude Include="WireFormat.h">
       <Filter>Connection</Filter>
     </ClInclude>
+    <ClInclude Include="WireFields.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="ByteFormat.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
