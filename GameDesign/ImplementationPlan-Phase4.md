@@ -1,6 +1,6 @@
 # Outpost Commander — Phase 4 Implementation Plan
 
-Status: **open** · Started 2026-10-06, when the owner accepted [the Phase 4 design](OutpostCommander-Phase4.md) with every gate decided as proposed and L11 waived · Derived from the Phase 4 design
+Status: **closed** · Started 2026-10-06, when the owner accepted [the Phase 4 design](OutpostCommander-Phase4.md) with every gate decided as proposed and L11 waived · Every milestone built and merged by 2026-10-08, #81 to #91 · U1–U6 answered; U7 and U8 await the owner's runs · Derived from the Phase 4 design
 
 The Phase 4 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 3 plan](Archive/ImplementationPlan-Phase3.md) is closed.
 
@@ -45,7 +45,7 @@ Task numbers continue the Phase 3 plan's, whose last was 26.1, so that a number 
 | 32.2 | The client sets retreat and draws the Repair Bay | 32.1 | L9 | done; the owner's run accepted on 2026-10-07 |
 | 33.1 | The AI plays Phase 4 | 28.3, 30.1, 31.1, 32.1 | owner, 2026-10-07 | done |
 | 34.1 | The match log for Phase 4 | 30.1, 31.1, 32.1 | — | done |
-| 34.2 | U1–U8 | 33.1, 34.1 | — | U1–U5 measured in the container; U6 passes; U7 and U8 await the owner |
+| 34.2 | U1–U8 | 33.1, 34.1 | — | done: U1–U6 answered; U7 and U8 await the owner's runs |
 
 ### Milestone order
 

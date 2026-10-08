@@ -1,6 +1,6 @@
 # Outpost Commander — Phase 4 Design: Fewer Ships, a Wider Reach
 
-Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-06, from the owner's answers of that day · Accepted on 2026-10-06, with every gate decided as proposed (§16) · The order of the work is [the Phase 4 plan](ImplementationPlan-Phase4.md)
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-06, from the owner's answers of that day · Accepted on 2026-10-06, with every gate decided as proposed (§16) · Built by 2026-10-08, every milestone merged; U1–U6 answered, U7 and U8 await the owner's runs (§2) · The order of the work is [the Phase 4 plan](ImplementationPlan-Phase4.md)
 
 This document says what Phase 4 builds on top of Phase 3, and amends [the Phase 3 design](Archive/OutpostCommander-Phase3.md), [the Phase 2 design](Archive/OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. What the owner decided on 2026-10-06 is in §3, and the owner decided every gate of §16 as proposed the same day; the numbers are starting values, as Phase 3's were.
 
@@ -179,7 +179,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 | # | Answer |
 |---|---|
 | U1 | Met: the players' first shot at a median of 11:38, between minute 8 and 20 in 39 of 40, after 3 derelicts salvaged and 2 pirate outposts fought by the median side. |
-| U2 | Met at its peak, 21 warships for the median side and 1 side of 80 over 40; missed at minute 20, where the median side has 20. |
+| U2 | Met at its peak, 21 warships for the median side and 1 side of 80 over 40; missed at minute 20, where the median side has 20. Recorded rather than tuned when Phase 4 closed (2026-10-08): the cap holds the swarm, and the Ore salvage brings fills it sooner. |
 | U3 | Met in number, short in share: 33.5 warships turned for home and 45% of them fighting again, where half is asked. Accepted as measured (owner, 2026-10-07). |
 | U4 | Met: 7 engagements before minute 40, in 4.5 sectors. |
 | U5 | Every match ends, by domination only. Recorded, not tuned (owner, 2026-10-07). |
