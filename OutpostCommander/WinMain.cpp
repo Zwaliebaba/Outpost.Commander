@@ -219,10 +219,12 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // server is made while the menu shows.
     // A match's players connect to its server over QUIC, as they will to a server of its own (ADR-060).
     const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true};
+    // The description is captured as a copy of its own rather than as the const it is here, so that moving the lambda moves
+    // it, which cannot throw, where copying its path could.
     auto serverLoad = PrepareAsync(
-      [serverDesc]
+      [desc = Outpost::ServerDesc(serverDesc)]
       {
-        return ServerStart{.server = Outpost::CreateInProcessServer(serverDesc),
+        return ServerStart{.server = Outpost::CreateInProcessServer(desc),
                            .ai = {Outpost::LoadPackagedAiSettings(Outpost::EASY_AI_SETTINGS),
                                   Outpost::LoadPackagedAiSettings(Outpost::NORMAL_AI_SETTINGS),
                                   Outpost::LoadPackagedAiSettings(Outpost::HARD_AI_SETTINGS)}};
