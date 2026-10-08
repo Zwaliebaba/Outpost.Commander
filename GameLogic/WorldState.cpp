@@ -192,10 +192,11 @@ template <typename Self, typename Parts> auto Outpost::Simulation::SavedFields(S
   [[maybe_unused]] auto& [ticksPerSecond, secondsPerTick, stallLimitTicks, tick, entities, lastEntityId, designs, lastDesignId, players,
                           targetRule, random, pathfinder, observer, plannedOrders, plannedThisTick, lastStandingGroup, scheduledOrders,
                           lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, tuning, unresearched, basePlayers,
-                          matchOver, winner, matchEndedTick, ending, fog, shots, destroyed, events] = _simulation;
+                          matchOver, winner, matchEndedTick, ending, fog, worldRules, restartSeconds, starts, shots, destroyed, events] =
+    _simulation;
   return std::tie(tick, entities, lastEntityId, designs, lastDesignId, players, targetRule, _parts.random, _parts.obstacles, plannedOrders,
                   lastStandingGroup, scheduledOrders, lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, basePlayers,
-                  matchOver, winner, matchEndedTick, ending, fog);
+                  matchOver, winner, matchEndedTick, ending, fog, worldRules, restartSeconds, starts);
 }
 
 void Outpost::Simulation::SaveState(ByteWriter& _writer) const

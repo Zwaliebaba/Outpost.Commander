@@ -318,11 +318,11 @@ auto Fields(Self& _value)
   auto& [tick, player, entities, shots, destroyed, events, scheduled, away, ore, oreIncomeHundredthsPerSecond, designs, mapSizeMeters,
          structureTypes, constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research, shipyardBuildSpeedFactor,
          researchTier, nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending, fogOfWar, sectors, tickets,
-         startingTickets] = _value;
+         startingTickets, restartTick] = _value;
   return std::tie(tick, player, entities, shots, destroyed, events, scheduled, away, ore, oreIncomeHundredthsPerSecond, designs,
                   mapSizeMeters, structureTypes, constructorCost, constructorBuildSeconds, hulls, drives, weapons, modules, research,
                   shipyardBuildSpeedFactor, researchTier, nodeCap, commandPoints, fleetCap, matchOver, winner, matchEndedTick, ending,
-                  fogOfWar, sectors, tickets, startingTickets);
+                  fogOfWar, sectors, tickets, startingTickets, restartTick);
 }
 
 template <typename Self>
@@ -380,7 +380,7 @@ constexpr MatchEnding LastOf(MatchEnding) noexcept
 
 constexpr EventKind LastOf(EventKind) noexcept
 {
-  return EventKind::OrderFired;
+  return EventKind::EmpireRestarted;
 }
 
 constexpr OrderOutcome LastOf(OrderOutcome) noexcept

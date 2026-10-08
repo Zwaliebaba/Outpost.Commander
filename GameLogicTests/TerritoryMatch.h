@@ -14,11 +14,14 @@ public:
   static constexpr Outpost::PlayerId RED{2};
   static constexpr std::uint32_t TICKS_PER_SECOND = 20;
   // With _content, the seed places the pirates' outposts and the derelicts as in a match (ADR-073, ADR-074); without, every
-  // sector is free and empty, as the tests of the territory rules want it.
-  explicit TerritoryMatch(bool _content = false)
+  // sector is free and empty, as the tests of the territory rules want it. With _restartSeconds, it plays by a world's rules,
+  // a lost seat restarting that long after (Phase 5 design §8).
+  explicit TerritoryMatch(bool _content = false, std::optional<std::uint32_t> _restartSeconds = std::nullopt)
     : m_map(MapFor(_content)),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = 3})
   {
+    if (_restartSeconds.has_value())
+      World().UseWorldRules(*_restartSeconds);
     World().PlaceStartingBases(m_server.MapData());
   }
 
@@ -57,6 +60,12 @@ public:
   [[nodiscard]] const Outpost::Tuning& TuningData() const noexcept
   {
     return m_server.TuningData();
+  }
+
+  // A player's start, where its Command Station stood at first.
+  [[nodiscard]] Outpost::PlanePosition Start(Outpost::PlayerId _player) const
+  {
+    return m_server.MapData().starts[_player.value - 1];
   }
 
   // The pirates' outposts the match's seed placed, if it has pirates (ADR-073).

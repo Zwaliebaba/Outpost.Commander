@@ -390,7 +390,11 @@ enum class EventKind : std::uint8_t
   SectorGained,
   SectorLost,
   // A scheduled order of the player's fired.
-  OrderFired
+  OrderFired,
+  // In a world, the player lost its Command Station and its last finished Shipyard, and its seat restarted at its start an
+  // hour later (Phase 5 design §8); each names the start's sector and the start.
+  EmpireLost,
+  EmpireRestarted
 };
 
 // What became of a scheduled order that fired (ADR-080).
@@ -493,6 +497,8 @@ struct AwayReport
       if (ordersFired.size() > REPORTED_ORDERS)
         ordersFired.erase(ordersFired.begin());
       break;
+    case EventKind::EmpireLost:
+    case EventKind::EmpireRestarted:
     case EventKind::RelaySuppressed:
     case EventKind::RelayAttacked:
     case EventKind::EnemyEntered:
@@ -568,5 +574,8 @@ struct Snapshot
   std::vector<SectorView> sectors;
   std::vector<TicketsView> tickets;
   std::int32_t startingTickets = 0;
+  // In a world, while the player has lost: the tick its seat restarts at its start, or has waited since for the start to
+  // be free (Phase 5 design §8); none while it stands, and none in a match.
+  std::optional<std::uint64_t> restartTick;
 };
 } // namespace Outpost

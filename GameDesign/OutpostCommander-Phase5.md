@@ -125,7 +125,7 @@ W1, W4 and W6 are the owner's week. W2's tick figure is the owner's run in Relea
 *Decided (gate H6).*
 
 - **Domination is off in a world.** A world ends when the owner stops it.
-- **A player who loses restarts.** A player with neither a Command Station nor a finished Shipyard has lost (ADR-037). In a world, an hour later its seat restarts at a free start: a Command Station and the starting Constructors as at the world's start, and the starting Ore, keeping its research and its designs. Its ships and structures that still stand stay its own.
+- **A player who loses restarts.** A player with neither a Command Station nor a finished Shipyard has lost (ADR-037). In a world, an hour later its seat restarts at a free start: a Command Station and the starting Constructors as at the world's start, and its Ore raised to the starting Ore when it has less, keeping its bank, its research and its designs (owner, 2026-10-08). Its ships and structures that still stand stay its own.
 - **A start is free** when no other player holds its home sector or has a structure in it. Phase 4's map has two starts, one for each seat, so a seat restarts only at its own, and waits while it is not free; the world log says so. A map with spare starts, which Phase 7 brings, makes the wait rare. This is the weakest rule of Phase 5, and the week will show how often it binds.
 
 ---

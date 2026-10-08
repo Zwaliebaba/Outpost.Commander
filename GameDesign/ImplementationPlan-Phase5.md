@@ -36,7 +36,8 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 38.3 | The client's orders window | 38.2 | H5 | built, in milestone 38's PR; awaiting the owner's run |
 | 39.1 | A world without an end | 37.3 | H6 | todo |
 | 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | todo |
-| 39.3 | W1–W6 | all above | — | todo |
+| 39.3 | The battle matchups | — | — | todo |
+| 39.4 | W1–W6 | all above | — | todo |
 
 ### Milestone order
 
@@ -204,8 +205,31 @@ Recorded in [ADR-080](../Design/ADR/ADR-080-events-and-scheduled-orders.md); ADR
 - **A time of day is the system's zone,** with summer time, from the standard library's database; the tests read Amsterdam's from it. Where the database cannot say the zone, the clock is UTC.
 - **Awaiting the owner's run:** a 02:00 attack given from the orders window, in play (W5).
 
-## Milestone 39
+## Milestone 39 — A world without an end, the world log and the week
 
-Scoped in detail when it becomes the next milestone, from the design section its tasks name.
+Design §8–§10, gate H6, and horizon §9. The owner decided on 2026-10-08 what the design left open:
 
-- **39 — A world without an end, the world log and the week** (design §8–§10).
+- **A player who loses keeps its bank,** raised to the starting Ore when it has less, as it keeps its research, its designs and what still stands of its own (design §8).
+- **The battle matchups are measured headless and played live:** a file of matchups, each run AI against AI over many seeds for the baseline, and a switch that starts one in the game against the AI for the owner to play (horizon §9, W4).
+
+### 39.1 — A world without an end
+
+*Gate H6.* In a world, domination is off and no match ends. A player who loses (ADR-037) is told so, and an hour of ticks later its seat restarts at its start once that is free: a Command Station and the starting Constructors, and its Ore raised to the starting Ore. A start is free while no other player holds its home sector or has a structure in it. An AI empire plans afresh round its new Command Station. The client's banner says when the seat restarts, or that it waits for its start.
+
+- **Done when:** `WorldRulesTests` keep a world with a lost player running without domination, restart the seat on the hour with its bank and research, hold it while its start is taken, and bring a saved lost seat back on the same tick; `HudTests` lay out the banner.
+
+### 39.2 — The world log and `--world-run`
+
+The server writes a world log beside its saves, as ADR-038's match log is written: each save and how long it took, each recovery, each hand-over between a player and its deputy, each scheduled order fired, each loss and restart, every hour each seat's bank, income, fleet against its cap, nodes and research, and each battle with whether its players were present. `OutpostServer --world-run` plays a world with an AI in every seat as fast as the processor allows, kills it and recovers it at random ticks, and compares it at the end with the same world run straight through.
+
+- **Done when:** `WorldLogTests` write each record from a scripted world; the container's `--world-run` of a day of world, killed at random, ends equal to the world run straight through.
+
+### 39.3 — The battle matchups
+
+Horizon §9: a matchups file of fleets on each side, played without bases on the 10 km map, the AI's battle behavior on both sides, each over many seeds; and the game's `--matchup <n>`, which starts one against the AI for the owner to play.
+
+- **Done when:** `MatchupTests` place a matchup and end it when one side's warships are gone; the container's baseline over 40 seeds is recorded. *Owner run:* the matchups played live (W4).
+
+### 39.4 — W1–W6
+
+The container measures W2 with the deputies in, W3 again and the length of a world run; the owner's week is W1, W4 and W6, and W2's tick in Release.

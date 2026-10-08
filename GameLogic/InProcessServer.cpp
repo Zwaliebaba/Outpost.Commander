@@ -84,6 +84,9 @@ std::unique_ptr<Outpost::Server> SetUpServer(const GameData& _data, Outpost::Ser
   auto server = std::make_unique<Outpost::InProcessServer>(_data.tuning, _data.map, _desc);
   if (!recovery)
   {
+    // A world has no end, and a player who loses restarts (Phase 5 design §8); a save carries its rules with it.
+    if (!_desc.world.empty())
+      server->World().UseWorldRules();
     server->World().PlaceStartingBases(server->MapData());
     if (_desc.measurementLoad)
       Outpost::PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());

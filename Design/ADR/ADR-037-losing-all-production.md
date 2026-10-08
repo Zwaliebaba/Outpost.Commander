@@ -8,8 +8,8 @@ In the MVP a match ended when a Command Station fell, so one raid that reached t
 
 ## Decision
 
-1. **A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard.** The server checks it every tick, as it checked the station, and the match ends once, with a winner or a draw, as [ADR-020](ADR-020-ai-and-match-flow.md) decision 9 has it. A Shipyard still under construction keeps nobody in the match, nor do Constructors, Research Labs, rigs or platforms.
-2. **A lost Command Station stays lost, and no code makes it so.** The tuning data gives the Command Station no cost, so a Constructor's order to build one is refused as `NotBuildable`, as it was in the MVP, and only a Command Station queues Constructors.
+1. **A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard.** The server checks it every tick, as it checked the station, and the match ends once, with a winner or a draw, as [ADR-020](ADR-020-ai-and-match-flow.md) decision 9 has it. In a world nothing ends: the player is told, and its seat restarts an hour later ([ADR-081](ADR-081-world-without-an-end.md)). A Shipyard still under construction keeps nobody in the match, nor do Constructors, Research Labs, rigs or platforms.
+2. **A lost Command Station stays lost in a match, and no code makes it so.** A world's restarted seat is given a new one ([ADR-081](ADR-081-world-without-an-end.md)). The tuning data gives the Command Station no cost, so a Constructor's order to build one is refused as `NotBuildable`, as it was in the MVP, and only a Command Station queues Constructors.
 3. **A player without a Command Station has its finished Shipyards revealed.** At the end of each tick under fog of war, every finished Shipyard of such a player is added to each opponent's remembered structures, or refreshed there, unless the opponent sees it. A snapshot shows it marked `remembered`, and an attack order may name it (ADR-024 decision 7). A site is not revealed, since it keeps nobody in the match; a Shipyard is revealed from the tick it is finished.
 4. **The AI's attack group goes for production first.** It ranks the enemy structures it sees or remembers: Shipyards, then the Command Station, then the rest. It attack-moves on the nearest of the best rank to the group's center, each level a structure has above the first counting as `attackLevelMeters` nearer ([ADR-020](ADR-020-ai-and-match-flow.md) decision 14), and keeps that target until it is gone, or until a structure of a better rank comes to light. When it knows none, it goes across the center to look ([ADR-024](ADR-024-fog-of-war.md) decision 8).
 5. **The AI plays on without its Command Station.** It still keeps its Shipyards' queues full, researches, builds its plan and repairs with the Constructors it has, and plans new Shipyards round where its station stood. It queues no Constructors.
@@ -25,6 +25,6 @@ In the MVP a match ended when a Command Station fell, so one raid that reached t
 
 ## What this forecloses
 
-- Building a Command Station again, without a new decision.
+- Building a Command Station again, without a new decision; a world's restart places one (ADR-081).
 - Anything other than a Command Station or a finished Shipyard keeping a player in the match.
 - Revealing more of a beaten player's base than its finished Shipyards.

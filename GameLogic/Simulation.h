@@ -326,6 +326,25 @@ public:
   // finished Shipyard loses the match (Phase 1 design §4).
   void PlaceStartingBases(const Map& _map);
 
+  // A world's rules (Phase 5 design §8), set before PlaceStartingBases and saved with the world: domination is off and no
+  // match ends. A player who loses is told so (EventKind::EmpireLost), and _restartSeconds of ticks later, an hour in a
+  // world and less in a test, its seat restarts at its start once the start is free: its Command Station and the starting
+  // Constructors again, and its Ore raised to the starting Ore when it has less (owner, 2026-10-08). A start is free while
+  // no other player holds its home sector or has a structure in it.
+  void UseWorldRules(std::uint32_t _restartSeconds = RESTART_SECONDS) noexcept
+  {
+    m_worldRules = true;
+    m_restartSeconds = _restartSeconds;
+  }
+  [[nodiscard]] bool HasWorldRules() const noexcept
+  {
+    return m_worldRules;
+  }
+  static constexpr std::uint32_t RESTART_SECONDS = 3600;
+  // Under a world's rules, the tick a lost player's seat restarts at, or has waited from for its start since; none while
+  // it stands.
+  [[nodiscard]] std::optional<std::uint64_t> RestartTick(PlayerId _player) const noexcept;
+
   // Match setup, after PlaceMap and UseTuning: the pirates' outposts the map's seed placed (Phase 4 design §8, ADR-073),
   // each on its sector's node, with the tuning data's Defence Platforms and ships of the outpost's size, all owned by
   // PIRATES at the base level. Throws Neuron::Exception when an outpost's size is not in the tuning data, its chase would
@@ -394,6 +413,7 @@ public:
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
            _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_ending == _b.m_ending && _a.m_fog == _b.m_fog &&
+           _a.m_worldRules == _b.m_worldRules && _a.m_restartSeconds == _b.m_restartSeconds && _a.m_starts == _b.m_starts &&
            _a.m_plannedOrders == _b.m_plannedOrders && _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors &&
            _a.m_outposts == _b.m_outposts && _a.m_scheduledOrders == _b.m_scheduledOrders &&
            _a.m_lastScheduledOrder == _b.m_lastScheduledOrder;
@@ -463,6 +483,8 @@ private:
     // The sectors it holds in which it saw an enemy or pirate warship at the end of the last tick, which tells the next
     // tick's sightings from new ones (ADR-080).
     std::vector<std::int32_t> enemySectors;
+    // Under a world's rules, the tick it lost on, while it waits to restart (Phase 5 design §8).
+    std::optional<std::uint64_t> lostTick;
     ResearchEffects researchEffects;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
@@ -474,9 +496,9 @@ private:
     friend auto Fields(Self& _value)
     {
       [[maybe_unused]] auto& [id, oreHundredths, oreRemainder, researched, shipyardsFinished, seen, remembered, revealedUntil,
-                              knownReserves, recovered, tickets, enemySectors, researchEffects] = _value;
+                              knownReserves, recovered, tickets, enemySectors, lostTick, researchEffects] = _value;
       return std::tie(id, oreHundredths, oreRemainder, researched, shipyardsFinished, seen, remembered, revealedUntil, knownReserves,
-                      recovered, tickets, enemySectors);
+                      recovered, tickets, enemySectors, lostTick);
     }
   };
 
@@ -771,6 +793,11 @@ private:
   void Mine();
   // Ends the match once a player whose base was placed has no Command Station left.
   void DecideMatch();
+  // Under a world's rules: tells a player that it lost, and restarts its seat on the hour once its start is free.
+  void RestartLostPlayers(const std::vector<PlayerId>& _standing);
+  [[nodiscard]] bool IsStartFree(PlayerId _player, PlanePosition _start) const noexcept;
+  // A player's Command Station on _start, and the starting Constructors in front of it, facing the map's center.
+  void PlaceStartingBase(PlayerId _owner, PlanePosition _start);
   // On a map with territory, every drain interval: each player that holds fewer nodes than another loses tickets, and a
   // player out of them ends the match (Phase 2 design §8, ADR-057).
   void Dominate();
@@ -823,6 +850,10 @@ private:
   std::uint64_t m_matchEndedTick = 0;
   MatchEnding m_ending = MatchEnding::LostProduction;
   bool m_fog = false;
+  // A world's rules, and each base player's start, where its seat restarts (Phase 5 design §8).
+  bool m_worldRules = false;
+  std::uint32_t m_restartSeconds = RESTART_SECONDS;
+  std::vector<std::pair<PlayerId, PlanePosition>> m_starts;
   // What the last tick did, for the snapshots built after it: its shots, its destructions, and each player's events.
   std::vector<ShotView> m_shots;
   std::vector<DestroyedView> m_destroyed;

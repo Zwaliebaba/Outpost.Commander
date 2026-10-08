@@ -1907,6 +1907,16 @@ std::string Hud::DescribeDerelict(const Snapshot& _newest, const EntityView& _de
 
 std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
 {
+  // In a world no match ends: a player who lost waits for its seat to restart at its start (Phase 5 design §8).
+  if (_newest.restartTick.has_value())
+  {
+    const std::uint64_t restart = *_newest.restartTick;
+    const std::uint64_t seconds =
+      _ticksPerSecond > 0 && restart > _newest.tick ? (restart - _newest.tick + _ticksPerSecond - 1) / _ticksPerSecond : 0;
+    return Outcome{.title = "Empire fallen",
+                   .detail = seconds > 0 ? std::format("It restarts at your start in {}", MinutesAndSeconds(seconds))
+                                         : std::string("It restarts once your start is clear of the enemy")};
+  }
   if (!_newest.matchOver)
     return std::nullopt;
   const std::string_view title = !_newest.winner.IsValid() ? "Draw" : _newest.winner == _newest.player ? "Victory" : "Defeat";

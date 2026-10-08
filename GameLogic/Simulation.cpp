@@ -85,6 +85,13 @@ constexpr float PIRATE_RING_METERS = 120.0f;
 // room for each other stay in it (ADR-075).
 constexpr float REPAIR_STANDOFF_METERS = 40.0f;
 
+// A start's base faces the map's center; a start at the center faces along +x.
+Outpost::PlaneVector StartForward(PlanePosition _start) noexcept
+{
+  const float heading = (_start.xMeters == 0.0f && _start.zMeters == 0.0f) ? 0.0f : std::atan2(-_start.zMeters, -_start.xMeters);
+  return {std::cos(heading), std::sin(heading)};
+}
+
 // A starting Command Station or Constructor must stay inside the map and clear of every obstacle. A base too large for its
 // start is a data error, reported rather than overlapped.
 void CheckStartingSlot(const Outpost::Map& _map, size_t _player, PlanePosition _position, float _radiusMeters)
@@ -683,9 +690,7 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
   for (size_t player = 0; player < _map.starts.size(); ++player)
   {
     const PlanePosition start = _map.starts[player];
-    const float heading = (start.xMeters == 0.0f && start.zMeters == 0.0f) ? 0.0f : std::atan2(-start.zMeters, -start.xMeters);
-    const PlaneVector forward{std::cos(heading), std::sin(heading)};
-    // Across is to the right of forward, a quarter turn clockwise seen from above.
+    const PlaneVector forward = StartForward(start);
     const PlaneVector across{forward.zMeters, -forward.xMeters};
     const PlayerId owner{static_cast<std::uint32_t>(player + 1)};
     if (std::ranges::find(m_basePlayers, owner) == m_basePlayers.end())
@@ -699,24 +704,38 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
       const PlanePosition position = start + forward * (stationRadius + BASE_ROW_GAP_METERS + constructorRadius) + across * offset;
       CheckStartingSlot(_map, player, position, constructorRadius);
     }
-
-    (void)SpawnStructure(owner, StructureKind::CommandStation, start, stationRadius, StructureHitPoints(owner, *station),
-                         station->armor * HUNDREDTHS);
-    for (size_t i = 0; i < constructors; ++i)
-    {
-      const float offset =
-        (static_cast<float>(i) - (static_cast<float>(constructors - 1) / 2.0f)) * ((2.0f * constructorRadius) + BASE_ROW_SPACING_METERS);
-      (void)SpawnConstructor(owner, start + forward * (stationRadius + BASE_ROW_GAP_METERS + constructorRadius) + across * offset, heading);
-    }
+    PlaceStartingBase(owner, start);
+    std::erase_if(m_starts, [owner](const auto& _start) { return _start.first == owner; });
+    m_starts.emplace_back(owner, start);
   }
-  // On a map with territory every player starts with its tickets (ADR-057).
-  if (HasTerritory())
+  // On a map with territory every player starts with its tickets (ADR-057), but in a world, which has no domination.
+  if (HasTerritory() && !m_worldRules)
   {
     for (const PlayerId owner : m_basePlayers)
     {
       if (PlayerState* player = FindPlayer(owner))
         player->tickets = m_tuning->territory.tickets;
     }
+  }
+}
+
+void Outpost::Simulation::PlaceStartingBase(PlayerId _owner, PlanePosition _start)
+{
+  const StructureTuning* station = StructureTuningFor(StructureKind::CommandStation);
+  const auto stationRadius = static_cast<float>(station->footprintRadiusMeters);
+  const auto constructorRadius = static_cast<float>(m_tuning->constructor.footprintRadiusMeters);
+  const auto constructors = static_cast<size_t>(m_tuning->rules.startingConstructors);
+  const PlaneVector forward = StartForward(_start);
+  // Across is to the right of forward, a quarter turn clockwise seen from above.
+  const PlaneVector across{forward.zMeters, -forward.xMeters};
+  const float heading = std::atan2(forward.zMeters, forward.xMeters);
+  (void)SpawnStructure(_owner, StructureKind::CommandStation, _start, stationRadius, StructureHitPoints(_owner, *station),
+                       station->armor * HUNDREDTHS);
+  for (size_t i = 0; i < constructors; ++i)
+  {
+    const float offset =
+      (static_cast<float>(i) - (static_cast<float>(constructors - 1) / 2.0f)) * ((2.0f * constructorRadius) + BASE_ROW_SPACING_METERS);
+    (void)SpawnConstructor(_owner, _start + forward * (stationRadius + BASE_ROW_GAP_METERS + constructorRadius) + across * offset, heading);
   }
 }
 
@@ -1035,7 +1054,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     snapshot.commandPoints = CommandPointsOf(_player);
     snapshot.fleetCap = FleetCapOf(_player);
   }
-  if (HasTerritory() && !m_basePlayers.empty())
+  snapshot.restartTick = RestartTick(_player);
+  if (HasTerritory() && !m_basePlayers.empty() && !m_worldRules)
   {
     snapshot.startingTickets = m_tuning->territory.tickets;
     for (const PlayerId player : m_basePlayers)
@@ -3611,8 +3631,73 @@ void Outpost::Simulation::DecideMatch()
     if (producing)
       standing.push_back(player);
   }
-  if (standing.size() < m_basePlayers.size())
+  if (m_worldRules)
+    RestartLostPlayers(standing);
+  else if (standing.size() < m_basePlayers.size())
     EndMatch(standing, MatchEnding::LostProduction);
+}
+
+// In a world no match ends (Phase 5 design §8): a player who loses is told so in the tick it does, and an hour of ticks
+// later its seat restarts at its start, once no other player holds the start's sector or has a structure in it. A player
+// that builds itself a Shipyard again in the meantime stands again, and waits for nothing.
+void Outpost::Simulation::RestartLostPlayers(const std::vector<PlayerId>& _standing)
+{
+  const std::uint64_t now = m_tick + 1;
+  const std::uint64_t restartTicks = std::uint64_t{m_restartSeconds} * m_ticksPerSecond;
+  for (const auto& [owner, start] : m_starts)
+  {
+    PlayerState* player = FindPlayer(owner);
+    if (player == nullptr)
+      continue;
+    const Sector* home = SectorAt(start);
+    const EventView told{.sector = home != nullptr ? home->placement.id : 0, .position = start};
+    if (std::ranges::find(_standing, owner) != _standing.end())
+    {
+      player->lostTick.reset();
+      continue;
+    }
+    if (!player->lostTick.has_value())
+    {
+      player->lostTick = now;
+      EventView lost = told;
+      lost.kind = EventKind::EmpireLost;
+      Raise(owner, lost);
+      continue;
+    }
+    if (now < *player->lostTick + restartTicks || !IsStartFree(owner, start))
+      continue;
+    PlaceStartingBase(owner, start);
+    player->oreHundredths = std::max(player->oreHundredths, std::int64_t{m_tuning->rules.startingOre} * HUNDREDTHS);
+    player->lostTick.reset();
+    EventView restarted = told;
+    restarted.kind = EventKind::EmpireRestarted;
+    Raise(owner, restarted);
+  }
+}
+
+bool Outpost::Simulation::IsStartFree(PlayerId _player, PlanePosition _start) const noexcept
+{
+  const Sector* home = SectorAt(_start);
+  if (home != nullptr && home->holder.IsValid() && home->holder != _player)
+    return false;
+  // Without sectors, the start's ground is as far round it as its base reaches and as far again.
+  const float reach = 2.0f * (static_cast<float>(StructureTuningFor(StructureKind::CommandStation)->footprintRadiusMeters) +
+                              BASE_ROW_GAP_METERS + (2.0f * static_cast<float>(m_tuning->constructor.footprintRadiusMeters)));
+  return std::ranges::none_of(
+    m_entities,
+    [&](const Entity& _entity)
+    {
+      const bool there = home != nullptr ? home->placement.Contains(_entity.position) : Distance(_entity.position, _start) < reach;
+      return _entity.kind == EntityKind::Structure && _entity.owner.IsValid() && _entity.owner != _player && there;
+    });
+}
+
+std::optional<std::uint64_t> Outpost::Simulation::RestartTick(PlayerId _player) const noexcept
+{
+  const PlayerState* player = FindPlayer(_player);
+  if (player == nullptr || !player->lostTick.has_value())
+    return std::nullopt;
+  return *player->lostTick + (std::uint64_t{m_restartSeconds} * m_ticksPerSecond);
 }
 
 // Phase 2 design §8, as Phase 4 amends it: every drain interval, a player that holds fewer nodes than the most any player
@@ -3620,7 +3705,7 @@ void Outpost::Simulation::DecideMatch()
 // its owner, and a free node for no one. A player out of tickets loses (ADR-057).
 void Outpost::Simulation::Dominate()
 {
-  if (m_matchOver || m_basePlayers.empty() || !HasTerritory())
+  if (m_matchOver || m_basePlayers.empty() || !HasTerritory() || m_worldRules)
     return;
   const auto interval =
     std::max<std::uint64_t>(1, static_cast<std::uint64_t>(std::llround(m_tuning->territory.drainIntervalSeconds * m_ticksPerSecond)));
