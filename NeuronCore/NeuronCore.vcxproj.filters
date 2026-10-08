@@ -33,10 +33,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.1\build\native\bin\$(Platform)\msquic.dll">
+    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.2\build\native\bin\$(Platform)\msquic.dll">
       <Filter>Network</Filter>
     </Content>
-    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.1\LICENSE">
+    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.2\LICENSE">
       <Filter>Network</Filter>
     </Content>
   </ItemGroup>
