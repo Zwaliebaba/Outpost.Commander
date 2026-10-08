@@ -126,8 +126,8 @@ Whether a front stays interesting for weeks with a few friends and their deputie
 - **O1 — Progression** (§6.1): tiers opened by holding derelicts and vaults; what losing one does; whether the Lab's levels stay.
 - **O2 — The bound on fleets** (§6.2): upkeep or a command cap, and how it follows territory. On 2026-10-06 the owner chose a command cap with dearer ships; the [Phase 4 draft](Archive/OutpostCommander-Phase4.md) proposes tying it to the Command Station's level rather than to territory (its gate L2).
 - **O3 — Ore over a season** (§6.3): fields that recover, or fields that appear.
-- **O4 — The deputy's directives** (§4): what a player can tell its deputy, and how well it must play.
-- **O5 — Where triggers are evaluated** (§5): the server or the deputy.
+- **O4 — The deputy's directives** (§4): what a player can tell its deputy, and how well it must play. For Phase 5 the deputy is a keeper ([Phase 5](OutpostCommander-Phase5.md) §6, gate H3, owner, 2026-10-08).
+- **O5 — Where triggers are evaluated** (§5): the server or the deputy. Decided: the server ([Phase 5](OutpostCommander-Phase5.md) §7, gate H4, owner, 2026-10-08).
 - **O6 — Diplomacy.** A free-for-all among friends and AI empires grows alliances by itself, and with them a player who decides the winner between the others. Accepted as it comes, or designed for.
 - **O7 — Reach.** A check-in needs the PC. The server can post "40 ships inbound to Kessler-3, arriving 21:40" to the friends' group chat through WinHTTP, which is in the Windows SDK, so R14 is not touched, though a dependency on a service deserves an ADR. A web view of the galaxy would reopen ADR-001 and R14.
 - **O8 — The world beyond one map.** A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems. So the 10 km world, relay jumps, forward Shipyards and pathing by sector, which Phase 3's draft had moved to a Phase 4, now wait on this horizon, and Phase 3 §3 says so (owner, 2026-10-04); Phase 3's rules are unchanged. Open: which of them a galaxy of systems still needs inside a system. **On 2026-10-06 the owner decided that a system is 10 km a side, and that the [Phase 4 draft](Archive/OutpostCommander-Phase4.md)'s map is the first one**; that draft proposes Shipyards only in held sectors in place of forward Shipyards anywhere, and leaves relay jumps here.
@@ -139,7 +139,7 @@ Whether a front stays interesting for weeks with a few friends and their deputie
 
 *Proposed, not decided.* Each step would be a phase design of its own, with its questions and gates, as Phases 1–3 were.
 
-1. **A world that persists.** Today's map as one system, run without stopping by the dedicated server, recovering from a restart, with a deputy in an absent seat; the owner against the AI or one friend. Its question: does a world that keeps running while its players are away work at all?
+1. **A world that persists.** Today's map as one system, run without stopping by the dedicated server, recovering from a restart, with a deputy in an absent seat; the owner against the AI or one friend. Its question: does a world that keeps running while its players are away work at all? **Taken up by [Phase 5](OutpostCommander-Phase5.md)**, accepted on 2026-10-08, which decides it there.
 2. **A galaxy.** Several systems and travel between them, with §6's limits and progression.
 3. **Friends.** Seats, seasons of weeks and the notifications of O7.
 4. **Seasons of months.** A save format that loads in later builds, the galaxy's arc and a season's end (§7).

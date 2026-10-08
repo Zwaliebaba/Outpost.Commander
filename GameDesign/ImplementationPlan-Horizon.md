@@ -1,6 +1,6 @@
 # Outpost Commander — Horizon Plan: From Phase 4 to a Galaxy That Keeps Running
 
-Status: **draft, proposed, nothing decided** · Started 2026-10-07, at the owner's request for a plan to build [the horizon](OutpostCommander-Horizon.md) once Phase 4 is done · Derived from the horizon, [the Phase 4 design](Archive/OutpostCommander-Phase4.md) and the code on `main` at that date · Brought up to date on 2026-10-08, when Phase 4 closed
+Status: **draft, proposed** · Its §4 is taken up by [the Phase 5 design](OutpostCommander-Phase5.md), accepted on 2026-10-08 with H1 to H9 as proposed, which is the authority for it from then · Started 2026-10-07, at the owner's request for a plan to build [the horizon](OutpostCommander-Horizon.md) once Phase 4 is done · Derived from the horizon, [the Phase 4 design](Archive/OutpostCommander-Phase4.md) and the code on `main` at that date · Brought up to date on 2026-10-08, when Phase 4 closed
 
 The horizon says where the game goes in the long run and decides almost nothing. This plan proposes how to get there: four phases, each of which becomes a phase design of its own, with its gates, before any of its code is written (horizon §11, AGENTS.md). It is not an authority, and it binds nothing until the owner accepts a phase design built from it. Where it disagrees with the horizon, §2 says so and why.
 
@@ -76,16 +76,7 @@ Milestones continue the Phase 4 plan's numbers, from 35. Each phase's milestones
 
 ### Milestones
 
-**35 — The dedicated server.**
-- `OutpostServer`, a console executable that links `GameLogic`, `NeuronServer`, `GameProtocol`, `NeuronCore` and `Opponent` (for deputies), and none of the client libraries. ADR-002 foresees it; its row in the project table and AGENTS.md §2 gain `Opponent`.
-- It binds the address it is configured with, not only `127.0.0.1`, and keeps its certificate's key across restarts, so a client pins it once. Today the key is deleted when the listener goes (ADR-060 decision 6).
-- A seat is taken with a token as well as the player. Today the first hello for an open seat takes it.
-- A dropped seat can be taken again after the server has started; today a hello after `Start` is refused (ADR-060 decision 5). The first snapshot after it carries everything the player sees and remembers; the per-tick shots and destructions it missed are lost, which is presentation.
-- The client's menu gains "Join a world": address, hash and token. That reopens K4's menu decision.
-- **ADR:** new, the dedicated server and its seats. ADR-002, ADR-004 and ADR-060 edited in place.
-- **Verify:** `GameLogicTests` over the loopback for tokens and retaken seats, in the container; `QuicTransportTests` for a remote bind and a retaken seat, in CI; **owner run** on a second machine.
-
-**36 — A world that survives a restart.**
+**35 — A world that survives a restart.**
 - A save format for the whole of `Simulation`'s state, written field by field from field lists, as `WireFormat` writes messages (ADR-060 decision 4), and headed by a state version that a change to `Simulation`'s layout must raise. The path graphs are not saved: they are built on load, which ADR-054 decision 7 makes the very graph the running world had.
 - The tuning data and the map are saved by their hash; a world refuses to load against others.
 - The server copies `Simulation` between ticks (it is copyable and compares equal, ADR-009 decision 8) and writes the copy on another thread. The command log is appended to a file as each tick's commands are applied.
@@ -94,6 +85,15 @@ Milestones continue the Phase 4 plan's numbers, from 35. Each phase's milestones
 - **ADR:** new, a world's state on disk. ADR-009 edited (the log is written to a file), ADR-025 edited (the copy and the writer's thread).
 - **Acceptance:** a world saved, loaded and compared equal; a world killed at a random tick and recovered compares equal at a later tick to the same world run straight through, on the same binary; a save of another version, another tuning or a cut file refused.
 - **Verify:** in the container, including the copy's and the write's time on a late 10 km world.
+
+**36 — The dedicated server.**
+- `OutpostServer`, a console executable that links `GameLogic`, `NeuronServer`, `GameProtocol`, `NeuronCore` and `Opponent` (for deputies), and none of the client libraries. ADR-002 foresees it; its row in the project table and AGENTS.md §2 gain `Opponent`.
+- It binds the address it is configured with, not only `127.0.0.1`, and keeps its certificate's key across restarts, so a client pins it once. Today the key is deleted when the listener goes (ADR-060 decision 6).
+- A seat is taken with a token as well as the player. Today the first hello for an open seat takes it.
+- A dropped seat can be taken again after the server has started; today a hello after `Start` is refused (ADR-060 decision 5). The first snapshot after it carries everything the player sees and remembers; the per-tick shots and destructions it missed are lost, which is presentation.
+- The client's menu gains "Join a world": address, hash and token. That reopens K4's menu decision.
+- **ADR:** new, the dedicated server and its seats. ADR-002, ADR-004 and ADR-060 edited in place.
+- **Verify:** `GameLogicTests` over the loopback for tokens and retaken seats, in the container; `QuicTransportTests` for a remote bind and a retaken seat, in CI; **owner run** on a second machine.
 
 **37 — Deputies in the server.**
 - The AI starts from any state: given a snapshot of a mid-match empire it did not build, it groups its ships, adopts its designs and production, and plays on (§2.5).
