@@ -21,6 +21,7 @@ The owner decided on 2026-10-03 to make the rings thin and faint, at full streng
 1. **A structure's ring is a line one pixel wide at any zoom.**
    - It is 1.3 times the footprint radius, the size of the selection ring, in its side's color at 0.35 at most. How it fades as the camera comes in is [ADR-046](ADR-046-second-look-at-the-screen.md)'s.
    - It has 96 segments, and the models' lines draw it (`MeshPipeline::DrawLines`), unpulled since nothing lies under it.
+   - A structure the player only remembers stands on none, since it may not be there ([ADR-080](ADR-080-territory-and-memory-over-the-fog.md)).
 2. **Some rings are at full strength**, in the color of a structure's own lines (`EdgeColor`, ADR-040):
    - Under the structure the pointer is on. It is picked as a click picks it (`PickEntity`), and not through the HUD.
    - Under every structure while one is being placed, since then the player is choosing where it stands among them.

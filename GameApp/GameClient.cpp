@@ -130,6 +130,27 @@ constexpr float HEALTH_LOW_SHARE = 0.25f;
 // just beyond the health bar.
 constexpr float UNBUILT_SHADE = 0.35f;
 constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.25f, 0.65f, 1.0f, 1.0f};
+// The territory, drawn over the fog, since every player sees it (interface plan 2, task UI1.1): the lattice of sector
+// borders one pixel wide in TERRITORY_LATTICE_COLOR, brighter than the grid and never wider (ADR-028); an outline inside each
+// held or guarded sector in its holder's color at TERRITORY_OUTLINE_SHADE, dashed while suppressed and dotted while cut
+// off; and a ring on every node, the size of a Relay's footprint ring, in its holder's color at NODE_RING_SHADE, in the
+// lattice's color brightened by NODE_NEUTRAL_BRIGHTNESS while free, and in the player's own lines' color, doubled, where it
+// could claim the node now. A side is drawn with one mesh 1 long, scaled to it, so its dashes and dots are shares of its
+// length: on a 2,000 m side, 40 dashes of 25 m and 100 dots of 4 m.
+constexpr DirectX::XMFLOAT4 TERRITORY_LATTICE_COLOR{0.04f, 0.043f, 0.063f, 1.0f};
+constexpr float TERRITORY_OUTLINE_SHADE = 0.5f;
+constexpr float NODE_RING_SHADE = 0.7f;
+constexpr float NODE_NEUTRAL_BRIGHTNESS = 2.0f;
+constexpr float CLAIMABLE_INNER_SHARE = 0.75f;
+constexpr int TERRITORY_DASHES = 40;
+constexpr float TERRITORY_DASH_SHARE = 0.5f;
+constexpr int TERRITORY_DOTS = 100;
+constexpr float TERRITORY_DOT_SHARE = 0.2f;
+// A structure or derelict the player only remembers (ADR-024) is drawn over the fog as its lines alone: no faces, no bar
+// and no ring, in its side's color MEMORY_GRAY_SHARE of the way to a gray as light as it, at MEMORY_SHADE, however far it
+// was built. What the player sees now has faces; a memory does not (interface plan 2, task UI1.2).
+constexpr float MEMORY_GRAY_SHARE = 0.5f;
+constexpr float MEMORY_SHADE = 0.6f;
 // The ghost: a flat disc of the footprint, a little above the ground.
 constexpr DirectX::XMFLOAT4 GHOST_VALID_COLOR{0.2f, 0.75f, 0.3f, 1.0f};
 constexpr DirectX::XMFLOAT4 GHOST_INVALID_COLOR{0.85f, 0.2f, 0.15f, 1.0f};
@@ -269,6 +290,26 @@ Neuron::MeshData BuildStrip()
   strip.boundsMin = {0.0f, 0.0f, -0.5f};
   strip.boundsMax = {1.0f, 0.0f, 0.5f};
   return strip;
+}
+
+// A line from x = 0 to 1 on the ground, broken into _pieces of which each draws its first _drawnShare, as a line list for
+// MeshPipeline::DrawLines, lit as the ground facing up: whole for one piece drawn whole, dashed or dotted for more.
+Neuron::MeshData BuildBrokenLine(int _pieces, float _drawnShare)
+{
+  Neuron::MeshData line;
+  constexpr DirectX::XMFLOAT3 UP{0.0f, 1.0f, 0.0f};
+  for (int piece = 0; piece < _pieces; ++piece)
+  {
+    const float start = static_cast<float>(piece) / static_cast<float>(_pieces);
+    const float end = (static_cast<float>(piece) + _drawnShare) / static_cast<float>(_pieces);
+    line.indices.push_back(static_cast<std::uint32_t>(line.vertices.size()));
+    line.vertices.push_back({{start, 0.0f, 0.0f}, UP});
+    line.indices.push_back(static_cast<std::uint32_t>(line.vertices.size()));
+    line.vertices.push_back({{end, 0.0f, 0.0f}, UP});
+  }
+  line.boundsMin = {0.0f, 0.0f, 0.0f};
+  line.boundsMax = {1.0f, 0.0f, 0.0f};
+  return line;
 }
 
 // Scaled uniformly, turned to a heading counterclockwise from +x seen from above, and moved to a point.
@@ -454,6 +495,9 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_ringLine = std::make_unique<Neuron::Mesh>(_renderer, BuildRingLine());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
+  m_solidLine = std::make_unique<Neuron::Mesh>(_renderer, BuildBrokenLine(1, 1.0f));
+  m_dashedLine = std::make_unique<Neuron::Mesh>(_renderer, BuildBrokenLine(TERRITORY_DASHES, TERRITORY_DASH_SHARE));
+  m_dottedLine = std::make_unique<Neuron::Mesh>(_renderer, BuildBrokenLine(TERRITORY_DOTS, TERRITORY_DOT_SHARE));
   // How high each rock reaches over its center, for a Mining Rig to stand there; the top of its bounds if the line down
   // its center misses it.
   for (size_t index = 0; index < ROCK_MODELS.size(); ++index)
@@ -504,6 +548,8 @@ void Outpost::GameClient::ClearMatch()
   m_hovered.reset();
   m_designer = Designer();
   m_fog = FogOfWar();
+  m_territory = {};
+  m_territoryTick.reset();
   m_alerts.Reset();
   m_fogTick.reset();
   m_fogRevisionShown.reset();
@@ -697,13 +743,19 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_designer.EndEditing();
     const std::optional<Hud::Action> hovered =
       m_hudLayout.ActionAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
-    Hud::Content content =
-      Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr, hovered);
+    Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
+                                         hovered, m_ticksPerSecond);
     content.fog = m_fog.CellsPerSide() > 0;
-    // What a derelict under the pointer holds (Phase 4 design §13), unless a placement's hint says more.
-    if (const auto derelict = std::ranges::find(m_entities, m_hovered.value_or(EntityId{}), &EntityView::id);
-        content.hint.empty() && derelict != m_entities.end() && derelict->kind == EntityKind::Derelict)
-      content.hint = Hud::DescribeDerelict(m_view.Newest(), *derelict);
+    // What a derelict under the pointer holds (Phase 4 design §13), and how long ago a structure the player only remembers
+    // was seen (interface plan 2, task UI1.2), unless a placement's hint says more.
+    if (const auto pointed = std::ranges::find(m_entities, m_hovered.value_or(EntityId{}), &EntityView::id);
+        content.hint.empty() && pointed != m_entities.end())
+    {
+      if (pointed->kind == EntityKind::Derelict)
+        content.hint = Hud::DescribeDerelict(m_view.Newest(), *pointed, m_ticksPerSecond);
+      else if (pointed->remembered)
+        content.hint = Hud::DescribeMemory(m_view.Newest(), *pointed, m_ticksPerSecond);
+    }
     for (const Alerts::Alert& alert : m_alerts.Shown(m_view.Newest().tick, m_ticksPerSecond))
       content.alerts.emplace_back(alert.text, alert.position);
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
@@ -1075,8 +1127,12 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
     return;
   m_faceDraws.clear();
   m_lineDraws.clear();
+  // What the player only remembers is drawn over the fog, after the rest (DrawMemories).
   for (const EntityView& entity : m_entities)
-    QueueEntity(entity);
+  {
+    if (!entity.remembered)
+      QueueEntity(entity);
+  }
   // Every model's faces, each mesh's copies in one draw (ADR-053).
   m_pipeline.DrawMeshes(_commandList, m_faceDraws);
   DrawShards(_commandList);
@@ -1089,6 +1145,92 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawEffects(_commandList);
   DrawGlows(_renderer, _commandList);
   DrawFog(_renderer, _commandList);
+  // Over the fog, what every player sees whatever the fog, the territory, and what the player only remembers, which the fog
+  // would otherwise dim as it dims the ground round it (interface plan 2, tasks UI1.1 and UI1.2).
+  m_pipeline.Resume(_commandList);
+  DrawTerritory(_commandList);
+  DrawMemories(_commandList);
+}
+
+void Outpost::GameClient::DrawMemories(ID3D12GraphicsCommandList* _commandList)
+{
+  m_memoryDraws.clear();
+  for (const EntityView& entity : m_entities)
+  {
+    if (!entity.remembered)
+      continue;
+    const std::optional<PlacedModel> placed = PlaceModel(entity);
+    if (!placed.has_value())
+      continue;
+    const DirectX::XMFLOAT4 color = Shaded(TowardGray(placed->set->color, MEMORY_GRAY_SHARE), MEMORY_SHADE);
+    const DirectX::XMFLOAT4X4 world = placed->World();
+    for (const ModelPiece& piece : ModelPieces(placed->set->name, *placed->model, placed->level))
+    {
+      if (piece.edges != nullptr)
+        m_memoryDraws.push_back({.mesh = piece.edges.get(), .instance = MeshInstance(PieceWorld(piece, world), color, LINE_LIFT_SHARE)});
+    }
+  }
+  m_pipeline.DrawLines(_commandList, m_memoryDraws);
+}
+
+void Outpost::GameClient::DrawTerritory(ID3D12GraphicsCommandList* _commandList)
+{
+  if (m_view.IsEmpty())
+    return;
+  const Snapshot& newest = m_view.Newest();
+  // Once a snapshot: who holds what, and which nodes the player could claim, change no faster than the server ticks.
+  if (m_territoryTick != newest.tick)
+  {
+    m_territory = MarkTerritory(newest, m_entities);
+    m_territoryTick = newest.tick;
+  }
+  m_territoryDraws.clear();
+  for (const TerritoryMarks::Line& line : m_territory.lines)
+  {
+    DirectX::XMFLOAT4 color = TERRITORY_LATTICE_COLOR;
+    if (line.look != TerritoryMarks::Look::Neutral)
+    {
+      const ModelSet* side = m_catalog.SetForPlayer(line.holder);
+      if (side == nullptr)
+        continue;
+      color = Shaded(side->color, TERRITORY_OUTLINE_SHADE);
+    }
+    const float dx = line.to.xMeters - line.from.xMeters;
+    const float dz = line.to.zMeters - line.from.zMeters;
+    const float length = std::hypot(dx, dz);
+    if (length <= 0.0f)
+      continue;
+    const Neuron::Mesh* mesh = line.pattern == TerritoryMarks::Pattern::Dashed   ? m_dashedLine.get()
+                               : line.pattern == TerritoryMarks::Pattern::Dotted ? m_dottedLine.get()
+                                                                                 : m_solidLine.get();
+    const DirectX::XMFLOAT3 from{line.from.xMeters, OVERLAY_LIFT_METERS, line.from.zMeters};
+    m_territoryDraws.push_back({.mesh = mesh, .instance = MeshInstance(WorldMatrix(from, std::atan2(dz, dx), length), color, 0.0f)});
+  }
+  // A node's ring is a Relay's footprint ring, so that a Relay on the node stands in it.
+  const auto relay = std::ranges::find(newest.structureTypes, StructureKind::Relay, &StructureTypeView::structure);
+  const float radius = (relay != newest.structureTypes.end() ? relay->radiusMeters : 0.0f) * RING_SIZE_PER_FOOTPRINT;
+  for (const TerritoryMarks::Node& node : m_territory.nodes)
+  {
+    if (radius <= 0.0f)
+      break;
+    DirectX::XMFLOAT4 color = Shaded(TERRITORY_LATTICE_COLOR, NODE_NEUTRAL_BRIGHTNESS);
+    if (node.look != TerritoryMarks::Look::Neutral)
+    {
+      const ModelSet* side = m_catalog.SetForPlayer(node.holder);
+      if (side == nullptr)
+        continue;
+      color = node.look == TerritoryMarks::Look::Claimable ? EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE)
+                                                           : Shaded(side->color, NODE_RING_SHADE);
+    }
+    const DirectX::XMFLOAT3 at{node.position.xMeters, OVERLAY_LIFT_METERS, node.position.zMeters};
+    m_territoryDraws.push_back({.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, radius), color, 0.0f)});
+    if (node.look == TerritoryMarks::Look::Claimable)
+    {
+      m_territoryDraws.push_back(
+        {.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, radius * CLAIMABLE_INNER_SHARE), color, 0.0f)});
+    }
+  }
+  m_pipeline.DrawLines(_commandList, m_territoryDraws);
 }
 
 void Outpost::GameClient::RenderInterface(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)
@@ -1106,7 +1248,11 @@ void Outpost::GameClient::DrawFog(const Neuron::Renderer& _renderer, ID3D12Graph
                                                              .originXMeters = origin.xMeters,
                                                              .originZMeters = origin.zMeters,
                                                              .cellMeters = FogOfWar::CELL_METERS,
-                                                             .cellsPerSide = m_fog.CellsPerSide()};
+                                                             .cellsPerSide = m_fog.CellsPerSide(),
+                                                             // What was seen before, darker on the ground than on the minimap
+                                                             // (interface plan 2, task UI1.3).
+                                                             .kneeShade = FogOfWar::SEEN_BEFORE_SHADE,
+                                                             .kneeOpacity = FogOfWar::GROUND_SEEN_BEFORE_SHADE};
   // The shades go to the GPU only when they change, and only the rows that did; the minimap samples the same texture
   // (ADR-052).
   if (m_fogRevisionShown != m_fog.Revision())
@@ -1176,6 +1322,10 @@ void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList
   const float buildOffset = healthOffset + thickness + HEALTH_BAR_GAP_METERS;
   for (const EntityView& entity : m_entities)
   {
+    // What the player only remembers shows no bar: its hit points and construction are as they were when it was seen
+    // (interface plan 2, task UI1.2).
+    if (entity.remembered)
+      continue;
     const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
     const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
     const float halfLength = std::max(entity.radiusMeters, leastHalfLength);
@@ -1234,7 +1384,8 @@ void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList
   m_ringDraws.clear();
   for (const EntityView& structure : m_entities)
   {
-    if (structure.kind != EntityKind::Structure || std::ranges::find(selected, structure.id) != selected.end())
+    // A memory stands on no ring: it may not be there (interface plan 2, task UI1.2).
+    if (structure.kind != EntityKind::Structure || structure.remembered || std::ranges::find(selected, structure.id) != selected.end())
       continue;
     const ModelSet* side = m_catalog.SetForPlayer(structure.owner);
     if (side == nullptr)

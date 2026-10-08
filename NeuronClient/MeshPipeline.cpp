@@ -141,13 +141,18 @@ void Neuron::MeshPipeline::BeginDrawing(ID3D12GraphicsCommandList* _commandList,
   m_frameIndex = _frameIndex;
   m_frameVerticesUsed = 0;
   m_frameInstancesUsed = 0;
+  Resume(_commandList);
+}
 
+void Neuron::MeshPipeline::Resume(ID3D12GraphicsCommandList* _commandList) const
+{
+  const UINT64 offset = UINT64{FRAME_CONSTANTS_BYTES} * m_frameIndex;
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   _commandList->SetGraphicsRootConstantBufferView(FRAME_PARAMETER, m_frameConstants->GetGPUVirtualAddress() + offset);
   _commandList->SetGraphicsRootShaderResourceView(INSTANCES_PARAMETER, m_frameInstances->GetGPUVirtualAddress() +
-                                                                         (UINT64{sizeof(Instance)} * MAX_FRAME_INSTANCES * _frameIndex));
+                                                                         (UINT64{sizeof(Instance)} * MAX_FRAME_INSTANCES * m_frameIndex));
 }
 
 std::optional<UINT> Neuron::MeshPipeline::AddInstance(const Instance& _instance) noexcept

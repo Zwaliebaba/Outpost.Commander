@@ -155,11 +155,11 @@ auto Fields(Self& _value)
 {
   auto& [id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters, hitPointsHundredths,
          maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
-         secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating, oreReserveHundredths, salvageOre, salvageTopic,
-         salvagePermille] = _value;
+         secondJobPermille, remembered, lastSeenTick, sightMeters, order, standing, retreat, retreating, oreReserveHundredths, salvageOre,
+         salvageTopic, salvagePermille] = _value;
   return std::tie(id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters,
                   hitPointsHundredths, maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue,
-                  research, jobPermille, secondJobPermille, remembered, sightMeters, order, standing, retreat, retreating,
+                  research, jobPermille, secondJobPermille, remembered, lastSeenTick, sightMeters, order, standing, retreat, retreating,
                   oreReserveHundredths, salvageOre, salvageTopic, salvagePermille);
 }
 

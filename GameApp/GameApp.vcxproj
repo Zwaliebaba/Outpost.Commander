@@ -94,6 +94,7 @@
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Starfield.h" />
     <ClInclude Include="FogOfWar.h" />
+    <ClInclude Include="TerritoryMarks.h" />
     <ClInclude Include="Alerts.h" />
     <ClInclude Include="Designer.h" />
     <ClInclude Include="ProductionTarget.h" />
@@ -120,6 +121,7 @@
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Starfield.cpp" />
     <ClCompile Include="FogOfWar.cpp" />
+    <ClCompile Include="TerritoryMarks.cpp" />
     <ClCompile Include="Alerts.cpp" />
     <ClCompile Include="Designer.cpp" />
     <ClCompile Include="ProductionTarget.cpp" />

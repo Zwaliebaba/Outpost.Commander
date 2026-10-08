@@ -123,6 +123,9 @@ struct EntityView
   // An enemy structure out of the player's sight, as the player last saw it there (ADR-024). It may have changed, or be
   // gone: the player learns which once it sees the place again.
   bool remembered = false;
+  // A remembered entity's: the tick of the last snapshot the player saw it in, which the client tells its age by. Zero for
+  // anything the player sees now.
+  std::uint64_t lastSeenTick = 0;
   // How far the entity sees under fog of war, which the client draws the fog by; the owner's only, and zero without fog
   // (ADR-024).
   float sightMeters = 0.0f;

@@ -8,6 +8,8 @@ cbuffer Frame : register(b0)
   float originZMeters;
   float cellMeters;
   uint cellsPerSide;
+  float kneeShade;
+  float kneeOpacity;
 };
 
 struct VertexOut

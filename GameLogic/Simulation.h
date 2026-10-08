@@ -557,7 +557,9 @@ private:
   [[nodiscard]] EntityView EntityViewOf(const Entity& _entity, bool _detailed) const;
   // At the end of each tick under fog of war: what each player sees and remembers, and attack orders on ships that went
   // out of sight end.
-  void UpdateVision();
+  // _seenTick is the tick of the snapshot that shows what this vision sees, which a remembered structure keeps as the last
+  // time it was seen.
+  void UpdateVision(std::uint64_t _seenTick);
   // The players whose base was placed and whose Command Station has fallen.
   [[nodiscard]] std::vector<PlayerId> PlayersWithoutStation() const;
   // Under fog of war, the side a shot hits sees its shooter for the tuning data's time.

@@ -402,6 +402,9 @@ public:
     EntityKind kind = EntityKind::Ship;
     // An ore asteroid that has run out, as far as the player knows: drawn darker (Phase 1 design §8).
     bool dry = false;
+    // A structure or derelict the player only remembers (ADR-024): drawn over the fog as a cross, so that it differs from
+    // what is seen by its shape as well as from an ore asteroid's outline (interface plan 2, task UI1.2).
+    bool remembered = false;
   };
 
   // One of the map's sectors on the minimap (ADR-056): tinted by whose it is, outlined in that side's color over the fog,
@@ -414,6 +417,11 @@ public:
     float maxZMeters = 0.0f;
     Side side = Side::Neutral;
     bool suppressed = false;
+    // Cut off from its holder's home, which its outline's dashes say (interface plan 2, task UI1.4).
+    bool cutOff = false;
+    // Its node, and whether the player could claim it now, by the Relay ghost's rule (CanClaim).
+    PlanePosition node;
+    bool claimable = false;
   };
 
   // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8). With them,
@@ -600,9 +608,11 @@ public:
   // design name from the snapshot's designs, the buttons the selection offers, and the minimap's marks. _placing is the
   // structure being placed, if any. With a _designer, which GameClient gives while its window is open, the designer;
   // _hovered is the button under the pointer, and a part's previews the design it would make.
+  // _ticksPerSecond is the server's rate, which tells how long ago a remembered structure was last seen; with none, its
+  // age is not told.
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
-                                        std::optional<Action> _hovered = std::nullopt);
+                                        std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0);
 
   // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
   // (Phase 1 design §12).
@@ -618,8 +628,13 @@ public:
   [[nodiscard]] static std::size_t StepTopics(std::size_t _firstTopic, int _step, std::size_t _topics) noexcept;
 
   // What a derelict holds, as the hint under the pointer shows it (Phase 4 design §9, §13): its Ore, the topic whose time
-  // it recovers, if any, and how far its salvage has come.
-  [[nodiscard]] static std::string DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict);
+  // it recovers, if any, and how far its salvage has come; and, for one the player only remembers, how long ago it was
+  // last seen, at _ticksPerSecond.
+  [[nodiscard]] static std::string DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict, std::uint32_t _ticksPerSecond);
+
+  // A structure the player only remembers, as the hint under the pointer shows it (interface plan 2, task UI1.2): what it
+  // is, how long ago it was last seen at _ticksPerSecond, and how far it was built if it was not finished.
+  [[nodiscard]] static std::string DescribeMemory(const Snapshot& _newest, const EntityView& _structure, std::uint32_t _ticksPerSecond);
 
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);

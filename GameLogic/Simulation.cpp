@@ -225,7 +225,7 @@ void Outpost::Simulation::UseFog()
   if (!m_tuning)
     throw Neuron::Exception("Simulation: fog of war needs the tuning data's sight");
   m_fog = true;
-  UpdateVision();
+  UpdateVision(m_tick);
 }
 
 bool Outpost::Simulation::Sees(PlayerId _player, const Entity& _entity) const noexcept
@@ -274,7 +274,7 @@ bool Outpost::Simulation::InSight(std::span<const Observer> _observers, PlanePos
 // A player sees an enemy entity that is within the sight of one of its own, measured from center to the entity's edge, or
 // that hit it in the last few seconds (ADR-024). Every armed entity sees beyond its weapon's range, so whatever it can
 // shoot it sees: fog never changes what a ship fires at, only what its player knows.
-void Outpost::Simulation::UpdateVision()
+void Outpost::Simulation::UpdateVision(std::uint64_t _seenTick)
 {
   const std::vector<PlayerId> exposed = PlayersWithoutStation();
   for (PlayerState& player : m_players)
@@ -295,6 +295,7 @@ void Outpost::Simulation::UpdateVision()
       if (entity.kind != EntityKind::Structure && entity.kind != EntityKind::Derelict)
         continue;
       EntityView view = EntityViewOf(entity, false);
+      view.lastSeenTick = _seenTick;
       if (const auto known = std::ranges::find(player.remembered, entity.id, &EntityView::id); known != player.remembered.end())
         *known = std::move(view);
       else
@@ -309,6 +310,7 @@ void Outpost::Simulation::UpdateVision()
           std::ranges::binary_search(player.seen, entity.id))
         continue;
       EntityView view = EntityViewOf(entity, false);
+      view.lastSeenTick = _seenTick;
       if (const auto known = std::ranges::find(player.remembered, entity.id, &EntityView::id); known != player.remembered.end())
         *known = std::move(view);
       else
@@ -911,7 +913,8 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   if (m_fog)
   {
     const ObservedPart part(m_observer, TickPart::Vision);
-    UpdateVision();
+    // What the tick leaves, which its snapshot reports as the next tick.
+    UpdateVision(m_tick + 1);
   }
   // A tick that planned no paths builds again one graph the obstacles' last change dropped, so that the next order finds
   // it built (ADR-032). The graphs are a cache: when they are built changes no path.

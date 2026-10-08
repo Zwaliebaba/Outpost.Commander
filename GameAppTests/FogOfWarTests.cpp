@@ -37,6 +37,16 @@ public:
     Assert::AreEqual(Outpost::FogOfWar::SEEN_BEFORE_SHADE, fog.ShadeAt({.xMeters = -500.0f, .zMeters = 0.0f}));
   }
 
+  // Interface plan 2, task UI1.3: on the ground, what was seen before is darker than the minimap shows it, short of what
+  // was never seen, which keeps its shade under the ground mask's knee.
+  TEST_METHOD(DarkensWhatWasSeenBeforeOnTheGround)
+  {
+    Assert::IsTrue(Outpost::FogOfWar::SEEN_SHADE < Outpost::FogOfWar::SEEN_BEFORE_SHADE);
+    Assert::IsTrue(Outpost::FogOfWar::SEEN_BEFORE_SHADE < Outpost::FogOfWar::GROUND_SEEN_BEFORE_SHADE);
+    Assert::IsTrue(Outpost::FogOfWar::GROUND_SEEN_BEFORE_SHADE <= Outpost::FogOfWar::NEVER_SEEN_SHADE,
+                   L"the knee leaves never seen at its own shade");
+  }
+
   TEST_METHOD(StartsWithNothingSeen)
   {
     Outpost::FogOfWar fog;

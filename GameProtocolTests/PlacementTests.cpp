@@ -131,6 +131,40 @@ public:
     Assert::IsFalse(Outpost::AtNodeCap(sectors, world, Outpost::PlayerId{2}, 2), L"another player's");
   }
 
+  // Interface plan 2, task UI1.1: a node is marked claimable by the rule that makes the Relay's ghost green there, for
+  // every sector, player and cap, with the node clear or covered.
+  TEST_METHOD(ClaimsANodeByTheGhostsRule)
+  {
+    std::vector<Outpost::EntityView> world = World();
+    std::vector<Outpost::SectorView> sectors = Sectors();
+    const auto agree = [&]()
+    {
+      for (const Outpost::SectorView& sector : sectors)
+      {
+        for (const Outpost::PlayerId player : {Outpost::PlayerId{1}, Outpost::PlayerId{2}})
+        {
+          for (const std::int32_t cap : {0, 1, 2})
+          {
+            const bool ghost = Outpost::PlaceGhost(Relay(), sector.node, world, MAP_SIZE_METERS, sectors, player, cap).valid;
+            Assert::AreEqual(ghost, Outpost::CanClaim(sector, Relay().radiusMeters, world, MAP_SIZE_METERS, sectors, player, cap));
+          }
+        }
+      }
+    };
+    agree();
+    Assert::IsTrue(Outpost::CanClaim(sectors[1], 30.0f, world, MAP_SIZE_METERS, sectors, Outpost::PlayerId{1}, 0), L"next to home");
+    Assert::IsFalse(Outpost::CanClaim(sectors[2], 30.0f, world, MAP_SIZE_METERS, sectors, Outpost::PlayerId{1}, 0), L"two away");
+    // A derelict over the middle node, as an outpost's wreck covers its camp's (ADR-074).
+    world.push_back(
+      {.id = Outpost::EntityId{3}, .kind = Outpost::EntityKind::Derelict, .position = sectors[1].node, .radiusMeters = 20.0f});
+    agree();
+    Assert::IsFalse(Outpost::CanClaim(sectors[1], 30.0f, world, MAP_SIZE_METERS, sectors, Outpost::PlayerId{1}, 0), L"covered");
+    sectors[1].guarded = true;
+    world.pop_back();
+    agree();
+    Assert::IsFalse(Outpost::CanClaim(sectors[1], 30.0f, world, MAP_SIZE_METERS, sectors, Outpost::PlayerId{1}, 0), L"guarded");
+  }
+
   // Phase 2 design §4: on a map with sectors a rig's ghost is green only in a sector the player holds.
   TEST_METHOD(ARigNeedsAHeldSector)
   {

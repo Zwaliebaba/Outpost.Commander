@@ -1,6 +1,6 @@
 # Outpost Commander — Second Interface Plan: The Screen Shows the Game
 
-Status: **draft** · proposed on 2026-10-08, awaiting the owner's acceptance and gates V1–V8 · From a UI/UX review of five screenshots of a match against the AI on the 10 km map, made on 2026-10-08 against [the Phase 5 design](OutpostCommander-Phase5.md), the designs it amends, and what [the first interface plan](ImplementationPlan-Interface.md) built
+Status: **open** · accepted by the owner on 2026-10-08, with gates V1–V8 as proposed · From a UI/UX review of five screenshots of a match against the AI on the 10 km map, made on 2026-10-08 against [the Phase 5 design](OutpostCommander-Phase5.md), the designs it amends, and what [the first interface plan](ImplementationPlan-Interface.md) built
 
 [The first interface plan](ImplementationPlan-Interface.md) made the text legible and the HUD say what production and research are doing. This review found the next layer. The main view does not show the state a match is decided by: territory, sight, and what the player only remembers. The HUD reports state in sentences, and in a warm color that also means the enemy.
 
@@ -61,10 +61,10 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| UI1.1 | Sectors and nodes in the world | — | V2 | todo |
-| UI1.2 | Memories that look like memories | — | V3 | todo |
-| UI1.3 | Sight that shows | UI1.2 | V2 | todo |
-| UI1.4 | The minimap's territory | UI1.1 | V2 | todo |
+| UI1.1 | Sectors and nodes in the world | — | V2 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI1.2 | Memories that look like memories | — | V3 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI1.3 | Sight that shows | UI1.2 | V2 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI2.1 | A warning is a chip | — | V4 | todo |
 | UI2.2 | Build progress in a neutral color | — | V4 | todo |
 | UI2.3 | The blast and Ore's glyph | — | V4 | todo |
@@ -95,18 +95,18 @@ A task whose gate the owner turns down is dropped, and its milestone ships witho
 
 ## Gates
 
-Each is an owner decision, proposed here and in the task it gates. None is decided yet.
+Each is an owner decision, proposed here and in the task it gates. All eight were decided on 2026-10-08, as proposed. Where a proposal left a choice to its task's ADR, the task makes it and records it under its "As built".
 
 | Gate | Decision | Proposed in | Blocks |
 |---|---|---|---|
-| V1 | **Where this plan stands against Phase 5.** Proposed: UI1, UI2.1 and UI3.1 land before Phase 5's 39.3, the owner's week. A world played for a week is where the map and the memories matter most, and W6 judges the rhythm by it. The rest goes beside Phase 5 or after it. Phase 5's 38.1 moves the alerts' source to the server, and its 38.3 adds an orders window. UI2.1 restyles the alerts' newest line, and UI4.2 the selection's commands; whichever lands second fits around the other. | this plan | the order |
-| V2 | **Territory and sight in the world** (UI1.1, UI1.3, UI1.4). Sector borders as one-pixel lines in the holder's color. A neutral border brighter than the grid and never wider, the way back ADR-028 left for major lines. A mark on every node, and a node the player could claim now in the player's color. A suppressed and a cut-off border, each told apart from a held one and from each other by pattern, not color. The borders drawn over the fog, as the minimap's are. The same lattice, nodes and states on the minimap. And a seen-before shade of about 0.8 on the ground, up from 0.55, which takes the grid outside sight from 15 of 255 to about 7, computed, against 27 in sight and about 4 where never seen. It changes ADR-028 decision 1's "all alike" and ADR-024 decision 9's shade. | UI1.1, UI1.3 | UI1.1, UI1.3, UI1.4 |
-| V3 | **Memories** (UI1.2). A remembered entity drawn after the fog, as lines without faces and without bars, with its age on hover and on its selection panel. And where the age comes from. Proposed: the server keeps the tick each remembered structure was last seen, so the age survives a save and a seat taken again (Phase 5). It adds to what `Simulation` holds, so `WORLD_STATE_VERSION` and `PROTOCOL_VERSION` rise (AGENTS.md R18). The other way, the client noting when a structure turned remembered, changes neither, but knows no age after a join. | UI1.2 | UI1.2 |
-| V4 | **One meaning per color** (UI2.1–UI2.3). A warning as a chip: the word, dark, on a filled tag of the warning's color, never plain text in that color. It marks an idle line's IDLE, an income of nothing and the newest alert; the enemy's figures stay plain text. Build progress in a neutral light gray. For the blast and the glyph, one of three: Ore's glyph becomes another CPU-drawn shape in the same gold (proposed); the particles become round spots, which reverses the owner's choice in ADR-026; or both stay. | UI2.1 | UI2.1, UI2.2, UI2.3 |
-| V5 | **The status and territory panels** (UI3.1–UI3.3). The Shipyards' line reports what binds them: the cap and the station level that lifts it, Ore, or idle with room. It warns only when an idle Shipyard could start a ship. A click at the cap selects the Command Station. The column's panels take one fixed width, with research and the fleet as bars. The nodes read "3 : 2", with "cap 10 of 25" as a label, under a drain row saying who loses how much a minute and when they reach nothing. The drain row needs the drain's two numbers in the snapshot, so `PROTOCOL_VERSION` rises. | UI3.1 | UI3.1, UI3.2, UI3.3 |
-| V6 | **Selection and commands** (UI4.2, UI4.3, UI4.5). The command panel stands against the selection panel's right edge, the pair centered at the bottom, so that the two read as one. Attack-move, Hold sector, Patrol and Stop buttons, each with its key's cap, for a selection with a warship. The retreat as three choices. One bar per ship, up to 24, a click on one selecting it. A new design's default name: where its hull, drive and weapon are a starting design's, that design's name with its module's code, "Lancer+SA". | UI4.2 | UI4.2, UI4.3, UI4.5 |
-| V7 | **Bars on the screen** (UI4.1). Health and build bars drawn by the HUD above their entity, 32 × 5 reference units at any zoom, filling left to right however the camera has turned, under every panel and window. ADR-047's least size becomes the size. It rewrites ADR-028 decision 7's place and ADR-047 decision 4. | UI4.1 | UI4.1 |
-| V8 | **The scene's weight** (UI5.1, UI5.2). Rock faces at a shade of their own, about half the 0.3 they share with the ships now, with their lines kept. Every field's rocks laid out from its identifier. The gaps between a field's rocks filled with smaller ones, so that the field looks as solid as the circle the server blocks. | UI5.1 | UI5.1, UI5.2 |
+| V1 | **Where this plan stands against Phase 5.** Proposed: UI1, UI2.1 and UI3.1 land before Phase 5's 39.3, the owner's week. A world played for a week is where the map and the memories matter most, and W6 judges the rhythm by it. The rest goes beside Phase 5 or after it. Phase 5's 38.1 moves the alerts' source to the server, and its 38.3 adds an orders window. UI2.1 restyles the alerts' newest line, and UI4.2 the selection's commands; whichever lands second fits around the other. **Decided on 2026-10-08:** as proposed. | this plan | the order |
+| V2 | **Territory and sight in the world** (UI1.1, UI1.3, UI1.4). Sector borders as one-pixel lines in the holder's color. A neutral border brighter than the grid and never wider, the way back ADR-028 left for major lines. A mark on every node, and a node the player could claim now in the player's color. A suppressed and a cut-off border, each told apart from a held one and from each other by pattern, not color. The borders drawn over the fog, as the minimap's are. The same lattice, nodes and states on the minimap. And a seen-before shade of about 0.8 on the ground, up from 0.55, which takes the grid outside sight from 15 of 255 to about 7, computed, against 27 in sight and about 4 where never seen. It changes ADR-028 decision 1's "all alike" and ADR-024 decision 9's shade. **Decided on 2026-10-08:** as proposed. | UI1.1, UI1.3 | UI1.1, UI1.3, UI1.4 |
+| V3 | **Memories** (UI1.2). A remembered entity drawn after the fog, as lines without faces and without bars, with its age on hover and on its selection panel. And where the age comes from. Proposed: the server keeps the tick each remembered structure was last seen, so the age survives a save and a seat taken again (Phase 5). It adds to what `Simulation` holds, so `WORLD_STATE_VERSION` and `PROTOCOL_VERSION` rise (AGENTS.md R18). The other way, the client noting when a structure turned remembered, changes neither, but knows no age after a join. **Decided on 2026-10-08:** as proposed. | UI1.2 | UI1.2 |
+| V4 | **One meaning per color** (UI2.1–UI2.3). A warning as a chip: the word, dark, on a filled tag of the warning's color, never plain text in that color. It marks an idle line's IDLE, an income of nothing and the newest alert; the enemy's figures stay plain text. Build progress in a neutral light gray. For the blast and the glyph, one of three: Ore's glyph becomes another CPU-drawn shape in the same gold (proposed); the particles become round spots, which reverses the owner's choice in ADR-026; or both stay. **Decided on 2026-10-08:** as proposed. | UI2.1 | UI2.1, UI2.2, UI2.3 |
+| V5 | **The status and territory panels** (UI3.1–UI3.3). The Shipyards' line reports what binds them: the cap and the station level that lifts it, Ore, or idle with room. It warns only when an idle Shipyard could start a ship. A click at the cap selects the Command Station. The column's panels take one fixed width, with research and the fleet as bars. The nodes read "3 : 2", with "cap 10 of 25" as a label, under a drain row saying who loses how much a minute and when they reach nothing. The drain row needs the drain's two numbers in the snapshot, so `PROTOCOL_VERSION` rises. **Decided on 2026-10-08:** as proposed. | UI3.1 | UI3.1, UI3.2, UI3.3 |
+| V6 | **Selection and commands** (UI4.2, UI4.3, UI4.5). The command panel stands against the selection panel's right edge, the pair centered at the bottom, so that the two read as one. Attack-move, Hold sector, Patrol and Stop buttons, each with its key's cap, for a selection with a warship. The retreat as three choices. One bar per ship, up to 24, a click on one selecting it. A new design's default name: where its hull, drive and weapon are a starting design's, that design's name with its module's code, "Lancer+SA". **Decided on 2026-10-08:** as proposed. | UI4.2 | UI4.2, UI4.3, UI4.5 |
+| V7 | **Bars on the screen** (UI4.1). Health and build bars drawn by the HUD above their entity, 32 × 5 reference units at any zoom, filling left to right however the camera has turned, under every panel and window. ADR-047's least size becomes the size. It rewrites ADR-028 decision 7's place and ADR-047 decision 4. **Decided on 2026-10-08:** as proposed. | UI4.1 | UI4.1 |
+| V8 | **The scene's weight** (UI5.1, UI5.2). Rock faces at a shade of their own, about half the 0.3 they share with the ships now, with their lines kept. Every field's rocks laid out from its identifier. The gaps between a field's rocks filled with smaller ones, so that the field looks as solid as the circle the server blocks. **Decided on 2026-10-08:** as proposed. | UI5.1 | UI5.1, UI5.2 |
 
 ---
 
@@ -135,6 +135,12 @@ Each is an owner decision, proposed here and in the task it gates. None is decid
   - the node marks: a claimable node marked exactly where the Relay's ghost would be green, and none at the node cap;
   - the lines rebuilt on a change and not otherwise.
 - **Verify:** CI; run, at the default zoom and the widest; **owner run.**
+- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md).
+  - `CanClaim` in `GameProtocol` is the one rule, and the Relay's ghost now calls it.
+  - The inset is 4 m.
+  - A side is one instance of a 1 m line mesh, whole, in 40 dashes or in 100 dots, made at startup. Nothing uploads mid-match, and the lines take none of the vertices the explosions' shards use.
+  - `MeshPipeline::Resume` binds the mesh pipeline again after the fog, without resetting the frame's instances as `BeginDrawing` would.
+  - `TerritoryMarks` and its tests ran in the Linux container against a stand-in for the Windows headers. `GameClient` and `MeshPipeline` are CI's first build. Not yet seen on screen.
 
 ### UI1.2 — Memories that look like memories
 
@@ -159,6 +165,12 @@ Each is an owner decision, proposed here and in the task it gates. None is decid
     - `WorldStateTests`: the new version's hash;
     - `WireFormatTests`: the field.
 - **Verify:** the container's `GameLogicTests` where the server changes; CI; run; **owner run.**
+- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md), the server's way.
+  - `WORLD_STATE_VERSION` goes from 2 to 3, with its layout's hash recorded, and `PROTOCOL_VERSION` from 12 to 13.
+  - ADR-077 is not edited: it says how versions are kept, and each raise is recorded with its change, as milestone 37's was.
+  - The minimap draws a memory as a cross over the fog.
+  - The hint reads "Shipyard · last seen 4:12 ago, 34% built", and a remembered derelict's hint ends with its age. `Hud::Describe` and `Hud::DescribeDerelict` take the server's tick rate.
+  - In the Linux container, GameLogicTests (292, all but QUIC's), GameProtocolTests and the HUD's tests pass. `GameClient` is CI's first build. Not yet seen on screen.
 
 ### UI1.3 — Sight that shows
 
@@ -171,6 +183,9 @@ Each is an owner decision, proposed here and in the task it gates. None is decid
 - **ADR:** rewrites ADR-024 decision 9's shades, and ADR-052 if the mapping lives in a shader.
 - **Acceptance:** `FogOfWarTests` with the shades.
 - **Verify:** CI; run, measuring the grid's brightness in and out of sight as the review measured it; **owner run.**
+- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md).
+  - The ground mask's shader maps the stored shade through a knee that `GroundMaskPipeline::FrameConstants` carries: 0.55 to 0.8, with never seen kept at 0.9. The minimap reads the texture without it.
+  - The shaders and the pipeline are CI's first build. Not yet seen on screen.
 
 ### UI1.4 — The minimap's territory
 
@@ -186,6 +201,11 @@ Each is an owner decision, proposed here and in the task it gates. None is decid
 - **ADR:** UI1.1's. ADR-056 decision 11 and ADR-068's minimap rewritten in place.
 - **Acceptance:** `HudTests`: the lattice; the nodes; a claimable node by the same rule as the ghost; a cut-off sector apart from a suppressed one; the marks' contrast.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md).
+  - The lattice is (0.11, 0.13, 0.17) linear, 2.06:1 against the map as the contrast test computes it.
+  - A node is a dot of 4 units, and a node the player could claim has a 12-unit outline round it.
+  - A cut-off sector's outline is in dashes of 6 units with gaps of 4.
+  - The HUD's tests ran in the Linux container with substitute fonts. Not yet seen on screen.
 
 ---
 
