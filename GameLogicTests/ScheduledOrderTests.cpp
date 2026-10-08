@@ -214,6 +214,7 @@ public:
       Doing(Outpost::ScheduledActionKind::Attack, {}, enemy), Doing(Outpost::ScheduledActionKind::HoldSector, node),
       Doing(Outpost::ScheduledActionKind::Patrol, node)};
     std::vector<Outpost::Command> orders;
+    orders.reserve(actions.size() + 1);
     for (std::size_t i = 0; i < actions.size(); ++i)
       orders.push_back(
         {.player = BLUE, .order = Outpost::ScheduleOrderCommand{.ships = {ships[i]}, .trigger = At(due), .action = actions[i]}});

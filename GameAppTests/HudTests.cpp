@@ -1978,7 +1978,7 @@ public:
     {
       newest.scheduled.push_back({.id = id,
                                   .ships = {Outpost::EntityId{100}, Outpost::EntityId{101}},
-                                  .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = 2 * 3600},
+                                  .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = std::int64_t{2} * 3600},
                                   .action = {.kind = Outpost::ScheduledActionKind::AttackMove}});
     }
     const Outpost::PlayerClock clock;
@@ -1989,10 +1989,15 @@ public:
     Assert::AreEqual(Outpost::Hud::ORDERS_SHOWN, panel.scheduled.size());
     Assert::AreEqual(std::size_t{2}, panel.more);
     Assert::AreEqual(std::string("At 02:00, attack-move to North \xC2\xB7 2 ships"), panel.scheduled.front());
-    std::vector<std::string> labels;
-    for (const Outpost::Hud::OrderRow& row : panel.rows)
-      labels.push_back(row.label);
-    Assert::IsTrue(labels == std::vector<std::string>{"WHEN", "HOUR", "MINUTE", "DO", "WHERE", "UNLESS"});
+    const auto labelsOf = [](const Outpost::Hud::OrdersPanel& _panel)
+    {
+      std::vector<std::string> labels;
+      labels.reserve(_panel.rows.size());
+      for (const Outpost::Hud::OrderRow& row : _panel.rows)
+        labels.push_back(row.label);
+      return labels;
+    };
+    Assert::IsTrue(labelsOf(panel) == std::vector<std::string>{"WHEN", "HOUR", "MINUTE", "DO", "WHERE", "UNLESS"});
     Assert::AreEqual(std::string("02"), panel.rows[1].value);
     Assert::AreEqual(std::string("Never"), panel.rows.back().value);
     Assert::AreEqual(std::string("Fires at 02:00 on your clock, in 1:00:00"), panel.fires);
@@ -2031,10 +2036,7 @@ public:
     form.Step(Outpost::OrderField::Action, 1, newest, newest.entities);
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{100}};
     panel = Outpost::Hud::DescribeOrders(newest, newest.entities, selected, form, clock, now);
-    labels.clear();
-    for (const Outpost::Hud::OrderRow& row : panel.rows)
-      labels.push_back(row.label);
-    Assert::IsTrue(labels == std::vector<std::string>{"WHEN", "WATCHING", "DO", "WHERE", "TARGET", "UNLESS"});
+    Assert::IsTrue(labelsOf(panel) == std::vector<std::string>{"WHEN", "WATCHING", "DO", "WHERE", "TARGET", "UNLESS"});
     Assert::AreEqual(std::string("North"), panel.rows[1].value);
     Assert::AreEqual(std::string("Relay (1 of 1)"), panel.rows[4].value);
     Assert::AreEqual(std::string("Fires once, the first time it happens"), panel.fires);
@@ -2051,7 +2053,7 @@ public:
     Outpost::Snapshot newest = OrdersSnapshot();
     newest.scheduled = {{.id = 4,
                          .ships = {Outpost::EntityId{100}},
-                         .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = 2 * 3600},
+                         .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = std::int64_t{2} * 3600},
                          .action = {.kind = Outpost::ScheduledActionKind::HoldSector}}};
     newest.entities[0].scheduledOrder = 4;
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{100}};

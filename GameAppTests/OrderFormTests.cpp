@@ -73,7 +73,7 @@ Outpost::ScheduleOrderCommand Given(const std::optional<Outpost::ScheduleOrderCo
   return _order.value_or(Outpost::ScheduleOrderCommand{});
 }
 
-const std::vector<Outpost::EntityId> SELECTED{Outpost::EntityId{1}, Outpost::EntityId{2}, Outpost::EntityId{3}};
+constexpr std::array SELECTED{Outpost::EntityId{1}, Outpost::EntityId{2}, Outpost::EntityId{3}};
 } // namespace
 
 TEST_CLASS(OrderFormTests)

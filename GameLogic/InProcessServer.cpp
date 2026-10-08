@@ -496,12 +496,15 @@ void Outpost::InProcessServer::RunTick()
         }
         // A seat's deputy comes with the controller that says when it plays (Host). While it does, the seat's report of what
         // its player misses grows, and the player's first snapshot once it plays again carries it (ADR-080).
-        const bool deputy = connection.hosted && connection.control.has_value();
+        SeatController* control = nullptr;
+        if (connection.hosted && connection.control.has_value())
+          control = &*connection.control;
+        const bool deputy = control != nullptr;
         bool plays = false;
-        if (deputy)
+        if (control != nullptr)
         {
           const bool gone = quic && quic->HasGone();
-          plays = connection.control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
+          plays = control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
           m_away.Take(snapshot, plays);
         }
         if (quic)

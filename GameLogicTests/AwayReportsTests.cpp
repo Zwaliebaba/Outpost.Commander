@@ -39,9 +39,10 @@ public:
     Outpost::Snapshot back = SnapshotOf(BLUE, 22);
     reports.Take(back, false);
     Assert::IsTrue(back.away.has_value(), L"the player's first snapshot back carries it");
-    Assert::AreEqual(std::uint64_t{20}, back.away->sinceTick, L"from the tick the deputy took the seat");
-    Assert::AreEqual(1u, back.away->shipsBuilt);
-    Assert::AreEqual(1u, back.away->shipsLost);
+    const Outpost::AwayReport report = back.away.value_or(Outpost::AwayReport{});
+    Assert::AreEqual(std::uint64_t{20}, report.sinceTick, L"from the tick the deputy took the seat");
+    Assert::AreEqual(1u, report.shipsBuilt);
+    Assert::AreEqual(1u, report.shipsLost);
     Outpost::Snapshot next = SnapshotOf(BLUE, 23);
     reports.Take(next, false);
     Assert::IsFalse(next.away.has_value(), L"once");

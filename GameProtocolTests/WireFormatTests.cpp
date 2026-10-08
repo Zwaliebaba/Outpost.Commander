@@ -233,8 +233,8 @@ public:
       Assert::AreEqual(i, command.order.index());
     }
 
-    const auto& scheduled =
-      std::get<Outpost::ScheduleOrderCommand>(std::get<Outpost::Command>(RoundTrip(Outpost::Command{.order = orders[14]})).order);
+    const Outpost::Message scheduledMessage = RoundTrip(Outpost::Command{.order = orders[14]});
+    const auto& scheduled = std::get<Outpost::ScheduleOrderCommand>(std::get<Outpost::Command>(scheduledMessage).order);
     Assert::IsTrue(scheduled.trigger == std::get<Outpost::ScheduleOrderCommand>(orders[14]).trigger, L"every field of a trigger");
     Assert::IsTrue(scheduled.action == std::get<Outpost::ScheduleOrderCommand>(orders[14]).action);
     Assert::IsTrue(scheduled.unlessCommandPoints == std::optional<std::int32_t>{27});
