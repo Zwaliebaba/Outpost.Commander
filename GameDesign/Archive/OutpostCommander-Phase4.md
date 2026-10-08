@@ -2,7 +2,7 @@
 
 Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-06, from the owner's answers of that day · Accepted on 2026-10-06, with every gate decided as proposed (§16) · Built by 2026-10-08, every milestone merged; U1–U6 answered, U7 and U8 await the owner's runs (§2) · The order of the work is [the Phase 4 plan](ImplementationPlan-Phase4.md)
 
-This document says what Phase 4 builds on top of Phase 3, and amends [the Phase 3 design](Archive/OutpostCommander-Phase3.md), [the Phase 2 design](Archive/OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. What the owner decided on 2026-10-06 is in §3, and the owner decided every gate of §16 as proposed the same day; the numbers are starting values, as Phase 3's were.
+This document says what Phase 4 builds on top of Phase 3, and amends [the Phase 3 design](OutpostCommander-Phase3.md), [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](OutpostCommander-Phase1.md) and [the MVP design](OutpostCommander-MVP.md) where they differ. What the owner decided on 2026-10-06 is in §3, and the owner decided every gate of §16 as proposed the same day; the numbers are starting values, as Phase 3's were.
 
 ---
 
@@ -192,7 +192,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 ## 3. Decided by the owner on 2026-10-06
 
 - **Ships become harder to build, and the opening is for exploring, mining and small fights.** That is the owner's direction for Phase 4 (§1).
-- **The map is 10 km a side, and it is the horizon's first star system.** This keeps the decision of 2026-10-04 that the world grows by systems and not into one large map ([Horizon](OutpostCommander-Horizon.md) O8, Phase 3 §3). A system is 10 km a side, and what Phase 4 builds on it is what the horizon's systems are built from.
+- **The map is 10 km a side, and it is the horizon's first star system.** This keeps the decision of 2026-10-04 that the world grows by systems and not into one large map ([Horizon](../OutpostCommander-Horizon.md) O8, Phase 3 §3). A system is 10 km a side, and what Phase 4 builds on it is what the horizon's systems are built from.
 - **The swarm is bounded by cost and by a fleet cap.** Ships cost more against income (§4), and a cap counts the warships a player has (§5).
 - **The opening holds pirate outposts and derelicts, placed from the match's seed.** Pirates are static guardians that guard their place and never raid (§8). A derelict pays Ore and research progress when salvaged (§9). Placement changes with the seed, and is the same for both sides (§7).
 - **A Repair Bay and a retreat order are in Phase 4. Veterancy is not** (§10).
@@ -288,7 +288,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **No respawn.** A cleared outpost stays cleared. Pirates are the opening's content and the mid-game's obstacles, not a third side for the whole match.
 - **Cleared, an outpost leaves a derelict** where its largest structure stood (§9).
 - **Drawn** with one of the two existing mesh sets in a third color of their own, until there is art for them. Models.json already reuses a mesh with a tint for the Relay. Fog of war applies to pirates as it does to an enemy (ADR-024).
-- **As built** (plan tasks 30.1 and 30.2, [ADR-073](../Design/ADR/ADR-073-pirates.md)):
+- **As built** (plan tasks 30.1 and 30.2, [ADR-073](../../Design/ADR/ADR-073-pirates.md)):
   - On each side a camp stands in two of the four contested sectors, drawn by the seed, and a stronghold on both rich corners and the center (owner, 2026-10-07).
   - Pirates fight at the base level, with no research.
   - Every player sees which sectors the pirates guard, as it sees each sector's holder (owner, 2026-10-07). The pirates themselves stay under fog.
@@ -307,7 +307,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **It pays Ore:** 300 near the homes, up to 900 in the far sectors. An outpost's derelict pays 600 for a camp and 1,200 for a stronghold.
 - **About one in three also pays research.** It names a research topic, and once salvaged it recovers half of that topic's research time for the salvaging player: half is taken off a topic under way, and a topic not yet started will take half its time when it is. Its Ore cost is unchanged. A topic of a tier the player's Lab has not opened is recovered all the same, and waits for the tier. This is "research is recovery" (MVP §2) made literal, and a first step towards Horizon §6.1.
 - **What a derelict holds is seen** once it is within a player's sight: its Ore, and the topic it names, if any. Under fog it is remembered as a structure is.
-- **As built** (plan tasks 31.1 and 31.2, [ADR-074](../Design/ADR/ADR-074-salvage.md)):
+- **As built** (plan tasks 31.1 and 31.2, [ADR-074](../../Design/ADR/ADR-074-salvage.md)):
   - On each side the seed picks one of the two flank sectors at 300 Ore, two of the three near sectors at 450, two of the four contested at 600 and the between sector at 750, mirrored. That is 12 a map (owner, 2026-10-07).
   - A third of the pairs name a topic, any topic.
   - A camp's wreck covers its node until it is salvaged.
@@ -325,7 +325,7 @@ These play the part of Phase 3's T1–T5. A failed answer is still a result. Eac
 - **A retreat threshold per ship:** never, at 50% or at 25% of hit points. It is set in the designer for a design, carried by every ship built to it, and changed on a selection. Below its threshold a ship drops its order and goes to the nearest Repair Bay, else the Command Station, else a Shipyard, and is repaired there. Once whole it goes back to its standing order (ADR-059) if it had one, and otherwise waits there.
 - **The simulation runs it, not the client**, so it works while nobody is looking. That is what an absent player's fleet needs on the horizon (Horizon §5).
 - **The default is 25%.** With dear ships, a fight to the last ship should be a choice the player makes, not something that happens by default. The AI's group fall-back (ADR-041) is unchanged, and the AI's ships use the per-ship threshold too.
-- **As built** (plan tasks 32.1 and 32.2, [ADR-075](../Design/ADR/ADR-075-repair-and-retreat.md)):
+- **As built** (plan tasks 32.1 and 32.2, [ADR-075](../../Design/ADR/ADR-075-repair-and-retreat.md)):
   - The Command Station and every Shipyard repair as a Repair Bay does, so a retreat always ends in a repair (owner, 2026-10-07).
   - Each repairer takes the four most damaged ships in its reach; two side by side take eight.
   - "Nearest" is the straight distance. A ship with nowhere to go fights on.
