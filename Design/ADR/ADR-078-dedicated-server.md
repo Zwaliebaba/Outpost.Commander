@@ -37,8 +37,8 @@ Phase 5 design §4 (gate H1) puts a world on a dedicated server that a player on
 - **What was tested, and where.**
   - `WorldSettingsTests` ran in the Linux container: settings and join files read back as written, every refusal, and a seed past 2⁵³ intact.
   - `OutpostServer` built in the container against stand-ins for the Windows headers and MsQuic's posix header. `--new-world`, its refusals and the settings it writes were run there.
-  - Running a world needs QUIC, and MsQuic's Linux build opens IPv6 sockets, which the container's kernel does not have. So `QuicTransportTests` were not run there: a seat refused without its token, a world's seat taken after it starts and again by a newer connection, a world's certificate kept, a listen address, and a hello of another version. CI's Debug|x64 run on Windows is their first.
-  - The shell's join and the menu's notice (`HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`) are built and run by CI first, and seen by the owner.
+  - Running a world needs QUIC, and MsQuic's Linux build opens IPv6 sockets, which the container's kernel does not have. So `QuicTransportTests` ran first in CI's Debug|x64 run on Windows, and pass: a seat refused without its token, a world's seat taken after it starts and again by a newer connection, a world's certificate kept and used by Schannel when it runs again, a listen address, and a hello of another version.
+  - The shell's join and the menu's notice (`HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`) were built and run by CI first, and pass; the owner sees them first.
 - **A world's port is reached through the owner's router and firewall.** Windows Defender Firewall asks about `OutpostServer` the first time it listens on an interface other than the loopback. A server behind a router needs the port forwarded. Neither is the game's to do.
 - **The tokens are in `World.json` and the join files as plain text.** Anyone who reads the world's folder or a player's join file can take that seat. That is the trust of a circle of friends, not of a public server.
 

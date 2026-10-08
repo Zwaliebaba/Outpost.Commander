@@ -26,8 +26,8 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 35.1 | A world's state saved and loaded | — | H8 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
 | 35.2 | The world's folder: saves, the command log and recovery | 35.1 | H7 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
 | 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
-| 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | built, in milestone 36's PR; awaiting CI |
-| 36.3 | The client joins a world | 36.2 | H1 | built, in milestone 36's PR; awaiting CI and the owner's run |
+| 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, in milestone 36's PR |
+| 36.3 | The client joins a world | 36.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
 | 37.1 | The AI starts from any state | — | — | todo |
 | 37.2 | Clients on the server's thread | 35.2 | — | todo |
 | 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | todo |
@@ -115,9 +115,9 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 
 Recorded in [ADR-078](../Design/ADR/ADR-078-dedicated-server.md).
 
-- **Run in the container.** `GameLogicTests` and `OutpostServer` built there against stand-ins for the Windows headers and MsQuic's posix header. `GameLogicTests` passes apart from `QuicTransportTests`. `--new-world` and its refusals were run. Running a world needs QUIC, and MsQuic's Linux build opens IPv6 sockets, which the container's kernel lacks. So every QUIC test, and a world run end to end, are CI's and the owner's.
-- **The CNG side is untested here.** The kept certificate, and naming its key on a certificate read back from a file, were written without Windows. CI's `AWorldKeepsItsCertificate` is their first run.
-- **The client's join and the menu's notice** are `GameApp` and shell code, which CI builds first and the owner sees first.
+- **Run in the container.** `GameLogicTests` and `OutpostServer` built there against stand-ins for the Windows headers and MsQuic's posix header. `GameLogicTests` passes apart from `QuicTransportTests`. `--new-world` and its refusals were run. Running a world needs QUIC, and MsQuic's Linux build opens IPv6 sockets, which the container's kernel lacks.
+- **Run in CI.** Debug|x64 on Windows passes all 582 tests, among them every `QuicTransportTests` case and `HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`. That includes `AWorldKeepsItsCertificate`: the kept CNG key and certificate, written without Windows, are what Schannel uses when the world runs again.
+- **The owner's runs** remain: a world run end to end on the development machine (36.1), and joined from a second machine (36.3).
 
 ## Milestones 37 to 39
 
