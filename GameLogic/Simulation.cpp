@@ -772,7 +772,8 @@ void Outpost::Simulation::PlaceMatchup(const Matchup& _matchup)
                                              DesignStatsFor(*m_tuning, components, EffectsOf(owner).upgrades), RetreatThreshold::Never);
       for (std::int32_t ship = 0; ship < group.count; ++ship, ++placed)
       {
-        const auto row = static_cast<float>(placed / MATCHUP_ROW_SHIPS);
+        const std::size_t rowIndex = placed / MATCHUP_ROW_SHIPS;
+        const auto row = static_cast<float>(rowIndex);
         const float column = static_cast<float>(placed % MATCHUP_ROW_SHIPS) - (static_cast<float>(MATCHUP_ROW_SHIPS - 1) / 2.0f);
         const PlanePosition position = front - forward * (row * MATCHUP_SPACING_METERS) + across * (column * MATCHUP_SPACING_METERS);
         // A matchup is fought to its end: no ship goes back for repair, as there is nothing to repair it (ADR-075).
@@ -783,7 +784,7 @@ void Outpost::Simulation::PlaceMatchup(const Matchup& _matchup)
   m_matchupEnd = m_tick + (std::uint64_t{MATCHUP_SECONDS} * m_ticksPerSecond);
 }
 
-void Outpost::Simulation::DecideMatchup()
+void Outpost::Simulation::DecideMatchup(std::uint64_t _endTick)
 {
   if (m_matchOver)
     return;
@@ -796,7 +797,7 @@ void Outpost::Simulation::DecideMatchup()
   }
   if (standing.size() < 2)
     EndMatch(standing, MatchEnding::FleetDestroyed);
-  else if (m_tick + 1 >= *m_matchupEnd)
+  else if (m_tick + 1 >= _endTick)
     EndMatch(standing, MatchEnding::TimeLimit);
 }
 
@@ -3678,7 +3679,7 @@ void Outpost::Simulation::DecideMatch()
 {
   if (m_matchupEnd.has_value())
   {
-    DecideMatchup();
+    DecideMatchup(*m_matchupEnd);
     return;
   }
   if (m_matchOver || m_basePlayers.empty())

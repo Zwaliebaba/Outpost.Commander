@@ -136,7 +136,7 @@ public:
   TEST_METHOD(EndsInADrawWhenTimeRunsOut)
   {
     MatchupBattle battle(SWARM_AGAINST_LINE);
-    const std::uint64_t last = Outpost::Simulation::MATCHUP_SECONDS * TICKS_PER_SECOND;
+    const std::uint64_t last = std::uint64_t{Outpost::Simulation::MATCHUP_SECONDS} * TICKS_PER_SECOND;
     while (battle.World().CurrentTick() + 1 < last)
       (void)battle.World().Tick({});
     Assert::IsFalse(battle.World().MatchOver(), L"not before its time");

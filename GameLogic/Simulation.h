@@ -802,8 +802,8 @@ private:
   void DecideMatch();
   // Under a world's rules: tells a player that it lost, and restarts its seat on the hour once its start is free.
   void RestartLostPlayers(const std::vector<PlayerId>& _standing);
-  // A battle matchup ends when a side has no warship left, or at its last tick.
-  void DecideMatchup();
+  // A battle matchup ends when a side has no warship left, or at its last tick, _endTick.
+  void DecideMatchup(std::uint64_t _endTick);
   [[nodiscard]] bool IsStartFree(PlayerId _player, PlanePosition _start) const noexcept;
   // A player's Command Station on _start, and the starting Constructors in front of it, facing the map's center.
   void PlaceStartingBase(PlayerId _owner, PlanePosition _start);
