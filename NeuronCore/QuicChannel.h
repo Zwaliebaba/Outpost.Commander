@@ -61,6 +61,10 @@ public:
   // The error code the peer closed the connection with, once it has; none while it is open, or when it went otherwise.
   [[nodiscard]] std::optional<std::uint64_t> PeerErrorCode() const;
 
+  // Whether the connection has gone, whichever end closed it and however: a peer that vanished is gone once MsQuic's idle
+  // timeout says so.
+  [[nodiscard]] bool HasGone() const;
+
   // Closes the connection and waits for MsQuic's last callback for it. Never from a Receiver. The destructor closes a
   // channel that is still open.
   void Close() noexcept;

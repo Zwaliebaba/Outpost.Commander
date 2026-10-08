@@ -71,6 +71,9 @@
     <ClInclude Include="WorldSettings.h">
       <Filter>World</Filter>
     </ClInclude>
+    <ClInclude Include="SeatController.h">
+      <Filter>Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -112,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="WorldSettings.cpp">
       <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="SeatController.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

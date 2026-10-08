@@ -52,6 +52,9 @@ constexpr float RAID_GUARD_METERS = 600.0f;
 // A detachment sent at a pirate outpost is ordered on to its node this often, since an attack-move ends where it was aimed
 // (ADR-076).
 constexpr std::uint64_t PIRATE_RESEND_SECONDS = 10;
+// An own structure no slot holds is taken into a new slot of its kind this close to the slot's preferred place: as far as
+// the search for a free place looks (ADR-020 decision 16).
+constexpr float ADOPT_METERS = static_cast<float>(SEARCH_RINGS) * SEARCH_STEP_METERS;
 // A Constructor sent to salvage that has not finished in this long gives the derelict up: the order was refused, or the
 // way is blocked.
 constexpr std::uint64_t SALVAGE_GIVE_UP_SECONDS = 300;
@@ -367,12 +370,13 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
                                             { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
   const bool hasStation = station != _snapshot.entities.end();
   // A lost Command Station is lost for good, and the AI plays on without it, building no more Constructors (Phase 1
-  // design §4).
+  // design §4). Made afresh for a player that has lost it, it lays its plan round what stands in for it.
   if (!m_planned)
   {
-    if (!hasStation)
+    const EntityView* anchor = hasStation ? &*station : StandIn(_snapshot);
+    if (anchor == nullptr)
       return;
-    Plan(_snapshot, *station);
+    Plan(_snapshot, *anchor);
   }
   PlanShipyards(_snapshot);
   FollowOre(_snapshot);
@@ -526,6 +530,12 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     }
     slot.radiusMeters = type->radiusMeters;
     const PlanePosition preferred = _preferredFor(type->radiusMeters);
+    if (const std::optional<PlanePosition> adopted = Adoptable(_snapshot, _kind, preferred))
+    {
+      slot.position = *adopted;
+      m_slots.push_back(slot);
+      return;
+    }
     const std::optional<PlanePosition> place = FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot, gap);
     slot.position = place.value_or(preferred);
     slot.abandoned = !place.has_value();
@@ -553,6 +563,64 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   const StructureTypeView rally{.structure = StructureKind::Shipyard, .radiusMeters = RALLY_RADIUS_METERS};
   const PlanePosition preferred = Along(home, forwardX, forwardZ, static_cast<float>(m_settings.rallyDistanceMeters));
   m_rally = FindPlace(rally, preferred, Blockers(_snapshot, std::nullopt), _snapshot, 0.0f).value_or(preferred);
+  AdoptClaims(_snapshot);
+}
+
+const Outpost::EntityView* Outpost::AiPlayer::StandIn(const Snapshot& _snapshot) const
+{
+  // A snapshot lists its entities in identifier order, so the first found is the oldest.
+  const EntityView* oldest = nullptr;
+  for (const EntityView& entity : _snapshot.entities)
+  {
+    if (entity.kind != EntityKind::Structure || entity.owner != m_player)
+      continue;
+    if (entity.structure == StructureKind::Shipyard)
+      return &entity;
+    if (oldest == nullptr)
+      oldest = &entity;
+  }
+  return oldest;
+}
+
+std::optional<Outpost::PlanePosition> Outpost::AiPlayer::Adoptable(const Snapshot& _snapshot, StructureKind _kind,
+                                                                   PlanePosition _preferred) const
+{
+  const EntityView* nearest = nullptr;
+  for (const EntityView& entity : _snapshot.entities)
+  {
+    if (!IsStructure(entity, _kind) || entity.owner != m_player || Distance(entity.position, _preferred) > ADOPT_METERS)
+      continue;
+    const bool held =
+      std::ranges::any_of(m_slots, [&](const Slot& _slot)
+                          { return _slot.structure == _kind && Distance(_slot.position, entity.position) <= SAME_PLACE_METERS; });
+    // Of two as near, the older, which comes first.
+    if (!held && (nearest == nullptr || Distance(entity.position, _preferred) < Distance(nearest->position, _preferred)))
+      nearest = &entity;
+  }
+  return nearest != nullptr ? std::optional(nearest->position) : std::nullopt;
+}
+
+// A sector it holds beyond its home has a Relay of its own on its node: one its player claimed, or the AI before it was
+// made afresh. It counts against the claims it makes (ClaimTerritory), and the plan builds it again if it is lost.
+void Outpost::AiPlayer::AdoptClaims(const Snapshot& _snapshot)
+{
+  for (const SectorView& sector : _snapshot.sectors)
+  {
+    if (sector.holder != m_player || sector.Contains(m_home) ||
+        std::ranges::any_of(m_slots, [&sector](const Slot& _slot)
+                            { return _slot.structure == StructureKind::Relay && _slot.position == sector.node; }))
+      continue;
+    const bool relay = std::ranges::any_of(_snapshot.entities,
+                                           [&](const EntityView& _entity)
+                                           {
+                                             return IsStructure(_entity, StructureKind::Relay) && _entity.owner == m_player &&
+                                                    Distance(_entity.position, sector.node) <= SAME_PLACE_METERS;
+                                           });
+    if (!relay)
+      continue;
+    AddRelaySlot(_snapshot, sector);
+    m_claimed.push_back(sector.id);
+  }
 }
 
 void Outpost::AiPlayer::AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid)
@@ -603,8 +671,10 @@ void Outpost::AiPlayer::AddPlatformBeside(const Snapshot& _snapshot, PlanePositi
   const PlanePosition preferred = Along(at, (m_home.xMeters - at.xMeters) / toHome, (m_home.zMeters - at.zMeters) / toHome,
                                         rigRadius + type->radiusMeters + static_cast<float>(m_settings.structureGapMeters));
   slot.radiusMeters = type->radiusMeters;
-  const std::optional<PlanePosition> place =
-    FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot, static_cast<float>(m_settings.structureGapMeters));
+  const std::optional<PlanePosition> adopted = Adoptable(_snapshot, StructureKind::DefensePlatform, preferred);
+  const std::optional<PlanePosition> place = adopted.has_value() ? adopted
+                                                                 : FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot,
+                                                                             static_cast<float>(m_settings.structureGapMeters));
   slot.position = place.value_or(preferred);
   slot.abandoned = !place.has_value();
   m_slots.push_back(slot);
@@ -706,7 +776,9 @@ void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot)
   const PlanePosition preferred = Along(home, directionX, directionZ, meters);
 
   slot.radiusMeters = type->radiusMeters;
-  const std::optional<PlanePosition> place = FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot, gap);
+  const std::optional<PlanePosition> adopted = Adoptable(_snapshot, StructureKind::Shipyard, preferred);
+  const std::optional<PlanePosition> place =
+    adopted.has_value() ? adopted : FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot, gap);
   slot.position = place.value_or(preferred);
   slot.abandoned = !place.has_value();
   m_slots.push_back(slot);
@@ -738,8 +810,10 @@ void Outpost::AiPlayer::AddHomePlatform(const Snapshot& _snapshot, std::int32_t 
   const PlanePosition preferred =
     Along(m_home, directionX, directionZ, HOME_PLATFORM_RING_METERS + (ring * HOME_PLATFORM_RING_STEP_METERS));
   slot.radiusMeters = type->radiusMeters;
-  const std::optional<PlanePosition> place =
-    FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot, static_cast<float>(m_settings.structureGapMeters));
+  const std::optional<PlanePosition> adopted = Adoptable(_snapshot, StructureKind::DefensePlatform, preferred);
+  const std::optional<PlanePosition> place = adopted.has_value() ? adopted
+                                                                 : FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot,
+                                                                             static_cast<float>(m_settings.structureGapMeters));
   slot.position = place.value_or(preferred);
   slot.abandoned = !place.has_value();
   m_slots.push_back(slot);
@@ -1833,8 +1907,10 @@ void Outpost::AiPlayer::PlanRepairBay(const Snapshot& _snapshot)
   const PlanePosition preferred =
     Along(front->node, (m_home.xMeters - front->node.xMeters) / toHome, (m_home.zMeters - front->node.zMeters) / toHome, meters);
   Slot slot{.structure = StructureKind::RepairBay, .radiusMeters = type->radiusMeters, .besideRig = std::nullopt};
-  const std::optional<PlanePosition> place =
-    FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot, static_cast<float>(m_settings.structureGapMeters));
+  const std::optional<PlanePosition> adopted = Adoptable(_snapshot, StructureKind::RepairBay, preferred);
+  const std::optional<PlanePosition> place = adopted.has_value() ? adopted
+                                                                 : FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot,
+                                                                             static_cast<float>(m_settings.structureGapMeters));
   slot.position = place.value_or(preferred);
   slot.abandoned = !place.has_value();
   m_slots.push_back(slot);

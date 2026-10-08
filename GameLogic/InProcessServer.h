@@ -26,10 +26,11 @@ private:
   std::shared_ptr<LoopbackChannel> m_channel;
 };
 
-// The server inside the client (ADR-002). Started, it runs its ticks on a thread of its own (ADR-025); a test may instead
-// step it by hand with Advance, on the test's thread. Match setup, World and the command log belong to whichever thread
-// steps it, so a started server is touched only through its connections and TakeTickTimings. Made to, it also takes
-// players over QUIC on the loopback address, each into a seat opened for it (ADR-060).
+// The server inside the client (ADR-002), and the dedicated server's (ADR-078). Started, it runs its ticks on a thread of its
+// own (ADR-025); a test may instead step it by hand with Advance, on the test's thread. Match setup, World and the command
+// log belong to whichever thread steps it, so a started server is touched only through its connections and
+// TakeTickTimings. Made to, it also takes players over QUIC, each into a seat opened for it (ADR-060), and it plays the
+// players it is given to host on that same thread, after each tick (ADR-079).
 class InProcessServer final : public Server
 {
 public:
@@ -42,6 +43,7 @@ public:
   // Throws Neuron::Exception once the server has started.
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
   [[nodiscard]] ServerAddress OpenSeat(PlayerId _player, const SeatToken& _token) override;
+  void Host(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted) override;
   // Throws Neuron::Exception when it has started already, or when a seat has not been taken.
   void Start() override;
   void Step() override;
@@ -93,6 +95,7 @@ public:
 private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
   // them, and then a snapshot for every connected player. A world's tick logs its commands and saves when a save is due.
+  // The players the server hosts then answer their snapshots, with orders for the next tick (ADR-079).
   void RunTick();
 
   // Hands a save of the world as it stands to its folder, which begins its log anew there (ADR-077).
@@ -112,8 +115,13 @@ private:
     // What a hello shows to take the seat (ADR-078).
     SeatToken token{};
     // Guarded by m_seatMutex: MsQuic's thread sets it when the player's hello takes the seat, and again when a newer
-    // connection takes it.
+    // connection takes it, and counts how often it has.
     std::shared_ptr<Neuron::QuicChannel> quic;
+    std::uint32_t takings = 0;
+    // The player the server plays itself, if any (ADR-079): without a seat, the player; with one, the seat's deputy, which
+    // plays it as control says. Touched by the thread that steps the server only, once it is set before the start.
+    std::unique_ptr<HostedPlayer> hosted;
+    std::optional<SeatController> control;
   };
 
   // Adds a connection for _player, unless the server has started or the player has one already.

@@ -66,6 +66,25 @@ std::wstring Wide(std::string_view _text)
 {
   return {_text.begin(), _text.end()};
 }
+
+// A hosted player that counts how often it was given the seat to play, and to watch.
+class Counter final : public Outpost::HostedPlayer
+{
+public:
+  [[nodiscard]] std::vector<Outpost::Command> Play([[maybe_unused]] const Outpost::Snapshot& _snapshot) override
+  {
+    ++plays;
+    return {};
+  }
+
+  void Watch([[maybe_unused]] const Outpost::Snapshot& _snapshot) override
+  {
+    ++watches;
+  }
+
+  std::uint64_t plays = 0;
+  std::uint64_t watches = 0;
+};
 } // namespace
 
 // The server and its clients over a real QUIC connection on the loopback address, through MsQuic (ADR-060).
@@ -181,6 +200,40 @@ public:
     guessed.token.back() ^= 0x80;
     Assert::ExpectException<Neuron::Exception>([&guessed] { Outpost::QuicTransport refused(guessed, BLUE); }, L"but not without its token");
     Assert::IsTrue(!SnapshotsOf(second, 1).empty(), L"and a refused one takes nothing from it");
+  }
+
+  // Phase 5 design §6, gate H2 (ADR-079): a seat's deputy plays it until its player takes it, watches while the player plays,
+  // takes it again a minute of ticks after the player's connection has gone, and gives it back when the player returns.
+  TEST_METHOD(ADeputyPlaysItsSeatWhileItsPlayerIsAway)
+  {
+    const TemporaryFolder folder;
+    auto server = WorldServer(folder.Path());
+    const Outpost::ServerAddress blueSeat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    auto counter = std::make_unique<Counter>();
+    const Counter& deputy = *counter;
+    server->Host(BLUE, std::move(counter));
+    server->Step();
+    Assert::AreEqual(std::uint64_t{1}, deputy.plays, L"a seat nobody has taken is the deputy's");
+
+    {
+      Outpost::QuicTransport blue(blueSeat, BLUE);
+      server->Step();
+      Assert::AreEqual(std::uint64_t{1}, deputy.watches, L"the player plays the seat it took");
+    }
+    // The connection has gone; the server hears so on MsQuic's thread.
+    std::this_thread::sleep_for(1s);
+    const std::uint64_t ticksPerMinute = std::uint64_t{Outpost::DEPUTY_DELAY_SECONDS} * server->TicksPerSecond();
+    for (std::uint64_t tick = 0; tick < ticksPerMinute; ++tick)
+      server->Step();
+    Assert::AreEqual(std::uint64_t{1}, deputy.plays, L"for a minute after the connection went, the seat is still the player's");
+    server->Step();
+    Assert::AreEqual(std::uint64_t{2}, deputy.plays, L"then the deputy's");
+
+    Outpost::QuicTransport again(blueSeat, BLUE);
+    const std::uint64_t watched = deputy.watches;
+    server->Step();
+    Assert::AreEqual(std::uint64_t{2}, deputy.plays);
+    Assert::AreEqual(watched + 1, deputy.watches, L"until the player takes it again");
   }
 
   // ADR-078: a world's server keeps its certificate in the world's folder, so that a player pins it once.

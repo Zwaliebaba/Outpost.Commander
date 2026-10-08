@@ -202,6 +202,27 @@ Outpost::ServerAddress Outpost::InProcessServer::OpenSeat(PlayerId _player, cons
   return {.host = m_listenHost, .port = m_listener->Port(), .certificate = m_listener->Certificate(), .token = _token};
 }
 
+void Outpost::InProcessServer::Host(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted)
+{
+  if (!_player.IsValid() || !_hosted)
+    throw Neuron::Exception("InProcessServer: hosting needs a player and what plays it");
+  const std::scoped_lock lock(m_seatMutex);
+  if (m_started)
+    throw Neuron::Exception("InProcessServer: players are hosted before the server starts");
+  const auto connection = std::ranges::find(m_connections, _player, &Connection::player);
+  // A player with no connection is the server's own, an AI empire, whose orders reach the tick as a connection's would.
+  if (connection == m_connections.end())
+  {
+    m_connections.push_back({.player = _player, .channel = std::make_shared<LoopbackChannel>(), .hosted = std::move(_hosted)});
+    return;
+  }
+  // A seat's deputy.
+  if (!connection->seat || connection->hosted)
+    throw Neuron::Exception(std::format("InProcessServer: player {} is hosted already or has a connection of its own", _player.value));
+  connection->hosted = std::move(_hosted);
+  connection->control.emplace(TicksPerSecond());
+}
+
 Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel)
 {
   // MsQuic hands the receiver one message at a time, so what it keeps between them needs no lock: the connection it
@@ -284,6 +305,7 @@ std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::TakeSeat(Pla
     // The player's newest connection holds the seat, so that one whose connection dropped without the server knowing yet
     // takes it back.
     replaced = std::exchange(seat->quic, std::move(_channel));
+    ++seat->takings;
     commands = seat->channel;
   }
   // The connection it had is told why it goes, outside the lock, which its own callbacks take.
@@ -427,25 +449,62 @@ void Outpost::InProcessServer::RunTick()
   if (m_world && m_simulation.CurrentTick() % (std::uint64_t{WORLD_SAVE_SECONDS} * TicksPerSecond()) == 0)
     SaveWorld();
 
+  // The players the server hosts, and the snapshot each answers once every player has been sent its own.
+  struct HostedTurn
+  {
+    Connection* connection = nullptr;
+    Snapshot snapshot;
+    // Whether it plays its seat now, or watches its player play it.
+    bool plays = true;
+  };
+  std::vector<HostedTurn> turns;
   {
     const ObservedPart part(&m_profiler, TickPart::Snapshots);
-    for (const Connection& connection : m_connections)
+    for (Connection& connection : m_connections)
     {
       Snapshot snapshot = m_simulation.BuildSnapshot(connection.player);
       if (connection.seat)
       {
-        // A seat not yet taken has nobody to send to, which only a test stepping the server can see.
+        // A seat not yet taken has nobody to send to.
         std::shared_ptr<Neuron::QuicChannel> quic;
+        std::uint32_t takings = 0;
         {
           const std::scoped_lock lock(m_seatMutex);
           quic = connection.quic;
+          takings = connection.takings;
         }
         if (quic)
           quic->Send(EncodeMessage(snapshot));
+        if (connection.hosted)
+        {
+          const bool gone = quic && quic->HasGone();
+          const bool plays = connection.control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
+          turns.push_back({.connection = &connection, .snapshot = std::move(snapshot), .plays = plays});
+        }
+        continue;
+      }
+      if (connection.hosted)
+      {
+        turns.push_back({.connection = &connection, .snapshot = std::move(snapshot), .plays = true});
         continue;
       }
       const std::scoped_lock lock(connection.channel->mutex);
       connection.channel->snapshots.push_back(std::move(snapshot));
+    }
+  }
+  {
+    // Their orders wait in their connection's queue for the next tick, which logs and applies them as a client's.
+    const ObservedPart part(&m_profiler, TickPart::Hosted);
+    for (HostedTurn& turn : turns)
+    {
+      if (!turn.plays)
+      {
+        turn.connection->hosted->Watch(turn.snapshot);
+        continue;
+      }
+      std::vector<Command> orders = turn.connection->hosted->Play(turn.snapshot);
+      const std::scoped_lock lock(turn.connection->channel->mutex);
+      std::ranges::move(orders, std::back_inserter(turn.connection->channel->commands));
     }
   }
   const TickTiming timing{.total = std::chrono::steady_clock::now() - started, .parts = m_profiler.Take()};

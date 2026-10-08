@@ -52,6 +52,22 @@ enum class StandingOrder : std::uint8_t
   Patrol
 };
 
+// What a ship is doing because it was told to (design §7, §9). Firing is not an order: an armed ship fires at whatever its
+// targeting picks, whatever its order.
+enum class ShipOrder : std::uint8_t
+{
+  // Holding where it is.
+  None,
+  // Heading for a point, firing on the move.
+  Move,
+  // Heading for a point, and standing to fire while an enemy is in range.
+  AttackMove,
+  // Closing on one target and firing at it until it dies.
+  Attack,
+  // A Constructor's: heading for a structure or ship of its own side, and building or repairing it once in reach.
+  Work
+};
+
 // What one player may see of one entity. It carries what the client draws and selects.
 struct EntityView
 {
@@ -110,6 +126,8 @@ struct EntityView
   // How far the entity sees under fog of war, which the client draws the fog by; the owner's only, and zero without fog
   // (ADR-024).
   float sightMeters = 0.0f;
+  // A ship's order, which only its owner sees: a deputy tells an idle warship by it (ADR-079).
+  ShipOrder order = ShipOrder::None;
   // A ship's standing order, which only its owner sees (ADR-059).
   StandingOrder standing = StandingOrder::None;
   // A ship's retreat, and whether it is going back to be repaired now (Phase 4 design §10, ADR-075); its owner's only.

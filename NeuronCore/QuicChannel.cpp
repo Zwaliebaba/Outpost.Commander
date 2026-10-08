@@ -439,6 +439,12 @@ std::optional<std::uint64_t> Neuron::QuicChannel::PeerErrorCode() const
   return m_state->peerErrorCode;
 }
 
+bool Neuron::QuicChannel::HasGone() const
+{
+  const std::scoped_lock lock(m_state->mutex);
+  return !m_state->failure.empty();
+}
+
 void Neuron::QuicChannel::Close() noexcept
 {
   State& state = *m_state;

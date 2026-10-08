@@ -7,11 +7,17 @@ inline constexpr std::uint16_t DEFAULT_WORLD_PORT = 45'000;
 // A world's settings, in its folder.
 inline constexpr std::string_view WORLD_SETTINGS_FILE = "World.json";
 
-// One of a world's seats: its player, and the token its player takes it with (ADR-078).
+// The difficulties an AI empire plays at, each a settings file of the AI's (ADR-065).
+inline constexpr std::array<std::string_view, 3> AI_DIFFICULTIES{"Easy", "Normal", "Hard"};
+
+// One of a world's seats: its player, and either the token its player takes it with (ADR-078), or the difficulty of the AI
+// empire that plays it, one of AI_DIFFICULTIES (Phase 5 design §1, ADR-079).
 struct WorldSeat
 {
   PlayerId player;
   SeatToken token{};
+  // Empty for a player's seat.
+  std::string ai;
 };
 
 // A world's settings (Phase 5 design §4, ADR-078), which its owner makes once, with the world, and the dedicated server
@@ -32,12 +38,13 @@ struct WorldSettings
 [[nodiscard]] WorldSettings NewWorldSettings(std::uint64_t _seed, std::size_t _seats);
 
 // The settings as World.json holds them: a JSON object, with the seed as a string of its decimal digits, since a JSON
-// number cannot hold every 64-bit one, and each token in hexadecimal.
+// number cannot hold every 64-bit one, each player's seat with its token in hexadecimal, and each AI empire's with its
+// difficulty.
 [[nodiscard]] std::string WriteWorldSettings(const WorldSettings& _settings);
 
 // What World.json's text holds. Throws Neuron::Exception, naming what is wrong, when it is not settings: a member missing
-// or unknown, a port out of range, a seed that is not a number, a token that is not 32 hexadecimal digits, no seat, or two
-// seats for one player.
+// or unknown, a port out of range, a seed that is not a number, a token that is not 32 hexadecimal digits, a seat with
+// both a token and an AI or neither, a difficulty there is none of, no seat, or two seats for one player.
 [[nodiscard]] WorldSettings ReadWorldSettings(std::string_view _text);
 
 // The join file of _seat, whose server presents _certificate on the settings' port, at their host.

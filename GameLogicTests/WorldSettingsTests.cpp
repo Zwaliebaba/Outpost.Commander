@@ -32,10 +32,13 @@ public:
   // too large for a JSON number survives as a string.
   TEST_METHOD(ReadBackAsTheyWereWritten)
   {
-    Outpost::WorldSettings settings = Outpost::NewWorldSettings(0xFFFF'FFFF'FFFF'FFFFull, 2);
+    Outpost::WorldSettings settings = Outpost::NewWorldSettings(0xFFFF'FFFF'FFFF'FFFFull, 3);
     settings.host = "a \"quoted\" host\\name";
     settings.port = 47001;
-    Assert::AreEqual(size_t{2}, settings.seats.size());
+    // The third an AI empire's (ADR-079).
+    settings.seats[2].ai = "Hard";
+    settings.seats[2].token = {};
+    Assert::AreEqual(size_t{3}, settings.seats.size());
     Assert::AreEqual(std::uint32_t{1}, settings.seats[0].player.value);
     Assert::AreEqual(std::uint32_t{2}, settings.seats[1].player.value);
     Assert::IsFalse(settings.seats[0].token == settings.seats[1].token, L"each seat its own token");
@@ -51,6 +54,7 @@ public:
     {
       Assert::IsTrue(settings.seats[i].player == read.seats[i].player);
       Assert::IsTrue(settings.seats[i].token == read.seats[i].token);
+      Assert::AreEqual(settings.seats[i].ai, read.seats[i].ai);
     }
     Assert::AreEqual(std::uint64_t{0xFFFF'FFFF'FFFF'FFFFull}, Outpost::ReadWorldSettings(SettingsText("", "")).seed);
   }
@@ -66,6 +70,14 @@ public:
     ExpectRefused("00112233445566778899aabbccddeeff", "00112233445566778899aabbccddee", L"a token too short");
     ExpectRefused("00112233445566778899aabbccddeeff", "00112233445566778899aabbccddeeXX", L"a token that is not hexadecimal");
     ExpectRefused("{ \"player\": 2", "{ \"player\": 1", L"two seats for one player");
+    ExpectRefused("\"token\": \"ffeeddccbbaa99887766554433221100\"", "\"ai\": \"Brutal\"", L"a difficulty there is none of");
+    ExpectRefused("\"token\": \"ffeeddccbbaa99887766554433221100\"", "\"ai\": \"Hard\", \"token\": \"ffeeddccbbaa99887766554433221100\"",
+                  L"a seat both a player's and an AI's");
+    ExpectRefused(", \"token\": \"ffeeddccbbaa99887766554433221100\"", "", L"a seat neither");
+    Assert::AreEqual(
+      std::string("Normal"),
+      Outpost::ReadWorldSettings(SettingsText("\"token\": \"ffeeddccbbaa99887766554433221100\"", "\"ai\": \"Normal\"")).seats[1].ai,
+      L"an AI empire's seat");
     ExpectRefused("\"host\"", "\"hots\"", L"a member misspelled");
     ExpectRefused(
       R"([ { "player": 1, "token": "00112233445566778899aabbccddeeff" }, { "player": 2, "token": "ffeeddccbbaa99887766554433221100" } ])",

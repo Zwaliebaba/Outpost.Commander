@@ -88,6 +88,7 @@
     <ClInclude Include="QuicTransport.h" />
     <ClInclude Include="SeatToken.h" />
     <ClInclude Include="JoinTicket.h" />
+    <ClInclude Include="HostedPlayer.h" />
     <ClInclude Include="WireFormat.h" />
     <ClInclude Include="WireFields.h" />
     <ClInclude Include="ByteFormat.h" />

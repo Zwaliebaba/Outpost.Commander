@@ -12,7 +12,7 @@ using Bytes = std::vector<std::byte>;
 
 // The layout of each state version's save, as the hash of Simulation::StateLayout (AGENTS.md R18). A change to what
 // Simulation holds changes the layout: raise WORLD_STATE_VERSION and record the new version's hash here, below the old.
-constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 1> LAYOUTS{{{1, 0x5EB85327A281B46Cull}}};
+constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 2> LAYOUTS{{{1, 0x5EB85327A281B46Cull}, {2, 0x8F33507C8E312761ull}}};
 
 std::uint64_t LayoutHash()
 {

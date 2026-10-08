@@ -7,6 +7,9 @@
     <Filter Include="Player">
       <UniqueIdentifier>{29a04743-53e5-4bf5-a944-c409d9bf604e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Deputy">
+      <UniqueIdentifier>{5d0c7a41-8e2b-4f6a-9c13-2b7e4a91d6f0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -17,6 +20,12 @@
     <ClInclude Include="AiPlayer.h">
       <Filter>Player</Filter>
     </ClInclude>
+    <ClInclude Include="AiEmpire.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Deputy.h">
+      <Filter>Deputy</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -25,6 +34,9 @@
     </ClCompile>
     <ClCompile Include="AiPlayer.cpp">
       <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Deputy.cpp">
+      <Filter>Deputy</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

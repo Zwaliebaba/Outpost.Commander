@@ -640,7 +640,7 @@ INCLUDE_PATHS = {
   "GameLogic": ("NeuronCore", "NeuronServer", "GameProtocol"),
   "GameApp": ("NeuronCore", "NeuronClient", "GameProtocol"),
   "OutpostCommander": ("NeuronCore", "NeuronClient", "GameProtocol", "Opponent", "GameApp"),
-  "OutpostServer": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic"),
+  "OutpostServer": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic", "Opponent"),
   "GameLogicTests": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic", "Opponent"),
   "GameAppTests": ("NeuronCore", "NeuronClient", "GameProtocol", "GameApp"),
 }

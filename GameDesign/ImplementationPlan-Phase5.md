@@ -28,9 +28,9 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
 | 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, in milestone 36's PR |
 | 36.3 | The client joins a world | 36.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
-| 37.1 | The AI starts from any state | — | — | todo |
-| 37.2 | Clients on the server's thread | 35.2 | — | todo |
-| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | todo |
+| 37.1 | The AI starts from any state | — | — | built, in milestone 37's PR |
+| 37.2 | Clients on the server's thread | 35.2 | — | built, in milestone 37's PR |
+| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | built, in milestone 37's PR; awaiting CI and the owner's run |
 | 38.1 | The server's events, and alerts read from them | — | H4 | todo |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | todo |
 | 38.3 | The client's orders window | 38.2 | H5 | todo |
@@ -119,10 +119,55 @@ Recorded in [ADR-078](../Design/ADR/ADR-078-dedicated-server.md).
 - **Run in CI.** Debug|x64 on Windows passes all 582 tests, among them every `QuicTransportTests` case and `HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`. That includes `AWorldKeepsItsCertificate`: the kept CNG key and certificate, written without Windows, are what Schannel uses when the world runs again.
 - **The owner's runs** remain: a world run end to end on the development machine (36.1), and joined from a second machine (36.3).
 
-## Milestones 37 to 39
+## Milestone 37 — Deputies
+
+Scoped from design §6. The owner decided two things the design left open (2026-10-08): a deputy keeps as many Constructors as its player had when it took the seat, and its defenders go back to where they stood once an attack is over.
+
+### 37.1 — The AI starts from any state
+
+- **Scope:** `AiPlayer` picks up any snapshot of its player. Its plan takes the structures its player has as its own rather than building them again beside them, its plan is laid round a Shipyard when its player has lost its Command Station, and its player's ships join its reserve. In a match, where everything the AI has comes from its plan, nothing changes.
+- **ADR:** ADR-020, edited in place (decision 16).
+- **Acceptance:** `AiPlayerTests`: an AI made afresh in the middle of a match orders no more base structures than the AI that never stopped; a Shipyard it did not build, near where its plan wants one, is that Shipyard; and a fresh AI without a station keeps its Shipyard building. AI-against-AI matches play as before.
+- **Verify:** the container's run of `GameLogicTests`; CI.
+
+### 37.2 — Clients on the server's thread
+
+- **Scope:** `HostedPlayer` in `GameProtocol` and `Server::Host`. After each tick the server hands each hosted player its snapshot, and applies and logs its orders at the next tick as a connection's. A hosted player without a seat is an AI empire (`AiEmpire`).
+- **ADR:** a new one, ADR-079; ADR-025 edited in place.
+- **Acceptance:** `InProcessServerTests`: a world of two AI empires on the server's thread replays from its log to an equal simulation; a player is hosted once, and only before the server starts.
+- **Verify:** the container's run of `GameLogicTests`, and W2's measurement with the hosted players; CI.
+
+### 37.3 — The seat's controller and the keeper
+
+- **Gates:** H2, H3, decided.
+- **Scope:**
+  - `SeatController`: the deputy's until the player takes the seat, the player's while its connection is open and for 60 s of ticks after it has gone, then the deputy's until the player is back.
+  - `QuicChannel::HasGone`.
+  - A ship's order in its owner's snapshot (`PROTOCOL_VERSION` 12, `WORLD_STATE_VERSION` 2).
+  - `Deputy`, the keeper of design §6.
+  - In `OutpostServer`: AI seats in `World.json` (`--ai <player>[:<difficulty>]`), and a deputy hosted for each player's seat.
+- **ADR:** ADR-079; ADR-002, ADR-077 and ADR-078 edited in place.
+- **Acceptance:**
+  - `SeatControllerTests`.
+  - `DeputyTests`: each keeper rule, a turn beginning afresh, and W3 over ten minutes of a real match.
+  - `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`.
+  - `WorldSettingsTests` with AI seats.
+- **Verify:** the container's run of `GameLogicTests` and of `OutpostServer --new-world --ai`; CI for the hand-over over QUIC; **owner run**: a world with an AI empire, left for an hour, and the deputy's play judged on the player's return.
+
+### As built
+
+Recorded in [ADR-079](../Design/ADR/ADR-079-seat-controller-and-deputy.md) and ADR-020 decision 16.
+
+- **Run in the container.** `GameLogicTests` passes, 331 tests, apart from `QuicTransportTests`, which need QUIC; `OutpostServer --new-world --ai` and its refusals were run. clang-tidy 18 with the repository's checks is clean over the changed files.
+- **Each new test was checked against a broken build.** With adoption taken out, an AI made afresh ordered 4 base structures in its first minute, against 0 for the AI that never stopped.
+- **W3, headless.** Over minutes 10 to 20, a deputy's Shipyards stood idle with Ore to spend 0.8–1.4% of their time and its Lab 0.2%, against the AI's 0.0–5.4% and 0.0–0.2%, over seeds 1 to 4. Its first version waited for the Ore and the cap before queueing, and stood idle 50.6% of the time.
+- **W2 in the container,** with two AI empires on the server's thread over an hour: a tick's 99th percentile 0.25–0.40 ms; the hosted players' 0.08–0.09 ms, at most 3.20 ms.
+- **The hand-over over a real connection** is `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`, which CI runs first.
+- **Not in this milestone.** The client's panel saying what happened while the player was away (design §11) needs the server's events, so it comes with milestone 38. A hand-over is logged with the world log, at milestone 39.
+
+## Milestones 38 and 39
 
 Each is scoped in detail when it becomes the next milestone, from the design section its tasks name.
 
-- **37 — Deputies** (design §6).
-- **38 — Orders that run while away** (design §7).
+- **38 — Orders that run while away** (design §7), and the client's panel of what happened while away (design §11), read from the server's events.
 - **39 — A world without an end, the world log and the week** (design §8–§10).

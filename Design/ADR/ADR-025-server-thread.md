@@ -15,7 +15,7 @@ Design §3 measured that cost on the development machine on 2026-10-01. The tick
 3. **`InProcessServer::Advance` stays, for tests.** It steps a server that has not been started, on the test's own thread, as every test before this did. Once the server has started, `Advance`, `Connect` and a second `Start` throw.
 4. **The loopback transport locks.** Each `LoopbackChannel` has a mutex that guards its command and snapshot queues. The client's `Send` and `Receive` take it, and so does the server's tick, briefly, to take the commands and to add each snapshot. A player on QUIC has its commands added under the same lock by MsQuic's thread, and its snapshots go to MsQuic instead (ADR-060). A snapshot is built before the lock is taken. The tick durations have a lock of their own. Nothing holds two locks at once.
 5. **A failure on the server's thread reaches the frame loop.** An exception the thread meets is kept, and the thread stops. `TakeTickTimings`, which the shell calls every frame, throws it again on the frame loop's thread. The shell reports it there as it reports any other error.
-6. **What the server touches is the server's.** Match setup (`World`, `MapData`, `StartStressLoad`, `UseWorld`) happens before `Start`. After it, the simulation is touched only by the server's thread, so `Simulation` has no locks and stays as it was (ADR-009). A world's save is encoded on the server's thread, between two ticks, and only its bytes cross to the world folder's own thread, which writes them ([ADR-077](ADR-077-world-state-on-disk.md)).
+6. **What the server touches is the server's.** Match setup (`World`, `MapData`, `StartStressLoad`, `UseWorld`) happens before `Start`. After it, the simulation is touched only by the server's thread, so `Simulation` has no locks and stays as it was (ADR-009). A world's save is encoded on the server's thread, between two ticks, and only its bytes cross to the world folder's own thread, which writes them ([ADR-077](ADR-077-world-state-on-disk.md)). The players the server hosts, a world's AI empires and deputies, are touched only by the server's thread too, after each tick ([ADR-079](ADR-079-seat-controller-and-deputy.md)).
 
 ## Consequences
 
@@ -28,5 +28,5 @@ Design §3 measured that cost on the development machine on 2026-10-01. The tick
 ## What this forecloses
 
 - Locks in `Simulation`. Only the server's thread touches a started simulation.
-- The AI on the server's thread. It is a client (ADR-002) and stays on the frame loop, as the human's client does, until clients and server are separate processes.
+- A match's AI on the server's thread. It is a client (ADR-002) and stays on the shell's frame loop, as the human's client does. A world's AI empires and its players' deputies, whose server runs apart from any client, are played on the server's thread ([ADR-079](ADR-079-seat-controller-and-deputy.md)).
 - Stepping a started server by hand, and connecting a player to one.

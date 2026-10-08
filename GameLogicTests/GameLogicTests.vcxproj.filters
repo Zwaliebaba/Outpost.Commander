@@ -50,5 +50,7 @@
     <ClCompile Include="WorldStateTests.cpp" />
     <ClCompile Include="WorldFolderTests.cpp" />
     <ClCompile Include="WorldSettingsTests.cpp" />
+    <ClCompile Include="SeatControllerTests.cpp" />
+    <ClCompile Include="DeputyTests.cpp" />
   </ItemGroup>
 </Project>

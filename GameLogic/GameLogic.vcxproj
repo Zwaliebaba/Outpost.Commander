@@ -90,6 +90,7 @@
     <ClInclude Include="StressLoad.h" />
     <ClInclude Include="WorldState.h" />
     <ClInclude Include="WorldFolder.h" />
+    <ClInclude Include="SeatController.h" />
     <ClInclude Include="WorldSettings.h" />
   </ItemGroup>
   <ItemGroup>
@@ -108,6 +109,7 @@
     <ClCompile Include="StressLoad.cpp" />
     <ClCompile Include="WorldState.cpp" />
     <ClCompile Include="WorldFolder.cpp" />
+    <ClCompile Include="SeatController.cpp" />
     <ClCompile Include="WorldSettings.cpp" />
   </ItemGroup>
   <ItemGroup>
