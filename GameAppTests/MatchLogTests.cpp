@@ -180,24 +180,83 @@ public:
                      out.str());
   }
 
-  // ADR-073: the log is of the players' fights, so a pirate's shot, or a shot at a pirate, is no contact and no engagement
-  // until milestone 34 counts them.
-  TEST_METHOD(LeavesOutThePiratesFights)
+  // Phase 4 plan task 34.1 (U1): a fight with the pirates is recorded once a player and sector, and the sector once they no
+  // longer guard it; it is no contact and no engagement, which are the players' fights (ADR-073).
+  TEST_METHOD(RecordsThePiratesFightsApart)
   {
     std::ostringstream out;
     {
       Outpost::MatchLog log(out, 7, 20);
-      for (const std::uint64_t tick : {100u, 110u})
+      for (const std::uint64_t tick : {100u, 110u, 120u})
       {
         Outpost::Snapshot view = SnapshotOf(HUMAN, tick);
+        view.sectors = {{.id = 1, .minXMeters = -100.0f, .maxXMeters = 0.0f, .maxZMeters = 100.0f, .guarded = tick < 120}};
         view.entities = {Swarm(10, HUMAN), Swarm(30, Outpost::PIRATES)};
-        view.shots = {{.shooter = Outpost::EntityId{10}, .target = Outpost::EntityId{30}, .from = {.xMeters = -50.0f, .zMeters = 50.0f}},
-                      {.shooter = Outpost::EntityId{30}, .target = Outpost::EntityId{10}, .from = {.xMeters = -40.0f, .zMeters = 50.0f}}};
+        view.shots = {{.shooter = Outpost::EntityId{10},
+                       .target = Outpost::EntityId{30},
+                       .from = {.xMeters = -50.0f, .zMeters = 50.0f},
+                       .to = {.xMeters = -40.0f, .zMeters = 50.0f}},
+                      {.shooter = Outpost::EntityId{30},
+                       .target = Outpost::EntityId{10},
+                       .from = {.xMeters = -40.0f, .zMeters = 50.0f},
+                       .to = {.xMeters = -50.0f, .zMeters = 50.0f}}};
         log.Record(view);
       }
     }
-    Assert::IsTrue(out.str().find("contact") == std::string::npos);
-    Assert::IsTrue(out.str().find("engagement") == std::string::npos);
+    const std::string written = out.str();
+    Assert::IsTrue(written.find("pirates 100 player 1 sector 1\n") != std::string::npos, L"the fight");
+    Assert::AreEqual(written.find("pirates"), written.rfind("pirates"), L"once");
+    Assert::IsTrue(written.find("cleared 120 sector 1\n") != std::string::npos, L"the sector cleared");
+    Assert::IsTrue(written.find("contact") == std::string::npos);
+    Assert::IsTrue(written.find("engagement") == std::string::npos);
+  }
+
+  // Phase 4 plan task 34.1: a derelict gone from the sight of the Constructors at it was salvaged by their player, not by one
+  // who only saw it (U1); a warship that turns for home, comes back whole and fires again (U3).
+  TEST_METHOD(RecordsSalvageRetreatsAndRepairs)
+  {
+    std::ostringstream out;
+    {
+      Outpost::MatchLog log(out, 7, 20);
+      const auto snapshot = [](Outpost::PlayerId _player, std::uint64_t _tick, bool _derelict, std::int32_t _hitPoints, bool _retreating)
+      {
+        Outpost::Snapshot view = SnapshotOf(_player, _tick);
+        Outpost::EntityView warship = Swarm(10, HUMAN);
+        warship.hitPointsHundredths = _hitPoints;
+        warship.maxHitPointsHundredths = 10000;
+        warship.retreating = _retreating;
+        view.entities = {warship, Swarm(20, AI)};
+        if (_player == HUMAN)
+        {
+          view.entities.push_back({.id = Outpost::EntityId{11},
+                                   .owner = HUMAN,
+                                   .role = Outpost::ShipRole::Constructor,
+                                   .position = {.xMeters = 25.0f},
+                                   .radiusMeters = 5.0f});
+        }
+        if (_derelict)
+          view.entities.push_back(
+            {.id = Outpost::EntityId{50}, .kind = Outpost::EntityKind::Derelict, .radiusMeters = 10.0f, .salvageOre = 300});
+        return view;
+      };
+      for (const Outpost::PlayerId player : {HUMAN, AI})
+        log.Record(snapshot(player, 100, true, 10000, false));
+      for (const Outpost::PlayerId player : {HUMAN, AI})
+        log.Record(snapshot(player, 120, false, 2000, true));
+      log.Record(snapshot(HUMAN, 140, false, 10000, false));
+      Outpost::Snapshot fire = snapshot(HUMAN, 160, false, 10000, false);
+      fire.shots = {{.shooter = Outpost::EntityId{10}, .target = Outpost::EntityId{20}}};
+      log.Record(fire);
+      fire.tick = 170;
+      log.Record(fire);
+    }
+    const std::string written = out.str();
+    Assert::IsTrue(written.find("salvaged 120 player 1 derelict 50 ore 300\n") != std::string::npos, L"the crew's salvage");
+    Assert::IsTrue(written.find("player 2 derelict") == std::string::npos, L"no salvage for a player who only saw it");
+    Assert::IsTrue(written.find("retreat 120 player 1 ship 10\n") != std::string::npos, L"the retreat");
+    Assert::IsTrue(written.find("repaired 140 player 1 ship 10\n") != std::string::npos, L"the repair");
+    Assert::IsTrue(written.find("again 160 player 1 ship 10\n") != std::string::npos, L"fighting again");
+    Assert::AreEqual(written.find("again"), written.rfind("again"), L"once");
   }
 
   // Phase 1 plan task 13.1: each tier the player's Research Lab opens (Phase 3 design §6), the player's own warships every

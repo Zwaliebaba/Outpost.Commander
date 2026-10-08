@@ -7,8 +7,9 @@ namespace Outpost
 // topic, and each research tier its Research Lab opened; every warship as it first appeared, by its components and its module;
 // each player's warship count every 30 seconds, and its peak; and each ore asteroid as it ran dry. For Phase 3's T2 to T4
 // (Phase 3 plan task 25.1) it holds each upgrade, each structure above level 1 that is attacked, and how long both
-// players sat at their node caps with equal nodes. It reads only snapshots, as any client does. Tools/MatchLog.py
-// summarizes it.
+// players sat at their node caps with equal nodes. For Phase 4's U1 and U3 (Phase 4 plan task 34.1) it holds each derelict
+// salvaged, each pirate outpost fought and cleared, and each warship that turns for home, is repaired and fights again. It
+// reads only snapshots, as any client does. Tools/MatchLog.py summarizes it.
 //
 // One line a record, every time in ticks:
 //
@@ -34,6 +35,14 @@ namespace Outpost
 //   stall <tick> ticks <count>                       the ticks during which both players were at their node caps and held
 //                                                    as many nodes as each other (Phase 3 T2); written with the peaks, on
 //                                                    a map with territory
+//   salvaged <tick> player <player> derelict <id> ore <ore>
+//                                                    a derelict left the player's sight while its Constructors were at it:
+//                                                    they salvaged it (Phase 4 U1). Two players' crews at one both count.
+//   pirates <tick> player <player> sector <id>       a first shot between the player and the pirates of the sector (U1)
+//   cleared <tick> sector <id>                       the pirates no longer guard the sector
+//   retreat <tick> player <player> ship <id>         a warship of the player's turned for home to be repaired (U3)
+//   repaired <tick> player <player> ship <id>        a warship that turned for home stopped, whole (U3)
+//   again <tick> player <player> ship <id>           a repaired warship fired, the first time since its repair (U3)
 //   ending <tick> <production or domination>         how the match ended, just before its end (Phase 2 S3)
 //   end <tick> winner <player, or 0 for a draw>
 //   left <tick>                                      the match was left before it ended (Finish)
@@ -67,6 +76,10 @@ private:
   void RecordUpgrades(const Snapshot& _snapshot);
   // Whether both players are at their caps with equal nodes in the tick of _snapshot, once both players' snapshots of it are in.
   void RecordStall(const Snapshot& _snapshot);
+  // The player's warships that turn for home and come back whole, from its own snapshots (Phase 4 U3).
+  void RecordRetreats(const Snapshot& _snapshot);
+  // The derelicts the player's Constructors finish, from its own snapshots (Phase 4 U1).
+  void RecordSalvage(const Snapshot& _snapshot);
 
   std::ostream* m_out = nullptr;
   std::uint64_t m_sampleTicks = 0;
@@ -122,5 +135,22 @@ private:
   bool m_territory = false;
   std::uint64_t m_stallTicks = 0;
   std::optional<std::uint64_t> m_stallCountedTick;
+
+  // Each sector the pirates were last seen to guard or not.
+  std::vector<std::pair<std::int32_t, bool>> m_guarded;
+  // Each player and sector whose pirates the player has fought.
+  std::set<std::pair<PlayerId, std::int32_t>> m_piratesFought;
+  // Whether each of a player's warships was last seen retreating, and the repaired ones that have not fired since, with
+  // their owners.
+  std::map<EntityId, bool> m_retreating;
+  std::map<EntityId, PlayerId> m_repaired;
+  // A derelict a player last saw with its Constructors at it, and the Ore it pays.
+  struct Salvage
+  {
+    PlayerId player;
+    EntityId derelict;
+    std::int32_t ore = 0;
+  };
+  std::vector<Salvage> m_salvage;
 };
 } // namespace Outpost

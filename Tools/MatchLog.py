@@ -1,6 +1,7 @@
 """Summarizes the matches the game logged, for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3, design section
 3), Phase 1's P1, P2 and P4 (Phase 1 plan task 13.1, Phase 1 design sections 2 and 10), Phase 2's S1 to S4 (Phase 2
-plan task 19.1, Phase 2 design section 2) and Phase 3's T1 to T4 (Phase 3 plan task 25.1, Phase 3 design section 2).
+plan task 19.1, Phase 2 design section 2), Phase 3's T1 to T4 (Phase 3 plan task 25.1, Phase 3 design section 2) and
+Phase 4's U1 to U5 (Phase 4 plan task 34.1, Phase 4 design section 2).
 
 The game adds every match against the AI to OutpostCommander-matches.log in the temporary folder, and its --ai-matches
 switch writes ten seeded AI-against-AI matches to OutpostCommander-ai-matches.log there. Each line is one record,
@@ -21,6 +22,12 @@ every time in ticks:
                                                                   a structure's level, from its owner's snapshots
   attacked <tick> player <owner> structure <id> <kind> level <level>   a structure above level 1 first shot at
   stall <tick> ticks <count>                                      the ticks both players sat at their caps with equal nodes
+  salvaged <tick> player <player> derelict <id> ore <ore>         a player's Constructors salvaged a derelict
+  pirates <tick> player <player> sector <id>                      a player first fought the pirates of a sector
+  cleared <tick> sector <id>                                      the pirates no longer guard a sector
+  retreat <tick> player <player> ship <id>                        a player's warship turned for home to be repaired
+  repaired <tick> player <player> ship <id>                       a warship that turned for home stopped, whole
+  again <tick> player <player> ship <id>                          a repaired warship fired, the first time since its repair
   ending <tick> <production or domination>                        how the match ended
   end <tick> winner <player, or 0 for a draw>                     the match ended
   left <tick>                                                     the match was left before it ended
@@ -31,8 +38,11 @@ five, in at least three sectors), the asteroids that ran dry, and for each playe
 finished, the times it opened each tier, its peak warship count (P4), its warships by design in each tier (P2 asks
 whether each tier changes what gets built), and its warships by design in windows of the match. On a map with territory it
 adds Phase 3's: how long the caps stalled the nodes (T2), each player's highest level of the Command Station, a Shipyard
-and the Research Lab (T3), and the structures above level 1 attacked (T4). With more than one match it ends with their
-lengths' median and spread, P1's and S4's repeatable figure, S1's to S3's, and T2's to T4's.
+and the Research Lab (T3), and the structures above level 1 attacked (T4). With Phase 4's records it adds the players'
+first shot at each other and what each side salvaged and fought of the pirates before it (U1), each side's warships at
+minute 20 (U2), the warships each side turned for home, had repaired and saw fight again (U3), and the engagements before
+minute 40 (U4). With more than one match it ends with their lengths' median and spread, P1's and S4's repeatable figure,
+S1's to S3's, T2's to T4's, and U1's to U5's.
 
 Usage: python Tools/MatchLog.py [log] [--all] [--ai-matches] [--window-minutes N]
 
@@ -50,6 +60,8 @@ import tempfile
 LOG_NAME = "OutpostCommander-matches.log"
 AI_MATCHES_LOG_NAME = "OutpostCommander-ai-matches.log"
 PLAYER_NAMES = {1: "Player", 2: "AI"}
+# The pirates' owner, as the log writes it (ADR-073).
+PIRATES = 0xFFFFFFFF
 AI_MATCHES_PLAYER_NAMES = {1: "AI 1", 2: "AI 2"}
 P1_MINUTES = (45, 60)
 # Phase 2 design section 2: contact by minute 5 (S1), and before minute 20 at least five engagements in at least three
@@ -65,6 +77,23 @@ T2_MINUTES = 5
 T3_LEVEL = 3
 T3_KINDS = ("station", "shipyard", "lab")
 T4_ATTACKS = 1
+# Phase 4 design section 2: in the median match each side salvages at least 2 derelicts and fights at least 1 pirate
+# outpost before the players first fire on each other, and that first shot comes between minute 8 and minute 20 in at
+# least 30 of 40 matches (U1); neither side ever has more than 40 warships, and at minute 20 each has fewer than 20 (U2);
+# each side sends at least 10 warships back to be repaired, and at least half of them fight again (U3); before minute 40
+# there are at least five engagements, in at least three sectors (U4); and every match ends, by both endings (U5).
+U1_SALVAGED = 2
+U1_PIRATES = 1
+U1_MINUTES = (8, 20)
+U1_SHARE = 30 / 40
+U2_MOST = 40
+U2_MINUTE = 20
+U2_AT_MINUTE = 20
+U3_RETREATS = 10
+U3_AGAIN_SHARE = 0.5
+U4_MINUTES = 40
+U4_ENGAGEMENTS = 5
+U4_SECTORS = 3
 
 
 class Match:
@@ -84,6 +113,12 @@ class Match:
     self.upgrades = []
     self.attacked = []
     self.stall_ticks = None
+    self.salvaged = []
+    self.pirates = []
+    self.cleared = []
+    self.retreats = []
+    self.repaired = []
+    self.again = []
     self.ending = None
     self.end_tick = None
     self.winner = None
@@ -117,8 +152,9 @@ class Match:
     return count >= S2_ENGAGEMENTS and sectors >= S2_SECTORS
 
   def players(self):
-    return sorted({player for _, player, _ in self.research} | {player for _, player, _ in self.built} |
-                  {player for _, player, _ in self.fleets})
+    """The players, not the pirates, whose warships are written as anyone's are (Phase 4 design section 8)."""
+    return sorted(({player for _, player, _ in self.research} | {player for _, player, _ in self.built} |
+                   {player for _, player, _ in self.fleets}) - {PIRATES})
 
   def top_level(self, player, kind):
     """The highest level the player finished of a structure of the kind; 1 when it finished none."""
@@ -133,6 +169,39 @@ class Match:
   def tier_three(self):
     """The players that opened tier 3."""
     return sorted({owner for _, owner, tier in self.tiers if tier >= 3})
+
+  def phase_four(self):
+    """Whether the log has Phase 4's records: a match on a map with derelicts and pirates leaves some."""
+    return bool(self.salvaged or self.pirates or self.retreats)
+
+  def before_contact(self, records, player):
+    """The player's records before the players' first shot at each other, or all of them without one."""
+    first = self.contact[0] if self.contact is not None else None
+    return [record for record in records if record[1] == player and (first is None or record[0] < first)]
+
+  def u1_side(self, player):
+    """The derelicts the player salvaged and the pirate outposts it fought before the players' first shot."""
+    return len(self.before_contact(self.salvaged, player)), len(self.before_contact(self.pirates, player))
+
+  def u1_contact(self):
+    low, high = U1_MINUTES
+    return self.contact is not None and low * 60 <= self.seconds(self.contact[0]) <= high * 60
+
+  def warships_at(self, player, minute):
+    """The player's warships at the last 30-second count by the minute; None without one."""
+    counts = [(tick, count) for tick, owner, count in self.fleets if owner == player and self.seconds(tick) <= minute * 60]
+    return max(counts)[1] if counts else None
+
+  def u3_side(self, player):
+    """The warships the player turned for home, had repaired, and saw fight again, each counted once."""
+    def ships(records):
+      return {ship for _, owner, ship in records if owner == player}
+    return len(ships(self.retreats)), len(ships(self.repaired)), len(ships(self.again))
+
+  def u4(self):
+    """The engagements before U4's minute 40, and the sectors they were in."""
+    early = [sector for tick, sector in self.engagements if self.seconds(tick) < U4_MINUTES * 60]
+    return len(early), len(set(early))
 
 
 def clock(seconds):
@@ -183,6 +252,15 @@ def read_matches(path):
           match.attacked.append((int(words[1]), int(words[3]), int(words[5]), words[6], int(words[8])))
         elif words[0] == "stall":
           match.stall_ticks = int(words[3])
+        elif words[0] == "salvaged":
+          match.salvaged.append((int(words[1]), int(words[3]), int(words[5]), int(words[7])))
+        elif words[0] == "pirates":
+          match.pirates.append((int(words[1]), int(words[3]), int(words[5])))
+        elif words[0] == "cleared":
+          match.cleared.append((int(words[1]), int(words[3])))
+        elif words[0] in ("retreat", "repaired", "again"):
+          getattr(match, {"retreat": "retreats", "repaired": "repaired", "again": "again"}[words[0]]).append(
+            (int(words[1]), int(words[3]), int(words[5])))
         elif words[0] == "ending":
           match.ending = words[2]
         elif words[0] == "end":
@@ -263,6 +341,20 @@ def describe(match, window_minutes, names):
                          for tick, owner, _, what, level in match.attacked)
     lines.append(f"  Structures above level 1 attacked: {len(match.attacked)}" + (f": {attacked}" if attacked else ""))
 
+  if match.phase_four():
+    if match.contact is not None:
+      low, high = U1_MINUTES
+      verdict = "within" if match.u1_contact() else "outside"
+      lines.append(f"  The players' first shot at each other at {clock(match.seconds(match.contact[0]))}; {verdict} U1's minute "
+                   f"{low} to {high}")
+    if match.cleared:
+      lines.append("  Pirate outposts cleared: " + ", ".join(f"sector {sector} at {clock(match.seconds(tick))}"
+                                                             for tick, sector in match.cleared))
+    count, sectors = match.u4()
+    verdict = "meets" if count >= U4_ENGAGEMENTS and sectors >= U4_SECTORS else "short of"
+    lines.append(f"  Engagements before {U4_MINUTES}:00: {count}, in {sectors} sectors; {verdict} U4's {U4_ENGAGEMENTS} in "
+                 f"{U4_SECTORS}")
+
   players = match.players()
   window_seconds = window_minutes * 60
   for player in players:
@@ -287,6 +379,18 @@ def describe(match, window_minutes, names):
     lost = sum(1 for _, owner, _, _, _, how in match.upgrades if owner == player and how == "lost")
     if lost:
       lines.append(f"    Upgrades lost with their structure: {lost}")
+    if match.phase_four():
+      salvaged, fought = match.u1_side(player)
+      ore = sum(ore for _, owner, _, ore in match.salvaged if owner == player)
+      lines.append(f"    Before the first shot: {salvaged} derelicts salvaged, {fought} pirate outposts fought (U1 asks "
+                   f"{U1_SALVAGED} and {U1_PIRATES}); in all {len([1 for r in match.salvaged if r[1] == player])} salvaged for "
+                   f"{ore} Ore")
+      at_minute = match.warships_at(player, U2_MINUTE)
+      if at_minute is not None:
+        lines.append(f"    Warships at {U2_MINUTE}:00: {at_minute} (U2 asks under {U2_AT_MINUTE})")
+      retreated, repaired, again = match.u3_side(player)
+      lines.append(f"    Warships turned for home: {retreated}, repaired {repaired}, fought again {again} (U3 asks {U3_RETREATS}, "
+                   f"and half of them again)")
 
     built = [(tick, design) for tick, owner, design in match.built if owner == player]
     if not built:
@@ -367,7 +471,49 @@ def summarize(matches):
     verdict = "meets" if statistics.median(attacks) >= T4_ATTACKS else "misses"
     lines.append(f"  T4, structures above level 1 attacked: median {statistics.median(attacks):g}, from {attacks[0]} to "
                  f"{attacks[-1]}; {verdict} T4's {T4_ATTACKS}")
+  lines.extend(summarize_phase_four([match for match in matches if match.phase_four()]))
   return "\n".join(lines)
+
+
+def summarize_phase_four(matches):
+  """U1 to U5 over the matches with Phase 4's records, each side's figure taken at the median."""
+  if not matches:
+    return []
+  lines = []
+  sides = [(match, player) for match in matches for player in match.players()]
+  salvaged = statistics.median(match.u1_side(player)[0] for match, player in sides)
+  fought = statistics.median(match.u1_side(player)[1] for match, player in sides)
+  timely = sum(1 for match in matches if match.u1_contact())
+  low, high = U1_MINUTES
+  met = salvaged >= U1_SALVAGED and fought >= U1_PIRATES and timely >= U1_SHARE * len(matches)
+  lines.append(f"  U1, before the players' first shot a side salvages a median {salvaged:g} and fights a median {fought:g} pirate "
+               f"outposts; the shot comes between minute {low} and {high} in {timely} of {len(matches)}; "
+               f"{'meets' if met else 'misses'} U1")
+  most = statistics.median(max((peak_of(match, player) or (0, 0))[0] for player in match.players()) for match in matches)
+  at_minute = statistics.median(max(match.warships_at(player, U2_MINUTE) or 0 for player in match.players()) for match in matches)
+  met = most <= U2_MOST and at_minute < U2_AT_MINUTE
+  lines.append(f"  U2, the larger side's peak: median {most:g}; its warships at {U2_MINUTE}:00: median {at_minute:g}; "
+               f"{'meets' if met else 'misses'} U2's {U2_MOST} and under {U2_AT_MINUTE}")
+  retreated = statistics.median(match.u3_side(player)[0] for match, player in sides)
+  again = statistics.median(match.u3_side(player)[2] for match, player in sides)
+  repaired = statistics.median(match.u3_side(player)[1] for match, player in sides)
+  met = retreated >= U3_RETREATS and again >= U3_AGAIN_SHARE * retreated
+  lines.append(f"  U3, warships a side turns for home: median {retreated:g}, repaired {repaired:g}, fight again {again:g}; "
+               f"{'meets' if met else 'misses'} U3's {U3_RETREATS} and half again")
+  engagements = statistics.median(match.u4()[0] for match in matches)
+  sectors = statistics.median(match.u4()[1] for match in matches)
+  met = engagements >= U4_ENGAGEMENTS and sectors >= U4_SECTORS
+  lines.append(f"  U4, engagements before {U4_MINUTES}:00: median {engagements:g} in a median {sectors:g} sectors; "
+               f"{'meets' if met else 'misses'} U4's {U4_ENGAGEMENTS} in {U4_SECTORS}")
+  endings = {}
+  for match in matches:
+    if match.ending is not None:
+      endings[match.ending] = endings.get(match.ending, 0) + 1
+  ended = sum(endings.values())
+  met = ended == len(matches) and len(endings) >= 2
+  how = ", ".join(f"{count} by {ending}" for ending, count in sorted(endings.items())) or "none"
+  lines.append(f"  U5, {ended} of {len(matches)} ended ({how}); {'meets' if met else 'misses'} U5's every match, by both endings")
+  return lines
 
 
 def main():
