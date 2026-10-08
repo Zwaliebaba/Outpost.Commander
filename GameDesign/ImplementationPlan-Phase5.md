@@ -28,9 +28,9 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
 | 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, in milestone 36's PR |
 | 36.3 | The client joins a world | 36.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
-| 37.1 | The AI starts from any state | — | — | built, in milestone 37's PR |
-| 37.2 | Clients on the server's thread | 35.2 | — | built, in milestone 37's PR |
-| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | built, in milestone 37's PR; awaiting CI and the owner's run |
+| 37.1 | The AI starts from any state | — | — | done, in milestone 37's PR |
+| 37.2 | Clients on the server's thread | 35.2 | — | done, in milestone 37's PR |
+| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | built, in milestone 37's PR; awaiting the owner's run |
 | 38.1 | The server's events, and alerts read from them | — | H4 | todo |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | todo |
 | 38.3 | The client's orders window | 38.2 | H5 | todo |
@@ -162,7 +162,7 @@ Recorded in [ADR-079](../Design/ADR/ADR-079-seat-controller-and-deputy.md) and A
 - **Each new test was checked against a broken build.** With adoption taken out, an AI made afresh ordered 4 base structures in its first minute, against 0 for the AI that never stopped.
 - **W3, headless.** Over minutes 10 to 20, a deputy's Shipyards stood idle with Ore to spend 0.8–1.4% of their time and its Lab 0.2%, against the AI's 0.0–5.4% and 0.0–0.2%, over seeds 1 to 4. Its first version waited for the Ore and the cap before queueing, and stood idle 50.6% of the time.
 - **W2 in the container,** with two AI empires on the server's thread over an hour: a tick's 99th percentile 0.25–0.40 ms; the hosted players' 0.08–0.09 ms, at most 3.20 ms.
-- **The hand-over over a real connection** is `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`, which CI runs first.
+- **Run in CI.** Debug|x64 on Windows passes all 602 tests, among them `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`, the hand-over over a real connection. Its W3 test measured the same there as in the container: the deputy's Shipyards idle 0.8% of the time, the AI's 0.0%.
 - **Not in this milestone.** The client's panel saying what happened while the player was away (design §11) needs the server's events, so it comes with milestone 38. A hand-over is logged with the world log, at milestone 39.
 
 ## Milestones 38 and 39
