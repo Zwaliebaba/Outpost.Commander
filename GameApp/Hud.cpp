@@ -68,8 +68,7 @@ constexpr float FIGURE_LINE_UNITS = 17.0f;
 
 // The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's gem and the figure in the
 // title face from the panel's left, so that the gem stays put as the figure changes, and the income at its right
-// (ADR-046).
-constexpr float ORE_PANEL_WIDTH = 260.0f;
+// (ADR-046). It is as wide as the column under it.
 constexpr float ORE_PANEL_HEIGHT = 44.0f;
 
 // The selection panel, anchored to the bottom edge's middle, as wide as its longest line within these (ADR-043).
@@ -109,19 +108,29 @@ constexpr float ORE_OUTLINE_UNITS = 2.0f;
 // The hint, anchored to the top edge's middle.
 constexpr float HINT_PANEL_WIDTH = 640.0f;
 
-// The status panel under the Ore (ADR-066): as wide as its longest line within these, and the room above and below its
-// lines, which the territory's and the alerts' panels keep too. Its place is kept for two lines, whether or not it has them,
-// so that what stands under it does not move as a Lab or a Shipyard is finished.
-constexpr float STATUS_PANEL_MIN_WIDTH = 260.0f;
-constexpr float STATUS_PANEL_WIDTH = 560.0f;
-constexpr float STATUS_LINES_KEPT = 2.0f;
+// The column under the Ore (interface plan 2, task UI3.2): the Ore, status, territory and alerts panels are one width, so
+// that the column's edge stands still. It is the widest of the alerts' COLUMN_LEAST_UNITS, the longest research topic's
+// name set on its line with room for "+99" queued at its end, and the widest of COLUMN_WIDEST_LINES, the status panel's
+// lines at their longest, set in the name face.
+constexpr float COLUMN_LEAST_UNITS = 380.0f;
+constexpr std::array<std::string_view, 3> COLUMN_WIDEST_LINES{"Shipyards \xC2\xB7 BUILDING 99 \xC2\xB7 WAITING 99 \xC2\xB7 IDLE 99",
+                                                              "Shipyards at the fleet cap \xC2\xB7 Station upgrading, 100%",
+                                                              "Research: every open topic done"};
+constexpr std::string_view COLUMN_WIDEST_QUEUED = "+99";
+// The status panel under the Ore (ADR-066): the room above and below its lines, which the territory's and the alerts'
+// panels keep too. Its place is kept for its three lines, the first with a bar under it, whether or not it has them, so that
+// what stands under it does not move as a Lab or a Shipyard is finished.
+constexpr float STATUS_LINES_KEPT = 3.0f;
 constexpr float PANEL_GAP = 8.0f;
 constexpr float TERRITORY_INSET_UNITS = 10.0f;
-constexpr float STATUS_PANEL_KEPT_UNITS = (2.0f * TERRITORY_INSET_UNITS) + (STATUS_LINES_KEPT * NAME_LINE_UNITS);
-// The territory, under the status panel's place (ADR-056, ADR-057).
-constexpr float TERRITORY_PANEL_WIDTH = 260.0f;
-// The alerts, under the territory (ADR-059), and how large an alert's mark is on the minimap.
-constexpr float ALERT_PANEL_WIDTH = 380.0f;
+// A status line's bar (task UI3.2): under its words, STATUS_UNDER_BAR_UNITS thick in a row of STATUS_BAR_ROW_UNITS; beside
+// them, STATUS_BESIDE_BAR_UNITS thick and STATUS_BAR_GAP_UNITS clear of the words and the figure.
+constexpr float STATUS_BAR_ROW_UNITS = 8.0f;
+constexpr float STATUS_UNDER_BAR_UNITS = 4.0f;
+constexpr float STATUS_BESIDE_BAR_UNITS = 6.0f;
+constexpr float STATUS_BAR_GAP_UNITS = 8.0f;
+constexpr float STATUS_PANEL_KEPT_UNITS = (2.0f * TERRITORY_INSET_UNITS) + (STATUS_LINES_KEPT * NAME_LINE_UNITS) + STATUS_BAR_ROW_UNITS;
+// How large an alert's mark is on the minimap (ADR-059).
 constexpr float ALERT_MARK_UNITS = 14.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
@@ -234,17 +243,19 @@ bool IsOpen(const Outpost::Snapshot& _newest, const Outpost::ResearchTopicView& 
   return !_topic.researched && _topic.tier <= _newest.researchTier && std::ranges::all_of(_topic.prerequisites, researched);
 }
 
-// The status panel's lines (ADR-066): what the player's finished Research Lab is doing, and what its finished Shipyards
-// are doing or what holds them back (interface plan 2, task UI3.1).
-// - The Lab's line says what it researches and how far it has come, or that it waits for Ore. Idle, it says IDLE in a chip
-//   (ADR-085 decision 1) while a topic is open to it, and that every open topic is done otherwise. A click opens research.
+// The status panel's lines (ADR-066): what the player's finished Research Lab is doing, what its finished Shipyards are
+// doing or what holds them back (interface plan 2, task UI3.1), and the fleet against its cap.
+// - The Lab's line names the topic it researches over a bar of how far it has come, with how many more are queued at the
+//   bar's end, "+3", or says it waits for Ore (task UI3.2). Idle, it says IDLE in a chip (ADR-085 decision 1) while a topic
+//   is open to it, and that every open topic is done otherwise. A click opens research.
 // - The Shipyards' line says first whether the fleet cap holds them back: a Shipyard waits for it, or the fleet has room for
-//   none of the player's saved designs. Then it reads "Fleet 29 / 30, at the cap · Station L4: +10", with what the station's
-//   next level adds to the cap, or how far its upgrade has come, plainly, since its remedy is a level and not a queue. A
-//   click selects the Command Station, whose panel offers the upgrade.
-// - Otherwise it counts the Shipyards building, waiting for Ore and idle, and ends with the fleet against its cap. The idle
-//   count is a chip only when an idle Shipyard could start a ship now: a saved design of a hull it builds fits under the
-//   cap, and the player has its Ore. A click opens production at the first idle Shipyard by number, or at the first.
+//   none of the player's saved designs. Then it reads "Shipyards at the fleet cap · Station L4: +10", with what the
+//   station's next level adds to the cap, or how far its upgrade has come, plainly, since its remedy is a level and not a
+//   queue. A click selects the Command Station, whose panel offers the upgrade.
+// - Otherwise it counts them, a label and a figure each, "Shipyards · BUILDING 2 · WAITING 1 · IDLE 3". The idle count is a
+//   chip only when an idle Shipyard could start a ship now: a saved design of a hull it builds fits under the cap, and the
+//   player has its Ore. A click opens production at the first idle Shipyard by number, or at the first.
+// - Under it, with a cap, the fleet as a bar against it, "29 / 30", whose click does what the Shipyards' does.
 std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std::span<const Outpost::EntityView> _entities)
 {
   const auto own = [&_newest](const Outpost::EntityView& _entity, Outpost::StructureKind _kind)
@@ -267,12 +278,15 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
     }
     else
     {
-      const std::string name = TopicNameOf(_newest, lab->research.front());
-      std::string text = lab->jobPermille > 0 ? std::format("Researching {}, {}%", name, lab->jobPermille / 10)
-                                              : std::format("Researching {}, waiting for Ore", name);
+      Hud::StatusLine line{
+        .runs = {{.text = TopicNameOf(_newest, lab->research.front())}},
+        .action = open,
+        .bar = Hud::StatusBar{.share = static_cast<float>(lab->jobPermille) / static_cast<float>(Outpost::PERMILLE), .under = true}};
+      if (lab->jobPermille == 0)
+        line.runs.push_back({.text = std::format("{}waiting for Ore", DOT)});
       if (lab->research.size() > 1)
-        text += std::format(" (+{} queued)", lab->research.size() - 1);
-      lines.push_back({.runs = {{.text = std::move(text)}}, .action = open});
+        line.bar->figure = std::format("+{}", lab->research.size() - 1);
+      lines.push_back(std::move(line));
     }
   }
 
@@ -333,9 +347,18 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
 
   // At the cap: the station's next level is the remedy, and a click goes to the station.
   const bool atCap = _newest.fleetCap > 0 && (capped > 0 || (!_newest.designs.empty() && std::ranges::none_of(_newest.designs, fits)));
+  // The fleet against its cap, under the Shipyards' line, its click theirs.
+  const auto fleet = [&_newest](const Hud::Action& _action)
+  {
+    const float share = static_cast<float>(_newest.commandPoints) / static_cast<float>(_newest.fleetCap);
+    return Hud::StatusLine{.runs = {{.text = "Fleet"}},
+                           .action = _action,
+                           .bar = Hud::StatusBar{.share = std::clamp(share, 0.0f, 1.0f),
+                                                 .figure = std::format("{} / {}", _newest.commandPoints, _newest.fleetCap)}};
+  };
   if (atCap)
   {
-    std::string text = std::format("Fleet {} / {}, at the cap", _newest.commandPoints, _newest.fleetCap);
+    std::string text = "Shipyards at the fleet cap";
     Hud::Action action{.kind = Hud::ActionKind::OpenProduction, .producer = shipyards.front()->id};
     const auto station = std::ranges::find_if(_entities, [&own](const Outpost::EntityView& _entity)
                                               { return own(_entity, Outpost::StructureKind::CommandStation); });
@@ -351,24 +374,20 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
         text += std::format("{}Station L{}: +{}", DOT, station->level + 1, type->levels[next].commandPoints - _newest.fleetCap);
     }
     lines.push_back({.runs = {{.text = std::move(text)}}, .action = action});
+    lines.push_back(fleet(action));
     return lines;
   }
 
-  std::vector<Hud::StatusRun> runs{{.text = std::format("Shipyards: {} building", building)}};
-  if (waiting > 0)
-    runs.back().text += std::format(", {} waiting for Ore", waiting);
+  std::vector<Hud::StatusRun> runs{{.text = std::format("Shipyards{}BUILDING {}{}WAITING {}{}", DOT, building, DOT, waiting, DOT)}};
+  const std::string idleText = std::format("IDLE {}", idle);
   if (idle > 0 && idleCouldStart)
-  {
-    runs.back().text += ", ";
-    runs.push_back({.text = std::format("{} IDLE", idle), .chip = true});
-  }
-  else if (idle > 0)
-    runs.back().text += std::format(", {} idle", idle);
+    runs.push_back({.text = idleText, .chip = true});
+  else
+    runs.back().text += idleText;
+  const Hud::Action open{.kind = Hud::ActionKind::OpenProduction, .producer = (firstIdle != nullptr ? firstIdle : shipyards.front())->id};
+  lines.push_back({.runs = std::move(runs), .action = open});
   if (_newest.fleetCap > 0)
-    runs.push_back({.text = std::format("{}fleet {} / {}", DOT, _newest.commandPoints, _newest.fleetCap)});
-  lines.push_back(
-    {.runs = std::move(runs),
-     .action = {.kind = Hud::ActionKind::OpenProduction, .producer = (firstIdle != nullptr ? firstIdle : shipyards.front())->id}});
+    lines.push_back(fleet(open));
   return lines;
 }
 
@@ -2321,6 +2340,9 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                   .marks = {}};
   if (_designer != nullptr)
     content.designer = DescribeDesigner(_newest, *_designer, _hovered);
+  content.researchNames.reserve(_newest.research.size());
+  for (const ResearchTopicView& topic : _newest.research)
+    content.researchNames.push_back(topic.nameUtf8);
 
   const auto sideOf = [&_newest](PlayerId _owner) {
     return !_owner.IsValid() ? Side::Neutral : _owner == _newest.player ? Side::Own : _owner == PIRATES ? Side::Pirate : Side::Enemy;
@@ -2890,20 +2912,28 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   const auto addButton = [&layout, &_metrics, scale](const Rect& _area, const Button& _button)
   { AddButton(layout, _metrics, scale, _area, _button); };
 
+  // The column under the Ore, its panels one width whatever they hold (interface plan 2, task UI3.2).
+  float columnUnits = COLUMN_LEAST_UNITS;
+  const float queuedUnits = _metrics.Width(Typeface::Figure, COLUMN_WIDEST_QUEUED) + FIT_GAP_UNITS;
+  for (const std::string& name : _content.researchNames)
+    columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, name) + queuedUnits + (2.0f * PADDING));
+  for (const std::string_view line : COLUMN_WIDEST_LINES)
+    columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, line) + (2.0f * CHIP_PAD_UNITS) + (2.0f * PADDING));
+
   // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second, a warning chip when they earn
   // nothing, since then nothing the player spends comes back.
   {
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, ORE_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, columnUnits, ORE_PANEL_HEIGHT);
     paint.GemAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
     const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
     const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
                                                             : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
     const float incomeTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
     if (income > 0)
-      paint.RightText(incomeText, ORE_PANEL_WIDTH - PADDING, incomeTop, NUMBERS_COLOR, Typeface::Figure);
+      paint.RightText(incomeText, columnUnits - PADDING, incomeTop, NUMBERS_COLOR, Typeface::Figure);
     else
     {
-      const float chipLeft = ORE_PANEL_WIDTH - PADDING - paint.ChipWidth(incomeText, Typeface::Figure);
+      const float chipLeft = columnUnits - PADDING - paint.ChipWidth(incomeText, Typeface::Figure);
       (void)paint.Chip(incomeText, chipLeft, incomeTop, Typeface::Figure, FIGURE_LINE_UNITS);
     }
   }
@@ -2919,11 +2949,11 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     const Territory& territory = *_content.territory;
     const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS;
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = underStatusUnits}, TERRITORY_PANEL_WIDTH, heightUnits);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = underStatusUnits}, columnUnits, heightUnits);
     const auto row = [&](const std::string& _label, const std::string& _own, const std::string& _enemy, float _top)
     {
       const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
-      const float right = TERRITORY_PANEL_WIDTH - PADDING;
+      const float right = columnUnits - PADDING;
       std::string own = std::format("{} : ", _own);
       const float ownRight = right - paint.Width(_enemy, Typeface::Figure);
       const float labelRoom = ownRight - paint.Width(own, Typeface::Figure) - PADDING - FIT_GAP_UNITS;
@@ -2951,46 +2981,51 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       _content.territory.has_value() ? (2.0f * TERRITORY_INSET_UNITS) + ((tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS) + PANEL_GAP : 0.0f;
     const float topUnits = underStatusUnits + territoryUnits;
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, ALERT_PANEL_WIDTH, heightUnits);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, columnUnits, heightUnits);
     for (size_t line = 0; line < _content.alerts.size(); ++line)
     {
       const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
       if (line == 0)
       {
         std::string newest =
-          paint.Fit(_content.alerts[line].first, Typeface::Name, ALERT_PANEL_WIDTH - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
+          paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
         (void)paint.Chip(std::move(newest), PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
       }
       else
-        paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, ALERT_PANEL_WIDTH - (2.0f * PADDING)), PADDING, top, TEXT_COLOR,
+        paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR,
                    Typeface::Name);
     }
   }
-  // The status panel: a line for the Research Lab and one for the Shipyards, an idle one's IDLE a chip, each a place to
-  // click that opens its window (ADR-066). It is as wide as its longest line, within its bounds.
+  // The status panel: the Research Lab's line, the Shipyards' and the fleet's, an idle one's IDLE a chip, research's progress
+  // and the fleet against its cap as bars, each line a place to click (ADR-066). It is the column's width.
   if (!_content.status.empty())
   {
     const auto runUnits = [&_metrics](const StatusRun& _run)
     { return _metrics.Width(Typeface::Name, _run.text) + (_run.chip ? 2.0f * CHIP_PAD_UNITS : 0.0f); };
-    float textUnits = 0.0f;
+    const auto rowUnits = [](const StatusLine& _line)
+    { return NAME_LINE_UNITS + (_line.bar.has_value() && _line.bar->under ? STATUS_BAR_ROW_UNITS : 0.0f); };
+    float heightUnits = 2.0f * TERRITORY_INSET_UNITS;
     for (const StatusLine& line : _content.status)
-    {
-      float lineUnits = 0.0f;
-      for (const StatusRun& run : line.runs)
-        lineUnits += runUnits(run);
-      textUnits = std::max(textUnits, lineUnits);
-    }
-    const float widthUnits = std::clamp(textUnits + (2.0f * PADDING), STATUS_PANEL_MIN_WIDTH, STATUS_PANEL_WIDTH);
-    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.status.size()) * NAME_LINE_UNITS);
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, widthUnits, heightUnits);
+      heightUnits += rowUnits(line);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, columnUnits, heightUnits);
+    const float right = columnUnits - PADDING;
+    float top = TERRITORY_INSET_UNITS;
     for (size_t line = 0; line < _content.status.size(); ++line)
     {
       const StatusLine& status = _content.status[line];
-      const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
+      const float lineUnits = rowUnits(status);
       // The line's row across the panel takes the click, the first and the last reaching to the panel's edge.
       const float rowTop = line == 0 ? 0.0f : top;
-      const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + NAME_LINE_UNITS;
-      paint.Press(paint.Area(0.0f, rowTop, widthUnits, rowBottom - rowTop, WINDOW_COLOR), status.action);
+      const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + lineUnits;
+      paint.Press(paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR), status.action);
+      // A bar's figure at the line's end, which the words stop short of, with room for a bar beside them.
+      float wordsRight = right;
+      if (status.bar.has_value() && !status.bar->figure.empty())
+      {
+        paint.RightText(status.bar->figure, right, top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR,
+                        Typeface::Figure);
+        wordsRight -= paint.Width(status.bar->figure, Typeface::Figure) + (status.bar->under ? FIT_GAP_UNITS : STATUS_BAR_GAP_UNITS);
+      }
       // Each run after the one before; a plain run is cut short to leave room for the runs after it, a chip never is.
       float left = PADDING;
       for (std::size_t run = 0; run < status.runs.size(); ++run)
@@ -3004,11 +3039,28 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
         float afterUnits = 0.0f;
         for (std::size_t later = run + 1; later < status.runs.size(); ++later)
           afterUnits += runUnits(status.runs[later]);
-        std::string text = paint.Fit(words.text, Typeface::Name, widthUnits - PADDING - left - afterUnits);
+        std::string text = paint.Fit(words.text, Typeface::Name, wordsRight - left - afterUnits);
         const float textUnitsSet = paint.Width(text, Typeface::Name);
         paint.Text(std::move(text), left, top, TEXT_COLOR, Typeface::Name);
         left += textUnitsSet;
       }
+      // The bar: under the words, across the panel, or beside them, from their end to its figure; filled for its share.
+      if (status.bar.has_value())
+      {
+        const StatusBar& bar = *status.bar;
+        const float barLeft = bar.under ? PADDING : left + STATUS_BAR_GAP_UNITS;
+        const float barWidth = (bar.under ? right : wordsRight) - barLeft;
+        const float thickness = bar.under ? STATUS_UNDER_BAR_UNITS : STATUS_BESIDE_BAR_UNITS;
+        const float barTop =
+          bar.under ? top + NAME_LINE_UNITS + ((STATUS_BAR_ROW_UNITS - thickness) / 2.0f) : top + ((NAME_LINE_UNITS - thickness) / 2.0f);
+        if (barWidth > 0.0f)
+        {
+          paint.Panel(barLeft, barTop, barWidth, thickness, BAR_TRACK_COLOR);
+          if (bar.share > 0.0f)
+            paint.Panel(barLeft, barTop, barWidth * std::min(bar.share, 1.0f), thickness, BAR_FILL_COLOR);
+        }
+      }
+      top += lineUnits;
     }
   }
 

@@ -455,12 +455,24 @@ public:
     friend bool operator==(const StatusRun&, const StatusRun&) = default;
   };
 
+  // A status line's bar (interface plan 2, task UI3.2): the share of it filled, from 0 to 1, and the figure at its end, such
+  // as "+3" queued or "29 / 30". Under its line's words, the width of the panel, or beside them, from their end.
+  struct StatusBar
+  {
+    float share = 0.0f;
+    std::string figure;
+    bool under = false;
+
+    friend bool operator==(const StatusBar&, const StatusBar&) = default;
+  };
+
   // A line of the status panel under the Ore (ADR-066): what the Research Lab or the Shipyards are doing, an idle one's
-  // IDLE a chip, and the window a click on it opens.
+  // IDLE a chip, a bar for how far a job has come or how full the fleet is, and what a click on it does.
   struct StatusLine
   {
     std::vector<StatusRun> runs;
     Action action;
+    std::optional<StatusBar> bar;
 
     // Its runs' words, one after another.
     [[nodiscard]] std::string Text() const;
@@ -523,8 +535,11 @@ public:
     // A line at the top while a structure's placement is armed.
     std::string hint;
     // The status panel's lines under the Ore (ADR-066): the Research Lab's once the player has a finished one, and the
-    // Shipyards' once the first is finished.
+    // Shipyards' and the fleet's once the first Shipyard is finished.
     std::vector<StatusLine> status;
+    // The match's research topics' names, which the column under the Ore is made wide enough for, so that its edge stands
+    // still whatever the Lab researches (interface plan 2, task UI3.2).
+    std::vector<std::string> researchNames;
     std::optional<DesignerPanel> designer;
     // The production and research windows' content, while they are open; GameClient fills them.
     std::optional<ProductionPanel> production;

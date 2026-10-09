@@ -69,7 +69,7 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI2.2 | Build progress in a neutral color | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI2.3 | The blast and Ore's glyph | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI3.2 | One column, and state in bars | UI3.1 | V5 | todo |
+| UI3.2 | One column, and state in bars | UI3.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI3.3 | Nodes and tickets that read | UI2.1 | V5 | todo |
 | UI4.1 | Bars on the screen | UI2.2 | V7 | todo |
 | UI4.2 | Commands beside the selection | — | V6 | todo |
@@ -292,7 +292,7 @@ The milestone's tasks share one ADR: one meaning per color.
 - **As built (2026-10-09):** [ADR-066](../Design/ADR/ADR-066-production-status-on-the-hud.md) decisions 1 and 2, rewritten in place.
   - The line at the cap reads "Station L4: +10": the glyph atlas has no arrow, and Bahnschrift's coverage of one is not known from here.
   - An idle Shipyard's chip also asks that it builds the design's hull, so that the chip never asks for a ship no idle Shipyard can start.
-  - Idle Shipyards that could start nothing are counted plainly, "2 idle".
+  - Idle Shipyards that could start nothing are counted plainly.
   - `ActionKind::Select` carries its entity in a field of its own, `Action::entity`, and `PlayerControls::SelectAlone` selects it, dropping any order armed for the selection before. `GameClient` moves the camera to it.
   - The HUD's tests ran in the Linux container; `PlayerControlsTests` and `GameClient` are CI's to build. Not yet seen on screen.
 
@@ -309,6 +309,13 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** ADR-066's.
 - **Acceptance:** `HudTests`: the panels' widths equal and unchanged across every status content; bars at 0, 50 and 100%; 14.1's and 14.2's tests.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-066](../Design/ADR/ADR-066-production-status-on-the-hud.md) decisions 1 and 3, rewritten in place.
+  - The column's one width is also no narrower than the status panel's widest lines, measured on fixed text, since the Shipyards' counts in capitals at two figures and the line at the cap with an upgrade under way are wider than 380 units less the padding with some fonts. It changes only with the match's research names.
+  - Research's bar runs under its name, across the panel, and "+3" stands at the bar's end on the name's line; " · waiting for Ore" follows the name, which is cut short first.
+  - The fleet is a line of its own under the Shipyards', "Fleet" beside a bar with "29 / 30" at its end, and takes the Shipyards' line's click. At the cap, the Shipyards' line drops its figures, "Shipyards at the fleet cap · Station L4: +10", since the bar under it gives them.
+  - The panel's place is kept for three lines and a bar, 94 units, where it was 64, so the windows open at 178 units from the top.
+  - The column's foot was already free: Phase 5's orders and away panels are floating windows.
+  - The HUD's tests ran in the Linux container with substitute fonts. Not yet seen on screen.
 
 ### UI3.3 — Nodes and tickets that read
 
