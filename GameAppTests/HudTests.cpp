@@ -196,6 +196,9 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
                                               .drain = "You -9,999 a minute \xC2\xB7 out in 99:59",
                                               .drainWarns = true};
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
+  // The tag at its widest: the longest address the tag holds, and the warning at its most seconds (ADR-086).
+  content.connection =
+    Outpost::Hud::Connection{.server = Outpost::Hud::ServerName("2001:db8:ffff:ffff:ffff:ffff:ffff:ffff", 65535), .silentSeconds = 999};
   content.buttons = {{.label = "Shipyard|300"},
                      {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
                      {.label = "Production", .key = "P"},
@@ -620,6 +623,80 @@ public:
     const Outpost::Hud::Text& enemyNodes = TextOf(layout, "2");
     Assert::IsTrue(enemyNodes.color.x == 1.0f && enemyNodes.color.y == 0.38f, L"the enemy's figure in the enemy's color");
     Assert::IsFalse(IsChip(layout, enemyNodes), L"and plain");
+  }
+
+  // ADR-086: the tag in the top-right corner says where the match runs, and warns once no snapshot has come for two
+  // seconds, its edge standing still as the seconds count; without a connection there is no tag.
+  TEST_METHOD(ShowsWhereTheMatchRuns)
+  {
+    // The tag's own panel: the widest that is not a chip's under _text's first pixel.
+    const auto tagOf = [](const Outpost::Hud::Layout& _layout, const Outpost::Hud::Text& _text)
+    {
+      Outpost::Hud::Rect tag;
+      for (const Outpost::Hud::Rect& panel : _layout.panels)
+      {
+        const bool chip = panel.color.x == 1.0f && panel.color.y == 0.5f && panel.color.z == 0.35f;
+        if (!chip && panel.Contains(std::round(_text.left) + 0.5f, std::round(_text.top) + 0.5f) && panel.width > tag.width)
+          tag = panel;
+      }
+      return tag;
+    };
+    Outpost::Hud::Content content{.ore = 650, .oreIncomeHundredthsPerSecond = 650};
+    Assert::IsFalse(
+      std::ranges::any_of(Lay(content, 1920, 1080).texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("Local"); }),
+      L"no tag without a connection");
+
+    content.connection = Outpost::Hud::Connection{};
+    const Outpost::Hud::Layout local = Lay(content, 1920, 1080);
+    const Outpost::Hud::Text& localText = TextOf(local, "Local skirmish");
+    Assert::IsFalse(IsChip(local, localText));
+    const Outpost::Hud::Rect localTag = tagOf(local, localText);
+    Assert::AreEqual(1920.0f - 16.0f, localTag.left + localTag.width, L"anchored to the top-right corner");
+    Assert::AreEqual(16.0f, localTag.top);
+
+    content.connection->server = Outpost::Hud::ServerName("203.0.113.5", 4433);
+    content.connection->silentSeconds = 1;
+    const Outpost::Hud::Layout server = Lay(content, 1920, 1080);
+    const Outpost::Hud::Rect serverTag = tagOf(server, TextOf(server, "Server 203.0.113.5:4433"));
+    Assert::AreEqual(1920.0f - 16.0f, serverTag.left + serverTag.width);
+    Assert::IsTrue(serverTag.width > localTag.width, L"as wide as its words");
+    Assert::IsFalse(std::ranges::any_of(server.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("No word"); }),
+                    L"a second without a snapshot is no warning");
+
+    // Silent: a chip under the address, the tag as wide at two seconds as at nine hundred.
+    std::vector<float> widths;
+    for (const std::int32_t seconds : {2, 10, 999, 5000})
+    {
+      content.connection->silentSeconds = seconds;
+      const Outpost::Hud::Layout silent = Lay(content, 1920, 1080);
+      const std::string words = std::format("No word from the server \xC2\xB7 {} s", std::min(seconds, 999));
+      const Outpost::Hud::Text& warning = TextOf(silent, words);
+      Assert::IsTrue(IsChip(silent, warning), std::wstring(winrt::to_hstring(words)).c_str());
+      const Outpost::Hud::Text& address = TextOf(silent, "Server 203.0.113.5:4433");
+      Assert::IsTrue(warning.top > address.top, L"under the address");
+      const Outpost::Hud::Rect tag = tagOf(silent, address);
+      Assert::AreEqual(1920.0f - 16.0f, tag.left + tag.width);
+      Assert::IsTrue(tag.Contains(warning.left, warning.top), L"inside the tag");
+      widths.push_back(tag.width);
+    }
+    Assert::IsTrue(std::ranges::all_of(widths, [&](float _width) { return _width == widths.front(); }), L"its edge stands still");
+
+    // An address too long for the tag is cut short, and the tag stays in bounds.
+    content.connection = Outpost::Hud::Connection{.server = Outpost::Hud::ServerName(std::string(80, 'h'), 4433)};
+    const Outpost::Hud::Layout longest = Lay(content, 1920, 1080);
+    const auto cut =
+      std::ranges::find_if(longest.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("Server h"); });
+    Assert::IsTrue(cut != longest.texts.end());
+    Assert::IsTrue(cut->text.size() < 80, L"cut short");
+    Assert::IsTrue(tagOf(longest, *cut).width <= 360.0f + (2.0f * 12.0f));
+  }
+
+  // ADR-086: a server's address is its host and port, an IPv6 host in brackets so that its port reads apart.
+  TEST_METHOD(WritesAServerName)
+  {
+    Assert::AreEqual(std::string("203.0.113.5:4433"), Outpost::Hud::ServerName("203.0.113.5", 4433));
+    Assert::AreEqual(std::string("outpost.example:1"), Outpost::Hud::ServerName("outpost.example", 1));
+    Assert::AreEqual(std::string("[2001:db8::5]:4433"), Outpost::Hud::ServerName("2001:db8::5", 4433));
   }
 
   // Task 4.2: selected Constructors offer every structure they build, with its cost, dim when the player cannot afford

@@ -449,6 +449,18 @@ public:
     bool drainWarns = false;
   };
 
+  // Where the match runs, as the tag in the top-right corner says it (ADR-086): on the game's own server, or on a dedicated
+  // server at its address; and how long no snapshot has come, which the tag warns of from SILENT_SECONDS.
+  struct Connection
+  {
+    // The dedicated server's address as ServerName writes it; empty for a match on the game's own server.
+    std::string server;
+    // Whole seconds since the last snapshot came.
+    std::int32_t silentSeconds = 0;
+  };
+  // How long no snapshot may come, at 20 a second, before the tag warns of it (ADR-086).
+  static constexpr std::int32_t SILENT_SECONDS = 2;
+
   // A run of a status line's words: plain, in the text's color, or a warning chip, dark on a tag of the warning's color
   // (ADR-085 decision 1).
   struct StatusRun
@@ -566,6 +578,8 @@ public:
     bool fog = false;
     // Once the match is over, a banner with a button back to the menu; the world runs on behind it (owner, 2026-10-01).
     std::optional<Outcome> outcome;
+    // Where the match runs; GameClient fills it (ADR-086).
+    std::optional<Connection> connection;
   };
 
   // How a panel is filled: solid, or with diagonal stripes, as a window's title bar is (ADR-030).
@@ -730,6 +744,10 @@ public:
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs. In a world,
   // which does not end, when the player's seat restarts after its loss (Phase 5 design §8).
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
+
+  // A dedicated server's address as the tag in the top-right corner writes it (ADR-086): _host and _port, "203.0.113.5:4433",
+  // and an IPv6 host in brackets, "[2001:db8::5]:4433".
+  [[nodiscard]] static std::string ServerName(std::string_view _host, std::uint16_t _port);
 
   // What the main menu offers and says besides its skirmishes (ADR-078): a world to join, when a join file is there, and a
   // notice, such as why the last game ended.

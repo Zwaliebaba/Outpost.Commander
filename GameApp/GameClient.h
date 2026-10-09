@@ -63,8 +63,9 @@ public:
   GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond, ClientAssets _assets, Neuron::UiAtlas _interface);
 
   // Shows a new match from its first snapshot: whatever the last match left in the view, the selection, the designer and
-  // the effects is gone, and the camera centers again on the player's fleet.
-  void StartMatch();
+  // the effects is gone, and the camera centers again on the player's fleet. _server is the dedicated server's address,
+  // Hud::ServerName's, which the HUD's tag shows; none for a match on the game's own server (ADR-086).
+  void StartMatch(std::string _server = {});
 
   // Shows the main menu, and nothing of the match that was; with _notice, saying it, such as why the last game ended
   // (ADR-078).
@@ -265,6 +266,9 @@ private:
   // What the menu says and offers besides its skirmishes (ADR-078).
   std::string m_menuNotice;
   bool m_offerWorld = false;
+  // Where the match runs, and how long since its last snapshot came, for the HUD's tag (ADR-086).
+  std::string m_server;
+  float m_silentSeconds = 0.0f;
   Difficulty m_difficulty = Difficulty::Normal;
   std::uint32_t m_ticksPerSecond = 0;
   ModelCatalog m_catalog;

@@ -135,6 +135,11 @@ constexpr float ALERT_MARK_UNITS = 14.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
 constexpr float BANNER_WIDTH = 520.0f;
+// Where the match runs, anchored to the top-right corner (ADR-086): as wide as its words, a server's address cut short
+// beyond CONNECTION_MOST_UNITS, and as wide as CONNECTION_WIDEST_SILENCE while it warns, so that its edge stands still as
+// the seconds count.
+constexpr float CONNECTION_MOST_UNITS = 360.0f;
+constexpr std::string_view CONNECTION_WIDEST_SILENCE = "No word from the server \xC2\xB7 999 s";
 // The main menu, centered.
 constexpr float MENU_WIDTH = 440.0f;
 
@@ -2110,6 +2115,11 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
   return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
 }
 
+std::string Hud::ServerName(std::string_view _host, std::uint16_t _port)
+{
+  return _host.contains(':') ? std::format("[{}]:{}", _host, _port) : std::format("{}:{}", _host, _port);
+}
+
 Hud::OrdersPanel Hud::DescribeOrders(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                      const OrderForm& _form, const PlayerClock& _clock, std::chrono::sys_seconds _now)
 {
@@ -3113,6 +3123,27 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     Painter paint = frame({.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
     paint.Text(paint.Fit(_content.hint, Typeface::Name, HINT_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
                (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
+  }
+
+  // Top-right anchor: where the match runs, "Local skirmish" or "Server 203.0.113.5:4433", and under it, once no snapshot
+  // has come for SILENT_SECONDS, a warning chip, "No word from the server · 5 s" (ADR-086). It takes no click.
+  if (_content.connection.has_value())
+  {
+    const Connection& connection = *_content.connection;
+    std::string where = connection.server.empty() ? std::string("Local skirmish") : std::format("Server {}", connection.server);
+    const bool silent = connection.silentSeconds >= SILENT_SECONDS;
+    float textUnits = std::min(_metrics.Width(Typeface::Name, where), CONNECTION_MOST_UNITS);
+    if (silent)
+      textUnits = std::max(textUnits, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS));
+    const float widthUnits = textUnits + (2.0f * PADDING);
+    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + ((silent ? 2.0f : 1.0f) * NAME_LINE_UNITS);
+    Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - widthUnits, .yUnits = MARGIN}, widthUnits, heightUnits);
+    paint.Text(paint.Fit(where, Typeface::Name, textUnits), PADDING, TERRITORY_INSET_UNITS, TEXT_COLOR, Typeface::Name);
+    if (silent)
+    {
+      (void)paint.Chip(std::format("No word from the server{}{} s", DOT, std::min(connection.silentSeconds, 999)), PADDING - CHIP_PAD_UNITS,
+                       TERRITORY_INSET_UNITS + NAME_LINE_UNITS, Typeface::Name, NAME_LINE_UNITS);
+    }
   }
 
   // Top-middle anchor, under the hint: how the match ended, and the way back to the menu.
