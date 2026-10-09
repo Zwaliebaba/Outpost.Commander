@@ -13,8 +13,11 @@ using Bytes = std::vector<std::byte>;
 // The layout of each state version's save, as the hash of SaveLayout (AGENTS.md R18): the simulation's state, and from
 // version 4 the seats' reports beside it. A change to either changes the layout: raise WORLD_STATE_VERSION and record the
 // new version's hash here, below the old.
-constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 4> LAYOUTS{
-  {{1, 0x5EB85327A281B46Cull}, {2, 0x8F33507C8E312761ull}, {3, 0x4D954F637F96B5C2ull}, {4, 0xA1F1A0DC52EC7069ull}}};
+constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 5> LAYOUTS{{{1, 0x5EB85327A281B46Cull},
+                                                                          {2, 0x8F33507C8E312761ull},
+                                                                          {3, 0x4D954F637F96B5C2ull},
+                                                                          {4, 0xA1F1A0DC52EC7069ull},
+                                                                          {5, 0x2EC92634EE22BAC5ull}}};
 
 std::uint64_t LayoutHash()
 {

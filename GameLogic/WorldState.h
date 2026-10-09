@@ -5,7 +5,7 @@ namespace Outpost
 // The version of the state a world's save holds (ADR-077). A change to what Simulation holds, or to the seats' reports a
 // save keeps beside it, raises it: WorldStateTests pins the layout of each version (SaveLayout), and fails until it is
 // raised and the new layout recorded (AGENTS.md R18). A save of another version is refused.
-inline constexpr std::uint32_t WORLD_STATE_VERSION = 4;
+inline constexpr std::uint32_t WORLD_STATE_VERSION = 5;
 
 // The world a save is of: what a server needs, besides the state, to make the simulation the state loads into.
 struct WorldIdentity

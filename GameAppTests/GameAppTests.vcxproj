@@ -109,6 +109,7 @@
     <ClCompile Include="ParticleSystemTests.cpp" />
     <ClCompile Include="StarfieldTests.cpp" />
     <ClCompile Include="FogOfWarTests.cpp" />
+    <ClCompile Include="TerritoryMarksTests.cpp" />
     <ClCompile Include="AlertsTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />

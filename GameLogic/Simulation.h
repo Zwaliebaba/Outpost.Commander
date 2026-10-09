@@ -585,7 +585,9 @@ private:
   [[nodiscard]] EntityView EntityViewOf(const Entity& _entity, bool _detailed) const;
   // At the end of each tick under fog of war: what each player sees and remembers, and attack orders on ships that went
   // out of sight end.
-  void UpdateVision();
+  // _seenTick is the tick of the snapshot that shows what this vision sees, which a remembered structure keeps as the last
+  // time it was seen.
+  void UpdateVision(std::uint64_t _seenTick);
   // Raises an event for _player, which its snapshot of this tick carries (ADR-080); none for the pirates or a player not
   // added. _position's sector is the event's unless it names one.
   void Raise(PlayerId _player, EventView _event);

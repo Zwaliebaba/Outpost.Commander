@@ -23,6 +23,13 @@ struct GhostPlacement
                                         float _mapSizeMeters, std::span<const SectorView> _sectors = {}, PlayerId _player = {},
                                         std::int32_t _nodeCap = 0);
 
+// Whether _player may claim _sector's node now with a Relay _relayRadiusMeters in radius, by what the snapshot shows: the
+// node is free and nothing stands on it, a sector next to it is the player's, no pirate guards it, and the player is under
+// its _nodeCap (ADR-056, ADR-073, Phase 3 design §7). The Relay's ghost is green, and the world and the minimap mark a node
+// the player could claim, by this one rule (interface plan 2, task UI1.1).
+[[nodiscard]] bool CanClaim(const SectorView& _sector, float _relayRadiusMeters, std::span<const EntityView> _entities,
+                            float _mapSizeMeters, std::span<const SectorView> _sectors, PlayerId _player, std::int32_t _nodeCap);
+
 // The nodes _player holds, with those it has taken with a Relay still under construction, which its Command Station's
 // level caps (Phase 3 design §7), as the server counts them.
 [[nodiscard]] std::int32_t NodesTaken(std::span<const SectorView> _sectors, std::span<const EntityView> _entities,

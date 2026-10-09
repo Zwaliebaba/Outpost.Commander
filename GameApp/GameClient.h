@@ -242,6 +242,12 @@ private:
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   // Under fog of war, the ground the player does not see now, dimmed or dark, over everything but the HUD (ADR-024).
   void DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
+  // The sectors' borders, each held or guarded sector's outline and every node's ring, over the fog, since every player sees
+  // the territory (interface plan 2, task UI1.1). The mesh pipeline must be bound.
+  void DrawTerritory(ID3D12GraphicsCommandList* _commandList);
+  // Every structure and derelict the player only remembers, as its lines alone, over the fog (interface plan 2, task UI1.2).
+  // The mesh pipeline must be bound.
+  void DrawMemories(ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
   // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
   // health bar, a tracer or a beam.
@@ -286,6 +292,13 @@ private:
   Alerts m_alerts;
   std::optional<std::uint64_t> m_fogTick;
   std::optional<std::uint64_t> m_fogRevisionShown;
+  // The territory as the world shows it, worked out again once a snapshot, at the tick it was (interface plan 2, task
+  // UI1.1); and this frame's lines and rings, kept so that their storage is not allocated every frame.
+  TerritoryMarks m_territory;
+  std::optional<std::uint64_t> m_territoryTick;
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_territoryDraws;
+  // This frame's memories' lines, kept so that their storage is not allocated every frame.
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_memoryDraws;
   // The floating windows, which keep their places for as long as the game runs (ADR-031); and what was selected on its own
   // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
   WindowManager m_windows;
@@ -342,6 +355,10 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ringLine;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
+  // Lines 1 long on the ground, whole, dashed and dotted, scaled to each side of a sector (interface plan 2, task UI1.1).
+  std::unique_ptr<Neuron::Mesh> m_solidLine;
+  std::unique_ptr<Neuron::Mesh> m_dashedLine;
+  std::unique_ptr<Neuron::Mesh> m_dottedLine;
   // The faces of the models drawn this frame, drawn together with each mesh's copies in one draw (ADR-053); their lines,
   // drawn together after them; and the structures' rings.
   std::vector<Neuron::MeshPipeline::MeshDraw> m_faceDraws;

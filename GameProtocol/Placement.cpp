@@ -18,20 +18,13 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
 {
   if (_type.structure == StructureKind::Relay)
   {
-    // The node of the sector under the cursor, free, and adjacent to a sector the player holds; without sectors, nowhere.
+    // The node of the sector under the cursor, green where the player could claim it; without sectors, nowhere.
     const SectorView* sector = FindSector(_sectors, _cursor);
     if (sector == nullptr)
       return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = false};
-    const auto heldByPlayer = [&](std::int32_t _id)
-    {
-      const auto found = std::ranges::find(_sectors, _id, &SectorView::id);
-      return found != _sectors.end() && found->holder == _player;
-    };
-    GhostPlacement ghost =
-      PlaceGhost({.structure = StructureKind::Shipyard, .radiusMeters = _type.radiusMeters}, sector->node, _entities, _mapSizeMeters);
-    ghost.valid = ghost.valid && !sector->holder.IsValid() && std::ranges::any_of(sector->adjacent, heldByPlayer) &&
-                  !AtNodeCap(_sectors, _entities, _player, _nodeCap) && !sector->guarded;
-    return ghost;
+    return {.position = sector->node,
+            .radiusMeters = _type.radiusMeters,
+            .valid = CanClaim(*sector, _type.radiusMeters, _entities, _mapSizeMeters, _sectors, _player, _nodeCap)};
   }
   if (_type.structure == StructureKind::MiningRig)
   {
@@ -83,6 +76,21 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
   // A ghost outside the map, or one overlap, makes it invalid: the search stops at the first overlap, and outside the map
   // it is not made at all.
   return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = inside && std::ranges::none_of(_entities, overlaps)};
+}
+
+bool Outpost::CanClaim(const SectorView& _sector, float _relayRadiusMeters, std::span<const EntityView> _entities, float _mapSizeMeters,
+                       std::span<const SectorView> _sectors, PlayerId _player, std::int32_t _nodeCap)
+{
+  const auto heldByPlayer = [&](std::int32_t _id)
+  {
+    const auto found = std::ranges::find(_sectors, _id, &SectorView::id);
+    return found != _sectors.end() && found->holder == _player;
+  };
+  // The node is clear as a structure's footprint is: inside the map, and over nothing that blocks a structure.
+  return !_sector.holder.IsValid() && !_sector.guarded && std::ranges::any_of(_sector.adjacent, heldByPlayer) &&
+         !AtNodeCap(_sectors, _entities, _player, _nodeCap) &&
+         PlaceGhost({.structure = StructureKind::Shipyard, .radiusMeters = _relayRadiusMeters}, _sector.node, _entities, _mapSizeMeters)
+           .valid;
 }
 
 std::int32_t Outpost::NodesTaken(std::span<const SectorView> _sectors, std::span<const EntityView> _entities, PlayerId _player) noexcept
