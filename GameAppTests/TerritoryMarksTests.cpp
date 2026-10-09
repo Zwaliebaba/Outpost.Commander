@@ -145,25 +145,20 @@ public:
     }
   }
 
-  // Every node has a mark: its holder's, the pirates' while they guard it, and the player's where it could claim the node
-  // now, which is exactly where the Relay's ghost would be green.
+  // The nodes the player could claim now are exactly those where the Relay's ghost would be green; a held or guarded node,
+  // and one a Relay site already takes, is not one of them.
   TEST_METHOD(MarksTheNodesThePlayerCouldClaim)
   {
     Outpost::Snapshot snapshot = Square();
     std::vector<Outpost::EntityView> entities = Stations(snapshot);
     Outpost::TerritoryMarks marks = Outpost::MarkTerritory(snapshot, entities);
-    Assert::AreEqual(size_t{4}, marks.nodes.size());
-    Assert::IsTrue(marks.nodes[0].look == Look::Held && marks.nodes[0].holder == PLAYER);
-    Assert::IsTrue(marks.nodes[1].look == Look::Claimable && marks.nodes[1].holder == PLAYER, L"next to home");
-    Assert::IsTrue(marks.nodes[2].look == Look::Claimable);
-    Assert::IsTrue(marks.nodes[3].look == Look::Held && marks.nodes[3].holder == ENEMY);
-    for (size_t i = 0; i < snapshot.sectors.size(); ++i)
+    Assert::IsTrue(marks.claimable == std::vector{snapshot.sectors[1].node, snapshot.sectors[2].node}, L"the two next to home");
+    for (const Outpost::SectorView& sector : snapshot.sectors)
     {
-      Assert::IsTrue(marks.nodes[i].position == snapshot.sectors[i].node);
-      const bool ghost = Outpost::PlaceGhost(snapshot.structureTypes[0], snapshot.sectors[i].node, entities, snapshot.mapSizeMeters,
-                                             snapshot.sectors, PLAYER, snapshot.nodeCap)
+      const bool ghost = Outpost::PlaceGhost(snapshot.structureTypes[0], sector.node, entities, snapshot.mapSizeMeters, snapshot.sectors,
+                                             PLAYER, snapshot.nodeCap)
                            .valid;
-      Assert::AreEqual(ghost, marks.nodes[i].look == Look::Claimable);
+      Assert::AreEqual(ghost, std::ranges::find(marks.claimable, sector.node) != marks.claimable.end());
     }
 
     snapshot.sectors[2].guarded = true;
@@ -176,8 +171,12 @@ public:
                         .radiusMeters = 30.0f,
                         .builtPermille = 100});
     marks = Outpost::MarkTerritory(snapshot, entities);
-    Assert::IsTrue(marks.nodes[1].look == Look::Neutral, L"a Relay site takes its node, and the cap");
-    Assert::IsTrue(marks.nodes[2].look == Look::Guarded && marks.nodes[2].holder == Outpost::PIRATES);
+    Assert::IsTrue(marks.claimable.empty(), L"a Relay site takes its node and the cap, and the pirates guard the other");
+
+    snapshot.structureTypes[0].buildable = false;
+    snapshot.sectors[2].guarded = false;
+    snapshot.nodeCap = 0;
+    Assert::IsTrue(Outpost::MarkTerritory(snapshot, {}).claimable.empty(), L"none while the player cannot build a Relay");
   }
 
   // A map without sectors has no territory to draw.
@@ -186,7 +185,7 @@ public:
     Outpost::Snapshot snapshot = Square();
     snapshot.sectors.clear();
     const Outpost::TerritoryMarks marks = Outpost::MarkTerritory(snapshot, {});
-    Assert::IsTrue(marks.lines.empty() && marks.nodes.empty());
+    Assert::IsTrue(marks.lines.empty() && marks.claimable.empty());
   }
 };
 } // namespace GameAppTests

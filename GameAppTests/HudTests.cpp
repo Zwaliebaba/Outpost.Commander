@@ -721,8 +721,9 @@ public:
     Assert::IsTrue(square.front() < fogAt, L"what is seen stays under the fog");
   }
 
-  // Interface plan 2, task UI1.4: over the fog the minimap draws every sector's border, at 2:1 against the map, a dot on
-  // every node, an outline round a node the player could claim now, and a cut-off sector's outline in dashes.
+  // Interface plan 2, task UI1.4: over the fog the minimap draws every sector's border, at 2:1 against the map, and a
+  // cut-off sector's outline in dashes. A node has no mark of its own; while the player places a Relay, each sector whose
+  // node it could claim now is outlined in its color inside the border (ADR-081 decision 7).
   TEST_METHOD(DrawsTheTerritoryOnTheMinimap)
   {
     Outpost::Snapshot newest = Newest();
@@ -745,15 +746,18 @@ public:
                        .node = {.xMeters = 750.0f},
                        .adjacent = {1}}};
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector<Outpost::EntityView>{}, {});
-    Assert::IsTrue(content.sectors[0].cutOff && !content.sectors[0].claimable, L"its own node");
-    Assert::IsTrue(content.sectors[1].claimable, L"free, and next to the player's");
-    Assert::IsTrue(content.sectors[1].node == newest.sectors[1].node);
+    Assert::IsTrue(content.sectors[0].cutOff);
+    Assert::IsTrue(std::ranges::none_of(content.sectors, &Outpost::Hud::SectorMark::claimable), L"none unless a Relay is placed");
+    Outpost::Hud::Content placing = Outpost::Hud::Describe(newest, std::vector<Outpost::EntityView>{}, {}, Outpost::StructureKind::Relay);
+    Assert::IsTrue(!placing.sectors[0].claimable && placing.sectors[1].claimable, L"while placing, the free one next to the player's");
     content.fog = true;
+    placing.fog = true;
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout placingLayout = Lay(placing, 1920, 1080);
     // A line, a dot or an outline's side at a point: not the map, a sector's wash or the fog.
-    const auto thinAt = [&layout](float _x, float _y)
+    const auto thinAt = [](const Outpost::Hud::Layout& _layout, float _x, float _y)
     {
-      return std::ranges::count_if(layout.panels,
+      return std::ranges::count_if(_layout.panels,
                                    [&](const Outpost::Hud::Rect& _panel)
                                    {
                                      const bool thin =
@@ -772,16 +776,30 @@ public:
     const std::vector<DirectX::XMFLOAT3> grounds = GroundsOf(layout, 0, Outpost::Hud::Text{.text = "x", .left = inside.x, .top = inside.y});
     Assert::IsTrue(ContrastOf({border->color.x, border->color.y, border->color.z}, grounds.front()) >= 2.0f, L"at 2:1");
 
-    // A dot on each node; round the claimable one an outline whose middle is the dot alone.
-    for (const Outpost::Hud::SectorMark& sector : content.sectors)
+    // No mark on a node, placing a Relay or not.
+    for (const Outpost::SectorView& sector : newest.sectors)
     {
       const DirectX::XMFLOAT2 node = layout.MinimapPixelOf(sector.node);
-      Assert::IsTrue(thinAt(node.x, node.y) >= 1, L"a dot on the node");
+      Assert::AreEqual(std::ptrdiff_t{0}, thinAt(layout, node.x, node.y), L"no mark on the node");
+      Assert::AreEqual(std::ptrdiff_t{0}, thinAt(placingLayout, node.x, node.y), L"none while placing");
     }
-    const DirectX::XMFLOAT2 claimable = layout.MinimapPixelOf(content.sectors[1].node);
-    Assert::IsTrue(thinAt(claimable.x + 5.5f, claimable.y) >= 1, L"the outline round a claimable node");
-    const DirectX::XMFLOAT2 own = layout.MinimapPixelOf(content.sectors[0].node);
-    Assert::AreEqual(std::ptrdiff_t{0}, thinAt(own.x + 5.5f, own.y), L"none round a node the player holds");
+    // The free sector outlined in the player's color at full strength, clear of its border and so of the held sector's
+    // outline beside it, only while a Relay is placed.
+    const DirectX::XMFLOAT2 freeLow = layout.MinimapPixelOf({.xMeters = 0.0f, .zMeters = 1500.0f});
+    const DirectX::XMFLOAT2 freeHigh = layout.MinimapPixelOf({.xMeters = 1500.0f, .zMeters = -1500.0f});
+    const auto ownInside = [&](const Outpost::Hud::Layout& _layout)
+    {
+      return std::ranges::count_if(_layout.panels,
+                                   [&](const Outpost::Hud::Rect& _panel)
+                                   {
+                                     return _panel.color.x == 0.35f && _panel.color.z == 1.0f && _panel.color.w == 1.0f &&
+                                            _panel.left > freeLow.x + 1.0f && _panel.top > freeLow.y + 1.0f &&
+                                            _panel.left + _panel.width < freeHigh.x - 1.0f &&
+                                            _panel.top + _panel.height < freeHigh.y - 1.0f;
+                                   });
+    };
+    Assert::AreEqual(std::ptrdiff_t{0}, ownInside(layout), L"no outline unless a Relay is placed");
+    Assert::AreEqual(std::ptrdiff_t{4}, ownInside(placingLayout), L"the claimable sector's four sides");
 
     // The cut-off sector's left side, along the map's left edge: dashes, with gaps between them.
     const DirectX::XMFLOAT2 low = layout.MinimapPixelOf({.xMeters = -1500.0f, .zMeters = -1500.0f});
