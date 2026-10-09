@@ -425,8 +425,7 @@ public:
     bool suppressed = false;
     // Cut off from its holder's home, which its outline's dashes say (interface plan 2, task UI1.4).
     bool cutOff = false;
-    // Its node, and whether the player could claim it now, by the Relay ghost's rule (CanClaim).
-    PlanePosition node;
+    // Whether the player is placing a Relay and could claim the sector's node now, by the Relay ghost's rule (CanClaim).
     bool claimable = false;
   };
 

@@ -45,15 +45,14 @@ constexpr float SECTOR_HATCH_ALPHA = 0.35f;
 constexpr float SECTOR_LINE_UNITS = 1.0f;
 // The territory over the fog (interface plan 2, task UI1.4): every sector's border in LATTICE_COLOR, at 2:1 against the map,
 // under the held sectors' outlines; a cut-off sector's outline in dashes of CUT_OFF_DASH_UNITS with CUT_OFF_GAP_UNITS between
-// them, where a suppressed one keeps its hatching; a dot of NODE_MARK_UNITS on every node, in its holder's color or
-// FREE_NODE_COLOR; and round a node the player could claim now an outline of CLAIMABLE_MARK_UNITS in its own color, a dot in
-// a square where an ore asteroid's outline is empty.
+// them, where a suppressed one keeps its hatching; and, while the player places a Relay, each sector whose node it could
+// claim now outlined CLAIMABLE_INSET_UNITS inside its border in the player's color. A node has no mark of its own: the
+// map's nodes are at their sectors' centers (Tools/MakeMap.py), so a mark would say only what the sector's border and wash
+// say (ADR-081 decision 7).
 constexpr DirectX::XMFLOAT4 LATTICE_COLOR{0.11f, 0.13f, 0.17f, 1.0f};
 constexpr float CUT_OFF_DASH_UNITS = 6.0f;
 constexpr float CUT_OFF_GAP_UNITS = 4.0f;
-constexpr float NODE_MARK_UNITS = 4.0f;
-constexpr DirectX::XMFLOAT4 FREE_NODE_COLOR{0.45f, 0.48f, 0.55f, 1.0f};
-constexpr float CLAIMABLE_MARK_UNITS = 12.0f;
+constexpr float CLAIMABLE_INSET_UNITS = 3.0f;
 // A structure or derelict the player only remembers is a cross MEMORY_MARK_UNITS across, its arms MEMORY_ARM_UNITS thick,
 // drawn over the fog in its side's color (interface plan 2, task UI1.2).
 constexpr float MEMORY_MARK_UNITS = 8.0f;
@@ -2221,8 +2220,9 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   {
     Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size()), .cap = _newest.nodeCap};
     content.sectors.reserve(_newest.sectors.size());
-    // Which nodes the player could claim now, as the world marks them and the Relay's ghost judges them.
-    const TerritoryMarks marked = MarkTerritory(_newest, _entities);
+    // While the player places a Relay, which nodes it could claim now, as the world marks them and the Relay's ghost judges
+    // them.
+    const TerritoryMarks marked = _placing == StructureKind::Relay ? MarkTerritory(_newest, _entities) : TerritoryMarks{};
     for (const SectorView& sector : _newest.sectors)
     {
       // A sector the pirates guard is held by no one, and shown as theirs (ADR-073).
@@ -2236,9 +2236,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                  .side = side,
                                  .suppressed = sector.suppressed,
                                  .cutOff = sector.cutOff,
-                                 .node = sector.node,
-                                 .claimable = content.sectors.size() < marked.nodes.size() &&
-                                              marked.nodes[content.sectors.size()].look == TerritoryMarks::Look::Claimable});
+                                 .claimable = std::ranges::find(marked.claimable, sector.node) != marked.claimable.end()});
     }
     // Domination's tickets, which both players see (ADR-057).
     for (const TicketsView& tickets : _newest.tickets)
@@ -3068,18 +3066,16 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
         layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_HATCH_ALPHA), Fill::Hatched));
     }
 
-    // Every node, and round one the player could claim now an outline in its own color.
+    // While the player places a Relay, each sector it could claim now, outlined in its own color inside the border, clear
+    // of the outline of its held sector beside it.
+    const float claimableInset = CLAIMABLE_INSET_UNITS * scale;
     for (const SectorMark& sector : _content.sectors)
     {
-      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(sector.node);
-      const float dot = NODE_MARK_UNITS * scale;
-      layout.panels.push_back({at.x - (dot / 2.0f), at.y - (dot / 2.0f), dot, dot,
-                               sector.side == Side::Neutral ? FREE_NODE_COLOR : sideColor(sector.side, 1.0f)});
-      if (sector.claimable)
-      {
-        const float side = CLAIMABLE_MARK_UNITS * scale;
-        outline({at.x - (side / 2.0f), at.y - (side / 2.0f), side, side, OWN_COLOR});
-      }
+      if (!sector.claimable)
+        continue;
+      const Rect area = sectorRect(sector, OWN_COLOR, Fill::Solid);
+      outline({area.left + claimableInset, area.top + claimableInset, area.width - (2.0f * claimableInset),
+               area.height - (2.0f * claimableInset), OWN_COLOR});
     }
 
     // What the player only remembers, as a cross in its side's color, over the fog that would dim it twice.

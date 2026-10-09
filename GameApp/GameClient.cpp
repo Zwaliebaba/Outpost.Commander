@@ -133,14 +133,12 @@ constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.25f, 0.65f, 1.0f, 1.0f};
 // The territory, drawn over the fog, since every player sees it (interface plan 2, task UI1.1): the lattice of sector
 // borders one pixel wide in TERRITORY_LATTICE_COLOR, brighter than the grid and never wider (ADR-028); an outline inside each
 // held or guarded sector in its holder's color at TERRITORY_OUTLINE_SHADE, dashed while suppressed and dotted while cut
-// off; and a ring on every node, the size of a Relay's footprint ring, in its holder's color at NODE_RING_SHADE, in the
-// lattice's color brightened by NODE_NEUTRAL_BRIGHTNESS while free, and in the player's own lines' color, doubled, where it
-// could claim the node now. A side is drawn with one mesh 1 long, scaled to it, so its dashes and dots are shares of its
-// length: on a 2,000 m side, 40 dashes of 25 m and 100 dots of 4 m.
+// off; and, while the player places a Relay, two rings on each node it could claim now, the outer the size of a Relay's
+// footprint ring and the inner CLAIMABLE_INNER_SHARE of it, in the player's own lines' color (ADR-081 decision 3). A side is
+// drawn with one mesh 1 long, scaled to it, so its dashes and dots are shares of its length: on a 2,000 m side, 40 dashes of
+// 25 m and 100 dots of 4 m.
 constexpr DirectX::XMFLOAT4 TERRITORY_LATTICE_COLOR{0.04f, 0.043f, 0.063f, 1.0f};
 constexpr float TERRITORY_OUTLINE_SHADE = 0.5f;
-constexpr float NODE_RING_SHADE = 0.7f;
-constexpr float NODE_NEUTRAL_BRIGHTNESS = 2.0f;
 constexpr float CLAIMABLE_INNER_SHARE = 0.75f;
 constexpr int TERRITORY_DASHES = 40;
 constexpr float TERRITORY_DASH_SHARE = 0.5f;
@@ -1242,26 +1240,18 @@ void Outpost::GameClient::DrawTerritory(ID3D12GraphicsCommandList* _commandList)
     const DirectX::XMFLOAT3 from{line.from.xMeters, OVERLAY_LIFT_METERS, line.from.zMeters};
     m_territoryDraws.push_back({.mesh = mesh, .instance = MeshInstance(WorldMatrix(from, std::atan2(dz, dx), length), color, 0.0f)});
   }
-  // A node's ring is a Relay's footprint ring, so that a Relay on the node stands in it.
+  // While the player places a Relay, two rings on each node it could claim now, the outer a Relay's footprint ring, so that
+  // the Relay's ghost stands in it.
   const auto relay = std::ranges::find(newest.structureTypes, StructureKind::Relay, &StructureTypeView::structure);
   const float radius = (relay != newest.structureTypes.end() ? relay->radiusMeters : 0.0f) * RING_SIZE_PER_FOOTPRINT;
-  for (const TerritoryMarks::Node& node : m_territory.nodes)
+  const ModelSet* own = m_catalog.SetForPlayer(newest.player);
+  if (m_controls.Placing() == StructureKind::Relay && radius > 0.0f && own != nullptr)
   {
-    if (radius <= 0.0f)
-      break;
-    DirectX::XMFLOAT4 color = Shaded(TERRITORY_LATTICE_COLOR, NODE_NEUTRAL_BRIGHTNESS);
-    if (node.look != TerritoryMarks::Look::Neutral)
+    const DirectX::XMFLOAT4 color = EdgeColor(own->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
+    for (const PlanePosition node : m_territory.claimable)
     {
-      const ModelSet* side = m_catalog.SetForPlayer(node.holder);
-      if (side == nullptr)
-        continue;
-      color = node.look == TerritoryMarks::Look::Claimable ? EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE)
-                                                           : Shaded(side->color, NODE_RING_SHADE);
-    }
-    const DirectX::XMFLOAT3 at{node.position.xMeters, OVERLAY_LIFT_METERS, node.position.zMeters};
-    m_territoryDraws.push_back({.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, radius), color, 0.0f)});
-    if (node.look == TerritoryMarks::Look::Claimable)
-    {
+      const DirectX::XMFLOAT3 at{node.xMeters, OVERLAY_LIFT_METERS, node.zMeters};
+      m_territoryDraws.push_back({.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, radius), color, 0.0f)});
       m_territoryDraws.push_back(
         {.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, radius * CLAIMABLE_INNER_SHARE), color, 0.0f)});
     }

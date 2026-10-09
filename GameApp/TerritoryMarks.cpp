@@ -60,27 +60,14 @@ Outpost::TerritoryMarks Outpost::MarkTerritory(const Snapshot& _newest, std::spa
         {.from = corners[i], .to = corners[(i + 1) % corners.size()], .look = look, .holder = holder, .pattern = pattern});
   }
 
-  // A mark on every node: its holder's, the pirates' while they guard it, the player's where it could claim it now.
+  // The nodes the player could claim now, as the Relay's ghost judges them.
   const auto relay = std::ranges::find(_newest.structureTypes, StructureKind::Relay, &StructureTypeView::structure);
+  if (relay == _newest.structureTypes.end() || !relay->buildable)
+    return marks;
   for (const SectorView& sector : _newest.sectors)
   {
-    TerritoryMarks::Node& node = marks.nodes.emplace_back(TerritoryMarks::Node{.position = sector.node});
-    if (sector.holder.IsValid())
-    {
-      node.look = TerritoryMarks::Look::Held;
-      node.holder = sector.holder;
-    }
-    else if (sector.guarded)
-    {
-      node.look = TerritoryMarks::Look::Guarded;
-      node.holder = PIRATES;
-    }
-    else if (relay != _newest.structureTypes.end() && relay->buildable &&
-             CanClaim(sector, relay->radiusMeters, _entities, _newest.mapSizeMeters, _newest.sectors, _newest.player, _newest.nodeCap))
-    {
-      node.look = TerritoryMarks::Look::Claimable;
-      node.holder = _newest.player;
-    }
+    if (CanClaim(sector, relay->radiusMeters, _entities, _newest.mapSizeMeters, _newest.sectors, _newest.player, _newest.nodeCap))
+      marks.claimable.push_back(sector.node);
   }
   return marks;
 }
