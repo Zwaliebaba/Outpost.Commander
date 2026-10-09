@@ -38,8 +38,8 @@ Outpost::PlanePosition TerritoryMatch::AsteroidIn(std::int32_t _sector) const
 {
   const Outpost::SectorPlacement& sector = Placement(_sector);
   const std::vector<Outpost::OreAsteroidPlacement>& asteroids = m_server.MapData().oreAsteroids;
-  const auto found =
-    std::ranges::find_if(asteroids, [&sector](const Outpost::OreAsteroidPlacement& _asteroid) { return sector.Contains(_asteroid.position); });
+  const auto found = std::ranges::find_if(asteroids, [&sector](const Outpost::OreAsteroidPlacement& _asteroid)
+                                          { return sector.Contains(_asteroid.position); });
   Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(found != asteroids.end(), L"no asteroid in the sector");
   return found->position;
 }
@@ -73,7 +73,8 @@ Outpost::EntityId TerritoryMatch::Relay(Outpost::PlayerId _owner, std::int32_t _
 
 Outpost::EntityId TerritoryMatch::Warship(Outpost::PlayerId _owner, Outpost::PlanePosition _position)
 {
-  return World().SpawnShip(_owner, World().FindDesign(_owner, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1}})->id, _position);
+  return World().SpawnShip(_owner, World().FindDesign(_owner, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1}})->id,
+                           _position);
 }
 
 std::vector<Outpost::EntityId> TerritoryMatch::Constructors(Outpost::PlayerId _player)
