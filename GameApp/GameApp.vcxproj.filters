@@ -28,6 +28,9 @@
     <Filter Include="Fog">
       <UniqueIdentifier>{e8ab7097-eab7-4676-8ced-537f66af174b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Territory">
+      <UniqueIdentifier>{ae693f3a-f833-47a2-bb2f-b080f182a5b2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Models">
       <UniqueIdentifier>{c5a73e18-9f42-4b6d-8e01-3d27b6f9a4c5}</UniqueIdentifier>
     </Filter>
@@ -97,6 +100,9 @@
     </ClInclude>
     <ClInclude Include="FogOfWar.h">
       <Filter>Fog</Filter>
+    </ClInclude>
+    <ClInclude Include="TerritoryMarks.h">
+      <Filter>Territory</Filter>
     </ClInclude>
     <ClInclude Include="Hud.h">
       <Filter>Interface</Filter>
@@ -169,6 +175,9 @@
     </ClCompile>
     <ClCompile Include="FogOfWar.cpp">
       <Filter>Fog</Filter>
+    </ClCompile>
+    <ClCompile Include="TerritoryMarks.cpp">
+      <Filter>Territory</Filter>
     </ClCompile>
     <ClCompile Include="Hud.cpp">
       <Filter>Interface</Filter>

@@ -36,7 +36,7 @@ struct SeatTick
 //   seat <tick> player <p> <player, deputy or ai>  who plays the seat, when it changes, and from the first tick
 //   order <tick> player <p> order <id> <action> <given, held or refused>
 //                                                  a scheduled order fired (ADR-080)
-//   lost <tick> player <p>                         the player lost its production (ADR-081)
+//   lost <tick> player <p>                         the player lost its production (ADR-084)
 //   waiting <tick> player <p>                      its hour has passed and its start is not free
 //   restart <tick> player <p>                      its seat restarted at its start
 //   hour <tick> player <p> ore <n> income <hundredths a second> fleet <command points> cap <n> nodes <n> researched <n>

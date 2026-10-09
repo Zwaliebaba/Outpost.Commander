@@ -633,15 +633,170 @@ public:
     Outpost::Snapshot newest = Newest();
     newest.research = {{.id = Outpost::ResearchTopicId{5}, .nameUtf8 = "Fusion Drive", .recovered = true}};
     Outpost::EntityView derelict{.id = Outpost::EntityId{40}, .kind = Outpost::EntityKind::Derelict, .salvageOre = 1200};
-    Assert::AreEqual(std::string("Derelict: 1,200 Ore"), Outpost::Hud::DescribeDerelict(newest, derelict));
+    Assert::AreEqual(std::string("Derelict: 1,200 Ore"), Outpost::Hud::DescribeDerelict(newest, derelict, 20));
     derelict.salvageTopic = Outpost::ResearchTopicId{5};
     derelict.salvagePermille = 333;
     derelict.remembered = true;
-    Assert::AreEqual(std::string("Derelict: 1,200 Ore, and part of Fusion Drive's research time \xC2\xB7 salvaged 33% (as last seen)"),
-                     Outpost::Hud::DescribeDerelict(newest, derelict));
+    newest.tick = 2405;
+    derelict.lastSeenTick = 5;
+    Assert::AreEqual(
+      std::string("Derelict: 1,200 Ore, and part of Fusion Drive's research time \xC2\xB7 salvaged 33% (last seen 2:00 ago)"),
+      Outpost::Hud::DescribeDerelict(newest, derelict, 20));
     const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector<Outpost::EntityView>{derelict}, {});
     Assert::IsTrue(content.marks.front().kind == Outpost::EntityKind::Derelict &&
                    content.marks.front().side == Outpost::Hud::Side::Neutral);
+  }
+
+  // Interface plan 2, task UI1.2: a structure the player only remembers says how long ago it was last seen, under the
+  // pointer and on its selection panel, where what follows is as it was then; with no tick rate its age is not told.
+  TEST_METHOD(DescribesAMemoryWithItsAge)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.tick = 20 * 252 + 7;
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .radiusMeters = 40.0f}};
+    const Outpost::EntityView yard{.id = Outpost::EntityId{41},
+                                   .kind = Outpost::EntityKind::Structure,
+                                   .owner = Outpost::PlayerId{2},
+                                   .structure = Outpost::StructureKind::Shipyard,
+                                   .hitPointsHundredths = 120'000,
+                                   .maxHitPointsHundredths = 300'000,
+                                   .builtPermille = 340,
+                                   .remembered = true,
+                                   .lastSeenTick = 7};
+    Assert::AreEqual(std::string("Shipyard \xC2\xB7 last seen 4:12 ago, 34% built"), Outpost::Hud::DescribeMemory(newest, yard, 20));
+
+    const std::vector<Outpost::EntityView> entities{yard};
+    const std::vector<Outpost::EntityId> selected{yard.id};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected, std::nullopt, nullptr, std::nullopt, 20);
+    Assert::AreEqual(std::string("Last seen 4:12 ago"), content.selection.at(1));
+    Assert::AreEqual(std::string("34% built when seen"), content.selection.at(2));
+    Assert::AreEqual(std::string("Hit points 1,200 / 3,000 when seen"), content.selection.at(3));
+    Assert::IsTrue(content.marks.front().remembered);
+
+    Assert::AreEqual(std::string("Last seen earlier"), Outpost::Hud::Describe(newest, entities, selected).selection.at(1), L"no tick rate");
+    Outpost::EntityView seen = yard;
+    seen.remembered = false;
+    seen.lastSeenTick = 0;
+    const std::vector<Outpost::EntityView> live{seen};
+    const Outpost::Hud::Content now = Outpost::Hud::Describe(newest, live, selected, std::nullopt, nullptr, std::nullopt, 20);
+    Assert::AreEqual(std::string("Under construction, 34%"), now.selection.at(1), L"one seen now tells no age");
+    Assert::IsFalse(now.marks.front().remembered);
+  }
+
+  // Interface plan 2, task UI1.2: on the minimap a memory is a cross in its side's color, drawn over the fog so that the
+  // fog does not dim it twice, where what is seen is a filled square under the fog.
+  TEST_METHOD(DrawsAMemoryAsACrossOverTheFog)
+  {
+    Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f, .fog = true};
+    const Outpost::PlanePosition memory{.xMeters = -500.0f};
+    const Outpost::PlanePosition seen{.xMeters = 500.0f};
+    content.marks = {{.position = memory,
+                      .radiusMeters = 40.0f,
+                      .side = Outpost::Hud::Side::Enemy,
+                      .kind = Outpost::EntityKind::Structure,
+                      .remembered = true},
+                     {.position = seen, .radiusMeters = 40.0f, .side = Outpost::Hud::Side::Enemy, .kind = Outpost::EntityKind::Structure}};
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    const auto fog =
+      std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; });
+    Assert::IsTrue(fog != layout.panels.end());
+    const auto marksAt = [&layout](Outpost::PlanePosition _position, float _dx, float _dy)
+    {
+      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(_position);
+      std::vector<std::ptrdiff_t> found;
+      for (auto panel = layout.panels.begin(); panel != layout.panels.end(); ++panel)
+      {
+        if (panel->fill != Outpost::Hud::Fill::Fog && panel->width < 100.0f && panel->Contains(at.x + _dx, at.y + _dy))
+          found.push_back(panel - layout.panels.begin());
+      }
+      return found;
+    };
+    const std::ptrdiff_t fogAt = fog - layout.panels.begin();
+    const std::vector<std::ptrdiff_t> middle = marksAt(memory, 0.0f, 0.0f);
+    Assert::AreEqual(size_t{2}, middle.size(), L"two arms cross at its middle");
+    Assert::IsTrue(std::ranges::all_of(middle, [fogAt](std::ptrdiff_t _index) { return _index > fogAt; }), L"over the fog");
+    Assert::IsTrue(marksAt(memory, 3.0f, 3.0f).empty(), L"a cross, not a square: its corners are open");
+    const std::vector<std::ptrdiff_t> square = marksAt(seen, 3.0f, 3.0f);
+    Assert::AreEqual(size_t{1}, square.size());
+    Assert::IsTrue(square.front() < fogAt, L"what is seen stays under the fog");
+  }
+
+  // Interface plan 2, task UI1.4: over the fog the minimap draws every sector's border, at 2:1 against the map, a dot on
+  // every node, an outline round a node the player could claim now, and a cut-off sector's outline in dashes.
+  TEST_METHOD(DrawsTheTerritoryOnTheMinimap)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.mapSizeMeters = 3000.0f;
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Relay, .nameUtf8 = "Relay", .radiusMeters = 30.0f, .buildable = true}};
+    newest.sectors = {{.id = 1,
+                       .minXMeters = -1500.0f,
+                       .maxXMeters = 0.0f,
+                       .minZMeters = -1500.0f,
+                       .maxZMeters = 1500.0f,
+                       .node = {.xMeters = -750.0f},
+                       .adjacent = {2},
+                       .holder = PLAYER,
+                       .cutOff = true},
+                      {.id = 2,
+                       .minXMeters = 0.0f,
+                       .maxXMeters = 1500.0f,
+                       .minZMeters = -1500.0f,
+                       .maxZMeters = 1500.0f,
+                       .node = {.xMeters = 750.0f},
+                       .adjacent = {1}}};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector<Outpost::EntityView>{}, {});
+    Assert::IsTrue(content.sectors[0].cutOff && !content.sectors[0].claimable, L"its own node");
+    Assert::IsTrue(content.sectors[1].claimable, L"free, and next to the player's");
+    Assert::IsTrue(content.sectors[1].node == newest.sectors[1].node);
+    content.fog = true;
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    // A line, a dot or an outline's side at a point: not the map, a sector's wash or the fog.
+    const auto thinAt = [&layout](float _x, float _y)
+    {
+      return std::ranges::count_if(layout.panels,
+                                   [&](const Outpost::Hud::Rect& _panel)
+                                   {
+                                     const bool thin =
+                                       std::min(_panel.width, _panel.height) <= 2.5f || (_panel.width <= 14.0f && _panel.height <= 14.0f);
+                                     return _panel.fill == Outpost::Hud::Fill::Solid && thin && _panel.Contains(_x, _y);
+                                   });
+    };
+
+    // The free sector's border along the map's top, a little in from its corner.
+    const DirectX::XMFLOAT2 topRight = layout.MinimapPixelOf({.xMeters = 1400.0f, .zMeters = 1500.0f});
+    const auto border = std::ranges::find_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                             { return _panel.Contains(topRight.x, topRight.y + 0.5f) && _panel.height <= 2.0f; });
+    Assert::IsTrue(border != layout.panels.end(), L"a free sector's border");
+    // The map under it, within a sector and clear of its lines and marks, without the fog.
+    const DirectX::XMFLOAT2 inside = layout.MinimapPixelOf({.xMeters = 1000.0f, .zMeters = 1000.0f});
+    const std::vector<DirectX::XMFLOAT3> grounds = GroundsOf(layout, 0, Outpost::Hud::Text{.text = "x", .left = inside.x, .top = inside.y});
+    Assert::IsTrue(ContrastOf({border->color.x, border->color.y, border->color.z}, grounds.front()) >= 2.0f, L"at 2:1");
+
+    // A dot on each node; round the claimable one an outline whose middle is the dot alone.
+    for (const Outpost::Hud::SectorMark& sector : content.sectors)
+    {
+      const DirectX::XMFLOAT2 node = layout.MinimapPixelOf(sector.node);
+      Assert::IsTrue(thinAt(node.x, node.y) >= 1, L"a dot on the node");
+    }
+    const DirectX::XMFLOAT2 claimable = layout.MinimapPixelOf(content.sectors[1].node);
+    Assert::IsTrue(thinAt(claimable.x + 5.5f, claimable.y) >= 1, L"the outline round a claimable node");
+    const DirectX::XMFLOAT2 own = layout.MinimapPixelOf(content.sectors[0].node);
+    Assert::AreEqual(std::ptrdiff_t{0}, thinAt(own.x + 5.5f, own.y), L"none round a node the player holds");
+
+    // The cut-off sector's left side, along the map's left edge: dashes, with gaps between them.
+    const DirectX::XMFLOAT2 low = layout.MinimapPixelOf({.xMeters = -1500.0f, .zMeters = -1500.0f});
+    const DirectX::XMFLOAT2 high = layout.MinimapPixelOf({.xMeters = -1500.0f, .zMeters = 1500.0f});
+    int covered = 0;
+    int open = 0;
+    for (int pixel = 1; high.y + static_cast<float>(pixel) < low.y - 1.0f; ++pixel)
+    {
+      const float y = high.y + static_cast<float>(pixel);
+      const bool outlined = std::ranges::any_of(
+        layout.panels, [&](const Outpost::Hud::Rect& _panel)
+        { return _panel.color.x == 0.35f && _panel.color.z == 1.0f && _panel.width <= 2.5f && _panel.Contains(low.x + 0.5f, y); });
+      (outlined ? covered : open) += 1;
+    }
+    Assert::IsTrue(covered > 0 && open > 0, L"dashed, not whole");
   }
 
   TEST_METHOD(ShowsThePirates)

@@ -36,6 +36,7 @@ Outpost::Snapshot FullSnapshot()
      .jobPermille = 29,
      .secondJobPermille = 291,
      .remembered = true,
+     .lastSeenTick = 0x1'0000'0007ull,
      .sightMeters = 30.5f,
      .standing = Outpost::StandingOrder::Patrol,
      .retreat = Outpost::RetreatThreshold::Half,

@@ -43,6 +43,21 @@ constexpr float SECTOR_WASH_ALPHA = 0.12f;
 constexpr float SECTOR_OUTLINE_ALPHA = 0.55f;
 constexpr float SECTOR_HATCH_ALPHA = 0.35f;
 constexpr float SECTOR_LINE_UNITS = 1.0f;
+// The territory over the fog (interface plan 2, task UI1.4): every sector's border in LATTICE_COLOR, at 2:1 against the map,
+// under the held sectors' outlines; a cut-off sector's outline in dashes of CUT_OFF_DASH_UNITS with CUT_OFF_GAP_UNITS between
+// them, where a suppressed one keeps its hatching; a dot of NODE_MARK_UNITS on every node, in its holder's color or
+// FREE_NODE_COLOR; and round a node the player could claim now an outline of CLAIMABLE_MARK_UNITS in its own color, a dot in
+// a square where an ore asteroid's outline is empty.
+constexpr DirectX::XMFLOAT4 LATTICE_COLOR{0.11f, 0.13f, 0.17f, 1.0f};
+constexpr float CUT_OFF_DASH_UNITS = 6.0f;
+constexpr float CUT_OFF_GAP_UNITS = 4.0f;
+constexpr float NODE_MARK_UNITS = 4.0f;
+constexpr DirectX::XMFLOAT4 FREE_NODE_COLOR{0.45f, 0.48f, 0.55f, 1.0f};
+constexpr float CLAIMABLE_MARK_UNITS = 12.0f;
+// A structure or derelict the player only remembers is a cross MEMORY_MARK_UNITS across, its arms MEMORY_ARM_UNITS thick,
+// drawn over the fog in its side's color (interface plan 2, task UI1.2).
+constexpr float MEMORY_MARK_UNITS = 8.0f;
+constexpr float MEMORY_ARM_UNITS = 2.0f;
 
 // Everything below in reference units.
 constexpr float MARGIN = 16.0f;
@@ -308,6 +323,23 @@ std::string Capitals(std::string_view _text)
   for (char& character : capitals)
     character = static_cast<char>(std::toupper(static_cast<unsigned char>(character)));
   return capitals;
+}
+
+// _text with its first letter a capital, to open a line.
+std::string Capitalized(std::string _text)
+{
+  if (!_text.empty())
+    _text.front() = static_cast<char>(std::toupper(static_cast<unsigned char>(_text.front())));
+  return _text;
+}
+
+// How long ago the player last saw _entity, which it only remembers, "last seen 4:12 ago", counted at _ticksPerSecond from
+// the tick the server says it was last seen in (interface plan 2, task UI1.2); "last seen earlier" when that is not known.
+std::string LastSeen(const Outpost::Snapshot& _newest, const Outpost::EntityView& _entity, std::uint32_t _ticksPerSecond)
+{
+  if (_ticksPerSecond == 0 || _entity.lastSeenTick == 0 || _entity.lastSeenTick > _newest.tick)
+    return "last seen earlier";
+  return std::format("last seen {} ago", Outpost::MinutesAndSeconds((_newest.tick - _entity.lastSeenTick) / _ticksPerSecond));
 }
 
 // A ship's retreat as the HUD writes it (Phase 4 design §10).
@@ -1893,7 +1925,7 @@ std::string Outpost::MinutesAndSeconds(std::uint64_t _seconds)
   return hours > 0 ? std::format("{}:{:02}:{:02}", hours, minutes, seconds) : std::format("{}:{:02}", minutes, seconds);
 }
 
-std::string Hud::DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict)
+std::string Hud::DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict, std::uint32_t _ticksPerSecond)
 {
   std::string text = std::format("Derelict: {} Ore", WithThousands(_derelict.salvageOre));
   if (_derelict.salvageTopic.IsValid())
@@ -1901,7 +1933,17 @@ std::string Hud::DescribeDerelict(const Snapshot& _newest, const EntityView& _de
   if (_derelict.salvagePermille > 0)
     text += std::format("{}salvaged {}%", DOT, _derelict.salvagePermille / 10);
   if (_derelict.remembered)
-    text += " (as last seen)";
+    text += std::format(" ({})", LastSeen(_newest, _derelict, _ticksPerSecond));
+  return text;
+}
+
+std::string Hud::DescribeMemory(const Snapshot& _newest, const EntityView& _structure, std::uint32_t _ticksPerSecond)
+{
+  const auto type = std::ranges::find(_newest.structureTypes, _structure.structure, &StructureTypeView::structure);
+  std::string text = std::format("{}{}{}", type != _newest.structureTypes.end() ? type->nameUtf8 : std::string("Structure"), DOT,
+                                 LastSeen(_newest, _structure, _ticksPerSecond));
+  if (_structure.builtPermille < PERMILLE)
+    text += std::format(", {}% built", _structure.builtPermille / 10);
   return text;
 }
 
@@ -2158,7 +2200,7 @@ DirectX::XMFLOAT2 Hud::Layout::MinimapPixelOf(PlanePosition _point) const noexce
 
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
-                                             const Designer* _designer, std::optional<Action> _hovered)
+                                             const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond)
 {
   Content content{.ore = _newest.ore,
                   .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
@@ -2179,6 +2221,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   {
     Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size()), .cap = _newest.nodeCap};
     content.sectors.reserve(_newest.sectors.size());
+    // Which nodes the player could claim now, as the world marks them and the Relay's ghost judges them.
+    const TerritoryMarks marked = MarkTerritory(_newest, _entities);
     for (const SectorView& sector : _newest.sectors)
     {
       // A sector the pirates guard is held by no one, and shown as theirs (ADR-073).
@@ -2190,7 +2234,11 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                  .minZMeters = sector.minZMeters,
                                  .maxZMeters = sector.maxZMeters,
                                  .side = side,
-                                 .suppressed = sector.suppressed});
+                                 .suppressed = sector.suppressed,
+                                 .cutOff = sector.cutOff,
+                                 .node = sector.node,
+                                 .claimable = content.sectors.size() < marked.nodes.size() &&
+                                              marked.nodes[content.sectors.size()].look == TerritoryMarks::Look::Claimable});
     }
     // Domination's tickets, which both players see (ADR-057).
     for (const TicketsView& tickets : _newest.tickets)
@@ -2211,7 +2259,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                              .radiusMeters = entity.radiusMeters,
                              .side = side,
                              .kind = entity.kind,
-                             .dry = entity.kind == EntityKind::Asteroid && entity.oreReserveHundredths == 0});
+                             .dry = entity.kind == EntityKind::Asteroid && entity.oreReserveHundredths == 0,
+                             .remembered = entity.remembered});
   }
 
   const auto typeOf = [&_newest](StructureKind _kind) -> const StructureTypeView*
@@ -2246,12 +2295,21 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       if (grows)
         name += std::format("{}L{}", DOT, structure->level);
       content.selection.push_back(std::move(name));
+      // One the player only remembers says how long ago it was seen, and that what follows is as it was then (interface
+      // plan 2, task UI1.2).
+      const bool memory = structure->remembered;
+      const std::string_view then = memory ? " when seen" : "";
+      if (memory)
+        content.selection.push_back(Capitalized(LastSeen(_newest, *structure, _ticksPerSecond)));
       if (structure->builtPermille < PERMILLE)
-        content.selection.push_back(std::format("Under construction, {}%", structure->builtPermille / 10));
+      {
+        content.selection.push_back(memory ? std::format("{}% built{}", structure->builtPermille / 10, then)
+                                           : std::format("Under construction, {}%", structure->builtPermille / 10));
+      }
       if (structure->upgradePermille.has_value())
-        content.selection.push_back(std::format("Upgrading to L{}, {}%", structure->level + 1, *structure->upgradePermille / 10));
-      content.selection.push_back(std::format("Hit points {} / {}", WithThousands(WholePoints(structure->hitPointsHundredths)),
-                                              WithThousands(WholePoints(structure->maxHitPointsHundredths))));
+        content.selection.push_back(std::format("Upgrading to L{}, {}%{}", structure->level + 1, *structure->upgradePermille / 10, then));
+      content.selection.push_back(std::format("Hit points {} / {}{}", WithThousands(WholePoints(structure->hitPointsHundredths)),
+                                              WithThousands(WholePoints(structure->maxHitPointsHundredths)), then));
       content.selectionHealth = HealthShare(structure->hitPointsHundredths, structure->maxHitPointsHundredths);
       // A Mining Rig's asteroid's Ore left, as far as the player knows it (Phase 1 design §8).
       if (structure->structure == StructureKind::MiningRig && structure->oreReserveHundredths.has_value())
@@ -2921,7 +2979,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     {
       for (const Mark& mark : _content.marks)
       {
-        if ((mark.side != Side::Neutral) == sided)
+        // A memory is drawn over the fog, below.
+        if ((mark.side != Side::Neutral) == sided && !mark.remembered)
           marks.push_back(&mark);
       }
     }
@@ -2964,20 +3023,76 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
         {layout.minimap.left, layout.minimap.top, layout.minimap.width, layout.minimap.height, {0.0f, 0.0f, 0.0f, 1.0f}, Fill::Fog});
     }
 
-    // Over the fog, since both sides know who holds what and where the pirates are: each held or guarded sector's outline,
-    // and stripes over a suppressed one.
+    // Over the fog, since both sides know who holds what and where the pirates are: every sector's border, then each held
+    // or guarded sector's outline, dashed while it is cut off, and stripes over a suppressed one.
     const float sectorLine = SECTOR_LINE_UNITS * scale;
+    const auto outline = [&layout, sectorLine](const Rect& _area)
+    {
+      layout.panels.push_back({_area.left, _area.top, _area.width, sectorLine, _area.color});
+      layout.panels.push_back({_area.left, _area.top + _area.height - sectorLine, _area.width, sectorLine, _area.color});
+      layout.panels.push_back({_area.left, _area.top, sectorLine, _area.height, _area.color});
+      layout.panels.push_back({_area.left + _area.width - sectorLine, _area.top, sectorLine, _area.height, _area.color});
+    };
+    // Dashes along each side, each side starting with one.
+    const auto dashedOutline = [&layout, sectorLine, scale](const Rect& _area)
+    {
+      const float dash = CUT_OFF_DASH_UNITS * scale;
+      const float period = (CUT_OFF_DASH_UNITS + CUT_OFF_GAP_UNITS) * scale;
+      for (int index = 0; static_cast<float>(index) * period < _area.width; ++index)
+      {
+        const float along = static_cast<float>(index) * period;
+        const float length = std::min(dash, _area.width - along);
+        layout.panels.push_back({_area.left + along, _area.top, length, sectorLine, _area.color});
+        layout.panels.push_back({_area.left + along, _area.top + _area.height - sectorLine, length, sectorLine, _area.color});
+      }
+      for (int index = 0; static_cast<float>(index) * period < _area.height; ++index)
+      {
+        const float along = static_cast<float>(index) * period;
+        const float length = std::min(dash, _area.height - along);
+        layout.panels.push_back({_area.left, _area.top + along, sectorLine, length, _area.color});
+        layout.panels.push_back({_area.left + _area.width - sectorLine, _area.top + along, sectorLine, length, _area.color});
+      }
+    };
+    for (const SectorMark& sector : _content.sectors)
+      outline(sectorRect(sector, LATTICE_COLOR, Fill::Solid));
     for (const SectorMark& sector : _content.sectors)
     {
       if (sector.side == Side::Neutral)
         continue;
       const Rect area = sectorRect(sector, sideColor(sector.side, SECTOR_OUTLINE_ALPHA), Fill::Solid);
-      layout.panels.push_back({area.left, area.top, area.width, sectorLine, area.color});
-      layout.panels.push_back({area.left, area.top + area.height - sectorLine, area.width, sectorLine, area.color});
-      layout.panels.push_back({area.left, area.top, sectorLine, area.height, area.color});
-      layout.panels.push_back({area.left + area.width - sectorLine, area.top, sectorLine, area.height, area.color});
+      if (sector.cutOff)
+        dashedOutline(area);
+      else
+        outline(area);
       if (sector.suppressed)
         layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_HATCH_ALPHA), Fill::Hatched));
+    }
+
+    // Every node, and round one the player could claim now an outline in its own color.
+    for (const SectorMark& sector : _content.sectors)
+    {
+      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(sector.node);
+      const float dot = NODE_MARK_UNITS * scale;
+      layout.panels.push_back({at.x - (dot / 2.0f), at.y - (dot / 2.0f), dot, dot,
+                               sector.side == Side::Neutral ? FREE_NODE_COLOR : sideColor(sector.side, 1.0f)});
+      if (sector.claimable)
+      {
+        const float side = CLAIMABLE_MARK_UNITS * scale;
+        outline({at.x - (side / 2.0f), at.y - (side / 2.0f), side, side, OWN_COLOR});
+      }
+    }
+
+    // What the player only remembers, as a cross in its side's color, over the fog that would dim it twice.
+    for (const Mark& mark : _content.marks)
+    {
+      if (!mark.remembered)
+        continue;
+      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
+      const float across = MEMORY_MARK_UNITS * scale;
+      const float arm = MEMORY_ARM_UNITS * scale;
+      const DirectX::XMFLOAT4 color = mark.side == Side::Neutral ? DERELICT_COLOR : sideColor(mark.side, 1.0f);
+      layout.panels.push_back({at.x - (across / 2.0f), at.y - (arm / 2.0f), across, arm, color});
+      layout.panels.push_back({at.x - (arm / 2.0f), at.y - (across / 2.0f), arm, across, color});
     }
 
     // Each alert's place, as an outlined square over everything else (ADR-059).

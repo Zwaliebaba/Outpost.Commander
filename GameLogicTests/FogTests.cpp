@@ -154,6 +154,39 @@ public:
     Assert::IsNull(FindView(arena.World().BuildSnapshot(BLUE), yard), L"seen gone, so forgotten");
   }
 
+  // A remembered structure carries the tick of the last snapshot its player saw it in, which the client tells its age by
+  // (interface plan 2, task UI1.2), and that tick stands while the structure stays out of sight. One seen now carries none.
+  TEST_METHOD(RemembersWhenAStructureWasLastSeen)
+  {
+    MatchArena arena;
+    const Outpost::EntityId yard = arena.Structure(RED, Outpost::StructureKind::Shipyard, {.xMeters = -1500.0f, .zMeters = 1500.0f});
+    const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1500.0f, .zMeters = 1350.0f});
+    arena.World().UseFog();
+    const Outpost::Snapshot first = arena.World().BuildSnapshot(BLUE);
+    const Outpost::EntityView* seen = FindView(first, yard);
+    Assert::IsTrue(seen != nullptr && !seen->remembered);
+    Assert::AreEqual(std::uint64_t{0}, seen->lastSeenTick, L"seen now, so no age");
+
+    (void)arena.Tick({Order(BLUE, Outpost::MoveCommand{.ships = {scout}, .destination = {.xMeters = -1500.0f, .zMeters = 200.0f}})});
+    std::uint64_t lastSeen = 0;
+    for (int tick = 0; tick < 20 * 20 && arena.World().Sees(BLUE, arena.Get(yard)); ++tick)
+    {
+      lastSeen = arena.World().BuildSnapshot(BLUE).tick;
+      (void)arena.Tick();
+    }
+    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(yard)), L"the scout left it behind");
+    Assert::IsTrue(lastSeen > 0);
+    const Outpost::Snapshot gone = arena.World().BuildSnapshot(BLUE);
+    const Outpost::EntityView* remembered = FindView(gone, yard);
+    Assert::IsTrue(remembered != nullptr && remembered->remembered);
+    Assert::AreEqual(lastSeen, remembered->lastSeenTick, L"the last snapshot that showed it");
+
+    arena.Run(10 * 20);
+    const Outpost::Snapshot later = arena.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(lastSeen, FindView(later, yard)->lastSeenTick, L"it stands while the yard is out of sight");
+    Assert::IsTrue(later.tick >= lastSeen + (std::uint64_t{10} * 20));
+  }
+
   // An attack on a ship ends once no entity of the attacker's side sees it, since the player would not know where it went.
   TEST_METHOD(EndsAnAttackOnAShipOutOfSight)
   {

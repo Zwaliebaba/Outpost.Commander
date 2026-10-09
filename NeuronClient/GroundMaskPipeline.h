@@ -21,6 +21,11 @@ public:
     float originZMeters;
     float cellMeters;
     UINT cellsPerSide;
+    // How much darker the mask is than its shades. A shade up to kneeShade covers in proportion, up to kneeOpacity at
+    // kneeShade; a darker one covers as much as its shade says, and never less than kneeOpacity. So a middle shade can be
+    // made darker while the darkest keep theirs. A kneeShade of zero leaves every shade as it is.
+    float kneeShade;
+    float kneeOpacity;
   };
 
   // The shades' texture is this many texels a side, so a grid may have at most this many cells a side: 500 of 20 m on the

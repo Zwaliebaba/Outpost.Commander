@@ -30,6 +30,7 @@
 #include "ExplosionManager.h"
 #include "Starfield.h"
 #include "FogOfWar.h"
+#include "TerritoryMarks.h"
 #include "Alerts.h"
 #include "Designer.h"
 #include "ProductionTarget.h"

@@ -145,7 +145,7 @@ void Outpost::WorldLog::RecordSeat(std::uint64_t _tick, const SeatTick& _seat)
     else if (event.kind == EventKind::EmpireRestarted)
       Write(std::format("restart {} player {}", _tick, _seat.player.value));
   }
-  // The hour has passed and the seat has not restarted: its start is not free (ADR-081). Written once a wait.
+  // The hour has passed and the seat has not restarted: its start is not free (ADR-084). Written once a wait.
   const bool waiting = snapshot.restartTick.has_value() && _tick > *snapshot.restartTick;
   if (waiting && !state->waiting)
     Write(std::format("waiting {} player {}", _tick, _seat.player.value));

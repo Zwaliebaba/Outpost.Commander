@@ -54,6 +54,10 @@ public:
   // Binds the pipeline to the frame's command list and sets the frame's constants. Draw calls follow.
   void BeginDrawing(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, const FrameConstants& _constants);
 
+  // Binds the pipeline again after another pipeline drew into the frame's command list, with the frame's constants and slots
+  // as BeginDrawing left them: what was drawn earlier in the frame keeps its instances and vertices. Draw calls follow.
+  void Resume(ID3D12GraphicsCommandList* _commandList) const;
+
   // Draws _mesh placed by _world, which may turn, move and scale uniformly, in a linear color.
   void Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color);
 

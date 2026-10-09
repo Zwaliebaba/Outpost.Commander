@@ -13,6 +13,10 @@ public:
   static constexpr float SEEN_SHADE = 0.0f;
   static constexpr float SEEN_BEFORE_SHADE = 0.55f;
   static constexpr float NEVER_SEEN_SHADE = 0.9f;
+  // On the ground, what was seen before is darker than its shade, so that the edge of sight is where the grid and the stars
+  // go out; never seen keeps its shade. The minimap keeps SEEN_BEFORE_SHADE, where telling what was explored from what never
+  // was matters for scouting. The ground's mask maps one to the other (interface plan 2, task UI1.3).
+  static constexpr float GROUND_SEEN_BEFORE_SHADE = 0.8f;
 
   // Starts over on a map of this side, centered on the origin, none of it seen; empty while the side is zero.
   void Reset(float _mapSizeMeters);
