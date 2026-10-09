@@ -54,5 +54,9 @@
     <ClCompile Include="SeatControllerTests.cpp" />
     <ClCompile Include="AwayReportsTests.cpp" />
     <ClCompile Include="DeputyPlayTests.cpp" />
+    <ClCompile Include="RepositoryData.cpp" />
+    <ClCompile Include="MatchArena.cpp" />
+    <ClCompile Include="TerritoryMatch.cpp" />
+    <ClCompile Include="WorldMatch.cpp" />
   </ItemGroup>
 </Project>
