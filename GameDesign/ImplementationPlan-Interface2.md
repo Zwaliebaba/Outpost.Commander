@@ -135,7 +135,7 @@ Each is an owner decision, proposed here and in the task it gates. All eight wer
   - the node marks: a claimable node marked exactly where the Relay's ghost would be green, and none at the node cap;
   - the lines rebuilt on a change and not otherwise.
 - **Verify:** CI; run, at the default zoom and the widest; **owner run.**
-- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md).
+- **As built (2026-10-08):** [ADR-081](../Design/ADR/ADR-081-territory-and-memory-over-the-fog.md).
   - `CanClaim` in `GameProtocol` is the one rule, and the Relay's ghost now calls it.
   - The inset is 4 m.
   - A side is one instance of a 1 m line mesh, whole, in 40 dashes or in 100 dots, made at startup. Nothing uploads mid-match, and the lines take none of the vertices the explosions' shards use.
@@ -165,8 +165,8 @@ Each is an owner decision, proposed here and in the task it gates. All eight wer
     - `WorldStateTests`: the new version's hash;
     - `WireFormatTests`: the field.
 - **Verify:** the container's `GameLogicTests` where the server changes; CI; run; **owner run.**
-- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md), the server's way.
-  - `WORLD_STATE_VERSION` goes from 2 to 3, with its layout's hash recorded, and `PROTOCOL_VERSION` from 12 to 13.
+- **As built (2026-10-08):** [ADR-081](../Design/ADR/ADR-081-territory-and-memory-over-the-fog.md), the server's way.
+  - `WORLD_STATE_VERSION` goes from 4 to 5, with its layout's hash recorded, and `PROTOCOL_VERSION` from 13 to 14. They land after milestone 38, which raised them to 4 and 13.
   - ADR-077 is not edited: it says how versions are kept, and each raise is recorded with its change, as milestone 37's was.
   - The minimap draws a memory as a cross over the fog.
   - The hint reads "Shipyard · last seen 4:12 ago, 34% built", and a remembered derelict's hint ends with its age. `Hud::Describe` and `Hud::DescribeDerelict` take the server's tick rate.
@@ -183,7 +183,7 @@ Each is an owner decision, proposed here and in the task it gates. All eight wer
 - **ADR:** rewrites ADR-024 decision 9's shades, and ADR-052 if the mapping lives in a shader.
 - **Acceptance:** `FogOfWarTests` with the shades.
 - **Verify:** CI; run, measuring the grid's brightness in and out of sight as the review measured it; **owner run.**
-- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md).
+- **As built (2026-10-08):** [ADR-081](../Design/ADR/ADR-081-territory-and-memory-over-the-fog.md).
   - The ground mask's shader maps the stored shade through a knee that `GroundMaskPipeline::FrameConstants` carries: 0.55 to 0.8, with never seen kept at 0.9. The minimap reads the texture without it.
   - CI built the shaders and the pipeline, Debug|x64. Not yet seen on screen.
 
@@ -201,7 +201,7 @@ Each is an owner decision, proposed here and in the task it gates. All eight wer
 - **ADR:** UI1.1's. ADR-056 decision 11 and ADR-068's minimap rewritten in place.
 - **Acceptance:** `HudTests`: the lattice; the nodes; a claimable node by the same rule as the ghost; a cut-off sector apart from a suppressed one; the marks' contrast.
 - **Verify:** CI; run; **owner run.**
-- **As built (2026-10-08):** [ADR-080](../Design/ADR/ADR-080-territory-and-memory-over-the-fog.md).
+- **As built (2026-10-08):** [ADR-081](../Design/ADR/ADR-081-territory-and-memory-over-the-fog.md).
   - The lattice is (0.11, 0.13, 0.17) linear, 2.06:1 against the map as the contrast test computes it.
   - A node is a dot of 4 units, and a node the player could claim has a 12-unit outline round it.
   - A cut-off sector's outline is in dashes of 6 units with gaps of 4.

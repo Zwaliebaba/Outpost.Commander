@@ -32,6 +32,7 @@
 #include "WorldFolder.h"
 #include "WorldSettings.h"
 #include "SeatController.h"
+#include "AwayReports.h"
 #include "StressLoad.h"
 #include "InProcessServer.h"
 #include "MeasurementLoad.h"

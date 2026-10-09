@@ -1752,6 +1752,87 @@ void LayControls(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, Outpost
   }
 }
 
+// The orders window (Phase 5 design §7, §11): under a label, the seat's scheduled orders, a line each; and under another,
+// the form's rows, each its label and its value between the arrows that step it, the line that says when the order fires,
+// and the button that gives it. It is as tall as its most orders and rows, so that it does not jump as the form changes.
+constexpr float ORDERS_WINDOW_WIDTH = 640.0f;
+constexpr float ORDER_ROW_UNITS = 30.0f;
+constexpr float ORDER_VALUE_LEFT = 150.0f;
+constexpr float ORDER_ARROW_TOP = 3.0f;
+constexpr float ORDER_TEXT_TOP = 6.0f;
+constexpr float ORDER_LABEL_TOP = 9.0f;
+
+// Where the form's label stands, and the window's height.
+constexpr float ORDERS_FORM_TOP =
+  Hud::TITLE_BAR_UNITS + PADDING + NAME_LINE_UNITS + (static_cast<float>(Hud::ORDERS_SHOWN + 1) * NAME_LINE_UNITS) + SECTION_GAP;
+constexpr float ORDERS_ROWS_TOP = ORDERS_FORM_TOP + NAME_LINE_UNITS;
+constexpr float ORDERS_FIRES_TOP = ORDERS_ROWS_TOP + (static_cast<float>(Hud::ORDER_ROWS) * ORDER_ROW_UNITS) + PANEL_GAP;
+constexpr float ORDERS_GIVE_TOP = ORDERS_FIRES_TOP + NAME_LINE_UNITS + PANEL_GAP;
+constexpr float ORDERS_WINDOW_HEIGHT = ORDERS_GIVE_TOP + BUTTON_HEIGHT + PADDING;
+
+void LayOrders(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::OrdersPanel& _panel,
+               Outpost::WindowManager::Point _corner, float _scale)
+{
+  (void)OpenWindow(_layout, Outpost::WindowKind::Orders, std::string(), _corner, ORDERS_WINDOW_WIDTH,
+                   ORDERS_WINDOW_HEIGHT - Hud::TITLE_BAR_UNITS, _scale);
+  Painter paint(_layout, _metrics, _corner, _scale);
+  paint.Text("SCHEDULED ORDERS", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  const float room = ORDERS_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
+  float top = Hud::TITLE_BAR_UNITS + PADDING;
+  paint.Text("WAITING", WINDOW_INSET, top + 3.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  top += NAME_LINE_UNITS;
+  if (_panel.scheduled.empty())
+    paint.Text("None", WINDOW_INSET, top, DIM_TEXT_COLOR, Hud::Typeface::Name);
+  for (const std::string& line : _panel.scheduled)
+  {
+    paint.Text(paint.Fit(line, Hud::Typeface::Name, room), WINDOW_INSET, top, TEXT_COLOR, Hud::Typeface::Name);
+    top += NAME_LINE_UNITS;
+  }
+  if (_panel.more > 0)
+    paint.Text(std::format("and {} more", _panel.more), WINDOW_INSET, top, DIM_TEXT_COLOR, Hud::Typeface::Name);
+
+  paint.Text("NEW ORDER FOR THE SELECTION", WINDOW_INSET, ORDERS_FORM_TOP + 3.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  for (std::size_t row = 0; row < _panel.rows.size() && row < Hud::ORDER_ROWS; ++row)
+  {
+    const Hud::OrderRow& order = _panel.rows[row];
+    const float rowTop = ORDERS_ROWS_TOP + (static_cast<float>(row) * ORDER_ROW_UNITS);
+    paint.Text(order.label, WINDOW_INSET, rowTop + ORDER_LABEL_TOP, ROW_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+    (void)paint.Stepped(order.value, ORDER_VALUE_LEFT, rowTop + ORDER_ARROW_TOP, rowTop + ORDER_TEXT_TOP,
+                        ORDERS_WINDOW_WIDTH - WINDOW_INSET - ORDER_VALUE_LEFT, true,
+                        {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = -1},
+                        {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = 1}, TEXT_COLOR, Hud::Typeface::Name);
+  }
+  paint.Text(paint.Fit(_panel.fires, Hud::Typeface::Name, room), WINDOW_INSET, ORDERS_FIRES_TOP, NUMBERS_COLOR, Hud::Typeface::Name);
+  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET, ORDERS_GIVE_TOP, room, BUTTON_HEIGHT, CARD_COLOR), _panel.give);
+}
+
+// The away window (Phase 5 design §11): how long the player was away, in the title face, and what happened, a line each.
+constexpr float AWAY_WINDOW_WIDTH = 600.0f;
+
+float AwayHeight(std::size_t _lines) noexcept
+{
+  return Hud::TITLE_BAR_UNITS + PADDING + TITLE_LINE_UNITS + (static_cast<float>(_lines) * NAME_LINE_UNITS) + PADDING;
+}
+
+void LayAway(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::AwayPanel& _panel, Outpost::WindowManager::Point _corner,
+             float _scale)
+{
+  const std::size_t lines = std::min(_panel.lines.size(), Hud::AWAY_LINES);
+  (void)OpenWindow(_layout, Outpost::WindowKind::Away, std::string(), _corner, AWAY_WINDOW_WIDTH, AwayHeight(lines) - Hud::TITLE_BAR_UNITS,
+                   _scale);
+  Painter paint(_layout, _metrics, _corner, _scale);
+  paint.Text("WHILE YOU WERE AWAY", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  const float room = AWAY_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
+  float top = Hud::TITLE_BAR_UNITS + PADDING;
+  paint.Text(paint.Fit(_panel.since, Hud::Typeface::Title, room), WINDOW_INSET, top, TEXT_COLOR, Hud::Typeface::Title);
+  top += TITLE_LINE_UNITS;
+  for (std::size_t line = 0; line < lines; ++line)
+  {
+    paint.Text(paint.Fit(_panel.lines[line], Hud::Typeface::Name, room), WINDOW_INSET, top, NUMBERS_COLOR, Hud::Typeface::Name);
+    top += NAME_LINE_UNITS;
+  }
+}
+
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
 std::size_t LayerStart(const Hud::Layout& _layout, std::size_t _window, std::size_t Hud::Window::*_first, std::size_t _total) noexcept
 {
@@ -1875,6 +1956,103 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
   // A domination says so: the side that ran out of tickets held less of the map (Phase 2 design §8).
   const std::string_view how = _newest.ending == MatchEnding::Domination ? "By domination. " : "";
   return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
+}
+
+Hud::OrdersPanel Hud::DescribeOrders(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
+                                     const OrderForm& _form, const PlayerClock& _clock, std::chrono::sys_seconds _now)
+{
+  OrdersPanel panel;
+  const auto ships = [](std::size_t _count) { return std::format("{} {}", _count, _count == 1 ? "ship" : "ships"); };
+  for (const ScheduledOrderView& order : _newest.scheduled)
+  {
+    if (panel.scheduled.size() == ORDERS_SHOWN)
+    {
+      ++panel.more;
+      continue;
+    }
+    std::string text = DescribeScheduledOrder(order, _newest, _clock);
+    text.front() = static_cast<char>(std::toupper(static_cast<unsigned char>(text.front())));
+    panel.scheduled.push_back(std::format("{}{}{}", text, DOT, ships(order.ships.size())));
+  }
+
+  const auto sectorName = [&_newest](std::int32_t _sector, std::string_view _none)
+  {
+    const auto sector = std::ranges::find(_newest.sectors, _sector, &SectorView::id);
+    return sector != _newest.sectors.end() ? sector->nameUtf8 : std::string(_none);
+  };
+  panel.rows.push_back({.label = "WHEN", .value = std::string(OrderForm::NameOf(_form.Trigger())), .field = OrderField::Trigger});
+  const bool timed = _form.Trigger() == ScheduledTriggerKind::TimeOfDay;
+  if (timed)
+  {
+    panel.rows.push_back({.label = "HOUR", .value = std::format("{:02}", _form.Hour()), .field = OrderField::Hour});
+    panel.rows.push_back({.label = "MINUTE", .value = std::format("{:02}", _form.Minute()), .field = OrderField::Minute});
+  }
+  else
+    panel.rows.push_back(
+      {.label = "WATCHING", .value = sectorName(_form.TriggerSector(), "None held"), .field = OrderField::TriggerSector});
+  panel.rows.push_back({.label = "DO", .value = std::string(OrderForm::NameOf(_form.Action())), .field = OrderField::Action});
+  if (!_newest.sectors.empty())
+    panel.rows.push_back({.label = "WHERE", .value = sectorName(_form.ActionSector(), "None"), .field = OrderField::ActionSector});
+  if (_form.TakesTarget())
+  {
+    const std::vector<const EntityView*> targets = _form.Targets(_newest, _entities);
+    const auto target = std::ranges::find(targets, _form.Target(), &EntityView::id);
+    panel.rows.push_back({.label = "TARGET",
+                          .value = target != targets.end() ? std::format("{} ({} of {})", OrderForm::NameOf(**target, _newest),
+                                                                         (target - targets.begin()) + 1, targets.size())
+                                                           : std::string("None there"),
+                          .field = OrderField::Target});
+  }
+  const std::optional<std::int32_t> condition = _form.Condition();
+  panel.rows.push_back({.label = "UNLESS",
+                        .value = condition.has_value() ? std::format("Over {} enemy CP there", *condition) : "Never",
+                        .field = OrderField::Condition});
+
+  if (timed)
+  {
+    const std::chrono::sys_seconds moment = _clock.NextMoment(_now, _form.Hour(), _form.Minute());
+    panel.fires = std::format("Fires at {} on your clock, in {}", _clock.Reading(moment),
+                              MinutesAndSeconds(static_cast<std::uint64_t>((moment - _now).count())));
+  }
+  else
+    panel.fires = "Fires once, the first time it happens";
+  const std::size_t given = _form.ShipsFor(_selected, _entities).size();
+  std::string missing = _form.Missing(_selected, _newest, _entities);
+  panel.give = {.label = given > 0 ? std::format("Give to {}|", ships(given)) : std::string("Give the order|"),
+                .action = {.kind = ActionKind::GiveOrder},
+                .enabled = missing.empty(),
+                .note = std::move(missing)};
+  return panel;
+}
+
+Hud::AwayPanel Hud::DescribeAway(const Snapshot& _newest, const AwayReport& _report, std::uint64_t _untilTick,
+                                 std::uint32_t _ticksPerSecond)
+{
+  const std::uint64_t ticks = _untilTick > _report.sinceTick ? _untilTick - _report.sinceTick : 0;
+  AwayPanel panel{.since = std::format("Away for {}", MinutesAndSeconds(_ticksPerSecond > 0 ? ticks / _ticksPerSecond : 0)), .lines = {}};
+  const auto count = [](std::uint32_t _count, std::string_view _thing)
+  { return _count == 0 ? std::format("no {}s", _thing) : std::format("{} {}{}", _count, _thing, _count == 1 ? "" : "s"); };
+  const auto sectorName = [&_newest](std::int32_t _sector)
+  {
+    const auto sector = std::ranges::find(_newest.sectors, _sector, &SectorView::id);
+    return sector != _newest.sectors.end() ? sector->nameUtf8 : std::string("the field");
+  };
+  const auto names = [&](const std::vector<std::int32_t>& _sectors)
+  {
+    std::string text;
+    for (const std::int32_t sector : _sectors)
+      text += std::format("{}{}", text.empty() ? "" : ", ", sectorName(sector));
+    return text;
+  };
+  panel.lines.push_back(std::format("Built {} and {}", count(_report.shipsBuilt, "ship"), count(_report.structuresBuilt, "structure")));
+  panel.lines.push_back(std::format("Lost {} and {}", count(_report.shipsLost, "ship"), count(_report.structuresLost, "structure")));
+  if (!_report.sectorsGained.empty())
+    panel.lines.push_back(std::format("Sectors gained: {}", names(_report.sectorsGained)));
+  if (!_report.sectorsLost.empty())
+    panel.lines.push_back(std::format("Sectors lost: {}", names(_report.sectorsLost)));
+  for (const EventView& fired : _report.ordersFired)
+    panel.lines.push_back(DescribeFiredOrder(fired, sectorName(fired.sector)));
+  return panel;
 }
 
 Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor,
@@ -2533,6 +2711,8 @@ bool Hud::WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::u
     return false;
   if (_newest == nullptr)
     return true;
+  if (!fits(ORDERS_WINDOW_WIDTH, ORDERS_WINDOW_HEIGHT) || !fits(AWAY_WINDOW_WIDTH, AwayHeight(AWAY_LINES)))
+    return false;
   // The designer with every component of the match, locked or not, as tall as it grows.
   Designer designer;
   designer.Update(*_newest);
@@ -2923,7 +3103,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
 
   // The floating windows (ADR-031), over everything else, back to front: those the manager has open, where it left them,
   // or, without a manager, every window the content has at its default place.
-  std::vector<WindowKind> backToFront{WindowKind::Production, WindowKind::Research, WindowKind::Designer, WindowKind::Controls};
+  std::vector<WindowKind> backToFront{WindowKind::Production, WindowKind::Research, WindowKind::Designer,
+                                      WindowKind::Controls,   WindowKind::Orders,   WindowKind::Away};
   if (_windows != nullptr)
     backToFront.assign(_windows->FrontToBack().rbegin(), _windows->FrontToBack().rend());
   const auto place = [&](WindowKind _kind, WindowManager::Point _default, float _widthUnits)
@@ -2960,6 +3141,20 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       const WindowManager::Point middle{.xUnits = (screenWidthUnits - CONTROLS_WINDOW_WIDTH) / 2.0f,
                                         .yUnits = std::max(MARGIN, (screenHeightUnits - ControlsHeight(KeyBindings())) / 2.0f)};
       LayControls(layout, _metrics, place(kind, middle, CONTROLS_WINDOW_WIDTH), scale);
+    }
+    // The orders window, at first at the right under the Ore's line, and the away window in the middle (Phase 5 design §11).
+    else if (kind == WindowKind::Orders && _content.orders.has_value())
+    {
+      LayOrders(layout, _metrics, *_content.orders,
+                place(kind, {.xUnits = screenWidthUnits - MARGIN - ORDERS_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, ORDERS_WINDOW_WIDTH),
+                scale);
+    }
+    else if (kind == WindowKind::Away && _content.away.has_value())
+    {
+      const float heightUnits = AwayHeight(std::min(_content.away->lines.size(), AWAY_LINES));
+      const WindowManager::Point middle{.xUnits = (screenWidthUnits - AWAY_WINDOW_WIDTH) / 2.0f,
+                                        .yUnits = std::max(MARGIN, (screenHeightUnits - heightUnits) / 2.0f)};
+      LayAway(layout, _metrics, *_content.away, place(kind, middle, AWAY_WINDOW_WIDTH), scale);
     }
   }
   return layout;

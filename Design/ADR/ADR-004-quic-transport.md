@@ -14,7 +14,7 @@ MsQuic is Microsoft's QUIC implementation. It is MIT-licensed, and the GDK docum
 
 ## Decision
 
-1. **The network transport is QUIC, through MsQuic**: the package `Microsoft.Native.Quic.MsQuic.Schannel` 2.6.1, which is the Schannel build.
+1. **The network transport is QUIC, through MsQuic**: the package `Microsoft.Native.Quic.MsQuic.Schannel` 2.6.2, which is the Schannel build.
 2. **The shell's matches use it, with the server still in the process.** The human and the AI reach the server inside the client over the loopback address. The headless runs and the tests that step the server keep ADR-002's `LoopbackTransport`. [ADR-060](ADR-060-quic-in-process.md) owns how.
 3. **MsQuic lives in `NeuronCore`**, because both ends need it: the client connects and the dedicated server listens. The QUIC code in `NeuronCore` knows no game concept (R9). It moves messages. The `Transport` that carries commands and snapshots over those messages is game code, and so is their wire format (ADR-060).
 4. **`msquic.h` is included only from `NeuronCore`'s `.cpp` files.** The package adds its include directory to `NeuronCore`'s include path and no other. A `NeuronCore` header that included `msquic.h` would therefore break every project that includes that header. The MsQuic headers include `<windows.h>`, so they come after `pch.h`, where `NeuronCore.h` sets the Windows macro family (AGENTS.md §4).

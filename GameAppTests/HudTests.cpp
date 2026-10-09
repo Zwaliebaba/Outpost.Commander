@@ -57,6 +57,29 @@ Outpost::Snapshot Newest()
   return snapshot;
 }
 
+// A sector, North, that the player holds, with a warship of the player's in it and an enemy Relay, for the orders window.
+Outpost::Snapshot OrdersSnapshot()
+{
+  Outpost::Snapshot snapshot = Newest();
+  snapshot.sectors = {{.id = 1,
+                       .nameUtf8 = "North",
+                       .minXMeters = -500.0f,
+                       .maxXMeters = 500.0f,
+                       .minZMeters = -500.0f,
+                       .maxZMeters = 500.0f,
+                       .node = {.xMeters = 0.0f, .zMeters = 100.0f},
+                       .holder = PLAYER}};
+  snapshot.structureTypes = {{.structure = Outpost::StructureKind::Relay, .nameUtf8 = "Relay"}};
+  snapshot.entities = {
+    {.id = Outpost::EntityId{100}, .owner = PLAYER, .design = SWARM, .hitPointsHundredths = 100, .maxHitPointsHundredths = 100},
+    {.id = Outpost::EntityId{200},
+     .kind = Outpost::EntityKind::Structure,
+     .owner = Outpost::PlayerId{2},
+     .structure = Outpost::StructureKind::Relay,
+     .position = {.xMeters = 0.0f, .zMeters = 100.0f}}};
+  return snapshot;
+}
+
 // A designer with a name and one card, and a button of the HUD's, for laying windows out.
 Outpost::Hud::Content WithDesigner()
 {
@@ -128,7 +151,8 @@ std::string LongestName(char _last)
   return std::string(Outpost::DESIGN_NAME_LIMIT - 1, 'W') + _last;
 }
 
-// The longest content the game makes, with every window open (task 14.1), the Controls window among them (task 16.4): six designs of the longest names, all selected,
+// The longest content the game makes, with every window open (task 14.1), the Controls window among them (task 16.4), and
+// the orders and away windows (Phase 5 design §11): six designs of the longest names, all selected,
 // one of them loaded in the designer of five weapons, every part locked or every part unlocked; a full queue at a
 // Shipyard and at the Lab; a page of topics, among them Relay Archives with both its prerequisites to do; a placement's
 // hint, the status panel's lines, the alerts, the territory and the banner. The Ore is five figures, more than any match in
@@ -198,6 +222,30 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
     laboratory.queue.push_back({.name = "Mass Driver Calibration", .front = job == 0, .waiting = job == 0});
   content.laboratory = laboratory;
   content.controls = true;
+
+  // The orders window with every order shown and more, and the form at its most rows; and the away window at its most lines.
+  Outpost::Hud::OrdersPanel orders{.more = 99,
+                                   .fires = "Fires at 23:55 on your clock, in 23:59:59",
+                                   .give = {.label = "Give to 99 ships|", .enabled = false, .note = "NO ENEMY SEEN THERE"}};
+  for (std::size_t order = 0; order < Outpost::Hud::ORDERS_SHOWN; ++order)
+  {
+    orders.scheduled.push_back("When the Relay in " + LongestName('S') + " is threatened, Mining Rig in " + LongestName('T') +
+                               ", unless over 60 enemy CP");
+  }
+  for (const auto& [label, field] :
+       std::array<std::pair<const char*, Outpost::OrderField>, Outpost::Hud::ORDER_ROWS>{{{"WHEN", Outpost::OrderField::Trigger},
+                                                                                          {"HOUR", Outpost::OrderField::Hour},
+                                                                                          {"MINUTE", Outpost::OrderField::Minute},
+                                                                                          {"DO", Outpost::OrderField::Action},
+                                                                                          {"WHERE", Outpost::OrderField::ActionSector},
+                                                                                          {"TARGET", Outpost::OrderField::Target},
+                                                                                          {"UNLESS", Outpost::OrderField::Condition}}})
+    orders.rows.push_back({.label = label, .value = LongestName('V') + " (99 of 99)", .field = field});
+  content.orders = orders;
+  Outpost::Hud::AwayPanel away{.since = "Away for 999:59:59", .lines = {}};
+  while (away.lines.size() < Outpost::Hud::AWAY_LINES)
+    away.lines.push_back("Order held back: attack-move to " + LongestName('A') + " and " + LongestName('B'));
+  content.away = away;
   return content;
 }
 
@@ -2072,6 +2120,142 @@ public:
       std::ranges::any_of(layout.panels, [&](const Outpost::Hud::Rect& _panel)
                           { return _panel.left < at.x && _panel.left + _panel.width > at.x && _panel.top < at.y && _panel.height < 3.0f; }),
       L"a mark round the alert's place");
+  }
+
+  // Phase 5 design §7, §11: the orders window lists the seat's scheduled orders, the first ORDERS_SHOWN with how many ships
+  // wait on each and how many more there are; and lays out the form, a row a field with the arrows that step it either way,
+  // when the order fires, and the button that gives it to the selection's warships, which says why it cannot while it
+  // cannot.
+  TEST_METHOD(LaysOutTheOrdersWindow)
+  {
+    Outpost::Snapshot newest = OrdersSnapshot();
+    for (std::uint32_t id = 1; id <= Outpost::Hud::ORDERS_SHOWN + 2; ++id)
+    {
+      newest.scheduled.push_back({.id = id,
+                                  .ships = {Outpost::EntityId{100}, Outpost::EntityId{101}},
+                                  .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = std::int64_t{2} * 3600},
+                                  .action = {.kind = Outpost::ScheduledActionKind::AttackMove}});
+    }
+    const Outpost::PlayerClock clock;
+    const std::chrono::sys_seconds now{std::chrono::hours{1}};
+    Outpost::OrderForm form;
+    form.Update(newest, newest.entities);
+    Outpost::Hud::OrdersPanel panel = Outpost::Hud::DescribeOrders(newest, newest.entities, {}, form, clock, now);
+    Assert::AreEqual(Outpost::Hud::ORDERS_SHOWN, panel.scheduled.size());
+    Assert::AreEqual(std::size_t{2}, panel.more);
+    Assert::AreEqual(std::string("At 02:00, attack-move to North \xC2\xB7 2 ships"), panel.scheduled.front());
+    const auto labelsOf = [](const Outpost::Hud::OrdersPanel& _panel)
+    {
+      std::vector<std::string> labels;
+      labels.reserve(_panel.rows.size());
+      for (const Outpost::Hud::OrderRow& row : _panel.rows)
+        labels.push_back(row.label);
+      return labels;
+    };
+    Assert::IsTrue(labelsOf(panel) == std::vector<std::string>{"WHEN", "HOUR", "MINUTE", "DO", "WHERE", "UNLESS"});
+    Assert::AreEqual(std::string("02"), panel.rows[1].value);
+    Assert::AreEqual(std::string("Never"), panel.rows.back().value);
+    Assert::AreEqual(std::string("Fires at 02:00 on your clock, in 1:00:00"), panel.fires);
+    Assert::IsFalse(panel.give.enabled);
+    Assert::AreEqual(std::string("SELECT WARSHIPS"), panel.give.note);
+
+    Outpost::Hud::Content content;
+    content.orders = panel;
+    Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    Assert::AreEqual(std::size_t{1}, layout.windows.size());
+    Assert::IsTrue(layout.windows[0].kind == Outpost::WindowKind::Orders);
+    for (const Outpost::Hud::OrderRow& row : panel.rows)
+    {
+      for (const int step : {-1, 1})
+      {
+        Assert::IsTrue(std::ranges::any_of(layout.actions,
+                                           [&](const auto& _action) {
+                                             return _action.second == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StepOrder,
+                                                                                           .field = row.field,
+                                                                                           .step = step};
+                                           }),
+                       std::format(L"{} steps {}", std::wstring(winrt::to_hstring(row.label)), step).c_str());
+      }
+    }
+    const auto gives = [&layout]
+    {
+      return std::ranges::any_of(layout.actions,
+                                 [](const auto& _action) { return _action.second.kind == Outpost::Hud::ActionKind::GiveOrder; });
+    };
+    Assert::IsFalse(gives(), L"nothing to give it to");
+    for (const std::string text : {"SELECT WARSHIPS", "and 2 more", "Fires at 02:00 on your clock, in 1:00:00"})
+      Assert::IsTrue(std::ranges::find(layout.texts, text, &Outpost::Hud::Text::text) != layout.texts.end());
+
+    // An event trigger watches a sector, and an attack takes a target there.
+    form.Step(Outpost::OrderField::Trigger, 1, newest, newest.entities);
+    form.Step(Outpost::OrderField::Action, 1, newest, newest.entities);
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{100}};
+    panel = Outpost::Hud::DescribeOrders(newest, newest.entities, selected, form, clock, now);
+    Assert::IsTrue(labelsOf(panel) == std::vector<std::string>{"WHEN", "WATCHING", "DO", "WHERE", "TARGET", "UNLESS"});
+    Assert::AreEqual(std::string("North"), panel.rows[1].value);
+    Assert::AreEqual(std::string("Relay (1 of 1)"), panel.rows[4].value);
+    Assert::AreEqual(std::string("Fires once, the first time it happens"), panel.fires);
+    Assert::IsTrue(panel.give.enabled);
+    Assert::AreEqual(std::string("Give to 1 ship|"), panel.give.label);
+    content.orders = panel;
+    layout = Lay(content, 1920, 1080);
+    Assert::IsTrue(gives());
+  }
+
+  // Design §11: the selection's panel names the scheduled order its ship waits on, whole.
+  TEST_METHOD(NamesAShipsPendingOrder)
+  {
+    Outpost::Snapshot newest = OrdersSnapshot();
+    newest.scheduled = {{.id = 4,
+                         .ships = {Outpost::EntityId{100}},
+                         .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = std::int64_t{2} * 3600},
+                         .action = {.kind = Outpost::ScheduledActionKind::HoldSector}}};
+    newest.entities[0].scheduledOrder = 4;
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{100}};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, newest.entities, selected);
+    Assert::IsFalse(content.selection.empty());
+    const std::string pending = Outpost::PendingOrderLine(selected, newest.entities, newest, Outpost::PlayerClock()).value_or("");
+    Assert::AreEqual(std::string("Scheduled: at 02:00, hold North"), pending);
+    content.selection.push_back(pending);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    Assert::IsTrue(std::ranges::find(layout.texts, pending, &Outpost::Hud::Text::text) != layout.texts.end(), L"whole");
+  }
+
+  // Design §11: on taking its seat again the player is told what happened while it was away, in a window of its own: how
+  // long, what was built and lost, the sectors gained and lost, and each order that fired.
+  TEST_METHOD(SaysWhatHappenedWhileAway)
+  {
+    Outpost::Snapshot newest = OrdersSnapshot();
+    newest.sectors.push_back(newest.sectors.front());
+    newest.sectors.back().id = 2;
+    newest.sectors.back().nameUtf8 = "South";
+    const Outpost::AwayReport report{
+      .sinceTick = 100,
+      .shipsBuilt = 3,
+      .structuresBuilt = 1,
+      .shipsLost = 0,
+      .structuresLost = 2,
+      .sectorsGained = {1},
+      .sectorsLost = {2},
+      .ordersFired = {{.kind = Outpost::EventKind::OrderFired, .sector = 1, .action = Outpost::ScheduledActionKind::AttackMove},
+                      {.kind = Outpost::EventKind::OrderFired,
+                       .sector = 2,
+                       .action = Outpost::ScheduledActionKind::Move,
+                       .outcome = Outpost::OrderOutcome::HeldInstead}}};
+    const Outpost::Hud::AwayPanel panel = Outpost::Hud::DescribeAway(newest, report, 100 + (20 * 3725), 20);
+    Assert::AreEqual(std::string("Away for 1:02:05"), panel.since);
+    Assert::IsTrue(panel.lines == std::vector<std::string>{"Built 3 ships and 1 structure", "Lost no ships and 2 structures",
+                                                           "Sectors gained: North", "Sectors lost: South",
+                                                           "Order fired: attack-move to North", "Order held back: move to South"});
+
+    Outpost::Hud::Content content;
+    Assert::IsTrue(Lay(content, 1920, 1080).windows.empty(), L"nothing to tell, no window");
+    content.away = panel;
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    Assert::AreEqual(std::size_t{1}, layout.windows.size());
+    Assert::IsTrue(layout.windows[0].kind == Outpost::WindowKind::Away);
+    for (const std::string& line : panel.lines)
+      Assert::IsTrue(std::ranges::find(layout.texts, line, &Outpost::Hud::Text::text) != layout.texts.end());
   }
 
   // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs.

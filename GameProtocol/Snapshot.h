@@ -136,6 +136,8 @@ struct EntityView
   // A ship's retreat, and whether it is going back to be repaired now (Phase 4 design §10, ADR-075); its owner's only.
   RetreatThreshold retreat = RetreatThreshold::Never;
   bool retreating = false;
+  // The scheduled order a ship waits on, which only its owner sees (ADR-080); zero for none.
+  std::uint32_t scheduledOrder = 0;
   // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
   // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
   std::optional<std::int64_t> oreReserveHundredths;
@@ -369,6 +371,143 @@ struct DestroyedView
   float radiusMeters = 0.0f;
 };
 
+// What happened to a player in a tick, which the server raises and the player's snapshot of that tick carries (Phase 5
+// design §7, ADR-080). Its alerts are read from them, and a scheduled order's trigger is one of them.
+enum class EventKind : std::uint8_t
+{
+  // A Relay of the player's suppressed, or hit by an enemy's shot (ADR-059).
+  RelaySuppressed,
+  RelayAttacked,
+  // Enemy or pirate warships the player sees in a sector it holds that held none it saw in the tick before.
+  EnemyEntered,
+  // A ship of the player's starts going back to be repaired (ADR-075).
+  ShipRetreating,
+  // A sector the pirates guarded no longer is (ADR-073); every player hears of it.
+  PiratesCleared,
+  // A ship or structure of the player's finished, or destroyed.
+  ShipBuilt,
+  StructureBuilt,
+  ShipLost,
+  StructureLost,
+  // A sector the player came to hold, or no longer holds.
+  SectorGained,
+  SectorLost,
+  // A scheduled order of the player's fired.
+  OrderFired
+};
+
+// What became of a scheduled order that fired (ADR-080).
+enum class OrderOutcome : std::uint8_t
+{
+  // Its ships were given its action.
+  AsGiven,
+  // Its condition held it back, and its ships hold the sector they are in.
+  HeldInstead,
+  // The server refused what it ordered, as when an attack's target is gone or out of sight.
+  Refused
+};
+
+// One event, for the player whose snapshot carries it.
+struct EventView
+{
+  EventKind kind = EventKind::RelaySuppressed;
+  // The sector it happened in; zero for none, as on a map without sectors.
+  std::int32_t sector = 0;
+  // Where it happened: the Relay, the ship, the structure, the first enemy warship seen, or the sector's node.
+  PlanePosition position;
+  // The ship or structure it is about, if any.
+  EntityId subject;
+  // A structure's kind, for a structure built or lost.
+  StructureKind structure = StructureKind::CommandStation;
+  // Whose warships entered, or whose shot hit the Relay: an enemy, or the pirates.
+  PlayerId other;
+  // A scheduled order that fired: which, the action its ships were given, and what became of it.
+  std::uint32_t order = 0;
+  ScheduledActionKind action = ScheduledActionKind::Move;
+  OrderOutcome outcome = OrderOutcome::AsGiven;
+
+  friend bool operator==(const EventView&, const EventView&) = default;
+};
+
+// One of the player's scheduled orders, as its own snapshot shows it (ADR-080): what it was given, with the tick its time
+// of day became, and the ships still waiting on it.
+struct ScheduledOrderView
+{
+  std::uint32_t id = 0;
+  std::vector<EntityId> ships;
+  ScheduledTrigger trigger;
+  ScheduledAction action;
+  std::optional<std::int32_t> unlessCommandPoints;
+
+  friend bool operator==(const ScheduledOrderView&, const ScheduledOrderView&) = default;
+};
+
+// What happened to a player's empire while its deputy played its seat (Phase 5 design §11, ADR-080), which the server keeps
+// and hands it when it takes the seat again.
+struct AwayReport
+{
+  // The tick the deputy took the seat at.
+  std::uint64_t sinceTick = 0;
+  std::uint32_t shipsBuilt = 0;
+  std::uint32_t structuresBuilt = 0;
+  std::uint32_t shipsLost = 0;
+  std::uint32_t structuresLost = 0;
+  // The sectors gained and lost, as it comes back to them: one gained and lost again is in neither.
+  std::vector<std::int32_t> sectorsGained;
+  std::vector<std::int32_t> sectorsLost;
+  // The scheduled orders that fired, as their events, at most REPORTED_ORDERS of the last.
+  std::vector<EventView> ordersFired;
+
+  static constexpr std::size_t REPORTED_ORDERS = 16;
+
+  // Adds an event of the player's to the report; one it does not tell of changes nothing.
+  void Record(const EventView& _event)
+  {
+    // A sector gained that was lost before comes back to where it was, and the other way round.
+    const auto turn = [&_event](std::vector<std::int32_t>& _to, std::vector<std::int32_t>& _from)
+    {
+      if (const auto back = std::ranges::find(_from, _event.sector); back != _from.end())
+        _from.erase(back);
+      else if (std::ranges::find(_to, _event.sector) == _to.end())
+        _to.push_back(_event.sector);
+    };
+    switch (_event.kind)
+    {
+    case EventKind::ShipBuilt:
+      ++shipsBuilt;
+      break;
+    case EventKind::StructureBuilt:
+      ++structuresBuilt;
+      break;
+    case EventKind::ShipLost:
+      ++shipsLost;
+      break;
+    case EventKind::StructureLost:
+      ++structuresLost;
+      break;
+    case EventKind::SectorGained:
+      turn(sectorsGained, sectorsLost);
+      break;
+    case EventKind::SectorLost:
+      turn(sectorsLost, sectorsGained);
+      break;
+    case EventKind::OrderFired:
+      ordersFired.push_back(_event);
+      if (ordersFired.size() > REPORTED_ORDERS)
+        ordersFired.erase(ordersFired.begin());
+      break;
+    case EventKind::RelaySuppressed:
+    case EventKind::RelayAttacked:
+    case EventKind::EnemyEntered:
+    case EventKind::ShipRetreating:
+    case EventKind::PiratesCleared:
+      break;
+    }
+  }
+
+  friend bool operator==(const AwayReport&, const AwayReport&) = default;
+};
+
 // The world as one player may see it after one tick (ADR-002 decision 4). Under fog of war it holds the player's own
 // entities, the asteroids and fields, the enemy entities the player sees and the enemy structures it remembers, and the
 // shots and destructions it sees (ADR-024).
@@ -380,6 +519,12 @@ struct Snapshot
   // What happened in this tick that the entities alone do not show.
   std::vector<ShotView> shots;
   std::vector<DestroyedView> destroyed;
+  // The player's events of this tick, in the order the server raised them, and its scheduled orders (ADR-080).
+  std::vector<EventView> events;
+  std::vector<ScheduledOrderView> scheduled;
+  // What happened while the player was away, in the first snapshot after it takes its seat again from its deputy (Phase 5
+  // design §11); none otherwise.
+  std::optional<AwayReport> away;
   // The player's own: its Ore, whole, what its Mining Rigs earn each second in hundredths of an Ore, and its saved
   // designs.
   std::int32_t ore = 0;

@@ -153,6 +153,31 @@ Outpost::Snapshot FullSnapshot()
                               .guarded = true});
   snapshot.tickets.push_back({.player = Outpost::PlayerId{1}, .tickets = 95});
   snapshot.startingTickets = 96;
+  // The last kind of event (ADR-080), with every field set.
+  const Outpost::EventView fired{.kind = Outpost::EventKind::OrderFired,
+                                 .sector = 98,
+                                 .position = {.xMeters = 9.5f, .zMeters = -9.5f},
+                                 .subject = Outpost::EntityId{99},
+                                 .structure = Outpost::StructureKind::RepairBay,
+                                 .other = Outpost::PIRATES,
+                                 .order = 100,
+                                 .action = Outpost::ScheduledActionKind::BuildRig,
+                                 .outcome = Outpost::OrderOutcome::Refused};
+  snapshot.events.push_back(fired);
+  snapshot.scheduled.push_back({.id = 101,
+                                .ships = {Outpost::EntityId{102}},
+                                .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = -103, .tick = 104},
+                                .action = {.kind = Outpost::ScheduledActionKind::Attack, .target = Outpost::EntityId{105}},
+                                .unlessCommandPoints = 106});
+  snapshot.away = Outpost::AwayReport{.sinceTick = 107,
+                                      .shipsBuilt = 108,
+                                      .structuresBuilt = 109,
+                                      .shipsLost = 110,
+                                      .structuresLost = 111,
+                                      .sectorsGained = {112},
+                                      .sectorsLost = {113},
+                                      .ordersFired = {fired}};
+  snapshot.entities[0].scheduledOrder = 114;
   return snapshot;
 }
 
@@ -193,7 +218,12 @@ public:
       Outpost::PatrolCommand{.ships = ships, .destination = {.zMeters = 19.0f}},
       Outpost::UpgradeStructureCommand{.structure = Outpost::EntityId{21}},
       Outpost::SalvageCommand{.constructors = ships, .derelict = Outpost::EntityId{22}},
-      Outpost::SetRetreatCommand{.ships = ships, .retreat = Outpost::RetreatThreshold::Quarter}};
+      Outpost::SetRetreatCommand{.ships = ships, .retreat = Outpost::RetreatThreshold::Quarter},
+      Outpost::ScheduleOrderCommand{
+        .ships = ships,
+        .trigger = {.kind = Outpost::ScheduledTriggerKind::RigLost, .sector = 23, .utcSeconds = 1'790'000'000, .tick = 24},
+        .action = {.kind = Outpost::ScheduledActionKind::BuildRig, .position = {.xMeters = 25.0f}, .target = Outpost::EntityId{26}},
+        .unlessCommandPoints = 27}};
     Assert::AreEqual(std::variant_size_v<Outpost::Order>, orders.size(), L"every alternative once");
     for (size_t i = 0; i < orders.size(); ++i)
     {
@@ -203,6 +233,12 @@ public:
       Assert::AreEqual(std::uint32_t{20}, command.player.value);
       Assert::AreEqual(i, command.order.index());
     }
+
+    const Outpost::Message scheduledMessage = RoundTrip(Outpost::Command{.order = orders[14]});
+    const auto& scheduled = std::get<Outpost::ScheduleOrderCommand>(std::get<Outpost::Command>(scheduledMessage).order);
+    Assert::IsTrue(scheduled.trigger == std::get<Outpost::ScheduleOrderCommand>(orders[14]).trigger, L"every field of a trigger");
+    Assert::IsTrue(scheduled.action == std::get<Outpost::ScheduleOrderCommand>(orders[14]).action);
+    Assert::IsTrue(scheduled.unlessCommandPoints == std::optional<std::int32_t>{27});
 
     const Outpost::Message save = RoundTrip(Outpost::Command{.order = orders[8]});
     const auto& design = std::get<Outpost::SaveDesignCommand>(std::get<Outpost::Command>(save).order);
@@ -220,6 +256,9 @@ public:
     Assert::IsTrue(expected.entities == snapshot.entities, L"entities, with their queues and research");
     Assert::IsTrue(expected.sectors == snapshot.sectors);
     Assert::IsTrue(expected.tickets == snapshot.tickets);
+    Assert::IsTrue(expected.events == snapshot.events, L"the tick's events");
+    Assert::IsTrue(expected.scheduled == snapshot.scheduled, L"the player's scheduled orders");
+    Assert::IsTrue(expected.away == snapshot.away, L"the report of a time away");
     Assert::IsTrue(snapshot.entities[0].oreReserveHundredths == std::optional<std::int64_t>{-31'000'000'000ll});
     Assert::IsFalse(snapshot.entities[1].oreReserveHundredths.has_value());
     Assert::IsTrue(snapshot.entities[0].upgradePermille == std::optional<std::int32_t>{417});

@@ -352,6 +352,48 @@ void Outpost::Simulation::UpdateVision(std::uint64_t _seenTick)
   }
 }
 
+void Outpost::Simulation::Raise(PlayerId _player, EventView _event)
+{
+  if (FindPlayer(_player) == nullptr)
+    return;
+  if (_event.sector == 0)
+  {
+    if (const Sector* sector = SectorAt(_event.position))
+      _event.sector = sector->placement.id;
+  }
+  m_events.emplace_back(_player, _event);
+}
+
+void Outpost::Simulation::RaiseSightings()
+{
+  for (PlayerState& player : m_players)
+  {
+    // The sectors the player holds where it sees an enemy or pirate warship, each with the first of them, in identifier
+    // order.
+    std::vector<std::pair<std::int32_t, const Entity*>> sightings;
+    for (const Entity& ship : m_entities)
+    {
+      if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Warship || !ship.owner.IsValid() || ship.owner == player.id ||
+          !Sees(player.id, ship))
+        continue;
+      const Sector* sector = SectorAt(ship.position);
+      if (sector == nullptr || sector->holder != player.id ||
+          std::ranges::find(sightings, sector->placement.id, &std::pair<std::int32_t, const Entity*>::first) != sightings.end())
+        continue;
+      sightings.emplace_back(sector->placement.id, &ship);
+    }
+    std::vector<std::int32_t> sectors;
+    for (const auto& [sector, ship] : sightings)
+    {
+      sectors.push_back(sector);
+      if (std::ranges::find(player.enemySectors, sector) == player.enemySectors.end())
+        Raise(player.id,
+              {.kind = EventKind::EnemyEntered, .sector = sector, .position = ship->position, .subject = ship->id, .other = ship->owner});
+    }
+    player.enemySectors = std::move(sectors);
+  }
+}
+
 std::vector<Outpost::PlayerId> Outpost::Simulation::PlayersWithoutStation() const
 {
   std::vector<PlayerId> players;
@@ -804,70 +846,14 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   results.reserve(_commands.size());
   m_shots.clear();
   m_destroyed.clear();
+  m_events.clear();
   {
     const ObservedPart part(m_observer, TickPart::Commands);
     // The large orders of the last tick plan the rest of their paths and set off before this tick's orders, which may
     // order their ships again (ADR-032).
     FinishPlannedOrders();
     for (const Command& command : _commands)
-    {
-      const std::size_t plannedBefore = m_plannedOrders.size();
-      results.push_back(std::visit(
-        [this, &command]<typename OrderType>(const OrderType& _order)
-        {
-          if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
-                        std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand> ||
-                        std::is_same_v<OrderType, HoldSectorCommand> || std::is_same_v<OrderType, PatrolCommand>)
-            return Apply(command.player, _order);
-          else
-            return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
-        },
-        command.order));
-      // A ship given another order leaves the group it was planning with.
-      if (results.back() == CommandResult::Applied)
-      {
-        std::visit(
-          [this, plannedBefore]<typename OrderType>(const OrderType& _order)
-          {
-            if constexpr (requires { _order.ships; })
-            {
-              for (std::size_t index = 0; index < plannedBefore; ++index)
-                std::erase_if(m_plannedOrders[index].members, [&_order](const PlannedOrder::Member& _member)
-                              { return std::ranges::find(_order.ships, _member.ship) != _order.ships.end(); });
-            }
-            // Any order a player gives a ship ends its retreat; a hit below its threshold starts it again (ADR-075).
-            if constexpr (!std::is_same_v<OrderType, SetRetreatCommand>)
-            {
-              const auto endRetreat = [this](const std::vector<EntityId>& _ships)
-              {
-                for (const EntityId id : _ships)
-                {
-                  if (Entity* ship = FindMutableEntity(id))
-                  {
-                    ship->retreating = false;
-                    ship->repairer = {};
-                  }
-                }
-              };
-              if constexpr (requires { _order.ships; })
-                endRetreat(_order.ships);
-              if constexpr (requires { _order.constructors; })
-                endRetreat(_order.constructors);
-            }
-            // Any other order a player gives a ship ends its standing order (ADR-059).
-            if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
-                          std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
-            {
-              for (const EntityId id : _order.ships)
-              {
-                if (Entity* ship = FindMutableEntity(id))
-                  ship->standing = StandingOrder::None;
-              }
-            }
-          },
-          command.order);
-      }
-    }
+      results.push_back(ApplyOrder(command.player, command.order));
   }
 
   // The world advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
@@ -916,6 +902,8 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     // What the tick leaves, which its snapshot reports as the next tick.
     UpdateVision(m_tick + 1);
   }
+  RaiseSightings();
+  FireScheduledOrders();
   // A tick that planned no paths builds again one graph the obstacles' last change dropped, so that the next order finds
   // it built (ADR-032). The graphs are a cache: when they are built changes no path.
   if (!m_plannedThisTick)
@@ -954,6 +942,22 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   {
     snapshot.shots = m_shots;
     snapshot.destroyed = m_destroyed;
+  }
+  for (const auto& [player, event] : m_events)
+  {
+    if (player == _player)
+      snapshot.events.push_back(event);
+  }
+  for (const ScheduledOrder& order : m_scheduledOrders)
+  {
+    if (order.player == _player)
+    {
+      snapshot.scheduled.push_back({.id = order.id,
+                                    .ships = order.ships,
+                                    .trigger = order.trigger,
+                                    .action = order.action,
+                                    .unlessCommandPoints = order.unlessCommandPoints});
+    }
   }
   if (const auto state = std::ranges::find(m_players, _player, &PlayerState::id); state != m_players.end())
     snapshot.ore = static_cast<std::int32_t>(state->oreHundredths / HUNDREDTHS);
@@ -1078,6 +1082,9 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
       view.standing = entity.standing;
       view.retreat = entity.retreat;
       view.retreating = entity.retreating;
+      const auto waiting = std::ranges::find_if(m_scheduledOrders, [&entity](const ScheduledOrder& _order)
+                                                { return std::ranges::find(_order.ships, entity.id) != _order.ships.end(); });
+      view.scheduledOrder = waiting != m_scheduledOrders.end() ? waiting->id : 0;
     }
     // An ore asteroid's Ore left, and a rig's asteroid's, as far as the player knows it (Phase 1 design §8).
     if (entity.kind == EntityKind::Asteroid)
@@ -1471,6 +1478,8 @@ void Outpost::Simulation::Fight()
     std::int32_t hundredths = 0;
   };
   std::vector<Hit> hits;
+  // The Relays an enemy's shot hit this tick, each once, with whose shot hit it first (ADR-080).
+  std::vector<std::pair<EntityId, PlayerId>> relaysHit;
 
   // One gun of _shooter: it reloads, waits while it has no target, and fires at _target when it is ready (ADR-014). The
   // shot names the gun, so that the client draws a structure's guns from their own hardpoints (ADR-064).
@@ -1510,6 +1519,9 @@ void Outpost::Simulation::Fight()
                        .to = target.position,
                        .splashRadiusMeters = _armament.splashRadiusMeters,
                        .gun = _gun});
+    if (target.kind == EntityKind::Structure && target.structure == StructureKind::Relay && target.owner != _shooter.owner &&
+        std::ranges::find(relaysHit, target.id, &std::pair<EntityId, PlayerId>::first) == relaysHit.end())
+      relaysHit.emplace_back(target.id, _shooter.owner);
     // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
     // after its own armor. Never the shooter's own side (ADR-014).
     if (_armament.splashRadiusMeters > 0.0f)
@@ -1562,6 +1574,13 @@ void Outpost::Simulation::Fight()
     }
   }
 
+  for (const auto& [relay, shooter] : relaysHit)
+  {
+    const Entity& hit = *FindEntity(relay);
+    Raise(hit.owner,
+          {.kind = EventKind::RelayAttacked, .position = hit.position, .subject = hit.id, .structure = hit.structure, .other = shooter});
+  }
+
   bool anyDestroyed = false;
   for (const Hit& hit : hits)
   {
@@ -1600,6 +1619,13 @@ void Outpost::Simulation::Fight()
                              .position = entity.position,
                              .headingRadians = entity.headingRadians,
                              .radiusMeters = entity.radiusMeters});
+      if (entity.kind == EntityKind::Ship || entity.kind == EntityKind::Structure)
+      {
+        Raise(entity.owner, {.kind = entity.kind == EntityKind::Ship ? EventKind::ShipLost : EventKind::StructureLost,
+                             .position = entity.position,
+                             .subject = entity.id,
+                             .structure = entity.structure});
+      }
     }
   }
   const bool blockerDestroyed = std::ranges::any_of(
@@ -2344,6 +2370,11 @@ void Outpost::Simulation::Work()
       const std::int32_t done = std::min(target.buildWorkNeeded, target.buildWorkDone + work);
       target.hitPointsHundredths += static_cast<std::int32_t>(granted(done) - granted(target.buildWorkDone));
       target.buildWorkDone = done;
+      if (target.IsBuilt())
+      {
+        Raise(target.owner,
+              {.kind = EventKind::StructureBuilt, .position = target.position, .subject = target.id, .structure = target.structure});
+      }
       if (target.IsBuilt() && target.hitPointsHundredths >= target.maxHitPointsHundredths)
         finished.push_back(id);
       continue;
@@ -2456,10 +2487,13 @@ void Outpost::Simulation::Retreat(const std::vector<EntityId>& _ships)
            Distance(other.position, ship.position) < Distance(best->position, ship.position)))
         best = &other;
     }
+    const bool wasRetreating = ship.retreating;
     ship.repairer = best != nullptr ? best->id : EntityId{};
     ship.retreating = best != nullptr;
     if (best == nullptr)
       continue;
+    if (!wasRetreating)
+      Raise(ship.owner, {.kind = EventKind::ShipRetreating, .position = ship.position, .subject = ship.id});
     ship.attackTarget = {};
     ship.workTarget = {};
     for (PlannedOrder& planned : m_plannedOrders)
@@ -2639,10 +2673,9 @@ void Outpost::Simulation::Produce()
                                                                     : FindDesign(delivery.job.design)->stats.movement.radiusMeters;
     const PlanePosition position =
       m_pathfinder.Clear(delivery.producerPosition + out * (delivery.producerRadiusMeters + radius + SPAWN_GAP_METERS), radius);
-    if (delivery.job.role == ShipRole::Constructor)
-      (void)SpawnConstructor(delivery.owner, position, heading);
-    else
-      (void)SpawnShip(delivery.owner, delivery.job.design, position, heading);
+    const EntityId built = delivery.job.role == ShipRole::Constructor ? SpawnConstructor(delivery.owner, position, heading)
+                                                                      : SpawnShip(delivery.owner, delivery.job.design, position, heading);
+    Raise(delivery.owner, {.kind = EventKind::ShipBuilt, .position = position, .subject = built});
   }
 }
 
@@ -2696,6 +2729,8 @@ void Outpost::Simulation::UpdateTerritory()
 {
   if (!HasTerritory())
     return;
+  // How each sector stood before, which tells what changed (ADR-080).
+  const std::vector<Sector> before = m_sectors;
   const auto suppressionRadius = static_cast<float>(m_tuning->territory.suppressionRadiusMeters);
   for (Sector& sector : m_sectors)
   {
@@ -2769,6 +2804,25 @@ void Outpost::Simulation::UpdateTerritory()
   }
   for (size_t index = 0; index < m_sectors.size(); ++index)
     m_sectors[index].cutOff = m_sectors[index].holder.IsValid() && linked[index] == 0;
+
+  for (size_t index = 0; index < m_sectors.size(); ++index)
+  {
+    const Sector& was = before[index];
+    const Sector& now = m_sectors[index];
+    const EventView about{.sector = now.placement.id, .position = now.placement.node};
+    if (was.holder != now.holder)
+    {
+      Raise(was.holder, {.kind = EventKind::SectorLost, .sector = about.sector, .position = about.position});
+      Raise(now.holder, {.kind = EventKind::SectorGained, .sector = about.sector, .position = about.position});
+    }
+    if (now.suppressed && !(was.suppressed && was.holder == now.holder))
+      Raise(now.holder, {.kind = EventKind::RelaySuppressed, .sector = about.sector, .position = about.position});
+    if (was.guarded && !now.guarded)
+    {
+      for (const PlayerState& player : m_players)
+        Raise(player.id, {.kind = EventKind::PiratesCleared, .sector = about.sector, .position = about.position});
+    }
+  }
 }
 
 std::int32_t Outpost::Simulation::NodeCapOf(PlayerId _player) const noexcept
@@ -3067,6 +3121,232 @@ std::vector<Outpost::EntityId> Outpost::Simulation::WarshipsOf(const std::vector
       warships.push_back(id);
   }
   return warships;
+}
+
+Outpost::CommandResult Outpost::Simulation::ApplyOrder(PlayerId _player, const Order& _order)
+{
+  const std::size_t plannedBefore = m_plannedOrders.size();
+  const CommandResult result = std::visit(
+    [this, _player]<typename OrderType>(const OrderType& _given)
+    {
+      if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
+                    std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand> ||
+                    std::is_same_v<OrderType, HoldSectorCommand> || std::is_same_v<OrderType, PatrolCommand> ||
+                    std::is_same_v<OrderType, ScheduleOrderCommand>)
+        return Apply(_player, _given);
+      else
+        return m_tuning ? Apply(_player, _given) : CommandResult::NotYetSupported;
+    },
+    _order);
+  // A scheduled order gives its ships nothing to do until it fires (ADR-080), and a retreat is no order (ADR-075).
+  if (result != CommandResult::Applied || std::holds_alternative<ScheduleOrderCommand>(_order))
+    return result;
+  std::visit(
+    [this, plannedBefore]<typename OrderType>(const OrderType& _given)
+    {
+      // A ship given another order leaves the group it was planning with.
+      if constexpr (requires { _given.ships; })
+      {
+        for (std::size_t index = 0; index < plannedBefore; ++index)
+          std::erase_if(m_plannedOrders[index].members, [&_given](const PlannedOrder::Member& _member)
+                        { return std::ranges::find(_given.ships, _member.ship) != _given.ships.end(); });
+      }
+      if constexpr (!std::is_same_v<OrderType, SetRetreatCommand>)
+      {
+        // Any order a player gives a ship ends its retreat; a hit below its threshold starts it again (ADR-075). And it takes
+        // the ship out of the scheduled order it waited on (ADR-080).
+        const auto endRetreat = [this](const std::vector<EntityId>& _ships)
+        {
+          for (const EntityId id : _ships)
+          {
+            if (Entity* ship = FindMutableEntity(id))
+            {
+              ship->retreating = false;
+              ship->repairer = {};
+            }
+          }
+          LeaveScheduledOrders(_ships);
+        };
+        if constexpr (requires { _given.ships; })
+          endRetreat(_given.ships);
+        if constexpr (requires { _given.constructors; })
+          endRetreat(_given.constructors);
+      }
+      // Any other order a player gives a ship ends its standing order (ADR-059).
+      if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
+                    std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
+      {
+        for (const EntityId id : _given.ships)
+        {
+          if (Entity* ship = FindMutableEntity(id))
+            ship->standing = StandingOrder::None;
+        }
+      }
+    },
+    _order);
+  return result;
+}
+
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const ScheduleOrderCommand& _schedule)
+{
+  const bool rig = _schedule.action.kind == ScheduledActionKind::BuildRig;
+  if (const CommandResult result = rig ? ValidateConstructors(_player, _schedule.ships) : ValidateShips(_player, _schedule.ships);
+      result != CommandResult::Applied)
+    return result;
+  // Warships take part, as in an attack (ADR-059); a rig is its Constructors' to build.
+  std::vector<EntityId> ships;
+  for (const EntityId id : _schedule.ships)
+  {
+    if ((rig || FindEntity(id)->role == ShipRole::Warship) && std::ranges::find(ships, id) == ships.end())
+      ships.push_back(id);
+  }
+  if (ships.empty())
+    return CommandResult::NoShips;
+  if (_schedule.trigger.kind != ScheduledTriggerKind::TimeOfDay && (!HasTerritory() || SectorById(_schedule.trigger.sector) == nullptr))
+    return CommandResult::NoSector;
+  if (!IsFinite(_schedule.action.position))
+    return CommandResult::InvalidPosition;
+  if (_schedule.action.kind == ScheduledActionKind::Attack)
+  {
+    const Entity* target = FindEntity(_schedule.action.target);
+    if (target == nullptr)
+      return CommandResult::UnknownTarget;
+    if (!target->owner.IsValid() || target->owner == _player)
+      return CommandResult::NotAnEnemy;
+  }
+  if (_schedule.action.kind == ScheduledActionKind::HoldSector && (!HasTerritory() || SectorAt(_schedule.action.position) == nullptr))
+    return CommandResult::NoSector;
+  if (_schedule.unlessCommandPoints.value_or(0) < 0)
+    return CommandResult::InvalidCondition;
+  // A ship waits on one scheduled order at a time: a new one takes it out of the last.
+  LeaveScheduledOrders(ships);
+  m_scheduledOrders.push_back({.id = ++m_lastScheduledOrder,
+                               .player = _player,
+                               .ships = std::move(ships),
+                               .trigger = _schedule.trigger,
+                               .action = _schedule.action,
+                               .unlessCommandPoints = _schedule.unlessCommandPoints});
+  return CommandResult::Applied;
+}
+
+void Outpost::Simulation::LeaveScheduledOrders(const std::vector<EntityId>& _ships)
+{
+  for (ScheduledOrder& order : m_scheduledOrders)
+    std::erase_if(order.ships, [&_ships](EntityId _ship) { return std::ranges::find(_ships, _ship) != _ships.end(); });
+  std::erase_if(m_scheduledOrders, [](const ScheduledOrder& _order) { return _order.ships.empty(); });
+}
+
+void Outpost::Simulation::FireScheduledOrders()
+{
+  // Whether one of the player's events of this tick fires _trigger.
+  const auto fired = [this](PlayerId _player, const ScheduledTrigger& _trigger)
+  {
+    if (_trigger.kind == ScheduledTriggerKind::TimeOfDay)
+      return _trigger.tick <= m_tick;
+    return std::ranges::any_of(m_events,
+                               [&](const std::pair<PlayerId, EventView>& _raised)
+                               {
+                                 const EventView& event = _raised.second;
+                                 if (_raised.first != _player || event.sector != _trigger.sector)
+                                   return false;
+                                 switch (_trigger.kind)
+                                 {
+                                 case ScheduledTriggerKind::EnemyInSector:
+                                   return event.kind == EventKind::EnemyEntered;
+                                 case ScheduledTriggerKind::RelayThreatened:
+                                   return event.kind == EventKind::RelaySuppressed || event.kind == EventKind::RelayAttacked;
+                                 case ScheduledTriggerKind::RigLost:
+                                   return event.kind == EventKind::StructureLost && event.structure == StructureKind::MiningRig;
+                                 case ScheduledTriggerKind::TimeOfDay:
+                                   break;
+                                 }
+                                 return false;
+                               });
+  };
+
+  // The orders that fire, in the order they were given, out of the list before they are given, so that their ships leaving
+  // them changes nothing; and the ships that are gone out of every order.
+  std::vector<ScheduledOrder> firing;
+  for (ScheduledOrder& order : m_scheduledOrders)
+  {
+    std::erase_if(order.ships,
+                  [this, &order](EntityId _ship)
+                  {
+                    const Entity* ship = FindEntity(_ship);
+                    return ship == nullptr || ship->owner != order.player;
+                  });
+    if (!order.ships.empty() && fired(order.player, order.trigger))
+      firing.push_back(std::move(order));
+  }
+  std::erase_if(m_scheduledOrders, [](const ScheduledOrder& _order) { return _order.ships.empty(); });
+
+  for (const ScheduledOrder& order : firing)
+  {
+    // Where the action takes them: its point, or its target where it stands now.
+    PlanePosition where = order.action.position;
+    if (order.action.kind == ScheduledActionKind::Attack)
+    {
+      if (const Entity* target = FindEntity(order.action.target))
+        where = target->position;
+    }
+    // The condition: the command points of the enemy warships the player sees in the action's sector, against the most it
+    // allows. Too many, and the ships hold the sector they are in, the middle of them, instead.
+    ScheduledActionKind action = order.action.kind;
+    if (order.unlessCommandPoints.has_value())
+    {
+      std::int32_t enemyPoints = 0;
+      if (const Sector* sector = HasTerritory() ? SectorAt(where) : nullptr)
+      {
+        for (const Entity& entity : m_entities)
+        {
+          if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Warship && entity.owner.IsValid() &&
+              entity.owner != order.player && sector->placement.Contains(entity.position) && Sees(order.player, entity))
+            enemyPoints += CommandPointsOfHull(entity.hull);
+        }
+      }
+      if (enemyPoints > *order.unlessCommandPoints)
+        action = ScheduledActionKind::HoldSector;
+    }
+    PlanePosition sum;
+    for (const EntityId id : order.ships)
+      sum = sum + (FindEntity(id)->position - PlanePosition{});
+    const float count = static_cast<float>(order.ships.size());
+    const PlanePosition middle{.xMeters = sum.xMeters / count, .zMeters = sum.zMeters / count};
+    const bool held = action != order.action.kind;
+    if (held)
+      where = middle;
+
+    Order given;
+    switch (action)
+    {
+    case ScheduledActionKind::Move:
+      given = MoveCommand{.ships = order.ships, .destination = where};
+      break;
+    case ScheduledActionKind::AttackMove:
+      given = AttackMoveCommand{.ships = order.ships, .destination = where};
+      break;
+    case ScheduledActionKind::Attack:
+      given = AttackCommand{.ships = order.ships, .target = order.action.target};
+      break;
+    case ScheduledActionKind::HoldSector:
+      given = HoldSectorCommand{.ships = order.ships, .position = where};
+      break;
+    case ScheduledActionKind::Patrol:
+      given = PatrolCommand{.ships = order.ships, .destination = where};
+      break;
+    case ScheduledActionKind::BuildRig:
+      given = BuildStructureCommand{.constructors = order.ships, .structure = StructureKind::MiningRig, .position = where};
+      break;
+    }
+    const CommandResult result = ApplyOrder(order.player, given);
+    Raise(order.player, {.kind = EventKind::OrderFired,
+                         .position = where,
+                         .order = order.id,
+                         .action = action,
+                         .outcome = result != CommandResult::Applied ? OrderOutcome::Refused
+                                    : held                           ? OrderOutcome::HeldInstead
+                                                                     : OrderOutcome::AsGiven});
+  }
 }
 
 // Phase 2 design §9: the warships hold the sector that holds the point. They go to its node, answer any enemy ship they
