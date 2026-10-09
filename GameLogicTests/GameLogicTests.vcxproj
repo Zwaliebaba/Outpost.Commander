@@ -93,9 +93,12 @@
     <ClInclude Include="WorldMatch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="MatchArena.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="RepositoryData.cpp" />
+    <ClCompile Include="TerritoryMatch.cpp" />
     <ClCompile Include="TuningTests.cpp" />
     <ClCompile Include="SimulationTests.cpp" />
     <ClCompile Include="InProcessServerTests.cpp" />
@@ -124,6 +127,7 @@
     <ClCompile Include="DominationTests.cpp" />
     <ClCompile Include="StandingOrderTests.cpp" />
     <ClCompile Include="EventTests.cpp" />
+    <ClCompile Include="WorldMatch.cpp" />
     <ClCompile Include="WorldRulesTests.cpp" />
     <ClCompile Include="WorldLogTests.cpp" />
     <ClCompile Include="WorldRunTests.cpp" />
