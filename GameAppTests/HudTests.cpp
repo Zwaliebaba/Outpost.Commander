@@ -2453,6 +2453,13 @@ public:
   {
     Outpost::Snapshot newest = Newest();
     newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating"}};
+    // A Small hull any Shipyard builds and a Medium one of level 2, and a design of each.
+    newest.hulls = {{.id = Outpost::HullId{1}, .nameUtf8 = "Small", .commandPoints = 1},
+                    {.id = Outpost::HullId{2}, .nameUtf8 = "Medium", .shipyardLevel = 2, .commandPoints = 2}};
+    newest.designs[0].hull = Outpost::HullId{1};
+    newest.designs[0].cost = 100;
+    newest.designs[1].hull = Outpost::HullId{2};
+    newest.designs[1].cost = 200;
     const auto structure = [](std::uint32_t _id, Outpost::StructureKind _kind, std::uint32_t _number)
     {
       return Outpost::EntityView{.id = Outpost::EntityId{_id},
@@ -2484,6 +2491,23 @@ public:
     Assert::AreEqual(std::string("Researching Hull Plating, 62%"), status[0].Text());
     Assert::IsFalse(status[0].Warns());
 
+    // An idle Lab with no topic open to it says so plainly: every topic researched, or one whose prerequisite is not, or of
+    // a tier the Lab has not opened.
+    entities.back().research.clear();
+    entities.back().jobPermille = 0;
+    newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating", .researched = true},
+                       {.id = Outpost::ResearchTopicId{3}, .nameUtf8 = "Fusion Drive", .prerequisites = {Outpost::ResearchTopicId{4}}},
+                       {.id = Outpost::ResearchTopicId{4}, .nameUtf8 = "Relay Archives", .tier = 2}};
+    status = statusOf(entities);
+    Assert::AreEqual(std::string("Research: every open topic done"), status[0].Text());
+    Assert::IsTrue(!status[0].Warns() && status[0].action == research);
+    newest.researchTier = 2;
+    Assert::IsTrue(statusOf(entities)[0].Warns(), L"tier 2 open, Relay Archives is open to it");
+    newest.researchTier = 1;
+    newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating"}};
+    entities.back().research = {Outpost::ResearchTopicId{2}};
+    entities.back().jobPermille = 620;
+
     // Shipyards 01 and 03 build, 02 waits for Ore, and 04 and 05 stand idle: production opens at 04, the first idle by
     // number, wherever it stands among the entities.
     Outpost::EntityView building = structure(31, Outpost::StructureKind::Shipyard, 1);
@@ -2509,6 +2533,22 @@ public:
     Assert::IsTrue(status[1].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = Outpost::EntityId{34}});
 
+    // Idle, but no saved design the player has the Ore for: counted plainly.
+    newest.ore = 50;
+    status = statusOf(entities);
+    Assert::AreEqual(std::string("Shipyards: 2 building, 1 waiting for Ore, 2 idle"), status[1].Text());
+    Assert::IsFalse(status[1].Warns(), L"nothing an idle Shipyard could start");
+    // Ore only for a Medium, which no Shipyard of level 1 builds; one of level 2 could start it.
+    newest.ore = 150;
+    std::swap(newest.designs[0].cost, newest.designs[1].cost);
+    Assert::IsFalse(statusOf(entities)[1].Warns(), L"a hull no idle Shipyard builds");
+    const auto fourth = std::ranges::find(entities, Outpost::EntityId{34}, &Outpost::EntityView::id);
+    fourth->level = 2;
+    Assert::IsTrue(statusOf(entities)[1].Warns(), L"a Shipyard of level 2 builds it");
+    fourth->level = 1;
+    std::swap(newest.designs[0].cost, newest.designs[1].cost);
+    newest.ore = 12345;
+
     // None idle: no warning, and production opens at the first Shipyard.
     std::erase_if(entities, [](const Outpost::EntityView& _entity) { return _entity.queue.empty() && _entity.shipyardNumber > 0; });
     status = statusOf(entities);
@@ -2531,9 +2571,12 @@ public:
     Assert::IsTrue(layout.ActionAt(idle.left + 4.0f, idle.top + 6.0f) == content.status[1].action, L"the chip too");
   }
 
-  // Phase 4 design §5: the Shipyards' status line ends with the fleet against its cap, and a Shipyard whose front warship
-  // does not fit under the cap says it waits for the cap, not for Ore: on the status line, in its selection panel and in
-  // its production window. The Command Station's next level names the cap it gives.
+  // Phase 4 design §5: a Shipyard whose front warship does not fit under the cap says it waits for the cap, not for Ore, in
+  // its selection panel and its production window. Interface plan 2, task UI3.1: on the status line the cap is then what
+  // holds the Shipyards back, as it is when the fleet has room for none of the saved designs. The line says so, plainly,
+  // with what the Command Station's next level adds, or how far its upgrade has come, and a click selects the station.
+  // Otherwise the line counts the Shipyards and ends with the fleet against its cap; without a cap it says nothing of it.
+  // The Command Station's next level names the cap it gives.
   TEST_METHOD(ShowsTheFleetAgainstItsCap)
   {
     Outpost::Snapshot newest = Newest();
@@ -2555,13 +2598,49 @@ public:
     lineYard.id = Outpost::EntityId{32};
     lineYard.shipyardNumber = 2;
     lineYard.queue = {{.design = LINE}, {.design = SWARM}};
-    const std::vector<Outpost::EntityView> entities{swarmYard, lineYard};
+    newest.structureTypes = {
+      {.structure = Outpost::StructureKind::CommandStation,
+       .nameUtf8 = "Command Station",
+       .levels = {{.cost = 300, .buildSeconds = 45.0, .maxHitPointsHundredths = 600000, .nodes = 4, .commandPoints = 20},
+                  {.cost = 500, .buildSeconds = 60.0, .maxHitPointsHundredths = 700000, .nodes = 6, .commandPoints = 30}}}};
+    Outpost::EntityView station{.id = Outpost::EntityId{20},
+                                .kind = Outpost::EntityKind::Structure,
+                                .owner = PLAYER,
+                                .structure = Outpost::StructureKind::CommandStation,
+                                .hitPointsHundredths = 500000,
+                                .maxHitPointsHundredths = 500000};
+    std::vector<Outpost::EntityView> entities{swarmYard, lineYard, station};
+    const auto statusOf = [&]() { return Outpost::Hud::Describe(newest, entities, {}).status; };
+    const Outpost::Hud::Action select{.kind = Outpost::Hud::ActionKind::Select, .entity = station.id};
 
-    // A Small fits at 11 of 12, so the first waits for Ore; a Medium does not, so the second waits for the cap.
-    const std::vector<Outpost::Hud::StatusLine> status = Outpost::Hud::Describe(newest, entities, {}).status;
+    // A Small fits at 11 of 12, so the first waits for Ore; a Medium does not, so the second waits for the cap, and the cap
+    // is what holds the Shipyards back. The station's next level lifts it by 8.
+    std::vector<Outpost::Hud::StatusLine> status = statusOf();
     Assert::AreEqual(size_t{1}, status.size());
-    Assert::AreEqual(std::string("Shipyards: 0 building, 1 waiting for Ore, 1 waiting for the fleet cap \xC2\xB7 fleet 11 / 12"),
-                     status[0].Text());
+    Assert::AreEqual(std::string("Fleet 11 / 12, at the cap \xC2\xB7 Station L2: +8"), status[0].Text());
+    Assert::IsTrue(!status[0].Warns() && status[0].action == select, L"plain, and a click goes to the station");
+    // While the station is upgrading, how far it has come; at its top level, the cap alone.
+    entities[2].upgradePermille = 620;
+    Assert::AreEqual(std::string("Fleet 11 / 12, at the cap \xC2\xB7 Station upgrading, 62%"), statusOf()[0].Text());
+    entities[2].upgradePermille.reset();
+    entities[2].level = 3;
+    Assert::AreEqual(std::string("Fleet 11 / 12, at the cap"), statusOf()[0].Text());
+    entities[2].level = 1;
+    // No Shipyard waits for the cap, but the fleet has room for none of the saved designs: at the cap too.
+    newest.commandPoints = 12;
+    entities[0].queue.clear();
+    entities[1].queue.clear();
+    status = statusOf();
+    Assert::AreEqual(std::string("Fleet 12 / 12, at the cap \xC2\xB7 Station L2: +8"), status[0].Text());
+    Assert::IsTrue(status[0].action == select, L"idle at the cap, no chip and the station");
+    // Room for a Small: the counts, an idle Shipyard that could start one a chip, and the fleet at the end.
+    newest.commandPoints = 11;
+    entities[0].queue = {{.design = SWARM}};
+    status = statusOf();
+    Assert::AreEqual(std::string("Shipyards: 0 building, 1 waiting for Ore, 1 IDLE \xC2\xB7 fleet 11 / 12"), status[0].Text());
+    Assert::IsTrue(status[0].Warns());
+    Assert::IsTrue(status[0].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = lineYard.id});
+    entities = {swarmYard, lineYard, station};
     const std::vector<std::string> selection = Outpost::Hud::Describe(newest, entities, std::vector{lineYard.id}).selection;
     Assert::IsTrue(
       std::ranges::find(selection, std::string("Building Medium+Ion+Lance \xC2\xB7 waiting for the fleet cap \xC2\xB7 +1 queued")) !=
@@ -2571,20 +2650,9 @@ public:
 
     // Without a cap, nothing is said of the fleet.
     newest.fleetCap = 0;
-    Assert::AreEqual(std::string("Shipyards: 0 building, 2 waiting for Ore"),
-                     Outpost::Hud::Describe(newest, entities, {}).status[0].Text());
+    Assert::AreEqual(std::string("Shipyards: 0 building, 2 waiting for Ore"), statusOf()[0].Text());
 
     // The station's next level gives a larger fleet.
-    newest.structureTypes = {
-      {.structure = Outpost::StructureKind::CommandStation,
-       .nameUtf8 = "Command Station",
-       .levels = {{.cost = 300, .buildSeconds = 45.0, .maxHitPointsHundredths = 600000, .nodes = 4, .commandPoints = 20}}}};
-    const Outpost::EntityView station{.id = Outpost::EntityId{20},
-                                      .kind = Outpost::EntityKind::Structure,
-                                      .owner = PLAYER,
-                                      .structure = Outpost::StructureKind::CommandStation,
-                                      .hitPointsHundredths = 500000,
-                                      .maxHitPointsHundredths = 500000};
     const std::vector<std::string> stationLines = Outpost::Hud::Describe(newest, std::vector{station}, std::vector{station.id}).selection;
     Assert::IsTrue(std::ranges::find(stationLines, std::string("L2: 4 nodes, fleet 20, 6,000 hit points")) != stationLines.end());
   }

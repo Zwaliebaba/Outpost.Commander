@@ -969,6 +969,13 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
   case Hud::ActionKind::GiveOrder:
     m_controls.Schedule(m_orderForm, WallClockNow(), m_clock, m_view.Newest(), m_knownEntities);
     break;
+  case Hud::ActionKind::Select:
+    if (const auto selected = std::ranges::find(m_entities, _action.entity, &EntityView::id); selected != m_entities.end())
+    {
+      m_controls.SelectAlone(selected->id);
+      m_camera.SetFocus(selected->position.xMeters, selected->position.zMeters);
+    }
+    break;
   }
 }
 

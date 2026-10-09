@@ -44,6 +44,9 @@ public:
   void Research(EntityId _lab, ResearchTopicId _topic);
   // From the HUD: the structure's next level, which Constructors then build (Phase 3 design §4).
   void Upgrade(EntityId _structure);
+  // From the HUD: _entity selected on its own, as a click on it selects it, and any order armed for the selection before
+  // dropped with it (interface plan 2, task UI3.1).
+  void SelectAlone(EntityId _entity);
   // From the designer: a new design, or a new name for a saved one (task 5.2).
   void SaveDesign(SaveDesignCommand _save);
   // From the selection panel: the selected ships' retreat (Phase 4 design §10).

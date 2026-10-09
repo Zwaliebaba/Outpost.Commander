@@ -386,6 +386,20 @@ public:
     Assert::IsTrue(std::ranges::find(boxed, STATION) == boxed.end());
   }
 
+  // Interface plan 2, task UI3.1: the HUD selects one of my structures alone, as the status line selects the Command Station
+  // at the fleet cap, and what was armed for the selection before goes with it.
+  TEST_METHOD(SelectsAStructureFromTheHud)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    driver.Click(driver.WorldView()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    Assert::IsTrue(driver.Controls().Placing().has_value());
+    driver.Controls().SelectAlone(Outpost::EntityId{STATION});
+    Assert::IsTrue((Ids{STATION}) == driver.Selected());
+    Assert::IsFalse(driver.Controls().Placing().has_value(), L"the placement goes with the Constructor");
+  }
+
   // Task 4.2: selected Constructors right-clicked on my own structure under construction, or damaged, work on it, and
   // the warships with them go there; a whole one is only a destination.
   TEST_METHOD(ConstructorsRepairAFriendlyThatNeedsIt)

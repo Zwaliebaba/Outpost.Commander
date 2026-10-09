@@ -222,10 +222,29 @@ std::string WorkLine(std::string_view _verb, const std::string& _front, std::int
   return line;
 }
 
-// The status panel's lines (ADR-066): what the player's finished Research Lab is doing, and how many of its finished
-// Shipyards are building, waiting for Ore, waiting for the fleet cap and idle, and the fleet against its cap (Phase 4
-// design §5). A line that reports an idle Lab or Shipyard says IDLE, in a chip (ADR-085 decision 1). A click on the Lab's line
-// opens research, and on the Shipyards' opens production at the first idle Shipyard, or at the first if none is.
+// Whether a topic is open to the player's Research Lab now: not researched, of a tier its Lab has opened, and with every
+// prerequisite researched (Phase 3 design §6).
+bool IsOpen(const Outpost::Snapshot& _newest, const Outpost::ResearchTopicView& _topic)
+{
+  const auto researched = [&_newest](Outpost::ResearchTopicId _id)
+  {
+    const auto found = std::ranges::find(_newest.research, _id, &Outpost::ResearchTopicView::id);
+    return found != _newest.research.end() && found->researched;
+  };
+  return !_topic.researched && _topic.tier <= _newest.researchTier && std::ranges::all_of(_topic.prerequisites, researched);
+}
+
+// The status panel's lines (ADR-066): what the player's finished Research Lab is doing, and what its finished Shipyards
+// are doing or what holds them back (interface plan 2, task UI3.1).
+// - The Lab's line says what it researches and how far it has come, or that it waits for Ore. Idle, it says IDLE in a chip
+//   (ADR-085 decision 1) while a topic is open to it, and that every open topic is done otherwise. A click opens research.
+// - The Shipyards' line says first whether the fleet cap holds them back: a Shipyard waits for it, or the fleet has room for
+//   none of the player's saved designs. Then it reads "Fleet 29 / 30, at the cap · Station L4: +10", with what the station's
+//   next level adds to the cap, or how far its upgrade has come, plainly, since its remedy is a level and not a queue. A
+//   click selects the Command Station, whose panel offers the upgrade.
+// - Otherwise it counts the Shipyards building, waiting for Ore and idle, and ends with the fleet against its cap. The idle
+//   count is a chip only when an idle Shipyard could start a ship now: a saved design of a hull it builds fits under the
+//   cap, and the player has its Ore. A click opens production at the first idle Shipyard by number, or at the first.
 std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std::span<const Outpost::EntityView> _entities)
 {
   const auto own = [&_newest](const Outpost::EntityView& _entity, Outpost::StructureKind _kind)
@@ -240,7 +259,12 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
   {
     const Hud::Action open{.kind = Hud::ActionKind::OpenResearch, .producer = lab->id};
     if (lab->research.empty())
-      lines.push_back({.runs = {{.text = "Research Lab "}, {.text = "IDLE", .chip = true}}, .action = open});
+    {
+      if (std::ranges::any_of(_newest.research, [&_newest](const Outpost::ResearchTopicView& _topic) { return IsOpen(_newest, _topic); }))
+        lines.push_back({.runs = {{.text = "Research Lab "}, {.text = "IDLE", .chip = true}}, .action = open});
+      else
+        lines.push_back({.runs = {{.text = "Research: every open topic done"}}, .action = open});
+    }
     else
     {
       const std::string name = TopicNameOf(_newest, lab->research.front());
@@ -261,17 +285,43 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
   if (shipyards.empty())
     return lines;
   std::ranges::sort(shipyards, {}, &Outpost::EntityView::shipyardNumber);
+
+  // A saved design's hull, and whether it fits under the fleet cap now.
+  const auto hullOf = [&_newest](const Outpost::DesignView& _design)
+  {
+    const auto hull = std::ranges::find(_newest.hulls, _design.hull, &Outpost::HullView::id);
+    return hull != _newest.hulls.end() ? &*hull : nullptr;
+  };
+  const auto fits = [&_newest, &hullOf](const Outpost::DesignView& _design)
+  {
+    const Outpost::HullView* hull = hullOf(_design);
+    return hull != nullptr && (_newest.fleetCap <= 0 || _newest.commandPoints + hull->commandPoints <= _newest.fleetCap);
+  };
+  // Whether _shipyard, idle, could start a ship now: a saved design of a hull it builds that fits, with its Ore.
+  const auto couldStart = [&_newest, &hullOf, &fits](const Outpost::EntityView& _shipyard)
+  {
+    return std::ranges::any_of(_newest.designs,
+                               [&](const Outpost::DesignView& _design)
+                               {
+                                 const Outpost::HullView* hull = hullOf(_design);
+                                 return hull != nullptr && hull->shipyardLevel <= _shipyard.level && fits(_design) &&
+                                        _newest.ore >= _design.cost;
+                               });
+  };
+
   std::size_t building = 0;
   std::size_t waiting = 0;
   std::size_t capped = 0;
   const Outpost::EntityView* firstIdle = nullptr;
   std::size_t idle = 0;
+  bool idleCouldStart = false;
   for (const Outpost::EntityView* shipyard : shipyards)
   {
     if (shipyard->queue.empty())
     {
       firstIdle = firstIdle != nullptr ? firstIdle : shipyard;
       ++idle;
+      idleCouldStart = idleCouldStart || couldStart(*shipyard);
     }
     else if (shipyard->jobPermille > 0)
       ++building;
@@ -280,16 +330,40 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
     else
       ++waiting;
   }
+
+  // At the cap: the station's next level is the remedy, and a click goes to the station.
+  const bool atCap = _newest.fleetCap > 0 && (capped > 0 || (!_newest.designs.empty() && std::ranges::none_of(_newest.designs, fits)));
+  if (atCap)
+  {
+    std::string text = std::format("Fleet {} / {}, at the cap", _newest.commandPoints, _newest.fleetCap);
+    Hud::Action action{.kind = Hud::ActionKind::OpenProduction, .producer = shipyards.front()->id};
+    const auto station = std::ranges::find_if(_entities, [&own](const Outpost::EntityView& _entity)
+                                              { return own(_entity, Outpost::StructureKind::CommandStation); });
+    if (station != _entities.end())
+    {
+      action = {.kind = Hud::ActionKind::Select, .entity = station->id};
+      const auto type =
+        std::ranges::find(_newest.structureTypes, Outpost::StructureKind::CommandStation, &Outpost::StructureTypeView::structure);
+      const auto next = static_cast<std::size_t>(std::max(0, station->level - 1));
+      if (station->upgradePermille.has_value())
+        text += std::format("{}Station upgrading, {}%", DOT, *station->upgradePermille / 10);
+      else if (type != _newest.structureTypes.end() && next < type->levels.size() && type->levels[next].commandPoints > _newest.fleetCap)
+        text += std::format("{}Station L{}: +{}", DOT, station->level + 1, type->levels[next].commandPoints - _newest.fleetCap);
+    }
+    lines.push_back({.runs = {{.text = std::move(text)}}, .action = action});
+    return lines;
+  }
+
   std::vector<Hud::StatusRun> runs{{.text = std::format("Shipyards: {} building", building)}};
   if (waiting > 0)
     runs.back().text += std::format(", {} waiting for Ore", waiting);
-  if (capped > 0)
-    runs.back().text += std::format(", {} waiting for the fleet cap", capped);
-  if (idle > 0)
+  if (idle > 0 && idleCouldStart)
   {
     runs.back().text += ", ";
     runs.push_back({.text = std::format("{} IDLE", idle), .chip = true});
   }
+  else if (idle > 0)
+    runs.back().text += std::format(", {} idle", idle);
   if (_newest.fleetCap > 0)
     runs.push_back({.text = std::format("{}fleet {} / {}", DOT, _newest.commandPoints, _newest.fleetCap)});
   lines.push_back(
@@ -297,6 +371,7 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
      .action = {.kind = Hud::ActionKind::OpenProduction, .producer = (firstIdle != nullptr ? firstIdle : shipyards.front())->id}});
   return lines;
 }
+
 // A damage card's rating: Good from two thirds of the best any design does to the hull, Fair from a third.
 constexpr float GOOD_SHARE = 2.0f / 3.0f;
 constexpr float FAIR_SHARE = 1.0f / 3.0f;

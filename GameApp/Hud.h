@@ -141,7 +141,9 @@ public:
     SetRetreat,
     // The orders window's form steps a field, and gives its order to the selection (Phase 5 design §7).
     StepOrder,
-    GiveOrder
+    GiveOrder,
+    // Selects one of the player's own entities on its own and moves the camera to it (interface plan 2, task UI3.1).
+    Select
   };
 
   struct Action
@@ -149,6 +151,8 @@ public:
     ActionKind kind = ActionKind::Build;
     StructureKind structure = StructureKind::CommandStation;
     EntityId producer;
+    // The entity Select selects.
+    EntityId entity;
     // The design a Shipyard builds; no design for the Command Station's Constructor.
     DesignId design;
     ResearchTopicId topic;

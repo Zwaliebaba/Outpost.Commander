@@ -68,7 +68,7 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI2.1 | A warning is a chip | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI2.2 | Build progress in a neutral color | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI2.3 | The blast and Ore's glyph | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | todo |
+| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI3.2 | One column, and state in bars | UI3.1 | V5 | todo |
 | UI3.3 | Nodes and tickets that read | UI2.1 | V5 | todo |
 | UI4.1 | Bars on the screen | UI2.2 | V7 | todo |
@@ -289,6 +289,12 @@ The milestone's tasks share one ADR: one meaning per color.
   - the click's target in each case;
   - the Lab with nothing open.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-066](../Design/ADR/ADR-066-production-status-on-the-hud.md) decisions 1 and 2, rewritten in place.
+  - The line at the cap reads "Station L4: +10": the glyph atlas has no arrow, and Bahnschrift's coverage of one is not known from here.
+  - An idle Shipyard's chip also asks that it builds the design's hull, so that the chip never asks for a ship no idle Shipyard can start.
+  - Idle Shipyards that could start nothing are counted plainly, "2 idle".
+  - `ActionKind::Select` carries its entity in a field of its own, `Action::entity`, and `PlayerControls::SelectAlone` selects it, dropping any order armed for the selection before. `GameClient` moves the camera to it.
+  - The HUD's tests ran in the Linux container; `PlayerControlsTests` and `GameClient` are CI's to build. Not yet seen on screen.
 
 ### UI3.2 — One column, and state in bars
 
