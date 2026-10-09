@@ -38,7 +38,7 @@ What the design leaves open: how the map and the tuning data say all this, what 
    - The Constructors work as on a site ([ADR-016](ADR-016-base-building.md) decision 5): a tick of work each tick for the first, and the tuning data's share of one more for each after it, at their own player's Rapid Construction rate.
    - Two players' crews on one derelict work on the same salvage. The crew that finishes it is paid, and any other crew on it that tick finds it gone.
    - When it is done, the derelict leaves, every work order on it ends, and its player is paid.
-   - The protocol carries the order, the derelict's kind, its Ore, topic and progress on `EntityView`, and `ResearchTopicView::recovered`. `PROTOCOL_VERSION` goes from 8 to 9.
+   - The protocol carries the order, the derelict's kind, its Ore, topic and progress on `EntityView`, and `ResearchTopicView::recovered`.
 5. **A named topic recovers `recoveryPercent` of its research time.**
    - If a Lab of the player's is researching it, that much comes off at once, and the topic may finish on the next tick.
    - Otherwise the player keeps it as recovered, whatever its tier, and the topic starts that far along. It still costs its full Ore.

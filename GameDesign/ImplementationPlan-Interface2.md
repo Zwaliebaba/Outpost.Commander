@@ -339,7 +339,7 @@ The milestone's tasks share one ADR: one meaning per color.
   - `GameLogicTests`: the snapshot carries the tuning data's numbers.
 - **Verify:** the container's `GameLogicTests`; CI; run; **owner run.**
 - **As built (2026-10-09):** [ADR-057](../Design/ADR/ADR-057-domination.md) decisions 7 and 8, and [ADR-056](../Design/ADR/ADR-056-territory.md) decision 11's panel line, rewritten in place.
-  - `PROTOCOL_VERSION` goes from 15 to 16, since milestone 39 had raised it to 15.
+  - The drain's numbers are on the wire under `PROTOCOL_VERSION` 1: the owner set both versions back to 1 on 2026-10-09, to stay there until the game is live (AGENTS.md R18, ADR-060, ADR-077).
   - The rows read "Enemy -20 a minute · out in 32:06" and "You -60 a minute · out in 12:09", with a hyphen for the minus: the glyph atlas has no minus sign.
   - The 12:09 case is three nodes behind with 729 tickets, or 728, since a part drain is a whole one; the review's fifth screenshot's own figures were not recorded.
   - Without a cap, the nodes' note reads "of 25".

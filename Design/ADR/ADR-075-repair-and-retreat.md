@@ -45,7 +45,7 @@ What the design leaves open: which four a repairer takes when more are near, wha
    - Whole, it waits where it is. A ship on a standing order keeps that order while it retreats, its group goes on without it, and once whole it rejoins the group when the group next moves (ADR-059).
    - The next hit while it is below its threshold starts a retreat again. A player who sends a damaged selection back into a fight sees its damaged ships turn round as each is hit.
 7. **`SetRetreatCommand`** sets the threshold of the player's ships it names, and gives them no order. `SaveDesignCommand` carries a design's retreat, and saving a design under its own name with a new retreat updates it. Ships already built keep theirs.
-8. **The protocol** carries `SetRetreatCommand`, the Repair Bay's kind, a design's retreat on `DesignView`, and on `EntityView` a ship's retreat and whether it is retreating, which only its owner sees. `PROTOCOL_VERSION` goes from 9 to 10.
+8. **The protocol** carries `SetRetreatCommand`, the Repair Bay's kind, a design's retreat on `DesignView`, and on `EntityView` a ship's retreat and whether it is retreating, which only its owner sees.
 9. **The AI** ([ADR-020](ADR-020-ai-and-match-flow.md), [ADR-041](ADR-041-ai-plays-a-longer-match.md)):
    - Its designs keep the default, so its ships retreat at a quarter.
    - It takes a retreating ship out of every order it gives, since any order would end the retreat.

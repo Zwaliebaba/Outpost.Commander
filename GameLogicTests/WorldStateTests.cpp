@@ -10,23 +10,11 @@ namespace
 {
 using Bytes = std::vector<std::byte>;
 
-// The layout of each state version's save, as the hash of SaveLayout (AGENTS.md R18): the simulation's state, and from
-// version 4 the seats' reports beside it. Version 5 adds when a remembered structure was last seen, and version 6 a world's
-// rules and each player's loss (Phase 5 design §8). A change to either changes the layout: raise WORLD_STATE_VERSION and
-// record the new version's hash here, below the old.
-constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 6> LAYOUTS{{{1, 0x5EB85327A281B46Cull},
-                                                                          {2, 0x8F33507C8E312761ull},
-                                                                          {3, 0x4D954F637F96B5C2ull},
-                                                                          {4, 0xA1F1A0DC52EC7069ull},
-                                                                          {5, 0x2EC92634EE22BAC5ull},
-                                                                          {6, 0xC7C5E5F3DF7A3234ull}}};
-
-std::uint64_t LayoutHash()
-{
-  const std::string layout = Outpost::SaveLayout();
-  const std::array<std::string_view, 1> texts{layout};
-  return Outpost::DataHash(texts);
-}
+// The layout of each state version's save, as the hash of SaveLayout (AGENTS.md R18): the simulation's state and the
+// seats' reports beside it. Until the game is live, WORLD_STATE_VERSION stays 1, and a change to either records its new
+// hash here in place of version 1's (owner, 2026-10-09); a save carries its layout's hash, so a save of the old layout is
+// refused. Once live, a change raises WORLD_STATE_VERSION and records the new version's hash here, below the old.
+constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 1> LAYOUTS{{{1, 0xC7C5E5F3DF7A3234ull}}};
 
 // _bytes with their checksum made again, as a save altered on purpose would have it.
 Bytes Rechecked(Bytes _bytes)
@@ -126,7 +114,8 @@ public:
     }
   }
 
-  // A save is refused when it is cut short, altered, of another world or data, or of another state version.
+  // A save is refused when it is cut short, altered, of another world or data, of another state version, or laid out
+  // otherwise.
   TEST_METHOD(RefusesWhatItCannotLoad)
   {
     WorldMatch match(2);
@@ -153,27 +142,32 @@ public:
     ExpectRefused(otherVersion, match.Identity(), match, L"another state version");
     Assert::ExpectException<Neuron::Exception>([&]() { (void)Outpost::ReadSaveHeader(otherVersion); });
 
+    // The layout's hash follows the version, twelve bytes in.
+    Bytes otherLayout = saved;
+    otherLayout[12] = static_cast<std::byte>(static_cast<std::uint8_t>(otherLayout[12]) ^ 1U);
+    otherLayout = Rechecked(std::move(otherLayout));
+    ExpectRefused(otherLayout, match.Identity(), match, L"another layout");
+    Assert::ExpectException<Neuron::Exception>([&]() { (void)Outpost::ReadSaveHeader(otherLayout); });
+
     // Not a save at all, though its checksum holds.
     Bytes notASave = saved;
     notASave[0] = std::byte{'X'};
     ExpectRefused(Rechecked(std::move(notASave)), match.Identity(), match, L"not a save");
   }
 
-  // AGENTS.md R18: the layout a save of WORLD_STATE_VERSION holds is the one recorded for it. A change to what Simulation
-  // holds fails this until the version is raised and its layout recorded.
+  // AGENTS.md R18: the layout a save of WORLD_STATE_VERSION holds is the one recorded for it, and the one its header
+  // carries. A change to what Simulation holds fails this until its layout is recorded.
   TEST_METHOD(TheLayoutIsTheVersions)
   {
     const auto recorded = std::ranges::find(LAYOUTS, Outpost::WORLD_STATE_VERSION, &std::pair<std::uint32_t, std::uint64_t>::first);
     Assert::IsTrue(recorded != LAYOUTS.end(), L"WORLD_STATE_VERSION has a recorded layout");
     Assert::AreEqual(
-      recorded->second, LayoutHash(),
-      L"what Simulation holds has changed: raise WORLD_STATE_VERSION and record its layout's hash in LAYOUTS (AGENTS.md R18)");
-    // Each version's layout is recorded once, and none is reused.
-    for (std::size_t i = 1; i < LAYOUTS.size(); ++i)
-    {
-      Assert::IsTrue(LAYOUTS[i].first > LAYOUTS[i - 1].first);
-      Assert::IsTrue(LAYOUTS[i].second != LAYOUTS[i - 1].second);
-    }
+      recorded->second, Outpost::SaveLayoutHash(),
+      L"what Simulation holds has changed: record its layout's hash in LAYOUTS, under version 1 until the game is live (AGENTS.md R18)");
+    // Each version's layout is recorded once, in order, and none is reused.
+    using Recorded = std::pair<std::uint32_t, std::uint64_t>;
+    Assert::IsTrue(std::ranges::adjacent_find(LAYOUTS, std::greater_equal{}, &Recorded::first) == LAYOUTS.end());
+    Assert::IsTrue(std::ranges::adjacent_find(LAYOUTS, std::equal_to{}, &Recorded::second) == LAYOUTS.end());
   }
 
   // The layout follows the field lists: an entity is saved with every one of its sixty fields, and a player with its

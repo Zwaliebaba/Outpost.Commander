@@ -290,7 +290,7 @@ public:
   {
     auto server = QuicServer();
     const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
-    // Version 10's hello: the kind, the version and the player, and no token.
+    // A hello of another version, 10, laid out as it was before the token: the kind, the version and the player.
     std::vector<std::byte> oldHello{std::byte{0}, std::byte{10}, std::byte{0}, std::byte{0}, std::byte{0},
                                     std::byte{1}, std::byte{0},  std::byte{0}, std::byte{0}};
     const std::unique_ptr<Neuron::QuicChannel> channel =
