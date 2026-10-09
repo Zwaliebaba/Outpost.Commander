@@ -1,4 +1,4 @@
-# ADR-085 — One meaning per color: a warning is a chip, never the enemy's salmon as text
+# ADR-085 — One meaning per color: a warning is a chip, and build progress is no side's
 
 Status: **accepted** · 2026-10-09
 
@@ -19,8 +19,11 @@ The owner decided gate V4 as proposed on 2026-10-08. This ADR is milestone UI2's
    - **The enemy's figures stay plain text** in `ENEMY_COLOR`.
    - **Two warnings stay plain text in the warning's color,** since each stands where no enemy figure does: a name the designer refuses, in its own field, and the main menu's notice, which wraps over several lines.
    - The chip's words stand at 10.3:1 against its tag, computed as WCAG's ratio of the two linear colors.
+2. **Build progress is a neutral light gray** (task UI2.2). The bar beyond a structure's health bar that shows the share built is (0.5, 0.52, 0.55) linear on every side's structures, where it was a blue one shade from the player's, so an enemy's site no longer reads as the player's. It is `GameClient`'s `BUILD_BAR_COLOR`, named once. The HUD's own progress fills (`BAR_FILL_COLOR`) stay blue, since they stand on the player's own buttons and queues.
 
 ## Consequences
+
+- **The build bar is `GameClient`'s,** which needs D3D12, so it has no test; CI builds it, and the owner's run sees it on an enemy's site and an own one.
 
 - **Tests:** `HudTests.MarksEachWarningWithAChip` (the three, each at 4.5:1 or more on its tag; an older alert and the run before the chip plain; the enemy's figure plain in its color), `WarnsOfNoIncome`, `ListsTheAlerts`, and `ShowsWhatProductionAndResearchAreDoing` with the chip after the counts and taking the line's click. Tests that count the HUD's panels set an income, so that the Ore panel holds no chip.
 - The whole-HUD contrast test (task 14.2) and the overlap test (task 14.1) see the chips through `LongestContent`.

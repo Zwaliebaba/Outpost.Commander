@@ -66,7 +66,7 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI1.3 | Sight that shows | UI1.2 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI2.1 | A warning is a chip | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI2.2 | Build progress in a neutral color | — | V4 | todo |
+| UI2.2 | Build progress in a neutral color | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI2.3 | The blast and Ore's glyph | — | V4 | todo |
 | UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | todo |
 | UI3.2 | One column, and state in bars | UI3.1 | V5 | todo |
@@ -246,6 +246,7 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** the milestone's.
 - **Acceptance:** the color named once and used for every side.
 - **Verify:** run, on an enemy structure under construction (shot 5's case) and an own one.
+- **As built (2026-10-09):** [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 2. `BUILD_BAR_COLOR` is (0.5, 0.52, 0.55) linear, the one constant every side's build bar already used. Not yet seen on screen.
 
 ### UI2.3 — The blast and Ore's glyph
 

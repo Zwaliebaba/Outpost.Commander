@@ -126,10 +126,11 @@ constexpr DirectX::XMFLOAT4 HEALTH_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 HEALTH_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
 constexpr float HEALTH_HURT_SHARE = 0.5f;
 constexpr float HEALTH_LOW_SHARE = 0.25f;
-// A structure under construction: its color darkens toward this share at the start, and a blue bar shows the share built,
-// just beyond the health bar.
+// A structure under construction: its color darkens toward this share at the start, and a bar shows the share built, just
+// beyond the health bar, in a light gray that is no side's, the same on the player's structures and the enemy's (ADR-085
+// decision 2).
 constexpr float UNBUILT_SHADE = 0.35f;
-constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.25f, 0.65f, 1.0f, 1.0f};
+constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.5f, 0.52f, 0.55f, 1.0f};
 // The territory, drawn over the fog, since every player sees it (interface plan 2, task UI1.1): the lattice of sector
 // borders one pixel wide in TERRITORY_LATTICE_COLOR, brighter than the grid and never wider (ADR-028); an outline inside each
 // held or guarded sector in its holder's color at TERRITORY_OUTLINE_SHADE, dashed while suppressed and dotted while cut
