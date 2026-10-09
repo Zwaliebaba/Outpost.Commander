@@ -30,6 +30,9 @@
     <Content Include="..\OutpostCommander\Assets\Map.json">
       <Filter>Data</Filter>
     </Content>
+    <Content Include="..\OutpostCommander\Assets\Matchups.json">
+      <Filter>Data</Filter>
+    </Content>
     <Content Include="..\OutpostCommander\Assets\Opponent.json">
       <Filter>Data</Filter>
     </Content>

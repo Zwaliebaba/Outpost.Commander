@@ -23,6 +23,9 @@ struct ServerDesc
   // new world from the seed. Empty for a match. A world's server keeps its QUIC certificate in the folder too, so that a
   // player pins it once (ADR-078).
   std::filesystem::path world;
+  // A battle matchup rather than a match (horizon §9, ADR-083): the index of one of Matchups.json's, whose fleets fight
+  // with no bases, no pirates and no fog of war. None for a match.
+  std::optional<std::uint32_t> matchup;
 };
 
 // How long after a player's connection has gone its deputy takes the seat (Phase 5 design §6, gate H2, ADR-079).

@@ -691,7 +691,8 @@ public:
   // is, how long ago it was last seen at _ticksPerSecond, and how far it was built if it was not finished.
   [[nodiscard]] static std::string DescribeMemory(const Snapshot& _newest, const EntityView& _structure, std::uint32_t _ticksPerSecond);
 
-  // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
+  // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs. In a world,
+  // which does not end, when the player's seat restarts after its loss (Phase 5 design §8).
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
 
   // What the main menu offers and says besides its skirmishes (ADR-078): a world to join, when a join file is there, and a

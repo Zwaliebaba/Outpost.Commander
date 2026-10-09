@@ -80,6 +80,7 @@
     <ClInclude Include="AiPlayer.h" />
     <ClInclude Include="AiEmpire.h" />
     <ClInclude Include="Deputy.h" />
+    <ClInclude Include="MatchupPlayer.h" />
     <ClInclude Include="AiMatchesOptions.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -90,6 +91,7 @@
     <ClCompile Include="AiSettings.cpp" />
     <ClCompile Include="AiPlayer.cpp" />
     <ClCompile Include="Deputy.cpp" />
+    <ClCompile Include="MatchupPlayer.cpp" />
     <ClCompile Include="AiMatchesOptions.cpp" />
   </ItemGroup>
   <ItemGroup>

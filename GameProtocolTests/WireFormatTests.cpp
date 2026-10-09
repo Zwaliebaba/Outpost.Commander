@@ -153,7 +153,8 @@ Outpost::Snapshot FullSnapshot()
                               .guarded = true});
   snapshot.tickets.push_back({.player = Outpost::PlayerId{1}, .tickets = 95});
   snapshot.startingTickets = 96;
-  // The last kind of event (ADR-080), with every field set.
+  // An order fired (ADR-080), with every field set; and the last kind of event, a world's restarted seat (Phase 5 design §8),
+  // and the tick its seat restarts at.
   const Outpost::EventView fired{.kind = Outpost::EventKind::OrderFired,
                                  .sector = 98,
                                  .position = {.xMeters = 9.5f, .zMeters = -9.5f},
@@ -164,6 +165,8 @@ Outpost::Snapshot FullSnapshot()
                                  .action = Outpost::ScheduledActionKind::BuildRig,
                                  .outcome = Outpost::OrderOutcome::Refused};
   snapshot.events.push_back(fired);
+  snapshot.events.push_back({.kind = Outpost::EventKind::EmpireRestarted, .sector = 115});
+  snapshot.restartTick = 116;
   snapshot.scheduled.push_back({.id = 101,
                                 .ships = {Outpost::EntityId{102}},
                                 .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = -103, .tick = 104},
@@ -275,6 +278,9 @@ public:
     Assert::AreEqual(0.75, snapshot.modules[0].speedFactor);
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);
     Assert::AreEqual(96, snapshot.startingTickets);
+    Assert::IsTrue(snapshot.events.size() == 2 && snapshot.events[1].kind == Outpost::EventKind::EmpireRestarted,
+                   L"the last kind of event");
+    Assert::AreEqual(std::uint64_t{116}, snapshot.restartTick.value_or(0), L"when a world's lost seat restarts");
     Assert::AreEqual(55.5, snapshot.constructorBuildSeconds, L"the Constructor's build time (ADR-068)");
     Assert::IsTrue(snapshot.entities[1].kind == Outpost::EntityKind::Derelict, L"the last kind of entity (ADR-074)");
     Assert::AreEqual(97u, snapshot.entities[0].salvageTopic.value);

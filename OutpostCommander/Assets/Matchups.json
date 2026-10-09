@@ -1,0 +1,44 @@
+{
+  "matchups": [
+    {
+      "name": "Mirror: Small Mass Drivers",
+      "distanceMeters": 700,
+      "sides": [
+        [ { "hull": 1, "drive": 1, "weapon": 1, "count": 20 } ],
+        [ { "hull": 1, "drive": 1, "weapon": 1, "count": 20 } ]
+      ]
+    },
+    {
+      "name": "Swarm against line: Small Mass Drivers and Medium Lances",
+      "distanceMeters": 700,
+      "sides": [
+        [ { "hull": 1, "drive": 1, "weapon": 1, "count": 25 } ],
+        [ { "hull": 2, "drive": 1, "weapon": 2, "count": 10 } ]
+      ]
+    },
+    {
+      "name": "Flak against swarm: Medium Flak Batteries and Small Mass Drivers",
+      "distanceMeters": 700,
+      "sides": [
+        [ { "hull": 2, "drive": 1, "weapon": 4, "count": 11 } ],
+        [ { "hull": 1, "drive": 1, "weapon": 1, "count": 24 } ]
+      ]
+    },
+    {
+      "name": "Heavy against line: Large Rail Cannons and Medium Lances",
+      "distanceMeters": 800,
+      "sides": [
+        [ { "hull": 3, "drive": 1, "weapon": 5, "count": 5 } ],
+        [ { "hull": 2, "drive": 1, "weapon": 2, "count": 11 } ]
+      ]
+    },
+    {
+      "name": "Missiles against line: Medium Missile Racks and Medium Lances",
+      "distanceMeters": 800,
+      "sides": [
+        [ { "hull": 2, "drive": 1, "weapon": 3, "count": 8 } ],
+        [ { "hull": 2, "drive": 1, "weapon": 2, "count": 10 } ]
+      ]
+    }
+  ]
+}

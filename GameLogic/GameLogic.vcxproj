@@ -79,6 +79,7 @@
     <ClInclude Include="InProcessServer.h" />
     <ClInclude Include="TickObserver.h" />
     <ClInclude Include="Map.h" />
+    <ClInclude Include="Matchup.h" />
     <ClInclude Include="MeasurementLoad.h" />
     <ClInclude Include="Pathfinder.h" />
     <ClInclude Include="PlaneVector.h" />
@@ -92,6 +93,8 @@
     <ClInclude Include="WorldFolder.h" />
     <ClInclude Include="SeatController.h" />
     <ClInclude Include="AwayReports.h" />
+    <ClInclude Include="WorldLog.h" />
+    <ClInclude Include="WorldRun.h" />
     <ClInclude Include="WorldSettings.h" />
   </ItemGroup>
   <ItemGroup>
@@ -101,6 +104,7 @@
     <ClCompile Include="InProcessServer.cpp" />
     <ClCompile Include="TickObserver.cpp" />
     <ClCompile Include="Map.cpp" />
+    <ClCompile Include="Matchup.cpp" />
     <ClCompile Include="MeasurementLoad.cpp" />
     <ClCompile Include="Pathfinder.cpp" />
     <ClCompile Include="Research.cpp" />
@@ -112,6 +116,8 @@
     <ClCompile Include="WorldFolder.cpp" />
     <ClCompile Include="SeatController.cpp" />
     <ClCompile Include="AwayReports.cpp" />
+    <ClCompile Include="WorldLog.cpp" />
+    <ClCompile Include="WorldRun.cpp" />
     <ClCompile Include="WorldSettings.cpp" />
   </ItemGroup>
   <ItemGroup>

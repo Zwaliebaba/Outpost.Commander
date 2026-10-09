@@ -2065,6 +2065,34 @@ public:
     newest.winner = PLAYER;
     newest.ending = Outpost::MatchEnding::Domination;
     Assert::AreEqual(std::string("By domination. Match length 6:13"), outcome().detail);
+
+    // ADR-083: a battle matchup's end says how.
+    newest.ending = Outpost::MatchEnding::FleetDestroyed;
+    Assert::AreEqual(std::string("A fleet destroyed. Match length 6:13"), outcome().detail);
+    newest.ending = Outpost::MatchEnding::TimeLimit;
+    Assert::AreEqual(std::string("Out of time. Match length 6:13"), outcome().detail);
+  }
+
+  // Phase 5 design §8: in a world no match ends, and a player who has lost is told when its seat restarts at its start, or
+  // that it waits for its start to be clear; the banner keeps the way back to the menu.
+  TEST_METHOD(SaysWhenAFallenSeatRestarts)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.tick = 1000;
+    newest.restartTick = 1000 + (20 * 3725);
+    const Outpost::Hud::Outcome fallen = Outpost::Hud::DescribeOutcome(newest, 20).value_or(Outpost::Hud::Outcome{});
+    Assert::AreEqual(std::string("Empire fallen"), fallen.title);
+    Assert::AreEqual(std::string("It restarts at your start in 1:02:05"), fallen.detail);
+    newest.restartTick = 990;
+    Assert::AreEqual(std::string("It restarts once your start is clear of the enemy"),
+                     Outpost::Hud::DescribeOutcome(newest, 20).value_or(Outpost::Hud::Outcome{}).detail);
+
+    Outpost::Hud::Content content;
+    content.outcome = Outpost::Hud::DescribeOutcome(newest, 20);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    Assert::IsTrue(std::ranges::find(layout.texts, std::string("Empire fallen"), &Outpost::Hud::Text::text) != layout.texts.end());
+    Assert::IsTrue(
+      std::ranges::any_of(layout.actions, [](const auto& _action) { return _action.second.kind == Outpost::Hud::ActionKind::BackToMenu; }));
   }
 
   // Phase 4 design §10, §13: a selection's retreat is the last button, which steps it for every ship from the first one's,

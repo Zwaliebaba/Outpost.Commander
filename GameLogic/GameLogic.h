@@ -22,6 +22,7 @@
 
 #include "Tuning.h"
 #include "Map.h"
+#include "Matchup.h"
 #include "PlaneVector.h"
 #include "TickObserver.h"
 #include "Pathfinder.h"
@@ -33,6 +34,8 @@
 #include "WorldSettings.h"
 #include "SeatController.h"
 #include "AwayReports.h"
+#include "WorldLog.h"
 #include "StressLoad.h"
 #include "InProcessServer.h"
+#include "WorldRun.h"
 #include "MeasurementLoad.h"

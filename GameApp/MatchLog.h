@@ -14,6 +14,7 @@ namespace Outpost
 // One line a record, every time in ticks:
 //
 //   match seed <seed> ticks_per_second <rate>
+//   matchup <number>                                 the match is that battle matchup, from 1 (ADR-083)
 //   research <tick> player <player> topic <id> <name>
 //   tier <tick> player <player> tier <tier>          the player's Research Lab opened the tier (Phase 3 design §6)
 //   built <tick> player <player> hull <id> drive <id> weapon <id> <hull name>+<drive name>+<weapon name>[+<module name>]
@@ -43,7 +44,9 @@ namespace Outpost
 //   retreat <tick> player <player> ship <id>         a warship of the player's turned for home to be repaired (U3)
 //   repaired <tick> player <player> ship <id>        a warship that turned for home stopped, whole (U3)
 //   again <tick> player <player> ship <id>           a repaired warship fired, the first time since its repair (U3)
-//   ending <tick> <production or domination>         how the match ended, just before its end (Phase 2 S3)
+//   ending <tick> <production, domination, fleet or time>
+//                                                    how the match ended, just before its end (Phase 2 S3); a battle
+//                                                    matchup's by a fleet destroyed or its time run out (ADR-083)
 //   end <tick> winner <player, or 0 for a draw>
 //   left <tick>                                      the match was left before it ended (Finish)
 class MatchLog : Neuron::NonCopyable
@@ -54,6 +57,9 @@ public:
   // The player leaves the match: writes the peaks and "left" when it had not ended, and flushes. Called by the shell, not
   // by a destructor, since writing can throw.
   void Finish();
+
+  // Says the match is a battle matchup, the number _number of Matchups.json's from 1 (ADR-083), for the owner's win rate.
+  void Matchup(std::uint32_t _number);
 
   // Takes one player's snapshot. Research and warship counts are read from each player's own snapshots, so every
   // player's are needed; a warship is written once, from whichever snapshot shows it first, and so is an asteroid that

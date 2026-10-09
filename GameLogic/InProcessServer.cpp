@@ -14,6 +14,7 @@ using HundredNanoseconds = std::chrono::duration<std::int64_t, std::ratio<1, 10'
 // Where the server finds its data, under the package's Assets folder (ADR-008).
 constexpr std::string_view TUNING_FILE = "Tuning.json";
 constexpr std::string_view MAP_FILE = "Map.json";
+constexpr std::string_view MATCHUPS_FILE = "Matchups.json";
 // Where a seat's player connects: the listener takes connections on the loopback address only (ADR-060).
 constexpr std::string_view LOOPBACK_HOST = "127.0.0.1";
 
@@ -72,7 +73,7 @@ GameData ReadGameData()
 // A server for _desc, set up: a match's map is placed, and now every player's starting base (ADR-016), and the load a
 // measurement run asks for. A world whose folder holds a save comes back as that world instead, made with its seed
 // (ADR-077).
-std::unique_ptr<Outpost::Server> SetUpServer(const GameData& _data, Outpost::ServerDesc _desc)
+std::unique_ptr<Outpost::InProcessServer> SetUpServer(const GameData& _data, Outpost::ServerDesc _desc)
 {
   std::optional<Outpost::WorldFolder::Recovery> recovery;
   if (!_desc.world.empty())
@@ -84,7 +85,19 @@ std::unique_ptr<Outpost::Server> SetUpServer(const GameData& _data, Outpost::Ser
   auto server = std::make_unique<Outpost::InProcessServer>(_data.tuning, _data.map, _desc);
   if (!recovery)
   {
-    server->World().PlaceStartingBases(server->MapData());
+    // A world has no end, and a player who loses restarts (Phase 5 design §8); a save carries its rules with it.
+    if (!_desc.world.empty())
+      server->World().UseWorldRules();
+    // A battle matchup's fleets fight with no bases (ADR-083).
+    if (_desc.matchup.has_value())
+    {
+      const std::vector<Outpost::Matchup> matchups = Outpost::LoadMatchups(ReadDataFile(MATCHUPS_FILE), server->TuningData());
+      if (*_desc.matchup >= matchups.size())
+        throw Neuron::Exception(std::format("Matchups.json has {} matchups, and no matchup {}.", matchups.size(), *_desc.matchup + 1));
+      server->World().PlaceMatchup(matchups[*_desc.matchup]);
+    }
+    else
+      server->World().PlaceStartingBases(server->MapData());
     if (_desc.measurementLoad)
       Outpost::PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
     if (_desc.stressLoad)
@@ -136,8 +149,9 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   }
   m_simulation.PlaceMap(m_map);
   m_simulation.UseTuning(m_tuning);
-  // Every match is played under fog of war (ADR-024).
-  m_simulation.UseFog();
+  // Every match is played under fog of war (ADR-024), and a battle matchup in the open (ADR-083).
+  if (!_desc.matchup.has_value())
+    m_simulation.UseFog();
   // One player per start, each with the starting Ore and the starting designs saved (design §5, §7).
   for (size_t player = 0; player < m_map.starts.size(); ++player)
   {
@@ -147,7 +161,7 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   }
   // The pirates' outposts and the derelicts the seed placed, after the players, so that each player's designs are numbered as before. A
   // measurement run is not a match, and its scenes stay as they were measured.
-  if (!_desc.measurementLoad && !_desc.stressLoad)
+  if (!_desc.measurementLoad && !_desc.stressLoad && !_desc.matchup.has_value())
   {
     m_simulation.PlacePirates(m_map);
     m_simulation.PlaceDerelicts(m_map);
@@ -481,17 +495,27 @@ void Outpost::InProcessServer::RunTick()
   std::vector<HostedTurn> turns;
   {
     const ObservedPart part(&m_profiler, TickPart::Snapshots);
+    // Every connection's snapshot, and who plays its seat, first, for the world's log to read them all.
+    struct Prepared
+    {
+      Connection* connection = nullptr;
+      Snapshot snapshot;
+      SeatPlay play = SeatPlay::Player;
+      std::shared_ptr<Neuron::QuicChannel> quic;
+    };
+    std::vector<Prepared> prepared;
+    prepared.reserve(m_connections.size());
     for (Connection& connection : m_connections)
     {
-      Snapshot snapshot = m_simulation.BuildSnapshot(connection.player);
+      Prepared& next =
+        prepared.emplace_back(Prepared{.connection = &connection, .snapshot = m_simulation.BuildSnapshot(connection.player)});
       if (connection.seat)
       {
         // A seat not yet taken has nobody to send to.
-        std::shared_ptr<Neuron::QuicChannel> quic;
         std::uint32_t takings = 0;
         {
           const std::scoped_lock lock(m_seatMutex);
-          quic = connection.quic;
+          next.quic = connection.quic;
           takings = connection.takings;
         }
         // A seat's deputy comes with the controller that says when it plays (Host). While it does, the seat's report of what
@@ -499,27 +523,43 @@ void Outpost::InProcessServer::RunTick()
         SeatController* control = nullptr;
         if (connection.hosted && connection.control.has_value())
           control = &*connection.control;
-        const bool deputy = control != nullptr;
-        bool plays = false;
         if (control != nullptr)
         {
-          const bool gone = quic && quic->HasGone();
-          plays = control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
-          m_away.Take(snapshot, plays);
+          const bool gone = next.quic && next.quic->HasGone();
+          const bool plays = control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
+          m_away.Take(next.snapshot, plays);
+          next.play = plays ? SeatPlay::Deputy : SeatPlay::Player;
         }
-        if (quic)
-          quic->Send(EncodeMessage(snapshot));
-        if (deputy)
-          turns.push_back({.connection = &connection, .snapshot = std::move(snapshot), .plays = plays});
+      }
+      else if (connection.hosted)
+        next.play = SeatPlay::Ai;
+    }
+    if (m_log)
+    {
+      std::vector<SeatTick> seats;
+      seats.reserve(prepared.size());
+      for (const Prepared& seat : prepared)
+        seats.push_back({.player = seat.connection->player, .play = seat.play, .snapshot = &seat.snapshot});
+      m_log->Record(m_simulation.CurrentTick(), seats);
+    }
+    for (Prepared& seat : prepared)
+    {
+      Connection& connection = *seat.connection;
+      if (connection.seat)
+      {
+        if (seat.quic)
+          seat.quic->Send(EncodeMessage(seat.snapshot));
+        if (connection.hosted && connection.control.has_value())
+          turns.push_back({.connection = &connection, .snapshot = std::move(seat.snapshot), .plays = seat.play == SeatPlay::Deputy});
         continue;
       }
       if (connection.hosted)
       {
-        turns.push_back({.connection = &connection, .snapshot = std::move(snapshot), .plays = true});
+        turns.push_back({.connection = &connection, .snapshot = std::move(seat.snapshot), .plays = true});
         continue;
       }
       const std::scoped_lock lock(connection.channel->mutex);
-      connection.channel->snapshots.push_back(std::move(snapshot));
+      connection.channel->snapshots.push_back(std::move(seat.snapshot));
     }
   }
   {
@@ -548,8 +588,12 @@ void Outpost::InProcessServer::UseWorld(const std::filesystem::path& _folder, st
   if (m_thread.joinable())
     throw Neuron::Exception("InProcessServer: a started server cannot become a world");
   m_identity = {.seed = m_seed, .ticksPerSecond = TicksPerSecond(), .dataHash = _dataHash};
+  std::optional<std::uint64_t> savedTick;
+  std::size_t replayed = 0;
   if (_recovery)
   {
+    savedTick = _recovery->header.tick;
+    replayed = _recovery->commands.size();
     m_away.Restore(DecodeWorld(_recovery->save, m_identity, m_simulation));
     m_commandLog.clear();
     // The commands logged since the save, each at the tick it was applied at, as the world that ran applied them.
@@ -569,12 +613,36 @@ void Outpost::InProcessServer::UseWorld(const std::filesystem::path& _folder, st
     }
   }
   m_world = std::make_unique<WorldFolder>(_folder);
+  m_logFile.open(_folder / WORLD_LOG_FILE, std::ios::app);
+  if (!m_logFile)
+    throw Neuron::Exception(std::format("The world's log in {} cannot be written.", _folder.string()));
+  m_log.emplace(m_logFile, TicksPerSecond());
+  m_log->Started(m_simulation.CurrentTick(), savedTick, replayed);
   SaveWorld();
+}
+
+void Outpost::InProcessServer::ReplaceHosted(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted)
+{
+  if (m_thread.joinable())
+    throw Neuron::Exception("InProcessServer: a started server's hosted players are its own");
+  const auto connection = std::ranges::find(m_connections, _player, &Connection::player);
+  if (connection == m_connections.end() || !connection->hosted || !_hosted)
+    throw Neuron::Exception(std::format("InProcessServer: player {} is not hosted", _player.value));
+  connection->hosted = std::move(_hosted);
+  const std::scoped_lock lock(connection->channel->mutex);
+  connection->channel->commands.clear();
 }
 
 void Outpost::InProcessServer::SaveWorld()
 {
-  m_world->Save(m_simulation.CurrentTick(), EncodeWorld(m_simulation, m_identity, m_away.Reports()));
+  // How long the save holds up the server's thread is its encoding; the folder writes it on a thread of its own (W2).
+  const auto started = std::chrono::steady_clock::now();
+  std::vector<std::byte> save = EncodeWorld(m_simulation, m_identity, m_away.Reports());
+  const auto encode = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started);
+  const std::size_t bytes = save.size();
+  m_world->Save(m_simulation.CurrentTick(), std::move(save));
+  if (m_log)
+    m_log->Saved(m_simulation.CurrentTick(), bytes, encode);
   // The world's folder keeps the commands from here on.
   m_commandLog.clear();
 }
@@ -587,6 +655,16 @@ void Outpost::InProcessServer::StartStressLoad()
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
   return SetUpServer(ReadGameData(), _desc);
+}
+
+std::unique_ptr<Outpost::InProcessServer> Outpost::CreateWorldServer(const ServerDesc& _desc)
+{
+  return SetUpServer(ReadGameData(), _desc);
+}
+
+std::vector<Outpost::Matchup> Outpost::ReadPackagedMatchups()
+{
+  return LoadMatchups(ReadDataFile(MATCHUPS_FILE), LoadTuning(ReadDataFile(TUNING_FILE)));
 }
 
 Outpost::ServerFactory Outpost::InProcessServerFactory()

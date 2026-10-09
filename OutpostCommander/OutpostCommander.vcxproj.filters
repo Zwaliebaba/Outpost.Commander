@@ -70,6 +70,9 @@
     <None Include="Assets\Map.json">
       <Filter>Package\Assets</Filter>
     </None>
+    <None Include="Assets\Matchups.json">
+      <Filter>Package\Assets</Filter>
+    </None>
     <None Include="Assets\Tuning.json">
       <Filter>Package\Assets</Filter>
     </None>

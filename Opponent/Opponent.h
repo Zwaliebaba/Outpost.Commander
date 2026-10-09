@@ -18,4 +18,5 @@
 #include "AiPlayer.h"
 #include "AiEmpire.h"
 #include "Deputy.h"
+#include "MatchupPlayer.h"
 #include "AiMatchesOptions.h"

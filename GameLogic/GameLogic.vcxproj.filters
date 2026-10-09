@@ -41,6 +41,9 @@
     <ClInclude Include="Map.h">
       <Filter>Map</Filter>
     </ClInclude>
+    <ClInclude Include="Matchup.h">
+      <Filter>Map</Filter>
+    </ClInclude>
     <ClInclude Include="Simulation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -77,6 +80,12 @@
     <ClInclude Include="AwayReports.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="WorldLog.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldRun.h">
+      <Filter>Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -87,6 +96,9 @@
       <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="Map.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClCompile Include="Matchup.cpp">
       <Filter>Map</Filter>
     </ClCompile>
     <ClCompile Include="Research.cpp">
@@ -123,6 +135,12 @@
       <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="AwayReports.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldLog.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldRun.cpp">
       <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>

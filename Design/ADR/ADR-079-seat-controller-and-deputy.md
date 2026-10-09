@@ -54,7 +54,7 @@ The design leaves two things open, which the owner decided on 2026-10-08: how ma
   The figure that counts, Release on the development machine, is the owner's run at milestone 39.
 - **A deputy's defence is blunt.** Any enemy warship in a held sector, a passing scout among them, draws every idle warship, so one sector may be stripped to answer another. Whether that is good enough is the owner's week to judge.
 - **A Shipyard idle at a restart builds the fleet's commonest design**, since the deputy learns a Shipyard's last design only from its queue, and nothing of it is saved.
-- **What happened while the player was away** is the host's report, kept from the events of the snapshots the deputy plays and handed to the player when it takes the seat again ([ADR-080](ADR-080-events-and-scheduled-orders.md)). A hand-over itself is logged by the world log, at milestone 39.
+- **What happened while the player was away** is the host's report, kept from the events of the snapshots the deputy plays and handed to the player when it takes the seat again ([ADR-080](ADR-080-events-and-scheduled-orders.md)). A hand-over itself is in the world log ([ADR-082](ADR-082-world-log-and-world-run.md)).
 - **An AI empire made afresh plays on, but not as it would have.** A world with AI empires replays from its log, not from its AIs.
 
 ## What this forecloses

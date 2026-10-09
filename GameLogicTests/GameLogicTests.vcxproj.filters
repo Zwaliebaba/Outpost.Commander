@@ -38,6 +38,10 @@
     <ClCompile Include="DominationTests.cpp" />
     <ClCompile Include="StandingOrderTests.cpp" />
     <ClCompile Include="EventTests.cpp" />
+    <ClCompile Include="WorldRulesTests.cpp" />
+    <ClCompile Include="WorldLogTests.cpp" />
+    <ClCompile Include="WorldRunTests.cpp" />
+    <ClCompile Include="MatchupTests.cpp" />
     <ClCompile Include="ScheduledOrderTests.cpp" />
     <ClCompile Include="UpgradeTests.cpp" />
     <ClCompile Include="FleetCapTests.cpp" />
