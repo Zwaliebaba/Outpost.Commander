@@ -67,7 +67,7 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI2.1 | A warning is a chip | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI2.2 | Build progress in a neutral color | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI2.3 | The blast and Ore's glyph | — | V4 | todo |
+| UI2.3 | The blast and Ore's glyph | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | todo |
 | UI3.2 | One column, and state in bars | UI3.1 | V5 | todo |
 | UI3.3 | Nodes and tickets that read | UI2.1 | V5 | todo |
@@ -259,6 +259,7 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** the milestone's. It rewrites ADR-043 decision 3's glyph or ADR-026 decision 1.
 - **Acceptance:** `NeuronClientTests`: the new sprite's shape. `HudTests`: `WritesOreOneWay` with it.
 - **Verify:** CI; run; **owner run.** The task may be dropped.
+- **As built (2026-10-09):** [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 3. The owner picked a cut gem from three drawn at 8, 13 and 20 pixels: a hexagon, a tall crystal and the gem. `SpriteShape::Diamond` is gone, since only Ore drew it. The glyph's test ran in the Linux container; not yet seen on screen.
 
 ---
 

@@ -121,16 +121,20 @@ public:
     Assert::AreEqual(0.0f, font.Width("", 3.0f));
   }
 
-  // ADR-030: the sprites are drawn, not shipped. A diamond is full at its center and empty in its corners; a checkbox is
-  // full along its edges and empty inside; a corner bracket is full along its top and left edges only.
+  // ADR-030: the sprites are drawn, not shipped. A gem is full at its middle and empty in its corners, flat on top, full
+  // in its shoulders where a diamond would be empty, and narrowing to a point at its foot (ADR-085 decision 3); a checkbox
+  // is full along its edges and empty inside; a corner bracket is full along its top and left edges only.
   TEST_METHOD(DrawsTheSprites)
   {
-    const Neuron::GlyphBitmap diamond = Neuron::DrawSprite(Neuron::SpriteShape::Diamond, 24);
-    Assert::AreEqual(24u, diamond.width);
-    Assert::AreEqual(std::uint8_t{255}, At(diamond, 12, 12));
-    Assert::AreEqual(std::uint8_t{0}, At(diamond, 0, 0));
-    Assert::AreEqual(std::uint8_t{0}, At(diamond, 23, 23));
-    Assert::AreEqual(At(diamond, 5, 12), At(diamond, 18, 12), L"symmetric");
+    const Neuron::GlyphBitmap gem = Neuron::DrawSprite(Neuron::SpriteShape::Gem, 24);
+    Assert::AreEqual(24u, gem.width);
+    Assert::AreEqual(std::uint8_t{255}, At(gem, 12, 12));
+    Assert::AreEqual(std::uint8_t{0}, At(gem, 0, 0));
+    Assert::AreEqual(std::uint8_t{0}, At(gem, 23, 23));
+    Assert::AreEqual(At(gem, 5, 10), At(gem, 18, 10), L"symmetric");
+    Assert::IsTrue(At(gem, 12, 4) == 255 && At(gem, 12, 2) == 0, L"a flat top");
+    Assert::AreEqual(std::uint8_t{255}, At(gem, 6, 5), L"a shoulder");
+    Assert::IsTrue(At(gem, 12, 19) == 255 && At(gem, 6, 18) == 0, L"narrowing to its foot");
 
     const Neuron::GlyphBitmap box = Neuron::DrawSprite(Neuron::SpriteShape::Checkbox, 24);
     Assert::AreEqual(std::uint8_t{255}, At(box, 0, 12));
@@ -143,7 +147,7 @@ public:
     Assert::AreEqual(std::uint8_t{0}, At(corner, 20, 20));
     Assert::AreEqual(std::uint8_t{0}, At(corner, 23, 12));
 
-    Assert::AreEqual(1u, Neuron::DrawSprite(Neuron::SpriteShape::Diamond, 0).width, L"never empty");
+    Assert::AreEqual(1u, Neuron::DrawSprite(Neuron::SpriteShape::Gem, 0).width, L"never empty");
   }
 
   // ADR-015, ADR-030: DirectWrite draws an installed font. Every character moves the pen, a letter has coverage, and a

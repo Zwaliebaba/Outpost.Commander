@@ -1923,21 +1923,21 @@ public:
     Assert::IsTrue(ore.color.x > ore.color.y && ore.color.y > ore.color.z, L"gold");
   }
 
-  // ADR-046: the Ore's diamond and figure start at the panel's left whatever the figure, and the income keeps to its right.
-  TEST_METHOD(KeepsTheOreDiamondStillAsTheFigureChanges)
+  // ADR-046: the Ore's gem and figure start at the panel's left whatever the figure, and the income keeps to its right.
+  TEST_METHOD(KeepsTheOreGemStillAsTheFigureChanges)
   {
     const auto oreAt = [](std::int32_t _ore)
     {
       const Outpost::Hud::Layout layout = Lay({.ore = _ore, .oreIncomeHundredthsPerSecond = 2700}, 1920, 1080);
-      const auto diamond = std::ranges::find(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite);
+      const auto gem = std::ranges::find(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite);
       const auto figure = std::ranges::find(layout.texts, Outpost::WithThousands(_ore), &Outpost::Hud::Text::text);
       const auto income = std::ranges::find(layout.texts, std::string("+27/s"), &Outpost::Hud::Text::text);
-      Assert::IsTrue(diamond != layout.sprites.end() && figure != layout.texts.end() && income != layout.texts.end());
-      return std::array<float, 3>{diamond->area.left, figure->left, income->left};
+      Assert::IsTrue(gem != layout.sprites.end() && figure != layout.texts.end() && income != layout.texts.end());
+      return std::array<float, 3>{gem->area.left, figure->left, income->left};
     };
     const std::array<float, 3> oneDigit = oreAt(5);
     const std::array<float, 3> eightDigits = oreAt(12345678);
-    Assert::AreEqual(oneDigit[0], eightDigits[0], 0.01f, L"the diamond");
+    Assert::AreEqual(oneDigit[0], eightDigits[0], 0.01f, L"the gem");
     Assert::AreEqual(oneDigit[1], eightDigits[1], 0.01f, L"the figure");
     Assert::AreEqual(oneDigit[2], eightDigits[2], 0.01f, L"the income");
     Assert::IsTrue(oneDigit[0] < 40.0f, L"at the panel's left");
@@ -1994,7 +1994,7 @@ public:
     Assert::AreEqual(std::ptrdiff_t{20}, corners, L"four for each of the Ore, the status, the selection, the buttons and the minimap");
   }
 
-  // ADR-043: Ore is written one way, as Ore's diamond and the figure grouped in thousands: the stockpile, a button's cost,
+  // ADR-043: Ore is written one way, as Ore's gem and the figure grouped in thousands: the stockpile, a button's cost,
   // and a window's Ore and its cards' costs.
   TEST_METHOD(WritesOreOneWay)
   {
@@ -2012,7 +2012,7 @@ public:
     Assert::IsFalse(has("12345") || has("Ore") || has("1500"));
     Assert::AreEqual(std::ptrdiff_t{4},
                      std::ranges::count(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite),
-                     L"a diamond for the stockpile, the button, the window's Ore and the card");
+                     L"a gem for the stockpile, the button, the window's Ore and the card");
   }
 
   // ADR-043: the production window's cards stay where they are as its queue grows, so that a card can be clicked again and

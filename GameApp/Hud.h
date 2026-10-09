@@ -41,7 +41,7 @@ public:
   };
 
   // Each typeface's size in reference units, which are pixels at 1080p, in Typeface's order (ADR-062). It is the one place
-  // a face's size is set: Typefaces rasterizes the faces at these sizes, and the layout sizes the diamond beside a figure
+  // a face's size is set: Typefaces rasterizes the faces at these sizes, and the layout sizes the gem beside a figure
   // from them.
   static constexpr std::array<float, 7> FACE_UNITS{FONT_UNITS, 22.0f, 13.0f, 16.0f, 14.0f, 28.0f, 13.0f};
 
@@ -52,7 +52,7 @@ public:
 
   [[nodiscard]] static std::vector<Neuron::FontDesc> Typefaces();
 
-  // The interface's sprites (ADR-030), in the order GameClient builds the UI pipeline with them: Ore's diamond, the box of
+  // The interface's sprites (ADR-030), in the order GameClient builds the UI pipeline with them: Ore's gem, the box of
   // a part research has yet to unlock, and a window's corner bracket.
   enum class Sprite : std::uint8_t
   {

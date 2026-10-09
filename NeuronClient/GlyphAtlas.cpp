@@ -4,8 +4,11 @@
 #include <dwrite_2.h>
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
+#include <limits>
+#include <span>
 
 #pragma comment(lib, "dwrite.lib")
 
@@ -19,6 +22,9 @@ constexpr std::uint8_t FULL_COVERAGE = 255;
 constexpr char32_t REPLACEMENT = char32_t{0xFFFD};
 // A sprite's lines are this share of its size, and at least a pixel.
 constexpr float SPRITE_LINE_SHARE = 1.0f / 12.0f;
+// A cut stone's corners as shares of its square, y down, clockwise as the screen shows them: its flat top, its widest on the
+// right, its point, and its widest on the left.
+constexpr std::array<std::array<float, 2>, 5> GEM_CORNERS{{{0.28f, 0.14f}, {0.72f, 0.14f}, {0.97f, 0.4f}, {0.5f, 0.94f}, {0.03f, 0.4f}}};
 
 DWRITE_FONT_STRETCH StretchOf(Neuron::FontStretch _stretch) noexcept
 {
@@ -48,6 +54,25 @@ std::string Narrow(std::wstring_view _text)
 std::uint8_t EdgeCoverage(float _inside) noexcept
 {
   return static_cast<std::uint8_t>(std::lround(std::clamp(_inside + 0.5f, 0.0f, 1.0f) * FULL_COVERAGE));
+}
+
+// How far (_x, _y) lies inside the convex shape whose corners are _corners scaled by _extent, as the nearest of its sides'
+// lines: positive inside and negative outside. The corners run clockwise as the screen shows them, y down.
+float InsideConvex(std::span<const std::array<float, 2>> _corners, float _extent, float _x, float _y) noexcept
+{
+  float inside = std::numeric_limits<float>::max();
+  for (std::size_t corner = 0; corner < _corners.size(); ++corner)
+  {
+    const std::array<float, 2>& from = _corners[corner];
+    const std::array<float, 2>& to = _corners[(corner + 1) % _corners.size()];
+    const float alongX = (to[0] - from[0]) * _extent;
+    const float alongY = (to[1] - from[1]) * _extent;
+    // The side's inward normal is a quarter turn from it, toward the inside of a clockwise shape.
+    const float toPointX = _x - (from[0] * _extent);
+    const float toPointY = _y - (from[1] * _extent);
+    inside = std::min(inside, ((toPointY * alongX) - (toPointX * alongY)) / std::hypot(alongX, alongY));
+  }
+  return inside;
 }
 } // namespace
 
@@ -288,7 +313,6 @@ Neuron::GlyphBitmap Neuron::DrawSprite(SpriteShape _shape, std::uint32_t _sizePi
   sprite.coverage.resize(std::size_t{size} * size);
   const auto extent = static_cast<float>(size);
   const float line = std::max(1.0f, std::round(extent * SPRITE_LINE_SHARE));
-  const float center = extent / 2.0f;
   for (std::uint32_t row = 0; row < size; ++row)
   {
     for (std::uint32_t column = 0; column < size; ++column)
@@ -299,8 +323,8 @@ Neuron::GlyphBitmap Neuron::DrawSprite(SpriteShape _shape, std::uint32_t _sizePi
       float inside = 0.0f;
       switch (_shape)
       {
-      case SpriteShape::Diamond:
-        inside = center - (std::abs(x - center) + std::abs(y - center));
+      case SpriteShape::Gem:
+        inside = InsideConvex(GEM_CORNERS, extent, x, y);
         break;
       case SpriteShape::Checkbox:
       {

@@ -66,8 +66,8 @@ constexpr float TITLE_LINE_UNITS = 30.0f;
 constexpr float NAME_LINE_UNITS = 22.0f;
 constexpr float FIGURE_LINE_UNITS = 17.0f;
 
-// The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's diamond and the figure in the
-// title face from the panel's left, so that the diamond stays put as the figure changes, and the income at its right
+// The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's gem and the figure in the
+// title face from the panel's left, so that the gem stays put as the figure changes, and the income at its right
 // (ADR-046).
 constexpr float ORE_PANEL_WIDTH = 260.0f;
 constexpr float ORE_PANEL_HEIGHT = 44.0f;
@@ -848,7 +848,7 @@ constexpr float ARROW_GAP_UNITS = 8.0f;
 constexpr float LINE_UNITS = 1.0f;
 // Labels in small spaced capitals.
 constexpr float LABEL_TRACKING_UNITS = 2.0f;
-// Ore's diamond beside a figure: this share of the figure's size, and this far from it.
+// Ore's gem beside a figure: this share of the figure's size, and this far from it.
 constexpr float ORE_MARK_SHARE = 0.6f;
 constexpr float ORE_MARK_GAP_UNITS = 5.0f;
 // The room a line cut short to fit keeps from what stands beside it, such as a cost (ADR-061).
@@ -1084,20 +1084,20 @@ public:
     return nextLeft + SMALL_BUTTON_UNITS;
   }
 
-  // How wide an amount of Ore is set, its diamond and its figure, in _face.
-  [[nodiscard]] float DiamondAndFigureWidth(std::int32_t _ore, Hud::Typeface _face) const
+  // How wide an amount of Ore is set, its gem and its figure, in _face.
+  [[nodiscard]] float GemAndFigureWidth(std::int32_t _ore, Hud::Typeface _face) const
   {
     return std::round(Hud::FaceUnits(_face) * ORE_MARK_SHARE) + ORE_MARK_GAP_UNITS + Width(Outpost::WithThousands(_ore), _face);
   }
 
-  // An amount of Ore that ends at _right: Ore's diamond, then the figure, in _face.
-  void DiamondAndFigure(std::int32_t _ore, float _right, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
+  // An amount of Ore that ends at _right: Ore's gem, then the figure, in _face.
+  void GemAndFigure(std::int32_t _ore, float _right, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
   {
-    DiamondAndFigureFrom(_ore, _right - DiamondAndFigureWidth(_ore, _face), _top, _face, _color);
+    GemAndFigureFrom(_ore, _right - GemAndFigureWidth(_ore, _face), _top, _face, _color);
   }
 
-  // An amount of Ore that starts at _left: Ore's diamond, sized by the face, then the figure, in _face.
-  void DiamondAndFigureFrom(std::int32_t _ore, float _left, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
+  // An amount of Ore that starts at _left: Ore's gem, sized by the face, then the figure, in _face.
+  void GemAndFigureFrom(std::int32_t _ore, float _left, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
   {
     const float sizeUnits = Hud::FaceUnits(_face);
     const float mark = std::round(sizeUnits * ORE_MARK_SHARE);
@@ -1117,7 +1117,7 @@ public:
   {
     Panel(_right - ORE_BOX_WIDTH, 38.0f, ORE_BOX_WIDTH, 30.0f, FIELD_COLOR);
     Outline(_right - ORE_BOX_WIDTH, 38.0f, ORE_BOX_WIDTH, 30.0f, EDGE_COLOR);
-    DiamondAndFigure(_ore, _right - 10.0f, 39.0f, Hud::Typeface::Title, GOLD_COLOR);
+    GemAndFigure(_ore, _right - 10.0f, 39.0f, Hud::Typeface::Title, GOLD_COLOR);
   }
 
 private:
@@ -1129,7 +1129,7 @@ private:
 };
 
 // A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
-// any cost after a '|' as Ore's diamond and the figure at its right, or its key as a cap there (task 15.2), and its place
+// any cost after a '|' as Ore's gem and the figure at its right, or its key as a cap there (task 15.2), and its place
 // among the actions when it does something. The label is cut short only where it would meet the cost, the note or the
 // cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right.
 void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
@@ -1186,10 +1186,10 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
     paint.Text(paint.Fit(label, Hud::Typeface::Name, room), BUTTON_INSET, labelTop, labelColor, Hud::Typeface::Name);
     return;
   }
-  const float costWidth = paint.DiamondAndFigureWidth(cost, Hud::Typeface::Figure);
+  const float costWidth = paint.GemAndFigureWidth(cost, Hud::Typeface::Figure);
   paint.Text(paint.Fit(label, Hud::Typeface::Name, room - costWidth - FIT_GAP_UNITS), BUTTON_INSET, labelTop, labelColor,
              Hud::Typeface::Name);
-  paint.DiamondAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+  paint.GemAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
 }
 
 void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::DesignerPanel& _panel,
@@ -1304,12 +1304,12 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
         paint.Press(face, card.action);
       paint.Outline(left, cardTop, CARD_WIDTH, cardHeight, card.picked ? PICKED_EDGE_COLOR : EDGE_COLOR);
       const float inner = CARD_WIDTH - 24.0f;
-      const float costWidth = paint.DiamondAndFigureWidth(card.cost, Hud::Typeface::Figure);
+      const float costWidth = paint.GemAndFigureWidth(card.cost, Hud::Typeface::Figure);
       const DirectX::XMFLOAT4& nameColor = locked ? LOCKED_TEXT_COLOR : TEXT_COLOR;
       paint.Text(paint.Fit(card.name, Hud::Typeface::Name, inner - costWidth - FIT_GAP_UNITS), left + 12.0f, cardTop + 8.0f, nameColor,
                  Hud::Typeface::Name);
-      paint.DiamondAndFigure(card.cost, left + CARD_WIDTH - 12.0f, cardTop + 11.0f, Hud::Typeface::Figure,
-                             locked ? LOCKED_TEXT_COLOR : GOLD_COLOR);
+      paint.GemAndFigure(card.cost, left + CARD_WIDTH - 12.0f, cardTop + 11.0f, Hud::Typeface::Figure,
+                         locked ? LOCKED_TEXT_COLOR : GOLD_COLOR);
       const DirectX::XMFLOAT4& numbersColor = locked ? LOCKED_TEXT_COLOR : NUMBERS_COLOR;
       paint.Text(paint.Fit(card.numbers, Hud::Typeface::Detail, inner), left + 12.0f, cardTop + CARD_NUMBERS_TOP, numbersColor,
                  Hud::Typeface::Detail);
@@ -1440,8 +1440,8 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     // The label's line, up to 27 units in the title face, ends above the detail's at either scale's rounding (ADR-061).
     paint.Text(queue.label, QUEUE_LEFT + 18.0f, footer + 2.0f, color, Hud::Typeface::Title, tracking);
     paint.Text(_panel.queueDetail, QUEUE_LEFT + 18.0f, footer + 31.0f, color, Hud::Typeface::Detail);
-    paint.DiamondAndFigure(_panel.queueCost, QUEUE_LEFT + queueWidth - 16.0f, footer + 10.0f, Hud::Typeface::Title,
-                           queue.enabled ? GOLD_COLOR : DIM_TEXT_COLOR);
+    paint.GemAndFigure(_panel.queueCost, QUEUE_LEFT + queueWidth - 16.0f, footer + 10.0f, Hud::Typeface::Title,
+                       queue.enabled ? GOLD_COLOR : DIM_TEXT_COLOR);
   }
 }
 
@@ -1591,11 +1591,11 @@ void LayProduction(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const
     // A design's name is cut short only where it would run past its card, and its abbreviation where it would meet the cost.
     paint.Text(paint.Fit(option.name, Hud::Typeface::Name, inner), left + CARD_INSET, cardTop + 6.0f,
                option.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Name);
-    const float costWidth = paint.DiamondAndFigureWidth(option.cost, Hud::Typeface::Figure);
+    const float costWidth = paint.GemAndFigureWidth(option.cost, Hud::Typeface::Figure);
     paint.Text(paint.Fit(option.detail, Hud::Typeface::Detail, inner - costWidth - FIT_GAP_UNITS), left + CARD_INSET, cardTop + 28.0f,
                option.enabled ? CODE_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
-    paint.DiamondAndFigure(option.cost, left + width - CARD_INSET, cardTop + 28.0f, Hud::Typeface::Figure,
-                           option.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+    paint.GemAndFigure(option.cost, left + width - CARD_INSET, cardTop + 28.0f, Hud::Typeface::Figure,
+                       option.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
     // How long one takes, and how it does against each hull: three segments a hull, three lit for Good, two for Fair and
     // one for Poor, so that the bars read without their colors (ADR-068).
     const float thirdTop = cardTop + OPTION_THIRD_LINE_TOP;
@@ -1704,11 +1704,11 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
       paint.Press(face, topic.action);
     paint.Outline(left, cardTop, width, topicHeight, EDGE_COLOR);
     const DirectX::XMFLOAT4& color = topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
-    const float costWidth = paint.DiamondAndFigureWidth(topic.cost, Hud::Typeface::Figure);
+    const float costWidth = paint.GemAndFigureWidth(topic.cost, Hud::Typeface::Figure);
     paint.Text(paint.Fit(topic.name, Hud::Typeface::Name, width - (2.0f * CARD_INSET) - costWidth - FIT_GAP_UNITS), left + CARD_INSET,
                cardTop + 6.0f, color, Hud::Typeface::Name);
-    paint.DiamondAndFigure(topic.cost, left + width - CARD_INSET, cardTop + 9.0f, Hud::Typeface::Figure,
-                           topic.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+    paint.GemAndFigure(topic.cost, left + width - CARD_INSET, cardTop + 9.0f, Hud::Typeface::Figure,
+                       topic.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
     float lineTop = cardTop + TOPIC_LINES_TOP;
     for (std::string& effect : EffectLines(topic, _metrics))
     {
@@ -2743,7 +2743,7 @@ std::vector<Neuron::FontDesc> Hud::Typefaces()
 std::vector<Neuron::SpriteDesc> Hud::Sprites()
 {
   return {
-    {.shape = Neuron::SpriteShape::Diamond, .sizeUnits = 12.0f},
+    {.shape = Neuron::SpriteShape::Gem, .sizeUnits = 12.0f},
     {.shape = Neuron::SpriteShape::Checkbox, .sizeUnits = 10.0f},
     {.shape = Neuron::SpriteShape::CornerBracket, .sizeUnits = 12.0f},
   };
@@ -2819,7 +2819,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // nothing, since then nothing the player spends comes back.
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, ORE_PANEL_WIDTH, ORE_PANEL_HEIGHT);
-    paint.DiamondAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
+    paint.GemAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
     const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
     const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
                                                             : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);

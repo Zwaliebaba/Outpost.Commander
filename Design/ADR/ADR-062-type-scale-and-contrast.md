@@ -15,7 +15,7 @@ The owner decided gate K1 on 2026-10-03 as the plan proposed. On 2026-10-04 the 
    - The figure face goes from 13 to 14, at weight 600. That is Cascadia Mono's semibold; Consolas has none and meets 600 with its bold.
    - The detail face goes from 11 to 13.
    - The body face (20), the title face (22), the name face (16) and the large figures (28) stay.
-2. **One place sets a face's size: `Hud::FACE_UNITS`, read through `Hud::FaceUnits`.** `Typefaces` rasterizes each face at that size, and Ore's diamond beside a figure is sized from it. The sizes written beside calls are gone: `TITLE_FACE_UNITS`, and the 13 and 22 passed with a figure.
+2. **One place sets a face's size: `Hud::FACE_UNITS`, read through `Hud::FaceUnits`.** `Typefaces` rasterizes each face at that size, and Ore's gem beside a figure is sized from it. The sizes written beside calls are gone: `TITLE_FACE_UNITS`, and the 13 and 22 passed with a figure.
 3. **Every text stands at 4.5:1 or more against what it is drawn on.** Contrast is WCAG's ratio of relative luminances, computed from the linear colors in `Hud.cpp` over black. A hatched panel's stripes and the gaps between them are both counted. These colors are raised; the other labels stay at 4.8–5.9:1.
    - **Locked text** goes from (0.15, 0.19, 0.26) to (0.20, 0.26, 0.35). It stands at 4.6:1 on a locked card's stripes, 5.1:1 on its body and 5.3:1 on a dim card. Its luminance is 29% of live text's.
    - **Labels on a window's hatched title bar** take the row labels' color: "SHIPYARD 05 · DESIGNER", "QUEUE · 4 BUILT", "PRODUCTION" and "RESEARCH". They go from 3.6:1 on the stripes to 5.8:1.
