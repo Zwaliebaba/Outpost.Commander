@@ -153,6 +153,8 @@ Outpost::Snapshot FullSnapshot()
                               .guarded = true});
   snapshot.tickets.push_back({.player = Outpost::PlayerId{1}, .tickets = 95});
   snapshot.startingTickets = 96;
+  snapshot.drainIntervalSeconds = 3.25;
+  snapshot.drainTicketsPerNodeDifference = 97;
   // An order fired (ADR-080), with every field set; and the last kind of event, a world's restarted seat (Phase 5 design §8),
   // and the tick its seat restarts at.
   const Outpost::EventView fired{.kind = Outpost::EventKind::OrderFired,
@@ -278,6 +280,7 @@ public:
     Assert::AreEqual(0.75, snapshot.modules[0].speedFactor);
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);
     Assert::AreEqual(96, snapshot.startingTickets);
+    Assert::IsTrue(snapshot.drainIntervalSeconds == 3.25 && snapshot.drainTicketsPerNodeDifference == 97, L"the drain (task UI3.3)");
     Assert::IsTrue(snapshot.events.size() == 2 && snapshot.events[1].kind == Outpost::EventKind::EmpireRestarted,
                    L"the last kind of event");
     Assert::AreEqual(std::uint64_t{116}, snapshot.restartTick.value_or(0), L"when a world's lost seat restarts");

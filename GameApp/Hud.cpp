@@ -2377,6 +2377,27 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       else
         territory.enemyTickets = tickets.tickets;
     }
+    // Who the drain takes tickets from, at what a minute, and when they run out: the drains their tickets last, rounded up,
+    // times the interval (task UI3.3). The next drain may be up to an interval away, which the row does not try to show.
+    if (territory.ownTickets.has_value() && territory.enemyTickets.has_value() && _newest.drainIntervalSeconds > 0.0 &&
+        _newest.drainTicketsPerNodeDifference > 0)
+    {
+      const std::int32_t behind = std::abs(territory.ownNodes - territory.enemyNodes);
+      if (behind == 0)
+        territory.drain = "No drain";
+      else
+      {
+        const bool own = territory.ownNodes < territory.enemyNodes;
+        const std::int64_t perDrain = std::int64_t{_newest.drainTicketsPerNodeDifference} * behind;
+        const std::int64_t left = std::max(0, own ? *territory.ownTickets : *territory.enemyTickets);
+        const std::int64_t drains = (left + perDrain - 1) / perDrain;
+        const auto seconds = static_cast<std::int64_t>(std::ceil(static_cast<double>(drains) * _newest.drainIntervalSeconds));
+        const std::int64_t perMinute = std::llround(static_cast<double>(perDrain) * 60.0 / _newest.drainIntervalSeconds);
+        territory.drain =
+          std::format("{} -{} a minute{}out in {}:{:02}", own ? "You" : "Enemy", WithThousands(perMinute), DOT, seconds / 60, seconds % 60);
+        territory.drainWarns = own;
+      }
+    }
     content.territory = territory;
   }
 
@@ -2942,33 +2963,55 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP;
   const float underStatusUnits = underOreUnits + STATUS_PANEL_KEPT_UNITS + PANEL_GAP;
 
-  // Under the status panel's place: the nodes each side holds, and each side's tickets, the player's in its color and the
-  // enemy's in theirs (ADR-056, ADR-057).
+  // Under the status panel's place: the nodes each side holds and each side's tickets, the player's against the enemy's,
+  // "3 : 2", the player's in its color and the enemy's in theirs (ADR-056, ADR-057). Beside "Nodes", in the labels' color,
+  // the Command Station's cap of the map's nodes, "cap 10 of 25" (Phase 3 design §7). Under the tickets, who the drain takes
+  // from and when they run out, a warning chip when it is the player (interface plan 2, task UI3.3).
+  const auto territoryRows = [](const Territory& _territory)
+  {
+    const bool tickets = _territory.ownTickets.has_value() && _territory.enemyTickets.has_value();
+    return 1.0f + (tickets ? 1.0f : 0.0f) + (_territory.drain.empty() ? 0.0f : 1.0f);
+  };
   if (_content.territory.has_value())
   {
     const Territory& territory = *_content.territory;
     const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
-    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS;
+    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(territory) * NAME_LINE_UNITS);
     Painter paint = frame({.xUnits = MARGIN, .yUnits = underStatusUnits}, columnUnits, heightUnits);
-    const auto row = [&](const std::string& _label, const std::string& _own, const std::string& _enemy, float _top)
+    const auto row =
+      [&](const std::string& _label, const std::string& _note, const std::string& _own, const std::string& _enemy, float _top)
     {
       const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
       const float right = columnUnits - PADDING;
       std::string own = std::format("{} : ", _own);
       const float ownRight = right - paint.Width(_enemy, Typeface::Figure);
       const float labelRoom = ownRight - paint.Width(own, Typeface::Figure) - PADDING - FIT_GAP_UNITS;
-      paint.Text(paint.Fit(_label, Typeface::Name, labelRoom), PADDING, _top, TEXT_COLOR, Typeface::Name);
+      std::string label = paint.Fit(_label, Typeface::Name, labelRoom);
+      const float noteLeft = PADDING + paint.Width(label, Typeface::Name) + FIT_GAP_UNITS;
+      paint.Text(std::move(label), PADDING, _top, TEXT_COLOR, Typeface::Name);
+      if (!_note.empty())
+        paint.Text(paint.Fit(_note, Typeface::Name, PADDING + labelRoom - noteLeft), noteLeft, _top, LABEL_COLOR, Typeface::Name);
       paint.RightText(_enemy, right, figureTop, ENEMY_COLOR, Typeface::Figure);
       paint.RightText(std::move(own), ownRight, figureTop, OWN_COLOR, Typeface::Figure);
     };
-    // The player's own against its Command Station's cap, "4 / 5" (Phase 3 design §7).
-    const std::string own =
-      territory.cap > 0 ? std::format("{} / {}", territory.ownNodes, territory.cap) : std::to_string(territory.ownNodes);
-    row(std::format("Nodes of {}", territory.nodes), own, std::to_string(territory.enemyNodes), TERRITORY_INSET_UNITS);
+    const std::string note =
+      territory.cap > 0 ? std::format("cap {} of {}", territory.cap, territory.nodes) : std::format("of {}", territory.nodes);
+    row("Nodes", note, std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes), TERRITORY_INSET_UNITS);
+    float top = TERRITORY_INSET_UNITS + NAME_LINE_UNITS;
     if (tickets)
     {
-      row("Tickets", WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)),
-          TERRITORY_INSET_UNITS + NAME_LINE_UNITS);
+      row("Tickets", {}, WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)), top);
+      top += NAME_LINE_UNITS;
+    }
+    if (!territory.drain.empty())
+    {
+      if (territory.drainWarns)
+      {
+        const std::string drain = paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
+        (void)paint.Chip(drain, PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
+      }
+      else
+        paint.Text(paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR, Typeface::Name);
     }
   }
 
@@ -2976,9 +3019,9 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // ADR-085 decision 1).
   if (!_content.alerts.empty())
   {
-    const bool tickets = _content.territory.has_value() && _content.territory->ownTickets.has_value();
-    const float territoryUnits =
-      _content.territory.has_value() ? (2.0f * TERRITORY_INSET_UNITS) + ((tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS) + PANEL_GAP : 0.0f;
+    const float territoryUnits = _content.territory.has_value()
+                                   ? (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(*_content.territory) * NAME_LINE_UNITS) + PANEL_GAP
+                                   : 0.0f;
     const float topUnits = underStatusUnits + territoryUnits;
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
     Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, columnUnits, heightUnits);

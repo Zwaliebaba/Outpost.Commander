@@ -580,6 +580,11 @@ struct Snapshot
   std::vector<SectorView> sectors;
   std::vector<TicketsView> tickets;
   std::int32_t startingTickets = 0;
+  // With the tickets, domination's drain from the tuning data (ADR-057 decision 1): every drainIntervalSeconds, the tickets
+  // a player loses for each node it is behind. The HUD tells by them who loses how fast, and when they run out (interface
+  // plan 2, task UI3.3).
+  double drainIntervalSeconds = 0.0;
+  std::int32_t drainTicketsPerNodeDifference = 0;
   // In a world, while the player has lost: the tick its seat restarts at its start, or has waited since for the start to
   // be free (Phase 5 design §8); none while it stands, and none in a match.
   std::optional<std::uint64_t> restartTick;

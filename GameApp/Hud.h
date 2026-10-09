@@ -443,6 +443,10 @@ public:
     std::int32_t cap = 0;
     std::optional<std::int32_t> ownTickets;
     std::optional<std::int32_t> enemyTickets;
+    // With the tickets, who the drain takes them from, how fast, and when they run out, "Enemy -20 a minute · out in 32:06",
+    // or "No drain" while both hold as many nodes; a warning chip when it is the player's (interface plan 2, task UI3.3).
+    std::string drain;
+    bool drainWarns = false;
   };
 
   // A run of a status line's words: plain, in the text's color, or a warning chip, dark on a tag of the warning's color

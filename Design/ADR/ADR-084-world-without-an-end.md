@@ -19,7 +19,7 @@ Phase 5 design §8 (gate H6) takes away a world's end. Domination ([ADR-057](ADR
 5. **Each base player's start is state** (`Simulation::m_starts`), since a world restored from a save has no map's starts to place a base on.
 6. **An AI empire plans afresh when its seat restarts** (`AiEmpire`). It makes its `AiPlayer` anew on `EmpireRestarted`, which lays its plan round the new Command Station, as one made afresh after a server restart does ([ADR-079](ADR-079-seat-controller-and-deputy.md)). A deputy is a keeper with no plan to lay, and plays on.
 7. **The client's banner says it** (`Hud::DescribeOutcome`): "Empire fallen", and when the seat restarts at the player's start, or that it restarts once the start is clear of the enemy. The way back to the menu stays.
-8. **The protocol.** `PROTOCOL_VERSION` is 15. The two events are the last kinds of `EventKind`. Alerts and the report of a time away ([ADR-080](ADR-080-events-and-scheduled-orders.md)) tell neither; the banner tells the player.
+8. **The protocol.** The two events raised `PROTOCOL_VERSION` to 15, and the drain's numbers ([ADR-057](ADR-057-domination.md) decision 7) to 16. The two events are the last kinds of `EventKind`. Alerts and the report of a time away ([ADR-080](ADR-080-events-and-scheduled-orders.md)) tell neither; the banner tells the player.
 
 ## Consequences
 

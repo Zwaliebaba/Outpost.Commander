@@ -70,7 +70,7 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI2.3 | The blast and Ore's glyph | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI3.2 | One column, and state in bars | UI3.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | todo |
+| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI4.1 | Bars on the screen | UI2.2 | V7 | todo |
 | UI4.2 | Commands beside the selection | — | V6 | todo |
 | UI4.3 | Retreat as three choices | UI4.2 | V6 | todo |
@@ -338,6 +338,12 @@ The milestone's tasks share one ADR: one meaning per color.
   - `WireFormatTests`: the fields.
   - `GameLogicTests`: the snapshot carries the tuning data's numbers.
 - **Verify:** the container's `GameLogicTests`; CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-057](../Design/ADR/ADR-057-domination.md) decisions 7 and 8, and [ADR-056](../Design/ADR/ADR-056-territory.md) decision 11's panel line, rewritten in place.
+  - `PROTOCOL_VERSION` goes from 15 to 16, since milestone 39 had raised it to 15.
+  - The rows read "Enemy -20 a minute · out in 32:06" and "You -60 a minute · out in 12:09", with a hyphen for the minus: the glyph atlas has no minus sign.
+  - The 12:09 case is three nodes behind with 729 tickets, or 728, since a part drain is a whole one; the review's fifth screenshot's own figures were not recorded.
+  - Without a cap, the nodes' note reads "of 25".
+  - The container ran `GameLogicTests`, `GameProtocolTests` and the HUD's tests. Not yet seen on screen.
 
 ---
 

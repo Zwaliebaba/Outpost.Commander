@@ -187,8 +187,14 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
                     {.runs = {{.text = "Fleet"}}, .bar = Outpost::Hud::StatusBar{.share = 0.5f, .figure = "99 / 99"}}};
   content.researchNames = {"Mass Driver Calibration", "Reinforced Structures"};
   content.alerts = {{"Shipyard 05 is under attack", {}}, {"Mining Rig 12 destroyed", {}}, {"Relay 03 lost", {}}};
-  content.territory =
-    Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .cap = 12, .ownTickets = 10000, .enemyTickets = 10000};
+  content.territory = Outpost::Hud::Territory{.ownNodes = 12,
+                                              .enemyNodes = 12,
+                                              .nodes = 12,
+                                              .cap = 12,
+                                              .ownTickets = 10000,
+                                              .enemyTickets = 10000,
+                                              .drain = "You -9,999 a minute \xC2\xB7 out in 99:59",
+                                              .drainWarns = true};
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
   content.buttons = {{.label = "Shipyard|300"},
                      {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
@@ -913,9 +919,13 @@ public:
 
     content.fog = true;
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
-    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "1 / 3 : "; }),
-                   L"the player's own against its station's cap");
+    // The nodes as the tickets read, the player's against the enemy's, with the station's cap of the map's beside "Nodes" in
+    // the labels' color (interface plan 2, task UI3.3).
+    const Outpost::Hud::Text& nodes = TextOf(layout, "Nodes");
+    const Outpost::Hud::Text& cap = TextOf(layout, "cap 3 of 3");
+    Assert::IsTrue(cap.top == nodes.top && cap.left > nodes.left, L"the cap beside the label");
+    Assert::IsTrue(cap.color.x == 0.22f && cap.color.z == 0.42f, L"in the labels' color");
+    Assert::IsTrue(TextOf(layout, "1 : ").left < TextOf(layout, "1").left, L"the player's, then the enemy's");
     Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
                     L"no tickets without them");
     const auto fog =
@@ -2431,22 +2441,50 @@ public:
       Assert::IsTrue(std::ranges::find(layout.texts, line, &Outpost::Hud::Text::text) != layout.texts.end());
   }
 
-  // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs.
+  // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs. Interface plan 2,
+  // task UI3.3: under the tickets, who the drain takes from, at what a minute, and when they run out, the drains their
+  // tickets last rounded up, times the interval; a warning chip when it is the player, and "No drain" level on nodes.
   TEST_METHOD(ShowsTheTickets)
   {
+    const Outpost::PlayerId enemy{2};
     Outpost::Snapshot newest = Newest();
     newest.sectors = {{.id = 1, .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
-    newest.tickets = {{.player = PLAYER, .tickets = 1000}, {.player = Outpost::PlayerId{2}, .tickets = 870}};
-    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
-    Assert::IsTrue(content.territory.has_value());
-    const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
-    Assert::IsTrue(territory.ownTickets == 1000 && territory.enemyTickets == 870);
-    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    const auto text = [&layout](std::string_view _text) { return std::ranges::find(layout.texts, _text, &Outpost::Hud::Text::text); };
-    Assert::IsTrue(text("Tickets") != layout.texts.end());
-    Assert::IsTrue(text("1,000 : ") != layout.texts.end() && text("870") != layout.texts.end());
-    Assert::IsTrue(text("870")->left > text("1,000 : ")->left, L"the enemy's figure stands at the right");
-    Assert::IsTrue(text("Tickets")->top > text("Nodes of 1")->top);
+    newest.tickets = {{.player = PLAYER, .tickets = 1000}, {.player = enemy, .tickets = 642}};
+    newest.drainIntervalSeconds = 3.0;
+    newest.drainTicketsPerNodeDifference = 1;
+    const auto territoryOf = [&newest]() { return Outpost::Hud::Describe(newest, {}, {}).territory.value_or(Outpost::Hud::Territory{}); };
+    // Ahead by a node, at the review's first screenshot's figures: the enemy loses 20 a minute, out in 32:06.
+    Outpost::Hud::Territory territory = territoryOf();
+    Assert::IsTrue(territory.ownTickets == 1000 && territory.enemyTickets == 642);
+    Assert::AreEqual(std::string("Enemy -20 a minute \xC2\xB7 out in 32:06"), territory.drain);
+    Assert::IsFalse(territory.drainWarns);
+    const Outpost::Hud::Layout layout = Lay(Outpost::Hud::Describe(newest, {}, {}), 1920, 1080);
+    const Outpost::Hud::Text& tickets = TextOf(layout, "Tickets");
+    const Outpost::Hud::Text& drain = TextOf(layout, territory.drain);
+    Assert::IsTrue(TextOf(layout, "642").left > TextOf(layout, "1,000 : ").left, L"the enemy's figure stands at the right");
+    Assert::IsTrue(TextOf(layout, "Nodes").top < tickets.top && tickets.top < drain.top, L"nodes, tickets, then the drain");
+    Assert::IsFalse(IsChip(layout, drain), L"the enemy's loss is plain");
+
+    // Level on nodes: no drain.
+    newest.sectors.push_back({.id = 2, .minXMeters = 100.0f, .maxXMeters = 200.0f, .maxZMeters = 100.0f, .holder = enemy});
+    Assert::AreEqual(std::string("No drain"), territoryOf().drain);
+
+    // Behind by three, at the fifth screenshot's time: the player loses 60 a minute and is out in 12:09, a warning chip.
+    newest.sectors = {{.id = 1, .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = enemy},
+                      {.id = 2, .minXMeters = 100.0f, .maxXMeters = 200.0f, .maxZMeters = 100.0f, .holder = enemy},
+                      {.id = 3, .minXMeters = 200.0f, .maxXMeters = 300.0f, .maxZMeters = 100.0f, .holder = enemy}};
+    newest.tickets[0].tickets = 729;
+    territory = territoryOf();
+    Assert::AreEqual(std::string("You -60 a minute \xC2\xB7 out in 12:09"), territory.drain);
+    Assert::IsTrue(territory.drainWarns);
+    const Outpost::Hud::Layout behind = Lay(Outpost::Hud::Describe(newest, {}, {}), 1920, 1080);
+    Assert::IsTrue(IsChip(behind, TextOf(behind, territory.drain)), L"the player's own loss is a chip");
+    newest.tickets[0].tickets = 728;
+    Assert::AreEqual(std::string("You -60 a minute \xC2\xB7 out in 12:09"), territoryOf().drain, L"a part drain is a whole one");
+
+    // Without the drain's numbers, no row.
+    newest.drainIntervalSeconds = 0.0;
+    Assert::IsTrue(territoryOf().drain.empty());
   }
 
   // The banner sits at the top, over the world that runs on, and its button takes the player back to the menu.
