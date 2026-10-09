@@ -441,13 +441,27 @@ public:
     std::optional<std::int32_t> enemyTickets;
   };
 
-  // A line of the status panel under the Ore (ADR-066): what the Research Lab or the Shipyards are doing, in the warning's
-  // color while any stands idle, and the window a click on it opens.
-  struct StatusLine
+  // A run of a status line's words: plain, in the text's color, or a warning chip, dark on a tag of the warning's color
+  // (ADR-085 decision 1).
+  struct StatusRun
   {
     std::string text;
-    bool idle = false;
+    bool chip = false;
+
+    friend bool operator==(const StatusRun&, const StatusRun&) = default;
+  };
+
+  // A line of the status panel under the Ore (ADR-066): what the Research Lab or the Shipyards are doing, an idle one's
+  // IDLE a chip, and the window a click on it opens.
+  struct StatusLine
+  {
+    std::vector<StatusRun> runs;
     Action action;
+
+    // Its runs' words, one after another.
+    [[nodiscard]] std::string Text() const;
+    // Whether a run of it is a chip.
+    [[nodiscard]] bool Warns() const noexcept;
   };
 
   // A row of the orders window's form: what it sets, its value between the arrows that step it, and the field they step.

@@ -65,7 +65,7 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI1.2 | Memories that look like memories | — | V3 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI1.3 | Sight that shows | UI1.2 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
-| UI2.1 | A warning is a chip | — | V4 | todo |
+| UI2.1 | A warning is a chip | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI2.2 | Build progress in a neutral color | — | V4 | todo |
 | UI2.3 | The blast and Ore's glyph | — | V4 | todo |
 | UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | todo |
@@ -230,6 +230,11 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** the milestone's. It rewrites ADR-066 decision 2, ADR-047 decision 5 and ADR-059 decision 2 in place.
 - **Acceptance:** `HudTests`: each of the three drawn as a chip, with a panel under its word; no text in `ENEMY_COLOR` has one; 14.2's contrast test with the chip's text against its fill.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 1.
+  - A status line is a list of runs, each plain or a chip; the Shipyards' idle count is the chip "2 IDLE".
+  - The newest alert's tag starts 4 units left of the other lines, so its words stay in line with theirs.
+  - The main menu's notice stays plain text in the warning's color, as the designer's refused name does: it wraps over several lines, and no enemy figure stands near it.
+  - The chip's words stand at 10.3:1 on its tag, computed. Not yet seen on screen.
 
 ### UI2.2 — Build progress in a neutral color
 

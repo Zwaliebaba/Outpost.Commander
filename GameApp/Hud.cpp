@@ -224,8 +224,8 @@ std::string WorkLine(std::string_view _verb, const std::string& _front, std::int
 
 // The status panel's lines (ADR-066): what the player's finished Research Lab is doing, and how many of its finished
 // Shipyards are building, waiting for Ore, waiting for the fleet cap and idle, and the fleet against its cap (Phase 4
-// design §5). A line that reports an idle Lab or Shipyard says IDLE. A click on the Lab's line opens research, and on the
-// Shipyards' opens production at the first idle Shipyard, or at the first if none is.
+// design §5). A line that reports an idle Lab or Shipyard says IDLE, in a chip (ADR-085 decision 1). A click on the Lab's line
+// opens research, and on the Shipyards' opens production at the first idle Shipyard, or at the first if none is.
 std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std::span<const Outpost::EntityView> _entities)
 {
   const auto own = [&_newest](const Outpost::EntityView& _entity, Outpost::StructureKind _kind)
@@ -240,7 +240,7 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
   {
     const Hud::Action open{.kind = Hud::ActionKind::OpenResearch, .producer = lab->id};
     if (lab->research.empty())
-      lines.push_back({.text = "Research Lab IDLE", .idle = true, .action = open});
+      lines.push_back({.runs = {{.text = "Research Lab "}, {.text = "IDLE", .chip = true}}, .action = open});
     else
     {
       const std::string name = TopicNameOf(_newest, lab->research.front());
@@ -248,7 +248,7 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
                                               : std::format("Researching {}, waiting for Ore", name);
       if (lab->research.size() > 1)
         text += std::format(" (+{} queued)", lab->research.size() - 1);
-      lines.push_back({.text = std::move(text), .action = open});
+      lines.push_back({.runs = {{.text = std::move(text)}}, .action = open});
     }
   }
 
@@ -280,18 +280,20 @@ std::vector<Hud::StatusLine> StatusLinesOf(const Outpost::Snapshot& _newest, std
     else
       ++waiting;
   }
-  std::string text = std::format("Shipyards: {} building", building);
+  std::vector<Hud::StatusRun> runs{{.text = std::format("Shipyards: {} building", building)}};
   if (waiting > 0)
-    text += std::format(", {} waiting for Ore", waiting);
+    runs.back().text += std::format(", {} waiting for Ore", waiting);
   if (capped > 0)
-    text += std::format(", {} waiting for the fleet cap", capped);
+    runs.back().text += std::format(", {} waiting for the fleet cap", capped);
   if (idle > 0)
-    text += std::format(", {} IDLE", idle);
+  {
+    runs.back().text += ", ";
+    runs.push_back({.text = std::format("{} IDLE", idle), .chip = true});
+  }
   if (_newest.fleetCap > 0)
-    text += std::format("{}fleet {} / {}", DOT, _newest.commandPoints, _newest.fleetCap);
+    runs.push_back({.text = std::format("{}fleet {} / {}", DOT, _newest.commandPoints, _newest.fleetCap)});
   lines.push_back(
-    {.text = std::move(text),
-     .idle = idle > 0,
+    {.runs = std::move(runs),
      .action = {.kind = Hud::ActionKind::OpenProduction, .producer = (firstIdle != nullptr ? firstIdle : shipyards.front())->id}});
   return lines;
 }
@@ -851,6 +853,9 @@ constexpr float ORE_MARK_SHARE = 0.6f;
 constexpr float ORE_MARK_GAP_UNITS = 5.0f;
 // The room a line cut short to fit keeps from what stands beside it, such as a cost (ADR-061).
 constexpr float FIT_GAP_UNITS = 6.0f;
+// A warning chip (ADR-085 decision 1): its words in the windows' navy on a tag of the warning's color, which reaches this far
+// beyond them on either side and covers their whole line, descenders and all.
+constexpr float CHIP_PAD_UNITS = 4.0f;
 // The box a window's header holds the player's Ore in.
 constexpr float ORE_BOX_WIDTH = 116.0f;
 // How far down a small button its mark's line starts.
@@ -1016,6 +1021,22 @@ public:
   {
     const float left = _right - Width(_text, _face, _tracking);
     Text(std::move(_text), left, _top, _color, _face, _tracking);
+  }
+
+  // How wide a warning chip of _text is set in _face, its tag and all.
+  [[nodiscard]] float ChipWidth(std::string_view _text, Hud::Typeface _face) const noexcept
+  {
+    return Width(_text, _face) + (2.0f * CHIP_PAD_UNITS);
+  }
+
+  // A warning chip whose tag starts at _left, on a line of _lineUnits from _top (ADR-085 decision 1). It returns how wide it
+  // is.
+  float Chip(std::string _text, float _left, float _top, Hud::Typeface _face, float _lineUnits)
+  {
+    const float width = ChipWidth(_text, _face);
+    Panel(_left, _top, width, _lineUnits, WARNING_COLOR);
+    Text(std::move(_text), _left + CHIP_PAD_UNITS, _top, WINDOW_COLOR, _face);
+    return width;
   }
 
   void Sprite(Hud::Sprite _sprite, float _left, float _top, float _size, const DirectX::XMFLOAT4& _color)
@@ -1936,6 +1957,19 @@ std::string Hud::DescribeDerelict(const Snapshot& _newest, const EntityView& _de
   return text;
 }
 
+std::string Hud::StatusLine::Text() const
+{
+  std::string text;
+  for (const StatusRun& run : runs)
+    text += run.text;
+  return text;
+}
+
+bool Hud::StatusLine::Warns() const noexcept
+{
+  return std::ranges::any_of(runs, &StatusRun::chip);
+}
+
 std::string Hud::DescribeMemory(const Snapshot& _newest, const EntityView& _structure, std::uint32_t _ticksPerSecond)
 {
   const auto type = std::ranges::find(_newest.structureTypes, _structure.structure, &StructureTypeView::structure);
@@ -2781,16 +2815,22 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   const auto addButton = [&layout, &_metrics, scale](const Rect& _area, const Button& _button)
   { AddButton(layout, _metrics, scale, _area, _button); };
 
-  // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second, in the warning's color when they
-  // earn nothing, since then nothing the player spends comes back.
+  // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second, a warning chip when they earn
+  // nothing, since then nothing the player spends comes back.
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, ORE_PANEL_WIDTH, ORE_PANEL_HEIGHT);
     paint.DiamondAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
     const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
     const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
                                                             : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
-    paint.RightText(incomeText, ORE_PANEL_WIDTH - PADDING, ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f,
-                    income > 0 ? NUMBERS_COLOR : WARNING_COLOR, Typeface::Figure);
+    const float incomeTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+    if (income > 0)
+      paint.RightText(incomeText, ORE_PANEL_WIDTH - PADDING, incomeTop, NUMBERS_COLOR, Typeface::Figure);
+    else
+    {
+      const float chipLeft = ORE_PANEL_WIDTH - PADDING - paint.ChipWidth(incomeText, Typeface::Figure);
+      (void)paint.Chip(incomeText, chipLeft, incomeTop, Typeface::Figure, FIGURE_LINE_UNITS);
+    }
   }
 
   // Under the Ore: what the Research Lab and the Shipyards are doing (ADR-066).
@@ -2827,7 +2867,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     }
   }
 
-  // Under the territory: the alerts, newest first, in the warning's color (ADR-059).
+  // Under the territory: the alerts, newest first, the newest a warning chip whose words line up with the others' (ADR-059,
+  // ADR-085 decision 1).
   if (!_content.alerts.empty())
   {
     const bool tickets = _content.territory.has_value() && _content.territory->ownTickets.has_value();
@@ -2838,18 +2879,32 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, ALERT_PANEL_WIDTH, heightUnits);
     for (size_t line = 0; line < _content.alerts.size(); ++line)
     {
-      paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, ALERT_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
-                 TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS), line == 0 ? WARNING_COLOR : TEXT_COLOR,
-                 Typeface::Name);
+      const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
+      if (line == 0)
+      {
+        std::string newest =
+          paint.Fit(_content.alerts[line].first, Typeface::Name, ALERT_PANEL_WIDTH - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
+        (void)paint.Chip(std::move(newest), PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
+      }
+      else
+        paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, ALERT_PANEL_WIDTH - (2.0f * PADDING)), PADDING, top, TEXT_COLOR,
+                   Typeface::Name);
     }
   }
-  // The status panel: a line for the Research Lab and one for the Shipyards, an idle one in the warning's color, each a place
-  // to click that opens its window (ADR-066). It is as wide as its longest line, within its bounds.
+  // The status panel: a line for the Research Lab and one for the Shipyards, an idle one's IDLE a chip, each a place to
+  // click that opens its window (ADR-066). It is as wide as its longest line, within its bounds.
   if (!_content.status.empty())
   {
+    const auto runUnits = [&_metrics](const StatusRun& _run)
+    { return _metrics.Width(Typeface::Name, _run.text) + (_run.chip ? 2.0f * CHIP_PAD_UNITS : 0.0f); };
     float textUnits = 0.0f;
     for (const StatusLine& line : _content.status)
-      textUnits = std::max(textUnits, _metrics.Width(Typeface::Name, line.text));
+    {
+      float lineUnits = 0.0f;
+      for (const StatusRun& run : line.runs)
+        lineUnits += runUnits(run);
+      textUnits = std::max(textUnits, lineUnits);
+    }
     const float widthUnits = std::clamp(textUnits + (2.0f * PADDING), STATUS_PANEL_MIN_WIDTH, STATUS_PANEL_WIDTH);
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.status.size()) * NAME_LINE_UNITS);
     Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, widthUnits, heightUnits);
@@ -2861,8 +2916,24 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       const float rowTop = line == 0 ? 0.0f : top;
       const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + NAME_LINE_UNITS;
       paint.Press(paint.Area(0.0f, rowTop, widthUnits, rowBottom - rowTop, WINDOW_COLOR), status.action);
-      paint.Text(paint.Fit(status.text, Typeface::Name, widthUnits - (2.0f * PADDING)), PADDING, top,
-                 status.idle ? WARNING_COLOR : TEXT_COLOR, Typeface::Name);
+      // Each run after the one before; a plain run is cut short to leave room for the runs after it, a chip never is.
+      float left = PADDING;
+      for (std::size_t run = 0; run < status.runs.size(); ++run)
+      {
+        const StatusRun& words = status.runs[run];
+        if (words.chip)
+        {
+          left += paint.Chip(words.text, left, top, Typeface::Name, NAME_LINE_UNITS);
+          continue;
+        }
+        float afterUnits = 0.0f;
+        for (std::size_t later = run + 1; later < status.runs.size(); ++later)
+          afterUnits += runUnits(status.runs[later]);
+        std::string text = paint.Fit(words.text, Typeface::Name, widthUnits - PADDING - left - afterUnits);
+        const float textUnitsSet = paint.Width(text, Typeface::Name);
+        paint.Text(std::move(text), left, top, TEXT_COLOR, Typeface::Name);
+        left += textUnitsSet;
+      }
     }
   }
 
