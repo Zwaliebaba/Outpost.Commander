@@ -67,6 +67,31 @@ std::wstring Wide(std::string_view _text)
   return {_text.begin(), _text.end()};
 }
 
+// The error code the server closes a connection to _seat with once it is sent _hello, or 0 when it has not closed it within
+// ten seconds.
+std::uint64_t CloseCodeFor(const Outpost::ServerAddress& _seat, std::span<const std::byte> _hello)
+{
+  const std::unique_ptr<Neuron::QuicChannel> channel =
+    Neuron::QuicChannel::Connect({.host = _seat.host,
+                                  .port = _seat.port,
+                                  .applicationProtocol = std::string(Outpost::QUIC_APPLICATION_PROTOCOL),
+                                  .serverCertificate = _seat.certificate});
+  channel->Send(_hello);
+  const auto deadline = std::chrono::steady_clock::now() + 10s;
+  while (std::chrono::steady_clock::now() < deadline)
+  {
+    try
+    {
+      (void)channel->Receive(100ms);
+    }
+    catch (const Neuron::Exception&)
+    {
+      return channel->PeerErrorCode().value_or(0);
+    }
+  }
+  return 0;
+}
+
 // A hosted player that counts how often it was given the seat to play, and to watch.
 class Counter final : public Outpost::HostedPlayer
 {
@@ -291,30 +316,32 @@ public:
     auto server = QuicServer();
     const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
     // A hello of another version, 10, laid out as it was before the token: the kind, the version and the player.
-    std::vector<std::byte> oldHello{std::byte{0}, std::byte{10}, std::byte{0}, std::byte{0}, std::byte{0},
-                                    std::byte{1}, std::byte{0},  std::byte{0}, std::byte{0}};
-    const std::unique_ptr<Neuron::QuicChannel> channel =
-      Neuron::QuicChannel::Connect({.host = seat.host,
-                                    .port = seat.port,
-                                    .applicationProtocol = std::string(Outpost::QUIC_APPLICATION_PROTOCOL),
-                                    .serverCertificate = seat.certificate});
-    channel->Send(oldHello);
-    const auto deadline = std::chrono::steady_clock::now() + 10s;
-    bool closed = false;
-    while (!closed && std::chrono::steady_clock::now() < deadline)
-    {
-      try
-      {
-        (void)channel->Receive(100ms);
-      }
-      catch (const Neuron::Exception&)
-      {
-        closed = true;
-      }
-    }
-    Assert::IsTrue(closed);
-    Assert::AreEqual(static_cast<std::uint64_t>(Outpost::CloseReason::WrongVersion), channel->PeerErrorCode().value_or(0),
-                     Wide(std::format("closed with code {}", channel->PeerErrorCode().value_or(0))).c_str());
+    const std::vector<std::byte> oldHello{std::byte{0}, std::byte{10}, std::byte{0}, std::byte{0}, std::byte{0},
+                                          std::byte{1}, std::byte{0},  std::byte{0}, std::byte{0}};
+    const std::uint64_t code = CloseCodeFor(seat, oldHello);
+    Assert::AreEqual(static_cast<std::uint64_t>(Outpost::CloseReason::WrongVersion), code,
+                     Wide(std::format("closed with code {}", code)).c_str());
+  }
+
+  // ADR-060: a hello of this version from a build that lays its messages out otherwise is refused as another build's, and
+  // so is one cut short before its layout's hash ends; this build's own hello takes the seat.
+  TEST_METHOD(RefusesAHelloOfAnotherLayout)
+  {
+    auto server = QuicServer();
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    const std::vector<std::byte> otherLayout =
+      Outpost::EncodeMessage(Outpost::HelloMessage{.layoutHash = Outpost::WireLayoutHash() + 1, .player = BLUE, .token = seat.token});
+    std::uint64_t code = CloseCodeFor(seat, otherLayout);
+    Assert::AreEqual(static_cast<std::uint64_t>(Outpost::CloseReason::WrongVersion), code,
+                     Wide(std::format("closed with code {}", code)).c_str());
+
+    std::vector<std::byte> cutShort = Outpost::EncodeMessage(Outpost::HelloMessage{.player = BLUE, .token = seat.token});
+    cutShort.resize(1 + sizeof(std::uint32_t) + 4);
+    code = CloseCodeFor(seat, cutShort);
+    Assert::AreEqual(static_cast<std::uint64_t>(Outpost::CloseReason::WrongVersion), code,
+                     Wide(std::format("closed with code {}", code)).c_str());
+
+    Outpost::QuicTransport blue(seat, BLUE);
   }
 
   TEST_METHOD(OpensSeatsOnlyWhenItListens)

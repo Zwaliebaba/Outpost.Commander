@@ -353,7 +353,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         const Outpost::JoinTicket ticket = ReadJoinFile(_joinFile);
         match.emplace();
         match->player = std::make_unique<Outpost::QuicTransport>(ticket.address, ticket.player);
-        client.StartMatch();
+        client.StartMatch(Outpost::Hud::ServerName(ticket.address.host, ticket.address.port));
         lastFrame = std::chrono::steady_clock::now();
       }
       catch (const std::exception& error)

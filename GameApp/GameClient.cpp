@@ -526,9 +526,10 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_ui.SetImage(m_groundMask.ShadesView());
 }
 
-void Outpost::GameClient::StartMatch()
+void Outpost::GameClient::StartMatch(std::string _server)
 {
   ClearMatch();
+  m_server = std::move(_server);
   m_menuNotice.clear();
   m_screen = Screen::Match;
 }
@@ -543,6 +544,8 @@ void Outpost::GameClient::ShowMenu(std::string _notice)
 void Outpost::GameClient::ClearMatch()
 {
   m_view = SnapshotInterpolator(m_ticksPerSecond);
+  m_server.clear();
+  m_silentSeconds = 0.0f;
   m_effects = CombatEffects(m_ticksPerSecond, m_catalog.shots);
   m_particles = ParticleSystem(m_ticksPerSecond);
   m_explosions = ExplosionManager(m_ticksPerSecond);
@@ -581,6 +584,8 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
   // On the menu there is no match to show; anything still arriving from the last one is dropped.
   if (m_screen == Screen::Menu)
     return;
+  if (!_snapshots.empty())
+    m_silentSeconds = 0.0f;
   for (Snapshot& snapshot : _snapshots)
   {
     m_effects.Receive(snapshot);
@@ -649,6 +654,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
 
   m_everyHealthBar = _input.active && _input.IsDown(KEY_EVERY_HEALTH_BAR);
   m_view.Advance(_elapsedSeconds);
+  m_silentSeconds += _elapsedSeconds;
   std::swap(m_previousEntities, m_entities);
   m_view.Entities(m_entities);
   if (!m_view.IsEmpty() && m_view.Newest().fogOfWar)
@@ -764,6 +770,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
                                          hovered, m_ticksPerSecond);
     content.fog = m_fog.CellsPerSide() > 0;
+    content.connection = Hud::Connection{.server = m_server, .silentSeconds = static_cast<std::int32_t>(m_silentSeconds)};
     // What a derelict under the pointer holds (Phase 4 design §13), and how long ago a structure the player only remembers
     // was seen (interface plan 2, task UI1.2), unless a placement's hint says more.
     if (const auto pointed = std::ranges::find(m_entities, m_hovered.value_or(EntityId{}), &EntityView::id);
