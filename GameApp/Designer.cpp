@@ -111,22 +111,6 @@ Outpost::RetreatThreshold Outpost::Designer::Retreat(const Snapshot& _newest) co
   return match != nullptr ? match->retreat : DEFAULT_RETREAT;
 }
 
-void Outpost::Designer::StepRetreat(const Snapshot& _newest) noexcept
-{
-  switch (Retreat(_newest))
-  {
-  case RetreatThreshold::Quarter:
-    m_retreat = RetreatThreshold::Half;
-    break;
-  case RetreatThreshold::Half:
-    m_retreat = RetreatThreshold::Never;
-    break;
-  case RetreatThreshold::Never:
-    m_retreat = RetreatThreshold::Quarter;
-    break;
-  }
-}
-
 const Outpost::DesignView* Outpost::Designer::Match(const Snapshot& _newest) const noexcept
 {
   const auto found = std::ranges::find_if(
@@ -149,6 +133,17 @@ std::string Outpost::Designer::Name(const Snapshot& _newest) const
   std::string name = std::format("{}+{}+{}", hull->nameUtf8, drive->nameUtf8, weapon->nameUtf8);
   if (const ModuleView* module = Find(_newest.modules, m_module))
   {
+    // A module on a saved design's hull, drive and weapon, where that design without one has a short name, as a starting
+    // design has (ADR-069), takes that name with the module's code: "Lancer+SA" (interface plan 2, task UI4.5).
+    const auto base = std::ranges::find_if(
+      _newest.designs, [this](const DesignView& _design)
+      { return _design.hull == m_hull && _design.drive == m_drive && _design.weapon == m_weapon && !_design.module.IsValid(); });
+    if (base != _newest.designs.end() && base->nameUtf8 != name)
+    {
+      std::string shortName = std::format("{}+{}", base->nameUtf8, Abbreviation(module->nameUtf8));
+      if (IsValidDesignName(shortName))
+        return shortName;
+    }
     const std::string whole = std::format("{}+{}", name, module->nameUtf8);
     name = IsValidDesignName(whole) ? whole : std::format("{}+{}", name, Abbreviation(module->nameUtf8));
   }

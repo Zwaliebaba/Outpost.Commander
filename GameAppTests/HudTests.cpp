@@ -38,10 +38,10 @@ Outpost::Hud::TextMetrics MetricsFor(std::uint32_t _widthPixels, std::uint32_t _
 // own (ADR-070).
 Outpost::Hud::Layout Lay(const Outpost::Hud::Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                          std::span<const Outpost::PlanePosition> _view = {}, const Outpost::WindowManager* _windows = nullptr,
-                         float _factor = 1.0f)
+                         float _factor = 1.0f, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   return Outpost::Hud::Lay(_content, MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _view, _windows,
-                           _factor);
+                           _factor, _hovered);
 }
 
 Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f,
@@ -152,11 +152,12 @@ std::string LongestName(char _last)
 }
 
 // The longest content the game makes, with every window open (task 14.1), the Controls window among them (task 16.4), and
-// the orders and away windows (Phase 5 design §11): six designs of the longest names, all selected,
-// one of them loaded in the designer of five weapons, every part locked or every part unlocked; a full queue at a
-// Shipyard and at the Lab; a page of topics, among them Relay Archives with both its prerequisites to do; a placement's
-// hint, the status panel's lines, the alerts, the territory and the banner. The Ore is five figures, more than any match in
-// the review banked. With _hovered, the designer previews the part under the pointer.
+// the orders and away windows (Phase 5 design §11): six designs of the longest names, four ships of each, all selected so
+// that the selection has its most bars (interface plan 2, task UI4.5), one of them loaded in the designer of five weapons,
+// every part locked or every part unlocked; a full queue at a Shipyard and at the Lab; a page of topics, among them Relay
+// Archives with both its prerequisites to do; a placement's hint, the status panel's lines, the alerts, the territory and
+// the banner. The Ore is five figures, more than any match in the review banked. With _hovered, the designer previews the
+// part under the pointer.
 Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
@@ -171,8 +172,11 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
                               .drive = Outpost::DriveId{1},
                               .weapon = Outpost::WeaponId{2},
                               .cost = 1234});
-    newest.entities.push_back(Ship(100 + i, design, 150000, 220000));
-    selected.push_back(Outpost::EntityId{100 + i});
+    for (std::uint32_t ship = 0; ship < 4; ++ship)
+    {
+      newest.entities.push_back(Ship(100 + (4 * i) + ship, design, 150000, 220000));
+      selected.push_back(Outpost::EntityId{100 + (4 * i) + ship});
+    }
   }
   Outpost::Designer designer;
   designer.Update(newest);
@@ -541,7 +545,8 @@ public:
     Assert::AreEqual(44950.0f / 45000.0f, content.selectionHealth.value_or(-1.0f), 1e-6f);
   }
 
-  // Several ships: how many, how many of each design, most first, and their hit points together.
+  // Several ships: how many, how many of each design, most first, and their hit points together; and a bar for each ship,
+  // design by design in the lines' order, in place of the selection's one (interface plan 2, task UI4.5).
   TEST_METHOD(DescribesAGroupByDesign)
   {
     const std::vector<Outpost::EntityView> entities{Ship(1, LINE, 45000, 45000), Ship(2, SWARM, 10000, 19800), Ship(3, SWARM, 19800, 19800),
@@ -552,7 +557,132 @@ public:
     const std::vector<std::string> expected{"4 ships", "3 \xC3\x97 Small+Ion+Mass Driver", "1 \xC3\x97 Medium+Ion+Lance",
                                             "Hit points 946 / 1,044"};
     Assert::IsTrue(content.selection == expected);
-    Assert::AreEqual(94600.0f / 104400.0f, content.selectionHealth.value_or(-1.0f), 1e-6f);
+    Assert::IsFalse(content.selectionHealth.has_value());
+    const std::vector<std::uint32_t> order{2, 3, 4, 1};
+    Assert::AreEqual(order.size(), content.shipBars.size());
+    for (size_t i = 0; i < order.size(); ++i)
+      Assert::IsTrue(content.shipBars[i].ship == Outpost::EntityId{order[i]});
+    Assert::AreEqual(10000.0f / 19800.0f, content.shipBars[0].share, 1e-6f);
+  }
+
+  // Interface plan 2, task UI4.5: ships of one design are titled once, with their count. Up to 24 ships have a bar each
+  // under the lines, in rows of twelve, filled and colored by the ship's own share and outlined while it goes back to be
+  // repaired; a click on one selects that ship alone, and one under the pointer has its edge lit. Past 24, the selection
+  // has its one bar.
+  TEST_METHOD(GivesEachShipABar)
+  {
+    const auto select = [](std::uint32_t _count, std::uint32_t _swarms)
+    {
+      std::pair<std::vector<Outpost::EntityView>, std::vector<Outpost::EntityId>> ships;
+      for (std::uint32_t i = 1; i <= _count; ++i)
+      {
+        ships.first.push_back(i <= _swarms ? Ship(i, SWARM, 19800, 19800) : Ship(i, LINE, 45000, 45000));
+        ships.second.emplace_back(i);
+      }
+      return ships;
+    };
+    auto [entities, selected] = select(7, 7);
+    entities[2].hitPointsHundredths = 4000;
+    entities[5].retreating = true;
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
+    const std::vector<std::string> expected{"7 \xC3\x97 Small+Ion+Mass Driver", "Hit points 1,228 / 1,386", "1 retreating to be repaired"};
+    Assert::IsTrue(content.selection == expected, L"one design, titled once");
+    Assert::IsFalse(content.selectionHealth.has_value());
+    Assert::AreEqual(size_t{7}, content.shipBars.size());
+    Assert::AreEqual(4000.0f / 19800.0f, content.shipBars[2].share, 1e-6f);
+    Assert::IsTrue(content.shipBars[5].retreating && !content.shipBars[4].retreating);
+
+    // The bars, by the clicks they take: one row, left to right in the ships' order, under the lines and in the panel.
+    const auto barsOf = [](const Outpost::Hud::Layout& _layout)
+    {
+      std::vector<std::pair<Outpost::Hud::Rect, Outpost::Hud::Action>> bars;
+      for (const auto& press : _layout.actions)
+      {
+        if (press.second.kind == Outpost::Hud::ActionKind::Select)
+          bars.push_back(press);
+      }
+      return bars;
+    };
+    // What is drawn over a bar and round it: its track, its fill and any edge.
+    const auto panelsAt = [](const Outpost::Hud::Layout& _layout, const Outpost::Hud::Rect& _bar, float _scale)
+    {
+      const float reach = 1.5f * _scale;
+      std::vector<Outpost::Hud::Rect> found;
+      for (const Outpost::Hud::Rect& drawn : _layout.panels)
+      {
+        if (drawn.left >= _bar.left - reach && drawn.top >= _bar.top - reach &&
+            drawn.left + drawn.width <= _bar.left + _bar.width + reach && drawn.top + drawn.height <= _bar.top + _bar.height + reach)
+          found.push_back(drawn);
+      }
+      return found;
+    };
+    for (const std::uint32_t height : {1080u, 2160u})
+    {
+      const float scale = static_cast<float>(height) / 1080.0f;
+      const Outpost::Hud::Layout layout = Lay(content, height * 16 / 9, height);
+      const auto bars = barsOf(layout);
+      Assert::AreEqual(size_t{7}, bars.size());
+      const Outpost::Hud::Text& last = TextOf(layout, "1 retreating to be repaired");
+      // The selection panel: the widest under its title.
+      const Outpost::Hud::Text& title = TextOf(layout, expected.front());
+      Outpost::Hud::Rect panel;
+      for (const Outpost::Hud::Rect& drawn : layout.panels)
+      {
+        if (drawn.Contains(title.left + 1.0f, title.top + 1.0f) && drawn.width > panel.width)
+          panel = drawn;
+      }
+      for (size_t i = 0; i < bars.size(); ++i)
+      {
+        const Outpost::Hud::Rect& bar = bars[i].first;
+        Assert::IsTrue(bars[i].second.entity == Outpost::EntityId{static_cast<std::uint32_t>(i + 1)});
+        Assert::AreEqual(17.0f * scale, bar.width, 0.01f);
+        Assert::AreEqual(10.0f * scale, bar.height, 0.01f);
+        Assert::AreEqual(bars.front().first.top, bar.top, 0.01f, L"one row");
+        Assert::IsTrue(i == 0 || bar.left > bars[i - 1].first.left + bars[i - 1].first.width, L"left to right, apart");
+        Assert::IsTrue(bar.top > last.top + (16.0f * scale), L"under the lines");
+        Assert::IsTrue(bar.left > panel.left && bar.left + bar.width < panel.left + panel.width &&
+                         bar.top + bar.height < panel.top + panel.height,
+                       L"in the selection panel");
+        const auto action = layout.ActionAt(bar.left + (bar.width / 2.0f), bar.top + (bar.height / 2.0f));
+        Assert::IsTrue(action.has_value() && action.value_or(Outpost::Hud::Action{}) == bars[i].second, L"a click selects the ship");
+      }
+      const std::vector<Outpost::Hud::Rect> hurt = panelsAt(layout, bars[2].first, scale);
+      Assert::AreEqual(size_t{2}, hurt.size(), L"its track and its fill, no edge");
+      Assert::AreEqual((4000.0f / 19800.0f) * bars[2].first.width, hurt[1].width, 0.01f);
+      Assert::IsTrue(hurt[1].color.x > hurt[1].color.y, L"red");
+      const std::vector<Outpost::Hud::Rect> whole = panelsAt(layout, bars[0].first, scale);
+      Assert::IsTrue(whole.size() == 2 && whole[1].width == bars[0].first.width && whole[1].color.y > whole[1].color.x, L"full, green");
+      const std::vector<Outpost::Hud::Rect> going = panelsAt(layout, bars[5].first, scale);
+      Assert::AreEqual(size_t{6}, going.size(), L"its track, its fill and four edges");
+      for (size_t edge = 2; edge < going.size(); ++edge)
+        Assert::IsTrue(going[edge].color.x == 0.82f && going[edge].color.z == 0.96f, L"in the text's color");
+    }
+
+    // Under the pointer, the bar's edge is lit, and only its.
+    const Outpost::Hud::Layout plain = Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout lit = Lay(content, 1920, 1080, {}, nullptr, 1.0f, barsOf(plain)[3].second);
+    Assert::AreEqual(plain.panels.size() + 4, lit.panels.size(), L"four edges, and nothing else");
+    const std::vector<Outpost::Hud::Rect> hovered = panelsAt(lit, barsOf(lit)[3].first, 1.0f);
+    Assert::AreEqual(size_t{6}, hovered.size());
+    for (size_t edge = 2; edge < hovered.size(); ++edge)
+    {
+      const Outpost::Hud::Rect& line = hovered[edge];
+      Assert::IsTrue(line.color.x == 0.25f && line.color.y == 0.43f && line.color.z == 0.76f, L"in the edge's color");
+    }
+
+    // Two designs of 24 ships: two rows of twelve; one more, and the one bar.
+    std::tie(entities, selected) = select(24, 20);
+    const Outpost::Hud::Content full = Outpost::Hud::Describe(Newest(), entities, selected);
+    Assert::AreEqual(std::string("24 ships"), full.selection.front());
+    const auto rows = barsOf(Lay(full, 1920, 1080));
+    Assert::AreEqual(size_t{24}, rows.size());
+    Assert::AreEqual(rows[0].first.left, rows[12].first.left, 0.01f);
+    Assert::IsTrue(rows[12].first.top > rows[11].first.top + rows[11].first.height, L"a second row under the first");
+    std::tie(entities, selected) = select(25, 25);
+    const Outpost::Hud::Content more = Outpost::Hud::Describe(Newest(), entities, selected);
+    Assert::AreEqual(std::string("25 \xC3\x97 Small+Ion+Mass Driver"), more.selection.front());
+    Assert::IsTrue(more.shipBars.empty() && more.selectionHealth.has_value(), L"past 24, the one bar");
+    Assert::IsTrue(barsOf(Lay(more, 1920, 1080)).empty());
   }
 
   // ADR-006: one uniform scale, the largest at which the whole 1920x1080 frame fits, and anchors that keep the panels at
@@ -716,7 +846,8 @@ public:
 
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::AreEqual(std::string("Constructor"), content.selection.front());
-    Assert::AreEqual(size_t{4}, content.buttons.size(), L"the three it builds, and its retreat");
+    Assert::AreEqual(size_t{3}, content.buttons.size(), L"the three it builds");
+    Assert::IsTrue(content.retreat.has_value(), L"and its retreat, under them");
     Assert::AreEqual(std::string("Shipyard|300"), content.buttons[0].label);
     Assert::IsFalse(content.buttons[0].enabled, L"250 Ore does not buy a Shipyard");
     Assert::IsTrue(content.buttons[1].enabled);
@@ -751,11 +882,11 @@ public:
     constructor.role = Outpost::ShipRole::Constructor;
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}};
-    Assert::AreEqual(size_t{2}, Outpost::Hud::Describe(newest, entities, selected).buttons.size(), L"the Shipyard, and its retreat");
+    Assert::AreEqual(size_t{1}, Outpost::Hud::Describe(newest, entities, selected).buttons.size(), L"the Shipyard");
 
     newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
     const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{3}, content.buttons.size());
+    Assert::AreEqual(size_t{2}, content.buttons.size(), L"the Shipyard and the Relay");
     Assert::IsTrue(content.buttons[1].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
   }
@@ -1195,7 +1326,7 @@ public:
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{constructor.id};
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{2}, content.buttons.size(), L"the Relay, and its retreat");
+    Assert::AreEqual(size_t{1}, content.buttons.size(), L"the Relay");
     Assert::IsFalse(content.buttons[0].enabled);
     Assert::AreEqual(std::string("NODE CAP"), content.buttons[0].note);
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
@@ -1261,7 +1392,8 @@ public:
     Assert::IsTrue(panel.options.empty() && !panel.hint.empty());
   }
 
-  // Task 4.5: an enabled button is a place to click, anchored to the bottom-right corner; a dim one is not.
+  // Task 4.5: an enabled button is a place to click, at the bottom's middle beside the selection, where there is one
+  // (interface plan 2, task UI4.2); a dim one is not.
   TEST_METHOD(LaysOutButtonsForClicks)
   {
     const Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
@@ -1270,7 +1402,8 @@ public:
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, layout.actions.size());
     const Outpost::Hud::Rect& area = layout.actions.front().first;
-    Assert::IsTrue(area.left + area.width < 1920.0f && area.left > 1920.0f - 400.0f);
+    Assert::AreEqual(1920.0f / 2.0f, area.left + (area.width / 2.0f), 0.5f, L"centered at the bottom, with no selection beside it");
+    Assert::IsTrue(area.top > 1080.0f - 200.0f);
     Assert::IsTrue(layout.ActionAt(area.left + 5.0f, area.top + 5.0f) == build);
     Assert::IsFalse(layout.ActionAt(area.left + 5.0f, area.top + area.height + 10.0f).has_value());
     Assert::IsTrue(layout.Covers(area.left + 5.0f, area.top + 5.0f));
@@ -1531,14 +1664,14 @@ public:
     Assert::AreEqual(std::string("SAVED"), panel.save.label);
     Assert::IsTrue(panel.save.selected && !panel.save.enabled);
     Assert::IsFalse(panel.rename.enabled, L"the name has not changed");
-    // Phase 4 design §10: the design's retreat, which a press steps; a saved design's new retreat is an update.
-    Assert::AreEqual(std::string("RETREAT AT 25%"), panel.retreat.label);
-    Assert::IsTrue(panel.retreat.action.kind == Outpost::Hud::ActionKind::StepRetreat);
+    // Phase 4 design §10: the design's retreat, which a press on its row sets (interface plan 2, task UI4.3); a saved
+    // design's new retreat is an update.
+    Assert::IsTrue(panel.retreat == Outpost::RetreatThreshold::Quarter);
     {
       Outpost::Designer stepped = designer;
-      stepped.StepRetreat(newest);
+      stepped.SetRetreat(Outpost::RetreatThreshold::Half);
       const Outpost::Hud::DesignerPanel changed = DesignerOf(newest, stepped);
-      Assert::AreEqual(std::string("RETREAT AT 50%"), changed.retreat.label);
+      Assert::IsTrue(changed.retreat == Outpost::RetreatThreshold::Half);
       Assert::IsTrue(changed.rename.enabled);
       Assert::AreEqual(std::string("UPDATE"), changed.rename.label);
     }
@@ -2087,6 +2220,95 @@ public:
     Assert::IsTrue(oneDigit[0] < 40.0f, L"at the panel's left");
   }
 
+  // Interface plan 2, task UI4.1: the bars over an entity, on the screen, 32 by 5 units at the back buffer's scale and not
+  // the player's factor, centered over their foot and 4 units above it, the health bar over the build bar, each a back of the side's color with
+  // its fill from the left; in a list of their own, drawn before every panel and window, so under them, which takes no
+  // click and covers nothing; and none wholly off the screen.
+  TEST_METHOD(LaysTheBarsOverTheEntities)
+  {
+    constexpr DirectX::XMFLOAT4 BACK{0.054f, 0.126f, 0.285f, 1.0f};
+    for (const std::uint32_t height : {1080u, 2160u})
+    {
+      const float scale = static_cast<float>(height) / 1080.0f;
+      Outpost::Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 650, .selection = {"Shipyard", "Hit points 1 / 3,000"}};
+      // A hurt structure under construction in the open, a ship under the selection panel, and one off the screen.
+      content.entityBars = {{.footPixels = {400.0f * scale, 500.0f * scale}, .health = 0.4f, .built = 0.75f, .back = BACK},
+                            {.footPixels = {960.0f * scale, 1050.0f * scale}, .health = 0.9f, .back = BACK},
+                            {.footPixels = {-100.0f, 300.0f}, .health = 0.2f, .back = BACK}};
+      for (const float factor : {1.0f, 1.5f})
+      {
+        const Outpost::Hud::Layout layout = Lay(content, height * 16 / 9, height, {}, nullptr, factor);
+        Assert::AreEqual(size_t{6}, layout.bars.size(), L"a back and a fill for each bar on the screen");
+        for (size_t i = 0; i < layout.bars.size(); i += 2)
+        {
+          const Outpost::Hud::Rect& back = layout.bars[i];
+          const Outpost::Hud::Rect& fill = layout.bars[i + 1];
+          Assert::AreEqual(32.0f * scale, back.width, 0.01f, L"the size at any factor");
+          Assert::AreEqual(5.0f * scale, back.height, 0.01f);
+          Assert::IsTrue(back.color.x == BACK.x && back.color.y == BACK.y && back.color.z == BACK.z, L"the side's back");
+          Assert::IsTrue(fill.left == back.left && fill.top == back.top && fill.height == back.height, L"filling from the left");
+        }
+        const Outpost::Hud::Rect& build = layout.bars[0];
+        const Outpost::Hud::Rect& health = layout.bars[2];
+        Assert::AreEqual(400.0f * scale, build.left + (build.width / 2.0f), 0.01f, L"centered over its foot");
+        Assert::AreEqual((500.0f - 4.0f) * scale, build.top + build.height, 0.01f, L"4 units above it");
+        Assert::AreEqual(0.75f * build.width, layout.bars[1].width, 0.01f);
+        Assert::IsTrue(layout.bars[1].color.x == 0.5f && layout.bars[1].color.y == 0.52f && layout.bars[1].color.z == 0.55f, L"gray");
+        Assert::AreEqual(build.top - (2.0f * scale), health.top + health.height, 0.01f, L"the health bar over the build bar");
+        Assert::AreEqual(0.4f * health.width, layout.bars[3].width, 0.01f);
+        // The health bars' own amber and green, as the selection's bars have them.
+        Assert::IsTrue(layout.bars[3].color.x == 1.0f && layout.bars[3].color.y == 0.7f && layout.bars[3].color.z == 0.1f,
+                       L"amber under half");
+        Assert::IsTrue(layout.bars[5].color.x == 0.2f && layout.bars[5].color.y == 0.85f && layout.bars[5].color.z == 0.3f,
+                       L"green over half");
+        Assert::AreEqual((1050.0f - 4.0f) * scale, layout.bars[4].top + layout.bars[4].height, 0.01f,
+                         L"no build bar, so the health stands where it would");
+
+        const float x = build.left + (build.width / 2.0f);
+        const float y = build.top + (build.height / 2.0f);
+        Assert::IsFalse(layout.Covers(x, y), L"a click on a bar is the world's");
+        Assert::IsFalse(layout.ActionAt(x, y).has_value());
+        Assert::IsTrue(layout.Covers(layout.bars[4].left + 16.0f * scale, layout.bars[4].top + 2.0f * scale),
+                       L"the selection panel, drawn after it, covers the ship's");
+      }
+    }
+  }
+
+  // Interface plan 2, task UI4.1: a bar shows over a hurt ship or structure, or any while Alt is held (ADR-047), and a build
+  // bar over one unfinished; none over what the player only remembers (task UI1.2), or what has no hit points.
+  TEST_METHOD(PutsABarOnlyOverWhatShowsOne)
+  {
+    constexpr DirectX::XMFLOAT2 FOOT{120.0f, 340.0f};
+    constexpr DirectX::XMFLOAT4 BACK{0.1f, 0.2f, 0.3f, 1.0f};
+    Outpost::EntityView ship = Ship(1, SWARM, 19800, 19800);
+    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, false).has_value(), L"whole");
+    const Outpost::Hud::EntityBar every = Outpost::Hud::BarOver(ship, FOOT, BACK, true).value_or(Outpost::Hud::EntityBar{});
+    Assert::AreEqual(1.0f, every.health.value_or(-1.0f), L"any while Alt is held");
+    Assert::IsFalse(every.built.has_value());
+    Assert::IsTrue(every.footPixels.x == FOOT.x && every.footPixels.y == FOOT.y && every.back.z == BACK.z);
+    ship.hitPointsHundredths = 9900;
+    Assert::AreEqual(0.5f, Outpost::Hud::BarOver(ship, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f));
+    ship.remembered = true;
+    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, true).has_value(), L"none for a memory");
+
+    Outpost::EntityView site{.id = Outpost::EntityId{2},
+                             .kind = Outpost::EntityKind::Structure,
+                             .owner = PLAYER,
+                             .hitPointsHundredths = 300000,
+                             .maxHitPointsHundredths = 300000,
+                             .builtPermille = 250};
+    const Outpost::Hud::EntityBar building = Outpost::Hud::BarOver(site, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{});
+    Assert::AreEqual(0.25f, building.built.value_or(-1.0f), L"the share built");
+    Assert::IsFalse(building.health.has_value(), L"and no health while whole");
+    site.hitPointsHundredths = 75000;
+    Assert::AreEqual(0.25f, Outpost::Hud::BarOver(site, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f));
+    site.remembered = true;
+    Assert::IsFalse(Outpost::Hud::BarOver(site, FOOT, BACK, true).has_value(), L"none for a memory");
+
+    const Outpost::EntityView rock{.id = Outpost::EntityId{3}, .kind = Outpost::EntityKind::Asteroid};
+    Assert::IsFalse(Outpost::Hud::BarOver(rock, FOOT, BACK, true).has_value(), L"no hit points");
+  }
+
   // ADR-046: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
   TEST_METHOD(DrawsTheSelectionsHealthAsABar)
   {
@@ -2305,8 +2527,9 @@ public:
       std::ranges::any_of(layout.actions, [](const auto& _action) { return _action.second.kind == Outpost::Hud::ActionKind::BackToMenu; }));
   }
 
-  // Phase 4 design §10, §13: a selection's retreat is the last button, which steps it for every ship from the first one's,
-  // and a ship going back to be repaired says so.
+  // Phase 4 design §10, §13: a selection's retreat is a row of three under its buttons (interface plan 2, task UI4.3),
+  // RETREAT over "25%", "50%" and "Never", the first ship's setting lit, or none and MIXED while the others differ; a press
+  // on a cell sets it for every ship. A ship going back to be repaired says so.
   TEST_METHOD(SetsTheSelectionsRetreat)
   {
     Outpost::EntityView first = Ship(9, SWARM, 30000, 30000);
@@ -2317,19 +2540,59 @@ public:
     std::vector<Outpost::EntityView> entities{first, second};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}, Outpost::EntityId{10}};
     Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
-    Assert::AreEqual(std::string("Retreat at 50%"), content.buttons.back().label);
-    Assert::IsTrue(content.buttons.back().action ==
-                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::SetRetreat, .retreat = Outpost::RetreatThreshold::Never});
+    Assert::IsTrue(content.retreat.has_value() && content.retreat->setting == Outpost::RetreatThreshold::Half && !content.retreat->mixed);
     Assert::AreEqual(std::string("1 retreating to be repaired"), content.selection.back());
+
+    // Whether the cell saying _words is picked: its face of the picks' color under its first pixel.
+    const auto picked = [](const Outpost::Hud::Layout& _layout, std::string_view _words)
+    {
+      const Outpost::Hud::Text& text = TextOf(_layout, _words);
+      return std::ranges::any_of(_layout.panels,
+                                 [&](const Outpost::Hud::Rect& _panel)
+                                 {
+                                   return _panel.color.x == 0.033f && _panel.color.y == 0.063f &&
+                                          _panel.Contains(std::round(text.left) + 0.5f, std::round(text.top) + 0.5f);
+                                 });
+    };
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    TextOf(layout, "RETREAT");
+    Assert::IsTrue(picked(layout, "50%") && !picked(layout, "25%") && !picked(layout, "Never"));
+    Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "MIXED"; }));
+    for (const Outpost::RetreatThreshold choice :
+         {Outpost::RetreatThreshold::Quarter, Outpost::RetreatThreshold::Half, Outpost::RetreatThreshold::Never})
+    {
+      const Outpost::Hud::Action set{.kind = Outpost::Hud::ActionKind::SetRetreat, .retreat = choice};
+      Assert::IsTrue(std::ranges::any_of(layout.actions, [&](const auto& _press) { return _press.second == set; }), L"a press for each");
+    }
 
     entities[1].retreat = Outpost::RetreatThreshold::Quarter;
     content = Outpost::Hud::Describe(Newest(), entities, selected);
-    Assert::AreEqual(std::string("Retreat: mixed"), content.buttons.back().label);
+    Assert::IsTrue(content.retreat.value_or(Outpost::Hud::RetreatChoice{}).mixed);
+    const Outpost::Hud::Layout mixed = Lay(content, 1920, 1080);
+    TextOf(mixed, "MIXED");
+    Assert::IsTrue(!picked(mixed, "25%") && !picked(mixed, "50%") && !picked(mixed, "Never"), L"none lit while mixed");
+
     entities[0].retreat = Outpost::RetreatThreshold::Never;
     const std::vector<Outpost::EntityId> alone{Outpost::EntityId{9}};
     content = Outpost::Hud::Describe(Newest(), entities, alone);
-    Assert::AreEqual(std::string("Never retreat"), content.buttons.back().label);
-    Assert::IsTrue(content.buttons.back().action.retreat == Outpost::RetreatThreshold::Quarter, L"round to a quarter");
+    Assert::IsTrue(picked(Lay(content, 1920, 1080), "Never"));
+    Assert::IsFalse(Outpost::Hud::Describe(Newest(), entities, {}).retreat.has_value(), L"no ship, no retreat");
+  }
+
+  // The designer's retreat is the same row, RETREAT over three cells in its labels' capitals, its design's setting lit,
+  // each a press that sets it.
+  TEST_METHOD(SetsTheDesignsRetreatInARow)
+  {
+    const Outpost::Hud::Content content = LongestContent(true);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    for (const std::string_view words : {"25%", "50%", "NEVER"})
+      TextOf(layout, words);
+    for (const Outpost::RetreatThreshold choice :
+         {Outpost::RetreatThreshold::Quarter, Outpost::RetreatThreshold::Half, Outpost::RetreatThreshold::Never})
+    {
+      const Outpost::Hud::Action set{.kind = Outpost::Hud::ActionKind::DesignRetreat, .retreat = choice};
+      Assert::IsTrue(std::ranges::any_of(layout.actions, [&](const auto& _press) { return _press.second == set; }));
+    }
   }
 
   // ADR-059: a selection on a standing order says so.
@@ -2689,6 +2952,145 @@ public:
     const Outpost::Hud::Layout plain = LayMenu(1920, 1080);
     Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join world");
   }
+
+  // Interface plan 2, task UI4.2: a selection with a warship offers its orders first, each with its key's cap, Hold sector
+  // only where the map has sectors and the armed one lit; a selection of Constructors alone offers none. The buttons stand
+  // against the selection panel's right edge, bottom-aligned, the pair centered, at every width the selection panel takes.
+  TEST_METHOD(OffersTheOrdersBesideTheSelection)
+  {
+    Outpost::Snapshot newest = Newest();
+    std::vector<Outpost::EntityView> entities{Ship(1, LINE, 100, 100)};
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{1}};
+    const auto labels = [](const Outpost::Hud::Content& _content)
+    {
+      std::vector<std::string> words;
+      words.reserve(_content.buttons.size());
+      for (const Outpost::Hud::Button& button : _content.buttons)
+        words.push_back(button.label + "/" + button.key);
+      return words;
+    };
+    const std::vector<std::string> unsectored = labels(Outpost::Hud::Describe(newest, entities, selected));
+    Assert::IsTrue(unsectored.size() >= 3 && std::vector<std::string>(unsectored.begin(), unsectored.begin() + 3) ==
+                                               std::vector<std::string>{"Attack-move/A", "Patrol/T", "Stop/S"},
+                   L"no sector to hold on a map without sectors");
+    newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    const Outpost::Hud::Content warship = Outpost::Hud::Describe(newest, entities, selected);
+    const std::vector<std::string> words = labels(warship);
+    Assert::IsTrue(words.size() >= 4 && std::vector<std::string>(words.begin(), words.begin() + 4) ==
+                                          std::vector<std::string>{"Attack-move/A", "Hold sector/H", "Patrol/T", "Stop/S"});
+    Assert::IsTrue(warship.buttons[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::HoldSector});
+    Assert::IsFalse(std::ranges::any_of(warship.buttons, &Outpost::Hud::Button::selected), L"nothing armed");
+
+    const Outpost::Hud::Content armed =
+      Outpost::Hud::Describe(newest, entities, selected, std::nullopt, nullptr, std::nullopt, 0, Outpost::Hud::ActionKind::Patrol);
+    Assert::IsTrue(armed.buttons[2].selected && !armed.buttons[0].selected && !armed.buttons[1].selected && !armed.buttons[3].selected);
+
+    entities.front().role = Outpost::ShipRole::Constructor;
+    Assert::IsFalse(std::ranges::any_of(Outpost::Hud::Describe(newest, entities, selected).buttons,
+                                        [](const Outpost::Hud::Button& _button) { return _button.label == "Stop"; }),
+                    L"a Constructor has no orders' buttons");
+    entities.front().role = Outpost::ShipRole::Warship;
+
+    // The panel of the window's color under the first pixel of the first text that starts as _words do, cut short or not.
+    const auto frameOf = [](const Outpost::Hud::Layout& _layout, std::string_view _words)
+    {
+      const auto found =
+        std::ranges::find_if(_layout.texts, [&](const Outpost::Hud::Text& _text)
+                             { return _text.text.starts_with(_words.substr(0, std::min<std::size_t>(_words.size(), 6))); });
+      Assert::IsTrue(found != _layout.texts.end(), std::wstring(winrt::to_hstring(_words)).c_str());
+      const Outpost::Hud::Text& text = *found;
+      return *std::ranges::find_if(_layout.panels,
+                                   [&](const Outpost::Hud::Rect& _panel)
+                                   {
+                                     return _panel.color.x == 0.009f && _panel.color.y == 0.013f &&
+                                            _panel.Contains(std::round(text.left) + 0.5f, std::round(text.top) + 0.5f);
+                                   });
+    };
+    for (const std::string& name : {std::string("Lancer"), std::string("Heavy Lancer with a Long Name"), LongestName('Z')})
+    {
+      newest.designs = {{.id = LINE, .nameUtf8 = name}};
+      for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
+      {
+        const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
+        const Outpost::Hud::Layout layout = Lay(content, width, height);
+        const Outpost::Hud::Rect selection = frameOf(layout, content.selection.front());
+        const Outpost::Hud::Rect orders = frameOf(layout, "Attack-move");
+        const std::wstring what = std::format(L"{} at {} wide", std::wstring(winrt::to_hstring(name)), width);
+        Assert::AreEqual(selection.left + selection.width, orders.left, 0.01f, what.c_str());
+        Assert::AreEqual(selection.top + selection.height, orders.top + orders.height, 0.01f, L"bottom-aligned");
+        Assert::AreEqual(static_cast<float>(width) / 2.0f, (selection.left + orders.left + orders.width) / 2.0f, 0.5f,
+                         L"the pair centered");
+      }
+    }
+  }
+
+  // Interface plan 2, task UI4.4: the button under the pointer has its edge lit, and the status line under it lies on the
+  // cards' color, with any line whose click does the same; nothing else changes, and without a pointer nothing is lit.
+  TEST_METHOD(LightsWhatThePointerIsOver)
+  {
+    const Outpost::Hud::Action production{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = Outpost::EntityId{5}};
+    const Outpost::Hud::Action research{.kind = Outpost::Hud::ActionKind::OpenResearch, .producer = Outpost::EntityId{6}};
+    Outpost::Hud::Content content{.ore = 650, .oreIncomeHundredthsPerSecond = 650};
+    content.buttons = {{.label = "Production", .action = production, .key = "P"},
+                       {.label = "Research", .action = research, .key = "R"},
+                       {.label = "Shipyard|300", .action = production, .enabled = false}};
+    content.status = {
+      {.runs = {{.text = "Mass Driver Calibration"}}, .action = research},
+      {.runs = {{.text = "Shipyards \xC2\xB7 BUILDING 1 \xC2\xB7 WAITING 0 \xC2\xB7 IDLE 0"}}, .action = production},
+      {.runs = {{.text = "Fleet"}}, .action = production, .bar = Outpost::Hud::StatusBar{.share = 0.5f, .figure = "4 / 8"}}};
+    const auto isLit = [](const Outpost::Hud::Rect& _panel)
+    { return _panel.color.x == 0.25f && _panel.color.y == 0.43f && _panel.color.z == 0.76f; };
+    const auto isCard = [](const Outpost::Hud::Rect& _panel)
+    { return _panel.color.x == 0.014f && _panel.color.y == 0.02f && _panel.color.z == 0.041f; };
+    // The panel of _kind's color whose span holds the first pixel of the text saying _words, if any.
+    const auto under = [](const Outpost::Hud::Layout& _layout, std::string_view _words, const auto& _kind)
+    {
+      const Outpost::Hud::Text& text = TextOf(_layout, _words);
+      return std::ranges::any_of(_layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                 { return _kind(_panel) && _panel.Contains(std::round(text.left) + 0.5f, std::round(text.top) + 0.5f); });
+    };
+
+    const Outpost::Hud::Layout plain = Lay(content, 1920, 1080);
+    Assert::IsFalse(std::ranges::any_of(plain.panels, isLit), L"nothing lit without a pointer");
+    Assert::IsFalse(under(plain, "Fleet", isCard));
+
+    // Over the Research button: its four edges lit, and the status line that opens research on the cards' color.
+    const Outpost::Hud::Layout overResearch = Lay(content, 1920, 1080, {}, nullptr, 1.0f, research);
+    Assert::AreEqual(std::ptrdiff_t{4}, std::ranges::count_if(overResearch.panels, isLit), L"one button's edges");
+    // The Research button's place, at the bottom, where the status line that opens research too is at the top.
+    const Outpost::Hud::Rect researchButton =
+      std::ranges::find_if(overResearch.actions, [&](const auto& _press) { return _press.second == research && _press.first.top > 540.0f; })
+        ->first;
+    for (const Outpost::Hud::Rect& edge : overResearch.panels)
+    {
+      if (isLit(edge))
+      {
+        Assert::IsTrue(
+          edge.left >= researchButton.left - 0.5f && edge.left + edge.width <= researchButton.left + researchButton.width + 0.5f &&
+            edge.top >= researchButton.top - 0.5f && edge.top + edge.height <= researchButton.top + researchButton.height + 0.5f,
+          L"the Research button's");
+      }
+    }
+    Assert::IsTrue(under(overResearch, "Mass Driver Calibration", isCard));
+    Assert::IsFalse(under(overResearch, "Fleet", isCard));
+
+    // Over production: the Production button, not the dim Shipyard button that names it too, and both lines that open it.
+    const Outpost::Hud::Layout overProduction = Lay(content, 1920, 1080, {}, nullptr, 1.0f, production);
+    Assert::AreEqual(std::ptrdiff_t{4}, std::ranges::count_if(overProduction.panels, isLit), L"only the enabled button");
+    Assert::IsTrue(under(overProduction, "Fleet", isCard));
+    Assert::IsFalse(under(overProduction, "Mass Driver Calibration", isCard));
+
+    // The words, their places and the clicks are as without the pointer.
+    for (const Outpost::Hud::Layout* lit : {&overResearch, &overProduction})
+    {
+      Assert::AreEqual(plain.texts.size(), lit->texts.size());
+      for (std::size_t i = 0; i < plain.texts.size(); ++i)
+        Assert::IsTrue(plain.texts[i].text == lit->texts[i].text && plain.texts[i].left == lit->texts[i].left &&
+                       plain.texts[i].top == lit->texts[i].top);
+      Assert::AreEqual(plain.actions.size(), lit->actions.size());
+    }
+  }
+
   // ADR-066: under the Ore, a line for the Research Lab once the player has a finished one, and one for the Shipyards once
   // the first is finished: what the Lab researches and how far it has come, that it waits for Ore, or that it is idle; and
   // how many Shipyards build, wait for Ore and stand idle. An idle line says IDLE, in a chip, and a click on a

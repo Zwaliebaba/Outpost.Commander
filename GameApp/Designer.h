@@ -61,16 +61,21 @@ public:
     return {m_hull, m_drive, m_weapon, m_module};
   }
 
-  // The design's retreat (Phase 4 design §10): as picked, or else the matching design's, or else the default; and stepping
-  // it to the next, from a quarter to half to never and round. Saving sends it.
+  // The design's retreat (Phase 4 design §10): as picked, or else the matching design's, or else the default; and picking
+  // one from the designer's row of three (interface plan 2, task UI4.3). Saving sends it.
   [[nodiscard]] RetreatThreshold Retreat(const Snapshot& _newest) const noexcept;
-  void StepRetreat(const Snapshot& _newest) noexcept;
+  void SetRetreat(RetreatThreshold _retreat) noexcept
+  {
+    m_retreat = _retreat;
+  }
 
   // The player's saved design of the picked components, if there is one.
   [[nodiscard]] const DesignView* Match(const Snapshot& _newest) const noexcept;
 
-  // The name as typed, or else the matching design's, or else the components' names as design §7 writes them, such as
-  // "Small+Ion+Mass Driver", and the module's after them, or its initials where the whole would be too long a name.
+  // The name as typed, or else the matching design's. Or else, for a module on the components of a saved design without
+  // one whose name is not theirs, such as the Lancer, that name and the module's initials, "Lancer+SA". Or else the
+  // components' names as design §7 writes them, such as "Small+Ion+Mass Driver", and the module's after them, or its
+  // initials where the whole would be too long a name.
   [[nodiscard]] std::string Name(const Snapshot& _newest) const;
 
   // The picked design's stats, or none while a pick names nothing in the snapshot.

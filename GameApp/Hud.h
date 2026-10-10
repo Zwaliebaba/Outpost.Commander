@@ -136,14 +136,21 @@ public:
     NextTopics,
     // Upgrades the selected structure by one level (Phase 3 design §4, §9).
     Upgrade,
-    // The designer's retreat steps to the next, and a selection of ships is set to one (Phase 4 design §10, §13).
-    StepRetreat,
+    // The designer's retreat is set to one, and a selection of ships is set to one (Phase 4 design §10, §13), each from a
+    // row of three (interface plan 2, task UI4.3).
+    DesignRetreat,
     SetRetreat,
     // The orders window's form steps a field, and gives its order to the selection (Phase 5 design §7).
     StepOrder,
     GiveOrder,
     // Selects one of the player's own entities on its own and moves the camera to it (interface plan 2, task UI3.1).
-    Select
+    Select,
+    // A warship's orders, as their keys give them (interface plan 2, task UI4.2): arm attack-move, holding a sector or a
+    // patrol for the next left-click, or stop the selected ships at once.
+    AttackMove,
+    HoldSector,
+    Patrol,
+    Stop
   };
 
   struct Action
@@ -293,8 +300,8 @@ public:
     // SAVE for a new design, SAVED when the name and the parts are a saved design; RENAME for a saved design's new name.
     Button save;
     Button rename;
-    // The design's retreat, which steps to the next when pressed (Phase 4 design §10).
-    Button retreat;
+    // The design's retreat, drawn as a row of three, its setting lit (Phase 4 design §10; interface plan 2, task UI4.3).
+    RetreatThreshold retreat = DEFAULT_RETREAT;
     // The saved designs, and the first shown of those that do not all fit.
     std::vector<DesignChip> chips;
     std::size_t firstChip = 0;
@@ -538,16 +545,52 @@ public:
     std::string detail;
   };
 
+  // A selection's retreat, as the row of three under its buttons shows it (interface plan 2, task UI4.3): the first ship's
+  // setting, and whether the others differ, which lights none and says MIXED.
+  struct RetreatChoice
+  {
+    RetreatThreshold setting = DEFAULT_RETREAT;
+    bool mixed = false;
+  };
+
+  // A ship's own bar under a selection of two to SHIP_BARS_MOST ships (interface plan 2, task UI4.5): the ship a click on
+  // it selects alone, the share of its hit points it has left, and whether it is going back to be repaired, which its
+  // outline marks.
+  struct ShipBar
+  {
+    EntityId ship;
+    float share = 1.0f;
+    bool retreating = false;
+  };
+
+  static constexpr std::size_t SHIP_BARS_MOST = 24;
+
+  // The bars over an entity on the screen (interface plan 2, task UI4.1): the point they stand a little above, the top of the
+  // entity's model on the screen in its column, which GameClient finds with the camera, in back-buffer pixels; the share of
+  // hit points left, while the health bar shows; the share built, while the build bar shows; and their back's color, the
+  // side's darkened (ADR-028 decision 7).
+  struct EntityBar
+  {
+    DirectX::XMFLOAT2 footPixels{};
+    std::optional<float> health;
+    std::optional<float> built;
+    DirectX::XMFLOAT4 back{};
+  };
+
   // What the HUD shows, in words and marks.
   struct Content
   {
     std::int32_t ore = 0;
     std::int32_t oreIncomeHundredthsPerSecond = 0;
-    // The selection panel's lines, first to last; none when nothing is selected. With them, the share of its hit points
-    // the selection has left, for a bar under them (ADR-046).
+    // The selection panel's lines, first to last; none when nothing is selected. With them, under the lines, a bar for
+    // each ship of a selection of two to SHIP_BARS_MOST, or else the share of its hit points the whole selection has
+    // left, for one bar (ADR-046).
     std::vector<std::string> selection;
     std::optional<float> selectionHealth;
+    std::vector<ShipBar> shipBars;
     std::vector<Button> buttons;
+    // The selection's retreat, under its buttons, while it holds a ship (interface plan 2, task UI4.3).
+    std::optional<RetreatChoice> retreat;
     // A line at the top while a structure's placement is armed.
     std::string hint;
     // The status panel's lines under the Ore (ADR-066): the Research Lab's once the player has a finished one, and the
@@ -580,6 +623,8 @@ public:
     std::optional<Outcome> outcome;
     // Where the match runs; GameClient fills it (ADR-086).
     std::optional<Connection> connection;
+    // The bars over the entities that show one; GameClient fills them (interface plan 2, task UI4.1).
+    std::vector<EntityBar> entityBars;
   };
 
   // How a panel is filled: solid, or with diagonal stripes, as a window's title bar is (ADR-030).
@@ -682,6 +727,9 @@ public:
     std::vector<SpriteMark> sprites;
     // Back to front, the order they are drawn in.
     std::vector<Window> windows;
+    // The bars over the entities, drawn before every layer, so under every panel and window (interface plan 2, task UI4.1).
+    // They take no click and cover nothing, so that a click on one is the world's.
+    std::vector<Rect> bars;
 
     // Layer 0 is the HUD and layer i + 1 the window windows[i]; there are windows.size() + 1.
     [[nodiscard]] std::size_t LayerCount() const noexcept
@@ -716,10 +764,12 @@ public:
   // structure being placed, if any. With a _designer, which GameClient gives while its window is open, the designer;
   // _hovered is the button under the pointer, and a part's previews the design it would make.
   // _ticksPerSecond is the server's rate, which tells how long ago a remembered structure was last seen; with none, its
-  // age is not told.
+  // age is not told. _armed is the order the controls have armed for the next left-click, AttackMove, HoldSector or
+  // Patrol, whose button is lit (interface plan 2, task UI4.2).
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
-                                        std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0);
+                                        std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0,
+                                        std::optional<ActionKind> _armed = std::nullopt);
 
   // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
   // (Phase 1 design §12).
@@ -754,6 +804,12 @@ public:
   // is, how long ago it was last seen at _ticksPerSecond, and how far it was built if it was not finished.
   [[nodiscard]] static std::string DescribeMemory(const Snapshot& _newest, const EntityView& _structure, std::uint32_t _ticksPerSecond);
 
+  // The bars over _entity, standing on _footPixels with a back of _back: its health while it is hurt, or whole while _every
+  // is held (ADR-047), and its build while it is unfinished; nothing when neither shows, or when the player only remembers
+  // it, since its hit points and its building are as they were when it was seen (interface plan 2, task UI1.2).
+  [[nodiscard]] static std::optional<EntityBar> BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels,
+                                                        const DirectX::XMFLOAT4& _back, bool _every) noexcept;
+
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs. In a world,
   // which does not end, when the player's seat restarts after its loss (Phase 5 design §8).
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
@@ -785,10 +841,12 @@ public:
   // Where everything goes on a back buffer of this size, its text measured with _metrics, which are the fonts at this
   // size's scale. _view is the ground the camera shows, its corners in order, outlined on the minimap; empty when the
   // camera sees past the horizon. The floating windows (ADR-031) are those _windows has open, in its order and where it
-  // left them; without a manager, every window the content has, at its default place.
+  // left them; without a manager, every window the content has, at its default place. _hovered is the action under the
+  // pointer, which the HUD's button and status line that take it are lit for (interface plan 2, task UI4.4).
   [[nodiscard]] static Layout Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels,
                                   std::uint32_t _heightPixels, std::span<const PlanePosition> _view = {},
-                                  const WindowManager* _windows = nullptr, float _factor = 1.0f);
+                                  const WindowManager* _windows = nullptr, float _factor = 1.0f,
+                                  std::optional<Action> _hovered = std::nullopt);
 
   // Where a window _widthUnits wide may stand with its top-left corner at _corner on a screen of this size, in reference
   // units: moved only as far as keeps its title bar on the screen, and WINDOW_KEPT_ON_SCREEN_UNITS of its width.

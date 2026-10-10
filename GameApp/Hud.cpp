@@ -82,6 +82,23 @@ constexpr float HEALTH_BAR_UNITS = 6.0f;
 constexpr float HEALTH_BAR_GAP_UNITS = 8.0f;
 constexpr float HEALTH_HURT_SHARE = 0.5f;
 constexpr float HEALTH_LOW_SHARE = 0.25f;
+// A ship's own bar, under a selection of up to Hud::SHIP_BARS_MOST ships, in rows of twelve that fit the narrowest
+// selection panel (interface plan 2, task UI4.5).
+constexpr float SHIP_BAR_WIDTH_UNITS = 17.0f;
+constexpr float SHIP_BAR_HEIGHT_UNITS = 10.0f;
+constexpr float SHIP_BAR_GAP_UNITS = 4.0f;
+constexpr size_t SHIP_BARS_A_ROW = 12;
+static_assert((SHIP_BARS_A_ROW * SHIP_BAR_WIDTH_UNITS) + ((SHIP_BARS_A_ROW - 1) * SHIP_BAR_GAP_UNITS) <=
+              SELECTION_PANEL_MIN_WIDTH - (2.0f * PADDING));
+
+// The bars over an entity, on the screen, at any zoom and however the camera has turned (interface plan 2, task UI4.1):
+// each this size in reference units at the back buffer's scale, not the player's factor, which sizes the HUD and not the
+// world's marks (ADR-070); the health bar over the build bar, this far apart, and the pair this far above the top of the
+// entity's model on the screen.
+constexpr float ENTITY_BAR_WIDTH_UNITS = 32.0f;
+constexpr float ENTITY_BAR_HEIGHT_UNITS = 5.0f;
+constexpr float ENTITY_BAR_GAP_UNITS = 2.0f;
+constexpr float ENTITY_BAR_LIFT_UNITS = 4.0f;
 
 // The buttons, stacked in a panel anchored to the bottom-right corner; a button's label and cost stand this far in.
 constexpr float BUTTON_PANEL_WIDTH = 380.0f;
@@ -442,34 +459,21 @@ std::string LastSeen(const Outpost::Snapshot& _newest, const Outpost::EntityView
   return std::format("last seen {} ago", Outpost::MinutesAndSeconds((_newest.tick - _entity.lastSeenTick) / _ticksPerSecond));
 }
 
-// A ship's retreat as the HUD writes it (Phase 4 design §10).
-std::string RetreatWords(Outpost::RetreatThreshold _retreat)
-{
-  switch (_retreat)
-  {
-  case Outpost::RetreatThreshold::Half:
-    return "Retreat at 50%";
-  case Outpost::RetreatThreshold::Quarter:
-    return "Retreat at 25%";
-  case Outpost::RetreatThreshold::Never:
-    break;
-  }
-  return "Never retreat";
-}
-
-// The retreat a press steps to: from a quarter to half to never, and round.
-Outpost::RetreatThreshold NextRetreat(Outpost::RetreatThreshold _retreat) noexcept
+// The retreats a row offers, left to right, and what each cell says (Phase 4 design §10; interface plan 2, task UI4.3).
+constexpr std::array<Outpost::RetreatThreshold, 3> RETREAT_CHOICES{Outpost::RetreatThreshold::Quarter, Outpost::RetreatThreshold::Half,
+                                                                   Outpost::RetreatThreshold::Never};
+std::string_view RetreatCell(Outpost::RetreatThreshold _retreat) noexcept
 {
   switch (_retreat)
   {
   case Outpost::RetreatThreshold::Quarter:
-    return Outpost::RetreatThreshold::Half;
+    return "25%";
   case Outpost::RetreatThreshold::Half:
-    return Outpost::RetreatThreshold::Never;
+    return "50%";
   case Outpost::RetreatThreshold::Never:
     break;
   }
-  return Outpost::RetreatThreshold::Quarter;
+  return "Never";
 }
 
 // The best each of a design's numbers reaches over every design the components make, locked ones included, so that the
@@ -603,7 +607,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   panel.rename = {.label = match != nullptr && save.has_value() && save->nameUtf8 == match->nameUtf8 ? "UPDATE" : "RENAME",
                   .action = {.kind = Hud::ActionKind::SaveDesign},
                   .enabled = save.has_value() && !savesNew};
-  panel.retreat = {.label = Capitals(RetreatWords(_designer.Retreat(_newest))), .action = {.kind = Hud::ActionKind::StepRetreat}};
+  panel.retreat = _designer.Retreat(_newest);
 
   panel.chips.reserve(_newest.designs.size());
   for (const Outpost::DesignView& design : _newest.designs)
@@ -956,6 +960,11 @@ constexpr float FIT_GAP_UNITS = 6.0f;
 // A warning chip (ADR-085 decision 1): its words in the windows' navy on a tag of the warning's color, which reaches this far
 // beyond them on either side and covers their whole line, descenders and all.
 constexpr float CHIP_PAD_UNITS = 4.0f;
+// A row of retreats (interface plan 2, task UI4.3): the room between its cells, a line's height as a share of its face's
+// size, which centers the words in a cell, and in the HUD the room its RETREAT label takes over it.
+constexpr float RETREAT_CELL_GAP_UNITS = 4.0f;
+constexpr float RETREAT_LINE_SHARE = 1.25f;
+constexpr float RETREAT_LABEL_UNITS = 20.0f;
 // The box a window's header holds the player's Ore in.
 constexpr float ORE_BOX_WIDTH = 116.0f;
 // How far down a small button its mark's line starts.
@@ -980,6 +989,9 @@ constexpr DirectX::XMFLOAT4 CARD_COLOR{0.014f, 0.02f, 0.041f, 1.0f};
 constexpr DirectX::XMFLOAT4 EDGE_COLOR{0.026f, 0.037f, 0.07f, 1.0f};
 constexpr DirectX::XMFLOAT4 PICKED_COLOR{0.033f, 0.063f, 0.136f, 1.0f};
 constexpr DirectX::XMFLOAT4 PICKED_EDGE_COLOR{0.35f, 0.56f, 0.9f, 1.0f};
+// A button under the pointer has its edge lit in the windows' edge color, short of a pick's; a status line under it lies on
+// the cards' color (interface plan 2, task UI4.4).
+constexpr DirectX::XMFLOAT4 HOVER_EDGE_COLOR = WINDOW_EDGE_COLOR;
 constexpr DirectX::XMFLOAT4 LOCKED_COLOR{0.007f, 0.01f, 0.016f, 1.0f};
 constexpr DirectX::XMFLOAT4 LOCKED_HATCH_COLOR{0.012f, 0.016f, 0.024f, 1.0f};
 // Raised from the mockup's (0.15, 0.19, 0.26) to 4.6:1 on a locked card's hatching, and still under a third of live
@@ -999,6 +1011,22 @@ constexpr DirectX::XMFLOAT4 QUEUE_HATCH_COLOR{0.034f, 0.099f, 0.044f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_EDGE_COLOR{0.09f, 0.29f, 0.12f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_TEXT_COLOR{0.85f, 1.0f, 0.86f, 1.0f};
 constexpr DirectX::XMFLOAT4 SLOT_FILLED_COLOR{0.15f, 0.25f, 0.45f, 1.0f};
+
+// The build bar over an entity, in a light gray that is no side's (ADR-085 decision 2).
+constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.5f, 0.52f, 0.55f, 1.0f};
+
+// A health bar's fill, over an entity and in the selection panel alike: green above half, then amber above a quarter, then
+// red (ADR-046, interface plan 2, task UI4.1). Brighter than the figures' good, fair and poor, which are tuned to a window's
+// navy (ADR-062): on a side's back at 0.3 this red stands at 2.36:1 and this amber at 4.47:1 or more, where the figures'
+// would stand at 1.67:1 and 3.32:1 (ADR-088 decision 5).
+constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
+constexpr DirectX::XMFLOAT4 HEALTH_FAIR_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
+constexpr DirectX::XMFLOAT4 HEALTH_POOR_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
+
+const DirectX::XMFLOAT4& HealthColor(float _share) noexcept
+{
+  return _share > HEALTH_HURT_SHARE ? HEALTH_GOOD_COLOR : _share > HEALTH_LOW_SHARE ? HEALTH_FAIR_COLOR : HEALTH_POOR_COLOR;
+}
 
 // The color of a hovered part's change: green when better, red when worse, and _same when neither.
 DirectX::XMFLOAT4 ChangeColor(Hud::Change _change, const DirectX::XMFLOAT4& _same) noexcept
@@ -1231,8 +1259,10 @@ private:
 // A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
 // any cost after a '|' as Ore's gem and the figure at its right, or its key as a cap there (task 15.2), and its place
 // among the actions when it does something. The label is cut short only where it would meet the cost, the note or the
-// cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right.
-void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
+// cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right. Under the
+// pointer, _hovered, its edge is lit unless it is a pick, whose edge is lit already.
+void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button,
+               bool _hovered = false)
 {
   Painter paint(_layout, _metrics, {.xUnits = _area.left / _scale, .yUnits = _area.top / _scale}, _scale);
   const float width = _area.width / _scale;
@@ -1243,7 +1273,7 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
                                                        : FIELD_COLOR);
   if (_button.enabled)
     paint.Press(face, _button.action);
-  paint.Outline(0.0f, 0.0f, width, height, _button.selected ? PICKED_EDGE_COLOR : EDGE_COLOR);
+  paint.Outline(0.0f, 0.0f, width, height, _button.selected ? PICKED_EDGE_COLOR : _hovered ? HOVER_EDGE_COLOR : EDGE_COLOR);
   if (_button.progressPermille.has_value())
   {
     const float barWidth = width - (2.0f * BUTTON_BAR_INSET);
@@ -1290,6 +1320,29 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
   paint.Text(paint.Fit(label, Hud::Typeface::Name, room - costWidth - FIT_GAP_UNITS), BUTTON_INSET, labelTop, labelColor,
              Hud::Typeface::Name);
   paint.GemAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+}
+
+// A row of the three retreats from _left, _widthUnits across, each cell _heightUnits tall with its words centered in _face
+// at _tracking, the one at _lit picked, and each a press of _kind that sets it (interface plan 2, task UI4.3). Under the
+// pointer, _hovered, a cell's edge is lit as a button's is.
+void RetreatRow(Painter& _paint, float _left, float _top, float _widthUnits, float _heightUnits,
+                std::optional<Outpost::RetreatThreshold> _lit, Hud::ActionKind _kind, Hud::Typeface _face, float _tracking,
+                const std::optional<Hud::Action>& _hovered)
+{
+  const float cell = (_widthUnits - (2.0f * RETREAT_CELL_GAP_UNITS)) / static_cast<float>(RETREAT_CHOICES.size());
+  for (std::size_t i = 0; i < RETREAT_CHOICES.size(); ++i)
+  {
+    const Outpost::RetreatThreshold choice = RETREAT_CHOICES[i];
+    const Hud::Action action{.kind = _kind, .retreat = choice};
+    const bool lit = _lit == choice;
+    const float left = _left + (static_cast<float>(i) * (cell + RETREAT_CELL_GAP_UNITS));
+    _paint.Press(_paint.Panel(left, _top, cell, _heightUnits, lit ? PICKED_COLOR : CARD_COLOR), action);
+    _paint.Outline(left, _top, cell, _heightUnits, lit ? PICKED_EDGE_COLOR : _hovered == action ? HOVER_EDGE_COLOR : EDGE_COLOR);
+    std::string words = _face == Hud::Typeface::Label ? Capitals(RetreatCell(choice)) : std::string(RetreatCell(choice));
+    const float wordsLeft = left + ((cell - _paint.Width(words, _face, _tracking)) / 2.0f);
+    const float lineUnits = std::round(Hud::FaceUnits(_face) * RETREAT_LINE_SHARE);
+    _paint.Text(std::move(words), wordsLeft, _top + ((_heightUnits - lineUnits) / 2.0f), TEXT_COLOR, _face, _tracking);
+  }
 }
 
 void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::DesignerPanel& _panel,
@@ -1499,15 +1552,15 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     paint.Text(rename.label, DESIGNER_INSET + 14.0f, footer + 16.0f, rename.enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label,
                tracking);
   }
-  // The design's retreat, between Rename and the stepper; a press steps it (Phase 4 design §10).
+  // The design's retreat, between Rename and the stepper: RETREAT over a row of three, its setting lit, each a press that
+  // sets it (Phase 4 design §10; interface plan 2, task UI4.3).
   {
     constexpr float RETREAT_LEFT = DESIGNER_INSET + 102.0f;
     constexpr float RETREAT_WIDTH = 206.0f;
-    const Hud::Rect face = paint.Panel(RETREAT_LEFT, footer, RETREAT_WIDTH, FOOTER_HEIGHT, CARD_COLOR);
-    paint.Outline(RETREAT_LEFT, footer, RETREAT_WIDTH, FOOTER_HEIGHT, EDGE_COLOR);
-    paint.Press(face, _panel.retreat.action);
-    paint.Text(paint.Fit(_panel.retreat.label, Hud::Typeface::Label, RETREAT_WIDTH - 28.0f), RETREAT_LEFT + 14.0f, footer + 16.0f,
-               TEXT_COLOR, Hud::Typeface::Label, tracking);
+    constexpr float RETREAT_CELLS_TOP = 18.0f;
+    paint.Text("RETREAT", RETREAT_LEFT, footer, ROW_LABEL_COLOR, Hud::Typeface::Label, tracking);
+    RetreatRow(paint, RETREAT_LEFT, footer + RETREAT_CELLS_TOP, RETREAT_WIDTH, FOOTER_HEIGHT - RETREAT_CELLS_TOP, _panel.retreat,
+               Hud::ActionKind::DesignRetreat, Hud::Typeface::Label, tracking, std::nullopt);
   }
   constexpr float STEPPER_LEFT = 346.0f;
   constexpr float STEP_WIDTH = 36.0f;
@@ -2114,6 +2167,21 @@ std::string Hud::DescribeMemory(const Snapshot& _newest, const EntityView& _stru
   return text;
 }
 
+std::optional<Hud::EntityBar> Hud::BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels, const DirectX::XMFLOAT4& _back,
+                                           bool _every) noexcept
+{
+  if (_entity.remembered)
+    return std::nullopt;
+  EntityBar bar{.footPixels = _footPixels, .health = std::nullopt, .built = std::nullopt, .back = _back};
+  if (_entity.maxHitPointsHundredths > 0 && (_every || _entity.hitPointsHundredths < _entity.maxHitPointsHundredths))
+    bar.health = HealthShare(_entity.hitPointsHundredths, _entity.maxHitPointsHundredths);
+  if (_entity.builtPermille < PERMILLE)
+    bar.built = static_cast<float>(std::max(_entity.builtPermille, 0)) / static_cast<float>(PERMILLE);
+  if (!bar.health.has_value() && !bar.built.has_value())
+    return std::nullopt;
+  return bar;
+}
+
 std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
 {
   // In a world no match ends: a player who lost waits for its seat to restart at its start (Phase 5 design §8).
@@ -2384,7 +2452,8 @@ DirectX::XMFLOAT2 Hud::Layout::MinimapPixelAt(PlanePosition _point) const noexce
 
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
-                                             const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond)
+                                             const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond,
+                                             std::optional<ActionKind> _armed)
 {
   Content content{.ore = _newest.ore,
                   .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
@@ -2638,18 +2707,23 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   std::int64_t hitPoints = 0;
   std::int64_t maxHitPoints = 0;
   bool constructors = false;
+  bool warships = false;
   bool holding = false;
   bool patrolling = false;
   // The first ship's retreat, whether the others share it, and how many are going back to be repaired (Phase 4 design §10).
   std::optional<RetreatThreshold> retreat;
   bool mixedRetreat = false;
   size_t retreating = 0;
+  // Each ship's own bar, beside its design, to stand in the order of the lines (interface plan 2, task UI4.5).
+  std::vector<std::pair<DesignId, ShipBar>> bars;
+  bars.reserve(_selected.size());
   for (const EntityId id : _selected)
   {
     const auto ship = std::ranges::find(_entities, id, &EntityView::id);
     if (ship == _entities.end() || ship->kind != EntityKind::Ship)
       continue;
     constructors = constructors || ship->role == ShipRole::Constructor;
+    warships = warships || ship->role == ShipRole::Warship;
     holding = holding || ship->standing == StandingOrder::HoldSector;
     patrolling = patrolling || ship->standing == StandingOrder::Patrol;
     mixedRetreat = mixedRetreat || (retreat.has_value() && *retreat != ship->retreat);
@@ -2658,6 +2732,9 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     retreating += ship->retreating ? 1 : 0;
     hitPoints += ship->hitPointsHundredths;
     maxHitPoints += ship->maxHitPointsHundredths;
+    bars.emplace_back(ship->design, ShipBar{.ship = ship->id,
+                                            .share = HealthShare(ship->hitPointsHundredths, ship->maxHitPointsHundredths),
+                                            .retreating = ship->retreating});
     const auto counted = std::ranges::find(byDesign, ship->design, &std::pair<DesignId, size_t>::first);
     if (counted == byDesign.end())
       byDesign.emplace_back(ship->design, 1);
@@ -2673,8 +2750,12 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   size_t ships = 0;
   for (const auto& [design, count] : byDesign)
     ships += count;
+  // One ship is titled with its design's name, and ships of one design with their count and its name, once (interface
+  // plan 2, task UI4.5). Ships of several designs are counted over a line for each.
   if (ships == 1)
     content.selection.push_back(nameOf(byDesign.front().first));
+  else if (byDesign.size() == 1)
+    content.selection.push_back(std::format("{} {} {}", ships, TIMES, nameOf(byDesign.front().first)));
   else
   {
     content.selection.reserve(byDesign.size() + 3);
@@ -2686,7 +2767,19 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   }
   content.selection.push_back(
     std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
-  content.selectionHealth = HealthShare(hitPoints, maxHitPoints);
+  // Two to SHIP_BARS_MOST ships have a bar each, design by design in the lines' order; one ship, or more than that, the
+  // selection's one bar (interface plan 2, task UI4.5).
+  if (ships > 1 && ships <= SHIP_BARS_MOST)
+  {
+    const auto rank = [&byDesign](const std::pair<DesignId, ShipBar>& _bar)
+    { return std::ranges::find(byDesign, _bar.first, &std::pair<DesignId, size_t>::first) - byDesign.begin(); };
+    std::ranges::stable_sort(bars, {}, rank);
+    content.shipBars.reserve(bars.size());
+    for (const auto& [design, bar] : bars)
+      content.shipBars.push_back(bar);
+  }
+  else
+    content.selectionHealth = HealthShare(hitPoints, maxHitPoints);
   // A standing order the selection keeps (ADR-059).
   if (holding)
     content.selection.emplace_back("Holding a sector");
@@ -2695,6 +2788,19 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   if (retreating > 0)
     content.selection.push_back(ships == 1 ? std::string("Retreating to be repaired")
                                            : std::format("{} retreating to be repaired", retreating));
+  // A warship's orders, first, each with its key's cap, the one armed for the next left-click lit until it is given or
+  // canceled (interface plan 2, task UI4.2). Each does what its key does, to every selected ship. A map without sectors has
+  // none to hold (ADR-059).
+  if (warships)
+  {
+    const auto order = [&_armed](std::string _label, ActionKind _kind, std::uint8_t _key)
+    { return Button{.label = std::move(_label), .action = {.kind = _kind}, .selected = _armed == _kind, .key = KeyCap(_key)}; };
+    content.buttons.push_back(order("Attack-move", ActionKind::AttackMove, KEY_ATTACK_MOVE));
+    if (!_newest.sectors.empty())
+      content.buttons.push_back(order("Hold sector", ActionKind::HoldSector, KEY_HOLD_SECTOR));
+    content.buttons.push_back(order("Patrol", ActionKind::Patrol, KEY_PATROL));
+    content.buttons.push_back(order("Stop", ActionKind::Stop, KEY_STOP));
+  }
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
   {
@@ -2720,14 +2826,10 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                                    : std::string()});
     }
   }
-  // The selection's retreat, in the corner below the rest, which a press steps for every ship in it, from the first one's
-  // (Phase 4 design §10, §13).
+  // The selection's retreat, under the rest, the first ship's and whether the others differ (Phase 4 design §10, §13;
+  // interface plan 2, task UI4.3).
   if (retreat.has_value())
-  {
-    content.buttons.push_back({.label = mixedRetreat ? std::string("Retreat: mixed") : RetreatWords(*retreat),
-                               .action = {.kind = ActionKind::SetRetreat, .retreat = NextRetreat(*retreat)},
-                               .enabled = true});
-  }
+    content.retreat = RetreatChoice{.setting = *retreat, .mixed = mixedRetreat};
   return content;
 }
 
@@ -2971,7 +3073,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 }
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                     std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor)
+                     std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered)
 {
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   const auto width = static_cast<float>(_widthPixels);
@@ -2987,8 +3089,46 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     (void)Frame(layout, _corner.xUnits * scale, _corner.yUnits * scale, _widthUnits * scale, _heightUnits * scale, scale);
     return Painter(layout, _metrics, _corner, scale);
   };
-  const auto addButton = [&layout, &_metrics, scale](const Rect& _area, const Button& _button)
-  { AddButton(layout, _metrics, scale, _area, _button); };
+  // First, under every panel and window, the bars over the entities: each a back of its side's color with its fill from
+  // the left, the health bar over the build bar, the pair centered over its foot, a little above it, and set to whole
+  // pixels, so that it keeps its size as it moves (interface plan 2, task UI4.1). A pair wholly off the screen is left out.
+  {
+    const float barScale = Scale(_widthPixels, _heightPixels);
+    const float barWidth = std::round(ENTITY_BAR_WIDTH_UNITS * barScale);
+    const float barHeight = std::max(std::round(ENTITY_BAR_HEIGHT_UNITS * barScale), 1.0f);
+    const float barGap = std::round(ENTITY_BAR_GAP_UNITS * barScale);
+    const float barLift = std::round(ENTITY_BAR_LIFT_UNITS * barScale);
+    for (const EntityBar& bar : _content.entityBars)
+    {
+      const float left = std::round(bar.footPixels.x - (barWidth / 2.0f));
+      float bottom = std::round(bar.footPixels.y) - barLift;
+      const float count = (bar.health.has_value() ? 1.0f : 0.0f) + (bar.built.has_value() ? 1.0f : 0.0f);
+      const float stackHeight = (count * barHeight) + (std::max(count - 1.0f, 0.0f) * barGap);
+      if (count == 0.0f || left + barWidth <= 0.0f || left >= width || bottom <= 0.0f || bottom - stackHeight >= height)
+        continue;
+      const auto addBar = [&layout, &bar, &bottom, left, barWidth, barHeight, barGap](float _share, const DirectX::XMFLOAT4& _fill)
+      {
+        const float top = bottom - barHeight;
+        layout.bars.push_back({.left = left, .top = top, .width = barWidth, .height = barHeight, .color = bar.back});
+        const float share = std::clamp(_share, 0.0f, 1.0f);
+        if (share > 0.0f)
+          layout.bars.push_back({.left = left, .top = top, .width = barWidth * share, .height = barHeight, .color = _fill});
+        bottom = top - barGap;
+      };
+      if (bar.built.has_value())
+        addBar(bar.built.value_or(0.0f), BUILD_BAR_COLOR);
+      if (bar.health.has_value())
+      {
+        const float share = bar.health.value_or(0.0f);
+        addBar(share, HealthColor(share));
+      }
+    }
+  }
+
+  // Whether _action is the one under the pointer, which lights what takes it (interface plan 2, task UI4.4).
+  const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };
+  const auto addButton = [&layout, &_metrics, scale, &hovered](const Rect& _area, const Button& _button)
+  { AddButton(layout, _metrics, scale, _area, _button, _button.enabled && hovered(_button.action)); };
 
   // The column under the Ore, its panels one width whatever they hold (interface plan 2, task UI3.2).
   float columnUnits = COLUMN_LEAST_UNITS;
@@ -3114,10 +3254,13 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     {
       const StatusLine& status = _content.status[line];
       const float lineUnits = rowUnits(status);
-      // The line's row across the panel takes the click, the first and the last reaching to the panel's edge.
+      // The line's row across the panel takes the click, the first and the last reaching to the panel's edge. Under the
+      // pointer it lies on the cards' color, as does any line whose click does the same.
       const float rowTop = line == 0 ? 0.0f : top;
       const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + lineUnits;
-      paint.Press(paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR), status.action);
+      const Rect row = hovered(status.action) ? paint.Panel(0.0f, rowTop, columnUnits, rowBottom - rowTop, CARD_COLOR)
+                                              : paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR);
+      paint.Press(row, status.action);
       // A bar's figure at the line's end, which the words stop short of, with room for a bar beside them.
       float wordsRight = right;
       if (status.bar.has_value() && !status.bar->figure.empty())
@@ -3206,20 +3349,42 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
               {.label = "Back to menu", .action = {.kind = ActionKind::BackToMenu}});
   }
 
-  // Bottom-middle anchor: the selection, its first line in the title face and the rest in the name face, in a panel as
-  // wide as its longest line, within its bounds; a line longer than the widest panel holds is cut short.
+  // Bottom-middle anchor: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
+  // centered at the bottom so that the two read as one, and never over the minimap (interface plan 2, task UI4.2). The
+  // selection's first line is in the title face and the rest in the name face, in a panel as wide as its longest line,
+  // within its bounds; a line longer than the widest panel holds is cut short. A button's label holds the name and the
+  // cost, split at '|', and the buttons stack downward from the panel's top.
+  const auto faceOf = [](size_t _line) { return _line == 0 ? Typeface::Title : Typeface::Name; };
+  float selectionUnits = 0.0f;
   if (!_content.selection.empty())
   {
-    const auto faceOf = [](size_t _line) { return _line == 0 ? Typeface::Title : Typeface::Name; };
     float textUnits = 0.0f;
     for (size_t line = 0; line < _content.selection.size(); ++line)
       textUnits = std::max(textUnits, _metrics.Width(faceOf(line), _content.selection[line]));
-    const float widthUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+    selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+  }
+  // The buttons' panel holds the buttons and, at its foot, the selection's retreat (interface plan 2, task UI4.3).
+  const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
+  const float buttonsUnits = buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f;
+  float pairLeft = (screenWidthUnits - selectionUnits - buttonsUnits) / 2.0f;
+  if (_content.mapSizeMeters > 0.0f)
+    pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
+  if (!_content.selection.empty())
+  {
+    const float widthUnits = selectionUnits;
     const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
-    const float barUnits = _content.selectionHealth.has_value() ? HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS : 0.0f;
+    // A selection's ships' bars stand in rows under the lines, or else its one bar does.
+    const size_t barRows = (_content.shipBars.size() + SHIP_BARS_A_ROW - 1) / SHIP_BARS_A_ROW;
+    float barUnits = 0.0f;
+    if (barRows > 0)
+    {
+      const auto rows = static_cast<float>(barRows);
+      barUnits = HEALTH_BAR_GAP_UNITS + (rows * SHIP_BAR_HEIGHT_UNITS) + ((rows - 1.0f) * SHIP_BAR_GAP_UNITS);
+    }
+    else if (_content.selectionHealth.has_value())
+      barUnits = HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS;
     const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
-    Painter paint = frame({.xUnits = (screenWidthUnits - widthUnits) / 2.0f, .yUnits = screenHeightUnits - MARGIN - heightUnits},
-                          widthUnits, heightUnits);
+    Painter paint = frame({.xUnits = pairLeft, .yUnits = screenHeightUnits - MARGIN - heightUnits}, widthUnits, heightUnits);
     const float room = widthUnits - (2.0f * PADDING);
     paint.Text(paint.Fit(_content.selection.front(), Typeface::Title, room), PADDING, PADDING, TEXT_COLOR, Typeface::Title);
     for (size_t line = 1; line < _content.selection.size(); ++line)
@@ -3227,34 +3392,63 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       paint.Text(paint.Fit(_content.selection[line], Typeface::Name, room), PADDING,
                  PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1)), NUMBERS_COLOR, Typeface::Name);
     }
-    if (_content.selectionHealth.has_value())
+    const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
+    // A ship's bar fills from the left as its health does, outlined in the text's color while the ship goes back to be
+    // repaired, or in the edge's under the pointer otherwise; a click on it selects that ship alone (interface plan 2,
+    // task UI4.5).
+    for (size_t i = 0; i < _content.shipBars.size(); ++i)
+    {
+      const ShipBar& bar = _content.shipBars[i];
+      const size_t row = i / SHIP_BARS_A_ROW;
+      const size_t column = i % SHIP_BARS_A_ROW;
+      const float left = PADDING + (static_cast<float>(column) * (SHIP_BAR_WIDTH_UNITS + SHIP_BAR_GAP_UNITS));
+      const float top = barTop + (static_cast<float>(row) * (SHIP_BAR_HEIGHT_UNITS + SHIP_BAR_GAP_UNITS));
+      const Action select{.kind = ActionKind::Select, .entity = bar.ship};
+      const Rect track = paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS, SHIP_BAR_HEIGHT_UNITS, BAR_TRACK_COLOR);
+      const float share = std::clamp(bar.share, 0.0f, 1.0f);
+      if (share > 0.0f)
+        paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS * share, SHIP_BAR_HEIGHT_UNITS, HealthColor(share));
+      if (bar.retreating || hovered(select))
+      {
+        paint.Outline(left - LINE_UNITS, top - LINE_UNITS, SHIP_BAR_WIDTH_UNITS + (2.0f * LINE_UNITS),
+                      SHIP_BAR_HEIGHT_UNITS + (2.0f * LINE_UNITS), bar.retreating ? TEXT_COLOR : HOVER_EDGE_COLOR);
+      }
+      paint.Press(track, select);
+    }
+    if (barRows == 0 && _content.selectionHealth.has_value())
     {
       const float share = std::clamp(*_content.selectionHealth, 0.0f, 1.0f);
-      const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
       const float barWidth = widthUnits - (2.0f * PADDING);
       paint.Panel(PADDING, barTop, barWidth, HEALTH_BAR_UNITS, BAR_TRACK_COLOR);
       if (share > 0.0f)
-      {
-        paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS,
-                    share > HEALTH_HURT_SHARE  ? GOOD_COLOR
-                    : share > HEALTH_LOW_SHARE ? FAIR_COLOR
-                                               : POOR_COLOR);
-      }
+        paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS, HealthColor(share));
     }
   }
-
-  // Bottom-right anchor: the buttons, stacked upward from the corner. A label holds the name and the cost, split at '|'.
-  if (!_content.buttons.empty())
+  if (buttonsPanel)
   {
     const auto count = static_cast<float>(_content.buttons.size());
-    const float heightUnits = (2.0f * PADDING) + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
-    Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - BUTTON_PANEL_WIDTH, .yUnits = screenHeightUnits - MARGIN - heightUnits},
-                          BUTTON_PANEL_WIDTH, heightUnits);
+    const float buttonsHeight = count > 0.0f ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
+    const float retreatTop = PADDING + buttonsHeight + (count > 0.0f ? BUTTON_GAP : 0.0f);
+    const float heightUnits =
+      _content.retreat.has_value() ? retreatTop + RETREAT_LABEL_UNITS + BUTTON_HEIGHT + PADDING : (2.0f * PADDING) + buttonsHeight;
+    Painter paint =
+      frame({.xUnits = pairLeft + selectionUnits, .yUnits = screenHeightUnits - MARGIN - heightUnits}, BUTTON_PANEL_WIDTH, heightUnits);
     for (size_t i = 0; i < _content.buttons.size(); ++i)
     {
       addButton(paint.Area(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)), BUTTON_PANEL_WIDTH - (2.0f * PADDING),
                            BUTTON_HEIGHT, CARD_COLOR),
                 _content.buttons[i]);
+    }
+    // The selection's retreat: RETREAT, with MIXED at the right while its ships differ, over a row of three, its setting
+    // lit, each a press that sets it for every ship.
+    if (_content.retreat.has_value())
+    {
+      const RetreatChoice& retreat = *_content.retreat;
+      paint.Text("RETREAT", PADDING, retreatTop, ROW_LABEL_COLOR, Typeface::Label, paint.Tracking());
+      if (retreat.mixed)
+        paint.RightText("MIXED", BUTTON_PANEL_WIDTH - PADDING, retreatTop, NUMBERS_COLOR, Typeface::Label, paint.Tracking());
+      RetreatRow(paint, PADDING, retreatTop + RETREAT_LABEL_UNITS, BUTTON_PANEL_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT,
+                 retreat.mixed ? std::nullopt : std::optional(retreat.setting), ActionKind::SetRetreat, Typeface::Name, 0.0f, _hovered);
     }
   }
 

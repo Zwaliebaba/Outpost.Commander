@@ -338,6 +338,34 @@ public:
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
   }
 
+  // Interface plan 2, task UI4.2: the HUD's order buttons do what their keys do. Each arms its order for the next click in
+  // place of what was armed, or stops at once; with nothing selected, none does anything.
+  TEST_METHOD(GivesTheOrdersOfTheHudsButtons)
+  {
+    Driver driver;
+    driver.Controls().ArmAttackMove(driver.WorldView());
+    driver.Controls().ArmStanding(Outpost::StandingOrder::Patrol, driver.WorldView());
+    driver.Controls().Stop(driver.WorldView());
+    Assert::IsFalse(driver.Controls().IsAttackMoveArmed() || driver.Controls().ArmedStanding().has_value(), L"nothing selected");
+    Assert::IsTrue(driver.Controls().TakeCommands().empty());
+
+    driver.Click(driver.WorldView()[1]);
+    driver.Controls().ArmAttackMove(driver.WorldView());
+    Assert::IsTrue(driver.Controls().IsAttackMoveArmed());
+    driver.Controls().ArmStanding(Outpost::StandingOrder::HoldSector, driver.WorldView());
+    Assert::IsFalse(driver.Controls().IsAttackMoveArmed());
+    Assert::IsTrue(driver.Controls().ArmedStanding() == Outpost::StandingOrder::HoldSector);
+    driver.Controls().ArmStanding(Outpost::StandingOrder::Patrol, driver.WorldView());
+    Assert::IsTrue(driver.Controls().ArmedStanding() == Outpost::StandingOrder::Patrol);
+    driver.ClickPixel(960, 200);
+    Assert::IsTrue(Ids{2} == driver.Selected(), L"the click was an order, not a selection");
+    driver.Controls().Stop(driver.WorldView());
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{2}, commands.size());
+    Assert::IsNotNull(std::get_if<Outpost::PatrolCommand>(&commands[0].order));
+    Assert::IsNotNull(std::get_if<Outpost::StopCommand>(&commands[1].order));
+  }
+
   TEST_METHOD(EscapeCancelsAttackMove)
   {
     Driver driver;

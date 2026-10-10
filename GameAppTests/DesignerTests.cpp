@@ -83,8 +83,7 @@ TEST_CLASS(DesignerTests)
 {
 public:
   // Phase 2 design §10: the module slot starts empty and stays so until the player picks one; a module's cost and speed
-  // join the design's, its name follows the weapon's, by its initials where the whole is too long a name, and saving and
-  // loading carry it.
+  // join the design's, its initials follow the Swarm's name, and saving and loading carry it.
   TEST_METHOD(PicksAModuleOrNone)
   {
     constexpr Outpost::ModuleId SENSOR_ARRAY{1};
@@ -100,7 +99,7 @@ public:
     designer.Update(newest);
     Assert::IsTrue(designer.Picked().module == SENSOR_ARRAY);
     Assert::IsNull(designer.Match(newest), L"the Swarm has no module");
-    Assert::AreEqual(std::string("Small+Ion+Mass Driver+SA"), designer.Name(newest), L"the whole name is too long");
+    Assert::AreEqual(std::string("Swarm+SA"), designer.Name(newest));
     const std::optional<Outpost::DesignStats> stats = designer.Stats(newest);
     Assert::IsTrue(stats.has_value());
     Assert::AreEqual(87 + 40, stats.value_or(Outpost::DesignStats{}).cost);
@@ -118,6 +117,41 @@ public:
     newest.modules.clear();
     designer.Update(newest);
     Assert::IsFalse(designer.Picked().module.IsValid(), L"a module the snapshot no longer lists is dropped");
+  }
+
+  // Interface plan 2, task UI4.5: a module on a starting design's hull, drive and weapon takes that design's short name and
+  // the module's initials, "Lancer+SA"; a typed name still wins. Without a saved design of a short name to follow, or where
+  // the two are too long a name, the components name it, the module's whole name after them where it fits.
+  TEST_METHOD(NamesAModuleAfterItsStartingDesign)
+  {
+    constexpr Outpost::ModuleId SENSOR_ARRAY{1};
+    constexpr Outpost::DesignId LANCER{4};
+    Outpost::Snapshot newest = Components();
+    newest.modules = {
+      {.id = SENSOR_ARRAY, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .speedFactor = 0.9, .cost = 40, .available = true}};
+    newest.designs.push_back({.id = LANCER, .nameUtf8 = "Lancer", .hull = MEDIUM, .drive = ION, .weapon = LANCE, .cost = 215});
+    Outpost::Designer lancer = Picking(MEDIUM, ION, LANCE);
+    lancer.PickModule(SENSOR_ARRAY);
+    Assert::AreEqual(std::string("Lancer+SA"), lancer.Name(newest));
+    Assert::AreEqual(std::string("Lancer+SA"), lancer.SaveCommand(newest).value_or(Outpost::SaveDesignCommand{}).nameUtf8);
+
+    lancer.BeginEditing(newest);
+    for (int i = 0; i < 3; ++i)
+      (void)lancer.Edit(Key(VK_BACK), newest);
+    (void)lancer.Edit(Character('!'), newest);
+    Assert::AreEqual(std::string("Lancer!"), lancer.Name(newest), L"a typed name wins");
+
+    Outpost::Designer picket = Picking(SMALL, ION, LANCE);
+    picket.PickModule(SENSOR_ARRAY);
+    Assert::AreEqual(std::string("Small+Ion+Lance+Sensor Array"), picket.Name(newest), L"no saved design to follow");
+    newest.designs.back().nameUtf8 = "Medium+Ion+Lance";
+    Outpost::Designer components = Picking(MEDIUM, ION, LANCE);
+    components.PickModule(SENSOR_ARRAY);
+    Assert::AreEqual(std::string("Medium+Ion+Lance+Sensor Array"), components.Name(newest), L"the saved one's is its components'");
+    newest.designs.front().nameUtf8 = std::string(Outpost::DESIGN_NAME_LIMIT - 2, 'S');
+    Outpost::Designer swarm = Picking(SMALL, ION, MASS_DRIVER);
+    swarm.PickModule(SENSOR_ARRAY);
+    Assert::AreEqual(std::string("Small+Ion+Mass Driver+SA"), swarm.Name(newest), L"too long a name with its initials");
   }
 
   // Every slot holds an available component: the first, until the player picks another, and the first again when the
@@ -180,25 +214,25 @@ public:
     Assert::AreEqual(std::string("Swarm"), swarm.Name(snapshot), L"the name follows the snapshot again");
   }
 
-  // Phase 4 design §10: a design's retreat follows the saved design until the player steps it, and saving sends it; a
+  // Phase 4 design §10: a design's retreat follows the saved design until the player picks one, and saving sends it; a
   // saved design whose retreat changed is saved again under its name.
   TEST_METHOD(SetsTheDesignsRetreat)
   {
     const Outpost::Snapshot snapshot = Components();
     Outpost::Designer swarm = Picking(SMALL, ION, MASS_DRIVER);
     Assert::IsTrue(swarm.Retreat(snapshot) == Outpost::RetreatThreshold::Quarter);
-    swarm.StepRetreat(snapshot);
+    swarm.SetRetreat(Outpost::RetreatThreshold::Half);
     Assert::IsTrue(swarm.Retreat(snapshot) == Outpost::RetreatThreshold::Half);
     const Outpost::SaveDesignCommand update = swarm.SaveCommand(snapshot).value_or(Outpost::SaveDesignCommand{});
     Assert::IsTrue(update.design == SWARM && update.retreat == Outpost::RetreatThreshold::Half);
     Assert::AreEqual(std::string("Swarm"), update.nameUtf8);
-    swarm.StepRetreat(snapshot);
+    swarm.SetRetreat(Outpost::RetreatThreshold::Never);
     Assert::IsTrue(swarm.Retreat(snapshot) == Outpost::RetreatThreshold::Never);
-    swarm.StepRetreat(snapshot);
-    Assert::IsFalse(swarm.SaveCommand(snapshot).has_value(), L"round to the saved one");
+    swarm.SetRetreat(Outpost::RetreatThreshold::Quarter);
+    Assert::IsFalse(swarm.SaveCommand(snapshot).has_value(), L"back to the saved one");
 
     Outpost::Designer picket = Picking(SMALL, ION, LANCE);
-    picket.StepRetreat(snapshot);
+    picket.SetRetreat(Outpost::RetreatThreshold::Half);
     Assert::IsTrue(picket.SaveCommand(snapshot).value_or(Outpost::SaveDesignCommand{}).retreat == Outpost::RetreatThreshold::Half);
     picket.ForgetTypedName();
     Assert::IsTrue(picket.Retreat(snapshot) == Outpost::DEFAULT_RETREAT, L"after a save it follows the snapshot");

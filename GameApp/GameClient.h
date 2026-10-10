@@ -181,6 +181,9 @@ private:
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model, int _level = FIRST_MODEL_LEVEL) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
+  // The corners of _entity's model's bounds where its pose puts them, which the bars over it stand above (interface plan 2,
+  // task UI4.1); for an entity without a model, the corners of its footprint's square on the ground.
+  [[nodiscard]] std::array<DirectX::XMFLOAT3, 8> BoundsCorners(const EntityView& _entity) const;
   // Leans each ship of the view into its turn, by its bank limits, for a frame of _elapsedSeconds (ADR-029).
   void UpdateBanking(float _elapsedSeconds);
   // How a Mining Rig, the model _set/_model drawn at _scale, stands on its rock: tilted and lifted so that its legs stand on
@@ -233,10 +236,6 @@ private:
   // (ADR-042); false when the rig's kind is not known.
   bool DrapeRigRing(const EntityView& _rig);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
-  // A bar over each damaged ship and structure, or every one while Alt is held, its length the share of hit points left
-  // (task 3.5), and one over each structure under construction, its length the share built (task 4.2). Neither is smaller
-  // on screen than a least size (ADR-047).
-  void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
   // as diamonds of their sprite (ADR-026).

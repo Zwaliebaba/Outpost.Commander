@@ -18,6 +18,9 @@ The MVP design gives the four nicknames in its §7. Task 16.5 of the interface p
 2. **The list is optional, and strict when present.** `LoadTuning` rejects an entry whose components do not exist, or that research unlocks, so that it is not a starting design. It also rejects a name the server would refuse (`IsValidDesignName`), and an entry whose components or name another entry already has.
 3. **Match setup saves each starting design under its short name** (`StartingDesignName`). A starting design the file does not name keeps its components' name (`DesignName`), and so does any design the AI saves.
 4. **A name is only a name.** The design's components, its code and its stats are what they were, and a player can still rename it.
+5. **A module on a starting design's hull, drive and weapon takes its name**, with the module's initials: a Sensor Array on the Lancer's components is "Lancer+SA" (`Designer::Name`, [interface plan 2](../../GameDesign/ImplementationPlan-Interface2.md) task UI4.5). The client has no list of the starting designs, so it reads them as the snapshot gives them: a saved design without a module, of the same hull, drive and weapon, whose name is not its components'. A starting design the player has renamed lends its new name.
+   - Where no such design is saved, or its name and the initials are longer than a name may be (`IsValidDesignName`), the components name the new design as before, "Small+Ion+Lance+Sensor Array", or with the module's initials where the whole is too long.
+   - A typed name wins, and a saved design's own name, as before.
 
 ## Consequences
 
@@ -28,6 +31,7 @@ The MVP design gives the four nicknames in its §7. Task 16.5 of the interface p
   - `RejectsABrokenStartingDesignName` refuses each kind of bad entry.
   - `DesignTests.StartingDesignsAreTheFourOfTheFirstMinutes` checks the four short names and the components' names.
   - `EveryPlayerStartsWithItsDesignsAndABase` finds Swarm saved.
+  - `DesignerTests.NamesAModuleAfterItsStartingDesign` checks "Lancer+SA", a typed name kept, and the components' name where no saved design leads or the name would be too long.
 
 ## What this forecloses
 
