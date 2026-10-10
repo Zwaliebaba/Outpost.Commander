@@ -82,6 +82,14 @@ constexpr float HEALTH_BAR_UNITS = 6.0f;
 constexpr float HEALTH_BAR_GAP_UNITS = 8.0f;
 constexpr float HEALTH_HURT_SHARE = 0.5f;
 constexpr float HEALTH_LOW_SHARE = 0.25f;
+// A ship's own bar, under a selection of up to Hud::SHIP_BARS_MOST ships, in rows of twelve that fit the narrowest
+// selection panel (interface plan 2, task UI4.5).
+constexpr float SHIP_BAR_WIDTH_UNITS = 17.0f;
+constexpr float SHIP_BAR_HEIGHT_UNITS = 10.0f;
+constexpr float SHIP_BAR_GAP_UNITS = 4.0f;
+constexpr size_t SHIP_BARS_A_ROW = 12;
+static_assert((SHIP_BARS_A_ROW * SHIP_BAR_WIDTH_UNITS) + ((SHIP_BARS_A_ROW - 1) * SHIP_BAR_GAP_UNITS) <=
+              SELECTION_PANEL_MIN_WIDTH - (2.0f * PADDING));
 
 // The buttons, stacked in a panel anchored to the bottom-right corner; a button's label and cost stand this far in.
 constexpr float BUTTON_PANEL_WIDTH = 380.0f;
@@ -994,6 +1002,12 @@ constexpr DirectX::XMFLOAT4 QUEUE_HATCH_COLOR{0.034f, 0.099f, 0.044f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_EDGE_COLOR{0.09f, 0.29f, 0.12f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_TEXT_COLOR{0.85f, 1.0f, 0.86f, 1.0f};
 constexpr DirectX::XMFLOAT4 SLOT_FILLED_COLOR{0.15f, 0.25f, 0.45f, 1.0f};
+
+// A health bar's fill: green above half, then amber above a quarter, then red (ADR-046).
+const DirectX::XMFLOAT4& HealthColor(float _share) noexcept
+{
+  return _share > HEALTH_HURT_SHARE ? GOOD_COLOR : _share > HEALTH_LOW_SHARE ? FAIR_COLOR : POOR_COLOR;
+}
 
 // The color of a hovered part's change: green when better, red when worse, and _same when neither.
 DirectX::XMFLOAT4 ChangeColor(Hud::Change _change, const DirectX::XMFLOAT4& _same) noexcept
@@ -2666,6 +2680,9 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   std::optional<RetreatThreshold> retreat;
   bool mixedRetreat = false;
   size_t retreating = 0;
+  // Each ship's own bar, beside its design, to stand in the order of the lines (interface plan 2, task UI4.5).
+  std::vector<std::pair<DesignId, ShipBar>> bars;
+  bars.reserve(_selected.size());
   for (const EntityId id : _selected)
   {
     const auto ship = std::ranges::find(_entities, id, &EntityView::id);
@@ -2681,6 +2698,9 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     retreating += ship->retreating ? 1 : 0;
     hitPoints += ship->hitPointsHundredths;
     maxHitPoints += ship->maxHitPointsHundredths;
+    bars.emplace_back(ship->design, ShipBar{.ship = ship->id,
+                                            .share = HealthShare(ship->hitPointsHundredths, ship->maxHitPointsHundredths),
+                                            .retreating = ship->retreating});
     const auto counted = std::ranges::find(byDesign, ship->design, &std::pair<DesignId, size_t>::first);
     if (counted == byDesign.end())
       byDesign.emplace_back(ship->design, 1);
@@ -2696,8 +2716,12 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   size_t ships = 0;
   for (const auto& [design, count] : byDesign)
     ships += count;
+  // One ship is titled with its design's name, and ships of one design with their count and its name, once (interface
+  // plan 2, task UI4.5). Ships of several designs are counted over a line for each.
   if (ships == 1)
     content.selection.push_back(nameOf(byDesign.front().first));
+  else if (byDesign.size() == 1)
+    content.selection.push_back(std::format("{} {} {}", ships, TIMES, nameOf(byDesign.front().first)));
   else
   {
     content.selection.reserve(byDesign.size() + 3);
@@ -2709,7 +2733,19 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   }
   content.selection.push_back(
     std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
-  content.selectionHealth = HealthShare(hitPoints, maxHitPoints);
+  // Two to SHIP_BARS_MOST ships have a bar each, design by design in the lines' order; one ship, or more than that, the
+  // selection's one bar (interface plan 2, task UI4.5).
+  if (ships > 1 && ships <= SHIP_BARS_MOST)
+  {
+    const auto rank = [&byDesign](const std::pair<DesignId, ShipBar>& _bar)
+    { return std::ranges::find(byDesign, _bar.first, &std::pair<DesignId, size_t>::first) - byDesign.begin(); };
+    std::ranges::stable_sort(bars, {}, rank);
+    content.shipBars.reserve(bars.size());
+    for (const auto& [design, bar] : bars)
+      content.shipBars.push_back(bar);
+  }
+  else
+    content.selectionHealth = HealthShare(hitPoints, maxHitPoints);
   // A standing order the selection keeps (ADR-059).
   if (holding)
     content.selection.emplace_back("Holding a sector");
@@ -3267,7 +3303,16 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   {
     const float widthUnits = selectionUnits;
     const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
-    const float barUnits = _content.selectionHealth.has_value() ? HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS : 0.0f;
+    // A selection's ships' bars stand in rows under the lines, or else its one bar does.
+    const size_t barRows = (_content.shipBars.size() + SHIP_BARS_A_ROW - 1) / SHIP_BARS_A_ROW;
+    float barUnits = 0.0f;
+    if (barRows > 0)
+    {
+      const auto rows = static_cast<float>(barRows);
+      barUnits = HEALTH_BAR_GAP_UNITS + (rows * SHIP_BAR_HEIGHT_UNITS) + ((rows - 1.0f) * SHIP_BAR_GAP_UNITS);
+    }
+    else if (_content.selectionHealth.has_value())
+      barUnits = HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS;
     const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
     Painter paint = frame({.xUnits = pairLeft, .yUnits = screenHeightUnits - MARGIN - heightUnits}, widthUnits, heightUnits);
     const float room = widthUnits - (2.0f * PADDING);
@@ -3277,19 +3322,36 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       paint.Text(paint.Fit(_content.selection[line], Typeface::Name, room), PADDING,
                  PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1)), NUMBERS_COLOR, Typeface::Name);
     }
-    if (_content.selectionHealth.has_value())
+    const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
+    // A ship's bar fills from the left as its health does, outlined in the text's color while the ship goes back to be
+    // repaired, or in the edge's under the pointer otherwise; a click on it selects that ship alone (interface plan 2,
+    // task UI4.5).
+    for (size_t i = 0; i < _content.shipBars.size(); ++i)
+    {
+      const ShipBar& bar = _content.shipBars[i];
+      const size_t row = i / SHIP_BARS_A_ROW;
+      const size_t column = i % SHIP_BARS_A_ROW;
+      const float left = PADDING + (static_cast<float>(column) * (SHIP_BAR_WIDTH_UNITS + SHIP_BAR_GAP_UNITS));
+      const float top = barTop + (static_cast<float>(row) * (SHIP_BAR_HEIGHT_UNITS + SHIP_BAR_GAP_UNITS));
+      const Action select{.kind = ActionKind::Select, .entity = bar.ship};
+      const Rect track = paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS, SHIP_BAR_HEIGHT_UNITS, BAR_TRACK_COLOR);
+      const float share = std::clamp(bar.share, 0.0f, 1.0f);
+      if (share > 0.0f)
+        paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS * share, SHIP_BAR_HEIGHT_UNITS, HealthColor(share));
+      if (bar.retreating || hovered(select))
+      {
+        paint.Outline(left - LINE_UNITS, top - LINE_UNITS, SHIP_BAR_WIDTH_UNITS + (2.0f * LINE_UNITS),
+                      SHIP_BAR_HEIGHT_UNITS + (2.0f * LINE_UNITS), bar.retreating ? TEXT_COLOR : HOVER_EDGE_COLOR);
+      }
+      paint.Press(track, select);
+    }
+    if (barRows == 0 && _content.selectionHealth.has_value())
     {
       const float share = std::clamp(*_content.selectionHealth, 0.0f, 1.0f);
-      const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
       const float barWidth = widthUnits - (2.0f * PADDING);
       paint.Panel(PADDING, barTop, barWidth, HEALTH_BAR_UNITS, BAR_TRACK_COLOR);
       if (share > 0.0f)
-      {
-        paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS,
-                    share > HEALTH_HURT_SHARE  ? GOOD_COLOR
-                    : share > HEALTH_LOW_SHARE ? FAIR_COLOR
-                                               : POOR_COLOR);
-      }
+        paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS, HealthColor(share));
     }
   }
   if (buttonsPanel)

@@ -545,7 +545,6 @@ public:
     std::string detail;
   };
 
-  // What the HUD shows, in words and marks.
   // A selection's retreat, as the row of three under its buttons shows it (interface plan 2, task UI4.3): the first ship's
   // setting, and whether the others differ, which lights none and says MIXED.
   struct RetreatChoice
@@ -554,14 +553,29 @@ public:
     bool mixed = false;
   };
 
+  // A ship's own bar under a selection of two to SHIP_BARS_MOST ships (interface plan 2, task UI4.5): the ship a click on
+  // it selects alone, the share of its hit points it has left, and whether it is going back to be repaired, which its
+  // outline marks.
+  struct ShipBar
+  {
+    EntityId ship;
+    float share = 1.0f;
+    bool retreating = false;
+  };
+
+  static constexpr std::size_t SHIP_BARS_MOST = 24;
+
+  // What the HUD shows, in words and marks.
   struct Content
   {
     std::int32_t ore = 0;
     std::int32_t oreIncomeHundredthsPerSecond = 0;
-    // The selection panel's lines, first to last; none when nothing is selected. With them, the share of its hit points
-    // the selection has left, for a bar under them (ADR-046).
+    // The selection panel's lines, first to last; none when nothing is selected. With them, under the lines, a bar for
+    // each ship of a selection of two to SHIP_BARS_MOST, or else the share of its hit points the whole selection has
+    // left, for one bar (ADR-046).
     std::vector<std::string> selection;
     std::optional<float> selectionHealth;
+    std::vector<ShipBar> shipBars;
     std::vector<Button> buttons;
     // The selection's retreat, under its buttons, while it holds a ship (interface plan 2, task UI4.3).
     std::optional<RetreatChoice> retreat;

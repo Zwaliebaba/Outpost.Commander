@@ -34,7 +34,7 @@ The owner asked for all seven to be done. The owner also found two faults while 
    - An asteroid field is near the map's own darkness: (0.06, 0.06, 0.065), down from (0.13, 0.13, 0.14).
    - An ore asteroid's mark is at least 8 units across, the largest of the marks' smallest sizes.
    - The neutral marks are drawn first, so that a rig's mark shows over its asteroid's.
-6. **The selection panel writes a group as "2 × Constructor"**, and shows its hit points as a bar under its lines as well as in figures. The bar is green above half, amber above a quarter, and red below, as the bar over a damaged ship is.
+6. **The selection panel writes a group of one design once, as its title, "2 × Constructor"**, and a group of several designs as its count over a line for each, "3 × Swarm". It shows its hit points in figures, and as bars under its lines: one for each ship of a group of up to 24, or else one for the whole selection ([ADR-088](ADR-088-selection-and-commands.md) decision 4). A bar is green above half, amber above a quarter, and red below, as the bar over a damaged ship is.
 7. **A button that cannot be pressed for a reason other than its cost says why, in place of the cost.** The Research Lab's says "ONE PER PLAYER" once the player has one. A button the player only cannot afford is still dim with its cost, as the windows' cards are. The reason is on the button rather than on hover, so it shows without the pointer.
 8. **A Mining Rig is ordered only onto an asteroid the player has seen.**
    - `FogOfWar::HasSeen` says whether any cell of the asteroid's circle was ever in sight; without fog of war, all of the map was.
@@ -49,7 +49,7 @@ The owner asked for all seven to be done. The owner also found two faults while 
     - `KeepsTheOreGemStillAsTheFigureChanges`
     - `DrawsTheSelectionsHealthAsABar`
     - `DrawsARigsMarkOverItsAsteroid`
-    - In `DescribesOneShip`, `DescribesAGroupByDesign` and `OffersTheStructuresToConstructors`: the × sign, the health share and the button's note.
+    - In `DescribesOneShip`, `DescribesAGroupByDesign` and `OffersTheStructuresToConstructors`: the × sign, the health share and the button's note. ADR-088 decision 4's tests have the title of one design and the ships' own bars.
   - `FogOfWarTests.SaysWhetherAnyOfACircleWasSeen`.
   - `PlayerControlsTests.OrdersAMiningRigOnlyByAKnownAsteroid`.
   - `StarfieldTests.DrawsNoBurstWarm`.

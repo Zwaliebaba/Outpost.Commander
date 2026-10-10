@@ -152,11 +152,11 @@ std::string LongestName(char _last)
 }
 
 // The longest content the game makes, with every window open (task 14.1), the Controls window among them (task 16.4), and
-// the orders and away windows (Phase 5 design §11): six designs of the longest names, all selected,
-// one of them loaded in the designer of five weapons, every part locked or every part unlocked; a full queue at a
-// Shipyard and at the Lab; a page of topics, among them Relay Archives with both its prerequisites to do; a placement's
-// hint, the status panel's lines, the alerts, the territory and the banner. The Ore is five figures, more than any match in
-// the review banked. With _hovered, the designer previews the part under the pointer.
+// the orders and away windows (Phase 5 design §11): six designs of the longest names, four ships of each, all selected so
+// that the selection has its most bars (interface plan 2, task UI4.5), one of them loaded in the designer of five weapons,
+// every part locked or every part unlocked; a full queue at a Shipyard and at the Lab; a page of topics, among them Relay
+// Archives with both its prerequisites to do; a placement's hint, the status panel's lines, the alerts, the territory and
+// the banner. The Ore is five figures, more than any match in the review banked. With _hovered, the designer previews the part under the pointer.
 Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
@@ -171,8 +171,11 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
                               .drive = Outpost::DriveId{1},
                               .weapon = Outpost::WeaponId{2},
                               .cost = 1234});
-    newest.entities.push_back(Ship(100 + i, design, 150000, 220000));
-    selected.push_back(Outpost::EntityId{100 + i});
+    for (std::uint32_t ship = 0; ship < 4; ++ship)
+    {
+      newest.entities.push_back(Ship(100 + (4 * i) + ship, design, 150000, 220000));
+      selected.push_back(Outpost::EntityId{100 + (4 * i) + ship});
+    }
   }
   Outpost::Designer designer;
   designer.Update(newest);
@@ -541,7 +544,8 @@ public:
     Assert::AreEqual(44950.0f / 45000.0f, content.selectionHealth.value_or(-1.0f), 1e-6f);
   }
 
-  // Several ships: how many, how many of each design, most first, and their hit points together.
+  // Several ships: how many, how many of each design, most first, and their hit points together; and a bar for each ship,
+  // design by design in the lines' order, in place of the selection's one (interface plan 2, task UI4.5).
   TEST_METHOD(DescribesAGroupByDesign)
   {
     const std::vector<Outpost::EntityView> entities{Ship(1, LINE, 45000, 45000), Ship(2, SWARM, 10000, 19800), Ship(3, SWARM, 19800, 19800),
@@ -552,7 +556,132 @@ public:
     const std::vector<std::string> expected{"4 ships", "3 \xC3\x97 Small+Ion+Mass Driver", "1 \xC3\x97 Medium+Ion+Lance",
                                             "Hit points 946 / 1,044"};
     Assert::IsTrue(content.selection == expected);
-    Assert::AreEqual(94600.0f / 104400.0f, content.selectionHealth.value_or(-1.0f), 1e-6f);
+    Assert::IsFalse(content.selectionHealth.has_value());
+    const std::vector<std::uint32_t> order{2, 3, 4, 1};
+    Assert::AreEqual(order.size(), content.shipBars.size());
+    for (size_t i = 0; i < order.size(); ++i)
+      Assert::IsTrue(content.shipBars[i].ship == Outpost::EntityId{order[i]});
+    Assert::AreEqual(10000.0f / 19800.0f, content.shipBars[0].share, 1e-6f);
+  }
+
+  // Interface plan 2, task UI4.5: ships of one design are titled once, with their count. Up to 24 ships have a bar each
+  // under the lines, in rows of twelve, filled and colored by the ship's own share and outlined while it goes back to be
+  // repaired; a click on one selects that ship alone, and one under the pointer has its edge lit. Past 24, the selection
+  // has its one bar.
+  TEST_METHOD(GivesEachShipABar)
+  {
+    const auto select = [](std::uint32_t _count, std::uint32_t _swarms)
+    {
+      std::pair<std::vector<Outpost::EntityView>, std::vector<Outpost::EntityId>> ships;
+      for (std::uint32_t i = 1; i <= _count; ++i)
+      {
+        ships.first.push_back(i <= _swarms ? Ship(i, SWARM, 19800, 19800) : Ship(i, LINE, 45000, 45000));
+        ships.second.emplace_back(i);
+      }
+      return ships;
+    };
+    auto [entities, selected] = select(7, 7);
+    entities[2].hitPointsHundredths = 4000;
+    entities[5].retreating = true;
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
+    const std::vector<std::string> expected{"7 \xC3\x97 Small+Ion+Mass Driver", "Hit points 1,228 / 1,386", "1 retreating to be repaired"};
+    Assert::IsTrue(content.selection == expected, L"one design, titled once");
+    Assert::IsFalse(content.selectionHealth.has_value());
+    Assert::AreEqual(size_t{7}, content.shipBars.size());
+    Assert::AreEqual(4000.0f / 19800.0f, content.shipBars[2].share, 1e-6f);
+    Assert::IsTrue(content.shipBars[5].retreating && !content.shipBars[4].retreating);
+
+    // The bars, by the clicks they take: one row, left to right in the ships' order, under the lines and in the panel.
+    const auto barsOf = [](const Outpost::Hud::Layout& _layout)
+    {
+      std::vector<std::pair<Outpost::Hud::Rect, Outpost::Hud::Action>> bars;
+      for (const auto& press : _layout.actions)
+      {
+        if (press.second.kind == Outpost::Hud::ActionKind::Select)
+          bars.push_back(press);
+      }
+      return bars;
+    };
+    // What is drawn over a bar and round it: its track, its fill and any edge.
+    const auto panelsAt = [](const Outpost::Hud::Layout& _layout, const Outpost::Hud::Rect& _bar, float _scale)
+    {
+      const float reach = 1.5f * _scale;
+      std::vector<Outpost::Hud::Rect> found;
+      for (const Outpost::Hud::Rect& drawn : _layout.panels)
+      {
+        if (drawn.left >= _bar.left - reach && drawn.top >= _bar.top - reach &&
+            drawn.left + drawn.width <= _bar.left + _bar.width + reach && drawn.top + drawn.height <= _bar.top + _bar.height + reach)
+          found.push_back(drawn);
+      }
+      return found;
+    };
+    for (const std::uint32_t height : {1080u, 2160u})
+    {
+      const float scale = static_cast<float>(height) / 1080.0f;
+      const Outpost::Hud::Layout layout = Lay(content, height * 16 / 9, height);
+      const auto bars = barsOf(layout);
+      Assert::AreEqual(size_t{7}, bars.size());
+      const Outpost::Hud::Text& last = TextOf(layout, "1 retreating to be repaired");
+      // The selection panel: the widest under its title.
+      const Outpost::Hud::Text& title = TextOf(layout, expected.front());
+      Outpost::Hud::Rect panel;
+      for (const Outpost::Hud::Rect& drawn : layout.panels)
+      {
+        if (drawn.Contains(title.left + 1.0f, title.top + 1.0f) && drawn.width > panel.width)
+          panel = drawn;
+      }
+      for (size_t i = 0; i < bars.size(); ++i)
+      {
+        const Outpost::Hud::Rect& bar = bars[i].first;
+        Assert::IsTrue(bars[i].second.entity == Outpost::EntityId{static_cast<std::uint32_t>(i + 1)});
+        Assert::AreEqual(17.0f * scale, bar.width, 0.01f);
+        Assert::AreEqual(10.0f * scale, bar.height, 0.01f);
+        Assert::AreEqual(bars.front().first.top, bar.top, 0.01f, L"one row");
+        Assert::IsTrue(i == 0 || bar.left > bars[i - 1].first.left + bars[i - 1].first.width, L"left to right, apart");
+        Assert::IsTrue(bar.top > last.top + (16.0f * scale), L"under the lines");
+        Assert::IsTrue(bar.left > panel.left && bar.left + bar.width < panel.left + panel.width &&
+                         bar.top + bar.height < panel.top + panel.height,
+                       L"in the selection panel");
+        const auto action = layout.ActionAt(bar.left + (bar.width / 2.0f), bar.top + (bar.height / 2.0f));
+        Assert::IsTrue(action.has_value() && action.value_or(Outpost::Hud::Action{}) == bars[i].second, L"a click selects the ship");
+      }
+      const std::vector<Outpost::Hud::Rect> hurt = panelsAt(layout, bars[2].first, scale);
+      Assert::AreEqual(size_t{2}, hurt.size(), L"its track and its fill, no edge");
+      Assert::AreEqual((4000.0f / 19800.0f) * bars[2].first.width, hurt[1].width, 0.01f);
+      Assert::IsTrue(hurt[1].color.x > hurt[1].color.y, L"red");
+      const std::vector<Outpost::Hud::Rect> whole = panelsAt(layout, bars[0].first, scale);
+      Assert::IsTrue(whole.size() == 2 && whole[1].width == bars[0].first.width && whole[1].color.y > whole[1].color.x, L"full, green");
+      const std::vector<Outpost::Hud::Rect> going = panelsAt(layout, bars[5].first, scale);
+      Assert::AreEqual(size_t{6}, going.size(), L"its track, its fill and four edges");
+      for (size_t edge = 2; edge < going.size(); ++edge)
+        Assert::IsTrue(going[edge].color.x == 0.82f && going[edge].color.z == 0.96f, L"in the text's color");
+    }
+
+    // Under the pointer, the bar's edge is lit, and only its.
+    const Outpost::Hud::Layout plain = Lay(content, 1920, 1080);
+    const Outpost::Hud::Layout lit = Lay(content, 1920, 1080, {}, nullptr, 1.0f, barsOf(plain)[3].second);
+    Assert::AreEqual(plain.panels.size() + 4, lit.panels.size(), L"four edges, and nothing else");
+    const std::vector<Outpost::Hud::Rect> hovered = panelsAt(lit, barsOf(lit)[3].first, 1.0f);
+    Assert::AreEqual(size_t{6}, hovered.size());
+    for (size_t edge = 2; edge < hovered.size(); ++edge)
+    {
+      const Outpost::Hud::Rect& line = hovered[edge];
+      Assert::IsTrue(line.color.x == 0.25f && line.color.y == 0.43f && line.color.z == 0.76f, L"in the edge's color");
+    }
+
+    // Two designs of 24 ships: two rows of twelve; one more, and the one bar.
+    std::tie(entities, selected) = select(24, 20);
+    const Outpost::Hud::Content full = Outpost::Hud::Describe(Newest(), entities, selected);
+    Assert::AreEqual(std::string("24 ships"), full.selection.front());
+    const auto rows = barsOf(Lay(full, 1920, 1080));
+    Assert::AreEqual(size_t{24}, rows.size());
+    Assert::AreEqual(rows[0].first.left, rows[12].first.left, 0.01f);
+    Assert::IsTrue(rows[12].first.top > rows[11].first.top + rows[11].first.height, L"a second row under the first");
+    std::tie(entities, selected) = select(25, 25);
+    const Outpost::Hud::Content more = Outpost::Hud::Describe(Newest(), entities, selected);
+    Assert::AreEqual(std::string("25 \xC3\x97 Small+Ion+Mass Driver"), more.selection.front());
+    Assert::IsTrue(more.shipBars.empty() && more.selectionHealth.has_value(), L"past 24, the one bar");
+    Assert::IsTrue(barsOf(Lay(more, 1920, 1080)).empty());
   }
 
   // ADR-006: one uniform scale, the largest at which the whole 1920x1080 frame fits, and anchors that keep the panels at
