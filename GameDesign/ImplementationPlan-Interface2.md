@@ -61,24 +61,24 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| UI1.1 | Sectors and nodes in the world | — | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
-| UI1.2 | Memories that look like memories | — | V3 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
-| UI1.3 | Sight that shows | UI1.2 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
-| UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
-| UI2.1 | A warning is a chip | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI2.2 | Build progress in a neutral color | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI2.3 | The blast and Ore's glyph | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI3.2 | One column, and state in bars | UI3.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI1.1 | Sectors and nodes in the world | — | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99) and [#100](https://github.com/Zwaliebaba/Outpost.Commander/pull/100); awaiting the owner's run |
+| UI1.2 | Memories that look like memories | — | V3 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99); awaiting the owner's run |
+| UI1.3 | Sight that shows | UI1.2 | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99); awaiting the owner's run |
+| UI1.4 | The minimap's territory | UI1.1 | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99) and [#100](https://github.com/Zwaliebaba/Outpost.Commander/pull/100); awaiting the owner's run |
+| UI2.1 | A warning is a chip | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
+| UI2.2 | Build progress in a neutral color | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
+| UI2.3 | The blast and Ore's glyph | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
+| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
+| UI3.2 | One column, and state in bars | UI3.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
+| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
 | UI4.1 | Bars on the screen | UI2.2 | V7 | todo |
 | UI4.2 | Commands beside the selection | — | V6 | todo |
 | UI4.3 | Retreat as three choices | UI4.2 | V6 | todo |
 | UI4.4 | Controls that answer the pointer | — | — | todo |
 | UI4.5 | One count, one bar per ship, a short name | UI3.1 | V6 | todo |
-| UI5.1 | Rocks that stand back | — | V8 | todo |
-| UI5.2 | Fields of their own | — | V8 | todo |
-| UI5.3 | The minimap's view as its four corners | — | — | todo |
+| UI5.1 | Rocks that stand back | — | V8 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI5.2 | Fields of their own | — | V8 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI5.3 | The minimap's view as its four corners | — | — | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 
 ### Milestone order
 
@@ -453,6 +453,9 @@ The milestone's looks share one ADR: selection and commands.
 - **ADR:** ADR-040 and ADR-028 decision 4 rewritten in place.
 - **Acceptance:** none pure.
 - **Verify:** CI; run, with the measure; **owner run.**
+- **As built (2026-10-10):** [ADR-040](../Design/ADR/ADR-040-lines-over-dark-faces.md) decision 1 and [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md) decision 4, rewritten in place.
+  - `ROCK_FILL_SHADE` is 0.15, half the ships' `FILL_SHADE`, for ore asteroids and fields alike; `ROCK_EDGE_BRIGHTNESS` and `FIELD_SHADE` are unchanged.
+  - `GameClient` alone, which needs D3D12: CI builds it. Not yet seen on screen, and the review's measure is the owner's run's.
 
 ### UI5.2 — Fields of their own
 
@@ -467,6 +470,10 @@ The milestone's looks share one ADR: selection and commands.
 - **ADR:** UI5.1's.
 - **Acceptance:** `GameAppTests`: one field's layout the same twice; two fields' layouts different; every rock inside its circle; no gap wider than the bound.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-10):** [ADR-087](../Design/ADR/ADR-087-fields-of-their-own.md), a new ADR, since none held the field's layout.
+  - The rock meshes reach as little as 0.60 of their radius across, measured from their files, so the old ring could leave about 46 m between two rocks. A gap is measured between the rocks' least reaches, which `GameClient` measures from the meshes as it loads them, and closed to the smallest hull's footprint from the snapshot, a Small hull's 16 m.
+  - Over the 10 km map's 80 fields that draws 14 to 18 rocks a field, 1,254 in all against 560; the GPU time is the owner's `--measure` run's.
+  - `FieldLayoutTests` ran in the Linux container; `GameClient` is CI's to build. Not yet seen on screen.
 
 ### UI5.3 — The minimap's view as its four corners
 
@@ -479,6 +486,10 @@ The milestone's looks share one ADR: selection and commands.
 - **ADR:** ADR-015 rewritten for the segment, and ADR-043 decision 7's "the camera's view an outline".
 - **Acceptance:** `NeuronClientTests`: a segment's corners at 0°, 45° and 90°. `HudTests`: the view's corners with the camera turned two ways.
 - **Verify:** CI; run, turning the camera.
+- **As built (2026-10-10):** [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) decisions 2 and 4 and [ADR-043](../Design/ADR/ADR-043-hud-in-the-windows-look.md) decision 7, rewritten in place.
+  - The segment is `Neuron::ScreenSegment`, its ends half its width past its points so that the outline's corners close. `Hud::Layout::lines` are drawn after each layer's panels.
+  - The view's corners are mapped without `MinimapPixelOf`'s clamp (`MinimapPixelAt`) and the lines cut at the minimap's edge, so that a view over the map's edge is cut there rather than bent.
+  - `ScreenSegmentTests` and the HUD's test ran in the Linux container; `UiPipeline::DrawSegment` is CI's to build. Not yet seen on screen.
 
 ---
 
