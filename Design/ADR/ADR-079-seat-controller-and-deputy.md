@@ -38,7 +38,7 @@ The design leaves two things open, which the owner decided on 2026-10-08: how ma
 
 - **Tested in the Linux container.**
   - `SeatControllerTests`: the hand-over and the hand-back, tick by tick.
-  - `DeputyTests`, in `OpponentTests` ([ADR-075](ADR-075-test-dll-per-library.md)), on snapshots built by hand: each of decision 6's keeper rules, and a turn beginning afresh.
+  - `DeputyTests`, in `OpponentTests` ([ADR-089](ADR-089-test-dll-per-library.md)), on snapshots built by hand: each of decision 6's keeper rules, and a turn beginning afresh.
   - `InProcessServerTests.HostsAiEmpiresWhoseOrdersReplayFromTheLog`: a world of two AI empires on the server's thread, three minutes of it replayed from the command log to an equal simulation; and `HostsAPlayerOnceAndBeforeItStarts`.
   - `WorldSettingsTests`: AI seats, and `--new-world --ai` run.
 - **Passed in CI's Debug|x64 run on Windows.** `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway` checks the hand-over over a real connection: the deputy plays an untaken seat, watches while its player plays, takes the seat exactly 60 s of ticks after the connection went, and hands it back when the player returns. QUIC does not run in the container (ADR-078).

@@ -50,7 +50,7 @@ GameLogicTests (test DLL)         ── drives GameLogic through GameProtocol. 
                                      the AI plays the real server here from milestone 6 (ADR-020)
 GameAppTests (test DLL)           ── drives GameApp's camera math, model data and interface without a GPU
 NeuronCoreTests, NeuronServerTests, NeuronClientTests, GameProtocolTests, OpponentTests (test DLLs)
-                                  ── each drives its own library, with only what that library builds on (ADR-075)
+                                  ── each drives its own library, with only what that library builds on (ADR-089)
 ```
 
 Each library has a master header named after it, and its `pch.h` includes that header. `NeuronClient.h`, `NeuronServer.h` and `GameProtocol.h` include `NeuronCore.h`. `Opponent.h` includes `GameProtocol.h`. `GameLogic.h` includes `NeuronServer.h` and `GameProtocol.h`, and `GameApp.h` includes `NeuronClient.h` and `GameProtocol.h`.
