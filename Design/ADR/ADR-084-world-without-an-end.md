@@ -8,7 +8,7 @@ Phase 5 design §8 (gate H6) takes away a world's end. Domination ([ADR-057](ADR
 
 ## Decision
 
-1. **A world's rules are the simulation's** (`Simulation::UseWorldRules`), set by the server for a new world before the bases are placed, and saved with the world (`WORLD_STATE_VERSION` 6). A match does not have them.
+1. **A world's rules are the simulation's** (`Simulation::UseWorldRules`), set by the server for a new world before the bases are placed, and saved with the world. A match does not have them.
 2. **Domination is off in a world.** No tickets are given and none drain, and a snapshot carries none. No match ends: `MatchOver` stays false.
 3. **A player who loses is told so in the tick it does.** The rule of loss is ADR-037's. `EventKind::EmpireLost` names the start's sector and the start. The player's state keeps the tick it lost on (`PlayerState::lostTick`), and its snapshot carries the tick its seat restarts at (`Snapshot::restartTick`).
 4. **The seat restarts at its start an hour of ticks later, once the start is free.** A start is free while no other player holds its sector and no other player's structure stands in it. On a map without sectors, the ground is twice as far round the start as its base reaches. While the start is not free the seat waits, and `restartTick` stays at the hour that has passed.
@@ -19,7 +19,7 @@ Phase 5 design §8 (gate H6) takes away a world's end. Domination ([ADR-057](ADR
 5. **Each base player's start is state** (`Simulation::m_starts`), since a world restored from a save has no map's starts to place a base on.
 6. **An AI empire plans afresh when its seat restarts** (`AiEmpire`). It makes its `AiPlayer` anew on `EmpireRestarted`, which lays its plan round the new Command Station, as one made afresh after a server restart does ([ADR-079](ADR-079-seat-controller-and-deputy.md)). A deputy is a keeper with no plan to lay, and plays on.
 7. **The client's banner says it** (`Hud::DescribeOutcome`): "Empire fallen", and when the seat restarts at the player's start, or that it restarts once the start is clear of the enemy. The way back to the menu stays.
-8. **The protocol.** `PROTOCOL_VERSION` is 15. The two events are the last kinds of `EventKind`. Alerts and the report of a time away ([ADR-080](ADR-080-events-and-scheduled-orders.md)) tell neither; the banner tells the player.
+8. **The protocol.** The two events are the last kinds of `EventKind`. Alerts and the report of a time away ([ADR-080](ADR-080-events-and-scheduled-orders.md)) tell neither; the banner tells the player.
 
 ## Consequences
 

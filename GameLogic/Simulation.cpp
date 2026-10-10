@@ -1123,6 +1123,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   if (HasTerritory() && !m_basePlayers.empty() && !m_worldRules)
   {
     snapshot.startingTickets = m_tuning->territory.tickets;
+    snapshot.drainIntervalSeconds = m_tuning->territory.drainIntervalSeconds;
+    snapshot.drainTicketsPerNodeDifference = m_tuning->territory.drainTicketsPerNodeDifference;
     for (const PlayerId player : m_basePlayers)
       snapshot.tickets.push_back({.player = player, .tickets = Tickets(player)});
   }

@@ -55,7 +55,6 @@ What the design leaves open: how the neutral owner is represented, how an outpos
    - The server reports no refused order, so without the flag a Relay ordered into an unscouted camp did nothing and showed nothing, and the AI ordered one every second.
    - The pirates themselves stay under fog of war.
    - A Relay's ghost is red in a guarded sector.
-   - `PROTOCOL_VERSION` goes from 7 to 8.
 8. **A measurement or stress run places no pirates.** It is not a match, and its scenes stay as they were measured (task 2.7, task 3.7).
 9. **The AI leaves pirates alone but for a detachment sent to clear an outpost** ([ADR-076](ADR-076-ai-plays-phase-4.md) decision 2; [ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
    - It neither plans nor claims a Relay or a rig in a guarded sector, and a claim that is guarded is dropped and another made in its place.

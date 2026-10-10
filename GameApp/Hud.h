@@ -41,7 +41,7 @@ public:
   };
 
   // Each typeface's size in reference units, which are pixels at 1080p, in Typeface's order (ADR-062). It is the one place
-  // a face's size is set: Typefaces rasterizes the faces at these sizes, and the layout sizes the diamond beside a figure
+  // a face's size is set: Typefaces rasterizes the faces at these sizes, and the layout sizes the gem beside a figure
   // from them.
   static constexpr std::array<float, 7> FACE_UNITS{FONT_UNITS, 22.0f, 13.0f, 16.0f, 14.0f, 28.0f, 13.0f};
 
@@ -52,7 +52,7 @@ public:
 
   [[nodiscard]] static std::vector<Neuron::FontDesc> Typefaces();
 
-  // The interface's sprites (ADR-030), in the order GameClient builds the UI pipeline with them: Ore's diamond, the box of
+  // The interface's sprites (ADR-030), in the order GameClient builds the UI pipeline with them: Ore's gem, the box of
   // a part research has yet to unlock, and a window's corner bracket.
   enum class Sprite : std::uint8_t
   {
@@ -141,7 +141,9 @@ public:
     SetRetreat,
     // The orders window's form steps a field, and gives its order to the selection (Phase 5 design §7).
     StepOrder,
-    GiveOrder
+    GiveOrder,
+    // Selects one of the player's own entities on its own and moves the camera to it (interface plan 2, task UI3.1).
+    Select
   };
 
   struct Action
@@ -149,6 +151,8 @@ public:
     ActionKind kind = ActionKind::Build;
     StructureKind structure = StructureKind::CommandStation;
     EntityId producer;
+    // The entity Select selects.
+    EntityId entity;
     // The design a Shipyard builds; no design for the Command Station's Constructor.
     DesignId design;
     ResearchTopicId topic;
@@ -439,15 +443,45 @@ public:
     std::int32_t cap = 0;
     std::optional<std::int32_t> ownTickets;
     std::optional<std::int32_t> enemyTickets;
+    // With the tickets, who the drain takes them from, how fast, and when they run out, "Enemy -20 a minute · out in 32:06",
+    // or "No drain" while both hold as many nodes; a warning chip when it is the player's (interface plan 2, task UI3.3).
+    std::string drain;
+    bool drainWarns = false;
   };
 
-  // A line of the status panel under the Ore (ADR-066): what the Research Lab or the Shipyards are doing, in the warning's
-  // color while any stands idle, and the window a click on it opens.
-  struct StatusLine
+  // A run of a status line's words: plain, in the text's color, or a warning chip, dark on a tag of the warning's color
+  // (ADR-085 decision 1).
+  struct StatusRun
   {
     std::string text;
-    bool idle = false;
+    bool chip = false;
+
+    friend bool operator==(const StatusRun&, const StatusRun&) = default;
+  };
+
+  // A status line's bar (interface plan 2, task UI3.2): the share of it filled, from 0 to 1, and the figure at its end, such
+  // as "+3" queued or "29 / 30". Under its line's words, the width of the panel, or beside them, from their end.
+  struct StatusBar
+  {
+    float share = 0.0f;
+    std::string figure;
+    bool under = false;
+
+    friend bool operator==(const StatusBar&, const StatusBar&) = default;
+  };
+
+  // A line of the status panel under the Ore (ADR-066): what the Research Lab or the Shipyards are doing, an idle one's
+  // IDLE a chip, a bar for how far a job has come or how full the fleet is, and what a click on it does.
+  struct StatusLine
+  {
+    std::vector<StatusRun> runs;
     Action action;
+    std::optional<StatusBar> bar;
+
+    // Its runs' words, one after another.
+    [[nodiscard]] std::string Text() const;
+    // Whether a run of it is a chip.
+    [[nodiscard]] bool Warns() const noexcept;
   };
 
   // A row of the orders window's form: what it sets, its value between the arrows that step it, and the field they step.
@@ -505,8 +539,11 @@ public:
     // A line at the top while a structure's placement is armed.
     std::string hint;
     // The status panel's lines under the Ore (ADR-066): the Research Lab's once the player has a finished one, and the
-    // Shipyards' once the first is finished.
+    // Shipyards' and the fleet's once the first Shipyard is finished.
     std::vector<StatusLine> status;
+    // The match's research topics' names, which the column under the Ore is made wide enough for, so that its edge stands
+    // still whatever the Lab researches (interface plan 2, task UI3.2).
+    std::vector<std::string> researchNames;
     std::optional<DesignerPanel> designer;
     // The production and research windows' content, while they are open; GameClient fills them.
     std::optional<ProductionPanel> production;

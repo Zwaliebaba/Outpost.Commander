@@ -34,7 +34,7 @@ The owner's win rate above the AI-against-AI baseline is what presence buys, and
 6. **The live half is the game's `--matchup <n>`, from 1.**
    - Every skirmish started from the menu is that matchup: the owner plays player 1, and `MatchupPlayer` plays player 2.
    - The match log writes `matchup <n>` after the match's line. `Tools/MatchLog.py` counts the owner's wins in each matchup.
-7. **The protocol.** The two endings are the last of `MatchEnding`, inside this milestone's `PROTOCOL_VERSION` 15 ([ADR-084](ADR-084-world-without-an-end.md)).
+7. **The protocol.** The two endings are the last of `MatchEnding`.
 
 ## Consequences
 

@@ -38,7 +38,7 @@ As task 9.6's looks shared [ADR-046](ADR-046-second-look-at-the-screen.md), task
 3. **What a production card says (task 16.3).** A Shipyard's card adds a third line under the code and cost:
    - The design's build time at the player's Shipyard speed, as the designer gives it.
    - A short bar for each hull, marked with the hull's initial, S, M and L. Each bar is three segments, lit as the designer rates the design's damage against that hull: three for Good, two for Fair and one for Poor. The bars read without their colors.
-   - The Constructor's card adds its build time. The snapshot now carries the Command Station's time for a Constructor (`Snapshot::constructorBuildSeconds`), and `PROTOCOL_VERSION` goes from 5 to 6.
+   - The Constructor's card adds its build time. The snapshot now carries the Command Station's time for a Constructor (`Snapshot::constructorBuildSeconds`).
    - A card is 74 units tall, where it was 48. A card whose hull is above the Shipyard's level still says so in its code line.
 4. **The Controls window (task 16.4).**
    - F1 opens and closes it. It is a fourth `WindowKind`, in the windows' look, and opens in the middle of the screen. It lists every key and mouse action the game reads in a match, under three headings: selecting and orders, the camera, and the windows.

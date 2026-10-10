@@ -16,7 +16,7 @@ The owner accepted the plan's gates on 2026-10-08, V1 to V8 as proposed. Milesto
 
 1. **The server keeps when a remembered structure was last seen.**
    - `EntityView::lastSeenTick` is the tick of the last snapshot the player saw the entity in. `Simulation::UpdateVision` sets it on each structure and derelict it records as seen: the next tick's at the end of a tick, and the current one when fog is first turned on. A remembered view keeps it while it is out of sight. An entity the player sees now carries zero.
-   - It is part of what `Simulation` holds, so it is saved, survives a seat taken again (Phase 5) and replays. `WORLD_STATE_VERSION` goes from 4 to 5, with version 5's layout hash recorded beside the others (AGENTS.md R18). It is on the wire, so `PROTOCOL_VERSION` goes from 13 to 14.
+   - It is part of what `Simulation` holds, so it is saved, survives a seat taken again (Phase 5) and replays, and it is part of the save's layout (AGENTS.md R18). It is on the wire too.
 2. **One rule says whether the player could claim a node now.**
    - `CanClaim` in `GameProtocol` holds when the node is free and nothing stands on it as a Relay's footprint, a sector next to it is the player's, no pirate guards it, and the player is under its node cap.
    - The Relay's ghost (`PlaceGhost`), the world's rings on the nodes the player could claim and the minimap's outlines of their sectors all use it, so they cannot disagree.

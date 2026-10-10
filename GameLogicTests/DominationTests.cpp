@@ -23,7 +23,8 @@ constexpr std::uint32_t DRAIN_TICKS = 3 * TerritoryMatch::TICKS_PER_SECOND;
 TEST_CLASS(DominationTests)
 {
 public:
-  // Phase 2 design §8: each player starts with 1,000 tickets, and both players see both.
+  // Phase 2 design §8: each player starts with 1,000 tickets, and both players see both, with the drain's numbers from the
+  // tuning data, 1 ticket a node every 3 seconds, which the HUD tells the drain by (interface plan 2, task UI3.3).
   TEST_METHOD(EachPlayerStartsWithItsTickets)
   {
     TerritoryMatch match;
@@ -31,6 +32,8 @@ public:
     Assert::AreEqual(STARTING_TICKETS, match.World().Tickets(RED));
     const Outpost::Snapshot red = match.World().BuildSnapshot(RED);
     Assert::AreEqual(1000, red.startingTickets);
+    Assert::AreEqual(3.0, red.drainIntervalSeconds);
+    Assert::AreEqual(1, red.drainTicketsPerNodeDifference);
     Assert::IsTrue(red.tickets == std::vector<Outpost::TicketsView>{{.player = BLUE, .tickets = 1000}, {.player = RED, .tickets = 1000}});
   }
 

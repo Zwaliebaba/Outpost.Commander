@@ -20,12 +20,12 @@ The owner asked on 2026-10-03 for these to be fixed in the same change as the ri
 
 1. **Every panel of the HUD takes a window's look**, without a title bar, since it does not move. That is the Ore, the status panel ([ADR-066](ADR-066-production-status-on-the-hud.md)), the hint, the match's end, the selection, the buttons, the minimap's square and the main menu. Each has a window's body and a bracket at each corner, and stays anchored where it was (design §12, ADR-015).
 2. **Its text takes the windows' faces**: a panel's first line in the title face, its other lines in the name face, and figures in the figure face.
-3. **Ore is written one way everywhere**: Ore's diamond and the figure grouped in thousands. This holds for the stockpile, a window's Ore box, a card's cost and a button's cost.
+3. **Ore is written one way everywhere**: Ore's gem ([ADR-085](ADR-085-one-meaning-per-color.md) decision 3) and the figure grouped in thousands. This holds for the stockpile, a window's Ore box, a card's cost and a button's cost.
    - The stockpile drops the word "Ore".
-   - It is written from the panel's left: the diamond stays put and the figure grows to its right ([ADR-046](ADR-046-second-look-at-the-screen.md)).
+   - It is written from the panel's left: the gem stays put and the figure grows to its right ([ADR-046](ADR-046-second-look-at-the-screen.md)).
 4. **A button is a card.**
    - It has a card's face and edge, and its label in the name face.
-   - Any cost shows as the diamond and the figure at its right.
+   - Any cost shows as the gem and the figure at its right.
    - A button that cannot be pressed is dim on the field's color. One that cannot be pressed for a reason other than its cost says why in place of the cost (ADR-046).
 5. **The selection panel is as wide as its longest line**, between 280 and 560 units, and stays centered.
 6. **The production and research windows have their cards first and their queue under them.**

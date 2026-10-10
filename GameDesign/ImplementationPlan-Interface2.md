@@ -65,12 +65,12 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI1.2 | Memories that look like memories | — | V3 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI1.3 | Sight that shows | UI1.2 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
 | UI1.4 | The minimap's territory | UI1.1 | V2 | built, on `claude/focused-turing-3kzejn`, CI green; awaiting the owner's run |
-| UI2.1 | A warning is a chip | — | V4 | todo |
-| UI2.2 | Build progress in a neutral color | — | V4 | todo |
-| UI2.3 | The blast and Ore's glyph | — | V4 | todo |
-| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | todo |
-| UI3.2 | One column, and state in bars | UI3.1 | V5 | todo |
-| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | todo |
+| UI2.1 | A warning is a chip | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI2.2 | Build progress in a neutral color | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI2.3 | The blast and Ore's glyph | — | V4 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI3.2 | One column, and state in bars | UI3.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
 | UI4.1 | Bars on the screen | UI2.2 | V7 | todo |
 | UI4.2 | Commands beside the selection | — | V6 | todo |
 | UI4.3 | Retreat as three choices | UI4.2 | V6 | todo |
@@ -230,6 +230,11 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** the milestone's. It rewrites ADR-066 decision 2, ADR-047 decision 5 and ADR-059 decision 2 in place.
 - **Acceptance:** `HudTests`: each of the three drawn as a chip, with a panel under its word; no text in `ENEMY_COLOR` has one; 14.2's contrast test with the chip's text against its fill.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 1.
+  - A status line is a list of runs, each plain or a chip; the Shipyards' idle count is the chip "2 IDLE".
+  - The newest alert's tag starts 4 units left of the other lines, so its words stay in line with theirs.
+  - The main menu's notice stays plain text in the warning's color, as the designer's refused name does: it wraps over several lines, and no enemy figure stands near it.
+  - The chip's words stand at 10.3:1 on its tag, computed. Not yet seen on screen.
 
 ### UI2.2 — Build progress in a neutral color
 
@@ -241,6 +246,7 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** the milestone's.
 - **Acceptance:** the color named once and used for every side.
 - **Verify:** run, on an enemy structure under construction (shot 5's case) and an own one.
+- **As built (2026-10-09):** [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 2. `BUILD_BAR_COLOR` is (0.5, 0.52, 0.55) linear, the one constant every side's build bar already used. Not yet seen on screen.
 
 ### UI2.3 — The blast and Ore's glyph
 
@@ -253,6 +259,7 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** the milestone's. It rewrites ADR-043 decision 3's glyph or ADR-026 decision 1.
 - **Acceptance:** `NeuronClientTests`: the new sprite's shape. `HudTests`: `WritesOreOneWay` with it.
 - **Verify:** CI; run; **owner run.** The task may be dropped.
+- **As built (2026-10-09):** [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 3. The owner picked a cut gem from three drawn at 8, 13 and 20 pixels: a hexagon, a tall crystal and the gem. `SpriteShape::Diamond` is gone, since only Ore drew it. The glyph's test ran in the Linux container; not yet seen on screen.
 
 ---
 
@@ -282,6 +289,12 @@ The milestone's tasks share one ADR: one meaning per color.
   - the click's target in each case;
   - the Lab with nothing open.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-066](../Design/ADR/ADR-066-production-status-on-the-hud.md) decisions 1 and 2, rewritten in place.
+  - The line at the cap reads "Station L4: +10": the glyph atlas has no arrow, and Bahnschrift's coverage of one is not known from here.
+  - An idle Shipyard's chip also asks that it builds the design's hull, so that the chip never asks for a ship no idle Shipyard can start.
+  - Idle Shipyards that could start nothing are counted plainly.
+  - `ActionKind::Select` carries its entity in a field of its own, `Action::entity`, and `PlayerControls::SelectAlone` selects it, dropping any order armed for the selection before. `GameClient` moves the camera to it.
+  - The HUD's tests ran in the Linux container; `PlayerControlsTests` and `GameClient` are CI's to build. Not yet seen on screen.
 
 ### UI3.2 — One column, and state in bars
 
@@ -296,6 +309,13 @@ The milestone's tasks share one ADR: one meaning per color.
 - **ADR:** ADR-066's.
 - **Acceptance:** `HudTests`: the panels' widths equal and unchanged across every status content; bars at 0, 50 and 100%; 14.1's and 14.2's tests.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-066](../Design/ADR/ADR-066-production-status-on-the-hud.md) decisions 1 and 3, rewritten in place.
+  - The column's one width is also no narrower than the status panel's widest lines, measured on fixed text, since the Shipyards' counts in capitals at two figures and the line at the cap with an upgrade under way are wider than 380 units less the padding with some fonts. It changes only with the match's research names.
+  - Research's bar runs under its name, across the panel, and "+3" stands at the bar's end on the name's line; " · waiting for Ore" follows the name, which is cut short first.
+  - The fleet is a line of its own under the Shipyards', "Fleet" beside a bar with "29 / 30" at its end, and takes the Shipyards' line's click. At the cap, the Shipyards' line drops its figures, "Shipyards at the fleet cap · Station L4: +10", since the bar under it gives them.
+  - The panel's place is kept for three lines and a bar, 94 units, where it was 64, so the windows open at 178 units from the top.
+  - The column's foot was already free: Phase 5's orders and away panels are floating windows.
+  - The HUD's tests ran in the Linux container with substitute fonts. Not yet seen on screen.
 
 ### UI3.3 — Nodes and tickets that read
 
@@ -318,6 +338,12 @@ The milestone's tasks share one ADR: one meaning per color.
   - `WireFormatTests`: the fields.
   - `GameLogicTests`: the snapshot carries the tuning data's numbers.
 - **Verify:** the container's `GameLogicTests`; CI; run; **owner run.**
+- **As built (2026-10-09):** [ADR-057](../Design/ADR/ADR-057-domination.md) decisions 7 and 8, and [ADR-056](../Design/ADR/ADR-056-territory.md) decision 11's panel line, rewritten in place.
+  - The drain's numbers are on the wire under `PROTOCOL_VERSION` 1: the owner set both versions back to 1 on 2026-10-09, to stay there until the game is live (AGENTS.md R18, ADR-060, ADR-077).
+  - The rows read "Enemy -20 a minute · out in 32:06" and "You -60 a minute · out in 12:09", with a hyphen for the minus: the glyph atlas has no minus sign.
+  - The 12:09 case is three nodes behind with 729 tickets, or 728, since a part drain is a whole one; the review's fifth screenshot's own figures were not recorded.
+  - Without a cap, the nodes' note reads "of 25".
+  - The container ran `GameLogicTests`, `GameProtocolTests` and the HUD's tests. Not yet seen on screen.
 
 ---
 

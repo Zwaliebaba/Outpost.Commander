@@ -29,7 +29,7 @@ The owner asked for all seven to be done. The owner also found two faults while 
    - At the widest 1,600 m view, every ring is at 80% or more.
    - Under the pointer, and while a structure is placed, a ring is at full strength at any zoom.
 3. **A cross is white, or a hot star's blue-white, and never warm.** The points keep every tint.
-4. **The Ore panel writes the stockpile from its left.** Ore's diamond stays put, and the figure grows to its right. The income keeps to the panel's right edge.
+4. **The Ore panel writes the stockpile from its left.** Ore's gem stays put, and the figure grows to its right. The income keeps to the panel's right edge.
 5. **On the minimap:**
    - An asteroid field is near the map's own darkness: (0.06, 0.06, 0.065), down from (0.13, 0.13, 0.14).
    - An ore asteroid's mark is at least 8 units across, the largest of the marks' smallest sizes.
@@ -46,7 +46,7 @@ The owner asked for all seven to be done. The owner also found two faults while 
 
 - **Tests:**
   - `HudTests`:
-    - `KeepsTheOreDiamondStillAsTheFigureChanges`
+    - `KeepsTheOreGemStillAsTheFigureChanges`
     - `DrawsTheSelectionsHealthAsABar`
     - `DrawsARigsMarkOverItsAsteroid`
     - In `DescribesOneShip`, `DescribesAGroupByDesign` and `OffersTheStructuresToConstructors`: the × sign, the health share and the button's note.

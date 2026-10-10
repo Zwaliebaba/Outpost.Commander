@@ -2,10 +2,11 @@
 
 namespace Outpost
 {
-// The version of the state a world's save holds (ADR-077). A change to what Simulation holds, or to the seats' reports a
-// save keeps beside it, raises it: WorldStateTests pins the layout of each version (SaveLayout), and fails until it is
-// raised and the new layout recorded (AGENTS.md R18). A save of another version is refused.
-inline constexpr std::uint32_t WORLD_STATE_VERSION = 6;
+// The version of the state a world's save holds (ADR-077). It stays 1 until the game is live (owner, 2026-10-09), and a save
+// carries its layout's hash beside it (SaveLayoutHash), so that until then a change to what Simulation holds, or to the
+// seats' reports a save keeps beside it, records its new layout under version 1 and a save of the old one is refused
+// (AGENTS.md R18). A save of another version is refused too.
+inline constexpr std::uint32_t WORLD_STATE_VERSION = 1;
 
 // The world a save is of: what a server needs, besides the state, to make the simulation the state loads into.
 struct WorldIdentity
@@ -33,13 +34,13 @@ struct SaveHeader
 // What each seat's player missed while away, by player, which a save keeps beside the state (ADR-080).
 using SeatReports = std::vector<std::pair<PlayerId, AwayReport>>;
 
-// A save of _simulation's state, made between two ticks: a header naming the save's kind, WORLD_STATE_VERSION, the world
-// and the tick, then the state, then the seats' reports, then a checksum of all of it (ADR-077).
+// A save of _simulation's state, made between two ticks: a header naming the save's kind, WORLD_STATE_VERSION, the
+// layout's hash, the world and the tick, then the state, then the seats' reports, then a checksum of all of it (ADR-077).
 [[nodiscard]] std::vector<std::byte> EncodeWorld(const Simulation& _simulation, const WorldIdentity& _identity,
                                                  const SeatReports& _reports = {});
 
 // The header of a save. Throws Neuron::Exception when the bytes are not a whole save, with its checksum, of
-// WORLD_STATE_VERSION.
+// WORLD_STATE_VERSION and laid out as this build lays it out.
 [[nodiscard]] SaveHeader ReadSaveHeader(std::span<const std::byte> _bytes);
 
 // Loads a save's state into _simulation, which was made with the save's seed and tick rate and given the tuning data
@@ -50,4 +51,7 @@ SeatReports DecodeWorld(std::span<const std::byte> _bytes, const WorldIdentity& 
 // How a save lays out what follows its header, as ByteLayout describes it: the simulation's state (Simulation::StateLayout)
 // and the seats' reports. WorldStateTests pins it to WORLD_STATE_VERSION (AGENTS.md R18).
 [[nodiscard]] std::string SaveLayout();
+
+// DataHash of SaveLayout, which a save's header carries: a save laid out otherwise is refused, whatever its version.
+[[nodiscard]] std::uint64_t SaveLayoutHash();
 } // namespace Outpost

@@ -179,11 +179,22 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
   designer.Load(newest.designs.back());
   Outpost::Hud::Content content =
     Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, _hovered);
-  content.status = {{.text = "Researching Mass Driver Calibration, 99% (+4 queued)"},
-                    {.text = "Shipyards: 12 building, 12 waiting for Ore, 12 IDLE", .idle = true}};
+  // The status panel at its fullest (task UI3.2): the longest topic the tuning data has, waiting, with four more queued; the
+  // Shipyards' counts at two figures, idle a chip; and the fleet against its cap. The column is as wide as the longest topic.
+  content.status = {{.runs = {{.text = "Mass Driver Calibration"}, {.text = " \xC2\xB7 waiting for Ore"}},
+                     .bar = Outpost::Hud::StatusBar{.share = 0.99f, .figure = "+4", .under = true}},
+                    {.runs = {{.text = "Shipyards \xC2\xB7 BUILDING 12 \xC2\xB7 WAITING 12 \xC2\xB7 "}, {.text = "IDLE 12", .chip = true}}},
+                    {.runs = {{.text = "Fleet"}}, .bar = Outpost::Hud::StatusBar{.share = 0.5f, .figure = "99 / 99"}}};
+  content.researchNames = {"Mass Driver Calibration", "Reinforced Structures"};
   content.alerts = {{"Shipyard 05 is under attack", {}}, {"Mining Rig 12 destroyed", {}}, {"Relay 03 lost", {}}};
-  content.territory =
-    Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .cap = 12, .ownTickets = 10000, .enemyTickets = 10000};
+  content.territory = Outpost::Hud::Territory{.ownNodes = 12,
+                                              .enemyNodes = 12,
+                                              .nodes = 12,
+                                              .cap = 12,
+                                              .ownTickets = 10000,
+                                              .enemyTickets = 10000,
+                                              .drain = "You -9,999 a minute \xC2\xB7 out in 99:59",
+                                              .drainWarns = true};
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
   content.buttons = {{.label = "Shipyard|300"},
                      {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
@@ -341,6 +352,29 @@ std::vector<DirectX::XMFLOAT3> GroundsOf(const Outpost::Hud::Layout& _layout, st
   return grounds;
 }
 
+// Whether _text is a warning chip (ADR-085 decision 1): its words dark, on a panel of the warning's color under its first
+// pixel.
+bool IsChip(const Outpost::Hud::Layout& _layout, const Outpost::Hud::Text& _text)
+{
+  const float x = std::round(_text.left) + 0.5f;
+  const float y = std::round(_text.top) + 0.5f;
+  const bool tag = std::ranges::any_of(_layout.panels,
+                                       [&](const Outpost::Hud::Rect& _panel)
+                                       {
+                                         return _panel.color.x == 1.0f && _panel.color.y == 0.5f && _panel.color.z == 0.35f &&
+                                                _panel.fill == Outpost::Hud::Fill::Solid && _panel.Contains(x, y);
+                                       });
+  return tag && LuminanceOf({_text.color.x, _text.color.y, _text.color.z}) < 0.05f;
+}
+
+// The text that says _words in _layout, which the test needs.
+const Outpost::Hud::Text& TextOf(const Outpost::Hud::Layout& _layout, std::string_view _words)
+{
+  const auto found = std::ranges::find(_layout.texts, _words, &Outpost::Hud::Text::text);
+  Assert::IsTrue(found != _layout.texts.end(), std::wstring(winrt::to_hstring(_words)).c_str());
+  return *found;
+}
+
 // A text named for a failure: its layout, the back buffer's width and what it says.
 std::wstring Named(const std::wstring& _layout, std::uint32_t _widthPixels, const Outpost::Hud::Text& _text)
 {
@@ -482,7 +516,10 @@ public:
   // Task 3.6: the Ore stockpile, and no selection panel with nothing selected.
   TEST_METHOD(ShowsTheOreAndNoPanelWithoutASelection)
   {
-    const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), {}, {});
+    // Earning, so that the Ore panel holds no warning chip.
+    Outpost::Snapshot newest = Newest();
+    newest.oreIncomeHundredthsPerSecond = 650;
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
     Assert::AreEqual(12345, content.ore);
     Assert::IsTrue(content.selection.empty());
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
@@ -524,7 +561,7 @@ public:
     // A 16:10 panel: the width limits the scale.
     Assert::AreEqual(1.0f, Outpost::Hud::Scale(1920, 1200));
 
-    const Outpost::Hud::Content content{.ore = 0, .selection = {"1 ship", "Hit points 1 / 1"}};
+    const Outpost::Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 650, .selection = {"1 ship", "Hit points 1 / 1"}};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1200);
     Assert::AreEqual(size_t{2}, layout.panels.size());
     const Outpost::Hud::Rect& selection = layout.panels[1];
@@ -548,20 +585,41 @@ public:
     Assert::AreEqual(std::string("+0/s"), incomeText(0));
   }
 
-  // An income of nothing is written in the warning's color: no rig earns, so nothing the player spends comes back.
+  // An income of nothing is a warning chip (ADR-085 decision 1): no rig earns, so nothing the player spends comes back.
   TEST_METHOD(WarnsOfNoIncome)
   {
-    const auto incomeColor = [](std::int32_t _hundredths)
+    const Outpost::Hud::Layout earning = Lay({.ore = 0, .oreIncomeHundredthsPerSecond = 650}, 1920, 1080);
+    const Outpost::Hud::Text& income = TextOf(earning, "+6.5/s");
+    Assert::IsTrue(income.color.z > income.color.x && !IsChip(earning, income), L"an income is in the figures' blue");
+    const Outpost::Hud::Layout nothing = Lay({.ore = 0, .oreIncomeHundredthsPerSecond = 0}, 1920, 1080);
+    Assert::IsTrue(IsChip(nothing, TextOf(nothing, "+0/s")), L"no income is a chip");
+  }
+
+  // ADR-085 decision 1: a warning is a chip, its words dark on a tag of the warning's color: an idle line's IDLE, an income
+  // of nothing and the newest alert, each at 4.5:1 or more against its tag. Nothing else is, and the enemy's figures stay
+  // plain text in their own color.
+  TEST_METHOD(MarksEachWarningWithAChip)
+  {
+    Outpost::Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 0};
+    content.status = {{.runs = {{.text = "Research Lab "}, {.text = "IDLE", .chip = true}}}};
+    content.alerts = {{"Enemy ships in South", {}}, {"Mining Rig lost: North", {}}};
+    content.territory =
+      Outpost::Hud::Territory{.ownNodes = 3, .enemyNodes = 2, .nodes = 25, .cap = 10, .ownTickets = 900, .enemyTickets = 950};
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    for (const std::string_view words : {"IDLE", "+0/s", "Enemy ships in South"})
     {
-      const Outpost::Hud::Layout layout = Lay({.ore = 0, .oreIncomeHundredthsPerSecond = _hundredths}, 1920, 1080);
-      const auto income = std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.ends_with("/s"); });
-      Assert::IsTrue(income != layout.texts.end());
-      return income->color;
-    };
-    const DirectX::XMFLOAT4 earning = incomeColor(650);
-    const DirectX::XMFLOAT4 nothing = incomeColor(0);
-    Assert::IsTrue(earning.z > earning.x, L"an income is in the figures' blue");
-    Assert::IsTrue(nothing.x > nothing.z, L"no income is in a warm warning color");
+      const Outpost::Hud::Text& chip = TextOf(layout, words);
+      Assert::IsTrue(IsChip(layout, chip), std::wstring(winrt::to_hstring(words)).c_str());
+      const std::vector<DirectX::XMFLOAT3> grounds = GroundsOf(layout, 0, chip);
+      Assert::IsTrue(ContrastOf({chip.color.x, chip.color.y, chip.color.z}, grounds.back()) >= 4.5f, L"legible on its tag");
+    }
+    Assert::IsFalse(IsChip(layout, TextOf(layout, "Mining Rig lost: North")), L"an older alert is plain");
+    Assert::IsFalse(IsChip(layout, TextOf(layout, "Research Lab ")), L"the line round the chip is plain");
+    Assert::AreEqual(std::ptrdiff_t{3},
+                     std::ranges::count_if(layout.texts, [&](const Outpost::Hud::Text& _text) { return IsChip(layout, _text); }));
+    const Outpost::Hud::Text& enemyNodes = TextOf(layout, "2");
+    Assert::IsTrue(enemyNodes.color.x == 1.0f && enemyNodes.color.y == 0.38f, L"the enemy's figure in the enemy's color");
+    Assert::IsFalse(IsChip(layout, enemyNodes), L"and plain");
   }
 
   // Task 4.2: selected Constructors offer every structure they build, with its cost, dim when the player cannot afford
@@ -861,9 +919,13 @@ public:
 
     content.fog = true;
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
-    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "1 / 3 : "; }),
-                   L"the player's own against its station's cap");
+    // The nodes as the tickets read, the player's against the enemy's, with the station's cap of the map's beside "Nodes" in
+    // the labels' color (interface plan 2, task UI3.3).
+    const Outpost::Hud::Text& nodes = TextOf(layout, "Nodes");
+    const Outpost::Hud::Text& cap = TextOf(layout, "cap 3 of 3");
+    Assert::IsTrue(cap.top == nodes.top && cap.left > nodes.left, L"the cap beside the label");
+    Assert::IsTrue(cap.color.x == 0.22f && cap.color.z == 0.42f, L"in the labels' color");
+    Assert::IsTrue(TextOf(layout, "1 : ").left < TextOf(layout, "1").left, L"the player's, then the enemy's");
     Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
                     L"no tickets without them");
     const auto fog =
@@ -1279,10 +1341,10 @@ public:
     // Nothing selected, the research still shows under the Ore.
     const Outpost::Hud::Content unselected = Outpost::Hud::Describe(newest, std::vector{lab}, {});
     Assert::AreEqual(size_t{1}, unselected.status.size());
-    Assert::AreEqual(std::string("Researching Hull Plating, 25%"), unselected.status[0].text);
+    Assert::AreEqual(std::string("Hull Plating"), unselected.status[0].Text());
+    Assert::AreEqual(0.25f, unselected.status[0].bar.value_or(Outpost::Hud::StatusBar{}).share, 1e-6f);
     const Outpost::Hud::Layout layout = Lay(unselected, 1920, 1080);
-    Assert::IsTrue(
-      std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Researching Hull Plating, 25%"; }));
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Hull Plating"; }));
   }
 
   // Phase 1 design §5, §11: a component's abbreviation is the capital initial of each word of its name.
@@ -1876,21 +1938,21 @@ public:
     Assert::IsTrue(ore.color.x > ore.color.y && ore.color.y > ore.color.z, L"gold");
   }
 
-  // ADR-046: the Ore's diamond and figure start at the panel's left whatever the figure, and the income keeps to its right.
-  TEST_METHOD(KeepsTheOreDiamondStillAsTheFigureChanges)
+  // ADR-046: the Ore's gem and figure start at the panel's left whatever the figure, and the income keeps to its right.
+  TEST_METHOD(KeepsTheOreGemStillAsTheFigureChanges)
   {
     const auto oreAt = [](std::int32_t _ore)
     {
       const Outpost::Hud::Layout layout = Lay({.ore = _ore, .oreIncomeHundredthsPerSecond = 2700}, 1920, 1080);
-      const auto diamond = std::ranges::find(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite);
+      const auto gem = std::ranges::find(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite);
       const auto figure = std::ranges::find(layout.texts, Outpost::WithThousands(_ore), &Outpost::Hud::Text::text);
       const auto income = std::ranges::find(layout.texts, std::string("+27/s"), &Outpost::Hud::Text::text);
-      Assert::IsTrue(diamond != layout.sprites.end() && figure != layout.texts.end() && income != layout.texts.end());
-      return std::array<float, 3>{diamond->area.left, figure->left, income->left};
+      Assert::IsTrue(gem != layout.sprites.end() && figure != layout.texts.end() && income != layout.texts.end());
+      return std::array<float, 3>{gem->area.left, figure->left, income->left};
     };
     const std::array<float, 3> oneDigit = oreAt(5);
     const std::array<float, 3> eightDigits = oreAt(12345678);
-    Assert::AreEqual(oneDigit[0], eightDigits[0], 0.01f, L"the diamond");
+    Assert::AreEqual(oneDigit[0], eightDigits[0], 0.01f, L"the gem");
     Assert::AreEqual(oneDigit[1], eightDigits[1], 0.01f, L"the figure");
     Assert::AreEqual(oneDigit[2], eightDigits[2], 0.01f, L"the income");
     Assert::IsTrue(oneDigit[0] < 40.0f, L"at the panel's left");
@@ -1899,7 +1961,8 @@ public:
   // ADR-046: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
   TEST_METHOD(DrawsTheSelectionsHealthAsABar)
   {
-    const Outpost::Hud::Content healthy{.ore = 0, .selection = {"Shipyard", "Hit points 3,000 / 3,000"}};
+    const Outpost::Hud::Content healthy{
+      .ore = 0, .oreIncomeHundredthsPerSecond = 650, .selection = {"Shipyard", "Hit points 3,000 / 3,000"}};
     Outpost::Hud::Content hurt = healthy;
     hurt.selectionHealth = 0.2f;
     const Outpost::Hud::Layout without = Lay(healthy, 1920, 1080);
@@ -1936,7 +1999,7 @@ public:
     const Outpost::Hud::Content content{.ore = 0,
                                         .selection = {"Shipyard"},
                                         .buttons = {{.label = "Production"}},
-                                        .status = {{.text = "Researching Hull Plating, 25%"}},
+                                        .status = {{.runs = {{.text = "Researching Hull Plating, 25%"}}}},
                                         .mapSizeMeters = 2000.0f};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const Outpost::Hud::Span sprites = layout.SpritesOf(0);
@@ -1946,7 +2009,7 @@ public:
     Assert::AreEqual(std::ptrdiff_t{20}, corners, L"four for each of the Ore, the status, the selection, the buttons and the minimap");
   }
 
-  // ADR-043: Ore is written one way, as Ore's diamond and the figure grouped in thousands: the stockpile, a button's cost,
+  // ADR-043: Ore is written one way, as Ore's gem and the figure grouped in thousands: the stockpile, a button's cost,
   // and a window's Ore and its cards' costs.
   TEST_METHOD(WritesOreOneWay)
   {
@@ -1964,7 +2027,7 @@ public:
     Assert::IsFalse(has("12345") || has("Ore") || has("1500"));
     Assert::AreEqual(std::ptrdiff_t{4},
                      std::ranges::count(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite),
-                     L"a diamond for the stockpile, the button, the window's Ore and the card");
+                     L"a gem for the stockpile, the button, the window's Ore and the card");
   }
 
   // ADR-043: the production window's cards stay where they are as its queue grows, so that a card can be clicked again and
@@ -2008,7 +2071,7 @@ public:
   {
     const auto panelOf = [](std::vector<std::string> _lines)
     {
-      const Outpost::Hud::Layout layout = Lay({.ore = 0, .selection = std::move(_lines)}, 1920, 1080);
+      const Outpost::Hud::Layout layout = Lay({.ore = 0, .oreIncomeHundredthsPerSecond = 650, .selection = std::move(_lines)}, 1920, 1080);
       return layout.panels[1];
     };
     const Outpost::Hud::Rect narrow = panelOf({"Shipyard", "Hit points 3,000 / 3,000"});
@@ -2150,7 +2213,80 @@ public:
     Assert::AreEqual(std::string("Holding a sector"), content.selection.back());
   }
 
-  // ADR-059: the alerts under the territory, the newest in the warning's color, and a mark at each on the minimap.
+  // Interface plan 2, task UI3.2: the Ore, status, territory and alerts panels are one width, the column's, whatever the
+  // status panel holds, so that the column's edge stands still; no narrower than the alerts' 380 units. Research's progress
+  // and the fleet against its cap are bars, filled for their share, at nothing, half and the whole: research's under its
+  // name, across the panel, and the fleet's beside its label, short of its figure.
+  TEST_METHOD(KeepsTheColumnOneWidth)
+  {
+    using StatusBar = Outpost::Hud::StatusBar;
+    using StatusLine = Outpost::Hud::StatusLine;
+    Outpost::Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 650};
+    content.researchNames = {"Hull Plating", "Mass Driver Calibration"};
+    content.territory = Outpost::Hud::Territory{.ownNodes = 3, .enemyNodes = 2, .nodes = 25, .cap = 10};
+    content.alerts = {{"Enemy ships in South", {}}};
+    // The bodies of the panels at the left margin.
+    const auto columnOf = [&content](std::vector<StatusLine> _status)
+    {
+      content.status = std::move(_status);
+      const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+      std::vector<float> widths;
+      for (const Outpost::Hud::Rect& panel : layout.panels)
+      {
+        if (std::abs(panel.left - 16.0f) < 0.01f && panel.color.x == 0.009f && panel.color.y == 0.013f && panel.color.z == 0.024f)
+          widths.push_back(panel.width);
+      }
+      return widths;
+    };
+    const std::vector<float> bare = columnOf({});
+    Assert::AreEqual(size_t{3}, bare.size(), L"the Ore, the territory and the alerts");
+    Assert::IsTrue(bare.front() >= 380.0f);
+    const std::vector<std::vector<StatusLine>> statuses{
+      {{.runs = {{.text = "Research Lab "}, {.text = "IDLE", .chip = true}}}},
+      {{.runs = {{.text = "Hull Plating"}}, .bar = StatusBar{.share = 0.5f, .figure = "+2", .under = true}},
+       {.runs = {{.text = "Shipyards \xC2\xB7 BUILDING 1 \xC2\xB7 WAITING 0 \xC2\xB7 "}, {.text = "IDLE 2", .chip = true}}},
+       {.runs = {{.text = "Fleet"}}, .bar = StatusBar{.share = 0.5f, .figure = "15 / 30"}}},
+      {{.runs = {{.text = "Mass Driver Calibration"}, {.text = " \xC2\xB7 waiting for Ore"}}, .bar = StatusBar{.under = true}},
+       {.runs = {{.text = "Shipyards at the fleet cap \xC2\xB7 Station upgrading, 62%"}}},
+       {.runs = {{.text = "Fleet"}}, .bar = StatusBar{.share = 1.0f, .figure = "30 / 30"}}}};
+    for (const std::vector<StatusLine>& status : statuses)
+    {
+      const std::vector<float> widths = columnOf(status);
+      Assert::AreEqual(size_t{4}, widths.size(), L"and the status panel");
+      Assert::IsTrue(std::ranges::all_of(widths, [&](float _width) { return std::abs(_width - bare.front()) < 0.01f; }), L"one width");
+    }
+
+    const auto isTrack = [](const Outpost::Hud::Rect& _panel) { return _panel.color.x == 0.004f && _panel.color.z == 0.009f; };
+    const auto isFill = [](const Outpost::Hud::Rect& _panel) { return _panel.color.x == 0.17f && _panel.color.z == 0.58f; };
+    for (const float share : {0.0f, 0.5f, 1.0f})
+    {
+      content.status = {{.runs = {{.text = "Hull Plating"}}, .bar = StatusBar{.share = share, .figure = "+2", .under = true}},
+                        {.runs = {{.text = "Fleet"}}, .bar = StatusBar{.share = share, .figure = "15 / 30"}}};
+      const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+      std::vector<Outpost::Hud::Rect> tracks;
+      std::ranges::copy_if(layout.panels, std::back_inserter(tracks), isTrack);
+      Assert::AreEqual(size_t{2}, tracks.size());
+      for (const Outpost::Hud::Rect& track : tracks)
+      {
+        const auto fill = std::ranges::find_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                               { return isFill(_panel) && _panel.top == track.top && _panel.left == track.left; });
+        Assert::AreEqual(share > 0.0f, fill != layout.panels.end(), L"a fill only for a share");
+        if (fill != layout.panels.end())
+          Assert::AreEqual(share * track.width, fill->width, 0.01f);
+      }
+      const Outpost::Hud::Text& name = TextOf(layout, "Hull Plating");
+      const Outpost::Hud::Text& fleet = TextOf(layout, "Fleet");
+      const Outpost::Hud::Text& figure = TextOf(layout, "15 / 30");
+      const Outpost::Hud::Rect& under = tracks[0].top < tracks[1].top ? tracks[0] : tracks[1];
+      const Outpost::Hud::Rect& beside = tracks[0].top < tracks[1].top ? tracks[1] : tracks[0];
+      Assert::IsTrue(under.top >= name.top + 20.0f && under.top < fleet.top && under.left <= name.left, L"under the name");
+      Assert::IsTrue(beside.top > fleet.top && beside.top < fleet.top + 22.0f && beside.left > fleet.left, L"beside the label");
+      Assert::IsTrue(beside.left + beside.width < figure.left, L"short of its figure");
+    }
+  }
+
+  // ADR-059: the alerts under the territory, the newest a warning chip (ADR-085 decision 1), and a mark at each on the
+  // minimap.
   TEST_METHOD(ListsTheAlerts)
   {
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
@@ -2160,7 +2296,8 @@ public:
     const auto older = std::ranges::find(layout.texts, std::string("Enemy ships in West"), &Outpost::Hud::Text::text);
     Assert::IsTrue(newest != layout.texts.end() && older != layout.texts.end());
     Assert::IsTrue(newest->top < older->top, L"newest first");
-    Assert::IsTrue(newest->color.x > older->color.x && newest->color.z < older->color.z, L"the newest in the warning's color");
+    Assert::IsTrue(IsChip(layout, *newest) && !IsChip(layout, *older), L"the newest a chip");
+    Assert::AreEqual(older->left, newest->left, 0.01f, L"its words in line with the others'");
     const DirectX::XMFLOAT2 at = layout.MinimapPixelOf({.xMeters = 0.0f, .zMeters = -500.0f});
     Assert::IsTrue(
       std::ranges::any_of(layout.panels, [&](const Outpost::Hud::Rect& _panel)
@@ -2304,22 +2441,50 @@ public:
       Assert::IsTrue(std::ranges::find(layout.texts, line, &Outpost::Hud::Text::text) != layout.texts.end());
   }
 
-  // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs.
+  // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs. Interface plan 2,
+  // task UI3.3: under the tickets, who the drain takes from, at what a minute, and when they run out, the drains their
+  // tickets last rounded up, times the interval; a warning chip when it is the player, and "No drain" level on nodes.
   TEST_METHOD(ShowsTheTickets)
   {
+    const Outpost::PlayerId enemy{2};
     Outpost::Snapshot newest = Newest();
     newest.sectors = {{.id = 1, .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
-    newest.tickets = {{.player = PLAYER, .tickets = 1000}, {.player = Outpost::PlayerId{2}, .tickets = 870}};
-    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
-    Assert::IsTrue(content.territory.has_value());
-    const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
-    Assert::IsTrue(territory.ownTickets == 1000 && territory.enemyTickets == 870);
-    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    const auto text = [&layout](std::string_view _text) { return std::ranges::find(layout.texts, _text, &Outpost::Hud::Text::text); };
-    Assert::IsTrue(text("Tickets") != layout.texts.end());
-    Assert::IsTrue(text("1,000 : ") != layout.texts.end() && text("870") != layout.texts.end());
-    Assert::IsTrue(text("870")->left > text("1,000 : ")->left, L"the enemy's figure stands at the right");
-    Assert::IsTrue(text("Tickets")->top > text("Nodes of 1")->top);
+    newest.tickets = {{.player = PLAYER, .tickets = 1000}, {.player = enemy, .tickets = 642}};
+    newest.drainIntervalSeconds = 3.0;
+    newest.drainTicketsPerNodeDifference = 1;
+    const auto territoryOf = [&newest]() { return Outpost::Hud::Describe(newest, {}, {}).territory.value_or(Outpost::Hud::Territory{}); };
+    // Ahead by a node, at the review's first screenshot's figures: the enemy loses 20 a minute, out in 32:06.
+    Outpost::Hud::Territory territory = territoryOf();
+    Assert::IsTrue(territory.ownTickets == 1000 && territory.enemyTickets == 642);
+    Assert::AreEqual(std::string("Enemy -20 a minute \xC2\xB7 out in 32:06"), territory.drain);
+    Assert::IsFalse(territory.drainWarns);
+    const Outpost::Hud::Layout layout = Lay(Outpost::Hud::Describe(newest, {}, {}), 1920, 1080);
+    const Outpost::Hud::Text& tickets = TextOf(layout, "Tickets");
+    const Outpost::Hud::Text& drain = TextOf(layout, territory.drain);
+    Assert::IsTrue(TextOf(layout, "642").left > TextOf(layout, "1,000 : ").left, L"the enemy's figure stands at the right");
+    Assert::IsTrue(TextOf(layout, "Nodes").top < tickets.top && tickets.top < drain.top, L"nodes, tickets, then the drain");
+    Assert::IsFalse(IsChip(layout, drain), L"the enemy's loss is plain");
+
+    // Level on nodes: no drain.
+    newest.sectors.push_back({.id = 2, .minXMeters = 100.0f, .maxXMeters = 200.0f, .maxZMeters = 100.0f, .holder = enemy});
+    Assert::AreEqual(std::string("No drain"), territoryOf().drain);
+
+    // Behind by three, at the fifth screenshot's time: the player loses 60 a minute and is out in 12:09, a warning chip.
+    newest.sectors = {{.id = 1, .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = enemy},
+                      {.id = 2, .minXMeters = 100.0f, .maxXMeters = 200.0f, .maxZMeters = 100.0f, .holder = enemy},
+                      {.id = 3, .minXMeters = 200.0f, .maxXMeters = 300.0f, .maxZMeters = 100.0f, .holder = enemy}};
+    newest.tickets[0].tickets = 729;
+    territory = territoryOf();
+    Assert::AreEqual(std::string("You -60 a minute \xC2\xB7 out in 12:09"), territory.drain);
+    Assert::IsTrue(territory.drainWarns);
+    const Outpost::Hud::Layout behind = Lay(Outpost::Hud::Describe(newest, {}, {}), 1920, 1080);
+    Assert::IsTrue(IsChip(behind, TextOf(behind, territory.drain)), L"the player's own loss is a chip");
+    newest.tickets[0].tickets = 728;
+    Assert::AreEqual(std::string("You -60 a minute \xC2\xB7 out in 12:09"), territoryOf().drain, L"a part drain is a whole one");
+
+    // Without the drain's numbers, no row.
+    newest.drainIntervalSeconds = 0.0;
+    Assert::IsTrue(territoryOf().drain.empty());
   }
 
   // The banner sits at the top, over the world that runs on, and its button takes the player back to the menu.
@@ -2397,12 +2562,19 @@ public:
   }
   // ADR-066: under the Ore, a line for the Research Lab once the player has a finished one, and one for the Shipyards once
   // the first is finished: what the Lab researches and how far it has come, that it waits for Ore, or that it is idle; and
-  // how many Shipyards build, wait for Ore and stand idle. An idle line says IDLE, in the warning's color, and a click on a
+  // how many Shipyards build, wait for Ore and stand idle. An idle line says IDLE, in a chip, and a click on a
   // line opens its window: research, or production at the first idle Shipyard, or at the first Shipyard when none is.
   TEST_METHOD(ShowsWhatProductionAndResearchAreDoing)
   {
     Outpost::Snapshot newest = Newest();
     newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating"}};
+    // A Small hull any Shipyard builds and a Medium one of level 2, and a design of each.
+    newest.hulls = {{.id = Outpost::HullId{1}, .nameUtf8 = "Small", .commandPoints = 1},
+                    {.id = Outpost::HullId{2}, .nameUtf8 = "Medium", .shipyardLevel = 2, .commandPoints = 2}};
+    newest.designs[0].hull = Outpost::HullId{1};
+    newest.designs[0].cost = 100;
+    newest.designs[1].hull = Outpost::HullId{2};
+    newest.designs[1].cost = 200;
     const auto structure = [](std::uint32_t _id, Outpost::StructureKind _kind, std::uint32_t _number)
     {
       return Outpost::EntityView{.id = Outpost::EntityId{_id},
@@ -2425,14 +2597,37 @@ public:
     entities.back().builtPermille = Outpost::PERMILLE;
     std::vector<Outpost::Hud::StatusLine> status = statusOf(entities);
     Assert::AreEqual(size_t{1}, status.size());
-    Assert::AreEqual(std::string("Research Lab IDLE"), status[0].text);
-    Assert::IsTrue(status[0].idle && status[0].action == research);
+    Assert::AreEqual(std::string("Research Lab IDLE"), status[0].Text());
+    Assert::IsTrue(status[0].Warns() && status[0].action == research);
+    // Researching: the topic over a bar of how far it has come, and how many more are queued at its end (task UI3.2).
     entities.back().research = {Outpost::ResearchTopicId{2}};
-    Assert::AreEqual(std::string("Researching Hull Plating, waiting for Ore"), statusOf(entities)[0].text);
-    entities.back().jobPermille = 620;
     status = statusOf(entities);
-    Assert::AreEqual(std::string("Researching Hull Plating, 62%"), status[0].text);
-    Assert::IsFalse(status[0].idle);
+    Assert::AreEqual(std::string("Hull Plating \xC2\xB7 waiting for Ore"), status[0].Text());
+    Assert::IsTrue(status[0].bar == Outpost::Hud::StatusBar{.share = 0.0f, .under = true});
+    entities.back().jobPermille = 620;
+    entities.back().research.push_back(Outpost::ResearchTopicId{2});
+    status = statusOf(entities);
+    Assert::AreEqual(std::string("Hull Plating"), status[0].Text());
+    Assert::IsTrue(status[0].bar == Outpost::Hud::StatusBar{.share = 0.62f, .figure = "+1", .under = true});
+    Assert::IsFalse(status[0].Warns());
+    entities.back().research.pop_back();
+
+    // An idle Lab with no topic open to it says so plainly: every topic researched, or one whose prerequisite is not, or of
+    // a tier the Lab has not opened.
+    entities.back().research.clear();
+    entities.back().jobPermille = 0;
+    newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating", .researched = true},
+                       {.id = Outpost::ResearchTopicId{3}, .nameUtf8 = "Fusion Drive", .prerequisites = {Outpost::ResearchTopicId{4}}},
+                       {.id = Outpost::ResearchTopicId{4}, .nameUtf8 = "Relay Archives", .tier = 2}};
+    status = statusOf(entities);
+    Assert::AreEqual(std::string("Research: every open topic done"), status[0].Text());
+    Assert::IsTrue(!status[0].Warns() && status[0].action == research);
+    newest.researchTier = 2;
+    Assert::IsTrue(statusOf(entities)[0].Warns(), L"tier 2 open, Relay Archives is open to it");
+    newest.researchTier = 1;
+    newest.research = {{.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating"}};
+    entities.back().research = {Outpost::ResearchTopicId{2}};
+    entities.back().jobPermille = 620;
 
     // Shipyards 01 and 03 build, 02 waits for Ore, and 04 and 05 stand idle: production opens at 04, the first idle by
     // number, wherever it stands among the entities.
@@ -2453,35 +2648,57 @@ public:
     theirs.owner = Outpost::PlayerId{2};
     entities.push_back(theirs);
     status = statusOf(entities);
-    Assert::AreEqual(size_t{2}, status.size());
-    Assert::AreEqual(std::string("Shipyards: 2 building, 1 waiting for Ore, 2 IDLE"), status[1].text, L"not the enemy's");
-    Assert::IsTrue(status[1].idle);
+    Assert::AreEqual(size_t{2}, status.size(), L"no fleet line without a cap");
+    Assert::AreEqual(std::string("Shipyards \xC2\xB7 BUILDING 2 \xC2\xB7 WAITING 1 \xC2\xB7 IDLE 2"), status[1].Text(), L"not the enemy's");
+    Assert::IsTrue(status[1].Warns());
     Assert::IsTrue(status[1].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = Outpost::EntityId{34}});
+
+    // Idle, but no saved design the player has the Ore for: counted plainly.
+    newest.ore = 50;
+    status = statusOf(entities);
+    Assert::AreEqual(std::string("Shipyards \xC2\xB7 BUILDING 2 \xC2\xB7 WAITING 1 \xC2\xB7 IDLE 2"), status[1].Text());
+    Assert::IsFalse(status[1].Warns(), L"nothing an idle Shipyard could start");
+    // Ore only for a Medium, which no Shipyard of level 1 builds; one of level 2 could start it.
+    newest.ore = 150;
+    std::swap(newest.designs[0].cost, newest.designs[1].cost);
+    Assert::IsFalse(statusOf(entities)[1].Warns(), L"a hull no idle Shipyard builds");
+    const auto fourth = std::ranges::find(entities, Outpost::EntityId{34}, &Outpost::EntityView::id);
+    fourth->level = 2;
+    Assert::IsTrue(statusOf(entities)[1].Warns(), L"a Shipyard of level 2 builds it");
+    fourth->level = 1;
+    std::swap(newest.designs[0].cost, newest.designs[1].cost);
+    newest.ore = 12345;
 
     // None idle: no warning, and production opens at the first Shipyard.
     std::erase_if(entities, [](const Outpost::EntityView& _entity) { return _entity.queue.empty() && _entity.shipyardNumber > 0; });
     status = statusOf(entities);
-    Assert::AreEqual(std::string("Shipyards: 2 building, 1 waiting for Ore"), status[1].text);
-    Assert::IsFalse(status[1].idle);
+    Assert::AreEqual(std::string("Shipyards \xC2\xB7 BUILDING 2 \xC2\xB7 WAITING 1 \xC2\xB7 IDLE 0"), status[1].Text(),
+                     L"every count, in its place");
+    Assert::IsFalse(status[1].Warns());
     Assert::IsTrue(status[1].action.producer == building.id);
 
-    // Laid out: under the Ore, the idle line in the warning's color, and a click on each line opens its window.
+    // Laid out: under the Ore, the idle Shipyard's IDLE a chip after the counts, and a click on each line opens its window.
     entities.push_back(structure(34, Outpost::StructureKind::Shipyard, 4));
     const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, {});
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    const auto labLine = std::ranges::find(layout.texts, content.status[0].text, &Outpost::Hud::Text::text);
-    const auto yardsLine = std::ranges::find(layout.texts, content.status[1].text, &Outpost::Hud::Text::text);
-    Assert::IsTrue(labLine != layout.texts.end() && yardsLine != layout.texts.end());
-    Assert::IsTrue(labLine->top > 60.0f && labLine->left < 40.0f && yardsLine->top > labLine->top, L"under the Ore");
-    Assert::IsTrue(yardsLine->color.x > yardsLine->color.z && labLine->color.z > labLine->color.x, L"the idle line warns");
-    Assert::IsTrue(layout.ActionAt(labLine->left + 4.0f, labLine->top + 6.0f) == research);
-    Assert::IsTrue(layout.ActionAt(yardsLine->left + 4.0f, yardsLine->top + 6.0f) == content.status[1].action);
+    const Outpost::Hud::Text& labLine = TextOf(layout, content.status[0].Text());
+    const Outpost::Hud::Text& yardsLine = TextOf(layout, content.status[1].runs.front().text);
+    const Outpost::Hud::Text& idle = TextOf(layout, "IDLE 1");
+    Assert::IsTrue(labLine.top > 60.0f && labLine.left < 40.0f && yardsLine.top > labLine.top, L"under the Ore");
+    Assert::IsTrue(idle.top == yardsLine.top && idle.left > yardsLine.left, L"on the Shipyards' line, after the counts");
+    Assert::IsTrue(IsChip(layout, idle) && !IsChip(layout, yardsLine) && !IsChip(layout, labLine), L"the idle Shipyard warns");
+    Assert::IsTrue(layout.ActionAt(labLine.left + 4.0f, labLine.top + 6.0f) == research);
+    Assert::IsTrue(layout.ActionAt(yardsLine.left + 4.0f, yardsLine.top + 6.0f) == content.status[1].action);
+    Assert::IsTrue(layout.ActionAt(idle.left + 4.0f, idle.top + 6.0f) == content.status[1].action, L"the chip too");
   }
 
-  // Phase 4 design §5: the Shipyards' status line ends with the fleet against its cap, and a Shipyard whose front warship
-  // does not fit under the cap says it waits for the cap, not for Ore: on the status line, in its selection panel and in
-  // its production window. The Command Station's next level names the cap it gives.
+  // Phase 4 design §5: a Shipyard whose front warship does not fit under the cap says it waits for the cap, not for Ore, in
+  // its selection panel and its production window. Interface plan 2, task UI3.1: on the status line the cap is then what
+  // holds the Shipyards back, as it is when the fleet has room for none of the saved designs. The line says so, plainly,
+  // with what the Command Station's next level adds, or how far its upgrade has come, and a click selects the station.
+  // Otherwise the line counts the Shipyards and ends with the fleet against its cap; without a cap it says nothing of it.
+  // The Command Station's next level names the cap it gives.
   TEST_METHOD(ShowsTheFleetAgainstItsCap)
   {
     Outpost::Snapshot newest = Newest();
@@ -2503,13 +2720,54 @@ public:
     lineYard.id = Outpost::EntityId{32};
     lineYard.shipyardNumber = 2;
     lineYard.queue = {{.design = LINE}, {.design = SWARM}};
-    const std::vector<Outpost::EntityView> entities{swarmYard, lineYard};
+    newest.structureTypes = {
+      {.structure = Outpost::StructureKind::CommandStation,
+       .nameUtf8 = "Command Station",
+       .levels = {{.cost = 300, .buildSeconds = 45.0, .maxHitPointsHundredths = 600000, .nodes = 4, .commandPoints = 20},
+                  {.cost = 500, .buildSeconds = 60.0, .maxHitPointsHundredths = 700000, .nodes = 6, .commandPoints = 30}}}};
+    Outpost::EntityView station{.id = Outpost::EntityId{20},
+                                .kind = Outpost::EntityKind::Structure,
+                                .owner = PLAYER,
+                                .structure = Outpost::StructureKind::CommandStation,
+                                .hitPointsHundredths = 500000,
+                                .maxHitPointsHundredths = 500000};
+    std::vector<Outpost::EntityView> entities{swarmYard, lineYard, station};
+    const auto statusOf = [&]() { return Outpost::Hud::Describe(newest, entities, {}).status; };
+    const Outpost::Hud::Action select{.kind = Outpost::Hud::ActionKind::Select, .entity = station.id};
 
-    // A Small fits at 11 of 12, so the first waits for Ore; a Medium does not, so the second waits for the cap.
-    const std::vector<Outpost::Hud::StatusLine> status = Outpost::Hud::Describe(newest, entities, {}).status;
-    Assert::AreEqual(size_t{1}, status.size());
-    Assert::AreEqual(std::string("Shipyards: 0 building, 1 waiting for Ore, 1 waiting for the fleet cap \xC2\xB7 fleet 11 / 12"),
-                     status[0].text);
+    // A Small fits at 11 of 12, so the first waits for Ore; a Medium does not, so the second waits for the cap, and the cap
+    // is what holds the Shipyards back. The station's next level lifts it by 8. Under it, the fleet as a bar against the
+    // cap, its click the Shipyards' line's.
+    std::vector<Outpost::Hud::StatusLine> status = statusOf();
+    Assert::AreEqual(size_t{2}, status.size());
+    Assert::AreEqual(std::string("Shipyards at the fleet cap \xC2\xB7 Station L2: +8"), status[0].Text());
+    Assert::IsTrue(!status[0].Warns() && status[0].action == select, L"plain, and a click goes to the station");
+    Assert::AreEqual(std::string("Fleet"), status[1].Text());
+    Assert::IsTrue(status[1].bar == Outpost::Hud::StatusBar{.share = 11.0f / 12.0f, .figure = "11 / 12"} && status[1].action == select);
+    // While the station is upgrading, how far it has come; at its top level, the cap alone.
+    entities[2].upgradePermille = 620;
+    Assert::AreEqual(std::string("Shipyards at the fleet cap \xC2\xB7 Station upgrading, 62%"), statusOf()[0].Text());
+    entities[2].upgradePermille.reset();
+    entities[2].level = 3;
+    Assert::AreEqual(std::string("Shipyards at the fleet cap"), statusOf()[0].Text());
+    entities[2].level = 1;
+    // No Shipyard waits for the cap, but the fleet has room for none of the saved designs: at the cap too.
+    newest.commandPoints = 12;
+    entities[0].queue.clear();
+    entities[1].queue.clear();
+    status = statusOf();
+    Assert::AreEqual(std::string("Shipyards at the fleet cap \xC2\xB7 Station L2: +8"), status[0].Text());
+    Assert::IsTrue(status[0].action == select, L"idle at the cap, no chip and the station");
+    Assert::AreEqual(1.0f, status[1].bar.value_or(Outpost::Hud::StatusBar{}).share, L"a full fleet");
+    // Room for a Small: the counts, an idle Shipyard that could start one a chip, and the fleet under them.
+    newest.commandPoints = 11;
+    entities[0].queue = {{.design = SWARM}};
+    status = statusOf();
+    Assert::AreEqual(std::string("Shipyards \xC2\xB7 BUILDING 0 \xC2\xB7 WAITING 1 \xC2\xB7 IDLE 1"), status[0].Text());
+    Assert::IsTrue(status[0].Warns());
+    const Outpost::Hud::Action production{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = lineYard.id};
+    Assert::IsTrue(status[0].action == production && status[1].action == production);
+    entities = {swarmYard, lineYard, station};
     const std::vector<std::string> selection = Outpost::Hud::Describe(newest, entities, std::vector{lineYard.id}).selection;
     Assert::IsTrue(
       std::ranges::find(selection, std::string("Building Medium+Ion+Lance \xC2\xB7 waiting for the fleet cap \xC2\xB7 +1 queued")) !=
@@ -2519,19 +2777,11 @@ public:
 
     // Without a cap, nothing is said of the fleet.
     newest.fleetCap = 0;
-    Assert::AreEqual(std::string("Shipyards: 0 building, 2 waiting for Ore"), Outpost::Hud::Describe(newest, entities, {}).status[0].text);
+    status = statusOf();
+    Assert::AreEqual(size_t{1}, status.size());
+    Assert::AreEqual(std::string("Shipyards \xC2\xB7 BUILDING 0 \xC2\xB7 WAITING 2 \xC2\xB7 IDLE 0"), status[0].Text());
 
     // The station's next level gives a larger fleet.
-    newest.structureTypes = {
-      {.structure = Outpost::StructureKind::CommandStation,
-       .nameUtf8 = "Command Station",
-       .levels = {{.cost = 300, .buildSeconds = 45.0, .maxHitPointsHundredths = 600000, .nodes = 4, .commandPoints = 20}}}};
-    const Outpost::EntityView station{.id = Outpost::EntityId{20},
-                                      .kind = Outpost::EntityKind::Structure,
-                                      .owner = PLAYER,
-                                      .structure = Outpost::StructureKind::CommandStation,
-                                      .hitPointsHundredths = 500000,
-                                      .maxHitPointsHundredths = 500000};
     const std::vector<std::string> stationLines = Outpost::Hud::Describe(newest, std::vector{station}, std::vector{station.id}).selection;
     Assert::IsTrue(std::ranges::find(stationLines, std::string("L2: 4 nodes, fleet 20, 6,000 hit points")) != stationLines.end());
   }

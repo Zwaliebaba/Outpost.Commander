@@ -408,6 +408,15 @@ void Outpost::PlayerControls::Select(std::vector<EntityId> _ships, bool _add)
   m_selected = std::move(_ships);
 }
 
+void Outpost::PlayerControls::SelectAlone(EntityId _entity)
+{
+  m_selected = {_entity};
+  m_attackMoveArmed = false;
+  m_standingArmed.reset();
+  m_placing.reset();
+  m_lastClickedShip.reset();
+}
+
 void Outpost::PlayerControls::Give(Order _order)
 {
   // The server fills in the player from the connection (ADR-002).

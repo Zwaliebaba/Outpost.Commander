@@ -173,6 +173,10 @@ Outpost::SaveHeader GetHeader(Outpost::ByteReader& _reader)
     throw Neuron::Exception(
       std::format("{} holds state version {}, and this build reads version {} only.", SAVE_SOURCE, version, Outpost::WORLD_STATE_VERSION));
   }
+  std::uint64_t layoutHash = 0;
+  _reader.Get(layoutHash);
+  if (layoutHash != Outpost::SaveLayoutHash())
+    throw Neuron::Exception(std::format("{} was written by a build that lays its state out otherwise.", SAVE_SOURCE));
   Outpost::SaveHeader header;
   _reader.Get(header.identity.seed);
   _reader.Get(header.identity.ticksPerSecond);
@@ -253,6 +257,7 @@ std::vector<std::byte> Outpost::EncodeWorld(const Simulation& _simulation, const
   ByteWriter writer;
   writer.Put(SAVE_KIND);
   writer.Put(WORLD_STATE_VERSION);
+  writer.Put(SaveLayoutHash());
   writer.Put(_identity.seed);
   writer.Put(_identity.ticksPerSecond);
   writer.Put(_identity.dataHash);
@@ -298,4 +303,15 @@ std::string Outpost::SaveLayout()
   ByteLayout::Describe<SeatReports>(layout);
   layout += ';';
   return layout;
+}
+
+std::uint64_t Outpost::SaveLayoutHash()
+{
+  static const std::uint64_t LAYOUT_HASH = []
+  {
+    const std::string layout = SaveLayout();
+    const std::array<std::string_view, 1> texts{layout};
+    return DataHash(texts);
+  }();
+  return LAYOUT_HASH;
 }

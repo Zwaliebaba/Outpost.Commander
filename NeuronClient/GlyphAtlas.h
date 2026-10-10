@@ -24,8 +24,8 @@ struct FontDesc
 // A small shape the interface draws from the atlas like a glyph, in any color (ADR-030).
 enum class SpriteShape : std::uint8_t
 {
-  // A filled square standing on a corner.
-  Diamond,
+  // A cut stone: a flat top whose corners are cut, sloping out to its widest, then in to a point at its foot.
+  Gem,
   // The outline of a square.
   Checkbox,
   // An L along the top and the left edge; drawn flipped, it makes the other three corners.
@@ -35,7 +35,7 @@ enum class SpriteShape : std::uint8_t
 // A sprite, and how big it is drawn, in the caller's reference units.
 struct SpriteDesc
 {
-  SpriteShape shape = SpriteShape::Diamond;
+  SpriteShape shape = SpriteShape::Gem;
   float sizeUnits = 0.0f;
 };
 
