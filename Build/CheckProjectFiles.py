@@ -641,7 +641,7 @@ INCLUDE_PATHS = {
   "GameApp": ("NeuronCore", "NeuronClient", "GameProtocol"),
   "OutpostCommander": ("NeuronCore", "NeuronClient", "GameProtocol", "Opponent", "GameApp"),
   "OutpostServer": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic", "Opponent"),
-  # ADR-075: each library's test DLL includes that library and what it builds on, and nothing else.
+  # ADR-089: each library's test DLL includes that library and what it builds on, and nothing else.
   "NeuronCoreTests": ("NeuronCore",),
   "NeuronServerTests": ("NeuronCore", "NeuronServer"),
   "NeuronClientTests": ("NeuronCore", "NeuronClient"),
