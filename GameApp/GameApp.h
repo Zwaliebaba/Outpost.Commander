@@ -29,6 +29,7 @@
 #include "ParticleSystem.h"
 #include "ExplosionManager.h"
 #include "Starfield.h"
+#include "FieldLayout.h"
 #include "FogOfWar.h"
 #include "TerritoryMarks.h"
 #include "Alerts.h"
