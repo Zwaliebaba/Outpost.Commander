@@ -635,8 +635,15 @@ public:
     bool mirrorY = false;
   };
 
+  // A solid line at any angle, in pixels, such as the minimap's view (ADR-015).
+  struct Line
+  {
+    Neuron::ScreenSegment segment;
+    DirectX::XMFLOAT4 color{};
+  };
+
   // A floating window as laid out (ADR-031): its kind; where it stands, its title bar and its close box, in pixels; its
-  // top-left corner in reference units, as WindowManager::Grab takes it; and where its panels, texts, sprites and
+  // top-left corner in reference units, as WindowManager::Grab takes it; and where its panels, lines, texts, sprites and
   // buttons start in the layout's lists. Each runs to where the next window's starts, or to the list's end.
   struct Window
   {
@@ -646,6 +653,7 @@ public:
     Rect closeBox;
     WindowManager::Point corner;
     std::size_t firstPanel = 0;
+    std::size_t firstLine = 0;
     std::size_t firstText = 0;
     std::size_t firstSprite = 0;
     std::size_t firstAction = 0;
@@ -659,11 +667,12 @@ public:
   };
 
   // The HUD on a back buffer of one size, in its pixels. It is drawn in layers: the HUD, then each window back to front,
-  // each layer's panels, then its sprites, then its texts. A click belongs to the front layer under it.
+  // each layer's panels, then its lines, then its sprites, then its texts. A click belongs to the front layer under it.
   struct Layout
   {
     float fontPixels = 0.0f;
     std::vector<Rect> panels;
+    std::vector<Line> lines;
     std::vector<Text> texts;
     // Where each enabled button is, for clicks.
     std::vector<std::pair<Rect, Action>> actions;
@@ -682,6 +691,7 @@ public:
     // The front layer under a point: the front window's that holds it, or the HUD's.
     [[nodiscard]] std::size_t LayerAt(float _xPixels, float _yPixels) const noexcept;
     [[nodiscard]] Span PanelsOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span LinesOf(std::size_t _layer) const noexcept;
     [[nodiscard]] Span TextsOf(std::size_t _layer) const noexcept;
     [[nodiscard]] Span SpritesOf(std::size_t _layer) const noexcept;
     [[nodiscard]] Span ActionsOf(std::size_t _layer) const noexcept;
@@ -694,8 +704,11 @@ public:
     [[nodiscard]] std::optional<Action> ActionAt(float _xPixels, float _yPixels) const noexcept;
     // The point on the map under a point on the minimap, if it is on the minimap.
     [[nodiscard]] std::optional<PlanePosition> MapPointAt(float _xPixels, float _yPixels) const noexcept;
-    // Where a point on the map shows on the minimap, in pixels.
+    // Where a point on the map shows on the minimap, in pixels, held to the minimap's edge.
     [[nodiscard]] DirectX::XMFLOAT2 MinimapPixelOf(PlanePosition _point) const noexcept;
+    // Where a point falls on the minimap's plane, in pixels, past its edge when it is past the map's, so that a line to it
+    // can be cut at the edge rather than bent there.
+    [[nodiscard]] DirectX::XMFLOAT2 MinimapPixelAt(PlanePosition _point) const noexcept;
   };
 
   // The content for _player: its Ore and income from the newest snapshot, its research, a description of _selected, by

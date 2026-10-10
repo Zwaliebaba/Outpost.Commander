@@ -104,6 +104,9 @@
     <ClInclude Include="TerritoryMarks.h">
       <Filter>Territory</Filter>
     </ClInclude>
+    <ClInclude Include="FieldLayout.h">
+      <Filter>Models</Filter>
+    </ClInclude>
     <ClInclude Include="Hud.h">
       <Filter>Interface</Filter>
     </ClInclude>
@@ -178,6 +181,9 @@
     </ClCompile>
     <ClCompile Include="TerritoryMarks.cpp">
       <Filter>Territory</Filter>
+    </ClCompile>
+    <ClCompile Include="FieldLayout.cpp">
+      <Filter>Models</Filter>
     </ClCompile>
     <ClCompile Include="Hud.cpp">
       <Filter>Interface</Filter>

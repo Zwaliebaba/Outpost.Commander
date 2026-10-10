@@ -95,6 +95,7 @@
     <ClCompile Include="MeshDataTests.cpp" />
     <ClCompile Include="TextureDataTests.cpp" />
     <ClCompile Include="GlyphAtlasTests.cpp" />
+    <ClCompile Include="ScreenSegmentTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

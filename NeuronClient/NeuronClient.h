@@ -25,4 +25,5 @@
 #include "GroundMaskPipeline.h"
 #include "StarPipeline.h"
 #include "GlyphAtlas.h"
+#include "ScreenSegment.h"
 #include "UiPipeline.h"

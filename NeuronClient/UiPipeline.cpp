@@ -225,12 +225,31 @@ void Neuron::UiPipeline::AddQuad(float _left, float _top, float _right, float _b
   m_frameVertices.push_back({{_left, _bottom}, {_u0, _v1}, _color});
 }
 
+void Neuron::UiPipeline::AddQuad(const std::array<DirectX::XMFLOAT2, 4>& _corners, float _u, float _v, const DirectX::XMFLOAT4& _color)
+{
+  if (m_frameVertices.size() >= std::size_t{MAX_QUADS} * VERTICES_PER_QUAD)
+    return;
+  for (const DirectX::XMFLOAT2& corner : _corners)
+    m_frameVertices.push_back({corner, {_u, _v}, _color});
+}
+
 void Neuron::UiPipeline::FillRect(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color)
 {
   // Every corner samples the solid block's center, which is full coverage.
   const float u = (static_cast<float>(m_atlas.solidX) + 0.5f) / static_cast<float>(m_atlas.width);
   const float v = (static_cast<float>(m_atlas.solidY) + 0.5f) / static_cast<float>(m_atlas.height);
   AddQuad(_left, _top, _left + _width, _top + _height, u, v, u, v, _color);
+}
+
+void Neuron::UiPipeline::DrawSegment(const ScreenSegment& _segment, const DirectX::XMFLOAT4& _color)
+{
+  const std::optional<std::array<DirectX::XMFLOAT2, 4>> corners = _segment.Corners();
+  if (!corners.has_value())
+    return;
+  // Every corner samples the solid block's center, as a filled rectangle's do.
+  const float u = (static_cast<float>(m_atlas.solidX) + 0.5f) / static_cast<float>(m_atlas.width);
+  const float v = (static_cast<float>(m_atlas.solidY) + 0.5f) / static_cast<float>(m_atlas.height);
+  AddQuad(*corners, u, v, _color);
 }
 
 void Neuron::UiPipeline::FillHatched(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,

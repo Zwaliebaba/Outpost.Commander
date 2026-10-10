@@ -36,15 +36,9 @@ constexpr std::string_view ASTEROID_SET = "Asteroids";
 constexpr std::array<std::string_view, 3> ROCK_MODELS{"Small", "Medium", "Large"};
 constexpr float SMALL_ROCK_MAX_METERS = 35.0f;
 constexpr float LARGE_ROCK_MIN_METERS = 55.0f;
-// A field is a loose cluster of rocks inside its circle: one in the middle and a ring around it, each given as a
-// distance from the center and a size, both in shares of the field's radius, turned by a fixed angle per rock. The
-// server blocks the whole circle; this only has to read as a field (design §4).
-constexpr float FIELD_CENTER_ROCK_SHARE = 0.45f;
-constexpr int FIELD_RING_ROCKS = 6;
-constexpr float FIELD_RING_DISTANCE_SHARE = 0.62f;
-constexpr float FIELD_RING_ROCK_SHARE = 0.3f;
-constexpr float FIELD_RING_START_RADIANS = 0.26f;
-// A field is darker than an ore asteroid, so the two read apart.
+// A field is a cluster of rocks inside its circle, as FieldLayout lays it out from its identifier, its ring closed to gaps
+// no wider than the smallest hull (interface plan 2, task UI5.2). The server blocks the whole circle (MVP design §4). A field
+// is darker than an ore asteroid, so the two read apart.
 constexpr float FIELD_SHADE = 0.7f;
 // Every model, rock, ship and structure, also shows its edges as thin lines, for a vector look from the eighties (owner,
 // 2026-10-02, ADR-027). Only the edges where its surface bends by more than CREASE_DEGREES are drawn: on low-poly
@@ -60,6 +54,9 @@ constexpr float EDGE_BRIGHTNESS = 2.0f;
 constexpr float EDGE_WHITE_SHARE = 0.35f;
 constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
 constexpr float FILL_SHADE = 0.3f;
+// A rock's faces are darker still, half a ship's, so that at the default zoom the terrain stands back from the fleet; its
+// lines keep ROCK_EDGE_BRIGHTNESS and carry its shape (interface plan 2, task UI5.1).
+constexpr float ROCK_FILL_SHADE = 0.15f;
 // A model's lines are pulled this share of their distance toward the eye: about two and a half pixels of depth at the
 // camera's 45 degree field of view on a 1080-pixel screen. They show over the faces they lie on and move nowhere on the
 // screen, so they no longer stand off a silhouette as a lift along the normal did (ADR-040).
@@ -509,6 +506,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   {
     const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, ROCK_MODELS[index]);
     m_rockTops[index] = Neuron::SurfaceHeightAt(rock, 0.0f, 0.0f).value_or(rock.boundsMax.y);
+    m_rockReachShare = std::min(m_rockReachShare, FieldLayout::NarrowestReach(rock.vertices));
   }
   if (const StructureModel* rig = m_catalog.ModelForStructure(StructureKind::MiningRig))
   {
@@ -1313,7 +1311,7 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   // The layout's own scale, which its font size was set by.
   const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
   m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, scale);
-  // The HUD, then each window back to front: each layer's panels, then its sprites, then its texts (ADR-031).
+  // The HUD, then each window back to front: each layer's panels, then its lines, then its sprites, then its texts (ADR-031).
   for (std::size_t layer = 0; layer < m_hudLayout.LayerCount(); ++layer)
   {
     const Hud::Span panels = m_hudLayout.PanelsOf(layer);
@@ -1333,6 +1331,9 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
       else
         m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
     }
+    const Hud::Span lines = m_hudLayout.LinesOf(layer);
+    for (std::size_t i = lines.first; i < lines.end; ++i)
+      m_ui.DrawSegment(m_hudLayout.lines[i].segment, m_hudLayout.lines[i].color);
     const Hud::Span sprites = m_hudLayout.SpritesOf(layer);
     for (std::size_t i = sprites.first; i < sprites.end; ++i)
     {
@@ -1572,24 +1573,30 @@ void Outpost::GameClient::QueueEntity(const EntityView& _entity)
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
     QueueModel(ASTEROID_SET, RockModel(_entity.radiusMeters), WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters),
-               set.color, FILL_SHADE);
+               set.color, ROCK_FILL_SHADE);
     break;
   }
   case EntityKind::AsteroidField:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
-    const float radius = _entity.radiusMeters;
-    const float centerRock = radius * FIELD_CENTER_ROCK_SHARE;
-    QueueModel(ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color, FILL_SHADE);
-    const float ringRock = radius * FIELD_RING_ROCK_SHARE;
-    for (int i = 0; i < FIELD_RING_ROCKS; ++i)
+    // The ring is closed to the smallest hull's footprint, a Small hull's; with no hulls known, it is left as drawn.
+    float gap = std::numeric_limits<float>::max();
+    if (!m_view.IsEmpty())
     {
-      const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
-      const float distance = radius * FIELD_RING_DISTANCE_SHARE;
-      const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      QueueModel(ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color, FILL_SHADE);
+      for (const HullView& hull : m_view.Newest().hulls)
+        gap = std::min(gap, 2.0f * static_cast<float>(hull.footprintRadiusMeters));
     }
+    const FieldLayout layout = FieldLayout::Of(_entity.id, _entity.radiusMeters, m_rockReachShare, gap);
+    const auto queueRock = [&](const FieldRock& _rock)
+    {
+      const DirectX::XMFLOAT3 at{position.x + _rock.xMeters, 0.0f, position.z + _rock.zMeters};
+      QueueModel(ASTEROID_SET, RockModel(_rock.radiusMeters), WorldMatrix(at, _rock.turnRadians, _rock.radiusMeters), color,
+                 ROCK_FILL_SHADE);
+    };
+    queueRock(layout.center);
+    for (const FieldRock& rock : layout.ring)
+      queueRock(rock);
     break;
   }
   case EntityKind::Derelict:

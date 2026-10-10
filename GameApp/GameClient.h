@@ -374,6 +374,9 @@ private:
   std::vector<Neuron::MeshVertex> m_drapedRing;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
   std::array<float, 3> m_rockTops{};
+  // How far the narrowest of the rock meshes reaches on the ground, at a radius of 1, which closes a field's ring
+  // (FieldLayout, interface plan 2, task UI5.2).
+  float m_rockReachShare = 1.0f;
   bool m_cameraPlaced = false;
   // Alt is held this frame, and every ship and structure shows its health bar.
   bool m_everyHealthBar = false;

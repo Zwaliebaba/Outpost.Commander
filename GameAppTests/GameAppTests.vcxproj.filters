@@ -24,6 +24,7 @@
     <ClCompile Include="StarfieldTests.cpp" />
     <ClCompile Include="FogOfWarTests.cpp" />
     <ClCompile Include="TerritoryMarksTests.cpp" />
+    <ClCompile Include="FieldLayoutTests.cpp" />
     <ClCompile Include="AlertsTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />
