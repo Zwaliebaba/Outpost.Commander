@@ -38,10 +38,10 @@ Outpost::Hud::TextMetrics MetricsFor(std::uint32_t _widthPixels, std::uint32_t _
 // own (ADR-070).
 Outpost::Hud::Layout Lay(const Outpost::Hud::Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                          std::span<const Outpost::PlanePosition> _view = {}, const Outpost::WindowManager* _windows = nullptr,
-                         float _factor = 1.0f)
+                         float _factor = 1.0f, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   return Outpost::Hud::Lay(_content, MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _view, _windows,
-                           _factor);
+                           _factor, _hovered);
 }
 
 Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f,
@@ -2689,6 +2689,74 @@ public:
     const Outpost::Hud::Layout plain = LayMenu(1920, 1080);
     Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join world");
   }
+
+  // Interface plan 2, task UI4.4: the button under the pointer has its edge lit, and the status line under it lies on the
+  // cards' color, with any line whose click does the same; nothing else changes, and without a pointer nothing is lit.
+  TEST_METHOD(LightsWhatThePointerIsOver)
+  {
+    const Outpost::Hud::Action production{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = Outpost::EntityId{5}};
+    const Outpost::Hud::Action research{.kind = Outpost::Hud::ActionKind::OpenResearch, .producer = Outpost::EntityId{6}};
+    Outpost::Hud::Content content{.ore = 650, .oreIncomeHundredthsPerSecond = 650};
+    content.buttons = {{.label = "Production", .action = production, .key = "P"},
+                       {.label = "Research", .action = research, .key = "R"},
+                       {.label = "Shipyard|300", .action = production, .enabled = false}};
+    content.status = {
+      {.runs = {{.text = "Mass Driver Calibration"}}, .action = research},
+      {.runs = {{.text = "Shipyards \xC2\xB7 BUILDING 1 \xC2\xB7 WAITING 0 \xC2\xB7 IDLE 0"}}, .action = production},
+      {.runs = {{.text = "Fleet"}}, .action = production, .bar = Outpost::Hud::StatusBar{.share = 0.5f, .figure = "4 / 8"}}};
+    const auto isLit = [](const Outpost::Hud::Rect& _panel)
+    { return _panel.color.x == 0.25f && _panel.color.y == 0.43f && _panel.color.z == 0.76f; };
+    const auto isCard = [](const Outpost::Hud::Rect& _panel)
+    { return _panel.color.x == 0.014f && _panel.color.y == 0.02f && _panel.color.z == 0.041f; };
+    // The panel of _kind's color whose span holds the first pixel of the text saying _words, if any.
+    const auto under = [](const Outpost::Hud::Layout& _layout, std::string_view _words, const auto& _kind)
+    {
+      const Outpost::Hud::Text& text = TextOf(_layout, _words);
+      return std::ranges::any_of(_layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                 { return _kind(_panel) && _panel.Contains(std::round(text.left) + 0.5f, std::round(text.top) + 0.5f); });
+    };
+
+    const Outpost::Hud::Layout plain = Lay(content, 1920, 1080);
+    Assert::IsFalse(std::ranges::any_of(plain.panels, isLit), L"nothing lit without a pointer");
+    Assert::IsFalse(under(plain, "Fleet", isCard));
+
+    // Over the Research button: its four edges lit, and the status line that opens research on the cards' color.
+    const Outpost::Hud::Layout overResearch = Lay(content, 1920, 1080, {}, nullptr, 1.0f, research);
+    Assert::AreEqual(std::ptrdiff_t{4}, std::ranges::count_if(overResearch.panels, isLit), L"one button's edges");
+    // The Research button's place, in the bottom-right corner, where the status line that opens research too is top-left.
+    const Outpost::Hud::Rect researchButton = std::ranges::find_if(overResearch.actions, [&](const auto& _press)
+                                                                   { return _press.second == research && _press.first.left > 960.0f; })
+                                                ->first;
+    for (const Outpost::Hud::Rect& edge : overResearch.panels)
+    {
+      if (isLit(edge))
+      {
+        Assert::IsTrue(
+          edge.left >= researchButton.left - 0.5f && edge.left + edge.width <= researchButton.left + researchButton.width + 0.5f &&
+            edge.top >= researchButton.top - 0.5f && edge.top + edge.height <= researchButton.top + researchButton.height + 0.5f,
+          L"the Research button's");
+      }
+    }
+    Assert::IsTrue(under(overResearch, "Mass Driver Calibration", isCard));
+    Assert::IsFalse(under(overResearch, "Fleet", isCard));
+
+    // Over production: the Production button, not the dim Shipyard button that names it too, and both lines that open it.
+    const Outpost::Hud::Layout overProduction = Lay(content, 1920, 1080, {}, nullptr, 1.0f, production);
+    Assert::AreEqual(std::ptrdiff_t{4}, std::ranges::count_if(overProduction.panels, isLit), L"only the enabled button");
+    Assert::IsTrue(under(overProduction, "Fleet", isCard));
+    Assert::IsFalse(under(overProduction, "Mass Driver Calibration", isCard));
+
+    // The words, their places and the clicks are as without the pointer.
+    for (const Outpost::Hud::Layout* lit : {&overResearch, &overProduction})
+    {
+      Assert::AreEqual(plain.texts.size(), lit->texts.size());
+      for (std::size_t i = 0; i < plain.texts.size(); ++i)
+        Assert::IsTrue(plain.texts[i].text == lit->texts[i].text && plain.texts[i].left == lit->texts[i].left &&
+                       plain.texts[i].top == lit->texts[i].top);
+      Assert::AreEqual(plain.actions.size(), lit->actions.size());
+    }
+  }
+
   // ADR-066: under the Ore, a line for the Research Lab once the player has a finished one, and one for the Shipyards once
   // the first is finished: what the Lab researches and how far it has come, that it waits for Ore, or that it is idle; and
   // how many Shipyards build, wait for Ore and stand idle. An idle line says IDLE, in a chip, and a click on a

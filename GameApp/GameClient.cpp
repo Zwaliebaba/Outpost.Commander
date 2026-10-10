@@ -801,7 +801,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     if (std::optional<std::string> pending = PendingOrderLine(selected, m_entities, m_view.Newest(), m_clock);
         pending.has_value() && !content.selection.empty())
       content.selection.push_back(std::move(*pending));
-    m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows, m_interfaceFactor);
+    m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows, m_interfaceFactor, hovered);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
   }

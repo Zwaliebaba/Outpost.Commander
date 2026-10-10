@@ -980,6 +980,9 @@ constexpr DirectX::XMFLOAT4 CARD_COLOR{0.014f, 0.02f, 0.041f, 1.0f};
 constexpr DirectX::XMFLOAT4 EDGE_COLOR{0.026f, 0.037f, 0.07f, 1.0f};
 constexpr DirectX::XMFLOAT4 PICKED_COLOR{0.033f, 0.063f, 0.136f, 1.0f};
 constexpr DirectX::XMFLOAT4 PICKED_EDGE_COLOR{0.35f, 0.56f, 0.9f, 1.0f};
+// A button under the pointer has its edge lit in the windows' edge color, short of a pick's; a status line under it lies on
+// the cards' color (interface plan 2, task UI4.4).
+constexpr DirectX::XMFLOAT4 HOVER_EDGE_COLOR = WINDOW_EDGE_COLOR;
 constexpr DirectX::XMFLOAT4 LOCKED_COLOR{0.007f, 0.01f, 0.016f, 1.0f};
 constexpr DirectX::XMFLOAT4 LOCKED_HATCH_COLOR{0.012f, 0.016f, 0.024f, 1.0f};
 // Raised from the mockup's (0.15, 0.19, 0.26) to 4.6:1 on a locked card's hatching, and still under a third of live
@@ -1231,8 +1234,10 @@ private:
 // A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
 // any cost after a '|' as Ore's gem and the figure at its right, or its key as a cap there (task 15.2), and its place
 // among the actions when it does something. The label is cut short only where it would meet the cost, the note or the
-// cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right.
-void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
+// cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right. Under the
+// pointer, _hovered, its edge is lit unless it is a pick, whose edge is lit already.
+void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button,
+               bool _hovered = false)
 {
   Painter paint(_layout, _metrics, {.xUnits = _area.left / _scale, .yUnits = _area.top / _scale}, _scale);
   const float width = _area.width / _scale;
@@ -1243,7 +1248,7 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
                                                        : FIELD_COLOR);
   if (_button.enabled)
     paint.Press(face, _button.action);
-  paint.Outline(0.0f, 0.0f, width, height, _button.selected ? PICKED_EDGE_COLOR : EDGE_COLOR);
+  paint.Outline(0.0f, 0.0f, width, height, _button.selected ? PICKED_EDGE_COLOR : _hovered ? HOVER_EDGE_COLOR : EDGE_COLOR);
   if (_button.progressPermille.has_value())
   {
     const float barWidth = width - (2.0f * BUTTON_BAR_INSET);
@@ -2971,7 +2976,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 }
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                     std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor)
+                     std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered)
 {
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   const auto width = static_cast<float>(_widthPixels);
@@ -2987,8 +2992,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     (void)Frame(layout, _corner.xUnits * scale, _corner.yUnits * scale, _widthUnits * scale, _heightUnits * scale, scale);
     return Painter(layout, _metrics, _corner, scale);
   };
-  const auto addButton = [&layout, &_metrics, scale](const Rect& _area, const Button& _button)
-  { AddButton(layout, _metrics, scale, _area, _button); };
+  // Whether _action is the one under the pointer, which lights what takes it (interface plan 2, task UI4.4).
+  const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };
+  const auto addButton = [&layout, &_metrics, scale, &hovered](const Rect& _area, const Button& _button)
+  { AddButton(layout, _metrics, scale, _area, _button, _button.enabled && hovered(_button.action)); };
 
   // The column under the Ore, its panels one width whatever they hold (interface plan 2, task UI3.2).
   float columnUnits = COLUMN_LEAST_UNITS;
@@ -3114,10 +3121,13 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     {
       const StatusLine& status = _content.status[line];
       const float lineUnits = rowUnits(status);
-      // The line's row across the panel takes the click, the first and the last reaching to the panel's edge.
+      // The line's row across the panel takes the click, the first and the last reaching to the panel's edge. Under the
+      // pointer it lies on the cards' color, as does any line whose click does the same.
       const float rowTop = line == 0 ? 0.0f : top;
       const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + lineUnits;
-      paint.Press(paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR), status.action);
+      const Rect row = hovered(status.action) ? paint.Panel(0.0f, rowTop, columnUnits, rowBottom - rowTop, CARD_COLOR)
+                                              : paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR);
+      paint.Press(row, status.action);
       // A bar's figure at the line's end, which the words stop short of, with room for a bar beside them.
       float wordsRight = right;
       if (status.bar.has_value() && !status.bar->figure.empty())
