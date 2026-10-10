@@ -55,6 +55,9 @@
     <ClInclude Include="UiPipeline.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="ScreenSegment.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -89,6 +92,9 @@
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="UiPipeline.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="ScreenSegment.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
   </ItemGroup>

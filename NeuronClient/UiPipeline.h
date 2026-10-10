@@ -43,6 +43,9 @@ public:
 
   void FillRect(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color);
 
+  // A solid line at any angle, as one quad laid along it (ScreenSegment::Corners); nothing for one of no length.
+  void DrawSegment(const ScreenSegment& _segment, const DirectX::XMFLOAT4& _color);
+
   // A rectangle of diagonal stripes rising to the right, _stripePixels wide every _periodPixels, laid on the screen's
   // pixels so that neighboring hatched rectangles line up.
   void FillHatched(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color, float _periodPixels,
@@ -107,6 +110,8 @@ private:
   void UseAtlas(UiAtlas _atlas);
   void AddQuad(float _left, float _top, float _right, float _bottom, float _u0, float _v0, float _u1, float _v1,
                const DirectX::XMFLOAT4& _color);
+  // A quad of any shape, its corners in the order AddQuad's go round, every corner sampling one texel.
+  void AddQuad(const std::array<DirectX::XMFLOAT2, 4>& _corners, float _u, float _v, const DirectX::XMFLOAT4& _color);
 
   Renderer& m_renderer;
   std::vector<FontDesc> m_fonts;

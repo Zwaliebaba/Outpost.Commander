@@ -1311,7 +1311,7 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   // The layout's own scale, which its font size was set by.
   const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
   m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, scale);
-  // The HUD, then each window back to front: each layer's panels, then its sprites, then its texts (ADR-031).
+  // The HUD, then each window back to front: each layer's panels, then its lines, then its sprites, then its texts (ADR-031).
   for (std::size_t layer = 0; layer < m_hudLayout.LayerCount(); ++layer)
   {
     const Hud::Span panels = m_hudLayout.PanelsOf(layer);
@@ -1331,6 +1331,9 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
       else
         m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
     }
+    const Hud::Span lines = m_hudLayout.LinesOf(layer);
+    for (std::size_t i = lines.first; i < lines.end; ++i)
+      m_ui.DrawSegment(m_hudLayout.lines[i].segment, m_hudLayout.lines[i].color);
     const Hud::Span sprites = m_hudLayout.SpritesOf(layer);
     for (std::size_t i = sprites.first; i < sprites.end; ++i)
     {

@@ -1354,6 +1354,58 @@ public:
     Assert::IsFalse(layout.MapPointAt(map.left - 5.0f, map.top).has_value());
   }
 
+  // Interface plan 2, task UI5.3: the minimap draws the camera's view as the ground the screen's four corners show, joined
+  // in turn, so that it turns with the camera, and cuts what runs past the map at its edge.
+  TEST_METHOD(DrawsTheViewAsItsFourCorners)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.mapSizeMeters = 2000.0f;
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector<Outpost::EntityView>{}, {});
+    const auto closeTo = [](const DirectX::XMFLOAT2& _a, const DirectX::XMFLOAT2& _b)
+    { return std::abs(_a.x - _b.x) < 0.01f && std::abs(_a.y - _b.y) < 0.01f; };
+
+    // The far side wider than the near, as a pitched camera sees the ground, unturned and turned a quarter.
+    const std::vector<Outpost::PlanePosition> unturned{{-300.0f, 250.0f}, {300.0f, 250.0f}, {200.0f, -150.0f}, {-200.0f, -150.0f}};
+    std::vector<Outpost::PlanePosition> turned;
+    turned.reserve(unturned.size());
+    for (const Outpost::PlanePosition corner : unturned)
+      turned.push_back({-corner.zMeters, corner.xMeters});
+    for (const std::vector<Outpost::PlanePosition>& view : {unturned, turned})
+    {
+      const Outpost::Hud::Layout layout = Lay(content, 1920, 1080, view);
+      Assert::AreEqual(std::size_t{4}, layout.lines.size(), L"a line between each two corners");
+      Assert::AreEqual(std::size_t{4}, layout.LinesOf(0).end, L"all in the HUD's layer");
+      for (std::size_t i = 0; i < 4; ++i)
+      {
+        const Outpost::Hud::Line& line = layout.lines[i];
+        Assert::IsTrue(closeTo(layout.MinimapPixelOf(view[i]), line.segment.from), L"from a corner");
+        Assert::IsTrue(closeTo(layout.MinimapPixelOf(view[(i + 1) % 4]), line.segment.to), L"to the next");
+        Assert::AreEqual(1.5f, line.segment.widthPixels, 0.001f);
+      }
+      Assert::IsFalse(std::ranges::any_of(layout.panels, [](const Outpost::Hud::Rect& _panel)
+                                          { return _panel.color.x == 0.85f && _panel.color.y == 0.9f && _panel.color.w == 0.8f; }),
+                      L"no box of panels around it");
+    }
+    Assert::IsFalse(closeTo(Lay(content, 1920, 1080, unturned).lines[1].segment.to, Lay(content, 1920, 1080, turned).lines[1].segment.to),
+                    L"it turns with the camera");
+
+    // A view over the map's west edge: the side wholly past it is gone, and the two that cross it end at the minimap's edge.
+    const std::vector<Outpost::PlanePosition> over{{-1500.0f, 600.0f}, {200.0f, 600.0f}, {200.0f, -200.0f}, {-1500.0f, -200.0f}};
+    const Outpost::Hud::Layout cut = Lay(content, 1920, 1080, over);
+    const Outpost::Hud::Rect& map = cut.minimap;
+    Assert::AreEqual(std::size_t{3}, cut.lines.size());
+    for (const Outpost::Hud::Line& line : cut.lines)
+    {
+      for (const DirectX::XMFLOAT2& end : {line.segment.from, line.segment.to})
+      {
+        Assert::IsTrue(end.x >= map.left - 0.01f && end.x <= map.left + map.width + 0.01f && end.y >= map.top - 0.01f &&
+                         end.y <= map.top + map.height + 0.01f,
+                       L"inside the minimap");
+      }
+    }
+    Assert::AreEqual(map.left, cut.lines[0].segment.from.x, 0.01f, L"the north side starts at the west edge");
+  }
+
   // Task 5.1, Phase 1 design §12: the research window shows the Research Lab's queue, and offers each topic not researched
   // or queued yet with what it does and what it costs, dim while its prerequisite is neither; the topic under way shows
   // under the Ore, in the status panel (ADR-066).

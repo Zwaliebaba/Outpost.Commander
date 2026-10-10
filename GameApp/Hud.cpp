@@ -877,6 +877,7 @@ float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _t
                      .closeBox = {left + width - titleHeight, top, titleHeight, titleHeight, CLOSE_BOX_COLOR},
                      .corner = _corner,
                      .firstPanel = _layout.panels.size(),
+                     .firstLine = _layout.lines.size(),
                      .firstText = _layout.texts.size(),
                      .firstSprite = _layout.sprites.size(),
                      .firstAction = _layout.actions.size()};
@@ -1953,6 +1954,40 @@ void LayAway(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::
 }
 
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
+// The part of the line from _from to _to that lies inside _rect, by Liang and Barsky's clipping; none when none of it does.
+std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> ClipToRect(DirectX::XMFLOAT2 _from, DirectX::XMFLOAT2 _to,
+                                                                          const Hud::Rect& _rect) noexcept
+{
+  const float dx = _to.x - _from.x;
+  const float dy = _to.y - _from.y;
+  // How far along the line it enters the rectangle and leaves it, each edge taken as a bound on the share along: the left,
+  // the right, the top and the bottom.
+  float enter = 0.0f;
+  float leave = 1.0f;
+  const std::array<std::pair<float, float>, 4> edges{{{-dx, _from.x - _rect.left},
+                                                      {dx, _rect.left + _rect.width - _from.x},
+                                                      {-dy, _from.y - _rect.top},
+                                                      {dy, _rect.top + _rect.height - _from.y}}};
+  for (const auto& [toward, room] : edges)
+  {
+    if (toward == 0.0f)
+    {
+      if (room < 0.0f)
+        return std::nullopt;
+      continue;
+    }
+    const float share = room / toward;
+    if (toward < 0.0f)
+      enter = std::max(enter, share);
+    else
+      leave = std::min(leave, share);
+  }
+  if (enter > leave)
+    return std::nullopt;
+  return std::pair{DirectX::XMFLOAT2{_from.x + (enter * dx), _from.y + (enter * dy)},
+                   DirectX::XMFLOAT2{_from.x + (leave * dx), _from.y + (leave * dy)}};
+}
+
 std::size_t LayerStart(const Hud::Layout& _layout, std::size_t _window, std::size_t Hud::Window::*_first, std::size_t _total) noexcept
 {
   return _window < _layout.windows.size() ? _layout.windows[_window].*_first : _total;
@@ -2294,6 +2329,11 @@ Hud::Span Hud::Layout::PanelsOf(std::size_t _layer) const noexcept
   return LayerSpan(*this, _layer, &Window::firstPanel, panels.size());
 }
 
+Hud::Span Hud::Layout::LinesOf(std::size_t _layer) const noexcept
+{
+  return LayerSpan(*this, _layer, &Window::firstLine, lines.size());
+}
+
 Hud::Span Hud::Layout::TextsOf(std::size_t _layer) const noexcept
 {
   return LayerSpan(*this, _layer, &Window::firstText, texts.size());
@@ -2333,6 +2373,13 @@ DirectX::XMFLOAT2 Hud::Layout::MinimapPixelOf(PlanePosition _point) const noexce
   const float x = std::clamp((_point.xMeters + half) / mapSizeMeters, 0.0f, 1.0f);
   const float y = std::clamp((half - _point.zMeters) / mapSizeMeters, 0.0f, 1.0f);
   return {minimap.left + (x * minimap.width), minimap.top + (y * minimap.height)};
+}
+
+DirectX::XMFLOAT2 Hud::Layout::MinimapPixelAt(PlanePosition _point) const noexcept
+{
+  const float half = mapSizeMeters / 2.0f;
+  return {minimap.left + ((_point.xMeters + half) / mapSizeMeters * minimap.width),
+          minimap.top + ((half - _point.zMeters) / mapSizeMeters * minimap.height)};
 }
 
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
@@ -3375,22 +3422,16 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       layout.panels.push_back({at.x + half - sectorLine, at.y - half, sectorLine, side, WARNING_COLOR});
     }
 
-    // The view's outline, as the box around the ground the camera shows.
-    if (!_view.empty())
+    // The view's outline: the ground the screen's four corners show, joined in turn, so that it shows the near side and the
+    // far and turns with the camera (interface plan 2, task UI5.3). What runs past the map is cut at the minimap's edge.
+    for (std::size_t corner = 0; corner < _view.size(); ++corner)
     {
-      DirectX::XMFLOAT2 low = layout.MinimapPixelOf(_view.front());
-      DirectX::XMFLOAT2 high = low;
-      for (const PlanePosition corner : _view)
+      if (const std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> inside =
+            ClipToRect(layout.MinimapPixelAt(_view[corner]), layout.MinimapPixelAt(_view[(corner + 1) % _view.size()]), layout.minimap))
       {
-        const DirectX::XMFLOAT2 pixel = layout.MinimapPixelOf(corner);
-        low = {std::min(low.x, pixel.x), std::min(low.y, pixel.y)};
-        high = {std::max(high.x, pixel.x), std::max(high.y, pixel.y)};
+        layout.lines.push_back(
+          {.segment = {.from = inside->first, .to = inside->second, .widthPixels = VIEW_LINE_UNITS * scale}, .color = VIEW_COLOR});
       }
-      const float line = VIEW_LINE_UNITS * scale;
-      layout.panels.push_back({low.x, low.y, high.x - low.x, line, VIEW_COLOR});
-      layout.panels.push_back({low.x, high.y - line, high.x - low.x, line, VIEW_COLOR});
-      layout.panels.push_back({low.x, low.y, line, high.y - low.y, VIEW_COLOR});
-      layout.panels.push_back({high.x - line, low.y, line, high.y - low.y, VIEW_COLOR});
     }
   }
 
