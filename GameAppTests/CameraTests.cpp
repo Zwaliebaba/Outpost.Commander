@@ -252,7 +252,8 @@ public:
   // from the left, whichever way the camera faces.
   TEST_METHOD(PlacesABarAboveItsFootprintAtEveryTurn)
   {
-    constexpr float RADIUS_METERS = 30.0f;
+    // A Small hull's footprint, low on the screen, so that its bar stays on the screen at the nearest zoom too.
+    constexpr float RADIUS_METERS = 16.0f;
     constexpr int RIM_POINTS = 36;
     const Outpost::Viewport viewport{.widthPixels = 1920, .heightPixels = 1080};
     const std::vector<Neuron::GlyphAtlas::Font> fonts =
@@ -266,7 +267,7 @@ public:
         camera.Zoom(notches);
         camera.Rotate(static_cast<float>(quarter) * std::numbers::pi_v<float> / 2.0f);
         // A point off the screen's middle column.
-        const std::optional<Outpost::PlanePosition> ground = camera.GroundPointAtPixel(700.0f, 600.0f, viewport);
+        const std::optional<Outpost::PlanePosition> ground = camera.GroundPointAtPixel(700.0f, 800.0f, viewport);
         Assert::IsTrue(ground.has_value());
         const Outpost::PlanePosition point = ground.value_or(Outpost::PlanePosition{});
         const DirectX::XMFLOAT2 middle = camera.PixelOf(point, viewport).value_or(DirectX::XMFLOAT2{});
@@ -274,6 +275,7 @@ public:
         Assert::IsTrue(above.has_value());
         const DirectX::XMFLOAT2 foot = above.value_or(DirectX::XMFLOAT2{});
         Assert::AreEqual(middle.x, foot.x, 0.01f, L"in its column");
+        Assert::IsTrue(foot.y > 20.0f && foot.y < static_cast<float>(viewport.heightPixels), L"on the screen, so laid out");
         for (int step = 0; step < RIM_POINTS; ++step)
         {
           const float angle = static_cast<float>(step) * 2.0f * std::numbers::pi_v<float> / static_cast<float>(RIM_POINTS);
