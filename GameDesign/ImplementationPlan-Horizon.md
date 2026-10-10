@@ -8,6 +8,8 @@ The horizon says where the game goes in the long run and decides almost nothing.
 
 ## 1. Before Phase 5 starts
 
+**Where it stands, 2026-10-10.** Phase 5 started on 2026-10-08, when the owner accepted [its design](OutpostCommander-Phase5.md), and its milestones 35 to 39 are built and merged ([#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) to [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98)); its week, W1–W6, is the owner's. U7 and U8 are still recorded as the owner's runs, as are the owner's runs of both interface plans. What follows is this section as it stood before Phase 5.
+
 Phase 4 closed on 2026-10-08: every task done, U1–U6 answered, and U7 and U8 awaiting the owner's runs (Phase 4 §2). The Interface plan's owner runs, 14–17, are also outstanding. Phase 5 should not start before U7 and U8 are answered, and what Phase 4 found shapes it:
 
 - **The deputy is milestone 33's AI** ([ADR-076](../Design/ADR/ADR-076-ai-plays-phase-4.md)). It salvages, clears pirates by detachment, builds a Repair Bay at its front and explores with its scout. Everything §4 asks of a deputy is built on it, and its cold start (§2.5) is the change it still needs.

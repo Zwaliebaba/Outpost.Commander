@@ -25,19 +25,19 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 |---|---|---|---|---|
 | 35.1 | A world's state saved and loaded | — | H8 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
 | 35.2 | The world's folder: saves, the command log and recovery | 35.1 | H7 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
-| 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
-| 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, in milestone 36's PR |
-| 36.3 | The client joins a world | 36.2 | H1 | built, in milestone 36's PR; awaiting the owner's run |
-| 37.1 | The AI starts from any state | — | — | done, in milestone 37's PR |
-| 37.2 | Clients on the server's thread | 35.2 | — | done, in milestone 37's PR |
-| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | built, in milestone 37's PR; awaiting the owner's run |
-| 38.1 | The server's events, and alerts read from them | — | H4 | done, in milestone 38's PR |
-| 38.2 | Scheduled orders | 38.1 | H4, H5 | done, in milestone 38's PR |
-| 38.3 | The client's orders window | 38.2 | H5 | built, in milestone 38's PR; awaiting the owner's run |
-| 39.1 | A world without an end | 37.3 | H6 | done, in milestone 39's PR |
-| 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | done, in milestone 39's PR |
-| 39.3 | The battle matchups | — | — | built, in milestone 39's PR; awaiting the owner's run |
-| 39.4 | W1–W6 | all above | — | the container's part done, in milestone 39's PR; awaiting the owner's week |
+| 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
+| 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94) |
+| 36.3 | The client joins a world | 36.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
+| 37.1 | The AI starts from any state | — | — | done, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95) |
+| 37.2 | Clients on the server's thread | 35.2 | — | done, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95) |
+| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | merged, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95); awaiting the owner's run |
+| 38.1 | The server's events, and alerts read from them | — | H4 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
+| 38.2 | Scheduled orders | 38.1 | H4, H5 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
+| 38.3 | The client's orders window | 38.2 | H5 | merged, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97); awaiting the owner's run |
+| 39.1 | A world without an end | 37.3 | H6 | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
+| 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
+| 39.3 | The battle matchups | — | — | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
+| 39.4 | W1–W6 | all above | — | the container's part done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's week |
 
 ### Milestone order
 

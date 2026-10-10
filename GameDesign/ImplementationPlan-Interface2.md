@@ -71,11 +71,11 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
 | UI3.2 | One column, and state in bars | UI3.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
 | UI3.3 | Nodes and tickets that read | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
-| UI4.1 | Bars on the screen | UI2.2 | V7 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI4.2 | Commands beside the selection | — | V6 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI4.3 | Retreat as three choices | UI4.2 | V6 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI4.4 | Controls that answer the pointer | — | — | built, on `claude/focused-turing-3kzejn`; awaiting CI and a run |
-| UI4.5 | One count, one bar per ship, a short name | UI3.1 | V6 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI4.1 | Bars on the screen | UI2.2 | V7 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
+| UI4.2 | Commands beside the selection | — | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
+| UI4.3 | Retreat as three choices | UI4.2 | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
+| UI4.4 | Controls that answer the pointer | — | — | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting a run |
+| UI4.5 | One count, one bar per ship, a short name | UI3.1 | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
 | UI5.1 | Rocks that stand back | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting the owner's run |
 | UI5.2 | Fields of their own | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting the owner's run |
 | UI5.3 | The minimap's view as its four corners | — | — | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting a run |

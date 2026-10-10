@@ -40,7 +40,7 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 
 SP1, then SP2. The network is built only once the search over the numbers has a result, because that result is its baseline. SP1 answers what fixed numbers can do. SP2 answers what decisions that adapt to the match can do on top of them.
 
-SP2 targets Phase 3's rules, so SP2.2 waits for Phase 3 to be built. SP1.4 follows Phase 3 whenever its AI lands. Nothing in this plan builds for the horizon's galaxy, its seasons or more than two players; the blueprint's §16 lists what waits for a phase design that takes them up.
+SP2 targets Phase 3's rules, which were built and run by 2026-10-04, so SP2.2 waits only for SP2.1. SP1.4 brought the search up to Phase 3's AI ([#80](https://github.com/Zwaliebaba/Outpost.Commander/pull/80)). Nothing in this plan builds for the horizon's galaxy, its seasons or more than two players; the blueprint's §16 lists what waits for a phase design that takes them up.
 
 ---
 
