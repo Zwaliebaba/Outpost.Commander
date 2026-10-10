@@ -1,4 +1,4 @@
-# ADR-075 — Each library has a test DLL of its own, which can include only that library and what it builds on
+# ADR-089 — Each library has a test DLL of its own, which can include only that library and what it builds on
 
 Status: **accepted** · 2026-10-07
 
