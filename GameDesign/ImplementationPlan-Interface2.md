@@ -71,14 +71,14 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 | UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
 | UI3.2 | One column, and state in bars | UI3.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
 | UI3.3 | Nodes and tickets that read | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
-| UI4.1 | Bars on the screen | UI2.2 | V7 | todo |
-| UI4.2 | Commands beside the selection | — | V6 | todo |
-| UI4.3 | Retreat as three choices | UI4.2 | V6 | todo |
-| UI4.4 | Controls that answer the pointer | — | — | todo |
-| UI4.5 | One count, one bar per ship, a short name | UI3.1 | V6 | todo |
-| UI5.1 | Rocks that stand back | — | V8 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI5.2 | Fields of their own | — | V8 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
-| UI5.3 | The minimap's view as its four corners | — | — | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI4.1 | Bars on the screen | UI2.2 | V7 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI4.2 | Commands beside the selection | — | V6 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI4.3 | Retreat as three choices | UI4.2 | V6 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI4.4 | Controls that answer the pointer | — | — | built, on `claude/focused-turing-3kzejn`; awaiting CI and a run |
+| UI4.5 | One count, one bar per ship, a short name | UI3.1 | V6 | built, on `claude/focused-turing-3kzejn`; awaiting CI and the owner's run |
+| UI5.1 | Rocks that stand back | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting the owner's run |
+| UI5.2 | Fields of their own | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting the owner's run |
+| UI5.3 | The minimap's view as its four corners | — | — | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting a run |
 
 ### Milestone order
 
@@ -373,6 +373,13 @@ The milestone's looks share one ADR: selection and commands.
   - `GameAppTests`: a bar's place above its entity with the camera turned 0°, 90°, 180° and 270°, its fill growing to the right in each.
   - `HudTests`: bars under the panels; none for a remembered entity; the size at 1080p and 2160p.
 - **Verify:** CI; run, turning the camera; **owner run.**
+- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 5. [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md) decision 7, [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 4 and [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 2 are rewritten in place, and [ADR-031](../Design/ADR/ADR-031-floating-windows.md) decision 4 names the bars.
+  - **The player's factor (ADR-070) does not scale a bar,** since it sizes the HUD and not the world's marks.
+  - **The bars are a list of the layout's own (`Layout::bars`),** not panels. A panel covers the world for clicks (ADR-015 decision 5), and a bar must not.
+  - **`Camera::PixelAbove` gives the place** the scope names. Whether it clears each model's own height is the owner's run's to judge.
+  - **The health fill keeps the ground bars' green, amber and red,** which differ a little from the HUD's own good, fair and poor that the selection's bars use. Making them one set is a one-line change, the owner's to call.
+  - **At the default view the bars are shorter than they were:** 32 pixels where a Large hull's was 184 and the Command Station's 346.
+  - `HudTests` ran in the Linux container. `Camera`, `CameraTests` and `GameClient` need DirectXMath and D3D12, so CI is their first build. Not yet seen on screen.
 
 ### UI4.2 — Commands beside the selection
 
@@ -391,6 +398,10 @@ The milestone's looks share one ADR: selection and commands.
   - `HudTests`: the four, with their caps, for warships; none for a selection of only Constructors; an armed one lit; the two panels touching at every width the selection panel takes.
   - `PlayerControlsTests`: each button arms or orders as its key does.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 2. [ADR-043](../Design/ADR/ADR-043-hud-in-the-windows-look.md) decision 1's anchor and [ADR-059](../Design/ADR/ADR-059-alerts-and-standing-orders.md) decision 7 are rewritten in place.
+  - **The pair moves right of the minimap** rather than staying centered, on a screen narrower than about 3:2, such as 4:3, with both panels at their widest.
+  - **A button arms on the press,** and a release acts only on a press made in the world, so the press on a button never gives the order it arms.
+  - `HudTests` ran in the Linux container. `PlayerControls` and its tests, and `GameClient`, are CI's to build. Not yet seen on screen.
 
 ### UI4.3 — Retreat as three choices
 
@@ -405,6 +416,9 @@ The milestone's looks share one ADR: selection and commands.
 - **ADR:** ADR-075 decision 10 rewritten in place.
 - **Acceptance:** `HudTests`: each setting lit; mixed; a press on each cell; 14.1's tests.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 3. [ADR-075](../Design/ADR/ADR-075-repair-and-retreat.md) decision 10 is rewritten in place.
+  - **The designer's row fits where its stepper was,** in the 206 by 48 units the stepper had, so no stepper is left. The whole-HUD overlap and contrast tests pass with it.
+  - `HudTests` and `DesignerTests` ran in the Linux container; `GameClient` is CI's to build. Not yet seen on screen.
 
 ### UI4.4 — Controls that answer the pointer
 
@@ -418,6 +432,9 @@ The milestone's looks share one ADR: selection and commands.
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: a hovered button; a hovered status line; nothing else changed.
 - **Verify:** CI; run.
+- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 1.
+  - **A dim button naming the action under the pointer stays unlit.** The windows' cards, which the designer already previews under the pointer, and the menu's buttons are unchanged.
+  - `HudTests` ran in the Linux container; `GameClient` is CI's to build. Not yet seen on screen.
 
 ### UI4.5 — One count, one bar per ship, a short name
 
@@ -437,6 +454,11 @@ The milestone's looks share one ADR: selection and commands.
   - `HudTests`: the titles; seven bars, with one hurt and one retreating; a click on a bar; 25 ships falling back to the single bar.
   - The designer's tests: "Lancer+SA", and a typed name kept.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 4. [ADR-046](../Design/ADR/ADR-046-second-look-at-the-screen.md) decision 6 is rewritten in place, and [ADR-069](../Design/ADR/ADR-069-starting-design-names.md) gains decision 5.
+  - **The bars are for two to 24 ships.** One ship keeps the selection's one bar, since a bar of its own would be the same bar, narrower.
+  - **The client has no list of the starting designs,** so `Designer::Name` follows a saved design without a module on the same hull, drive and weapon whose name is not its components'. A starting design the player has renamed lends its new name.
+  - **A click on a ship's bar also centers the camera on it,** as `ActionKind::Select` does (UI3.1).
+  - `HudTests` and `DesignerTests` ran in the Linux container. Not yet seen on screen.
 
 ---
 
