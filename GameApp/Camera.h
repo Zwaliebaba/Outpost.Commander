@@ -95,6 +95,11 @@ public:
   // the eye sets it: what keeps a mark on the ground a fixed number of pixels wide at any zoom (ADR-067). Nothing when the
   // point is behind the camera.
   [[nodiscard]] std::optional<float> MetersPerPixelAt(PlanePosition _point, const Viewport& _viewport) const noexcept;
+  // Where a mark over a footprint of _radiusMeters round _point stands on the viewport, in pixels: in the point's column, and
+  // above the footprint's top on the screen by the radius as the depth there spans it, however the camera has turned
+  // (interface plan 2, task UI4.1). Nothing when the point is behind the camera.
+  [[nodiscard]] std::optional<DirectX::XMFLOAT2> PixelAbove(PlanePosition _point, float _radiusMeters,
+                                                            const Viewport& _viewport) const noexcept;
 
 private:
   // The ground directions that are the screen's right and top.

@@ -247,6 +247,55 @@ public:
     }
   }
 
+  // Interface plan 2, task UI4.1: the bars over an entity stand in its column and above every point of its footprint's rim
+  // on the screen, with the camera turned a quarter at a time, zoomed in and out; and the HUD lays them out there, filling
+  // from the left, whichever way the camera faces.
+  TEST_METHOD(PlacesABarAboveItsFootprintAtEveryTurn)
+  {
+    constexpr float RADIUS_METERS = 30.0f;
+    constexpr int RIM_POINTS = 36;
+    const Outpost::Viewport viewport{.widthPixels = 1920, .heightPixels = 1080};
+    const std::vector<Neuron::GlyphAtlas::Font> fonts =
+      Neuron::RasterizeUiAtlas(Outpost::Hud::Typefaces(), Outpost::Hud::Sprites(), 1.0f).glyphs.fonts;
+    const Outpost::Hud::TextMetrics metrics(fonts, 1.0f);
+    for (const float notches : {-10.0f, 0.0f, 10.0f})
+    {
+      for (int quarter = 0; quarter < 4; ++quarter)
+      {
+        Outpost::Camera camera(RepositorySettings());
+        camera.Zoom(notches);
+        camera.Rotate(static_cast<float>(quarter) * std::numbers::pi_v<float> / 2.0f);
+        // A point off the screen's middle column.
+        const std::optional<Outpost::PlanePosition> ground = camera.GroundPointAtPixel(700.0f, 600.0f, viewport);
+        Assert::IsTrue(ground.has_value());
+        const Outpost::PlanePosition point = ground.value_or(Outpost::PlanePosition{});
+        const DirectX::XMFLOAT2 middle = camera.PixelOf(point, viewport).value_or(DirectX::XMFLOAT2{});
+        const std::optional<DirectX::XMFLOAT2> above = camera.PixelAbove(point, RADIUS_METERS, viewport);
+        Assert::IsTrue(above.has_value());
+        const DirectX::XMFLOAT2 foot = above.value_or(DirectX::XMFLOAT2{});
+        Assert::AreEqual(middle.x, foot.x, 0.01f, L"in its column");
+        for (int step = 0; step < RIM_POINTS; ++step)
+        {
+          const float angle = static_cast<float>(step) * 2.0f * std::numbers::pi_v<float> / static_cast<float>(RIM_POINTS);
+          const Outpost::PlanePosition rim{.xMeters = point.xMeters + (RADIUS_METERS * std::cos(angle)),
+                                           .zMeters = point.zMeters + (RADIUS_METERS * std::sin(angle))};
+          Assert::IsTrue(foot.y < camera.PixelOf(rim, viewport).value_or(DirectX::XMFLOAT2{}).y, L"above the footprint");
+        }
+
+        Outpost::Hud::Content content{};
+        content.entityBars = {{.footPixels = foot, .health = 0.5f, .back = {0.1f, 0.1f, 0.1f, 1.0f}}};
+        const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, metrics, viewport.widthPixels, viewport.heightPixels);
+        Assert::AreEqual(size_t{2}, layout.bars.size());
+        const Outpost::Hud::Rect& back = layout.bars[0];
+        const Outpost::Hud::Rect& fill = layout.bars[1];
+        Assert::AreEqual(back.left, fill.left, L"the fill starts at the back's left");
+        Assert::AreEqual(back.width / 2.0f, fill.width, 0.01f, L"and grows to the right");
+        Assert::AreEqual(foot.x, back.left + (back.width / 2.0f), 0.51f, L"over the entity");
+        Assert::AreEqual(foot.y, back.top + back.height, 0.51f);
+      }
+    }
+  }
+
   TEST_METHOD(RejectsADefaultOutsideTheLimits)
   {
     ExpectRejected(R"("defaultViewWidthMeters": 500)", R"("defaultViewWidthMeters": 5000)");

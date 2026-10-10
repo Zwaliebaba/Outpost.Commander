@@ -104,30 +104,15 @@ constexpr DirectX::XMFLOAT4 SELECTION_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 constexpr DirectX::XMFLOAT4 ATTACK_MOVE_COLOR{1.0f, 0.65f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 
-// A damaged ship's or structure's bar floats above it, as long as its footprint is wide and just off it toward -z: green
-// above half its hit points, then amber, then red, over a full-length bar in its side's color darkened to
-// HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02, ADR-028); dark gray for a
-// side the data does not name. The gap is small, so that the bar reads as the ship's. Held, KEY_EVERY_HEALTH_BAR shows a
-// bar over every ship and structure, whole or not (ADR-047).
-constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
-constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
-constexpr float HEALTH_BAR_GAP_METERS = 1.5f;
-// A bar is never shorter or thinner on screen than these, in the HUD's reference units at the screen's middle: zoomed out,
-// a Small hull's own 16 m is a few pixels long and its 2.5 m is one (ADR-047).
-constexpr float HEALTH_BAR_LEAST_LENGTH_UNITS = 32.0f;
-constexpr float HEALTH_BAR_LEAST_THICKNESS_UNITS = 5.0f;
+// The back of the bars over a ship or a structure, which the HUD draws on the screen (interface plan 2, task UI4.1): its
+// side's color darkened to HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02,
+// ADR-028); dark gray for a side the data does not name. Held, KEY_EVERY_HEALTH_BAR shows a bar over every ship and
+// structure, whole or not (ADR-047).
 constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
 constexpr float HEALTH_BACK_SHADE = 0.3f;
-constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
-constexpr DirectX::XMFLOAT4 HEALTH_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
-constexpr DirectX::XMFLOAT4 HEALTH_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
-constexpr float HEALTH_HURT_SHARE = 0.5f;
-constexpr float HEALTH_LOW_SHARE = 0.25f;
-// A structure under construction: its color darkens toward this share at the start, and a bar shows the share built, just
-// beyond the health bar, in a light gray that is no side's, the same on the player's structures and the enemy's (ADR-085
-// decision 2).
+// A structure under construction: its color darkens toward this share at the start, and a bar under its health bar shows
+// the share built (ADR-085 decision 2).
 constexpr float UNBUILT_SHADE = 0.35f;
-constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.5f, 0.52f, 0.55f, 1.0f};
 // The territory, drawn over the fog, since every player sees it (interface plan 2, task UI1.1): the lattice of sector
 // borders one pixel wide in TERRITORY_LATTICE_COLOR, brighter than the grid and never wider (ADR-028); an outline inside each
 // held or guarded sector in its holder's color at TERRITORY_OUTLINE_SHADE, dashed while suppressed and dotted while cut
@@ -774,6 +759,18 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
                                          hovered, m_ticksPerSecond, armed);
     content.fog = m_fog.CellsPerSide() > 0;
+    // The bars over the entities, each placed above its footprint on the screen by the camera, for the HUD to lay out
+    // (interface plan 2, task UI4.1).
+    for (const EntityView& entity : m_entities)
+    {
+      const std::optional<DirectX::XMFLOAT2> foot = m_camera.PixelAbove(entity.position, entity.radiusMeters, m_viewport);
+      if (!foot.has_value())
+        continue;
+      const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
+      const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
+      if (std::optional<Hud::EntityBar> bar = Hud::BarOver(entity, foot.value_or(DirectX::XMFLOAT2{}), back, m_everyHealthBar))
+        content.entityBars.push_back(*bar);
+    }
     content.connection = Hud::Connection{.server = m_server, .silentSeconds = static_cast<std::int32_t>(m_silentSeconds)};
     // What a derelict under the pointer holds (Phase 4 design §13), and how long ago a structure the player only remembers
     // was seen (interface plan 2, task UI1.2), unless a placement's hint says more.
@@ -1206,7 +1203,6 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawFootprints(_commandList);
   DrawSelection(_commandList);
   DrawGhost(_commandList);
-  DrawHealthBars(_commandList);
   DrawEffects(_commandList);
   DrawGlows(_renderer, _commandList);
   DrawFog(_renderer, _commandList);
@@ -1329,6 +1325,9 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   // The layout's own scale, which its font size was set by.
   const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
   m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, scale);
+  // The bars over the entities, under every panel (interface plan 2, task UI4.1).
+  for (const Hud::Rect& bar : m_hudLayout.bars)
+    m_ui.FillRect(bar.left, bar.top, bar.width, bar.height, bar.color);
   // The HUD, then each window back to front: each layer's panels, then its lines, then its sprites, then its texts (ADR-031).
   for (std::size_t layer = 0; layer < m_hudLayout.LayerCount(); ++layer)
   {
@@ -1367,52 +1366,6 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
     }
   }
   m_ui.End(_commandList, _frameIndex);
-}
-
-void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList)
-{
-  // How many meters of ground a reference unit of the HUD covers at the screen's middle, which sets a bar's least size.
-  const float metersPerUnit = m_camera.ViewWidthMeters() * Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels) /
-                              static_cast<float>(std::max(m_viewport.widthPixels, 1u));
-  const float thickness = std::max(HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_LEAST_THICKNESS_UNITS * metersPerUnit);
-  const float leastHalfLength = HEALTH_BAR_LEAST_LENGTH_UNITS * metersPerUnit / 2.0f;
-  // How far each bar's middle stands off the footprint: the health bar's near edge where a bar of HEALTH_BAR_WIDTH_METERS
-  // has it, and the build bar a gap beyond the health bar.
-  const float healthOffset = HEALTH_BAR_GAP_METERS - (HEALTH_BAR_WIDTH_METERS / 2.0f) + (thickness / 2.0f);
-  const float buildOffset = healthOffset + thickness + HEALTH_BAR_GAP_METERS;
-  for (const EntityView& entity : m_entities)
-  {
-    // What the player only remembers shows no bar: its hit points and construction are as they were when it was seen
-    // (interface plan 2, task UI1.2).
-    if (entity.remembered)
-      continue;
-    const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
-    const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
-    const float halfLength = std::max(entity.radiusMeters, leastHalfLength);
-    const float left = entity.position.xMeters - halfLength;
-    if (entity.builtPermille < PERMILLE)
-    {
-      const float z = entity.position.zMeters - entity.radiusMeters - buildOffset;
-      const float built = static_cast<float>(entity.builtPermille) / static_cast<float>(PERMILLE);
-      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * halfLength), .zMeters = z}, thickness,
-               HEALTH_BAR_HEIGHT_METERS, back);
-      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * halfLength * built), .zMeters = z}, thickness,
-               HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
-    }
-    if (entity.maxHitPointsHundredths <= 0 || (!m_everyHealthBar && entity.hitPointsHundredths >= entity.maxHitPointsHundredths))
-      continue;
-    const float share =
-      std::clamp(static_cast<float>(entity.hitPointsHundredths) / static_cast<float>(entity.maxHitPointsHundredths), 0.0f, 1.0f);
-    const float z = entity.position.zMeters - entity.radiusMeters - healthOffset;
-    const PlanePosition start{.xMeters = left, .zMeters = z};
-    DrawBand(_commandList, start, {.xMeters = left + (2.0f * halfLength), .zMeters = z}, thickness, HEALTH_BAR_HEIGHT_METERS, back);
-    const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE  ? HEALTH_GOOD_COLOR
-                                     : share > HEALTH_LOW_SHARE ? HEALTH_HURT_COLOR
-                                                                : HEALTH_LOW_COLOR;
-    // A little higher than the dark bar, so the two do not fight over the same depth.
-    DrawBand(_commandList, start, {.xMeters = left + (2.0f * halfLength * share), .zMeters = z}, thickness,
-             HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, color);
-  }
 }
 
 void Outpost::GameClient::DrawEffects(ID3D12GraphicsCommandList* _commandList)

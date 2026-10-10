@@ -261,6 +261,21 @@ std::optional<float> Outpost::Camera::MetersPerPixelAt(PlanePosition _point, con
   return 2.0f * depth * std::tan(Radians(m_settings.verticalFieldOfViewDegrees) / 2.0f) / static_cast<float>(_viewport.heightPixels);
 }
 
+std::optional<DirectX::XMFLOAT2> Outpost::Camera::PixelAbove(PlanePosition _point, float _radiusMeters,
+                                                             const Viewport& _viewport) const noexcept
+{
+  // The footprint's top on the screen is its rim's point toward the screen's top.
+  const DirectX::XMFLOAT2 forward = GroundForward();
+  const std::optional<DirectX::XMFLOAT2> middle = PixelOf(_point, _viewport);
+  const std::optional<DirectX::XMFLOAT2> top =
+    PixelOf({.xMeters = _point.xMeters + (forward.x * _radiusMeters), .zMeters = _point.zMeters + (forward.y * _radiusMeters)}, _viewport);
+  const std::optional<float> metersPerPixel = MetersPerPixelAt(_point, _viewport);
+  if (!middle.has_value() || !top.has_value() || !metersPerPixel.has_value())
+    return std::nullopt;
+  return DirectX::XMFLOAT2{middle.value_or(DirectX::XMFLOAT2{}).x,
+                           top.value_or(DirectX::XMFLOAT2{}).y - (_radiusMeters / metersPerPixel.value_or(1.0f))};
+}
+
 DirectX::XMFLOAT2 Outpost::Camera::GroundForward() const noexcept
 {
   return {std::cos(m_yawRadians), std::sin(m_yawRadians)};

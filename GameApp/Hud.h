@@ -565,6 +565,17 @@ public:
 
   static constexpr std::size_t SHIP_BARS_MOST = 24;
 
+  // The bars over an entity on the screen (interface plan 2, task UI4.1), where GameClient places them from the camera: the
+  // middle of their foot, in back-buffer pixels; the share of hit points left, while the health bar shows; the share
+  // built, while the build bar shows; and their back's color, the side's darkened (ADR-028 decision 7).
+  struct EntityBar
+  {
+    DirectX::XMFLOAT2 footPixels{};
+    std::optional<float> health;
+    std::optional<float> built;
+    DirectX::XMFLOAT4 back{};
+  };
+
   // What the HUD shows, in words and marks.
   struct Content
   {
@@ -611,6 +622,8 @@ public:
     std::optional<Outcome> outcome;
     // Where the match runs; GameClient fills it (ADR-086).
     std::optional<Connection> connection;
+    // The bars over the entities that show one; GameClient fills them (interface plan 2, task UI4.1).
+    std::vector<EntityBar> entityBars;
   };
 
   // How a panel is filled: solid, or with diagonal stripes, as a window's title bar is (ADR-030).
@@ -713,6 +726,9 @@ public:
     std::vector<SpriteMark> sprites;
     // Back to front, the order they are drawn in.
     std::vector<Window> windows;
+    // The bars over the entities, drawn before every layer, so under every panel and window (interface plan 2, task UI4.1).
+    // They take no click and cover nothing, so that a click on one is the world's.
+    std::vector<Rect> bars;
 
     // Layer 0 is the HUD and layer i + 1 the window windows[i]; there are windows.size() + 1.
     [[nodiscard]] std::size_t LayerCount() const noexcept
@@ -786,6 +802,12 @@ public:
   // A structure the player only remembers, as the hint under the pointer shows it (interface plan 2, task UI1.2): what it
   // is, how long ago it was last seen at _ticksPerSecond, and how far it was built if it was not finished.
   [[nodiscard]] static std::string DescribeMemory(const Snapshot& _newest, const EntityView& _structure, std::uint32_t _ticksPerSecond);
+
+  // The bars over _entity, standing on _footPixels with a back of _back: its health while it is hurt, or whole while _every
+  // is held (ADR-047), and its build while it is unfinished; nothing when neither shows, or when the player only remembers
+  // it, since its hit points and its building are as they were when it was seen (interface plan 2, task UI1.2).
+  [[nodiscard]] static std::optional<EntityBar> BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels,
+                                                        const DirectX::XMFLOAT4& _back, bool _every) noexcept;
 
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs. In a world,
   // which does not end, when the player's seat restarts after its loss (Phase 5 design §8).

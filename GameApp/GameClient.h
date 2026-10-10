@@ -233,10 +233,6 @@ private:
   // (ADR-042); false when the rig's kind is not known.
   bool DrapeRigRing(const EntityView& _rig);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
-  // A bar over each damaged ship and structure, or every one while Alt is held, its length the share of hit points left
-  // (task 3.5), and one over each structure under construction, its length the share built (task 4.2). Neither is smaller
-  // on screen than a least size (ADR-047).
-  void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
   // as diamonds of their sprite (ADR-026).

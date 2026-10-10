@@ -91,6 +91,13 @@ constexpr size_t SHIP_BARS_A_ROW = 12;
 static_assert((SHIP_BARS_A_ROW * SHIP_BAR_WIDTH_UNITS) + ((SHIP_BARS_A_ROW - 1) * SHIP_BAR_GAP_UNITS) <=
               SELECTION_PANEL_MIN_WIDTH - (2.0f * PADDING));
 
+// The bars over an entity, on the screen, at any zoom and however the camera has turned (interface plan 2, task UI4.1):
+// each this size in reference units at the back buffer's scale, not the player's factor, which sizes the HUD and not the
+// world's marks (ADR-070); the health bar over the build bar, this far apart.
+constexpr float ENTITY_BAR_WIDTH_UNITS = 32.0f;
+constexpr float ENTITY_BAR_HEIGHT_UNITS = 5.0f;
+constexpr float ENTITY_BAR_GAP_UNITS = 2.0f;
+
 // The buttons, stacked in a panel anchored to the bottom-right corner; a button's label and cost stand this far in.
 constexpr float BUTTON_PANEL_WIDTH = 380.0f;
 constexpr float BUTTON_HEIGHT = 34.0f;
@@ -1002,6 +1009,13 @@ constexpr DirectX::XMFLOAT4 QUEUE_HATCH_COLOR{0.034f, 0.099f, 0.044f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_EDGE_COLOR{0.09f, 0.29f, 0.12f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_TEXT_COLOR{0.85f, 1.0f, 0.86f, 1.0f};
 constexpr DirectX::XMFLOAT4 SLOT_FILLED_COLOR{0.15f, 0.25f, 0.45f, 1.0f};
+
+// The bars over an entity fill green above half its hit points, then amber, then red, as they did on the ground (ADR-028),
+// and its build bar in a light gray that is no side's (ADR-085 decision 2).
+constexpr DirectX::XMFLOAT4 ENTITY_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
+constexpr DirectX::XMFLOAT4 ENTITY_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
+constexpr DirectX::XMFLOAT4 ENTITY_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
+constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.5f, 0.52f, 0.55f, 1.0f};
 
 // A health bar's fill: green above half, then amber above a quarter, then red (ADR-046).
 const DirectX::XMFLOAT4& HealthColor(float _share) noexcept
@@ -2148,6 +2162,21 @@ std::string Hud::DescribeMemory(const Snapshot& _newest, const EntityView& _stru
   return text;
 }
 
+std::optional<Hud::EntityBar> Hud::BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels, const DirectX::XMFLOAT4& _back,
+                                           bool _every) noexcept
+{
+  if (_entity.remembered)
+    return std::nullopt;
+  EntityBar bar{.footPixels = _footPixels, .health = std::nullopt, .built = std::nullopt, .back = _back};
+  if (_entity.maxHitPointsHundredths > 0 && (_every || _entity.hitPointsHundredths < _entity.maxHitPointsHundredths))
+    bar.health = HealthShare(_entity.hitPointsHundredths, _entity.maxHitPointsHundredths);
+  if (_entity.builtPermille < PERMILLE)
+    bar.built = static_cast<float>(std::max(_entity.builtPermille, 0)) / static_cast<float>(PERMILLE);
+  if (!bar.health.has_value() && !bar.built.has_value())
+    return std::nullopt;
+  return bar;
+}
+
 std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
 {
   // In a world no match ends: a player who lost waits for its seat to restart at its start (Phase 5 design §8).
@@ -3055,6 +3084,41 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     (void)Frame(layout, _corner.xUnits * scale, _corner.yUnits * scale, _widthUnits * scale, _heightUnits * scale, scale);
     return Painter(layout, _metrics, _corner, scale);
   };
+  // First, under every panel and window, the bars over the entities: each a back of its side's color with its fill from
+  // the left, the health bar over the build bar, the pair centered on its foot and set to whole pixels, so that it keeps
+  // its size as it moves (interface plan 2, task UI4.1). A pair wholly off the screen is left out.
+  {
+    const float barScale = Scale(_widthPixels, _heightPixels);
+    const float barWidth = std::round(ENTITY_BAR_WIDTH_UNITS * barScale);
+    const float barHeight = std::max(std::round(ENTITY_BAR_HEIGHT_UNITS * barScale), 1.0f);
+    const float barGap = std::round(ENTITY_BAR_GAP_UNITS * barScale);
+    for (const EntityBar& bar : _content.entityBars)
+    {
+      const float left = std::round(bar.footPixels.x - (barWidth / 2.0f));
+      float bottom = std::round(bar.footPixels.y);
+      const float count = (bar.health.has_value() ? 1.0f : 0.0f) + (bar.built.has_value() ? 1.0f : 0.0f);
+      const float stackHeight = (count * barHeight) + (std::max(count - 1.0f, 0.0f) * barGap);
+      if (count == 0.0f || left + barWidth <= 0.0f || left >= width || bottom <= 0.0f || bottom - stackHeight >= height)
+        continue;
+      const auto addBar = [&layout, &bar, &bottom, left, barWidth, barHeight, barGap](float _share, const DirectX::XMFLOAT4& _fill)
+      {
+        const float top = bottom - barHeight;
+        layout.bars.push_back({.left = left, .top = top, .width = barWidth, .height = barHeight, .color = bar.back});
+        const float share = std::clamp(_share, 0.0f, 1.0f);
+        if (share > 0.0f)
+          layout.bars.push_back({.left = left, .top = top, .width = barWidth * share, .height = barHeight, .color = _fill});
+        bottom = top - barGap;
+      };
+      if (bar.built.has_value())
+        addBar(bar.built.value_or(0.0f), BUILD_BAR_COLOR);
+      if (bar.health.has_value())
+      {
+        const float share = bar.health.value_or(0.0f);
+        addBar(share, share > HEALTH_HURT_SHARE ? ENTITY_GOOD_COLOR : share > HEALTH_LOW_SHARE ? ENTITY_HURT_COLOR : ENTITY_LOW_COLOR);
+      }
+    }
+  }
+
   // Whether _action is the one under the pointer, which lights what takes it (interface plan 2, task UI4.4).
   const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };
   const auto addButton = [&layout, &_metrics, scale, &hovered](const Rect& _area, const Button& _button)

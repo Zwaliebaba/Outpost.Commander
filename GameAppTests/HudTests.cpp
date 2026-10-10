@@ -2219,6 +2219,92 @@ public:
     Assert::IsTrue(oneDigit[0] < 40.0f, L"at the panel's left");
   }
 
+  // Interface plan 2, task UI4.1: the bars over an entity, on the screen, 32 by 5 units at the back buffer's scale and not
+  // the player's factor, centered on their foot, the health bar over the build bar, each a back of the side's color with
+  // its fill from the left; in a list of their own, drawn before every panel and window, so under them, which takes no
+  // click and covers nothing; and none wholly off the screen.
+  TEST_METHOD(LaysTheBarsOverTheEntities)
+  {
+    constexpr DirectX::XMFLOAT4 BACK{0.054f, 0.126f, 0.285f, 1.0f};
+    for (const std::uint32_t height : {1080u, 2160u})
+    {
+      const float scale = static_cast<float>(height) / 1080.0f;
+      Outpost::Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 650, .selection = {"Shipyard", "Hit points 1 / 3,000"}};
+      // A hurt structure under construction in the open, a ship under the selection panel, and one off the screen.
+      content.entityBars = {{.footPixels = {400.0f * scale, 500.0f * scale}, .health = 0.4f, .built = 0.75f, .back = BACK},
+                            {.footPixels = {960.0f * scale, 1050.0f * scale}, .health = 0.9f, .back = BACK},
+                            {.footPixels = {-100.0f, 300.0f}, .health = 0.2f, .back = BACK}};
+      for (const float factor : {1.0f, 1.5f})
+      {
+        const Outpost::Hud::Layout layout = Lay(content, height * 16 / 9, height, {}, nullptr, factor);
+        Assert::AreEqual(size_t{6}, layout.bars.size(), L"a back and a fill for each bar on the screen");
+        for (size_t i = 0; i < layout.bars.size(); i += 2)
+        {
+          const Outpost::Hud::Rect& back = layout.bars[i];
+          const Outpost::Hud::Rect& fill = layout.bars[i + 1];
+          Assert::AreEqual(32.0f * scale, back.width, 0.01f, L"the size at any factor");
+          Assert::AreEqual(5.0f * scale, back.height, 0.01f);
+          Assert::IsTrue(back.color.x == BACK.x && back.color.y == BACK.y && back.color.z == BACK.z, L"the side's back");
+          Assert::IsTrue(fill.left == back.left && fill.top == back.top && fill.height == back.height, L"filling from the left");
+        }
+        const Outpost::Hud::Rect& build = layout.bars[0];
+        const Outpost::Hud::Rect& health = layout.bars[2];
+        Assert::AreEqual(400.0f * scale, build.left + (build.width / 2.0f), 0.01f, L"centered on its foot");
+        Assert::AreEqual(500.0f * scale, build.top + build.height, 0.01f, L"standing on it");
+        Assert::AreEqual(0.75f * build.width, layout.bars[1].width, 0.01f);
+        Assert::IsTrue(layout.bars[1].color.x == 0.5f && layout.bars[1].color.y == 0.52f && layout.bars[1].color.z == 0.55f, L"gray");
+        Assert::AreEqual(build.top - (2.0f * scale), health.top + health.height, 0.01f, L"the health bar over the build bar");
+        Assert::AreEqual(0.4f * health.width, layout.bars[3].width, 0.01f);
+        Assert::IsTrue(layout.bars[3].color.x == 1.0f && layout.bars[3].color.y == 0.7f, L"amber under half");
+        Assert::IsTrue(layout.bars[5].color.y > layout.bars[5].color.x, L"green over half");
+        Assert::AreEqual(1050.0f * scale, layout.bars[4].top + layout.bars[4].height, 0.01f,
+                         L"no build bar, so the health stands on its foot");
+
+        const float x = build.left + (build.width / 2.0f);
+        const float y = build.top + (build.height / 2.0f);
+        Assert::IsFalse(layout.Covers(x, y), L"a click on a bar is the world's");
+        Assert::IsFalse(layout.ActionAt(x, y).has_value());
+        Assert::IsTrue(layout.Covers(layout.bars[4].left + 16.0f * scale, layout.bars[4].top + 2.0f * scale),
+                       L"the selection panel, drawn after it, covers the ship's");
+      }
+    }
+  }
+
+  // Interface plan 2, task UI4.1: a bar shows over a hurt ship or structure, or any while Alt is held (ADR-047), and a build
+  // bar over one unfinished; none over what the player only remembers (task UI1.2), or what has no hit points.
+  TEST_METHOD(PutsABarOnlyOverWhatShowsOne)
+  {
+    constexpr DirectX::XMFLOAT2 FOOT{120.0f, 340.0f};
+    constexpr DirectX::XMFLOAT4 BACK{0.1f, 0.2f, 0.3f, 1.0f};
+    Outpost::EntityView ship = Ship(1, SWARM, 19800, 19800);
+    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, false).has_value(), L"whole");
+    const Outpost::Hud::EntityBar every = Outpost::Hud::BarOver(ship, FOOT, BACK, true).value_or(Outpost::Hud::EntityBar{});
+    Assert::AreEqual(1.0f, every.health.value_or(-1.0f), L"any while Alt is held");
+    Assert::IsFalse(every.built.has_value());
+    Assert::IsTrue(every.footPixels.x == FOOT.x && every.footPixels.y == FOOT.y && every.back.z == BACK.z);
+    ship.hitPointsHundredths = 9900;
+    Assert::AreEqual(0.5f, Outpost::Hud::BarOver(ship, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f));
+    ship.remembered = true;
+    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, true).has_value(), L"none for a memory");
+
+    Outpost::EntityView site{.id = Outpost::EntityId{2},
+                             .kind = Outpost::EntityKind::Structure,
+                             .owner = PLAYER,
+                             .hitPointsHundredths = 300000,
+                             .maxHitPointsHundredths = 300000,
+                             .builtPermille = 250};
+    const Outpost::Hud::EntityBar building = Outpost::Hud::BarOver(site, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{});
+    Assert::AreEqual(0.25f, building.built.value_or(-1.0f), L"the share built");
+    Assert::IsFalse(building.health.has_value(), L"and no health while whole");
+    site.hitPointsHundredths = 75000;
+    Assert::AreEqual(0.25f, Outpost::Hud::BarOver(site, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f));
+    site.remembered = true;
+    Assert::IsFalse(Outpost::Hud::BarOver(site, FOOT, BACK, true).has_value(), L"none for a memory");
+
+    const Outpost::EntityView rock{.id = Outpost::EntityId{3}, .kind = Outpost::EntityKind::Asteroid};
+    Assert::IsFalse(Outpost::Hud::BarOver(rock, FOOT, BACK, true).has_value(), L"no hit points");
+  }
+
   // ADR-046: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
   TEST_METHOD(DrawsTheSelectionsHealthAsABar)
   {
