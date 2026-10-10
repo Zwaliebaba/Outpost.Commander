@@ -60,6 +60,9 @@ constexpr float EDGE_BRIGHTNESS = 2.0f;
 constexpr float EDGE_WHITE_SHARE = 0.35f;
 constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
 constexpr float FILL_SHADE = 0.3f;
+// A rock's faces are darker still, half a ship's, so that at the default zoom the terrain stands back from the fleet; its
+// lines keep ROCK_EDGE_BRIGHTNESS and carry its shape (interface plan 2, task UI5.1).
+constexpr float ROCK_FILL_SHADE = 0.15f;
 // A model's lines are pulled this share of their distance toward the eye: about two and a half pixels of depth at the
 // camera's 45 degree field of view on a 1080-pixel screen. They show over the faces they lie on and move nowhere on the
 // screen, so they no longer stand off a silhouette as a lift along the normal did (ADR-040).
@@ -1572,7 +1575,7 @@ void Outpost::GameClient::QueueEntity(const EntityView& _entity)
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
     QueueModel(ASTEROID_SET, RockModel(_entity.radiusMeters), WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters),
-               set.color, FILL_SHADE);
+               set.color, ROCK_FILL_SHADE);
     break;
   }
   case EntityKind::AsteroidField:
@@ -1581,14 +1584,14 @@ void Outpost::GameClient::QueueEntity(const EntityView& _entity)
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
     const float radius = _entity.radiusMeters;
     const float centerRock = radius * FIELD_CENTER_ROCK_SHARE;
-    QueueModel(ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color, FILL_SHADE);
+    QueueModel(ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color, ROCK_FILL_SHADE);
     const float ringRock = radius * FIELD_RING_ROCK_SHARE;
     for (int i = 0; i < FIELD_RING_ROCKS; ++i)
     {
       const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
       const float distance = radius * FIELD_RING_DISTANCE_SHARE;
       const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      QueueModel(ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color, FILL_SHADE);
+      QueueModel(ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color, ROCK_FILL_SHADE);
     }
     break;
   }
