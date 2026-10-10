@@ -104,6 +104,28 @@ void Outpost::PlayerControls::SaveDesign(SaveDesignCommand _save)
   Give(std::move(_save));
 }
 
+void Outpost::PlayerControls::ArmAttackMove(std::span<const EntityView> _entities)
+{
+  m_placing.reset();
+  m_standingArmed.reset();
+  m_attackMoveArmed = !SelectedShips(_entities).empty();
+}
+
+void Outpost::PlayerControls::ArmStanding(StandingOrder _standing, std::span<const EntityView> _entities)
+{
+  m_placing.reset();
+  m_attackMoveArmed = false;
+  m_standingArmed.reset();
+  if (!SelectedShips(_entities).empty())
+    m_standingArmed = _standing;
+}
+
+void Outpost::PlayerControls::Stop(std::span<const EntityView> _entities)
+{
+  if (std::vector<EntityId> ships = SelectedShips(_entities); !ships.empty())
+    Give(StopCommand{.ships = std::move(ships)});
+}
+
 void Outpost::PlayerControls::SetRetreat(RetreatThreshold _retreat, std::span<const EntityView> _entities)
 {
   if (std::vector<EntityId> ships = SelectedShips(_entities); !ships.empty())
@@ -346,24 +368,17 @@ void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Fram
   }
   if (_event.key == KEY_ATTACK_MOVE && !_event.control)
   {
-    m_placing.reset();
-    m_standingArmed.reset();
-    m_attackMoveArmed = !SelectedShips(_frame.entities).empty();
+    ArmAttackMove(_frame.entities);
     return;
   }
   if ((_event.key == KEY_HOLD_SECTOR || _event.key == KEY_PATROL) && !_event.control)
   {
-    m_placing.reset();
-    m_attackMoveArmed = false;
-    m_standingArmed.reset();
-    if (!SelectedShips(_frame.entities).empty())
-      m_standingArmed = _event.key == KEY_HOLD_SECTOR ? StandingOrder::HoldSector : StandingOrder::Patrol;
+    ArmStanding(_event.key == KEY_HOLD_SECTOR ? StandingOrder::HoldSector : StandingOrder::Patrol, _frame.entities);
     return;
   }
   if (_event.key == KEY_STOP && !_event.control)
   {
-    if (std::vector<EntityId> ships = SelectedShips(_frame.entities); !ships.empty())
-      Give(StopCommand{.ships = std::move(ships)});
+    Stop(_frame.entities);
     return;
   }
 

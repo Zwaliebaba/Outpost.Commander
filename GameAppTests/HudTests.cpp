@@ -1261,7 +1261,8 @@ public:
     Assert::IsTrue(panel.options.empty() && !panel.hint.empty());
   }
 
-  // Task 4.5: an enabled button is a place to click, anchored to the bottom-right corner; a dim one is not.
+  // Task 4.5: an enabled button is a place to click, at the bottom's middle beside the selection, where there is one
+  // (interface plan 2, task UI4.2); a dim one is not.
   TEST_METHOD(LaysOutButtonsForClicks)
   {
     const Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
@@ -1270,7 +1271,8 @@ public:
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, layout.actions.size());
     const Outpost::Hud::Rect& area = layout.actions.front().first;
-    Assert::IsTrue(area.left + area.width < 1920.0f && area.left > 1920.0f - 400.0f);
+    Assert::AreEqual(1920.0f / 2.0f, area.left + (area.width / 2.0f), 0.5f, L"centered at the bottom, with no selection beside it");
+    Assert::IsTrue(area.top > 1080.0f - 200.0f);
     Assert::IsTrue(layout.ActionAt(area.left + 5.0f, area.top + 5.0f) == build);
     Assert::IsFalse(layout.ActionAt(area.left + 5.0f, area.top + area.height + 10.0f).has_value());
     Assert::IsTrue(layout.Covers(area.left + 5.0f, area.top + 5.0f));
@@ -2690,6 +2692,77 @@ public:
     Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join world");
   }
 
+  // Interface plan 2, task UI4.2: a selection with a warship offers its orders first, each with its key's cap, Hold sector
+  // only where the map has sectors and the armed one lit; a selection of Constructors alone offers none. The buttons stand
+  // against the selection panel's right edge, bottom-aligned, the pair centered, at every width the selection panel takes.
+  TEST_METHOD(OffersTheOrdersBesideTheSelection)
+  {
+    Outpost::Snapshot newest = Newest();
+    std::vector<Outpost::EntityView> entities{Ship(1, LINE, 100, 100)};
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{1}};
+    const auto labels = [](const Outpost::Hud::Content& _content)
+    {
+      std::vector<std::string> words;
+      words.reserve(_content.buttons.size());
+      for (const Outpost::Hud::Button& button : _content.buttons)
+        words.push_back(button.label + "/" + button.key);
+      return words;
+    };
+    const std::vector<std::string> unsectored = labels(Outpost::Hud::Describe(newest, entities, selected));
+    Assert::IsTrue(unsectored.size() >= 3 && std::vector<std::string>(unsectored.begin(), unsectored.begin() + 3) ==
+                                               std::vector<std::string>{"Attack-move/A", "Patrol/T", "Stop/S"},
+                   L"no sector to hold on a map without sectors");
+    newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    const Outpost::Hud::Content warship = Outpost::Hud::Describe(newest, entities, selected);
+    const std::vector<std::string> words = labels(warship);
+    Assert::IsTrue(words.size() >= 4 && std::vector<std::string>(words.begin(), words.begin() + 4) ==
+                                          std::vector<std::string>{"Attack-move/A", "Hold sector/H", "Patrol/T", "Stop/S"});
+    Assert::IsTrue(warship.buttons[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::HoldSector});
+    Assert::IsFalse(std::ranges::any_of(warship.buttons, &Outpost::Hud::Button::selected), L"nothing armed");
+
+    const Outpost::Hud::Content armed =
+      Outpost::Hud::Describe(newest, entities, selected, std::nullopt, nullptr, std::nullopt, 0, Outpost::Hud::ActionKind::Patrol);
+    Assert::IsTrue(armed.buttons[2].selected && !armed.buttons[0].selected && !armed.buttons[1].selected && !armed.buttons[3].selected);
+
+    entities.front().role = Outpost::ShipRole::Constructor;
+    Assert::IsFalse(std::ranges::any_of(Outpost::Hud::Describe(newest, entities, selected).buttons,
+                                        [](const Outpost::Hud::Button& _button) { return _button.label == "Stop"; }),
+                    L"a Constructor has no orders' buttons");
+    entities.front().role = Outpost::ShipRole::Warship;
+
+    // The panel of the window's color under the first pixel of the first text that starts as _words do, cut short or not.
+    const auto frameOf = [](const Outpost::Hud::Layout& _layout, std::string_view _words)
+    {
+      const auto found =
+        std::ranges::find_if(_layout.texts, [&](const Outpost::Hud::Text& _text)
+                             { return _text.text.starts_with(_words.substr(0, std::min<std::size_t>(_words.size(), 6))); });
+      Assert::IsTrue(found != _layout.texts.end(), std::wstring(winrt::to_hstring(_words)).c_str());
+      const Outpost::Hud::Text& text = *found;
+      return *std::ranges::find_if(_layout.panels,
+                                   [&](const Outpost::Hud::Rect& _panel)
+                                   {
+                                     return _panel.color.x == 0.009f && _panel.color.y == 0.013f &&
+                                            _panel.Contains(std::round(text.left) + 0.5f, std::round(text.top) + 0.5f);
+                                   });
+    };
+    for (const std::string& name : {std::string("Lancer"), std::string("Heavy Lancer with a Long Name"), LongestName('Z')})
+    {
+      newest.designs = {{.id = LINE, .nameUtf8 = name}};
+      for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
+      {
+        const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
+        const Outpost::Hud::Layout layout = Lay(content, width, height);
+        const Outpost::Hud::Rect selection = frameOf(layout, content.selection.front());
+        const Outpost::Hud::Rect orders = frameOf(layout, "Attack-move");
+        const std::wstring what = std::format(L"{} at {} wide", std::wstring(winrt::to_hstring(name)), width);
+        Assert::AreEqual(selection.left + selection.width, orders.left, 0.01f, what.c_str());
+        Assert::AreEqual(selection.top + selection.height, orders.top + orders.height, 0.01f, L"bottom-aligned");
+        Assert::AreEqual(static_cast<float>(width) / 2.0f, (selection.left + orders.left + orders.width) / 2.0f, 0.5f,
+                         L"the pair centered");
+      }
+    }
+  }
+
   // Interface plan 2, task UI4.4: the button under the pointer has its edge lit, and the status line under it lies on the
   // cards' color, with any line whose click does the same; nothing else changes, and without a pointer nothing is lit.
   TEST_METHOD(LightsWhatThePointerIsOver)
@@ -2723,10 +2796,10 @@ public:
     // Over the Research button: its four edges lit, and the status line that opens research on the cards' color.
     const Outpost::Hud::Layout overResearch = Lay(content, 1920, 1080, {}, nullptr, 1.0f, research);
     Assert::AreEqual(std::ptrdiff_t{4}, std::ranges::count_if(overResearch.panels, isLit), L"one button's edges");
-    // The Research button's place, in the bottom-right corner, where the status line that opens research too is top-left.
-    const Outpost::Hud::Rect researchButton = std::ranges::find_if(overResearch.actions, [&](const auto& _press)
-                                                                   { return _press.second == research && _press.first.left > 960.0f; })
-                                                ->first;
+    // The Research button's place, at the bottom, where the status line that opens research too is at the top.
+    const Outpost::Hud::Rect researchButton =
+      std::ranges::find_if(overResearch.actions, [&](const auto& _press) { return _press.second == research && _press.first.top > 540.0f; })
+        ->first;
     for (const Outpost::Hud::Rect& edge : overResearch.panels)
     {
       if (isLit(edge))

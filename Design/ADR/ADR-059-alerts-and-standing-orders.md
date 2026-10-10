@@ -32,7 +32,7 @@ It leaves open where each lives, how a group acts as one, what ends a standing o
    - **A patrol** attack-moves to its destination. Each time the whole group stands idle at one end, it attack-moves to the other.
 5. **Any other order the player gives a ship ends its standing order**: a move, an attack-move, an attack or a stop. The group orders a standing order gives do not end it. The order is state, so it replays (ADR-009). A ship retreating to be repaired keeps its standing order, and its group goes on without it until it is whole ([ADR-075](ADR-075-repair-and-retreat.md)).
 6. **Only the owner sees a ship's standing order** (`EntityView::standing`). The selection panel says "Holding a sector" or "On patrol".
-7. **Keys:** H, then a left-click, holds the sector clicked in. T, then a left-click, patrols to the point clicked. Escape or a right-click cancels either, and A, H or T replaces the other. P is taken by the production window, so patrol is T.
+7. **Keys:** H, then a left-click, holds the sector clicked in. T, then a left-click, patrols to the point clicked. Escape or a right-click cancels either, and A, H or T replaces the other. P is taken by the production window, so patrol is T. A selection with a warship offers each as a button too, with Attack-move and Stop, beside the selection ([ADR-088](ADR-088-selection-and-commands.md) decision 2).
 
 ## Consequences
 

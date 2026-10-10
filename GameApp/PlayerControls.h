@@ -47,6 +47,12 @@ public:
   // From the HUD: _entity selected on its own, as a click on it selects it, and any order armed for the selection before
   // dropped with it (interface plan 2, task UI3.1).
   void SelectAlone(EntityId _entity);
+  // From the HUD's order buttons and from their keys alike (interface plan 2, task UI4.2): arm attack-move, or holding a
+  // sector or a patrol, for the next left-click, while the selection holds a ship, dropping whatever was armed before; or
+  // stop the selected ships at once. _entities is the interpolated view.
+  void ArmAttackMove(std::span<const EntityView> _entities);
+  void ArmStanding(StandingOrder _standing, std::span<const EntityView> _entities);
+  void Stop(std::span<const EntityView> _entities);
   // From the designer: a new design, or a new name for a saved one (task 5.2).
   void SaveDesign(SaveDesignCommand _save);
   // From the selection panel: the selected ships' retreat (Phase 4 design §10).

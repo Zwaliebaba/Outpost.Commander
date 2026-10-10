@@ -765,8 +765,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_designer.EndEditing();
     const std::optional<Hud::Action> hovered =
       m_hudLayout.ActionAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
+    // The order the next left-click gives, whose button the HUD lights (interface plan 2, task UI4.2).
+    std::optional<Hud::ActionKind> armed;
+    if (m_controls.IsAttackMoveArmed())
+      armed = Hud::ActionKind::AttackMove;
+    else if (const std::optional<StandingOrder> standing = m_controls.ArmedStanding(); standing.has_value())
+      armed = *standing == StandingOrder::HoldSector ? Hud::ActionKind::HoldSector : Hud::ActionKind::Patrol;
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
-                                         hovered, m_ticksPerSecond);
+                                         hovered, m_ticksPerSecond, armed);
     content.fog = m_fog.CellsPerSide() > 0;
     content.connection = Hud::Connection{.server = m_server, .silentSeconds = static_cast<std::int32_t>(m_silentSeconds)};
     // What a derelict under the pointer holds (Phase 4 design §13), and how long ago a structure the player only remembers
@@ -967,6 +973,18 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::SetRetreat:
     m_controls.SetRetreat(_action.retreat, m_entities);
+    break;
+  case Hud::ActionKind::AttackMove:
+    m_controls.ArmAttackMove(m_entities);
+    break;
+  case Hud::ActionKind::HoldSector:
+    m_controls.ArmStanding(StandingOrder::HoldSector, m_entities);
+    break;
+  case Hud::ActionKind::Patrol:
+    m_controls.ArmStanding(StandingOrder::Patrol, m_entities);
+    break;
+  case Hud::ActionKind::Stop:
+    m_controls.Stop(m_entities);
     break;
   case Hud::ActionKind::StepOrder:
     m_orderForm.Step(_action.field, _action.step, m_view.Newest(), m_knownEntities);

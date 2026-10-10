@@ -143,7 +143,13 @@ public:
     StepOrder,
     GiveOrder,
     // Selects one of the player's own entities on its own and moves the camera to it (interface plan 2, task UI3.1).
-    Select
+    Select,
+    // A warship's orders, as their keys give them (interface plan 2, task UI4.2): arm attack-move, holding a sector or a
+    // patrol for the next left-click, or stop the selected ships at once.
+    AttackMove,
+    HoldSector,
+    Patrol,
+    Stop
   };
 
   struct Action
@@ -716,10 +722,12 @@ public:
   // structure being placed, if any. With a _designer, which GameClient gives while its window is open, the designer;
   // _hovered is the button under the pointer, and a part's previews the design it would make.
   // _ticksPerSecond is the server's rate, which tells how long ago a remembered structure was last seen; with none, its
-  // age is not told.
+  // age is not told. _armed is the order the controls have armed for the next left-click, AttackMove, HoldSector or
+  // Patrol, whose button is lit (interface plan 2, task UI4.2).
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
-                                        std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0);
+                                        std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0,
+                                        std::optional<ActionKind> _armed = std::nullopt);
 
   // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
   // (Phase 1 design §12).

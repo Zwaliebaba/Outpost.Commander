@@ -2389,7 +2389,8 @@ DirectX::XMFLOAT2 Hud::Layout::MinimapPixelAt(PlanePosition _point) const noexce
 
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
-                                             const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond)
+                                             const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond,
+                                             std::optional<ActionKind> _armed)
 {
   Content content{.ore = _newest.ore,
                   .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
@@ -2643,6 +2644,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   std::int64_t hitPoints = 0;
   std::int64_t maxHitPoints = 0;
   bool constructors = false;
+  bool warships = false;
   bool holding = false;
   bool patrolling = false;
   // The first ship's retreat, whether the others share it, and how many are going back to be repaired (Phase 4 design §10).
@@ -2655,6 +2657,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     if (ship == _entities.end() || ship->kind != EntityKind::Ship)
       continue;
     constructors = constructors || ship->role == ShipRole::Constructor;
+    warships = warships || ship->role == ShipRole::Warship;
     holding = holding || ship->standing == StandingOrder::HoldSector;
     patrolling = patrolling || ship->standing == StandingOrder::Patrol;
     mixedRetreat = mixedRetreat || (retreat.has_value() && *retreat != ship->retreat);
@@ -2700,6 +2703,19 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   if (retreating > 0)
     content.selection.push_back(ships == 1 ? std::string("Retreating to be repaired")
                                            : std::format("{} retreating to be repaired", retreating));
+  // A warship's orders, first, each with its key's cap, the one armed for the next left-click lit until it is given or
+  // canceled (interface plan 2, task UI4.2). Each does what its key does, to every selected ship. A map without sectors has
+  // none to hold (ADR-059).
+  if (warships)
+  {
+    const auto order = [&_armed](std::string _label, ActionKind _kind, std::uint8_t _key)
+    { return Button{.label = std::move(_label), .action = {.kind = _kind}, .selected = _armed == _kind, .key = KeyCap(_key)}; };
+    content.buttons.push_back(order("Attack-move", ActionKind::AttackMove, KEY_ATTACK_MOVE));
+    if (!_newest.sectors.empty())
+      content.buttons.push_back(order("Hold sector", ActionKind::HoldSector, KEY_HOLD_SECTOR));
+    content.buttons.push_back(order("Patrol", ActionKind::Patrol, KEY_PATROL));
+    content.buttons.push_back(order("Stop", ActionKind::Stop, KEY_STOP));
+  }
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
   {
@@ -3216,20 +3232,31 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
               {.label = "Back to menu", .action = {.kind = ActionKind::BackToMenu}});
   }
 
-  // Bottom-middle anchor: the selection, its first line in the title face and the rest in the name face, in a panel as
-  // wide as its longest line, within its bounds; a line longer than the widest panel holds is cut short.
+  // Bottom-middle anchor: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
+  // centered at the bottom so that the two read as one, and never over the minimap (interface plan 2, task UI4.2). The
+  // selection's first line is in the title face and the rest in the name face, in a panel as wide as its longest line,
+  // within its bounds; a line longer than the widest panel holds is cut short. A button's label holds the name and the
+  // cost, split at '|', and the buttons stack downward from the panel's top.
+  const auto faceOf = [](size_t _line) { return _line == 0 ? Typeface::Title : Typeface::Name; };
+  float selectionUnits = 0.0f;
   if (!_content.selection.empty())
   {
-    const auto faceOf = [](size_t _line) { return _line == 0 ? Typeface::Title : Typeface::Name; };
     float textUnits = 0.0f;
     for (size_t line = 0; line < _content.selection.size(); ++line)
       textUnits = std::max(textUnits, _metrics.Width(faceOf(line), _content.selection[line]));
-    const float widthUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+    selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+  }
+  const float buttonsUnits = _content.buttons.empty() ? 0.0f : BUTTON_PANEL_WIDTH;
+  float pairLeft = (screenWidthUnits - selectionUnits - buttonsUnits) / 2.0f;
+  if (_content.mapSizeMeters > 0.0f)
+    pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
+  if (!_content.selection.empty())
+  {
+    const float widthUnits = selectionUnits;
     const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
     const float barUnits = _content.selectionHealth.has_value() ? HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS : 0.0f;
     const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
-    Painter paint = frame({.xUnits = (screenWidthUnits - widthUnits) / 2.0f, .yUnits = screenHeightUnits - MARGIN - heightUnits},
-                          widthUnits, heightUnits);
+    Painter paint = frame({.xUnits = pairLeft, .yUnits = screenHeightUnits - MARGIN - heightUnits}, widthUnits, heightUnits);
     const float room = widthUnits - (2.0f * PADDING);
     paint.Text(paint.Fit(_content.selection.front(), Typeface::Title, room), PADDING, PADDING, TEXT_COLOR, Typeface::Title);
     for (size_t line = 1; line < _content.selection.size(); ++line)
@@ -3252,14 +3279,12 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       }
     }
   }
-
-  // Bottom-right anchor: the buttons, stacked upward from the corner. A label holds the name and the cost, split at '|'.
   if (!_content.buttons.empty())
   {
     const auto count = static_cast<float>(_content.buttons.size());
     const float heightUnits = (2.0f * PADDING) + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
-    Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - BUTTON_PANEL_WIDTH, .yUnits = screenHeightUnits - MARGIN - heightUnits},
-                          BUTTON_PANEL_WIDTH, heightUnits);
+    Painter paint =
+      frame({.xUnits = pairLeft + selectionUnits, .yUnits = screenHeightUnits - MARGIN - heightUnits}, BUTTON_PANEL_WIDTH, heightUnits);
     for (size_t i = 0; i < _content.buttons.size(); ++i)
     {
       addButton(paint.Area(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)), BUTTON_PANEL_WIDTH - (2.0f * PADDING),
