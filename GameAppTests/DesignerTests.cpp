@@ -180,25 +180,25 @@ public:
     Assert::AreEqual(std::string("Swarm"), swarm.Name(snapshot), L"the name follows the snapshot again");
   }
 
-  // Phase 4 design §10: a design's retreat follows the saved design until the player steps it, and saving sends it; a
+  // Phase 4 design §10: a design's retreat follows the saved design until the player picks one, and saving sends it; a
   // saved design whose retreat changed is saved again under its name.
   TEST_METHOD(SetsTheDesignsRetreat)
   {
     const Outpost::Snapshot snapshot = Components();
     Outpost::Designer swarm = Picking(SMALL, ION, MASS_DRIVER);
     Assert::IsTrue(swarm.Retreat(snapshot) == Outpost::RetreatThreshold::Quarter);
-    swarm.StepRetreat(snapshot);
+    swarm.SetRetreat(Outpost::RetreatThreshold::Half);
     Assert::IsTrue(swarm.Retreat(snapshot) == Outpost::RetreatThreshold::Half);
     const Outpost::SaveDesignCommand update = swarm.SaveCommand(snapshot).value_or(Outpost::SaveDesignCommand{});
     Assert::IsTrue(update.design == SWARM && update.retreat == Outpost::RetreatThreshold::Half);
     Assert::AreEqual(std::string("Swarm"), update.nameUtf8);
-    swarm.StepRetreat(snapshot);
+    swarm.SetRetreat(Outpost::RetreatThreshold::Never);
     Assert::IsTrue(swarm.Retreat(snapshot) == Outpost::RetreatThreshold::Never);
-    swarm.StepRetreat(snapshot);
-    Assert::IsFalse(swarm.SaveCommand(snapshot).has_value(), L"round to the saved one");
+    swarm.SetRetreat(Outpost::RetreatThreshold::Quarter);
+    Assert::IsFalse(swarm.SaveCommand(snapshot).has_value(), L"back to the saved one");
 
     Outpost::Designer picket = Picking(SMALL, ION, LANCE);
-    picket.StepRetreat(snapshot);
+    picket.SetRetreat(Outpost::RetreatThreshold::Half);
     Assert::IsTrue(picket.SaveCommand(snapshot).value_or(Outpost::SaveDesignCommand{}).retreat == Outpost::RetreatThreshold::Half);
     picket.ForgetTypedName();
     Assert::IsTrue(picket.Retreat(snapshot) == Outpost::DEFAULT_RETREAT, L"after a save it follows the snapshot");

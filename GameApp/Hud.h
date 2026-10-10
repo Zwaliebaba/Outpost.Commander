@@ -136,8 +136,9 @@ public:
     NextTopics,
     // Upgrades the selected structure by one level (Phase 3 design §4, §9).
     Upgrade,
-    // The designer's retreat steps to the next, and a selection of ships is set to one (Phase 4 design §10, §13).
-    StepRetreat,
+    // The designer's retreat is set to one, and a selection of ships is set to one (Phase 4 design §10, §13), each from a
+    // row of three (interface plan 2, task UI4.3).
+    DesignRetreat,
     SetRetreat,
     // The orders window's form steps a field, and gives its order to the selection (Phase 5 design §7).
     StepOrder,
@@ -299,8 +300,8 @@ public:
     // SAVE for a new design, SAVED when the name and the parts are a saved design; RENAME for a saved design's new name.
     Button save;
     Button rename;
-    // The design's retreat, which steps to the next when pressed (Phase 4 design §10).
-    Button retreat;
+    // The design's retreat, drawn as a row of three, its setting lit (Phase 4 design §10; interface plan 2, task UI4.3).
+    RetreatThreshold retreat = DEFAULT_RETREAT;
     // The saved designs, and the first shown of those that do not all fit.
     std::vector<DesignChip> chips;
     std::size_t firstChip = 0;
@@ -545,6 +546,14 @@ public:
   };
 
   // What the HUD shows, in words and marks.
+  // A selection's retreat, as the row of three under its buttons shows it (interface plan 2, task UI4.3): the first ship's
+  // setting, and whether the others differ, which lights none and says MIXED.
+  struct RetreatChoice
+  {
+    RetreatThreshold setting = DEFAULT_RETREAT;
+    bool mixed = false;
+  };
+
   struct Content
   {
     std::int32_t ore = 0;
@@ -554,6 +563,8 @@ public:
     std::vector<std::string> selection;
     std::optional<float> selectionHealth;
     std::vector<Button> buttons;
+    // The selection's retreat, under its buttons, while it holds a ship (interface plan 2, task UI4.3).
+    std::optional<RetreatChoice> retreat;
     // A line at the top while a structure's placement is armed.
     std::string hint;
     // The status panel's lines under the Ore (ADR-066): the Research Lab's once the player has a finished one, and the

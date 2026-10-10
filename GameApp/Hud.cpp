@@ -442,34 +442,21 @@ std::string LastSeen(const Outpost::Snapshot& _newest, const Outpost::EntityView
   return std::format("last seen {} ago", Outpost::MinutesAndSeconds((_newest.tick - _entity.lastSeenTick) / _ticksPerSecond));
 }
 
-// A ship's retreat as the HUD writes it (Phase 4 design §10).
-std::string RetreatWords(Outpost::RetreatThreshold _retreat)
-{
-  switch (_retreat)
-  {
-  case Outpost::RetreatThreshold::Half:
-    return "Retreat at 50%";
-  case Outpost::RetreatThreshold::Quarter:
-    return "Retreat at 25%";
-  case Outpost::RetreatThreshold::Never:
-    break;
-  }
-  return "Never retreat";
-}
-
-// The retreat a press steps to: from a quarter to half to never, and round.
-Outpost::RetreatThreshold NextRetreat(Outpost::RetreatThreshold _retreat) noexcept
+// The retreats a row offers, left to right, and what each cell says (Phase 4 design §10; interface plan 2, task UI4.3).
+constexpr std::array<Outpost::RetreatThreshold, 3> RETREAT_CHOICES{Outpost::RetreatThreshold::Quarter, Outpost::RetreatThreshold::Half,
+                                                                   Outpost::RetreatThreshold::Never};
+std::string_view RetreatCell(Outpost::RetreatThreshold _retreat) noexcept
 {
   switch (_retreat)
   {
   case Outpost::RetreatThreshold::Quarter:
-    return Outpost::RetreatThreshold::Half;
+    return "25%";
   case Outpost::RetreatThreshold::Half:
-    return Outpost::RetreatThreshold::Never;
+    return "50%";
   case Outpost::RetreatThreshold::Never:
     break;
   }
-  return Outpost::RetreatThreshold::Quarter;
+  return "Never";
 }
 
 // The best each of a design's numbers reaches over every design the components make, locked ones included, so that the
@@ -603,7 +590,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   panel.rename = {.label = match != nullptr && save.has_value() && save->nameUtf8 == match->nameUtf8 ? "UPDATE" : "RENAME",
                   .action = {.kind = Hud::ActionKind::SaveDesign},
                   .enabled = save.has_value() && !savesNew};
-  panel.retreat = {.label = Capitals(RetreatWords(_designer.Retreat(_newest))), .action = {.kind = Hud::ActionKind::StepRetreat}};
+  panel.retreat = _designer.Retreat(_newest);
 
   panel.chips.reserve(_newest.designs.size());
   for (const Outpost::DesignView& design : _newest.designs)
@@ -956,6 +943,11 @@ constexpr float FIT_GAP_UNITS = 6.0f;
 // A warning chip (ADR-085 decision 1): its words in the windows' navy on a tag of the warning's color, which reaches this far
 // beyond them on either side and covers their whole line, descenders and all.
 constexpr float CHIP_PAD_UNITS = 4.0f;
+// A row of retreats (interface plan 2, task UI4.3): the room between its cells, a line's height as a share of its face's
+// size, which centers the words in a cell, and in the HUD the room its RETREAT label takes over it.
+constexpr float RETREAT_CELL_GAP_UNITS = 4.0f;
+constexpr float RETREAT_LINE_SHARE = 1.25f;
+constexpr float RETREAT_LABEL_UNITS = 20.0f;
 // The box a window's header holds the player's Ore in.
 constexpr float ORE_BOX_WIDTH = 116.0f;
 // How far down a small button its mark's line starts.
@@ -1297,6 +1289,29 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
   paint.GemAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
 }
 
+// A row of the three retreats from _left, _widthUnits across, each cell _heightUnits tall with its words centered in _face
+// at _tracking, the one at _lit picked, and each a press of _kind that sets it (interface plan 2, task UI4.3). Under the
+// pointer, _hovered, a cell's edge is lit as a button's is.
+void RetreatRow(Painter& _paint, float _left, float _top, float _widthUnits, float _heightUnits,
+                std::optional<Outpost::RetreatThreshold> _lit, Hud::ActionKind _kind, Hud::Typeface _face, float _tracking,
+                const std::optional<Hud::Action>& _hovered)
+{
+  const float cell = (_widthUnits - (2.0f * RETREAT_CELL_GAP_UNITS)) / static_cast<float>(RETREAT_CHOICES.size());
+  for (std::size_t i = 0; i < RETREAT_CHOICES.size(); ++i)
+  {
+    const Outpost::RetreatThreshold choice = RETREAT_CHOICES[i];
+    const Hud::Action action{.kind = _kind, .retreat = choice};
+    const bool lit = _lit == choice;
+    const float left = _left + (static_cast<float>(i) * (cell + RETREAT_CELL_GAP_UNITS));
+    _paint.Press(_paint.Panel(left, _top, cell, _heightUnits, lit ? PICKED_COLOR : CARD_COLOR), action);
+    _paint.Outline(left, _top, cell, _heightUnits, lit ? PICKED_EDGE_COLOR : _hovered == action ? HOVER_EDGE_COLOR : EDGE_COLOR);
+    std::string words = _face == Hud::Typeface::Label ? Capitals(RetreatCell(choice)) : std::string(RetreatCell(choice));
+    const float wordsLeft = left + ((cell - _paint.Width(words, _face, _tracking)) / 2.0f);
+    const float lineUnits = std::round(Hud::FaceUnits(_face) * RETREAT_LINE_SHARE);
+    _paint.Text(std::move(words), wordsLeft, _top + ((_heightUnits - lineUnits) / 2.0f), TEXT_COLOR, _face, _tracking);
+  }
+}
+
 void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::DesignerPanel& _panel,
                  Outpost::WindowManager::Point _corner, float _scale)
 {
@@ -1504,15 +1519,15 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     paint.Text(rename.label, DESIGNER_INSET + 14.0f, footer + 16.0f, rename.enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label,
                tracking);
   }
-  // The design's retreat, between Rename and the stepper; a press steps it (Phase 4 design §10).
+  // The design's retreat, between Rename and the stepper: RETREAT over a row of three, its setting lit, each a press that
+  // sets it (Phase 4 design §10; interface plan 2, task UI4.3).
   {
     constexpr float RETREAT_LEFT = DESIGNER_INSET + 102.0f;
     constexpr float RETREAT_WIDTH = 206.0f;
-    const Hud::Rect face = paint.Panel(RETREAT_LEFT, footer, RETREAT_WIDTH, FOOTER_HEIGHT, CARD_COLOR);
-    paint.Outline(RETREAT_LEFT, footer, RETREAT_WIDTH, FOOTER_HEIGHT, EDGE_COLOR);
-    paint.Press(face, _panel.retreat.action);
-    paint.Text(paint.Fit(_panel.retreat.label, Hud::Typeface::Label, RETREAT_WIDTH - 28.0f), RETREAT_LEFT + 14.0f, footer + 16.0f,
-               TEXT_COLOR, Hud::Typeface::Label, tracking);
+    constexpr float RETREAT_CELLS_TOP = 18.0f;
+    paint.Text("RETREAT", RETREAT_LEFT, footer, ROW_LABEL_COLOR, Hud::Typeface::Label, tracking);
+    RetreatRow(paint, RETREAT_LEFT, footer + RETREAT_CELLS_TOP, RETREAT_WIDTH, FOOTER_HEIGHT - RETREAT_CELLS_TOP, _panel.retreat,
+               Hud::ActionKind::DesignRetreat, Hud::Typeface::Label, tracking, std::nullopt);
   }
   constexpr float STEPPER_LEFT = 346.0f;
   constexpr float STEP_WIDTH = 36.0f;
@@ -2741,14 +2756,10 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                                    : std::string()});
     }
   }
-  // The selection's retreat, in the corner below the rest, which a press steps for every ship in it, from the first one's
-  // (Phase 4 design §10, §13).
+  // The selection's retreat, under the rest, the first ship's and whether the others differ (Phase 4 design §10, §13;
+  // interface plan 2, task UI4.3).
   if (retreat.has_value())
-  {
-    content.buttons.push_back({.label = mixedRetreat ? std::string("Retreat: mixed") : RetreatWords(*retreat),
-                               .action = {.kind = ActionKind::SetRetreat, .retreat = NextRetreat(*retreat)},
-                               .enabled = true});
-  }
+    content.retreat = RetreatChoice{.setting = *retreat, .mixed = mixedRetreat};
   return content;
 }
 
@@ -3246,7 +3257,9 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       textUnits = std::max(textUnits, _metrics.Width(faceOf(line), _content.selection[line]));
     selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
   }
-  const float buttonsUnits = _content.buttons.empty() ? 0.0f : BUTTON_PANEL_WIDTH;
+  // The buttons' panel holds the buttons and, at its foot, the selection's retreat (interface plan 2, task UI4.3).
+  const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
+  const float buttonsUnits = buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f;
   float pairLeft = (screenWidthUnits - selectionUnits - buttonsUnits) / 2.0f;
   if (_content.mapSizeMeters > 0.0f)
     pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
@@ -3279,10 +3292,13 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       }
     }
   }
-  if (!_content.buttons.empty())
+  if (buttonsPanel)
   {
     const auto count = static_cast<float>(_content.buttons.size());
-    const float heightUnits = (2.0f * PADDING) + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
+    const float buttonsHeight = count > 0.0f ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
+    const float retreatTop = PADDING + buttonsHeight + (count > 0.0f ? BUTTON_GAP : 0.0f);
+    const float heightUnits =
+      _content.retreat.has_value() ? retreatTop + RETREAT_LABEL_UNITS + BUTTON_HEIGHT + PADDING : (2.0f * PADDING) + buttonsHeight;
     Painter paint =
       frame({.xUnits = pairLeft + selectionUnits, .yUnits = screenHeightUnits - MARGIN - heightUnits}, BUTTON_PANEL_WIDTH, heightUnits);
     for (size_t i = 0; i < _content.buttons.size(); ++i)
@@ -3290,6 +3306,17 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       addButton(paint.Area(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)), BUTTON_PANEL_WIDTH - (2.0f * PADDING),
                            BUTTON_HEIGHT, CARD_COLOR),
                 _content.buttons[i]);
+    }
+    // The selection's retreat: RETREAT, with MIXED at the right while its ships differ, over a row of three, its setting
+    // lit, each a press that sets it for every ship.
+    if (_content.retreat.has_value())
+    {
+      const RetreatChoice& retreat = *_content.retreat;
+      paint.Text("RETREAT", PADDING, retreatTop, ROW_LABEL_COLOR, Typeface::Label, paint.Tracking());
+      if (retreat.mixed)
+        paint.RightText("MIXED", BUTTON_PANEL_WIDTH - PADDING, retreatTop, NUMBERS_COLOR, Typeface::Label, paint.Tracking());
+      RetreatRow(paint, PADDING, retreatTop + RETREAT_LABEL_UNITS, BUTTON_PANEL_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT,
+                 retreat.mixed ? std::nullopt : std::optional(retreat.setting), ActionKind::SetRetreat, Typeface::Name, 0.0f, _hovered);
     }
   }
 

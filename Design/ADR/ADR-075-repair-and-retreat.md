@@ -54,8 +54,8 @@ What the design leaves open: which four a repairer takes when more are near, wha
    - It builds a Repair Bay behind its front ([ADR-076](ADR-076-ai-plays-phase-4.md) decision 6).
 10. **The client** (design §13):
     - The build menu offers the Repair Bay, and its ghost is green only in a sector the player holds. It is drawn with the Shipyard's model, darker (`tint` 0.6 in `Models.json`), until it has a model of its own.
-    - The selection panel's last button shows the selection's retreat, or "mixed", and a press sets every selected ship to the next one after the first ship's: from 25% to 50% to never, and round. A line counts the ships retreating to be repaired.
-    - The designer shows the design's retreat between Rename and the stepper, and a press steps it. Saving sends it. A saved design whose retreat changed under the same name is saved with UPDATE.
+    - The selection's retreat is a row of three at the foot of its buttons, RETREAT over "25%", "50%" and "Never", the first ship's setting lit, or none lit and MIXED beside the label while the ships differ. A press on a cell sets every selected ship to it ([ADR-088](ADR-088-selection-and-commands.md) decision 3). A line counts the ships retreating to be repaired.
+    - The designer shows the design's retreat between Rename and the stepper as the same row, RETREAT over "25%", "50%" and "NEVER", and a press sets it. Saving sends it. A saved design whose retreat changed under the same name is saved with UPDATE.
     - Alerts ([ADR-059](ADR-059-alerts-and-standing-orders.md)) add **Ship retreating** when one of the player's ships starts going back, and **Pirates cleared** when a sector the pirates guarded no longer is.
     - The match log names the Repair Bay "bay".
 

@@ -111,22 +111,6 @@ Outpost::RetreatThreshold Outpost::Designer::Retreat(const Snapshot& _newest) co
   return match != nullptr ? match->retreat : DEFAULT_RETREAT;
 }
 
-void Outpost::Designer::StepRetreat(const Snapshot& _newest) noexcept
-{
-  switch (Retreat(_newest))
-  {
-  case RetreatThreshold::Quarter:
-    m_retreat = RetreatThreshold::Half;
-    break;
-  case RetreatThreshold::Half:
-    m_retreat = RetreatThreshold::Never;
-    break;
-  case RetreatThreshold::Never:
-    m_retreat = RetreatThreshold::Quarter;
-    break;
-  }
-}
-
 const Outpost::DesignView* Outpost::Designer::Match(const Snapshot& _newest) const noexcept
 {
   const auto found = std::ranges::find_if(

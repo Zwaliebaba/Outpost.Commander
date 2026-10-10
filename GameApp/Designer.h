@@ -61,10 +61,13 @@ public:
     return {m_hull, m_drive, m_weapon, m_module};
   }
 
-  // The design's retreat (Phase 4 design §10): as picked, or else the matching design's, or else the default; and stepping
-  // it to the next, from a quarter to half to never and round. Saving sends it.
+  // The design's retreat (Phase 4 design §10): as picked, or else the matching design's, or else the default; and picking
+  // one from the designer's row of three (interface plan 2, task UI4.3). Saving sends it.
   [[nodiscard]] RetreatThreshold Retreat(const Snapshot& _newest) const noexcept;
-  void StepRetreat(const Snapshot& _newest) noexcept;
+  void SetRetreat(RetreatThreshold _retreat) noexcept
+  {
+    m_retreat = _retreat;
+  }
 
   // The player's saved design of the picked components, if there is one.
   [[nodiscard]] const DesignView* Match(const Snapshot& _newest) const noexcept;

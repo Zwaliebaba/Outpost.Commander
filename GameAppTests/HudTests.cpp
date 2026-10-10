@@ -716,7 +716,8 @@ public:
 
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::AreEqual(std::string("Constructor"), content.selection.front());
-    Assert::AreEqual(size_t{4}, content.buttons.size(), L"the three it builds, and its retreat");
+    Assert::AreEqual(size_t{3}, content.buttons.size(), L"the three it builds");
+    Assert::IsTrue(content.retreat.has_value(), L"and its retreat, under them");
     Assert::AreEqual(std::string("Shipyard|300"), content.buttons[0].label);
     Assert::IsFalse(content.buttons[0].enabled, L"250 Ore does not buy a Shipyard");
     Assert::IsTrue(content.buttons[1].enabled);
@@ -751,11 +752,11 @@ public:
     constructor.role = Outpost::ShipRole::Constructor;
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}};
-    Assert::AreEqual(size_t{2}, Outpost::Hud::Describe(newest, entities, selected).buttons.size(), L"the Shipyard, and its retreat");
+    Assert::AreEqual(size_t{1}, Outpost::Hud::Describe(newest, entities, selected).buttons.size(), L"the Shipyard");
 
     newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
     const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{3}, content.buttons.size());
+    Assert::AreEqual(size_t{2}, content.buttons.size(), L"the Shipyard and the Relay");
     Assert::IsTrue(content.buttons[1].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
   }
@@ -1195,7 +1196,7 @@ public:
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{constructor.id};
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{2}, content.buttons.size(), L"the Relay, and its retreat");
+    Assert::AreEqual(size_t{1}, content.buttons.size(), L"the Relay");
     Assert::IsFalse(content.buttons[0].enabled);
     Assert::AreEqual(std::string("NODE CAP"), content.buttons[0].note);
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
@@ -1533,14 +1534,14 @@ public:
     Assert::AreEqual(std::string("SAVED"), panel.save.label);
     Assert::IsTrue(panel.save.selected && !panel.save.enabled);
     Assert::IsFalse(panel.rename.enabled, L"the name has not changed");
-    // Phase 4 design §10: the design's retreat, which a press steps; a saved design's new retreat is an update.
-    Assert::AreEqual(std::string("RETREAT AT 25%"), panel.retreat.label);
-    Assert::IsTrue(panel.retreat.action.kind == Outpost::Hud::ActionKind::StepRetreat);
+    // Phase 4 design §10: the design's retreat, which a press on its row sets (interface plan 2, task UI4.3); a saved
+    // design's new retreat is an update.
+    Assert::IsTrue(panel.retreat == Outpost::RetreatThreshold::Quarter);
     {
       Outpost::Designer stepped = designer;
-      stepped.StepRetreat(newest);
+      stepped.SetRetreat(Outpost::RetreatThreshold::Half);
       const Outpost::Hud::DesignerPanel changed = DesignerOf(newest, stepped);
-      Assert::AreEqual(std::string("RETREAT AT 50%"), changed.retreat.label);
+      Assert::IsTrue(changed.retreat == Outpost::RetreatThreshold::Half);
       Assert::IsTrue(changed.rename.enabled);
       Assert::AreEqual(std::string("UPDATE"), changed.rename.label);
     }
@@ -2307,8 +2308,9 @@ public:
       std::ranges::any_of(layout.actions, [](const auto& _action) { return _action.second.kind == Outpost::Hud::ActionKind::BackToMenu; }));
   }
 
-  // Phase 4 design §10, §13: a selection's retreat is the last button, which steps it for every ship from the first one's,
-  // and a ship going back to be repaired says so.
+  // Phase 4 design §10, §13: a selection's retreat is a row of three under its buttons (interface plan 2, task UI4.3),
+  // RETREAT over "25%", "50%" and "Never", the first ship's setting lit, or none and MIXED while the others differ; a press
+  // on a cell sets it for every ship. A ship going back to be repaired says so.
   TEST_METHOD(SetsTheSelectionsRetreat)
   {
     Outpost::EntityView first = Ship(9, SWARM, 30000, 30000);
@@ -2319,19 +2321,59 @@ public:
     std::vector<Outpost::EntityView> entities{first, second};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}, Outpost::EntityId{10}};
     Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
-    Assert::AreEqual(std::string("Retreat at 50%"), content.buttons.back().label);
-    Assert::IsTrue(content.buttons.back().action ==
-                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::SetRetreat, .retreat = Outpost::RetreatThreshold::Never});
+    Assert::IsTrue(content.retreat.has_value() && content.retreat->setting == Outpost::RetreatThreshold::Half && !content.retreat->mixed);
     Assert::AreEqual(std::string("1 retreating to be repaired"), content.selection.back());
+
+    // Whether the cell saying _words is picked: its face of the picks' color under its first pixel.
+    const auto picked = [](const Outpost::Hud::Layout& _layout, std::string_view _words)
+    {
+      const Outpost::Hud::Text& text = TextOf(_layout, _words);
+      return std::ranges::any_of(_layout.panels,
+                                 [&](const Outpost::Hud::Rect& _panel)
+                                 {
+                                   return _panel.color.x == 0.033f && _panel.color.y == 0.063f &&
+                                          _panel.Contains(std::round(text.left) + 0.5f, std::round(text.top) + 0.5f);
+                                 });
+    };
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    TextOf(layout, "RETREAT");
+    Assert::IsTrue(picked(layout, "50%") && !picked(layout, "25%") && !picked(layout, "Never"));
+    Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "MIXED"; }));
+    for (const Outpost::RetreatThreshold choice :
+         {Outpost::RetreatThreshold::Quarter, Outpost::RetreatThreshold::Half, Outpost::RetreatThreshold::Never})
+    {
+      const Outpost::Hud::Action set{.kind = Outpost::Hud::ActionKind::SetRetreat, .retreat = choice};
+      Assert::IsTrue(std::ranges::any_of(layout.actions, [&](const auto& _press) { return _press.second == set; }), L"a press for each");
+    }
 
     entities[1].retreat = Outpost::RetreatThreshold::Quarter;
     content = Outpost::Hud::Describe(Newest(), entities, selected);
-    Assert::AreEqual(std::string("Retreat: mixed"), content.buttons.back().label);
+    Assert::IsTrue(content.retreat.value_or(Outpost::Hud::RetreatChoice{}).mixed);
+    const Outpost::Hud::Layout mixed = Lay(content, 1920, 1080);
+    TextOf(mixed, "MIXED");
+    Assert::IsTrue(!picked(mixed, "25%") && !picked(mixed, "50%") && !picked(mixed, "Never"), L"none lit while mixed");
+
     entities[0].retreat = Outpost::RetreatThreshold::Never;
     const std::vector<Outpost::EntityId> alone{Outpost::EntityId{9}};
     content = Outpost::Hud::Describe(Newest(), entities, alone);
-    Assert::AreEqual(std::string("Never retreat"), content.buttons.back().label);
-    Assert::IsTrue(content.buttons.back().action.retreat == Outpost::RetreatThreshold::Quarter, L"round to a quarter");
+    Assert::IsTrue(picked(Lay(content, 1920, 1080), "Never"));
+    Assert::IsFalse(Outpost::Hud::Describe(Newest(), entities, {}).retreat.has_value(), L"no ship, no retreat");
+  }
+
+  // The designer's retreat is the same row, RETREAT over three cells in its labels' capitals, its design's setting lit,
+  // each a press that sets it.
+  TEST_METHOD(SetsTheDesignsRetreatInARow)
+  {
+    const Outpost::Hud::Content content = LongestContent(true);
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    for (const std::string_view words : {"25%", "50%", "NEVER"})
+      TextOf(layout, words);
+    for (const Outpost::RetreatThreshold choice :
+         {Outpost::RetreatThreshold::Quarter, Outpost::RetreatThreshold::Half, Outpost::RetreatThreshold::Never})
+    {
+      const Outpost::Hud::Action set{.kind = Outpost::Hud::ActionKind::DesignRetreat, .retreat = choice};
+      Assert::IsTrue(std::ranges::any_of(layout.actions, [&](const auto& _press) { return _press.second == set; }));
+    }
   }
 
   // ADR-059: a selection on a standing order says so.
