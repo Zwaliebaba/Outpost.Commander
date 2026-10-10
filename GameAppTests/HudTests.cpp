@@ -156,7 +156,8 @@ std::string LongestName(char _last)
 // that the selection has its most bars (interface plan 2, task UI4.5), one of them loaded in the designer of five weapons,
 // every part locked or every part unlocked; a full queue at a Shipyard and at the Lab; a page of topics, among them Relay
 // Archives with both its prerequisites to do; a placement's hint, the status panel's lines, the alerts, the territory and
-// the banner. The Ore is five figures, more than any match in the review banked. With _hovered, the designer previews the part under the pointer.
+// the banner. The Ore is five figures, more than any match in the review banked. With _hovered, the designer previews the
+// part under the pointer.
 Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
@@ -2255,8 +2256,11 @@ public:
         Assert::IsTrue(layout.bars[1].color.x == 0.5f && layout.bars[1].color.y == 0.52f && layout.bars[1].color.z == 0.55f, L"gray");
         Assert::AreEqual(build.top - (2.0f * scale), health.top + health.height, 0.01f, L"the health bar over the build bar");
         Assert::AreEqual(0.4f * health.width, layout.bars[3].width, 0.01f);
-        Assert::IsTrue(layout.bars[3].color.x == 1.0f && layout.bars[3].color.y == 0.7f, L"amber under half");
-        Assert::IsTrue(layout.bars[5].color.y > layout.bars[5].color.x, L"green over half");
+        // The health bars' own amber and green, as the selection's bars have them.
+        Assert::IsTrue(layout.bars[3].color.x == 1.0f && layout.bars[3].color.y == 0.7f && layout.bars[3].color.z == 0.1f,
+                       L"amber under half");
+        Assert::IsTrue(layout.bars[5].color.x == 0.2f && layout.bars[5].color.y == 0.85f && layout.bars[5].color.z == 0.3f,
+                       L"green over half");
         Assert::AreEqual(1050.0f * scale, layout.bars[4].top + layout.bars[4].height, 0.01f,
                          L"no build bar, so the health stands on its foot");
 

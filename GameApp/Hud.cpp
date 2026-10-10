@@ -1010,17 +1010,20 @@ constexpr DirectX::XMFLOAT4 QUEUE_EDGE_COLOR{0.09f, 0.29f, 0.12f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_TEXT_COLOR{0.85f, 1.0f, 0.86f, 1.0f};
 constexpr DirectX::XMFLOAT4 SLOT_FILLED_COLOR{0.15f, 0.25f, 0.45f, 1.0f};
 
-// The bars over an entity fill green above half its hit points, then amber, then red, as they did on the ground (ADR-028),
-// and its build bar in a light gray that is no side's (ADR-085 decision 2).
-constexpr DirectX::XMFLOAT4 ENTITY_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
-constexpr DirectX::XMFLOAT4 ENTITY_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
-constexpr DirectX::XMFLOAT4 ENTITY_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
+// The build bar over an entity, in a light gray that is no side's (ADR-085 decision 2).
 constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.5f, 0.52f, 0.55f, 1.0f};
 
-// A health bar's fill: green above half, then amber above a quarter, then red (ADR-046).
+// A health bar's fill, over an entity and in the selection panel alike: green above half, then amber above a quarter, then
+// red (ADR-046, interface plan 2, task UI4.1). Brighter than the figures' good, fair and poor, which are tuned to a window's
+// navy (ADR-062): on a side's back at 0.3 this red stands at 2.36:1 and this amber at 4.47:1 or more, where the figures'
+// would stand at 1.67:1 and 3.32:1 (ADR-088 decision 5).
+constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
+constexpr DirectX::XMFLOAT4 HEALTH_FAIR_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
+constexpr DirectX::XMFLOAT4 HEALTH_POOR_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
+
 const DirectX::XMFLOAT4& HealthColor(float _share) noexcept
 {
-  return _share > HEALTH_HURT_SHARE ? GOOD_COLOR : _share > HEALTH_LOW_SHARE ? FAIR_COLOR : POOR_COLOR;
+  return _share > HEALTH_HURT_SHARE ? HEALTH_GOOD_COLOR : _share > HEALTH_LOW_SHARE ? HEALTH_FAIR_COLOR : HEALTH_POOR_COLOR;
 }
 
 // The color of a hovered part's change: green when better, red when worse, and _same when neither.
@@ -3114,7 +3117,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       if (bar.health.has_value())
       {
         const float share = bar.health.value_or(0.0f);
-        addBar(share, share > HEALTH_HURT_SHARE ? ENTITY_GOOD_COLOR : share > HEALTH_LOW_SHARE ? ENTITY_HURT_COLOR : ENTITY_LOW_COLOR);
+        addBar(share, HealthColor(share));
       }
     }
   }

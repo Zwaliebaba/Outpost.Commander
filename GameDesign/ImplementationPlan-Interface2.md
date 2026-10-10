@@ -377,7 +377,7 @@ The milestone's looks share one ADR: selection and commands.
   - **The player's factor (ADR-070) does not scale a bar,** since it sizes the HUD and not the world's marks.
   - **The bars are a list of the layout's own (`Layout::bars`),** not panels. A panel covers the world for clicks (ADR-015 decision 5), and a bar must not.
   - **`Camera::PixelAbove` gives the place** the scope names. Whether it clears each model's own height is the owner's run's to judge.
-  - **The health fill keeps the ground bars' green, amber and red,** which differ a little from the HUD's own good, fair and poor that the selection's bars use. Making them one set is a one-line change, the owner's to call.
+  - **Every health bar fills from the ground bars' green, amber and red,** the selection's bars too (owner, 2026-10-10). The HUD's figures keep their own good, fair and poor, whose red would stand at 1.67:1 on a side's back at 0.3, against this red's 2.36:1.
   - **At the default view the bars are shorter than they were:** 32 pixels where a Large hull's was 184 and the Command Station's 346.
   - `HudTests` ran in the Linux container. `Camera`, `CameraTests` and `GameClient` need DirectXMath and D3D12, so CI is their first build. Not yet seen on screen.
 
