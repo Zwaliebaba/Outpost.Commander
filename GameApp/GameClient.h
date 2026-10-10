@@ -181,6 +181,9 @@ private:
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model, int _level = FIRST_MODEL_LEVEL) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
+  // The corners of _entity's model's bounds where its pose puts them, which the bars over it stand above (interface plan 2,
+  // task UI4.1); for an entity without a model, the corners of its footprint's square on the ground.
+  [[nodiscard]] std::array<DirectX::XMFLOAT3, 8> BoundsCorners(const EntityView& _entity) const;
   // Leans each ship of the view into its turn, by its bank limits, for a frame of _elapsedSeconds (ADR-029).
   void UpdateBanking(float _elapsedSeconds);
   // How a Mining Rig, the model _set/_model drawn at _scale, stands on its rock: tilted and lifted so that its legs stand on

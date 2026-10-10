@@ -759,17 +759,22 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
                                          hovered, m_ticksPerSecond, armed);
     content.fog = m_fog.CellsPerSide() > 0;
-    // The bars over the entities, each placed above its footprint on the screen by the camera, for the HUD to lay out
-    // (interface plan 2, task UI4.1).
+    // The bars over the entities that show one, each placed by the camera above its model on the screen, for the HUD to lay
+    // out (interface plan 2, task UI4.1).
     for (const EntityView& entity : m_entities)
     {
-      const std::optional<DirectX::XMFLOAT2> foot = m_camera.PixelAbove(entity.position, entity.radiusMeters, m_viewport);
-      if (!foot.has_value())
-        continue;
       const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
       const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
-      if (std::optional<Hud::EntityBar> bar = Hud::BarOver(entity, foot.value_or(DirectX::XMFLOAT2{}), back, m_everyHealthBar))
-        content.entityBars.push_back(*bar);
+      const std::optional<Hud::EntityBar> shown = Hud::BarOver(entity, {}, back, m_everyHealthBar);
+      if (!shown.has_value())
+        continue;
+      const std::array<DirectX::XMFLOAT3, 8> corners = BoundsCorners(entity);
+      const std::optional<DirectX::XMFLOAT2> foot = m_camera.PixelAbove(entity.position, corners, m_viewport);
+      if (!foot.has_value())
+        continue;
+      Hud::EntityBar bar = shown.value_or(Hud::EntityBar{});
+      bar.footPixels = foot.value_or(DirectX::XMFLOAT2{});
+      content.entityBars.push_back(bar);
     }
     content.connection = Hud::Connection{.server = m_server, .silentSeconds = static_cast<std::int32_t>(m_silentSeconds)};
     // What a derelict under the pointer holds (Phase 4 design §13), and how long ago a structure the player only remembers
@@ -1702,6 +1707,32 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
                      .pose = {.position = _entity.position, .headingRadians = _entity.headingRadians, .scale = scale},
                      .tint = model->tint,
                      .stance = stance};
+}
+
+std::array<DirectX::XMFLOAT3, 8> Outpost::GameClient::BoundsCorners(const EntityView& _entity) const
+{
+  std::array<DirectX::XMFLOAT3, 8> corners{};
+  if (const std::optional<PlacedModel> placed = PlaceModel(_entity); placed.has_value())
+  {
+    const Neuron::MeshData& shape = ModelShape(placed->set->name, *placed->model, placed->level);
+    const DirectX::XMFLOAT4X4 world = placed->World();
+    const DirectX::XMMATRIX matrix = DirectX::XMLoadFloat4x4(&world);
+    for (std::size_t i = 0; i < corners.size(); ++i)
+    {
+      const DirectX::XMVECTOR corner =
+        DirectX::XMVectorSet((i & 1U) != 0 ? shape.boundsMax.x : shape.boundsMin.x, (i & 2U) != 0 ? shape.boundsMax.y : shape.boundsMin.y,
+                             (i & 4U) != 0 ? shape.boundsMax.z : shape.boundsMin.z, 1.0f);
+      DirectX::XMStoreFloat3(&corners[i], DirectX::XMVector3TransformCoord(corner, matrix));
+    }
+    return corners;
+  }
+  const float radius = _entity.radiusMeters;
+  for (std::size_t i = 0; i < corners.size(); ++i)
+  {
+    corners[i] = {_entity.position.xMeters + ((i & 1U) != 0 ? radius : -radius), 0.0f,
+                  _entity.position.zMeters + ((i & 2U) != 0 ? radius : -radius)};
+  }
+  return corners;
 }
 
 void Outpost::GameClient::UpdateBanking(float _elapsedSeconds)

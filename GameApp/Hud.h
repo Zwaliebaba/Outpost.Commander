@@ -565,9 +565,10 @@ public:
 
   static constexpr std::size_t SHIP_BARS_MOST = 24;
 
-  // The bars over an entity on the screen (interface plan 2, task UI4.1), where GameClient places them from the camera: the
-  // middle of their foot, in back-buffer pixels; the share of hit points left, while the health bar shows; the share
-  // built, while the build bar shows; and their back's color, the side's darkened (ADR-028 decision 7).
+  // The bars over an entity on the screen (interface plan 2, task UI4.1): the point they stand a little above, the top of the
+  // entity's model on the screen in its column, which GameClient finds with the camera, in back-buffer pixels; the share of
+  // hit points left, while the health bar shows; the share built, while the build bar shows; and their back's color, the
+  // side's darkened (ADR-028 decision 7).
   struct EntityBar
   {
     DirectX::XMFLOAT2 footPixels{};

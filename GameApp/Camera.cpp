@@ -234,16 +234,7 @@ std::optional<Outpost::PlanePosition> Outpost::Camera::GroundPointAtPixel(float 
 
 std::optional<DirectX::XMFLOAT2> Outpost::Camera::PixelOf(PlanePosition _point, const Viewport& _viewport) const noexcept
 {
-  const DirectX::XMFLOAT4X4 viewProjection = ViewProjection(_viewport.AspectRatio());
-  DirectX::XMFLOAT4 clip;
-  DirectX::XMStoreFloat4(&clip, DirectX::XMVector4Transform(DirectX::XMVectorSet(_point.xMeters, 0.0f, _point.zMeters, 1.0f),
-                                                            DirectX::XMLoadFloat4x4(&viewProjection)));
-  if (clip.w <= 0.0f)
-    return std::nullopt;
-  const float screenX = clip.x / clip.w;
-  const float screenY = clip.y / clip.w;
-  return DirectX::XMFLOAT2{(screenX + 1.0f) * 0.5f * static_cast<float>(_viewport.widthPixels),
-                           (1.0f - screenY) * 0.5f * static_cast<float>(_viewport.heightPixels)};
+  return PixelOfPoint({_point.xMeters, 0.0f, _point.zMeters}, _viewport);
 }
 
 std::optional<float> Outpost::Camera::MetersPerPixelAt(PlanePosition _point, const Viewport& _viewport) const noexcept
@@ -261,19 +252,36 @@ std::optional<float> Outpost::Camera::MetersPerPixelAt(PlanePosition _point, con
   return 2.0f * depth * std::tan(Radians(m_settings.verticalFieldOfViewDegrees) / 2.0f) / static_cast<float>(_viewport.heightPixels);
 }
 
-std::optional<DirectX::XMFLOAT2> Outpost::Camera::PixelAbove(PlanePosition _point, float _radiusMeters,
+std::optional<DirectX::XMFLOAT2> Outpost::Camera::PixelOfPoint(const DirectX::XMFLOAT3& _pointMeters,
+                                                               const Viewport& _viewport) const noexcept
+{
+  const DirectX::XMFLOAT4X4 viewProjection = ViewProjection(_viewport.AspectRatio());
+  DirectX::XMFLOAT4 clip;
+  DirectX::XMStoreFloat4(&clip, DirectX::XMVector4Transform(DirectX::XMVectorSet(_pointMeters.x, _pointMeters.y, _pointMeters.z, 1.0f),
+                                                            DirectX::XMLoadFloat4x4(&viewProjection)));
+  if (clip.w <= 0.0f)
+    return std::nullopt;
+  const float screenX = clip.x / clip.w;
+  const float screenY = clip.y / clip.w;
+  return DirectX::XMFLOAT2{(screenX + 1.0f) * 0.5f * static_cast<float>(_viewport.widthPixels),
+                           (1.0f - screenY) * 0.5f * static_cast<float>(_viewport.heightPixels)};
+}
+
+std::optional<DirectX::XMFLOAT2> Outpost::Camera::PixelAbove(PlanePosition _point, std::span<const DirectX::XMFLOAT3> _cornersMeters,
                                                              const Viewport& _viewport) const noexcept
 {
-  // The footprint's top on the screen is its rim's point toward the screen's top.
-  const DirectX::XMFLOAT2 forward = GroundForward();
   const std::optional<DirectX::XMFLOAT2> middle = PixelOf(_point, _viewport);
-  const std::optional<DirectX::XMFLOAT2> top =
-    PixelOf({.xMeters = _point.xMeters + (forward.x * _radiusMeters), .zMeters = _point.zMeters + (forward.y * _radiusMeters)}, _viewport);
-  const std::optional<float> metersPerPixel = MetersPerPixelAt(_point, _viewport);
-  if (!middle.has_value() || !top.has_value() || !metersPerPixel.has_value())
+  if (!middle.has_value() || _cornersMeters.empty())
     return std::nullopt;
-  return DirectX::XMFLOAT2{middle.value_or(DirectX::XMFLOAT2{}).x,
-                           top.value_or(DirectX::XMFLOAT2{}).y - (_radiusMeters / metersPerPixel.value_or(1.0f))};
+  DirectX::XMFLOAT2 above = middle.value_or(DirectX::XMFLOAT2{});
+  for (const DirectX::XMFLOAT3& corner : _cornersMeters)
+  {
+    const std::optional<DirectX::XMFLOAT2> pixel = PixelOfPoint(corner, _viewport);
+    if (!pixel.has_value())
+      return std::nullopt;
+    above.y = std::min(above.y, pixel.value_or(DirectX::XMFLOAT2{}).y);
+  }
+  return above;
 }
 
 DirectX::XMFLOAT2 Outpost::Camera::GroundForward() const noexcept

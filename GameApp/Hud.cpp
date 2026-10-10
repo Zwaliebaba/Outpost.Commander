@@ -93,10 +93,12 @@ static_assert((SHIP_BARS_A_ROW * SHIP_BAR_WIDTH_UNITS) + ((SHIP_BARS_A_ROW - 1) 
 
 // The bars over an entity, on the screen, at any zoom and however the camera has turned (interface plan 2, task UI4.1):
 // each this size in reference units at the back buffer's scale, not the player's factor, which sizes the HUD and not the
-// world's marks (ADR-070); the health bar over the build bar, this far apart.
+// world's marks (ADR-070); the health bar over the build bar, this far apart, and the pair this far above the top of the
+// entity's model on the screen.
 constexpr float ENTITY_BAR_WIDTH_UNITS = 32.0f;
 constexpr float ENTITY_BAR_HEIGHT_UNITS = 5.0f;
 constexpr float ENTITY_BAR_GAP_UNITS = 2.0f;
+constexpr float ENTITY_BAR_LIFT_UNITS = 4.0f;
 
 // The buttons, stacked in a panel anchored to the bottom-right corner; a button's label and cost stand this far in.
 constexpr float BUTTON_PANEL_WIDTH = 380.0f;
@@ -3088,17 +3090,18 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     return Painter(layout, _metrics, _corner, scale);
   };
   // First, under every panel and window, the bars over the entities: each a back of its side's color with its fill from
-  // the left, the health bar over the build bar, the pair centered on its foot and set to whole pixels, so that it keeps
-  // its size as it moves (interface plan 2, task UI4.1). A pair wholly off the screen is left out.
+  // the left, the health bar over the build bar, the pair centered over its foot, a little above it, and set to whole
+  // pixels, so that it keeps its size as it moves (interface plan 2, task UI4.1). A pair wholly off the screen is left out.
   {
     const float barScale = Scale(_widthPixels, _heightPixels);
     const float barWidth = std::round(ENTITY_BAR_WIDTH_UNITS * barScale);
     const float barHeight = std::max(std::round(ENTITY_BAR_HEIGHT_UNITS * barScale), 1.0f);
     const float barGap = std::round(ENTITY_BAR_GAP_UNITS * barScale);
+    const float barLift = std::round(ENTITY_BAR_LIFT_UNITS * barScale);
     for (const EntityBar& bar : _content.entityBars)
     {
       const float left = std::round(bar.footPixels.x - (barWidth / 2.0f));
-      float bottom = std::round(bar.footPixels.y);
+      float bottom = std::round(bar.footPixels.y) - barLift;
       const float count = (bar.health.has_value() ? 1.0f : 0.0f) + (bar.built.has_value() ? 1.0f : 0.0f);
       const float stackHeight = (count * barHeight) + (std::max(count - 1.0f, 0.0f) * barGap);
       if (count == 0.0f || left + barWidth <= 0.0f || left >= width || bottom <= 0.0f || bottom - stackHeight >= height)

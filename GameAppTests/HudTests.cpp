@@ -2221,7 +2221,7 @@ public:
   }
 
   // Interface plan 2, task UI4.1: the bars over an entity, on the screen, 32 by 5 units at the back buffer's scale and not
-  // the player's factor, centered on their foot, the health bar over the build bar, each a back of the side's color with
+  // the player's factor, centered over their foot and 4 units above it, the health bar over the build bar, each a back of the side's color with
   // its fill from the left; in a list of their own, drawn before every panel and window, so under them, which takes no
   // click and covers nothing; and none wholly off the screen.
   TEST_METHOD(LaysTheBarsOverTheEntities)
@@ -2250,8 +2250,8 @@ public:
         }
         const Outpost::Hud::Rect& build = layout.bars[0];
         const Outpost::Hud::Rect& health = layout.bars[2];
-        Assert::AreEqual(400.0f * scale, build.left + (build.width / 2.0f), 0.01f, L"centered on its foot");
-        Assert::AreEqual(500.0f * scale, build.top + build.height, 0.01f, L"standing on it");
+        Assert::AreEqual(400.0f * scale, build.left + (build.width / 2.0f), 0.01f, L"centered over its foot");
+        Assert::AreEqual((500.0f - 4.0f) * scale, build.top + build.height, 0.01f, L"4 units above it");
         Assert::AreEqual(0.75f * build.width, layout.bars[1].width, 0.01f);
         Assert::IsTrue(layout.bars[1].color.x == 0.5f && layout.bars[1].color.y == 0.52f && layout.bars[1].color.z == 0.55f, L"gray");
         Assert::AreEqual(build.top - (2.0f * scale), health.top + health.height, 0.01f, L"the health bar over the build bar");
@@ -2261,8 +2261,8 @@ public:
                        L"amber under half");
         Assert::IsTrue(layout.bars[5].color.x == 0.2f && layout.bars[5].color.y == 0.85f && layout.bars[5].color.z == 0.3f,
                        L"green over half");
-        Assert::AreEqual(1050.0f * scale, layout.bars[4].top + layout.bars[4].height, 0.01f,
-                         L"no build bar, so the health stands on its foot");
+        Assert::AreEqual((1050.0f - 4.0f) * scale, layout.bars[4].top + layout.bars[4].height, 0.01f,
+                         L"no build bar, so the health stands where it would");
 
         const float x = build.left + (build.width / 2.0f);
         const float y = build.top + (build.height / 2.0f);
