@@ -3,8 +3,13 @@
 namespace Outpost
 {
 // The version of the messages below. A server refuses a client that speaks another (ADR-060). It stays 1 until the game is
-// live (owner, 2026-10-09), so until then a client and its server are of one build.
+// live (owner, 2026-10-09); until then a hello's layout hash is what tells a client of another build.
 inline constexpr std::uint32_t PROTOCOL_VERSION = 1;
+
+// How every message below is laid out, as ByteLayout describes it (ADR-077), and its 64-bit FNV-1a, which a hello carries:
+// a server refuses a client whose messages are laid out otherwise, whatever version it speaks (ADR-060).
+[[nodiscard]] std::string WireLayout();
+[[nodiscard]] std::uint64_t WireLayoutHash();
 
 // The application protocol a QUIC connection to the server negotiates (ADR-060).
 inline constexpr std::string_view QUIC_APPLICATION_PROTOCOL = "outpost-commander/1";
@@ -24,11 +29,13 @@ enum class CloseReason : std::uint8_t
 // What the server's close says to a player, by its QUIC error code; none for a code that is no CloseReason.
 [[nodiscard]] std::optional<std::string_view> DescribeClose(std::uint64_t _errorCode) noexcept;
 
-// The first message a client sends: the version it speaks, the player whose seat it takes, and the seat's token
-// (ADR-078).
+// The first message a client sends: the version it speaks and how its messages are laid out, which stay its first two
+// fields so that a server of another build can still read them, then the player whose seat it takes, and the seat's token
+// (ADR-060, ADR-078).
 struct HelloMessage
 {
   std::uint32_t protocolVersion = PROTOCOL_VERSION;
+  std::uint64_t layoutHash = WireLayoutHash();
   PlayerId player;
   SeatToken token{};
 };
@@ -57,4 +64,8 @@ using Message = std::variant<HelloMessage, WelcomeMessage, Command, Snapshot>;
 // The version a hello in _bytes says it speaks, read from its first field alone, so that a hello of another version,
 // whose fields may differ, is still told apart from a broken one (ADR-060); none when the bytes do not start a hello.
 [[nodiscard]] std::optional<std::uint32_t> PeekHelloVersion(std::span<const std::byte> _bytes) noexcept;
+
+// The layout's hash a hello in _bytes carries, read from its second field alone, after the version; none when the bytes do
+// not start a hello or end before the hash does.
+[[nodiscard]] std::optional<std::uint64_t> PeekHelloLayout(std::span<const std::byte> _bytes) noexcept;
 } // namespace Outpost

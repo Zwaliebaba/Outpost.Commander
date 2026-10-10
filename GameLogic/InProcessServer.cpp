@@ -246,11 +246,11 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
   {
     try
     {
-      // A hello of another version may not decode at all, so its version is read first (ADR-060).
+      // A hello of another build may not decode at all, so its version and its messages' layout are read first (ADR-060).
       if (!commands)
       {
         const std::optional<std::uint32_t> version = PeekHelloVersion(_message);
-        if (version.has_value() && *version != PROTOCOL_VERSION)
+        if (version.has_value() && (*version != PROTOCOL_VERSION || PeekHelloLayout(_message) != WireLayoutHash()))
         {
           Refuse(_peer, CloseReason::WrongVersion);
           return;
@@ -281,7 +281,7 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
         Refuse(_peer, CloseReason::MalformedMessage);
         return;
       }
-      if (hello->protocolVersion != PROTOCOL_VERSION)
+      if (hello->protocolVersion != PROTOCOL_VERSION || hello->layoutHash != WireLayoutHash())
       {
         Refuse(_peer, CloseReason::WrongVersion);
         return;

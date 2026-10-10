@@ -296,9 +296,30 @@ public:
   {
     const Outpost::Message hello = RoundTrip(Outpost::HelloMessage{.player = Outpost::PlayerId{2}});
     Assert::AreEqual(Outpost::PROTOCOL_VERSION, std::get<Outpost::HelloMessage>(hello).protocolVersion);
+    Assert::AreEqual(Outpost::WireLayoutHash(), std::get<Outpost::HelloMessage>(hello).layoutHash, L"this build's layout");
     Assert::AreEqual(std::uint32_t{2}, std::get<Outpost::HelloMessage>(hello).player.value);
     const Outpost::Message welcome = RoundTrip(Outpost::WelcomeMessage{.player = Outpost::PlayerId{1}});
     Assert::AreEqual(std::uint32_t{1}, std::get<Outpost::WelcomeMessage>(welcome).player.value);
+  }
+
+  // ADR-060: a hello's version and its layout's hash are its first two fields, which a server reads before it decodes the
+  // rest, so that a hello of another build is told apart from a broken one; the hash is of every message's layout.
+  TEST_METHOD(SaysHowItsMessagesAreLaidOut)
+  {
+    const std::string layout = Outpost::WireLayout();
+    Assert::IsTrue(layout.starts_with("a(r4{u32,u64,"), L"the hello first, its version and its layout's hash first");
+    std::uint64_t hash = 0xCBF29CE484222325ull;
+    for (const char character : layout)
+      hash = (hash ^ static_cast<std::uint8_t>(character)) * 0x100000001B3ull;
+    Assert::AreEqual(hash, Outpost::WireLayoutHash());
+
+    const std::vector<std::byte> hello = Outpost::EncodeMessage(Outpost::HelloMessage{.layoutHash = 0x0123456789ABCDEFull});
+    Assert::AreEqual(Outpost::PROTOCOL_VERSION, Outpost::PeekHelloVersion(hello).value_or(0));
+    Assert::AreEqual(std::uint64_t{0x0123456789ABCDEF}, Outpost::PeekHelloLayout(hello).value_or(0));
+    Assert::IsFalse(Outpost::PeekHelloLayout(std::span(hello).first(12)).has_value(), L"cut short inside the hash");
+    Assert::IsTrue(Outpost::PeekHelloVersion(std::span(hello).first(12)).has_value(), L"but not inside the version");
+    const std::vector<std::byte> welcome = Outpost::EncodeMessage(Outpost::WelcomeMessage{.player = Outpost::PlayerId{1}});
+    Assert::IsFalse(Outpost::PeekHelloLayout(welcome).has_value(), L"not a hello");
   }
 
   TEST_METHOD(RefusesAMessageCutShortOrRunOn)
