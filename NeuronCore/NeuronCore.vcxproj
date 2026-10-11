@@ -88,6 +88,7 @@
     <ClInclude Include="ServerCertificate.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="Json.cpp" />
     <ClCompile Include="JsonReader.cpp" />

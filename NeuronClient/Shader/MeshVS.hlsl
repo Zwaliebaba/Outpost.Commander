@@ -1,6 +1,7 @@
 // A mesh in the scene: each vertex placed by its instance's world matrix and the frame's camera (ADR-011, ADR-053).
-// cbuffer Frame is declared again, identically, in MeshPS.hlsl, MeshLineVS.hlsl and MeshLinePS.hlsl; cbuffer Draw, struct
-// Object and VertexOut in MeshLineVS.hlsl, and VertexOut in MeshPS.hlsl and MeshLinePS.hlsl. They must match
+// cbuffer Frame is declared again, identically, in MeshPS.hlsl, MeshLineVS.hlsl and MeshLinePS.hlsl; cbuffer Draw and
+// struct Object in MeshLineVS.hlsl; and VertexOut in MeshPS.hlsl. A line's VertexOut, in MeshLineVS.hlsl and
+// MeshLinePS.hlsl, is the same without the openness, which a line does not take (ADR-092). They must match
 // MeshPipeline.cpp.
 
 cbuffer Frame : register(b0)
@@ -9,7 +10,7 @@ cbuffer Frame : register(b0)
   float3 directionToLight;
   float keyWrap;
   float3 eyePosition;
-  float unused0;
+  float occlusionStrength;
   float3 keyColor;
   float unused1;
   float3 skyFill;
@@ -42,6 +43,7 @@ struct VertexIn
 {
   float3 position : POSITION;
   float3 normal : NORMAL;
+  float openness : OPENNESS;
 };
 
 struct VertexOut
@@ -49,6 +51,7 @@ struct VertexOut
   float4 position : SV_Position;
   float3 normal : NORMAL;
   nointerpolation float4 color : COLOR;
+  float openness : OPENNESS;
 };
 
 VertexOut main(VertexIn input, uint instanceId : SV_InstanceID)
@@ -61,5 +64,6 @@ VertexOut main(VertexIn input, uint instanceId : SV_InstanceID)
   // The world matrix scales uniformly, so its upper 3x3 turns normals correctly; the pixel shader normalizes them.
   output.normal = mul(input.normal, (float3x3)world);
   output.color = drawn.color;
+  output.openness = input.openness;
   return output;
 }

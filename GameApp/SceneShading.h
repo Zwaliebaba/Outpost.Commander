@@ -17,9 +17,14 @@ inline constexpr DirectX::XMFLOAT3 KEY_COLOR{0.627f, 0.539f, 0.427f};
 inline constexpr float KEY_WRAP = 0.3f;
 inline constexpr DirectX::XMFLOAT3 SKY_FILL{0.365f, 0.421f, 0.571f};
 inline constexpr DirectX::XMFLOAT3 GROUND_FILL{0.314f, 0.287f, 0.389f};
+// How far a face's light is darkened where the rest of its model shuts it in (ADR-092): all the way, so that a vertex the
+// baker found wholly shut in is black and one half shut in is lit by half. A line is never darkened, so the lines in a
+// recess stand out the more.
+inline constexpr float OCCLUSION_STRENGTH = 1.0f;
 
-// The light that reaches a face whose unit normal is _normal, per channel, as MeshPS.hlsl works it out.
-[[nodiscard]] DirectX::XMFLOAT3 FaceLight(const DirectX::XMFLOAT3& _normal) noexcept;
+// The light that reaches a face whose unit normal is _normal, per channel, as MeshPS.hlsl works it out, where the face is
+// _openness open (MeshVertex::openness).
+[[nodiscard]] DirectX::XMFLOAT3 FaceLight(const DirectX::XMFLOAT3& _normal, float _openness = 1.0f) noexcept;
 
 // How bright the light is that reaches a line whose unit normal is _normal, as MeshLinePS.hlsl works it out: the
 // luminance of FaceLight's.

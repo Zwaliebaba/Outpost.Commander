@@ -64,10 +64,11 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   ID3D12Device* device = _renderer.Device();
   m_rootSignature = CreateRootSignature(device);
 
-  // Matches MeshVertex.
-  const std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputLayout{{
+  // Matches MeshVertex. The lines' vertex shader takes no openness, which the input layout may offer it all the same.
+  const std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{{
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, normal), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    {"OPENNESS", 0, DXGI_FORMAT_R32_FLOAT, 0, offsetof(MeshVertex, openness), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
   }};
 
   // The defaults cull back faces, which are the counterclockwise ones, and test depth with less-than (ADR-011).

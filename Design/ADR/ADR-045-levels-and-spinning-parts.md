@@ -30,17 +30,17 @@ The baker refused every animation, so none of these sources could be baked.
    - a hardpoint on a part;
    - a part with no triangles;
    - a model whose every triangle spins.
-3. **The NMF layout is version 2, little-endian:**
+3. **The NMF layout is version 3, little-endian:**
 
    ```
-   char magic[4] = "NMF\0"; u32 version = 2; u32 vertexCount; u32 indexCount; u32 hardpointCount; u32 partCount; u32 flags = 0
-   vertexCount    x { f32 position[3]; f32 normal[3]; }      24 bytes, Neuron::MeshVertex
+   char magic[4] = "NMF\0"; u32 version = 3; u32 vertexCount; u32 indexCount; u32 hardpointCount; u32 partCount; u32 flags = 0
+   vertexCount    x { f32 position[3]; f32 normal[3]; u8 open; u8 zero[3]; }      28 bytes; open is ADR-092's
    indexCount     x u32, a multiple of 3, each below vertexCount
    hardpointCount x { u8 tagLength; char tag[tagLength]; f32 position[3]; f32 forward[3]; f32 up[3]; f32 size; }
    partCount      x { u32 firstIndex; u32 indexCount; f32 pivot[3]; f32 axis[3]; f32 periodSeconds; }
    ```
 
-   The triangles that stand still come first. The parts' runs of indices follow, one after another, to the end, each sorted by its node's name. A part turns once each period about its pivot, as `XMMatrixRotationAxis(axis, angle)` turns a point as the angle grows. The change of frame mirrors the source, so the baker reverses the source's axis. `Neuron::ParseNmf` reads only version 2, as strictly as ADR-018 decision 5 says, and every `.nmf` is baked again. It also refuses:
+   The triangles that stand still come first. The parts' runs of indices follow, one after another, to the end, each sorted by its node's name. A part turns once each period about its pivot, as `XMMatrixRotationAxis(axis, angle)` turns a point as the angle grows. The change of frame mirrors the source, so the baker reverses the source's axis. `Neuron::ParseNmf` reads only version 3, as strictly as ADR-018 decision 5 says, and every `.nmf` is baked again; version 3 added how open each vertex is ([ADR-092](ADR-092-baked-occlusion.md)). It also refuses:
    - a part's axis that is not a unit vector;
    - a period that is not positive;
    - runs that leave no triangle standing still, are not whole triangles, overlap or leave a gap, or do not reach the last index.
@@ -51,7 +51,7 @@ The baker refused every animation, so none of these sources could be baked.
 
 - Each of the 45 sources bakes, and `--check` proves the 45 `.nmf` files current. The 15 models with no levels and no parts change only in their header: 4 bytes and the version.
 - Every Research Lab in a match spins in step with every other, on the one clock. A phase for each structure would need the entity in `DrawModel`, and no one has asked for it.
-- `NeuronClientTests` checks the version 2 reader and its refusals, `MeshPiece`, and the sense and period of `PartWorld`. `GameAppTests` checks the level 1 file name, and that both players' Research Labs have a part. `BakeMeshes.py --self-test` checks that a part's corners turn in the game where glTF's animation turns them, a quarter turn in. It also checks that every new refusal fires.
+- `NeuronClientTests` checks the reader and its refusals, `MeshPiece`, and the sense and period of `PartWorld`. `GameAppTests` checks the level 1 file name, and that both players' Research Labs have a part. `BakeMeshes.py --self-test` checks that a part's corners turn in the game where glTF's animation turns them, a quarter turn in. It also checks that every new refusal fires.
 
 ## What this forecloses
 

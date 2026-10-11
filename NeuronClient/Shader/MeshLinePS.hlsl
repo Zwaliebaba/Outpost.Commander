@@ -1,7 +1,8 @@
 // A line in the scene, as bright as the light on a surface that faces the way it does, in its own hue: a line carries
 // whose a model is, or what a ring or a border means, and the light's warmth and coolness are the faces' (ADR-090). Its
-// normal is the mean of its two faces' (ADR-027). cbuffer Frame is declared again, identically, in MeshVS.hlsl,
-// MeshLineVS.hlsl and MeshPS.hlsl, and VertexOut in all three; they must match MeshPipeline.cpp.
+// normal is the mean of its two faces' (ADR-027). It is not darkened where its faces are shut in, so that a line in a
+// recess stands out the more (ADR-092). cbuffer Frame is declared again, identically, in MeshVS.hlsl, MeshLineVS.hlsl and
+// MeshPS.hlsl, and VertexOut in MeshLineVS.hlsl; they must match MeshPipeline.cpp.
 
 cbuffer Frame : register(b0)
 {
@@ -9,7 +10,7 @@ cbuffer Frame : register(b0)
   float3 directionToLight;
   float keyWrap;
   float3 eyePosition;
-  float unused0;
+  float occlusionStrength;
   float3 keyColor;
   float unused1;
   float3 skyFill;

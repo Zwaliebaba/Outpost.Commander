@@ -28,7 +28,9 @@ public:
     float keyWrap;
     // Where the camera is, in the world, toward which DrawLines pulls a line.
     DirectX::XMFLOAT3 eyePosition;
-    float unused0;
+    // How far a face's light is darkened by how shut in its vertices are (MeshVertex::openness, ADR-092): 0 ignores it,
+    // and 1 takes a face that is wholly shut in to black. A line is never darkened.
+    float occlusionStrength;
     DirectX::XMFLOAT3 keyColor;
     float unused1;
     DirectX::XMFLOAT3 skyFill;

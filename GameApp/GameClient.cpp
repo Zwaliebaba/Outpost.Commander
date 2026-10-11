@@ -1133,6 +1133,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   constants.skyFill = SKY_FILL;
   constants.groundFill = GROUND_FILL;
   constants.eyePosition = m_camera.EyePosition(aspectRatio);
+  constants.occlusionStrength = OCCLUSION_STRENGTH;
 
   // The sky first, under everything. Its stars are sized on the reference frame, so they keep their look at any
   // resolution (ADR-006, ADR-022).

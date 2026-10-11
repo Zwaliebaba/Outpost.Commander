@@ -2,6 +2,7 @@
 #include "RepositoryAssets.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <limits>
@@ -58,17 +59,24 @@ std::vector<DirectX::XMFLOAT3> SeenNormals()
   return normals;
 }
 
-// The least ratio of a model's lines to its faces over _normals, each face and its line lit as MeshPS.hlsl and
-// MeshLinePS.hlsl light them.
+// How open a face may be: wholly, half and not at all (ADR-092). A line is never darkened, so a shut-in face only stands
+// further below its lines.
+constexpr std::array<float, 3> OPENNESSES{1.0f, 0.5f, 0.0f};
+
+// The least ratio of a model's lines to its faces over _normals and every openness, each face and its line lit as
+// MeshPS.hlsl and MeshLinePS.hlsl light them.
 float LeastContrast(const DirectX::XMFLOAT4& _faces, const DirectX::XMFLOAT4& _lines, std::span<const DirectX::XMFLOAT3> _normals)
 {
   float least = std::numeric_limits<float>::max();
   for (const DirectX::XMFLOAT3& normal : _normals)
   {
-    const DirectX::XMFLOAT3 light = Outpost::FaceLight(normal);
-    const float face = Outpost::Luminance(_faces.x * light.x, _faces.y * light.y, _faces.z * light.z);
-    const float line = LuminanceOf(_lines) * Outpost::LineLight(normal);
-    least = std::min(least, (line + 0.05f) / (face + 0.05f));
+    for (const float openness : OPENNESSES)
+    {
+      const DirectX::XMFLOAT3 light = Outpost::FaceLight(normal, openness);
+      const float face = Outpost::Luminance(_faces.x * light.x, _faces.y * light.y, _faces.z * light.z);
+      const float line = LuminanceOf(_lines) * Outpost::LineLight(normal);
+      least = std::min(least, (line + 0.05f) / (face + 0.05f));
+    }
   }
   return least;
 }
@@ -121,6 +129,23 @@ public:
     const float brightest = std::max({light.x, light.y, light.z});
     const float dimmest = std::min({light.x, light.y, light.z});
     Assert::IsTrue(brightest <= MOST_TINT_UP * dimmest, L"nearly gray");
+  }
+
+  // ADR-092: a face is darkened by how shut in it is, by OCCLUSION_STRENGTH's share, and a line is not.
+  TEST_METHOD(DarkensAFaceByHowShutInItIs)
+  {
+    const DirectX::XMFLOAT3 normal{-0.6f, 0.0f, 0.8f};
+    const DirectX::XMFLOAT3 open = Outpost::FaceLight(normal);
+    for (const float openness : OPENNESSES)
+    {
+      const DirectX::XMFLOAT3 shut = Outpost::FaceLight(normal, openness);
+      const float share = 1.0f - (Outpost::OCCLUSION_STRENGTH * (1.0f - openness));
+      Assert::AreEqual(open.x * share, shut.x, 1e-6f, L"red darkened by its share");
+      Assert::AreEqual(open.y * share, shut.y, 1e-6f, L"green darkened by its share");
+      Assert::AreEqual(open.z * share, shut.z, 1e-6f, L"blue darkened by its share");
+    }
+    Assert::AreEqual(Outpost::FaceLight(normal, 1.0f).x, Outpost::FaceLight(normal, 2.0f).x, L"no more than wholly open");
+    Assert::AreEqual(Outpost::FaceLight(normal, 0.0f).x, Outpost::FaceLight(normal, -1.0f).x, L"no less than shut in");
   }
 
   TEST_METHOD(WarmsTheKeyAndCoolsTheFill)
