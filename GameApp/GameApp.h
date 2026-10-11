@@ -17,6 +17,7 @@
 
 #include "ModelCatalog.h"
 #include "Hardpoints.h"
+#include "SceneShading.h"
 #include "Camera.h"
 #include "SnapshotInterpolator.h"
 #include "ShipBanking.h"

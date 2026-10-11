@@ -8,9 +8,15 @@ cbuffer Frame : register(b0)
 {
   row_major float4x4 viewProjection;
   float3 directionToLight;
-  float ambient;
+  float keyWrap;
   float3 eyePosition;
   float unused0;
+  float3 keyColor;
+  float unused1;
+  float3 skyFill;
+  float unused2;
+  float3 groundFill;
+  float unused3;
 };
 
 cbuffer Draw : register(b1)

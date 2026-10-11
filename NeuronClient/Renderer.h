@@ -13,9 +13,10 @@ struct StaticBuffer
 
 // The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). A frame's scene is drawn
 // into a multisampled scene target with a depth buffer of its own, both the size of the back buffer (ADR-011, ADR-040).
-// BeginInterface resolves it into the back buffer through an sRGB view, and the interface is drawn over that at one
-// sample (ADR-050). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It knows no game concept: a frame is
-// cleared, whoever holds the command list draws into it, and it is presented.
+// BeginInterface makes the scene's glow (ADR-091) and resolves the scene into the back buffer through an sRGB view with the
+// glow added, and the interface is drawn over that at one sample (ADR-050). It uses d3dx12's helpers for barriers and
+// descriptors (ADR-007). It knows no game concept: a frame is cleared, whoever holds the command list draws into it, and it
+// is presented.
 class Renderer : NonCopyable
 {
 public:
@@ -44,13 +45,20 @@ public:
   // a viewport over the whole of them. The command list it returns is open until EndFrame.
   [[nodiscard]] ID3D12GraphicsCommandList* BeginFrame(const std::array<float, 4>& _clearColor);
 
-  // Resolves the scene BeginFrame started into the back buffer, and binds the back buffer through an sRGB view, at one
-  // sample and with no depth buffer, for the interface to be drawn over it (ADR-050). Pipelines that draw after it are
-  // built for RENDER_TARGET_FORMAT, one sample and no depth format. Once a frame; EndFrame calls it if nothing did.
+  // Makes the glow of the scene BeginFrame started (ADR-091), resolves the scene into the back buffer with the glow added,
+  // and binds the back buffer through an sRGB view, at one sample and with no depth buffer, for the interface to be drawn
+  // over it (ADR-050). Pipelines that draw after it are built for RENDER_TARGET_FORMAT, one sample and no depth format. Once
+  // a frame; EndFrame calls it if nothing did.
   void BeginInterface();
 
   // Finishes the frame, submits it and presents it.
   void EndFrame();
+
+  // How the scene glows from the next frame on (ADR-091). Until it is set, the glow adds nothing.
+  void SetBloom(const BloomDesc& _desc) noexcept
+  {
+    m_bloomDesc = _desc;
+  }
 
   // Opens a batch of uploads (ADR-048): CreateStaticBuffer and CreateStaticTexture record their copies into one command
   // list, through shared upload buffers, and EndUploads submits them all and waits for them once. What they return may
@@ -125,6 +133,8 @@ private:
 
   void CreateRenderTargets();
   void CreateDepthBuffer();
+  // Sets a viewport and a scissor over the whole of the back buffer, which the scene target and the depth buffer match.
+  void CoverWholeTarget();
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE SceneTargetView() const noexcept;
   // The render target view of back buffer _index, sRGB, after the scene's in the same heap.
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE BackBufferView(UINT _index) const noexcept;
@@ -150,6 +160,9 @@ private:
   UINT m_sceneView = 0;
   winrt::com_ptr<ID3D12RootSignature> m_resolveRootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_resolveState;
+  // The scene's glow, which the resolve adds (ADR-091), and how it glows.
+  std::unique_ptr<Bloom> m_bloom;
+  BloomDesc m_bloomDesc;
   winrt::com_ptr<ID3D12Resource> m_depthBuffer;
   std::array<winrt::com_ptr<ID3D12CommandAllocator>, FRAME_COUNT> m_commandAllocators;
   winrt::com_ptr<ID3D12GraphicsCommandList> m_commandList;

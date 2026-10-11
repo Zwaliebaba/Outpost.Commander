@@ -82,6 +82,7 @@
     <ClInclude Include="MatchLog.h" />
     <ClInclude Include="ModelCatalog.h" />
     <ClInclude Include="Hardpoints.h" />
+    <ClInclude Include="SceneShading.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Picking.h" />
     <ClInclude Include="PlayerControls.h" />
@@ -114,6 +115,7 @@
     <ClCompile Include="MatchLog.cpp" />
     <ClCompile Include="ModelCatalog.cpp" />
     <ClCompile Include="Hardpoints.cpp" />
+    <ClCompile Include="SceneShading.cpp" />
     <ClCompile Include="Picking.cpp" />
     <ClCompile Include="PlayerControls.cpp" />
     <ClCompile Include="SnapshotInterpolator.cpp" />
