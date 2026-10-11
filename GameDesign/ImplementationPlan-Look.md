@@ -113,7 +113,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 - **Verify:** CI; run; `--measure --stress` against the last figures; **owner run.**
 - **As built (2026-10-11):** [ADR-091](../Design/ADR/ADR-091-a-phosphor-glow.md).
   - `Neuron::Bloom`: five levels of `R11G11B10_FLOAT`, a bright pass, thirteen-tap down passes and tent up passes, added in the resolve. `SCENE_BLOOM` starts at a threshold of 0.35, a knee of 0.15, an intensity of 2 and a spread of 0.6, chosen by replaying the passes in numpy on a lit ship's line.
-  - `BloomTests` ran in the Linux container and on Windows in CI. The owner's Release run of `--measure --stress` at 1920×1080 put a whole frame's GPU work, the glow included, at a mean of 0.67 ms and a 99th percentile of 1.19 ms; the glow's own share was not measured apart.
+  - `BloomTests` ran in the Linux container and on Windows in CI. The owner's Release runs of `--measure --stress` at 1920×1080, this change against `main`, put the glow and the light together at 0.30 ms of GPU work a frame on average: a mean of 0.67 ms against 0.37 ms, and a 99th percentile of 1.19 ms against 0.81 ms.
 
 ---
 
