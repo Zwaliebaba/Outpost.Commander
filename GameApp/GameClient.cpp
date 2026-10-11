@@ -17,6 +17,13 @@ constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
 // The light, and the colors of a model's faces and lines in it, are SceneShading.h's (ADR-090).
 
+// The scene glows as a vector screen's phosphor glows (ADR-091): light above SCENE_BLOOM's threshold, eased in over its
+// knee, is blurred and added back, its levels weighed by its spread so that the glow stays close to what is bright. They
+// are first values, set by replaying the glow's passes on a lit Human ship's line over its faces: the line brightens by a
+// tenth, the face a pixel from it by half and four pixels from it by a sixth, and no channel of the line passes 1. The
+// faces, the grid and the dim side of every model stay under the threshold.
+constexpr Neuron::BloomDesc SCENE_BLOOM{.thresholdLuminance = 0.35f, .kneeLuminance = 0.15f, .intensity = 2.0f, .spread = 0.6f};
+
 // The grid covers the 10,000 m map (Phase 4 design §6) with a line every 100 m, each a pixel wide at any zoom, in the line art
 // of the asteroids' ridges (ADR-028). It is a dim blue-gray, barely there, so the sky shows through (ADR-022) and the
 // ridges stand out above it, and it is what shows the ground moving when the view pans.
@@ -410,6 +417,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_particles(_ticksPerSecond),
     m_explosions(_ticksPerSecond)
 {
+  _renderer.SetBloom(SCENE_BLOOM);
   // Gate H7: which face the figures found, Cascadia Mono or Consolas in its place (Phase 1 design §11).
   Neuron::DebugTrace(L"The interface's figures are set in {}.\n", m_ui.FamilyOf(static_cast<std::size_t>(Hud::Typeface::Figure)));
   // The models are kept in the catalog's order, which ModelIndex counts on, as LoadClientAssets made them.

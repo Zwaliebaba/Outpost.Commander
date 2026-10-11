@@ -35,6 +35,9 @@
     <ClInclude Include="MeshPipeline.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="Bloom.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="GlowPipeline.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -74,6 +77,9 @@
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="MeshPipeline.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Bloom.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="GlowPipeline.cpp">
@@ -130,6 +136,18 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\ResolvePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\BloomVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\BloomBrightPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\BloomDownPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\BloomUpPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\StarVS.hlsl">

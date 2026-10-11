@@ -80,15 +80,44 @@ void EnableDebugLayers() noexcept
 }
 #endif
 
-// The resolve's root signature: the scene's view as a table of one, read by the pixel shader (ADR-050).
+// The resolve's root signature, read by the pixel shader: the scene's view as a table of one at t0, the glow's first level
+// as a table of one at t1 (ADR-091), and the resolve's constants at b0, as root constants.
+constexpr UINT RESOLVE_SCENE_PARAMETER = 0;
+constexpr UINT RESOLVE_GLOW_PARAMETER = 1;
+constexpr UINT RESOLVE_CONSTANTS_PARAMETER = 2;
+
+// cbuffer Resolve in Shader/ResolvePS.hlsl: the size of a texel of the glow's first level and of the back buffer, as shares
+// of each, and how much of the glow is added.
+struct ResolveConstants
+{
+  float glowTexelWidth = 0.0f;
+  float glowTexelHeight = 0.0f;
+  float targetTexelWidth = 0.0f;
+  float targetTexelHeight = 0.0f;
+  float glowScale = 0.0f;
+  float unused0 = 0.0f;
+  float unused1 = 0.0f;
+  float unused2 = 0.0f;
+};
+constexpr UINT RESOLVE_CONSTANT_COUNT = sizeof(ResolveConstants) / sizeof(float);
+
 winrt::com_ptr<ID3D12RootSignature> CreateResolveRootSignature(ID3D12Device* _device)
 {
   const CD3DX12_DESCRIPTOR_RANGE1 sceneRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0,
                                              D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
-  CD3DX12_ROOT_PARAMETER1 parameter;
-  parameter.InitAsDescriptorTable(1, &sceneRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  const CD3DX12_DESCRIPTOR_RANGE1 glowRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0,
+                                            D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
+  std::array<CD3DX12_ROOT_PARAMETER1, 3> parameters{};
+  parameters[RESOLVE_SCENE_PARAMETER].InitAsDescriptorTable(1, &sceneRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  parameters[RESOLVE_GLOW_PARAMETER].InitAsDescriptorTable(1, &glowRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  parameters[RESOLVE_CONSTANTS_PARAMETER].InitAsConstants(RESOLVE_CONSTANT_COUNT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+  // Bilinear and clamped, for the glow's taps between texels; the scene is read by whole samples.
+  const CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                            D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0.0f, 16,
+                                            D3D12_COMPARISON_FUNC_LESS_EQUAL, D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE, 0.0f,
+                                            D3D12_FLOAT32_MAX, D3D12_SHADER_VISIBILITY_PIXEL);
   CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC description;
-  description.Init_1_1(1, &parameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+  description.Init_1_1(static_cast<UINT>(parameters.size()), parameters.data(), 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
   // Version 1.1 where the device has it, 1.0 otherwise; d3dx12 converts the description.
   D3D12_FEATURE_DATA_ROOT_SIGNATURE feature{.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1};
@@ -248,6 +277,8 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
     .SampleDesc = {.Count = 1, .Quality = 0},
   };
   winrt::check_hresult(m_device->CreateGraphicsPipelineState(&resolveDescription, IID_GRAPHICS_PPV_ARGS(m_resolveState)));
+  // The glow's pipelines and its slots in the shader-visible heap; its levels are made with the render targets (ADR-091).
+  m_bloom = std::make_unique<Bloom>(*this);
 
   for (auto& allocator : m_commandAllocators)
     winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
@@ -363,7 +394,12 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
   m_commandList->ClearRenderTargetView(renderTarget, _clearColor.data(), 0, nullptr);
   m_commandList->ClearDepthStencilView(depthStencil, D3D12_CLEAR_FLAG_DEPTH, DEPTH_CLEAR, 0, 0, nullptr);
   m_commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &depthStencil);
+  CoverWholeTarget();
+  return m_commandList.get();
+}
 
+void Neuron::Renderer::CoverWholeTarget()
+{
   const D3D12_VIEWPORT viewport{
     .TopLeftX = 0.0f,
     .TopLeftY = 0.0f,
@@ -375,7 +411,6 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
   const D3D12_RECT scissor{.left = 0, .top = 0, .right = static_cast<LONG>(m_widthPixels), .bottom = static_cast<LONG>(m_heightPixels)};
   m_commandList->RSSetViewports(1, &viewport);
   m_commandList->RSSetScissorRects(1, &scissor);
-  return m_commandList.get();
 }
 
 void Neuron::Renderer::BeginInterface()
@@ -388,7 +423,7 @@ void Neuron::Renderer::BeginInterface()
 
   // The scene's samples are averaged in linear color by a shader that reads them through an sRGB view and writes the back
   // buffer through one: a flip-model back buffer cannot be sRGB, but a view of it may be, so no texture stands between
-  // the two (ADR-050). The viewport and the scissor BeginFrame set cover the back buffer too.
+  // the two (ADR-050). The glow is made from the scene first, and the resolve adds it (ADR-091).
   ID3D12Resource* backBuffer = m_backBuffers[m_frameIndex].get();
   const std::array toResolve{
     CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -396,11 +431,30 @@ void Neuron::Renderer::BeginInterface()
     CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET),
   };
   m_commandList->ResourceBarrier(static_cast<UINT>(toResolve.size()), toResolve.data());
+  PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Bloom");
+  m_bloom->Draw(m_commandList.get(), ShaderViewGpu(m_sceneView), m_bloomDesc);
+  PIXEndEvent(m_commandList.get());
+
+  // The glow set viewports of its own; the resolve and the interface cover the back buffer.
+  CoverWholeTarget();
   const D3D12_CPU_DESCRIPTOR_HANDLE target = BackBufferView(m_frameIndex);
   m_commandList->OMSetRenderTargets(1, &target, FALSE, nullptr);
   m_commandList->SetGraphicsRootSignature(m_resolveRootSignature.get());
   m_commandList->SetPipelineState(m_resolveState.get());
-  m_commandList->SetGraphicsRootDescriptorTable(0, ShaderViewGpu(m_sceneView));
+  m_commandList->SetGraphicsRootDescriptorTable(RESOLVE_SCENE_PARAMETER, ShaderViewGpu(m_sceneView));
+  m_commandList->SetGraphicsRootDescriptorTable(RESOLVE_GLOW_PARAMETER, m_bloom->FirstLevelView());
+  const Bloom::Extent glow = m_bloom->FirstLevelExtent();
+  const ResolveConstants constants{
+    .glowTexelWidth = 1.0f / static_cast<float>(glow.widthPixels),
+    .glowTexelHeight = 1.0f / static_cast<float>(glow.heightPixels),
+    .targetTexelWidth = 1.0f / static_cast<float>(m_widthPixels),
+    .targetTexelHeight = 1.0f / static_cast<float>(m_heightPixels),
+    .glowScale = Bloom::CompositeScale(m_bloomDesc),
+    .unused0 = 0.0f,
+    .unused1 = 0.0f,
+    .unused2 = 0.0f,
+  };
+  m_commandList->SetGraphicsRoot32BitConstants(RESOLVE_CONSTANTS_PARAMETER, RESOLVE_CONSTANT_COUNT, &constants, 0);
   m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   m_commandList->DrawInstanced(3, 1, 0, 0);
 }
@@ -628,6 +682,9 @@ void Neuron::Renderer::CreateRenderTargets()
                                                   .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
                                                   .Texture2DMS = {.UnusedField_NothingToDefine = 0}};
   m_device->CreateShaderResourceView(m_sceneTarget.get(), &sceneView, ShaderViewCpu(m_sceneView));
+
+  // The glow's levels follow the scene's size (ADR-091).
+  m_bloom->Resize(m_widthPixels, m_heightPixels);
 }
 
 void Neuron::Renderer::CreateDepthBuffer()
