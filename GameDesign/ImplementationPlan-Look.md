@@ -42,8 +42,8 @@ Task numbers carry the prefix LV, and gates are lettered A.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | built; awaiting CI and the owner's run |
-| LV1.2 | A phosphor glow | — | A2 | built; awaiting CI and the owner's run |
+| LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107), CI green; run by the owner, awaiting the owner's verdict |
+| LV1.2 | A phosphor glow | — | A2 | [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107), CI green; run and measured by the owner, awaiting the owner's verdict |
 | LV2.1 | Occlusion baked into every vertex | — | A3 | todo |
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | todo |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | todo |
@@ -98,7 +98,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 - **Verify:** CI; run, at the default zoom and close in; **owner run.**
 - **As built (2026-10-11):** [ADR-090](../Design/ADR/ADR-090-a-warm-key-and-a-cool-fill.md).
   - The key is (0.627, 0.539, 0.427), the sky (0.365, 0.421, 0.571), the ground (0.314, 0.287, 0.389) and the wrap 0.3. The least light on a face the camera sees is 0.315 in luminance, and the light on a face that looks up is within 7% of gray.
-  - `SceneShadingTests` ran in the Linux container with gcc and clang against DirectXMath and stand-ins for the unit-test framework and the loaders; the shaders passed glslang's HLSL front end. `fxc`, MSVC and the test DLL are CI's. Not yet seen on screen.
+  - `SceneShadingTests` ran in the Linux container with gcc and clang against stand-ins, and on Windows in CI. The owner ran a Release build on 2026-10-11.
 
 ### LV1.2 — A phosphor glow
 
@@ -113,7 +113,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 - **Verify:** CI; run; `--measure --stress` against the last figures; **owner run.**
 - **As built (2026-10-11):** [ADR-091](../Design/ADR/ADR-091-a-phosphor-glow.md).
   - `Neuron::Bloom`: five levels of `R11G11B10_FLOAT`, a bright pass, thirteen-tap down passes and tent up passes, added in the resolve. `SCENE_BLOOM` starts at a threshold of 0.35, a knee of 0.15, an intensity of 2 and a spread of 0.6, chosen by replaying the passes in numpy on a lit ship's line.
-  - `BloomTests` ran in the Linux container; `Bloom.cpp` parsed against Microsoft's DirectX-Headers, and the shaders passed glslang. `Renderer.cpp`, `fxc` and the GPU time are CI's and the owner's. Not yet seen on screen.
+  - `BloomTests` ran in the Linux container and on Windows in CI. The owner's Release run of `--measure --stress` at 1920×1080 put a whole frame's GPU work, the glow included, at a mean of 0.67 ms and a 99th percentile of 1.19 ms; the glow's own share was not measured apart.
 
 ---
 
