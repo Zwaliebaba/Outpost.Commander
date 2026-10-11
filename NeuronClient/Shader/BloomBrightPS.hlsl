@@ -1,15 +1,16 @@
 // The glow's first level (ADR-091): each of its pixels covers two by two of the scene's. It averages each scene pixel's
 // samples, read through an sRGB view so that they arrive as linear color, as the resolve does (ADR-050), keeps of each pixel
 // the share of its light above the threshold, and averages the four. A pixel is kept by its luminance, eased in over the knee
-// either side of the threshold, so that nothing starts to glow at a hard edge. cbuffer Pass is declared again, identically, in
-// BloomDownPS.hlsl and BloomUpPS.hlsl, and VertexOut in BloomVS.hlsl; they must match Bloom.cpp.
+// either side of the threshold, so that nothing starts to glow at a hard edge. cbuffer PassConstants is declared again,
+// identically, in BloomDownPS.hlsl and BloomUpPS.hlsl, and VertexOut in BloomVS.hlsl; they must match Bloom.cpp. A cbuffer
+// cannot be named Pass: fxc reads pass as an effect's keyword whatever its case.
 
 // Must match Renderer::SAMPLE_COUNT.
 static const uint SAMPLE_COUNT = 4;
 // The luminance weights of linear sRGB.
 static const float3 LUMINANCE = float3(0.2126f, 0.7152f, 0.0722f);
 
-cbuffer Pass : register(b0)
+cbuffer PassConstants : register(b0)
 {
   float2 sourceTexel;
   float2 targetTexel;

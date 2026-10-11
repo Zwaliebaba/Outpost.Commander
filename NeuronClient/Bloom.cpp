@@ -12,12 +12,12 @@
 namespace
 {
 // The root signature's parameters, in order: the level read, as a table of one view at t0, and the pass's constants at b0,
-// as root constants (cbuffer Pass in the three pixel shaders).
+// as root constants (cbuffer PassConstants in the three pixel shaders).
 constexpr UINT SOURCE_PARAMETER = 0;
 constexpr UINT PASS_PARAMETER = 1;
 
-// cbuffer Pass in Shader/BloomBrightPS.hlsl, BloomDownPS.hlsl and BloomUpPS.hlsl: the size of a texel of the level read and
-// of the level written, as shares of each, the threshold and its knee, and the weight of what an up pass adds.
+// cbuffer PassConstants in Shader/BloomBrightPS.hlsl, BloomDownPS.hlsl and BloomUpPS.hlsl: the size of a texel of the level
+// read and of the level written, as shares of each, the threshold and its knee, and the weight of what an up pass adds.
 struct PassConstants
 {
   float sourceTexelWidth = 0.0f;

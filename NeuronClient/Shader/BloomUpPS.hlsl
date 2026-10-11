@@ -1,9 +1,9 @@
 // One level of the glow added into the level above it, which is twice its size (ADR-091): a three by three tent of bilinear
 // taps a texel of the smaller level apart, weighed by the spread, which the blend adds to what the down pass left there.
-// cbuffer Pass is declared again, identically, in BloomBrightPS.hlsl and BloomDownPS.hlsl, and VertexOut in BloomVS.hlsl;
-// they must match Bloom.cpp.
+// cbuffer PassConstants is declared again, identically, in BloomBrightPS.hlsl and BloomDownPS.hlsl, and VertexOut in
+// BloomVS.hlsl; they must match Bloom.cpp.
 
-cbuffer Pass : register(b0)
+cbuffer PassConstants : register(b0)
 {
   float2 sourceTexel;
   float2 targetTexel;

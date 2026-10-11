@@ -1,9 +1,9 @@
 // One level of the glow from the level above it, which is twice its size (ADR-091): thirteen bilinear taps, in five boxes
 // of four that overlap, the middle box weighed as much as the four corner boxes together. It blurs as it halves, and a thin
-// bright line does not flicker as it moves across the larger level's texels. cbuffer Pass is declared again, identically, in
-// BloomBrightPS.hlsl and BloomUpPS.hlsl, and VertexOut in BloomVS.hlsl; they must match Bloom.cpp.
+// bright line does not flicker as it moves across the larger level's texels. cbuffer PassConstants is declared again,
+// identically, in BloomBrightPS.hlsl and BloomUpPS.hlsl, and VertexOut in BloomVS.hlsl; they must match Bloom.cpp.
 
-cbuffer Pass : register(b0)
+cbuffer PassConstants : register(b0)
 {
   float2 sourceTexel;
   float2 targetTexel;
