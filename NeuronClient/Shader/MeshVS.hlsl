@@ -1,14 +1,21 @@
 // A mesh in the scene: each vertex placed by its instance's world matrix and the frame's camera (ADR-011, ADR-053).
-// cbuffer Frame is declared again, identically, in MeshPS.hlsl and MeshLineVS.hlsl; cbuffer Draw, struct Object and
-// VertexOut in MeshLineVS.hlsl, and VertexOut in MeshPS.hlsl. They must match MeshPipeline.cpp.
+// cbuffer Frame is declared again, identically, in MeshPS.hlsl, MeshLineVS.hlsl and MeshLinePS.hlsl; cbuffer Draw, struct
+// Object and VertexOut in MeshLineVS.hlsl, and VertexOut in MeshPS.hlsl and MeshLinePS.hlsl. They must match
+// MeshPipeline.cpp.
 
 cbuffer Frame : register(b0)
 {
   row_major float4x4 viewProjection;
   float3 directionToLight;
-  float ambient;
+  float keyWrap;
   float3 eyePosition;
   float unused0;
+  float3 keyColor;
+  float unused1;
+  float3 skyFill;
+  float unused2;
+  float3 groundFill;
+  float unused3;
 };
 
 // Where this draw's instances start among the frame's.

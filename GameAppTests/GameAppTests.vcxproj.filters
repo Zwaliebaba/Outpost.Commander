@@ -29,5 +29,6 @@
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />
     <ClCompile Include="DesignerTests.cpp" />
+    <ClCompile Include="SceneShadingTests.cpp" />
   </ItemGroup>
 </Project>
