@@ -19,8 +19,8 @@ A failed assertion is none of these: it says the code is wrong. Any exception ty
 1. **`ASSERT` and `ASSERT_TEXT` are checked in every configuration**; `DEBUG_ASSERT`, `DEBUG_ASSERT_TEXT` and `DEBUG_WARNING` in Debug only, and in Release their arguments are not evaluated. An assertion that holds evaluates its expression once and formats nothing.
 2. **A failed assertion names where it failed and what**: `ASSERT` writes its file and line, then the expression as written; `ASSERT_TEXT` writes its file and line, then the text its format string makes. The text is UTF-8, as `Neuron::Exception`'s is ([ADR-008](ADR-008-tuning-data.md)); there is no wide form. A format string is checked when it compiles.
 3. **Then the process ends, and nothing can catch it.**
-   - `Neuron::Fatal` formats the text and calls `Neuron::Fail`, in `Debug.cpp`. Should the formatting itself throw, out of memory, it fails with a fixed text instead, so `Fatal` keeps its `noexcept`.
-   - `Fail` writes it to the debugger's output and, when the process has one, to standard error: the dedicated server's console. Then it calls `__fastfail(FAST_FAIL_FATAL_APP_EXIT)`.
+   - `Neuron::Fatal` formats the text and calls `Neuron::FailFast`, in `Debug.cpp`. Should the formatting itself throw, out of memory, it fails with a fixed text instead, so `Fatal` keeps its `noexcept`.
+   - `FailFast` writes it to the debugger's output and, when the process has one, to standard error: the dedicated server's console. Then it calls `__fastfail(FAST_FAIL_FATAL_APP_EXIT)`.
    - With a debugger attached, the debugger stops there. Without one, Windows Error Reporting takes the process as it stands, at the failing frame.
    - No destructor runs, and no `catch` sees it. This holds in Debug and Release alike, on x64 and ARM64.
 4. **`Neuron::Exception` stays what is wrong with what the program was given**, which it reports and survives. A broken invariant is never thrown.

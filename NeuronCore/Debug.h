@@ -28,19 +28,19 @@ template <class... Types> void DebugTrace([[maybe_unused]] const std::wstring_vi
 // Writes _message where a developer sees it, to the debugger's output and to standard error, and ends the process at once,
 // in every configuration (ADR-093). Nothing can catch it: a failed assertion says the code is wrong, which no handler can
 // mend, and unwinding would run destructors over the state that broke.
-[[noreturn]] void Fail(const char* _message) noexcept;
+[[noreturn]] void FailFast(const char* _message) noexcept;
 
 // Fails with the text _fmt formats from _args, in UTF-8.
 template <class... Types> [[noreturn]] void Fatal(std::format_string<Types...> _fmt, Types&&... _args) noexcept
 {
   try
   {
-    Fail(std::format(_fmt, std::forward<Types>(_args)...).c_str());
+    FailFast(std::format(_fmt, std::forward<Types>(_args)...).c_str());
   }
   catch (...)
   {
     // Out of memory, or a formatter that threw: the process ends all the same.
-    Fail("A failure's message could not be formatted.");
+    FailFast("A failure's message could not be formatted.");
   }
 }
 } // namespace Neuron

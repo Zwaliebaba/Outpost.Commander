@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Debug.h"
 
-void Neuron::Fail(const char* _message) noexcept
+void Neuron::FailFast(const char* _message) noexcept
 {
   OutputDebugStringA(_message);
   OutputDebugStringA("\n");
