@@ -42,9 +42,9 @@ Task numbers carry the prefix LV, and gates are lettered A.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107), CI green; run by the owner, awaiting the owner's verdict |
-| LV1.2 | A phosphor glow | — | A2 | [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107), CI green; run and measured by the owner, awaiting the owner's verdict |
-| LV2.1 | Occlusion baked into every vertex | LV1 | A3 | built, on a branch stacked on #107; awaiting CI and the owner's run |
+| LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | merged, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); the owner's run accepts it |
+| LV1.2 | A phosphor glow | — | A2 | merged, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); the owner's run accepts it, zoomed in and out |
+| LV2.1 | Occlusion baked into every vertex | LV1 | A3 | built; awaiting CI and the owner's run |
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | todo |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | todo |
 | LV3.1 | Beacons | LV2.2 | A5 | todo |
