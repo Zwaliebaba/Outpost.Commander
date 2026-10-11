@@ -44,7 +44,7 @@ Task numbers carry the prefix LV, and gates are lettered A.
 |---|---|---|---|---|
 | LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107), CI green; run by the owner, awaiting the owner's verdict |
 | LV1.2 | A phosphor glow | — | A2 | [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107), CI green; run and measured by the owner, awaiting the owner's verdict |
-| LV2.1 | Occlusion baked into every vertex | — | A3 | todo |
+| LV2.1 | Occlusion baked into every vertex | LV1 | A3 | built, on a branch stacked on #107; awaiting CI and the owner's run |
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | todo |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | todo |
 | LV3.1 | Beacons | LV2.2 | A5 | todo |
@@ -130,6 +130,10 @@ The owner's models are a track of their own beside the plan: chunky proportions,
   - **The bake's time is measured** over every source, and CI's mesh job keeps running it.
 - **ADR:** ADR-045's layout and ADR-018's bake are rewritten.
 - **Acceptance:** the baker's `--self-test` checks an open face unoccluded and a face inside a box occluded; `MeshDataTests` read the byte; the contrast test of LV1.1 holds with the darkest occlusion the shipped models bake.
+- **As built (2026-10-11):** [ADR-092](../Design/ADR/ADR-092-baked-occlusion.md).
+  - 37 rays a vertex, cosine-weighted, sampled a quarter of the way in toward the triangle's middle, within a quarter of the model's extent. NMF version 3: a byte of openness and three zero bytes a vertex. A face's light is darkened by `OCCLUSION_STRENGTH`, 1, and a line's never.
+  - A bake of every source took 117 s one at a time and 33 s on 4 cores in the Linux container; the largest model 19.5 s.
+  - The baker's self-test, `MeshDataTests` and `SceneShadingTests` ran in the Linux container; the shaders passed glslang. The look was judged in an offline render of seven models; the game's run is the owner's.
 
 ### LV2.2 — Paint slots: team, trim and light
 
@@ -138,7 +142,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 - **Scope:**
   - **A face's paint is its material's name:** `team`, `trim` or `light`. A source with no material is `team`. Any other name fails the bake, naming the file, as an unknown hardpoint tag fails the load.
   - **`team` takes the side's color, as every face does today; `trim` a neutral color at the same shade; `light` a bright color that no light reaches**, so that it glows (LV1.2). The ADR picks the trim's and the light's colors.
-  - **The paint is a byte per vertex beside the occlusion,** in the same version as LV2.1.
+  - **The paint is a byte per vertex beside the occlusion,** in one of the three zero bytes version 3 keeps after it (ADR-092).
 - **Acceptance:** the baker's self-test refuses an unknown material; `MeshDataTests` read the paint; the contrast test covers a trim face and its line.
 
 ### LV2.3 — Two-tone lines

@@ -2,8 +2,8 @@
 """Bakes the meshes' glTF sources into the NMF files the game loads (ADR-018, ADR-045).
 
 Each model's source is a binary glTF, Art/Models/<Set>/<Model>.glb, edited with Blender's own glTF import and export.
-This turns each into OutpostCommander/Assets/Models/<Set>/<Model>.nmf: one triangle list of positions and normals, the
-model's hardpoints and its spinning parts, in the game's frame. A model that grows has one source a level,
+This turns each into OutpostCommander/Assets/Models/<Set>/<Model>.nmf: one triangle list of positions, normals and how
+open each vertex is, the model's hardpoints and its spinning parts, in the game's frame. A model that grows has one source a level,
 <Model>_L1.glb to <Model>_L5.glb, and each is baked as a model of its own. The .nmf files are committed, and CI runs
 --check to prove each one is exactly what its source bakes to. CPython's floats are IEEE doubles with no fused
 operations, so a bake is the same bytes on every machine.
@@ -32,10 +32,16 @@ the game would draw wrongly: triangles only, a position and a normal on every ve
 animation but a part's spin, no extension the file requires (Draco or quantized meshes, say), and no sparse accessor.
 Materials, texture coordinates, cameras and lights are left in the source and not baked.
 
-The NMF layout, little-endian, version 2:
+How open a vertex is, its occlusion, is computed here rather than read (ADR-092): rays cast over the hemisphere about its
+normal, cosine-weighted, from a point a quarter of the way in toward its triangle's middle, and the share of them that
+meet none of the model's triangles within a quarter of its largest extent. It is made with arithmetic and square roots
+only, so it too is the same bytes on every machine. A bake takes seconds for the largest models, so --check and a bake
+of every source run one source a core.
+
+The NMF layout, little-endian, version 3:
 
   char magic[4] = "NMF\\0"; u32 version; u32 vertexCount; u32 indexCount; u32 hardpointCount; u32 partCount; u32 flags = 0
-  vertexCount    x { f32 position[3]; f32 normal[3]; }
+  vertexCount    x { f32 position[3]; f32 normal[3]; u8 open; u8 zero[3]; }   open is 0 shut in to 255 wholly open
   indexCount     x u32, a multiple of 3, each below vertexCount
   hardpointCount x { u8 tagLength; char tag[tagLength]; f32 position[3]; f32 forward[3]; f32 up[3]; f32 size; }
   partCount      x { u32 firstIndex; u32 indexCount; f32 pivot[3]; f32 axis[3]; f32 periodSeconds; }
@@ -59,6 +65,7 @@ import math
 import re
 import struct
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -66,9 +73,9 @@ SOURCE_DIRECTORY = ROOT / "Art" / "Models"
 OUTPUT_DIRECTORY = ROOT / "OutpostCommander" / "Assets" / "Models"
 
 NMF_MAGIC = b"NMF\0"
-NMF_VERSION = 2
+NMF_VERSION = 3
 NMF_HEADER = struct.Struct("<4s6I")
-NMF_VERTEX = struct.Struct("<6f")
+NMF_VERTEX = struct.Struct("<6fB3x")
 NMF_HARDPOINT_FLOATS = struct.Struct("<10f")
 NMF_PART = struct.Struct("<2I7f")
 MAXIMUM_TAG_LENGTH = 31
@@ -89,6 +96,19 @@ UNIFORM_SCALE_TOLERANCE = 1e-4
 SPIN_AXIS_TOLERANCE = 1e-4
 SPIN_ANGLE_TOLERANCE = 1e-3
 FULL_TURN = 2.0 * math.pi
+# Occlusion (ADR-092): rays from the cells of a grid this many cells across that lie inside the unit disk, 37 of them; a
+# hit counts within this share of the model's largest extent; each vertex is sampled this share of the way in toward
+# its triangle's middle, so that a corner where another surface starts is not counted as shut in; and a ray starts
+# this share of the extent off the surface, and counts a hit only past the nearest share, so that it does not hit the
+# triangle it leaves or one that meets it flat.
+OCCLUSION_GRID = 7
+OCCLUSION_REACH_SHARE = 0.25
+OCCLUSION_INSET_SHARE = 0.25
+OCCLUSION_LIFT_SHARE = 1e-4
+OCCLUSION_NEAREST_SHARE = 1e-6
+# A ray is taken to run along a triangle's plane, and to miss it, when the determinant is within this share of the
+# extent squared.
+OCCLUSION_PARALLEL_SHARE = 1e-12
 
 
 class BakeError(Exception):
@@ -308,6 +328,123 @@ def read_spin(what, times, keys):
   return {"rotation": first, "axis": axis, "period": span / whole_turns}
 
 
+# ── Occlusion: how open each vertex is, which the game darkens a face's light by (ADR-092) ────────────────────────────
+
+
+def occlusion_directions():
+  """The rays' directions about +z. Points spread evenly over the unit disk and lifted straight up onto the hemisphere fall
+  as the cosine of their angle from +z does (Malley's method), so each ray counts alike in a cosine-weighted share. They
+  are the middles of a grid's cells inside the disk, made with arithmetic and square roots only, which IEEE doubles round
+  the same on every machine, so a bake is still the same bytes everywhere."""
+  directions = []
+  for row in range(OCCLUSION_GRID):
+    for column in range(OCCLUSION_GRID):
+      x = (2 * column + 1) / OCCLUSION_GRID - 1.0
+      y = (2 * row + 1) / OCCLUSION_GRID - 1.0
+      if x * x + y * y < 1.0:
+        directions.append((x, y, math.sqrt(1.0 - x * x - y * y)))
+  return directions
+
+
+def tangent_basis(normal):
+  """Two unit vectors at right angles to a unit normal and to each other, made without trigonometry (Duff and others,
+  2017), so that the result is the same bytes everywhere."""
+  x, y, z = normal
+  sign = 1.0 if z >= 0.0 else -1.0
+  a = -1.0 / (sign + z)
+  b = x * y * a
+  return (1.0 + sign * x * x * a, sign * b, -sign * x), (b, sign + y * y * a, -y)
+
+
+def vertex_openness(vertices, indices):
+  """How open each vertex is, from 0, shut in, to 1, nothing within reach above it: the share of rays cast over the
+  hemisphere about its normal, cosine-weighted, that meet none of the model's triangles within reach. Every triangle
+  counts, a spinning part's as it stands at rest. A vertex several triangles use is the mean of its samples in each, and
+  one no triangle uses is open."""
+  if not indices:
+    return [1.0] * len(vertices)
+  positions = [vertex[0:3] for vertex in vertices]
+  extent = max(max(position[axis] for position in positions) - min(position[axis] for position in positions) for axis in range(3))
+  if extent <= 0.0:
+    return [1.0] * len(vertices)
+  reach = OCCLUSION_REACH_SHARE * extent
+  lift = OCCLUSION_LIFT_SHARE * extent
+  nearest = OCCLUSION_NEAREST_SHARE * extent
+  parallel = OCCLUSION_PARALLEL_SHARE * extent * extent
+  directions = occlusion_directions()
+
+  triangles = []
+  for first in range(0, len(indices), 3):
+    a, b, c = (positions[indices[first + corner]] for corner in range(3))
+    middle = tuple((a[axis] + b[axis] + c[axis]) / 3.0 for axis in range(3))
+    radius = max(length(tuple(point[axis] - middle[axis] for axis in range(3))) for point in (a, b, c))
+    edge1 = tuple(b[axis] - a[axis] for axis in range(3))
+    edge2 = tuple(c[axis] - a[axis] for axis in range(3))
+    triangles.append((a, b, c, middle, radius, a + edge1 + edge2))
+
+  totals = [0.0] * len(vertices)
+  counts = [0] * len(vertices)
+  for here, (a, b, c, middle, radius, _) in enumerate(triangles):
+    corners = [indices[3 * here + corner] for corner in range(3)]
+    normals = [vertices[corner][3:6] for corner in corners]
+    # Only a triangle near enough to reach, and with a corner above this one's plane, can stop a ray. The plane is the
+    # normal's, which is the same at every corner of a flat-shaded triangle; with different ones none is left out.
+    flat = normals[0] == normals[1] == normals[2]
+    candidates = []
+    for there, (oa, ob, oc, other_middle, other_radius, ray_test) in enumerate(triangles):
+      if there == here:
+        continue
+      apart = sum((other_middle[axis] - middle[axis]) ** 2 for axis in range(3))
+      if apart > (reach + radius + other_radius) ** 2:
+        continue
+      if flat and max(dot(tuple(point[axis] - a[axis] for axis in range(3)), normals[0]) for point in (oa, ob, oc)) <= nearest:
+        continue
+      candidates.append(ray_test)
+    for vertex_index, normal in zip(corners, normals):
+      corner = positions[vertex_index]
+      sample = tuple(corner[axis] + (middle[axis] - corner[axis]) * OCCLUSION_INSET_SHARE for axis in range(3))
+      origin_x, origin_y, origin_z = (sample[axis] + normal[axis] * lift for axis in range(3))
+      tangent, bitangent = tangent_basis(normal)
+      blocked = 0
+      for x, y, z in directions:
+        ray_x = tangent[0] * x + bitangent[0] * y + normal[0] * z
+        ray_y = tangent[1] * x + bitangent[1] * y + normal[1] * z
+        ray_z = tangent[2] * x + bitangent[2] * y + normal[2] * z
+        # Moller and Trumbore's test, against both faces of each triangle.
+        for corner_x, corner_y, corner_z, e1x, e1y, e1z, e2x, e2y, e2z in candidates:
+          p_x = ray_y * e2z - ray_z * e2y
+          p_y = ray_z * e2x - ray_x * e2z
+          p_z = ray_x * e2y - ray_y * e2x
+          determinant = e1x * p_x + e1y * p_y + e1z * p_z
+          if -parallel < determinant < parallel:
+            continue
+          inverse = 1.0 / determinant
+          s_x = origin_x - corner_x
+          s_y = origin_y - corner_y
+          s_z = origin_z - corner_z
+          u = (s_x * p_x + s_y * p_y + s_z * p_z) * inverse
+          if u < 0.0 or u > 1.0:
+            continue
+          q_x = s_y * e1z - s_z * e1y
+          q_y = s_z * e1x - s_x * e1z
+          q_z = s_x * e1y - s_y * e1x
+          v = (ray_x * q_x + ray_y * q_y + ray_z * q_z) * inverse
+          if v < 0.0 or u + v > 1.0:
+            continue
+          distance = (e2x * q_x + e2y * q_y + e2z * q_z) * inverse
+          if nearest < distance <= reach:
+            blocked += 1
+            break
+      totals[vertex_index] += 1.0 - blocked / len(directions)
+      counts[vertex_index] += 1
+  return [total / count if count else 1.0 for total, count in zip(totals, counts)]
+
+
+def occlusion_byte(openness):
+  """An openness from 0 to 1 as the byte the .nmf stores, rounded to the nearest of 255 steps."""
+  return min(255, max(0, int(openness * 255.0 + 0.5)))
+
+
 def walk(document, node_index, parent, depth, visit, part):
   """Visits a node and everything under it. visit takes the node, its parent's and its own world matrix and the part it
   is in, and gives the part its children are in."""
@@ -451,9 +588,10 @@ def bake(data):
     part["first"] = len(indices)
     indices.extend(part["indices"])
 
+  openness = vertex_openness(vertices, indices)
   output = bytearray(NMF_HEADER.pack(NMF_MAGIC, NMF_VERSION, len(vertices), len(indices), len(hardpoints), len(parts), 0))
-  for vertex in vertices:
-    output += NMF_VERTEX.pack(*vertex)
+  for vertex, open_share in zip(vertices, openness):
+    output += NMF_VERTEX.pack(*vertex, occlusion_byte(open_share))
   output += struct.pack(f"<{len(indices)}I", *indices)
   for _, tag, position, forward, up, size in hardpoints:
     encoded = tag.encode("ascii")
@@ -591,13 +729,30 @@ def bake_file(source):
     raise BakeError(f"{source.relative_to(ROOT).as_posix()}: {error}") from None
 
 
+def baked_or_refused(source):
+  """A source's .nmf bytes, or the reason it was refused, as one result a worker process can hand back."""
+  try:
+    return bake_file(source), None
+  except BakeError as error:
+    return None, str(error)
+
+
+def bake_every_source():
+  """Each source with its bytes or its refusal, in the sources' order. Occlusion makes a bake take seconds, so the
+  sources are baked in processes of their own, one a core; each bake is the same bytes whichever process makes it."""
+  every = sources()
+  # The largest first, so that no core is left with one long bake at the end.
+  largest_first = sorted(every, key=lambda source: (-source.stat().st_size, source))
+  with ProcessPoolExecutor() as pool:
+    results = dict(zip(largest_first, pool.map(baked_or_refused, largest_first)))
+  return [(source, results[source]) for source in every]
+
+
 def bake_all():
   failures = 0
-  for source in sources():
-    try:
-      baked = bake_file(source)
-    except BakeError as error:
-      print(error)
+  for source, (baked, refusal) in bake_every_source():
+    if refusal is not None:
+      print(refusal)
       failures += 1
       continue
     target = output_for(source)
@@ -611,13 +766,11 @@ def bake_all():
 def check_all():
   findings = []
   expected = set()
-  for source in sources():
+  for source, (baked, refusal) in bake_every_source():
     target = output_for(source)
     expected.add(target)
-    try:
-      baked = bake_file(source)
-    except BakeError as error:
-      findings.append(str(error))
+    if refusal is not None:
+      findings.append(refusal)
       continue
     if not target.is_file():
       findings.append(f"{target.relative_to(ROOT).as_posix()}: missing; run python Tools/BakeMeshes.py")
@@ -663,12 +816,13 @@ def self_test():
   good = write_glb([triangle], [exhaust, {"name": "hp_gun", "translation": (0.0, 1.0, 0.0)}])
   baked = bake(good)
   expect(bake(good) == baked, "baking the same source twice gave different bytes")
-  expect(NMF_HEADER.unpack_from(baked, 0) == (NMF_MAGIC, 2, 3, 3, 2, 0, 0),
+  expect(NMF_HEADER.unpack_from(baked, 0) == (NMF_MAGIC, NMF_VERSION, 3, 3, 2, 0, 0),
          "the header of a one-triangle source with two hardpoints is wrong")
   vertices = [NMF_VERTEX.unpack_from(baked, NMF_HEADER.size + i * NMF_VERTEX.size) for i in range(3)]
   expect([vertex[:3] for vertex in vertices] == [(0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (2.0, 0.0, 0.0)],
          "a point (x, y, z) did not become (z, y, x)")
-  expect(all(vertex[3:] == (0.0, 1.0, 0.0) for vertex in vertices), "the normals did not keep pointing up")
+  expect(all(vertex[3:6] == (0.0, 1.0, 0.0) for vertex in vertices), "the normals did not keep pointing up")
+  expect(all(vertex[6] == 255 for vertex in vertices), "a triangle with nothing above it is not wholly open")
   corners = struct.unpack_from("<3I", baked, NMF_HEADER.size + 3 * NMF_VERTEX.size)
   expect(corners == (0, 1, 2), "a triangle's corners were not reversed")
   # Clockwise seen from above in the game's left-handed frame: cross(b - a, c - a) points along the normal.
@@ -698,6 +852,34 @@ def self_test():
   mirrored_corners = struct.unpack_from("<3I", mirrored, NMF_HEADER.size + 3 * NMF_VERTEX.size)
   expect(mirrored_corners == (0, 2, 1), "a mirrored model's triangles were reversed twice over")
 
+  # Occlusion (ADR-092). A floor of two triangles facing up, 2 m square, under a lid 4 m square facing down 0.2 m above it:
+  # only the floor's most grazing rays get out past the lid's edge. Beside it, a floor of the same size meeting a wall at
+  # one edge: some rays from the corners at the wall are stopped, and the corners 2 m from it are past reach, half a meter
+  # for a model 2 m across.
+  def square(name, half, height, facing, extra=()):
+    corners = [(-half, height, -half), (half, height, -half), (half, height, half), (-half, height, half)]
+    indices = [0, 2, 1, 0, 3, 2] if facing > 0.0 else [0, 1, 2, 0, 2, 3]
+    return dict({"name": name, "positions": corners, "normals": [(0.0, facing, 0.0)] * 4, "indices": indices}, **dict(extra))
+
+  def openness_of(data):
+    vertex_count = NMF_HEADER.unpack_from(data, 0)[2]
+    return [NMF_VERTEX.unpack_from(data, NMF_HEADER.size + i * NMF_VERTEX.size)[6] / 255.0 for i in range(vertex_count)]
+
+  covered = openness_of(bake(write_glb([square("Floor", 1.0, 0.0, 1.0), square("Lid", 2.0, 0.2, -1.0)])))
+  expect(max(covered[0:4]) < 0.15, "a floor under a lid is not shut in")
+  expect(min(covered[4:8]) > max(covered[0:4]), "the lid, with only the floor below it, is no more open than the floor")
+  wall = {"name": "Wall", "positions": [(1.0, 0.0, -1.0), (1.0, 2.0, -1.0), (1.0, 2.0, 1.0), (1.0, 0.0, 1.0)],
+          "normals": [(-1.0, 0.0, 0.0)] * 4, "indices": [0, 2, 1, 0, 3, 2]}
+  beside = openness_of(bake(write_glb([square("Floor", 1.0, 0.0, 1.0), wall])))
+  at_wall = [beside[corner] for corner in (1, 2)]
+  away = [beside[corner] for corner in (0, 3)]
+  expect(all(share < 0.9 for share in at_wall), "a floor's corners at a wall are not shut in at all")
+  expect(all(share == 1.0 for share in away), "a floor's corners out of a wall's reach are not wholly open")
+  far = openness_of(bake(write_glb([square("Floor", 1.0, 0.0, 1.0), dict(wall, translation=(0.0, 0.0, 40.0))])))
+  expect(all(share == 1.0 for share in far[0:4]), "a wall out of reach shuts a floor in")
+  expect(bake(write_glb([square("Floor", 1.0, 0.0, 1.0), wall])) == bake(write_glb([square("Floor", 1.0, 0.0, 1.0), wall])),
+         "baking occlusion twice gave different bytes")
+
   # A spinning part: a triangle 4 m ahead of the model's origin, off its pivot, turned a whole turn in 8 s about glTF's +y
   # by keys a quarter turn apart, as Blender writes a spin.
   def spin_keys(axis, angles):
@@ -707,7 +889,7 @@ def self_test():
   radar = dict(triangle, name="Radar", positions=[(1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (1.0, 0.0, 1.0)], translation=(0.0, 0.0, 4.0))
   spin = {"node": 1, "times": [0.0, 2.0, 4.0, 6.0, 8.0], "values": spin_keys((0.0, 1.0, 0.0), quarters)}
   spinning = bake(write_glb([triangle, radar], animations=[spin]))
-  expect(NMF_HEADER.unpack_from(spinning, 0) == (NMF_MAGIC, 2, 6, 6, 0, 1, 0),
+  expect(NMF_HEADER.unpack_from(spinning, 0) == (NMF_MAGIC, NMF_VERSION, 6, 6, 0, 1, 0),
          "the header of a source with a spinning part is wrong")
   _, parts = read_nmf_extras(spinning)
   first, count, pivot, axis, period = parts[0]

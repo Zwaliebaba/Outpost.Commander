@@ -19,8 +19,15 @@ constexpr float TOLERANCE = 1e-3f;
 // Where an .nmf file's vertex count is, after its magic and its version.
 constexpr size_t VERTEX_COUNT_OFFSET = 8;
 constexpr size_t VERSION_OFFSET = 4;
+// Where the first vertex's openness is, after the 28 bytes of the header and the vertex's position and normal, and its
+// padding after it (ADR-092).
+constexpr size_t FIRST_OPENNESS_OFFSET = 28 + 24;
+constexpr size_t FIRST_PADDING_OFFSET = FIRST_OPENNESS_OFFSET + 1;
+// The format's version, and how open the writer's vertices are: wholly.
+constexpr std::uint32_t NMF_VERSION = 3;
+constexpr std::uint8_t WHOLLY_OPEN = 255;
 
-// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-018, ADR-045).
+// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-018, ADR-045, ADR-092).
 class NmfWriter
 {
 public:
@@ -43,6 +50,15 @@ public:
     Put(_value.z);
   }
 
+  // A vertex: its position and normal, wholly open, and its three bytes of padding.
+  void PutVertex(const DirectX::XMFLOAT3& _position, const DirectX::XMFLOAT3& _normal)
+  {
+    Put3(_position);
+    Put3(_normal);
+    for (const std::uint8_t value : {WHOLLY_OPEN, std::uint8_t{0}, std::uint8_t{0}, std::uint8_t{0}})
+      Put(value);
+  }
+
   [[nodiscard]] const Neuron::ByteBuffer& Bytes() const noexcept
   {
     return m_bytes;
@@ -62,14 +78,11 @@ Neuron::ByteBuffer OneTriangle(std::string_view _tag = "exhaust", const DirectX:
   NmfWriter writer;
   for (const char c : {'N', 'M', 'F', '\0'})
     writer.Put(c);
-  for (const std::uint32_t value : {2u, 3u, 3u, 1u, 0u, 0u})
+  for (const std::uint32_t value : {NMF_VERSION, 3u, 3u, 1u, 0u, 0u})
     writer.Put(value);
   for (const DirectX::XMFLOAT3& position :
        {DirectX::XMFLOAT3{-2.0f, 0.0f, 0.0f}, DirectX::XMFLOAT3{-2.0f, 0.0f, 1.0f}, DirectX::XMFLOAT3{8.0f, 0.0f, 0.0f}})
-  {
-    writer.Put3(position);
-    writer.Put3(UP);
-  }
+    writer.PutVertex(position, UP);
   for (const std::uint32_t index : {0u, 1u, 2u})
     writer.Put(index);
   writer.PutTag(_tag);
@@ -88,15 +101,12 @@ Neuron::ByteBuffer TriangleAndPart(std::uint32_t _firstIndex = 3, std::uint32_t 
   NmfWriter writer;
   for (const char c : {'N', 'M', 'F', '\0'})
     writer.Put(c);
-  for (const std::uint32_t value : {2u, 6u, 6u, 0u, 1u, 0u})
+  for (const std::uint32_t value : {NMF_VERSION, 6u, 6u, 0u, 1u, 0u})
     writer.Put(value);
   for (const DirectX::XMFLOAT3& position :
        {DirectX::XMFLOAT3{-2.0f, 0.0f, 0.0f}, DirectX::XMFLOAT3{-2.0f, 0.0f, 1.0f}, DirectX::XMFLOAT3{8.0f, 0.0f, 0.0f},
         DirectX::XMFLOAT3{4.0f, 0.0f, 0.0f}, DirectX::XMFLOAT3{4.0f, 0.0f, 1.0f}, DirectX::XMFLOAT3{5.0f, 0.0f, 0.0f}})
-  {
-    writer.Put3(position);
-    writer.Put3(UP);
-  }
+    writer.PutVertex(position, UP);
   for (const std::uint32_t index : {0u, 1u, 2u, 3u, 4u, 5u})
     writer.Put(index);
   writer.Put(_firstIndex);
@@ -205,10 +215,47 @@ public:
 
   TEST_METHOD(RejectsAnotherVersion)
   {
+    for (const std::uint32_t version : {1u, 2u, 4u})
+    {
+      Neuron::ByteBuffer bytes = OneTriangle();
+      std::memcpy(bytes.data() + VERSION_OFFSET, &version, sizeof(version));
+      ExpectRejected(bytes);
+    }
+  }
+
+  // ADR-092: each vertex says how open it is, a byte from 0, shut in, to 255, wholly open; and its padding is zero.
+  TEST_METHOD(ReadsHowOpenEachVertexIs)
+  {
     Neuron::ByteBuffer bytes = OneTriangle();
-    const std::uint32_t version = 1;
-    std::memcpy(bytes.data() + VERSION_OFFSET, &version, sizeof(version));
-    ExpectRejected(bytes);
+    Assert::AreEqual(1.0f, Neuron::ParseNmf(bytes, "Test.nmf").vertices.front().openness, L"wholly open");
+    bytes[FIRST_OPENNESS_OFFSET] = 51;
+    const Neuron::MeshData mesh = Neuron::ParseNmf(bytes, "Test.nmf");
+    Assert::AreEqual(0.2f, mesh.vertices.front().openness, 1e-6f, L"51 of 255");
+    Assert::AreEqual(1.0f, mesh.vertices[1].openness, L"the next vertex keeps its own");
+    bytes[FIRST_OPENNESS_OFFSET] = 0;
+    Assert::AreEqual(0.0f, Neuron::ParseNmf(bytes, "Test.nmf").vertices.front().openness, L"shut in");
+  }
+
+  TEST_METHOD(RejectsAVertexWhosePaddingIsNotZero)
+  {
+    for (size_t pad = 0; pad < 3; ++pad)
+    {
+      Neuron::ByteBuffer bytes = OneTriangle();
+      bytes[FIRST_PADDING_OFFSET + pad] = 1;
+      ExpectRejected(bytes);
+    }
+  }
+
+  // The shipped models were baked with their occlusion: a Shipyard's bay shuts some of its vertices in, and a rock, which
+  // is a convex hull, shuts none in by much (ADR-092).
+  TEST_METHOD(ReadsTheShippedModelsOcclusion)
+  {
+    const Neuron::MeshData shipyard = Neuron::ParseNmf(ReadRepositoryAsset("Models\\Human\\Shipyard_L1.nmf"), "Shipyard_L1.nmf");
+    const auto openness = [](const Neuron::MeshVertex& _vertex) { return _vertex.openness; };
+    Assert::IsTrue(std::ranges::min(shipyard.vertices, {}, openness).openness < 0.5f, L"a vertex of the Shipyard shut in");
+    Assert::AreEqual(1.0f, std::ranges::max(shipyard.vertices, {}, openness).openness, L"a vertex of the Shipyard wholly open");
+    const Neuron::MeshData rock = Neuron::ParseNmf(ReadRepositoryAsset("Models\\Asteroids\\Small.nmf"), "Small.nmf");
+    Assert::IsTrue(std::ranges::min(rock.vertices, {}, openness).openness > 0.9f, L"a convex rock nearly open all over");
   }
 
   TEST_METHOD(RejectsAVertexCountTooLargeForTheFile)

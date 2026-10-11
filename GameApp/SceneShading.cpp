@@ -4,14 +4,17 @@
 #include <algorithm>
 #include <cmath>
 
-DirectX::XMFLOAT3 Outpost::FaceLight(const DirectX::XMFLOAT3& _normal) noexcept
+DirectX::XMFLOAT3 Outpost::FaceLight(const DirectX::XMFLOAT3& _normal, float _openness) noexcept
 {
-  // As MeshPS.hlsl has it: the fill by how far the face looks up, and the key by how far it faces the key, softened.
+  // As MeshPS.hlsl has it: the fill by how far the face looks up, and the key by how far it faces the key, softened, the
+  // two darkened by how shut in the face is.
   const float keyLength = std::sqrt((TOWARD_KEY.x * TOWARD_KEY.x) + (TOWARD_KEY.y * TOWARD_KEY.y) + (TOWARD_KEY.z * TOWARD_KEY.z));
   const float facing = ((_normal.x * TOWARD_KEY.x) + (_normal.y * TOWARD_KEY.y) + (_normal.z * TOWARD_KEY.z)) / keyLength;
   const float key = std::clamp((facing + KEY_WRAP) / (1.0f + KEY_WRAP), 0.0f, 1.0f);
   const float up = (_normal.y * 0.5f) + 0.5f;
-  const auto channel = [up, key](float _ground, float _sky, float _key) { return std::lerp(_ground, _sky, up) + (_key * key); };
+  const float darkened = 1.0f - (OCCLUSION_STRENGTH * (1.0f - std::clamp(_openness, 0.0f, 1.0f)));
+  const auto channel = [up, key, darkened](float _ground, float _sky, float _key)
+  { return (std::lerp(_ground, _sky, up) + (_key * key)) * darkened; };
   return {channel(GROUND_FILL.x, SKY_FILL.x, KEY_COLOR.x), channel(GROUND_FILL.y, SKY_FILL.y, KEY_COLOR.y),
           channel(GROUND_FILL.z, SKY_FILL.z, KEY_COLOR.z)};
 }
