@@ -2453,7 +2453,7 @@ DirectX::XMFLOAT2 Hud::Layout::MinimapPixelAt(PlanePosition _point) const noexce
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
                                              const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond,
-                                             std::optional<ActionKind> _armed)
+                                             std::optional<ActionKind> _armed, bool _buildFolded)
 {
   Content content{.ore = _newest.ore,
                   .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
@@ -2801,8 +2801,11 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.buttons.push_back(order("Patrol", ActionKind::Patrol, KEY_PATROL));
     content.buttons.push_back(order("Stop", ActionKind::Stop, KEY_STOP));
   }
-  // Constructors offer every structure they build (design §6); one Research Lab a player.
-  if (constructors)
+  // Constructors offer every structure they build (design §6); one Research Lab a player. Once the selection is given an
+  // order they fold into one Build button, which opens them again (ADR-088).
+  if (constructors && _buildFolded)
+    content.buttons.push_back({.label = "Build", .action = {.kind = ActionKind::OpenBuild}});
+  else if (constructors)
   {
     const bool hasLab = std::ranges::any_of(_entities,
                                             [&_newest](const EntityView& _entity) {

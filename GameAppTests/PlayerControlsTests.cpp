@@ -559,6 +559,75 @@ public:
     Assert::IsFalse(driver.Controls().Placing().has_value());
   }
 
+  // ADR-088: an order to the selection folds the Constructors' structures into the HUD's Build button and keeps the
+  // selection; a placement with Shift, a canceled one and the retreat fold nothing; the button, a click, a group and the
+  // HUD's own selection open them again.
+  TEST_METHOD(FoldsTheStructuresOnceGivenAnOrder)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    const Outpost::EntityView constructor = driver.WorldView()[5];
+    driver.Click(constructor);
+    Assert::IsFalse(driver.Controls().IsBuildFolded());
+
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.WorldView());
+    driver.ClickPixel(800, 400, VK_LBUTTON, true);
+    Assert::IsFalse(driver.Controls().IsBuildFolded(), L"Shift keeps them open");
+    driver.ClickPixel(900, 400);
+    Assert::IsTrue(driver.Controls().IsBuildFolded());
+    Assert::IsTrue(Ids{CONSTRUCTOR} == driver.Selected(), L"the selection stays");
+    driver.Controls().OpenBuild();
+    Assert::IsFalse(driver.Controls().IsBuildFolded(), L"the button opens them");
+
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.ClickPixel(900, 400, VK_RBUTTON);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.Key(VK_ESCAPE);
+    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.WorldView());
+    Assert::IsFalse(driver.Controls().IsBuildFolded(), L"nothing was ordered");
+
+    // Each order folds them, and a click on the Constructor, past a double click, opens them.
+    const auto folds = [&driver, &constructor](const auto& _order, const wchar_t* _what)
+    {
+      _order();
+      Assert::IsFalse(driver.Controls().TakeCommands().empty(), _what);
+      Assert::IsTrue(driver.Controls().IsBuildFolded(), _what);
+      Assert::IsTrue(Ids{CONSTRUCTOR} == driver.Selected(), _what);
+      driver.Wait(Outpost::PlayerControls::DOUBLE_CLICK_MILLISECONDS + 1);
+      driver.Click(constructor);
+      Assert::IsFalse(driver.Controls().IsBuildFolded(), _what);
+    };
+    folds([&driver] { driver.ClickPixel(900, 400, VK_RBUTTON); }, L"a move");
+    folds([&driver] { driver.Click(driver.WorldView()[6], VK_RBUTTON); }, L"building the site");
+    folds([&driver] { driver.Click(driver.WorldView()[8], VK_RBUTTON); }, L"an attack");
+    folds([&driver] { driver.Key(Outpost::KEY_STOP); }, L"a stop");
+    folds([&driver] { driver.Controls().MoveTo({.xMeters = 700.0f, .zMeters = -250.0f}, driver.WorldView()); }, L"a move from the minimap");
+    folds(
+      [&driver]
+      {
+        driver.Key(Outpost::KEY_ATTACK_MOVE);
+        driver.ClickPixel(900, 400);
+      },
+      L"an attack-move");
+    folds(
+      [&driver]
+      {
+        driver.Key(Outpost::KEY_PATROL);
+        driver.ClickPixel(900, 400);
+      },
+      L"a patrol");
+
+    driver.Key('3', true);
+    driver.ClickPixel(900, 400, VK_RBUTTON);
+    Assert::IsTrue(driver.Controls().IsBuildFolded());
+    driver.Key('3');
+    Assert::IsFalse(driver.Controls().IsBuildFolded(), L"a group recalled");
+    driver.ClickPixel(900, 400, VK_RBUTTON);
+    Assert::IsTrue(driver.Controls().IsBuildFolded());
+    driver.Controls().SelectAlone(Outpost::EntityId{CONSTRUCTOR});
+    Assert::IsFalse(driver.Controls().IsBuildFolded(), L"the HUD's selection");
+  }
+
   TEST_METHOD(QueuesAJobFromTheHud)
   {
     Driver driver;
