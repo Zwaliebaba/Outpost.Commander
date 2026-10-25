@@ -148,7 +148,7 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Seeds:** not stated
 - **Method:** `HandCheckTests`: the raid gathers 400 m off, out of the gun's reach, and attacks; the run ends when one side is gone.
 - **Source:** the MVP design, §12 (commit `393636c`, #38).
-- **Note:** The owner left these margins for the owner's playtests to judge (2026-10-01); the playtest log carries that run, and gate R10 of ImplementationPlan-Reconcile.md asks about it.
+- **Note:** The owner left these margins for the owner's playtests to judge (2026-10-01); the playtest log carries that run, and the owner kept it as the judge on 2026-10-25, the numbers standing until then (gate R10 of the reconciliation; [PostMortems.md](PostMortems.md), 2026-10-25).
 
 ### 2026-10-01 · The AI against a player who does nothing
 
@@ -272,7 +272,7 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Seeds:** not stated
 - **Method:** The full balance check run again with arcs.
 - **Source:** the Phase 1 plan, task 7.2 (commit `8c6acd2`, #49); ADR-039, Consequences (commit `8c6acd2`, #49).
-- **Note:** Phase 1's check of record later passed (d); whether that settles it is gate R9 of ImplementationPlan-Reconcile.md.
+- **Note:** Phase 1's check of record later passed (d); the owner took that as settling it on 2026-10-25, and nothing is retuned (gate R9 of the reconciliation; [PostMortems.md](PostMortems.md), 2026-10-25).
 
 ### 2026-10-03 · Large orders over two ticks: the balance check before and after (task 8.2)
 
@@ -286,7 +286,7 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Seeds:** not stated
 - **Method:** The full balance check before and after the change.
 - **Source:** the Phase 1 plan, task 8.2 (commit `573190e`, #49); ADR-032, Consequences (commit `9782b1c`, #49).
-- **Note:** Whether the shift matters is gate R8 of ImplementationPlan-Reconcile.md.
+- **Note:** The owner accepted the shift on 2026-10-25 (gate R8 of the reconciliation; [PostMortems.md](PostMortems.md), 2026-10-25).
 
 ### 2026-10-03 · The staged balance check, first runs (task 10.3)
 

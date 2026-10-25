@@ -1,6 +1,6 @@
 # Outpost Commander — Findings of the Design Reference
 
-Status: **open** · gates F1–F15 decided by the owner on 2026-10-25 · From the as-built Game Design Reference of 2026-10-25, which describes the game at `a053fe2`. The reference is tagged [`design-reference-2026-10-25`](https://github.com/Zwaliebaba/Outpost.Commander/tree/design-reference-2026-10-25/DesignReference) and published as a Claude Design canvas.
+Status: **open** · gates F1–F16 decided by the owner on 2026-10-25, F16 carried from the reconciliation's gate R7 · From the as-built Game Design Reference of 2026-10-25, which describes the game at `a053fe2`. The reference is tagged [`design-reference-2026-10-25`](https://github.com/Zwaliebaba/Outpost.Commander/tree/design-reference-2026-10-25/DesignReference) and published as a Claude Design canvas.
 
 The reference read every design document, ADR, data file and the code, and drew every screen from `Hud.cpp`'s layout. It found 68 conflicts and 79 gaps. Most conflicts are an earlier document that a later one already overrides, or an ADR that should say what the code does; they need no decision. Fifteen needed the owner. This plan writes those decisions down before the code that follows them, and puts the work in order.
 
@@ -27,6 +27,7 @@ Task numbers carry the prefix RF, and gates are lettered F.
 | RF2.1 | The designer reserves a row for each bar it draws | — | F3 | todo |
 | RF2.2 | The Controls window says what a click selects | — | F9 | todo |
 | RF2.3 | The Orders window's Give lights under the pointer | — | F13 | todo |
+| RF2.4 | A click selects another player's structure, for its panel | — | F16 | todo |
 | RF3.1 | The HUD draws each side in its own color | — | F1 | todo |
 | RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | todo |
 | RF5.1 | A refused command is told to the player | — | F10 | todo |
@@ -47,7 +48,7 @@ The owner's track, beside the plan:
 RF1, RF2, RF3, RF4, RF5.
 
 - **RF1 changes no code.** It lands with this plan. F11's rule needs no edit, because ADR-080 decision 5 already states it.
-- **RF2 is three small interface fixes,** each a test and a line or two.
+- **RF2 is four small interface fixes,** each a test and a few lines.
 - **RF3 changes what every minimap shows,** so it is a milestone of its own and an owner run.
 - **RF4 changes a rule the AI plays by.** The AI must place by it too.
 - **RF5 is the protocol and the world:** a refusal message, a cancel command, the first join and an asynchronous join. `PROTOCOL_VERSION` stays 1 until the game is live (AGENTS.md R18).
@@ -73,6 +74,7 @@ RF1, RF2, RF3, RF4, RF5.
 | F13 | **Hover in the windows.** Only the HUD's own controls light under the pointer ([ADR-088](../ADR/ADR-088-selection-and-commands.md)). The Orders window's Give is drawn like a HUD button but never lights. Nothing has a pressed state. **Decided on 2026-10-25:** Give lights. The windows otherwise stay as ADR-088 says, with no pressed state. | G-036, G-039 | RF2.3 | decided 2026-10-25 |
 | F14 | **A loading screen and a connecting sign.** The window is hidden until the game has loaded, as [ADR-049](../ADR/ADR-049-startup-in-parallel.md) chose. Join world freezes the menu for up to 10 s with no sign. **Decided on 2026-10-25:** keep the hidden startup. The join becomes asynchronous, with a connecting line on the menu. | G-034 | RF5.4 | decided 2026-10-25 |
 | F15 | **The Large hull card's numbers.** "1,200 HP · ARM 14 · 25m/s" may be cut short at 1080p in Cascadia Mono 13, against [ADR-062](../ADR/ADR-062-type-scale-and-contrast.md) decision 4. It is unproven, because the metric could not be checked without the font. **Decided on 2026-10-25:** the owner checks it on Windows. A fix is a task only if the run shows it. | C-005 | RF-O3 | decided 2026-10-25 |
+| F16 | **Another player's structure, selected.** `Hud::Describe` lays out a remembered structure's panel, "Last seen 4:12 ago" and what was seen then, but `PlayerControls` picks only the player's own ships and structures (`PlayerControls.cpp:263-275`), so no click opens it ([ADR-081](../ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 4). Gate V3 of [the second interface plan](ImplementationPlan-Interface2.md) put the age on the panel. **Decided on 2026-10-25,** as the reconciliation's gate R7: the panel is made reachable. A click on another player's structure, seen or remembered, selects it alone, for a panel with no buttons that takes no orders. | the reconciliation, R7 | RF2.4 | decided 2026-10-25 |
 
 ---
 
@@ -90,7 +92,7 @@ RF1, RF2, RF3, RF4, RF5.
 
 ---
 
-## Milestone RF2 — Three small interface fixes
+## Milestone RF2 — Four small interface fixes
 
 ### RF2.1 — The designer reserves a row for each bar it draws
 
@@ -102,8 +104,8 @@ RF1, RF2, RF3, RF4, RF5.
 
 ### RF2.2 — The Controls window says what a click selects
 
-- **Gate:** F9.
-- **Scope:** `KeyBindings.h:94` reads "Select a ship or a structure of yours", or words to that effect.
+- **Gate:** F9, and F16, whose click it names.
+- **Scope:** `KeyBindings.h:95` says that a click selects one of the player's own ships, or any structure, its own or another player's (RF2.4), in words to that effect.
 - **Verify:** CI; the Controls window in a run.
 
 ### RF2.3 — The Orders window's Give lights under the pointer
@@ -113,6 +115,18 @@ RF1, RF2, RF3, RF4, RF5.
 - **ADR:** [ADR-088](../ADR/ADR-088-selection-and-commands.md)'s Consequences name Give.
 - **Acceptance:** `HudTests`: Give is drawn lit when its action is under the pointer.
 - **Verify:** CI; run.
+
+### RF2.4 — A click selects another player's structure, for its panel
+
+- **Gate:** F16.
+- **Scope:**
+  - A left-click on none of the player's own ships or structures, but on another player's structure, seen or remembered, selects that structure alone (`PlayerControls.cpp:263-275`). A box still takes the player's own ships only, and Shift adds none of another player's structures to a selection.
+  - Its panel is the one `Hud::Describe` lays out: a seen structure's kind, level and hit points; a remembered one's "Last seen 4:12 ago" and what was seen then. It offers no buttons, opens no window, and gives no production line ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 4).
+  - A right-click with it selected gives no order, and it takes none.
+  - It leaves the selection when it is destroyed while seen, or its memory is forgotten.
+- **ADR:** [ADR-013](../ADR/ADR-013-client-view-and-controls.md) decision 5 and [ADR-081](../ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 4, edited in place, and Game §interface.hud.selection.
+- **Acceptance:** `PlayerControlsTests`: a click on another player's structure, seen or remembered, selects it alone, and a box does not; `HudTests`: its panel offers no button.
+- **Verify:** CI; run, selecting an enemy's seen and remembered structures; owner run.
 
 ---
 

@@ -242,3 +242,22 @@ Phase 4 ran from 2026-10-06, when the owner accepted its design with every gate 
 - **Three of the AI's new settings have no knob in self-play.** `attackCapShare`, the share of its cap at which the AI's reserve attacks (0.8 for Normal and Hard, 1 for Easy), `pirateMargin` and `scoutOwnHalfSeconds` came into `Opponent.json` without a knob in `Tools/SelfPlay.py`, whose self-test fails on all three; this was found on 2026-10-25, and the self-play plan's task SP1.5 takes it up, before SP1.3.
 - **Out of scope:** veterancy; relay jumps and travel between systems, which the horizon plan puts in a galaxy; the strategic view, unless U8 asked for it; pathing by sector, unless U7 missed; pirates that raid or respawn; save and load, which Phase 5 brought in for a world (ADR-077); new hulls and weapons, artillery and spotting included; AI personalities; and art for the pirates, the derelicts and the Repair Bay, which are drawn with the Tarkan set's meshes in violet, a hull's model in grey and the Shipyard's model darker.
 - **Two small things the plan noted:** the placing hint does not say why a Shipyard's ghost is red, as it does not for a rig's; and `python Tools/MakeMap.py --check` says whether the committed map is what the script writes, and CI does not run it.
+
+## 2026-10-25 — The reconciliation: where the code and the documents disagreed
+
+The documentation reconciliation of 2026-10-25 checked every ADR and every design against the code and data at `main`'s 8366820, and brought the documents to the code wherever a commit, an ADR or a plan said why the two differed. It left ten questions only the owner could answer, as gates R1 to R10 of its plan, which is cited as it stood at commit `70390f8`. The owner answered all ten on 2026-10-25, and the plan closed.
+
+**What it found.** Each question was a decision written before the code that the code then did not follow, or a choice an ADR left to the owner that nobody answered:
+
+- **R1, a joined world's tick rate.** ADR-013 had the rate come to the client at connection; the client uses its own build's. Kept: it holds while the game and `OutpostServer` package the same `Tuning.json` (ADR-013 decision 2).
+- **R2, acknowledgement or prediction over a real network.** Neither is built. Kept until an order's response is measured over a real network; [the playtest log](PlaytestLog.md) carries that run (ADR-002 decision 5).
+- **R3, a slow shooter's reveal.** ADR-024 said every shooter that keeps firing stays revealed, but the Rail Cannon fires every 6 s against a 3 s reveal. Kept: the reveal stays at 3 s (ADR-024 decision 1).
+- **R4, explored ground across a join.** Kept as the client's presentation, which a join starts afresh (ADR-024 decision 9).
+- **R5, the cut-off share on the panel.** The panel writes "half" where the data holds 50. Kept until the next change to the territory panel, which has the snapshot carry the share (ADR-056 decision 11).
+- **R6, a player's own color in seat 2.** Answered by gate F1 of [the findings plan](../Plans/ImplementationPlan-Findings.md): each side keeps its `Models.json` color everywhere, and the HUD follows the sides. R6's proposal, the viewer's own side always blue, was not taken.
+- **R7, another player's structure, selected.** A remembered structure's panel was laid out and no click reached it. The panel is made reachable, as the findings plan's gate F16 and task RF2.4.
+- **R8, the balance shares after split orders.** The shift is accepted (BalanceLog.md, the split orders).
+- **R9, criterion (d) at tier 1 after the arcs.** Settled by the later check of record; nothing is retuned (BalanceLog.md).
+- **R10, the thin margins against a raid.** Judged in the owner's next playtest against the AI's raids, which the playtest log carries; the numbers stand until then.
+
+**The lesson.** Eight of the ten were kept as the code has them. The two that change something, R6 and R7, were the HUD assuming the player is seat 1 and sees only its own structures: assumptions of a skirmish that a world with seats broke. A clause that leaves a question "to the owner" is a gate, and belongs in a gate table, where `OpenDecisions.md` lists it, and not only in an ADR's Consequences.

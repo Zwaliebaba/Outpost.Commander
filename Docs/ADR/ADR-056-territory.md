@@ -22,7 +22,7 @@ Territory is what the players fight over (Game §territory). Which sectors a pla
 11. **The client shows territory.** The marks in the world and on the minimap are [ADR-081](ADR-081-territory-and-memory-over-the-fog.md)'s, and the nodes panel [ADR-057](ADR-057-domination.md) decision 8's. Beside those:
     - **The ghost** of a Relay stands on the node of the sector under the cursor, green only where the server would build it by what the snapshot shows, by `CanClaim` ([ADR-081](ADR-081-territory-and-memory-over-the-fog.md) decision 2). A rig's ghost, a Shipyard's and a Repair Bay's is green only in a sector the player holds. `PlaceGhost` takes the snapshot's sectors, the player and its node cap; at the cap a Relay's ghost is red everywhere (`AtNodeCap`), and the placing hint reads "Relay: at the node cap; upgrade the Command Station to claim more".
     - **The fog** clears every sector the player holds that is not suppressed, as the server's sight does (decision 9).
-    - **A Relay's or a rig's panel** says what its sector earns: held, suppressed, cut off, or not held.
+    - **A Relay's or a rig's panel** says what its sector earns: held, suppressed, cut off, or not held. The cut-off share is written as "half" in the text, which agrees with the data's 50. The next change to the territory panel has the snapshot carry the share and the panel write it from there, so that the data stays its only copy (owner, 2026-10-25); a change to `cutOffIncomePercent` waits for it.
     - **A Constructor offers the Relay** only on a map with sectors, dim with NODE CAP at the cap.
     - **The Relay is drawn with the Research Lab's model, brighter** (its `tint` in `Models.json`).
 12. *(retired)*
