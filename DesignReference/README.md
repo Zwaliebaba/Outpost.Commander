@@ -61,6 +61,7 @@ The last command writes `<root>/project/`, ready to publish. Use a fresh `assets
 - **Nothing was built or run.** The container had no Windows, MSBuild or GPU.
 - **Screen geometry is derived, not dumped.** It comes from `Hud.cpp`'s arithmetic. Any width that depends on DirectWrite text measurement is an estimate, and is marked as one.
 - **Model images are approximations.** They are rendered in software from the shipped meshes and replay the game's shaders; they are not captured from the game.
-- **Verification.** Two independent passes checked the canvas against the repository; see `_work/V/V.md` and `V2.md`. Two items are left open in chapter 17 (`_work/V/open-after-verification.md`): the Hulls table overflows its artboard, and the minimap's sample marks leave out the player's own Shipyards, Research Lab and most of its warships.
+- **Verification.** Two independent passes checked the canvas against the repository (`_work/V/V.md`, `V2.md`). V found 17 failing items. V2 found 16 of them fixed. The owner asked for the last one, and two defects V2 found, to be fixed as well (`_work/V/open-after-verification.md`).
+- **Owner decisions.** The answers to the reference's open questions are in `_work/R/owner-decisions.md`. A draft plan that brings them to `main` is `_work/R/ImplementationPlan-Findings.draft.md`.
 
 The final state is tagged `design-reference-2026-10-25`.

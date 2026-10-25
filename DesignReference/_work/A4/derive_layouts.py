@@ -2665,7 +2665,7 @@ def victory_content():
     # The home rigs have mined their asteroids dry (7,500 Ore at 3.5 a second runs out in 35:43) and earn a fifth (exhaustedYieldPercent);
     # Improved Extraction is researched, since the Lab's L2, which tier 2 needs, requires it.
     c = content_of(2350, sectors, node_cap(4), (386, 0), rigs=rigs, dry=OWN_HOME_ORE, extraction=True, view=(-2000, -2000), derelicts=["C2"],
-                   extra=[wreck_mark("A4")] + ships)
+                   extra=ships)  # A4's wreck is salvaged: no structure stands on a derelict until then (Simulation.cpp:2126; ADR-074)
     assert c["territory"]["enemy_tickets"] == 0 and c["territory"]["own_nodes"] > c["territory"]["enemy_nodes"]
     c["building"] = ["Swarm", "Lancer"]
     c["alerts"] = [("Enemy ships in C2", node_of("C2"))]
@@ -2682,7 +2682,8 @@ def victory_content():
 @state("hud", "end-victory", "The match's end: Victory by domination, the world running on behind it",
        notes=["DescribeOutcome Hud.cpp:2199-2218. A domination ends when a player's tickets reach 0 (Simulation.cpp:3796-3804): the enemy's are 0, and the "
               "drain row, still computed, reads 'Enemy -80 a minute · out in 0:00' as plain text (Hud.cpp:2506-2526).",
-              "Later in the match than the busy state: the player cleared A4's camp (its wreck, 600 Ore, lies on A4's node) and holds 9 sectors to the enemy's 5; "
+              "Later in the match than the busy state: the player cleared A4's camp, salvaged its wreck (a derelict leaves once salvaged, ADR-074; no structure stands on "
+              "one before, Simulation.cpp:2126) and claimed A4 with a Relay; it holds 9 sectors to the enemy's 5; "
               "the 6 other outposts still stand. The player's three home asteroids are dry (DRY_COLOR).", SEED_STATE_NOTE])
 def s_hud_victory(out):
     lay_hud(out, victory_content(), hovered="BackToMenu")

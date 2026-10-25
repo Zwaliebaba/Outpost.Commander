@@ -25,7 +25,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 .md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
 .md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
 .md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
-.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:break-word}
 .md td code{font-size:11.5px}
 .md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
 .md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
@@ -128,15 +128,152 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 <ul>
 <li><strong>C-001, C-002 and C-004:</strong> left open. Each stays an open owner decision, and the reference draws what the code does.</li>
 <li><strong>C-003 and C-005:</strong> drawn and flagged. The designer frames show the Build row's overlap and the cut-short Large hull numbers as the code derives them, marked "derived, not seen".</li>
-</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">After verification</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>After verification</h2>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Owner decisions</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>Owner decisions, 2026-10-25</h2>
+<p>These are the answers to the reference's open questions, which the owner gave in the session. Each one decides what the game <em>should</em> do. None changes the reference, which still shows the code at <code>a053fe2</code>, and none changes the game yet.</p>
+<p>Under AGENTS.md §6 and the authority paragraph, each becomes work in the repository: an ADR edited in place, or a new ADR when the decision is new, in the same change as its code. The reference records the decisions here, so they are written down before the code is.</p>
+<h3>Conflicts (code against a decision)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Decision</th>
+<th>What it takes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C-001</td>
+<td>The minimap and the node figures color sides as own and enemy (<code>Hud.cpp:26-27</code>), while the world colors them by player number from <code>Models.json</code>. In a world, seat 2 sees its own ships red-orange in the world and blue on the minimap.</td>
+<td><strong>The HUD follows the sides.</strong> The minimap and the figures use each side's <code>Models.json</code> color, so a side keeps one color everywhere.</td>
+<td><code>Hud.cpp</code> reads the side colors the client already has (<code>ModelCatalog</code>); ADR-043 decision 7 and ADR-085 rewritten in place; contrast of the new figure colors rechecked against ADR-062.</td>
+</tr>
+<tr>
+<td>C-002</td>
+<td>The Human Command Station mesh is about 2:1 deep. It is drawn 90 m by about 181 m on a 90 m footprint at every level.</td>
+<td><strong>Rework the mesh.</strong> The Human station's L1–L5 art goes back toward a square plan.</td>
+<td>Owner's art in Blender; <code>Tools/BakeMeshes.py</code> bakes it again. No code change. ADR-064's "level 1 is square" holds again.</td>
+</tr>
+<tr>
+<td>C-003</td>
+<td>The designer reserves 6 bar rows (<code>Hud.cpp:1087</code>) but draws 7 whenever a module has sight. The Build row runs about 13 units into the footer.</td>
+<td><strong>Fix <code>ExtentOf</code>.</strong> Reserve a row per bar drawn.</td>
+<td>The window grows to 938 units: it still fits 1080p and still reaches 110 %. Add a <code>HudTests</code> case that no bar meets the footer.</td>
+</tr>
+<tr>
+<td>C-004</td>
+<td>A lit footprint ring uses the side's ship-line color. ADR-042 decision 2 says the structure's own line color.</td>
+<td><strong>The code wins.</strong></td>
+<td>ADR-042 decision 2 rewritten in place.</td>
+</tr>
+<tr>
+<td>C-005</td>
+<td>The Large hull card's numbers may be cut short at 1080p in Cascadia Mono. This is unproven.</td>
+<td><strong>The owner checks it on Windows.</strong></td>
+<td>Open until that run.</td>
+</tr>
+</tbody>
+</table>
+<h3>Gaps (nothing decided before)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Decision</th>
+<th>What it takes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>G-005</td>
+<td>A Shipyard and a Repair Bay need a held sector; a Research Lab and a Defence Platform need nothing, so Defence Platforms can creep into enemy sectors.</td>
+<td><strong>Both need a held sector.</strong></td>
+<td>The placement check in <code>Simulation.cpp:2113-2133</code>; ADR-056 gains the rule.</td>
+</tr>
+<tr>
+<td>G-004</td>
+<td>A Mining Rig can be placed in a held sector while it is suppressed, and earns nothing until the suppression lifts.</td>
+<td><strong>Allow it.</strong></td>
+<td>ADR-056 states it.</td>
+</tr>
+<tr>
+<td>G-014</td>
+<td>The art has Shipyard L4–L5 and Research Lab L5; the data stops at L3 and L4 (Phase 3 gate K3). The extra levels are loaded and never drawn.</td>
+<td><strong>Keep them for later.</strong></td>
+<td>ADR-064 notes that the art waits for content.</td>
+</tr>
+<tr>
+<td>G-015</td>
+<td>The Mining Rig mesh has a <code>gun</code> hardpoint and no weapon. The Defence Platform has 6 gun hardpoints for 1 gun.</td>
+<td><strong>Remove the rig's gun hardpoint.</strong> The platform's six are its muzzles: a shot leaves from the one nearest its target (<code>Hardpoints.cpp:206-220</code>).</td>
+<td>Owner's art, baked again; ADR-018 documents the muzzles.</td>
+</tr>
+<tr>
+<td>G-023</td>
+<td>The Controls window says "Select a ship, or a structure of yours", but a click picks only your own ships.</td>
+<td><strong>Own ships only; fix the text.</strong></td>
+<td><code>KeyBindings.h:94</code> reworded, for example "Select a ship or a structure of yours".</td>
+</tr>
+<tr>
+<td>G-025</td>
+<td>A command the server refuses is never told to the player (<code>InProcessServer.cpp:482</code>).</td>
+<td><strong>Tell the player.</strong> The server answers a refusal with its reason, and the HUD shows it.</td>
+<td>A protocol change, so a new ADR (and ADR-060 / ADR-080 rewritten in place); an alert or hint text for each refusal.</td>
+</tr>
+<tr>
+<td>G-028</td>
+<td>A seat nobody has taken is its deputy's from tick 0, so the first join of a new world opens an away report of everything since the world began.</td>
+<td><strong>No report on the first join.</strong></td>
+<td>The away report starts only once a player has held the seat (<code>AwayReports.cpp</code>, <code>SeatController.cpp</code>); ADR-079.</td>
+</tr>
+<tr>
+<td>G-034</td>
+<td>The window stays hidden while loading (ADR-049), and Join world freezes the menu for up to 10 s with no sign.</td>
+<td><strong>A connecting sign only.</strong> Keep the hidden startup; make the join asynchronous, with a "Connecting to {server}…" line on the menu.</td>
+<td><code>WinMain.cpp:349-358</code>, <code>QuicTransport</code>; ADR-078 decision 9 and ADR-086.</td>
+</tr>
+<tr>
+<td>G-024</td>
+<td>No cap on scheduled orders, and no cancel in the Orders window. <em>Corrected in the session:</em> a ship waits on at most one scheduled order, and any direct order to it takes it out (<code>Simulation.cpp:3240-3253, 3305-3320</code>). So the orders are already bounded by the ships, and Stop cancels one.</td>
+<td><strong>A cancel control in the Orders window, and no new cap.</strong> The window also says that a direct order leaves a scheduled one.</td>
+<td><code>Hud.cpp</code> Orders window and a command to cancel; ADR-080 states the rule as it is.</td>
+</tr>
+<tr>
+<td>G-036 / G-039</td>
+<td>Only the HUD's own controls light under the pointer. The Orders window's Give button never lights, and nothing has a pressed state.</td>
+<td><strong>Light Give only.</strong> Windows otherwise stay as ADR-088 says, with no pressed state.</td>
+<td><code>Hud.cpp:1979</code> passes the hovered flag; ADR-088's Consequences name Give.</td>
+</tr>
+</tbody>
+</table>
+<h3>The reference's own open items</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The Hulls table overflows its artboard (V item 10, failed twice)</td>
+<td><strong>Fix it anyway</strong>, by a narrow fix: the table's headers may break at their camelCase joins.</td>
+</tr>
+<tr>
+<td>The minimaps' sample marks leave out the player's own side (V2 defect C)</td>
+<td><strong>Fix it.</strong></td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">After verification</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>After verification</h2>
 <p>Two independent agents checked the published canvas against the repository.</p>
 <p><strong>V</strong> checked 60 numbers, 26 screen elements, coverage of states and models, scope, colors and sources. Three checks passed, four were partial and one failed, with 17 failing items (<code>DesignReference/_work/V/V.md</code>).</p>
 <p><strong>V2</strong> re-checked the 17 after they were fixed (<code>DesignReference/_work/V/V2.md</code>). 16 now pass, and all 14 new figure spot checks are consistent.</p>
-<h3>Left open</h3>
-<p>Two things stay open. The brief's rule is that a second failure on the same check goes here, not into a third attempt.</p>
+<h3>Fixed at the owner's request</h3>
+<p>The brief's rule sends a second failure to Open items, not to a third attempt. On 2026-10-25 the owner asked for both of these to be fixed anyway.</p>
 <ul>
-<li><strong>The Hulls table overflows its artboard</strong> (<code>ships-parts</code>, V item 10, failed twice). The table runs about 150 px past the 1,440 px board, so its last three columns, Unlocked by, Mesh lengthMeters and Source, spill past the edge. The first fix let every table cell break mid-word. That split words and numbers across the whole canvas, so it was reverted. A fix limited to the header cells of that one table is still to do.</li>
-<li><strong>The minimap's sample marks are incomplete</strong> (found by V2). The frames' minimaps leave out the player's own Shipyards and Research Lab, even a selected one, and most of its warships. The geometry and colors of the marks that are drawn are right. This is a gap in the sample content of <code>DesignReference/_work/A4/derive_layouts.py</code>, not in the game.</li>
+<li><strong>The Hulls table overflowed its artboard</strong> (<code>ships-parts</code>, V item 10, failed twice). A table's header now breaks only where a camelCase word joins (<code>speedMeters·PerSecond</code>), and a cell breaks only a word that cannot fit. The table fits its 1,440 px board, and no word splits.</li>
+<li><strong>The minimap's sample marks were incomplete</strong> (found by V2). Every in-match minimap now draws what the frame's panels imply: the player's Command Station, Shipyards, Research Lab, rigs and Relays, its warships and Constructors, and the enemy ships its alerts name. <code>derive_layouts.py</code> now fails a run whose minimap disagrees with its status panel or its alerts. In the victory frame, A4's wreck is shown salvaged, because no structure stands on a derelict until then (<code>Simulation.cpp:2126</code>; ADR-074).</li>
 </ul>
 <h3>Fixed after V2</h3>
 <ul>
@@ -256,7 +393,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 <h3>Related item outside A1–A7</h3>
 <p><code>Tools/BattleModel.py</code>, which A2 cites as a secondary source for the damage formula, is the MVP's Q2 balance model (<code>Tools/BattleModel.py:1-10</code>, "for the balance check of the MVP design"). It is not Horizon or self-play material.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4506}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 6093}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};

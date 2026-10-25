@@ -6,12 +6,12 @@ Two independent agents checked the published canvas against the repository.
 
 **V2** re-checked the 17 after they were fixed (`DesignReference/_work/V/V2.md`). 16 now pass, and all 14 new figure spot checks are consistent.
 
-## Left open
+## Fixed at the owner's request
 
-Two things stay open. The brief's rule is that a second failure on the same check goes here, not into a third attempt.
+The brief's rule sends a second failure to Open items, not to a third attempt. On 2026-10-25 the owner asked for both of these to be fixed anyway.
 
-- **The Hulls table overflows its artboard** (`ships-parts`, V item 10, failed twice). The table runs about 150 px past the 1,440 px board, so its last three columns, Unlocked by, Mesh lengthMeters and Source, spill past the edge. The first fix let every table cell break mid-word. That split words and numbers across the whole canvas, so it was reverted. A fix limited to the header cells of that one table is still to do.
-- **The minimap's sample marks are incomplete** (found by V2). The frames' minimaps leave out the player's own Shipyards and Research Lab, even a selected one, and most of its warships. The geometry and colors of the marks that are drawn are right. This is a gap in the sample content of `DesignReference/_work/A4/derive_layouts.py`, not in the game.
+- **The Hulls table overflowed its artboard** (`ships-parts`, V item 10, failed twice). A table's header now breaks only where a camelCase word joins (`speedMeters·PerSecond`), and a cell breaks only a word that cannot fit. The table fits its 1,440 px board, and no word splits.
+- **The minimap's sample marks were incomplete** (found by V2). Every in-match minimap now draws what the frame's panels imply: the player's Command Station, Shipyards, Research Lab, rigs and Relays, its warships and Constructors, and the enemy ships its alerts name. `derive_layouts.py` now fails a run whose minimap disagrees with its status panel or its alerts. In the victory frame, A4's wreck is shown salvaged, because no structure stands on a derelict until then (`Simulation.cpp:2126`; ADR-074).
 
 ## Fixed after V2
 

@@ -13,7 +13,7 @@
  "drawOrder": "layer -1 (entity bars) first; then layer 0 (HUD) and each window layer back to front; within a layer every 'panels' element (panel/outline/bar/button) in order, then 'lines', then 'sprites', then 'texts' (Hud.h:714-760, GameClient.cpp:1289-1338).",
  "notes": [
   "DescribeOutcome Hud.cpp:2199-2218. A domination ends when a player's tickets reach 0 (Simulation.cpp:3796-3804): the enemy's are 0, and the drain row, still computed, reads 'Enemy -80 a minute · out in 0:00' as plain text (Hud.cpp:2506-2526).",
-  "Later in the match than the busy state: the player cleared A4's camp (its wreck, 600 Ore, lies on A4's node) and holds 9 sectors to the enemy's 5; the 6 other outposts still stand. The player's three home asteroids are dry (DRY_COLOR).",
+  "Later in the match than the busy state: the player cleared A4's camp, salvaged its wreck (a derelict leaves once salvaged, ADR-074; no structure stands on one before, Simulation.cpp:2126) and claimed A4 with a Relay; it holds 9 sectors to the enemy's 5; the 6 other outposts still stand. The player's three home asteroids are dry (DRY_COLOR).",
   "Map content is seed 342's, a sample (a match's seed is the clock, WinMain.cpp:134-139): the 7 sectors pirates guard at the start of every match, camps on the contested pairs D1/B5 and E2/A4 and strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073); and all 40 ore asteroids, Map.json's 6 home ones and the 34 the seed places by Map.json sectorKinds and placement (Map.cpp:381-419), drawn under the fog since the map's asteroids are always seen (Simulation.cpp:245-247; Hud.cpp:3486-3528). A held sector shows its Relay on its node, and each rig the income implies stands on its asteroid."
  ],
  "layers": [
@@ -3331,22 +3331,6 @@
    "order": 209
   },
   {
-   "id": "minimap.mark.derelict#2",
-   "kind": "panel",
-   "x": 49.4,
-   "y": 854.2,
-   "w": 6.0,
-   "h": 6.0,
-   "color": "DERELICT_COLOR",
-   "fill": "solid",
-   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
-   "sample": true,
-   "note": "sample: the wreck of the camp the player cleared in A4 (600 Ore, Tuning.json pirates.outposts)",
-   "layer": 0,
-   "drawList": "panels",
-   "order": 210
-  },
-  {
    "id": "minimap.mark.structure",
    "kind": "panel",
    "x": 49.4,
@@ -3358,7 +3342,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 211
+   "order": 210
   },
   {
    "id": "minimap.mark.ship",
@@ -3374,7 +3358,7 @@
    "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
-   "order": 212
+   "order": 211
   },
   {
    "id": "minimap.mark.ship#2",
@@ -3390,7 +3374,7 @@
    "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
-   "order": 213
+   "order": 212
   },
   {
    "id": "minimap.mark.structure#2",
@@ -3405,7 +3389,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 214
+   "order": 213
   },
   {
    "id": "minimap.mark.structure#3",
@@ -3420,7 +3404,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 215
+   "order": 214
   },
   {
    "id": "minimap.mark.structure#4",
@@ -3435,7 +3419,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 216
+   "order": 215
   },
   {
    "id": "minimap.mark.structure#5",
@@ -3450,7 +3434,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 217
+   "order": 216
   },
   {
    "id": "minimap.mark.structure#6",
@@ -3465,7 +3449,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 218
+   "order": 217
   },
   {
    "id": "minimap.mark.structure#7",
@@ -3480,7 +3464,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 219
+   "order": 218
   },
   {
    "id": "minimap.mark.structure#8",
@@ -3495,7 +3479,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 220
+   "order": 219
   },
   {
    "id": "minimap.mark.structure#9",
@@ -3510,7 +3494,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 221
+   "order": 220
   },
   {
    "id": "minimap.mark.structure#10",
@@ -3525,7 +3509,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 222
+   "order": 221
   },
   {
    "id": "minimap.mark.structure#11",
@@ -3540,7 +3524,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 223
+   "order": 222
   },
   {
    "id": "minimap.mark.structure#12",
@@ -3555,7 +3539,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 224
+   "order": 223
   },
   {
    "id": "minimap.mark.structure#13",
@@ -3570,7 +3554,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 225
+   "order": 224
   },
   {
    "id": "minimap.mark.structure#14",
@@ -3585,7 +3569,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 226
+   "order": 225
   },
   {
    "id": "minimap.mark.structure#15",
@@ -3600,7 +3584,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 227
+   "order": 226
   },
   {
    "id": "minimap.mark.structure#16",
@@ -3615,7 +3599,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 228
+   "order": 227
   },
   {
    "id": "minimap.mark.structure#17",
@@ -3630,7 +3614,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 229
+   "order": 228
   },
   {
    "id": "minimap.mark.structure#18",
@@ -3645,7 +3629,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 230
+   "order": 229
   },
   {
    "id": "minimap.mark.structure#19",
@@ -3660,7 +3644,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 231
+   "order": 230
   },
   {
    "id": "minimap.mark.structure#20",
@@ -3676,7 +3660,7 @@
    "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1): Shipyard 01, idle",
    "layer": 0,
    "drawList": "panels",
-   "order": 232
+   "order": 231
   },
   {
    "id": "minimap.mark.structure#21",
@@ -3692,7 +3676,7 @@
    "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1): Shipyard 02, building a Swarm",
    "layer": 0,
    "drawList": "panels",
-   "order": 233
+   "order": 232
   },
   {
    "id": "minimap.mark.structure#22",
@@ -3708,7 +3692,7 @@
    "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1): Shipyard 03, building a Lancer",
    "layer": 0,
    "drawList": "panels",
-   "order": 234
+   "order": 233
   },
   {
    "id": "minimap.mark.structure#23",
@@ -3724,7 +3708,7 @@
    "note": "sample: the Lab the status panel's 'Lance Capacitors' line implies (Hud.cpp:281-311)",
    "layer": 0,
    "drawList": "panels",
-   "order": 235
+   "order": 234
   },
   {
    "id": "minimap.mark.ship#3",
@@ -3740,7 +3724,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 236
+   "order": 235
   },
   {
    "id": "minimap.mark.ship#4",
@@ -3756,7 +3740,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 237
+   "order": 236
   },
   {
    "id": "minimap.mark.ship#5",
@@ -3772,7 +3756,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 238
+   "order": 237
   },
   {
    "id": "minimap.mark.ship#6",
@@ -3788,7 +3772,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 239
+   "order": 238
   },
   {
    "id": "minimap.mark.ship#7",
@@ -3804,7 +3788,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 240
+   "order": 239
   },
   {
    "id": "minimap.mark.ship#8",
@@ -3820,7 +3804,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 241
+   "order": 240
   },
   {
    "id": "minimap.mark.ship#9",
@@ -3836,7 +3820,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 242
+   "order": 241
   },
   {
    "id": "minimap.mark.ship#10",
@@ -3852,7 +3836,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), in B2, where the camera looks",
    "layer": 0,
    "drawList": "panels",
-   "order": 243
+   "order": 242
   },
   {
    "id": "minimap.mark.ship#11",
@@ -3868,7 +3852,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), at C2's Relay, which it keeps unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 244
+   "order": 243
   },
   {
    "id": "minimap.mark.ship#12",
@@ -3884,7 +3868,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), at C2's Relay, which it keeps unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 245
+   "order": 244
   },
   {
    "id": "minimap.mark.ship#13",
@@ -3900,7 +3884,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), at C2's Relay, which it keeps unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 246
+   "order": 245
   },
   {
    "id": "minimap.mark.ship#14",
@@ -3916,7 +3900,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), at C2's Relay, which it keeps unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 247
+   "order": 246
   },
   {
    "id": "minimap.mark.ship#15",
@@ -3932,7 +3916,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), at C2's Relay, which it keeps unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 248
+   "order": 247
   },
   {
    "id": "minimap.mark.ship#16",
@@ -3948,7 +3932,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), at C2's Relay, which it keeps unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 249
+   "order": 248
   },
   {
    "id": "minimap.mark.ship#17",
@@ -3964,7 +3948,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), at C2's Relay, which it keeps unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 250
+   "order": 249
   },
   {
    "id": "minimap.mark.ship#18",
@@ -3980,7 +3964,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 251
+   "order": 250
   },
   {
    "id": "minimap.mark.ship#19",
@@ -3996,7 +3980,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 252
+   "order": 251
   },
   {
    "id": "minimap.mark.ship#20",
@@ -4012,7 +3996,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 253
+   "order": 252
   },
   {
    "id": "minimap.mark.ship#21",
@@ -4028,7 +4012,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 254
+   "order": 253
   },
   {
    "id": "minimap.mark.ship#22",
@@ -4044,7 +4028,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 255
+   "order": 254
   },
   {
    "id": "minimap.mark.ship#23",
@@ -4060,7 +4044,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 256
+   "order": 255
   },
   {
    "id": "minimap.mark.ship#24",
@@ -4076,7 +4060,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 257
+   "order": 256
   },
   {
    "id": "minimap.mark.ship#25",
@@ -4092,7 +4076,7 @@
    "note": "sample: one of the warships the fleet line counts (38 / 40, two under way), holding A4, the camp it cleared",
    "layer": 0,
    "drawList": "panels",
-   "order": 258
+   "order": 257
   },
   {
    "id": "minimap.mark.ship#26",
@@ -4108,7 +4092,7 @@
    "note": "sample: an enemy warship in C2, which the alert 'Enemy ships in C2' names; seen in a sector the player holds unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 259
+   "order": 258
   },
   {
    "id": "minimap.mark.ship#27",
@@ -4124,7 +4108,7 @@
    "note": "sample: an enemy warship in C2, which the alert 'Enemy ships in C2' names; seen in a sector the player holds unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 260
+   "order": 259
   },
   {
    "id": "minimap.mark.ship#28",
@@ -4140,7 +4124,7 @@
    "note": "sample: an enemy warship in C2, which the alert 'Enemy ships in C2' names; seen in a sector the player holds unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 261
+   "order": 260
   },
   {
    "id": "minimap.mark.ship#29",
@@ -4156,7 +4140,7 @@
    "note": "sample: an enemy warship in C2, which the alert 'Enemy ships in C2' names; seen in a sector the player holds unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 262
+   "order": 261
   },
   {
    "id": "minimap.fog",
@@ -4170,7 +4154,7 @@
    "source": "Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)",
    "layer": 0,
    "drawList": "panels",
-   "order": 263
+   "order": 262
   },
   {
    "id": "minimap.sector.lattice.A1",
@@ -4184,7 +4168,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 264
+   "order": 263
   },
   {
    "id": "minimap.sector.lattice.B1",
@@ -4198,7 +4182,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 265
+   "order": 264
   },
   {
    "id": "minimap.sector.lattice.C1",
@@ -4212,7 +4196,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 266
+   "order": 265
   },
   {
    "id": "minimap.sector.lattice.D1",
@@ -4226,7 +4210,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 267
+   "order": 266
   },
   {
    "id": "minimap.sector.lattice.E1",
@@ -4240,7 +4224,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 268
+   "order": 267
   },
   {
    "id": "minimap.sector.lattice.A2",
@@ -4254,7 +4238,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 269
+   "order": 268
   },
   {
    "id": "minimap.sector.lattice.B2",
@@ -4268,7 +4252,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 270
+   "order": 269
   },
   {
    "id": "minimap.sector.lattice.C2",
@@ -4282,7 +4266,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 271
+   "order": 270
   },
   {
    "id": "minimap.sector.lattice.D2",
@@ -4296,7 +4280,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 272
+   "order": 271
   },
   {
    "id": "minimap.sector.lattice.E2",
@@ -4310,7 +4294,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 273
+   "order": 272
   },
   {
    "id": "minimap.sector.lattice.A3",
@@ -4324,7 +4308,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 274
+   "order": 273
   },
   {
    "id": "minimap.sector.lattice.B3",
@@ -4338,7 +4322,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 275
+   "order": 274
   },
   {
    "id": "minimap.sector.lattice.C3",
@@ -4352,7 +4336,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 276
+   "order": 275
   },
   {
    "id": "minimap.sector.lattice.D3",
@@ -4366,7 +4350,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 277
+   "order": 276
   },
   {
    "id": "minimap.sector.lattice.E3",
@@ -4380,7 +4364,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 278
+   "order": 277
   },
   {
    "id": "minimap.sector.lattice.A4",
@@ -4394,7 +4378,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 279
+   "order": 278
   },
   {
    "id": "minimap.sector.lattice.B4",
@@ -4408,7 +4392,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 280
+   "order": 279
   },
   {
    "id": "minimap.sector.lattice.C4",
@@ -4422,7 +4406,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 281
+   "order": 280
   },
   {
    "id": "minimap.sector.lattice.D4",
@@ -4436,7 +4420,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 282
+   "order": 281
   },
   {
    "id": "minimap.sector.lattice.E4",
@@ -4450,7 +4434,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 283
+   "order": 282
   },
   {
    "id": "minimap.sector.lattice.A5",
@@ -4464,7 +4448,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 284
+   "order": 283
   },
   {
    "id": "minimap.sector.lattice.B5",
@@ -4478,7 +4462,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 285
+   "order": 284
   },
   {
    "id": "minimap.sector.lattice.C5",
@@ -4492,7 +4476,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 286
+   "order": 285
   },
   {
    "id": "minimap.sector.lattice.D5",
@@ -4506,7 +4490,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 287
+   "order": 286
   },
   {
    "id": "minimap.sector.lattice.E5",
@@ -4520,7 +4504,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 288
+   "order": 287
   },
   {
    "id": "minimap.sector.held.A1",
@@ -4536,7 +4520,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 289
+   "order": 288
   },
   {
    "id": "minimap.sector.held.B1",
@@ -4552,7 +4536,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 290
+   "order": 289
   },
   {
    "id": "minimap.sector.held.C1",
@@ -4568,7 +4552,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 291
+   "order": 290
   },
   {
    "id": "minimap.sector.held.D1",
@@ -4584,7 +4568,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 292
+   "order": 291
   },
   {
    "id": "minimap.sector.held.E1",
@@ -4600,7 +4584,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 293
+   "order": 292
   },
   {
    "id": "minimap.sector.held.A2",
@@ -4616,7 +4600,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 294
+   "order": 293
   },
   {
    "id": "minimap.sector.held.B2",
@@ -4632,7 +4616,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 295
+   "order": 294
   },
   {
    "id": "minimap.sector.held.C2",
@@ -4648,7 +4632,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 296
+   "order": 295
   },
   {
    "id": "minimap.sector.held.E2",
@@ -4664,7 +4648,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 297
+   "order": 296
   },
   {
    "id": "minimap.sector.held.A3",
@@ -4680,7 +4664,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 298
+   "order": 297
   },
   {
    "id": "minimap.sector.held.B3",
@@ -4696,7 +4680,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 299
+   "order": 298
   },
   {
    "id": "minimap.sector.held.C3",
@@ -4712,7 +4696,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 300
+   "order": 299
   },
   {
    "id": "minimap.sector.held.E3",
@@ -4728,7 +4712,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 301
+   "order": 300
   },
   {
    "id": "minimap.sector.held.A4",
@@ -4744,7 +4728,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 302
+   "order": 301
   },
   {
    "id": "minimap.sector.held.D4",
@@ -4760,7 +4744,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 303
+   "order": 302
   },
   {
    "id": "minimap.sector.held.E4",
@@ -4776,7 +4760,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 304
+   "order": 303
   },
   {
    "id": "minimap.sector.held.A5",
@@ -4792,7 +4776,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 305
+   "order": 304
   },
   {
    "id": "minimap.sector.held.B5",
@@ -4808,7 +4792,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 306
+   "order": 305
   },
   {
    "id": "minimap.sector.held.D5",
@@ -4824,7 +4808,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 307
+   "order": 306
   },
   {
    "id": "minimap.sector.held.E5",
@@ -4840,7 +4824,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 308
+   "order": 307
   },
   {
    "id": "minimap.alert",
@@ -4855,7 +4839,7 @@
    "source": "Hud.cpp:3608-3617 (ALERT_MARK_UNITS 14)",
    "layer": 0,
    "drawList": "panels",
-   "order": 309
+   "order": 308
   },
   {
    "id": "minimap.view",
@@ -4881,7 +4865,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 310
+   "order": 309
   },
   {
    "id": "minimap.view#2",
@@ -4907,7 +4891,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 311
+   "order": 310
   },
   {
    "id": "minimap.view#3",
@@ -4933,7 +4917,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 312
+   "order": 311
   },
   {
    "id": "minimap.view#4",
@@ -4959,7 +4943,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 313
+   "order": 312
   }
  ]
 }
