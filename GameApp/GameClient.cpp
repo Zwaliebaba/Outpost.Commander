@@ -53,7 +53,7 @@ constexpr float CREASE_DEGREES = 10.0f;
 constexpr float LINE_LIFT_SHARE = 0.002f;
 // Every structure stands on a faint ring the size of its selection ring, which puts it on the ground and says its size: a
 // line one pixel wide at any zoom, RING_LINE_SEGMENTS long, in its side's color at FOOTPRINT_RING_SHADE. Under the
-// pointer, and under every structure while one is placed, it takes the color of the structure's own lines. Selected, the
+// pointer, and under every structure while one is placed, it takes its side's ship-line color (ADR-042). Selected, the
 // selection's green ring takes its place (ADR-042). At rest it is there for the far view, where a structure is small, and
 // fades as the camera comes in: at its resting strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
 // and gone from RING_GONE_VIEW_SHARE. A Mining Rig's ring, its own footprint's laid over its rock, shows only under the

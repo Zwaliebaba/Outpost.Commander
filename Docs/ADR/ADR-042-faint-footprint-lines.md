@@ -1,6 +1,6 @@
 # ADR-042 — A structure's ring is a faint line a pixel wide, and a Mining Rig's ring is its own, laid over its rock
 
-Status: **accepted** · 2026-10-05
+Status: **accepted** · 2026-10-25
 Owns: structure-footprint-ring, rig-footprint-ring, footprint-ring-strength
 
 ## Context
@@ -19,7 +19,7 @@ The owner decided that the rings are thin and faint, at full strength only under
    - It is 1.3 times the footprint radius, the size of the selection ring. At rest it is drawn at its resting strength at most: its side's color at 0.35.
    - It has 96 segments, and the models' lines draw it (`MeshPipeline::DrawLines`), unpulled since nothing lies under it.
    - **A resting ring is for the far view** (owner, 2026-10-03). It is at its resting strength while its radius is at most 3% of the view's width, and fades from it to nothing by 6.5% of it, so that up close the bases are not ringed.
-2. **Some rings are at full strength**, which is the color of the structure's own lines (`EdgeColor`, [ADR-040](ADR-040-lines-over-dark-faces.md) decision 1), at any zoom:
+2. **Some rings are at full strength**, which is the color of its side's ship lines (`EdgeColor` of the side's color, [ADR-040](ADR-040-lines-over-dark-faces.md) decision 1), a little stronger in hue than the structure's own lines, which are drawn toward gray (owner, 2026-10-25), at any zoom:
    - Under the structure the pointer is on. It is picked as a click picks it (`PickEntity`), and not through the HUD.
    - Under every structure while one is being placed, since then the player is choosing where it stands among them.
 3. **The selection takes the place of the line.** A selected structure's ring takes the place of its line, and stays the strongest mark on the ground; the selection's ring is [ADR-067](ADR-067-selection-ring-at-a-fixed-width.md)'s.

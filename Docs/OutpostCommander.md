@@ -287,7 +287,7 @@ Territory is what the two players fight over between their bases. Each sector of
 
 ### What holding gives [§territory.gives]
 
-- **Ore belongs to sectors.** A Mining Rig may be ordered only onto an asteroid in a sector its player holds, and a rig earns only while its player holds the sector: all of its income when the sector is linked to home, the cut-off share when it is cut off, and nothing while it is suppressed (ADR-056 decision 5; Game §economy.income).
+- **Ore belongs to sectors.** A Mining Rig may be ordered only onto an asteroid in a sector its player holds, a suppressed one included, and a rig earns only while its player holds the sector: all of its income when the sector is linked to home, the cut-off share when it is cut off, and nothing while it is suppressed (ADR-056 decision 5; Game §economy.income).
 - **Production follows territory.** A Shipyard or a Repair Bay may be ordered only in a sector its player holds, however far from home, so that production moves forward as the territory does. One that stands in a sector its player loses keeps working (ADR-056 decision 5; ADR-075 decision 1; Game §structures.building).
 - **A held sector is in sight.** A sector its player holds and that is not suppressed is in that player's sight, all of it: its ships and structures, its asteroids' reserves and what is destroyed in it (ADR-056 decision 9; Game §sight.range).
 
@@ -1446,7 +1446,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **A drag box is its outline on the ground,** covering the ground the box on the screen covers (ADR-013 decision 5).
 - **Every structure stands on a faint ring,** a line a pixel wide at 1.3 times its footprint in its side's color, which puts it on the ground and says its size (ADR-042 decision 1).
   - **The ring is for the far view.** It is at its resting strength, faint in its side's color, while its radius is at most 3% of the view's width, and gone from 6.5%, so up close the bases are not ringed (ADR-042 decision 1).
-  - **It is at full strength, in the color of the structure's own lines, under the pointer and under every structure while one is placed** (ADR-042 decision 2).
+  - **It is at full strength, in its side's ship-line color, a little stronger in hue than the structure's own lines, under the pointer and under every structure while one is placed** (ADR-042 decision 2).
   - **A selected structure's selection ring takes its place** (ADR-042 decision 3).
   - **A Mining Rig's ring is its own footprint's, laid over its rock,** and shows only under the pointer and while a structure is placed, at full strength (ADR-042 decision 4).
   - **A structure the player only remembers stands on no ring** (ADR-081 decision 4).
