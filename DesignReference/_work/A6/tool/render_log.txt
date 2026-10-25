@@ -5,3 +5,4 @@
 81/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_34.png 9.1s (166s)
 101/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L1_top.png 6.4s (204s)
 121/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L1_34.png 8.0s (241s)
+141/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Small_34.png 8.2s (280s)

@@ -241,8 +241,9 @@ class Out:
         e = {"id": self.uid(eid), "kind": kind, "x": round(x, 2), "y": round(y, 2), "w": round(max(w, 0.0), 2),
              "h": round(max(h, 0.0), 2)}
         for k, v in kw.items():
-            if v is not None and v is not False:
-                e[k] = v
+            if v is None or (v is False and k not in ("measured", "enabled")):
+                continue
+            e[k] = v
         e["layer"] = self.layer if kind != "entityBar" else -1
         e["drawList"] = {0: "panels", 1: "lines", 2: "sprites", 3: "texts"}.get(LIST_RANK.get(kind, 0)) if kind != "entityBar" else "bars"
         e["order"] = self.seq
