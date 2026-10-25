@@ -10,7 +10,7 @@ Every owner decision that is still open: each row of a gate table whose Status i
 
 | Gate | Decision | Blocks |
 |---|---|---|
-| O9 | **Seasons of months** (§7): upgrade steps between state versions, the galaxy's arc over a season, how a season ends, and how far a deputy carries a seat over absences of weeks. | Seasons of months (the Horizon plan's Phase 8) |
+| O9 | **Seasons of months** (§7): upgrade steps between state versions, the galaxy's arc over a season, how a season ends, and how far a deputy carries a seat over absences of weeks. | Seasons of months (§7; §11) |
 
 ## [`Docs/Pillars.md`](../Pillars.md)
 

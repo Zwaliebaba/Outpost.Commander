@@ -1457,6 +1457,22 @@ Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time
 - **Source:** the Look plan, LV2.1's As built (commit `7aa6e4d`, #108); ADR-092, Consequences (commit `7aa6e4d`, #108).
 - **Note:** CI's mesh job has 4 cores and a 10-minute limit.
 
+### 2026-10-11 · How open the baked vertices are (LV2.1)
+
+| Quantity | Value |
+|---|---|
+| Vertices of the 45 sources | 48,948, for 16,316 triangles: three a triangle, since every source is flat-shaded and split |
+| Wholly open | 26% |
+| Less than half open | 30% |
+| Wholly shut in | 13%: faces buried inside other parts, which no one sees |
+| Mean openness | 0.65 |
+| The convex rocks | 0.97 open or more everywhere |
+
+- **Build:** LV2.1: `Tools/BakeMeshes.py` with CPython 3.13 in the Linux container, the same bake as the entry above
+- **Seeds:** not applicable
+- **Method:** The openness byte of every vertex of the baked `.nmf` files, counted.
+- **Source:** ADR-092, Consequences, and the Look plan, LV2.1's As built (commit `7aa6e4d`, #108).
+
 ## Screen
 
 The figures of the reviews of the screen, and of the meshes as drawn: sizes, contrast, brightness and hues.

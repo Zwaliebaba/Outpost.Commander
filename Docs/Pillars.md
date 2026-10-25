@@ -1,6 +1,6 @@
 # Outpost Commander — Pillars
 
-Status: **proposed** · Owner: Stefan Zwaal · Drafted from the game as built and [the horizon](Horizon.md); the owner's acceptance is P1, the gate of §6
+Owner: Stefan Zwaal · Drafted from the game as built and [the horizon](Horizon.md); whether the owner accepts them is §6's gate
 
 A pillar is what a design decision is checked against. Each pillar below is a one-line statement, what it asks of a decision, and the chapters of [the living design](OutpostCommander.md) it bears on. Where the game as built strains a pillar, the pillar says so: a strain is for the owner to weigh, and a pillar does not hide it. What the game is, rule by rule, is the living design (Game §overview).
 
@@ -14,15 +14,15 @@ It asks that every hull, drive and weapon have a stage of the match where it is 
 
 Bears on: Game §ships, Game §combat, Game §research, Game §ai.counters.
 
-**Where the game strains it.** The balance check cannot feel what a battle between two clumps does not show, such as a drive's speed or a module, and leaves them out (ADR-033 decision 6). A deputy gives each Shipyard again the design it last built (Game §ai.deputy), so while its player is away a fleet does not change its design in answer to what the enemy fields.
+**Where the game strains it.** The balance check cannot feel what a battle between two clumps does not show, such as a drive's speed or a module, and leaves them out (ADR-033 decision 6). A deputy gives each Shipyard again the design it last queued (Game §ai.deputy), so while its player is away a fleet does not change its design in answer to what the enemy fields.
 
 ## 2. Territory is income
 
 **Ore comes from asteroids in the sectors a player holds, and production follows the territory.**
 
-It asks that something between the bases be worth fighting for, so that a match is fought along a front rather than settled by one siege, and that expanding, defending and raiding Mining Rigs and Relays be the strategic layer. A Mining Rig, a Shipyard and a Repair Bay stand only in a held sector (Game §structures.sites), so losing ground costs income and reach, not only the structures lost.
+It asks that something between the bases be worth fighting for, so that a match is fought along a front rather than settled by one siege, and that expanding, defending and raiding Mining Rigs and Relays be the strategic layer. A Mining Rig, a Shipyard and a Repair Bay are built only in a held sector, and a rig earns only while its sector is held (Game §territory.gives), so losing ground costs income and reach, not only the structures lost.
 
-Bears on: Game §territory, Game §economy, Game §map, Game §structures.sites.
+Bears on: Game §territory, Game §economy, Game §map, Game §structures.building.
 
 **Where the game strains it.** Once a player's fleet fills its cap, income decides how fast it recovers from a lost battle, not how large its fleet grows, and the bank has no limit and nothing drains it (Game §economy.fleetcap; Game §economy.bank); [the horizon](Horizon.md) §6.2 follows this over a season. A world has no domination (Game §world.overview), so there holding more ground does not, by itself, win.
 
@@ -34,7 +34,7 @@ It asks that research unlock components and upgrades, so that a player's choices
 
 Bears on: Game §research, Game §structures.lab, Game §neutrals.derelicts, Game §ships.
 
-**Where the game strains it.** Every action keeps a match's pace in a world too ([the horizon](Horizon.md) §2), so the whole tree is done on a world's first day (the horizon §6), and research paces a match but not a world. The horizon's O1 proposes tiers that the galaxy opens.
+**Where the game strains it.** Every action keeps a match's pace in a world too ([the horizon](Horizon.md) §2), so the whole tree is done on a world's first day (the horizon §6), and research paces a match but not a world. The horizon proposes tiers that the galaxy opens, in its §6.1.
 
 ## 4. Readable at a glance
 
@@ -44,7 +44,7 @@ It asks that what a player needs in order to decide be on the screen, in the wor
 
 Bears on: Game §interface, Game §sight, Game §territory.shown, Game §look, Game §map.plane.
 
-**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A world has no tickets, so there the territory alone says who is winning. A player in a world's second seat sees its own ships in the Tarkan set's orange-red in the world and in blue on the minimap, which R6 of [the reconcile plan](Plans/ImplementationPlan-Reconcile.md) puts to the owner.
+**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A world has no tickets, so there the territory alone says who is winning. A player in a world's second seat sees its own ships in the Tarkan set's orange-red in the world and in blue on the minimap; which of the two a player's own side should be is the owner's to decide ([open decisions](Reference/OpenDecisions.md)).
 
 ## 5. Being there buys decisions, not actions
 
@@ -54,7 +54,7 @@ It asks that nothing move to a slower clock to fit a world (owner, 2026-10-04), 
 
 Bears on: Game §world, Game §ai.deputy, Game §orders.standing, Game §orders.scheduled, Game §orders.retreat, Game §session.server.
 
-**Where the game strains it.** The deputy is a keeper: it defends what its player holds and builds again what its Shipyards last built, but it never attacks, claims a sector or clears pirates (Game §ai.deputy), so a present player gains ground that an absent one only holds. How much presence buys is what the week's questions W3 and W4 measure ([OutpostCommander-Phase5.md](Plans/OutpostCommander-Phase5.md)).
+**Where the game strains it.** The deputy is a keeper: it defends what its player holds and gives its Shipyards again what they last queued, but it never attacks, claims a sector or clears pirates (Game §ai.deputy), so a present player gains ground that an absent one only holds. How much presence buys is what the battle matchups measure in battle (Game §session.matchup), and what a world's log records every hour, each seat's growth with how much of the hour its player and its deputy played it (Game §world.log).
 
 ---
 
