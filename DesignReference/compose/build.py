@@ -811,6 +811,7 @@ def build_all():
     chapter_head(17, "Open items", "Every conflict between code, ADRs and design documents, and every gap where nothing decides, for the owner. The reference shows the code's value in each case.",
                  ["conflicts.md", "gaps.md", "R/summary.md", "R/leak-check.md"]) +
     card("Summary", md(demote(read("R/summary.md"), 1))) +
+    card("Owner decisions", md(demote(read("R/owner-decisions.md"), 1))) +
     card("After verification", md(demote(read("V/open-after-verification.md"), 1))) +
     card("Horizon and self-play leak check", md(demote(read("R/leak-check.md"), 1))) + footer_note(), W))
   parts = split_at(demote(read("conflicts.md"), 1), 3, pattern=r"^#{3,4} ")

@@ -112,7 +112,7 @@ a{{color:{C['ACCENT_COLOR']}}}a:hover{{color:{C['TEXT_COLOR']}}}
 .md blockquote{{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid {C['GOLD_COLOR']};background:{C['FIELD_COLOR']};color:{C['NUMBERS_COLOR']};font-family:{READ};font-size:16px}}
 .md table{{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}}
 .md th{{font-family:{LABEL};font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:{C['LABEL_COLOR']};text-align:left;padding:6px 8px;border-bottom:1px solid {C['EDGE_COLOR']};vertical-align:bottom;background:{C['FIELD_COLOR']}}}
-.md td{{padding:5px 8px;border-bottom:1px solid {C['EDGE_COLOR']};vertical-align:top;color:{C['NUMBERS_COLOR']};overflow-wrap:anywhere}}
+.md td{{padding:5px 8px;border-bottom:1px solid {C['EDGE_COLOR']};vertical-align:top;color:{C['NUMBERS_COLOR']};overflow-wrap:break-word}}
 .md td code{{font-size:11.5px}}
 .md pre{{margin:6px 0 14px 0;padding:12px 14px;background:{C['FIELD_COLOR']};border:1px solid {C['EDGE_COLOR']};overflow:hidden;white-space:pre-wrap}}
 .md pre code{{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:{C['NUMBERS_COLOR']};white-space:pre-wrap}}
@@ -174,6 +174,16 @@ def _escape_outside_code(text):
   return "".join(out)
 
 
+TH = re.compile(r"<th>(.*?)</th>", re.S)
+CAMEL = re.compile(r"(?<=[a-z])(?=[A-Z])")
+
+
+def _camel_breaks(cell):
+  """Lets a header break where a camelCase word joins (speedMeters<wbr>PerSecond), and nowhere else."""
+  parts = re.split(r"(<[^>]+>)", cell)
+  return "".join(p if p.startswith("<") else CAMEL.sub("<wbr>", p) for p in parts)
+
+
 RATING = re.compile(r"<td>(\s*(?:<strong>)?)(Good|Fair|Poor)\b")
 
 
@@ -182,6 +192,7 @@ def md(text):
   text = _escape_outside_code(text)
   converter = _markdown()
   out = converter.convert(text)
+  out = TH.sub(lambda m: "<th>" + _camel_breaks(m.group(1)) + "</th>", out)
   out = RATING.sub(lambda m: f'<td>{m.group(1)}<span class="{m.group(2).lower()}">{m.group(2)}</span>', out)
   out = out.replace("{{", "{ {").replace("\\|", "|")  # a table's escaped pipe, left as is inside code by the converter
   return f'<div class="md">{out}</div>'
