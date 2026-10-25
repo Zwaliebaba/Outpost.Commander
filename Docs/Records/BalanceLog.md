@@ -1749,6 +1749,19 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Method:** A Python script replaying `MeshPS.hlsl`'s light, `GameClient.cpp`'s face and line colors and `Models.json`'s side colors over every unit normal in 3° steps that the camera can see at its lowest pitch, 40°; WCAG's ratio of the linear luminances, as ADR-040 computed it. Computed, not measured on a screen.
 - **Source:** the Look plan, what the review found and LV1.1 (commit `fdcc5f5`, #107).
 
+### 2026-10-25 · The Large hull card's numbers in Cascadia Mono (RF-O3)
+
+| Quantity | Value |
+|---|---|
+| Cascadia Mono's advance | 1,200 units of its 2,048 an em, every character the card uses, at weights 400, 600 and 700 |
+| The Large hull card's line, "1,200 HP · ARM 14 · 25m/s", against the card's 196 units of room | 25 characters of the Detail face, 13 units: at 100% on 1920×1080 a character is 8 pixels, 200 units in all, and the line is cut to "1,200 HP · ARM 14 · 2..."; the same at 100% on 2880×1920, at 12 pixels a character; whole at 110% on 1920×1080, at 100% on 2560×1440 and 3840×2160, and in Consolas, at 1,126 units an em, at every one of them |
+| The other part cards | whole, in both faces, at every one of those sizes |
+
+- **Build:** The tree of task 39.5, in the Linux container: `Hud::Describe` and `Hud::Lay` built by clang 18 against stand-ins, and `Neuron::RasterizeFont` replaced by a stand-in that gives each character the advance its font file holds, rounded to whole pixels as the game rounds it
+- **Seeds:** not applicable
+- **Method:** The designer laid out with the tuning data's three hulls unlocked, its card texts read from the layout. Cascadia Mono's advances read from the static fonts of Cascadia Code release 2407.24; Consolas's from its published metrics. Computed through the game's own layout code, not seen on a screen. Bahnschrift and Segoe UI were stood in for by Inter, which the hull card does not use.
+- **Source:** the findings plan, RF-O3.
+
 ## The code
 
 Counts taken over the source tree and its history.
