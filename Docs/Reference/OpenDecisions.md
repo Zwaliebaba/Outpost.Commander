@@ -4,7 +4,7 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-34 gates are open, in 9 documents.
+24 gates are open, in 8 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
@@ -45,21 +45,6 @@ Every owner decision that is still open: each row of a gate table whose Status i
 | Gate | Decision | Blocks |
 |---|---|---|
 | A7 | **What a plate is** (LV4.1–LV4.3). Proposed in LV4's tasks: fleets found by nearness on the screen, a plate's count and the arc of its hit points, its hull's glyph, plates that merge or move apart where they meet, a click that selects the fleet, and health bars only on Alt, under the pointer and close in. It rewrites [ADR-088](../ADR/ADR-088-selection-and-commands.md) decision 5, which holds when a bar shows, its place and its size. | LV4 |
-
-## [`Docs/Plans/ImplementationPlan-Reconcile.md`](../Plans/ImplementationPlan-Reconcile.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| R1 | **A joined world's tick rate.** Whether a world joined on a dedicated server takes its tick rate from the server, or checks it against the client's, rather than the client using its own build's tuning data. Proposed: keep what the code does while the game and `OutpostServer` package the same `Tuning.json`. | nothing built; a world's server with another tick rate |
-| R2 | **Acknowledgement or prediction over a real network.** Whether play in a world joined from another machine needs command acknowledgement or client-side prediction. Proposed: neither for now; measure an order's response over that network in the owner's week, and decide from the figure. | nothing built; an acknowledgement in the protocol, or a prediction layer in the client |
-| R3 | **A slow shooter's reveal.** Whether a shooter that keeps firing stays revealed between the shots of the slowest weapon, which fires every 6 s against a 3 s reveal. Proposed: keep the data; raising `shotRevealSeconds` is the data change if the owner wants every shooter that keeps firing revealed. | nothing built; the Rail Cannon's worth under fog |
-| R4 | **Explored ground across a join.** Whether the ground a player has explored is part of what a world remembers for it, or the client's presentation that starts afresh on every join. Proposed: presentation, as built. | nothing built; what a returning player sees of explored ground, and where it may order a Mining Rig |
-| R5 | **The cut-off share on the panel.** Whether a sector's panel reads the cut-off share from the data, or the share is fixed at half by decision. Proposed: keep the code in this run; with the next change to the territory panel, the snapshot carries the share and the panel writes it. | any change to `cutOffIncomePercent` |
-| R6 | **A player's own color in seat 2.** Whether a player's own side is drawn in the Human set's blue whatever its seat, or the HUD colors sides by seat as the world does. Proposed: draw the sets by viewer, the viewer's own side always in the Human set's blue. | ADR-011 decision 3's wording; a world played from seat 2 |
-| R7 | **Another player's structure, selected.** Whether a click selects another player's structure, seen or remembered, so that a remembered structure's panel opens, or that panel goes. Proposed: make the panel reachable, as gate V3 of [the second interface plan](../Plans/ImplementationPlan-Interface2.md) decided. | ADR-081 decision 4's panel; ADR-013 decision 5's selection rule; Game §interface.hud.selection |
-| R8 | **The balance shares after split orders.** Whether the shift in the balance check's shares from planning a large order over two ticks matters. Proposed: accept it. | — |
-| R9 | **Criterion (d) at tier 1 after the arcs.** Whether the later balance check of record settles criterion (d) at tier 1, so that nothing waits on a retune since ships turn in arcs. Proposed: settled; nothing is retuned. | — |
-| R10 | **The thin margins against a raid.** Whether the Defence Platform's and the Command Station's thin margins against a raid hold in play. Proposed: judge it in the owner's next playtest against the AI's raids; until then the numbers stand. | — |
 
 ## [`Docs/Plans/ImplementationPlan-SelfPlay.md`](../Plans/ImplementationPlan-SelfPlay.md)
 
