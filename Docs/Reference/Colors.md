@@ -25,8 +25,6 @@ Every color constant, a `constexpr` whose name ends in `_COLOR`, in the `.h` and
 | `DISABLED_BUTTON_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.05, 0.06, 0.08, 0.85 | `#3F4550` |
 | `WARNING_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 1.0, 0.5, 0.35, 1.0 | `#FFBCA0` |
 | `MAP_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.02, 0.04, 0.07, 0.95 | `#27384B` |
-| `OWN_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.35, 0.65, 1.0, 1.0 | `#A0D3FF` |
-| `ENEMY_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 1.0, 0.38, 0.25, 1.0 | `#FFA689` |
 | `PIRATE_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.78, 0.45, 1.0, 1.0 | `#E5B3FF` |
 | `DERELICT_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.62, 0.62, 0.66, 1.0 | `#CECED4` |
 | `NEUTRAL_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.45, 0.42, 0.4, 1.0 | `#B3ADAA` |
