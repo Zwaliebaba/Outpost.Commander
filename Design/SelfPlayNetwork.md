@@ -1,20 +1,20 @@
 # The Self-Play Network — Blueprint
 
-Status: **proposal** · 2026-10-04, revised that day for [Phase 3's draft](../GameDesign/Archive/OutpostCommander-Phase3.md) and [the horizon](../GameDesign/OutpostCommander-Horizon.md) · The blueprint of milestone SP2 of [the self-play plan](../GameDesign/ImplementationPlan-SelfPlay.md). Nothing here is decided until SP2.1's ADR. Six questions are the owner's, gates N1 to N6 (§15).
+Status: **proposal** · 2026-10-04 · It still targets Phase 3's rules and Phase 3's map of 9 sectors. What the game has gained since is not in it: the 10 km map of 25 sectors (Game §map), the fleet cap (Game §economy.fleetcap), pirates, derelicts and repair (Game §neutrals), retreat (Game §orders.retreat), the Sensor Array (Game §ships.modules) and worlds with their deputies and AI empires (Game §world, Game §ai.deputy, Game §ai.empire). SP2.1's ADR is written against the rules as built · The blueprint of milestone SP2 of [the self-play plan](../GameDesign/ImplementationPlan-SelfPlay.md). Nothing here is decided until SP2.1's ADR, and the owner's six questions are gates N1 to N6 (§15).
 
-This document describes how the network that plays the AI's macro game would work: what it sees, what it decides, how it learns, where it sits in the code, what it costs, and what it tells the owner. [ADR-063](ADR/ADR-063-self-play-probe.md) records the first milestone, the search over the AI's numbers, and why it comes first. The network targets Phase 3's rules, because it will be built after them, and §16 records what the horizon would change.
+This document describes how the network that plays the AI's macro game would work: what it sees, what it decides, how it learns, where it sits in the code, what it costs, and what it tells the owner. [ADR-063](ADR/ADR-063-self-play-probe.md) records the first milestone, the search over the AI's numbers, and why it comes first. The network targets Phase 3's rules, and §16 records what [the horizon](../GameDesign/OutpostCommander-Horizon.md) would change.
 
 ---
 
 ## 1. What it is for
 
-The owner asked on 2026-10-04 for networks that fight each other to discover the best combination of actions, as a probe of the match's rules. The opponent the game ships stays the scripted one of design §10. The owner also decided what the network decides: macro decisions and fleet tactics, with placement, the Constructors and pathing left to the scripted AI.
+The network is a probe of the match's rules: networks that fight each other to discover the best combination of actions (owner, 2026-10-04). The opponent the game ships stays the scripted one (Game §ai). The network decides macro decisions and fleet tactics, and placement, the Constructors and pathing stay the scripted AI's (owner, 2026-10-04).
 
 The first milestone answers what fixed numbers can do. The scripted AI applies the same rules whatever happens in the match: it researches in one order, answers a design with the counter its table names, and attacks once its reserve reaches a size. The network decides from the state of the match: what the enemy fields, where the territory stands, how the tickets run. If deciding from the state beats fixed rules by a wide margin, that margin and how it is won are the probe's findings. A strategy that wins too easily is a defect in the rules, or a weakness in how the scripted AI plays them, and the owner sorts which.
 
-The network never plays in the game the players get. It plays only in the headless `--ai-matches` switch, and ADR-063 forecloses a learned AI in the shipped game without a design amendment and a new ADR.
+The network never plays in the game the players get. It plays only in the headless `--ai-matches` switch, and ADR-063 forecloses a learned AI in the shipped game without a design decision of the owner's and a new ADR.
 
-**The horizon gives the AI another job.** The owner's horizon proposes a world that keeps running. In it, an AI called the deputy commands an absent player's seat around the clock, and the AI empires are the same code (horizon §4). A deputy much weaker than its player lets presence decide a season. The network does not become the deputy here: it stays the probe, and it becomes the deputy's benchmark (§13). Whether a learned policy should ever command a seat is gate N6 (§15).
+**A world gives the AI another job.** In a world that keeps running, the deputy commands an absent player's seat around the clock, and an AI empire is the same AI playing a seat of its own (Game §ai.deputy, Game §ai.empire; horizon §4). A deputy much weaker than its player lets presence decide a season. The network does not become the deputy here: it stays the probe, and it becomes the deputy's benchmark (§13). Whether a learned policy should ever command a seat is gate N6 (§15).
 
 ## 2. The shape of it in one paragraph
 
@@ -60,7 +60,7 @@ The body's reflexes stay faster than the network. The defence reflex answers a s
 
 ## 5. What it sees
 
-The observation has two parts: numbers about the whole match, and the same 18 numbers about each sector. On today's map of 9 sectors that is 288 numbers.
+The observation has two parts: numbers about the whole match, and the same 18 numbers about each sector. On Phase 3's map of 9 sectors that is 288 numbers.
 
 **The match**, 126 numbers:
 
@@ -99,14 +99,14 @@ The observation has two parts: numbers about the whole match, and the same 18 nu
 
 ## 6. What it decides
 
-Six heads, 109 choices on today's map. A head is consulted only when its decision is open, and a mask removes the choices the body cannot carry out:
+Six heads, 109 choices on Phase 3's map. A head is consulted only when its decision is open, and a mask removes the choices the body cannot carry out:
 
 | Head | Choices | Consulted | Masked out | The scripted rule it replaces |
 |---|---|---|---|---|
-| Research | the 23 topics | when one of the Lab's slots is free | researched; prerequisites not done; a tier the Lab's level has not opened (Phase 3 §6) | the research order (ADR-020) |
-| Production | 45 designs: 3 hulls × 3 drives × 5 weapons | every step | a component not unlocked; a hull above its best Shipyard's level (Phase 3 §5) | the counters, reviewed every 60 s (ADR-020 decision 8) |
-| Investment | nothing; a Shipyard; a Defence Platform at home; one by its front Relay; the next level of its Command Station, of a Shipyard or of the Lab | every step | one of the same kind still waiting; no place for it; a structure at its last level | a Shipyard per income share; platforms per Shipyard and per front Relay (ADR-020, ADR-041); Phase 3's upgrade rules (Phase 3 §8) |
-| Territory | no claim, or a sector | every step | a sector not free or not next to its territory; a claim still waiting for its Relay; the nodes its cap allows already held (Phase 3 §7) | the nearest free sector, one at a time (ADR-020 decision 13) |
+| Research | the 23 topics | when one of the Lab's slots is free | researched; prerequisites not done; a tier the Lab's level has not opened (Game §research.tiers) | the research order (ADR-020) |
+| Production | 45 designs: 3 hulls × 3 drives × 5 weapons | every step | a component not unlocked; a hull above its best Shipyard's level (Game §structures.shipyard) | the counters, reviewed every 60 s (ADR-020 decision 8) |
+| Investment | nothing; a Shipyard; a Defence Platform at home; one by its front Relay; the next level of its Command Station, of a Shipyard or of the Lab | every step | one of the same kind still waiting; no place for it; a structure at its last level | a Shipyard per income share; platforms per Shipyard and per front Relay (ADR-020, ADR-041); the upgrade rules (ADR-020 decision 14) |
+| Territory | no claim, or a sector | every step | a sector not free or not next to its territory; a claim still waiting for its Relay; the nodes its cap allows already held (Game §territory.cap) | the nearest free sector, one at a time (ADR-020 decision 13) |
 | Posture | hold home; hold the front; attack a sector | every step | a sector where it has seen or remembers no enemy structure, apart from the enemy's home | the attack group's size and lead, the fall-back and the regroup (ADR-041) |
 | Raid | no raid, or a sector; then 2, 4 or 8 ships | when no raid is under way | a sector the enemy does not hold; the enemy's home; more ships than half the reserve | the raid rule (ADR-020 decision 13) |
 
@@ -114,14 +114,14 @@ Six heads, 109 choices on today's map. A head is consulted only when its decisio
 
 - **Research** queues the topic in a free slot of the Lab, as the order's walk does today.
 - **Production** becomes the design the Shipyards keep queued. The body saves the design when the player does not have it, as it does today. A Shipyard whose level is below the design's hull keeps the last design it could build.
-- **Investment** adds a slot to the base plan, placed as the scripted AI places one today. A Shipyard is planned whatever the income. A level is ordered as Phase 3 §4 has it: the Ore paid when ordered, and the level building itself. The Shipyard upgraded is the one of lowest level, nearest the Command Station.
+- **Investment** adds a slot to the base plan, placed as the scripted AI places one today. A Shipyard is planned whatever the income. A level is ordered as Game §structures.levels.upgrade has it: the Ore paid when ordered, and the level building itself. The Shipyard upgraded is the one of lowest level, nearest the Command Station.
 - **Territory** plans the Relay and the rigs of the chosen sector, as the claim rule plans the nearest.
-- **Posture.** *Attack sector s* sends the reserve to join the attack group. It attack-moves the group on the best structure it knows in that sector, production first (ADR-037) and the highest level first (Phase 3 §8), or on the sector's node when it knows none. *Hold the front* and *hold home* send the reserve to hold that sector with a standing order (ADR-059). A hold chosen while an attack is under way calls the attack group back to the rally, so a fall-back is a hold.
+- **Posture.** *Attack sector s* sends the reserve to join the attack group. It attack-moves the group on the best structure it knows in that sector, production first (ADR-041 decision 6) and the highest level first (ADR-020 decision 14), or on the sector's node when it knows none. *Hold the front* and *hold home* send the reserve to hold that sector with a standing order (ADR-059). A hold chosen while an attack is under way calls the attack group back to the rally, so a fall-back is a hold.
 - **Raid** sends that many of the reserve's smallest hulls on the sector, and the body runs the raid as it runs one today, closing on the Relay.
 
 **What stays the body's:** where every structure goes, the Constructors and repair, keeping the Shipyards' queues full, the scout and its tour, the defence reflex, the pathing and formation of every order, which structure an attack goes for within its sector, and closing in.
 
-**What of `Opponent.json` still matters.** The body still reads `constructors`, `homeAsteroids`, `contestedAsteroids`, `shipyardQueueJobs`, `structureGapMeters`, `rallyDistanceMeters`, `defenseHoldSeconds`, `raidLossShare`, `scouts` and `scoutDesign`. The rest are the rules the heads replace, and so are the upgrade rules whose numbers Phase 3 adds (Phase 3 §8). A network seat plays on its seat's settings for the former, so it can play on SP1's champion's body.
+**What of `Opponent.json` still matters.** The body still reads `constructors`, `homeAsteroids`, `contestedAsteroids`, `shipyardQueueJobs`, `structureGapMeters`, `rallyDistanceMeters`, `defenseHoldSeconds`, `raidLossShare`, `scouts` and `scoutDesign`. The rest are the rules the heads replace, and so are the upgrade rules and their numbers (ADR-020 decision 14). A network seat plays on its seat's settings for the former, so it can play on SP1's champion's body.
 
 **The heads are drawn independently** given the layers they share, and a step's probability is the product of the consulted heads' probabilities. The raid's size is drawn only once its sector is. Choices that depend on each other, such as a raid and an attack on the same sector, are left for the body to reconcile: a raid takes ships from the reserve before the posture moves the rest.
 
@@ -142,7 +142,7 @@ About 200,000 parameters, 0.8 MB as floats. The sector encoder treats the sector
 
 The initialization and the activations follow the defaults that the large study of on-policy methods by Andrychowicz et al. (2021) found to work: orthogonal weights, tanh, and the last layer of each head scaled down to 0.01 so that the first choices are near uniform.
 
-**The forward pass in the game** is plain C++ over arrays of floats, in a fixed order: about 250,000 multiply-adds on today's map, done once every 10 seconds for each seat that has a network. The game is compiled `/fp:precise` with no contraction (R16), so the same binary gives the same probabilities for the same observation, which is what a replay needs (ADR-009). A masked choice's logit becomes minus infinity before the softmax, so it has probability zero. Masking the invalid choices, rather than letting the network pick them and fail, is what Huang and Ontañón (2022) found to scale.
+**The forward pass in the game** is plain C++ over arrays of floats, in a fixed order: about 250,000 multiply-adds on Phase 3's map, done once every 10 seconds for each seat that has a network. The game is compiled `/fp:precise` with no contraction (R16), so the same binary gives the same probabilities for the same observation, which is what a replay needs (ADR-009). A masked choice's logit becomes minus infinity before the softmax, so it has probability zero. Masking the invalid choices, rather than letting the network pick them and fail, is what Huang and Ontañón (2022) found to scale.
 
 ## 8. How a choice is drawn
 
@@ -168,7 +168,7 @@ A match with a network so reproduces from its seed, the two settings files and t
 - **Today an episode is a whole match.**
 - **An episode that stops without an outcome is cut short, not lost.** The trainer adds the value it estimates for the last state to the returns, and does not treat the stop as an ending. The learning code so works unchanged on pieces of a longer game.
 - **In a season there is no match to finish** (§12). An episode is then a segment of an hour or two, started from a state of a long run.
-- **The cheapest start state needs no new code.** The same binary replays a recorded run from its seed and commands to any tick (ADR-009). The AIs replay with it, since their draws are seeded too (§8). Forking a running server would save the replay's time, but the server cannot copy itself today.
+- **The cheapest start state needs no new code.** The same binary replays a recorded run from its seed and commands to any tick (ADR-009). The AIs replay with it, since their draws are seeded too (§8). A world's save, which the server writes from a copy of its state between ticks, would save the replay's time ([ADR-077](ADR/ADR-077-world-state-on-disk.md)).
 - **In a season the reward is position:** what the season's design makes winning, which the horizon leaves open (horizon §7). Until then the stand-in is the nodes held, and the capacity they allow once fleets are bounded (horizon §6.2), as a potential, as the tickets are today.
 
 ### Stage 1: the warm start
@@ -255,7 +255,7 @@ A last record holds the outcome, or says that the episode was cut short. A scrip
 
 ## 12. What it costs
 
-The only measured figure is the match: about 15 CPU seconds for a match of 45 minutes between scripted AIs, in the Linux container with clang at `-O2` (ADR-063). The network adds two forward passes every 10 seconds, about 150 million multiply-adds a match, which is milliseconds. Everything below is an estimate from that figure:
+The only measured figure is the match: about 15 CPU seconds for a match of 45 minutes between scripted AIs, in the Linux container with clang at `-O2` on 2026-10-04 ([the balance log](../GameDesign/Records/BalanceLog.md); [the budgets](Budgets.md) hold the latest). The network adds two forward passes every 10 seconds, about 150 million multiply-adds a match, which is milliseconds. Everything below is an estimate from that figure:
 
 | Stage | Matches | CPU hours | On 8 cores |
 |---|---|---|---|
@@ -300,23 +300,25 @@ Each finding is sorted by the owner, as in SP1.3: a rule that wants changing, a 
 - **A run outgrows the laptop.** *Answer:* the costs above, the warm start, an earlier time limit early on, and `--resume` after every iteration, as `Tools/SelfPlay.py` saves after every generation.
 - **Results differ between builds.** Floats are only promised to replay on one binary (ADR-009). *Answer:* train and measure on Release|x64 (ADR-063 decision 7). Weights move between builds; outcomes do not reproduce bit for bit across them.
 - **It fits the one map.** The encoding reads any map's sectors, but the weights learn this map. *Answer:* the probe answers for the repository's map, and another map is measured again before its findings count.
-- **It is built for a galaxy that is not planned.** The horizon is not accepted, and a network shaped for systems and seasons before a phase design decides them would be shaped wrong. *Answer:* only what costs nothing on today's map is taken now (§16).
-- **Phase 3 changes before it is built.** Its draft is not accepted, and its numbers are starting values. *Answer:* the heads and the observation follow its rules as built, and SP2.1's ADR is written against them.
+- **It is built for a galaxy that is not planned.** The horizon is not accepted, and a network shaped for systems and seasons before a phase design decides them would be shaped wrong. *Answer:* only what costs nothing on Phase 3's map is taken now (§16).
+- **The rules have moved on from Phase 3's.** *Answer:* SP2.1's ADR is written against the rules as built, and the observation and the heads follow them.
 
 ## 15. The owner's questions
 
-| Gate | Question | Recommendation |
-|---|---|---|
-| N1 | The trainer's library: PyTorch on the CPU, or NumPy with the gradients written by hand. Either is a tool's dependency that the game never links (R14). | PyTorch. Its gradients and its optimizer are used and tested far more widely than code written for this tool would be. |
-| N2 | The decision step: 5, 10 or 30 seconds. | 10 seconds (§4). |
-| N3 | The heads: the six of §6, with Phase 3's levels in the investment head and the defence reflex, the scout and placement left to the body; or the defence as a seventh head. | The six. The defence reflex is a reaction within a second, not a decision. |
-| N4 | The AI's draws, each seeded from the seed, the seat, the tick and the head: `Neuron::Random` moved from `NeuronServer` to `NeuronCore`, or a copy in `Opponent`. | The move. One generator, already pinned by `RandomTests`. |
-| N5 | The budget: how many hours of the laptop a run gets. | 35 hours for the plan of §12, run over several nights with `--resume`. |
-| N6 | Whether a learned policy should ever command a seat in a season: the horizon's deputy, or an AI empire (horizon §4). | No. A player must be able to predict the deputy left in charge, and see why it lost a fleet overnight. A scripted deputy that follows its player's directives can be read that way, and a learned policy cannot. The network stays the probe, and the deputy's benchmark (§13). |
+Each is the owner's, and each blocks SP2.1, the ADR that turns this blueprint into decisions. A row's proposal is this blueprint's recommendation.
+
+| Gate | Decision | Proposed in | Blocks | Status |
+|---|---|---|---|---|
+| N1 | The trainer's library: PyTorch on the CPU, or NumPy with the gradients written by hand. Either is a tool's dependency that the game never links (R14). Proposed: PyTorch, whose gradients and optimizer are used and tested far more widely than code written for this tool would be. | this blueprint, §3 | SP2.1, and the trainer of SP2.3 | open |
+| N2 | The decision step: 5, 10 or 30 seconds. Proposed: 10 seconds. | this blueprint, §4 | SP2.1, and the observation and the trajectories of SP2.2 and SP2.3 | open |
+| N3 | The heads: the six of §6, with Phase 3's levels in the investment head and the defence reflex, the scout and placement left to the body; or the defence as a seventh head. Proposed: the six, since the defence reflex is a reaction within a second, not a decision. | this blueprint, §6 | SP2.1, and the heads of SP2.2 | open |
+| N4 | The AI's draws, each seeded from the seed, the seat, the tick and the head: `Neuron::Random` moved from `NeuronServer` to `NeuronCore`, or a copy in `Opponent`. Proposed: the move, which keeps one generator, already pinned by `RandomTests`. | this blueprint, §8 | SP2.1, and the AI's draws in SP2.2 | open |
+| N5 | The budget: how many hours of the laptop a run gets. Proposed: 35 hours for the plan of §12, run over several nights with `--resume`. | this blueprint, §12 | SP2.1, and the owner's run of SP2.4 | open |
+| N6 | Whether a learned policy should ever command a seat in a season: the deputy, or an AI empire (horizon §4). Proposed: no. A player must be able to predict the deputy left in charge, and see why it lost a fleet overnight; a scripted deputy that follows its player's directives can be read that way, and a learned policy cannot. The network stays the probe, and the deputy's benchmark (§13). | this blueprint, §1 | SP2.1; and any learned policy in a seat | open |
 
 ## 16. What the horizon changes
 
-[The horizon](../GameDesign/OutpostCommander-Horizon.md) is not a plan, and it amends nothing here. Of what it would change, this blueprint takes now only what costs nothing on today's map:
+[The horizon](../GameDesign/OutpostCommander-Horizon.md) is not a plan, and it amends nothing here. Of what it would change, this blueprint takes now only what costs nothing on Phase 3's map:
 
 - **The sectors are encoded one by one, with shared weights, and chosen by pointing at them** (§5, §7). The network so reads any number of sectors and needs no mirrored map.
 - **A draw reproduces from the seed, the seat, the tick and the head** (§8). Nothing but the snapshot and the command log has to survive a restart.
@@ -336,7 +338,7 @@ What waits for a phase design that takes the horizon up:
 The self-play plan's milestone SP2 carries it out:
 
 - **SP2.1, the network's shape as an ADR.** The gates are decided, and this blueprint becomes decisions.
-- **SP2.2, the network plays,** once Phase 3 is built. The observation, the sector encoder, the masks, the heads and their pointers, the weights file and the forward pass in `Opponent`; the AI's own draws; the switch's options for a seat's network. Checked as §11 says, in CI.
+- **SP2.2, the network plays.** The observation, the sector encoder, the masks, the heads and their pointers, the weights file and the forward pass in `Opponent`; the AI's own draws; the switch's options for a seat's network. Checked as §11 says, in CI.
 - **SP2.3, trajectories, the warm start and the trainer.** The trajectory writer, the scripted seat's records, and the trainer under `Tools/` with its self-test. Done when the warm-started network wins about half its matches against the packaged settings.
 - **SP2.4, the league and its report.** The owner's run.
 
