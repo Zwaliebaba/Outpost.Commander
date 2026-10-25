@@ -99,6 +99,7 @@ From [ImplementationPlan-Findings.md](../Plans/ImplementationPlan-Findings.md), 
 | Run: what the Controls window says a click selects | The game, from #116 | F1: "Click · Select a ship of yours, or any structure", inside the window | A run of the game; the board names no owner run for this task. | Task RF2.2; gates F9 and F16 |
 | Run: Give lights under the pointer | The game, from #116 | The orders window (O) with warships selected: Give's edge lit under the pointer, as a HUD button's is; dim Give unlit | A run of the game; the board names no owner run for this task. | Task RF2.3; gate F13 |
 | Run and owner run: another player's structure selected | The game against the AI, from #116 | A click on an enemy structure in sight, and on one remembered under the fog: its panel alone, "Last seen 4:12 ago" for a memory, no buttons; a right-click and S give nothing; the selection gone once the memory is | The owner's run accepts it, and with it the memory's panel that task UI1.2 of the second interface plan laid out. | Task RF2.4; gate F16 |
+| Run as seat 1 and as seat 2, and owner run: each side in its own color | A world on `OutpostServer` with two players' seats, joined from the game as each, from #117 | Each seat's own ships, structures, sectors and territory figures in its set's color on the minimap and the territory panel, as in the world: player 1 blue and player 2 orange-red, whichever seat views; the pirates violet, a derelict gray | The two runs see the same colors; the owner's run accepts it. | Task RF3.1; gate F1 |
 
 ### The self-play plan
 
