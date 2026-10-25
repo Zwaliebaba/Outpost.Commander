@@ -1,18 +1,17 @@
 # ADR-045 — A model may grow through levels, and its parts may spin
 
-Status: **accepted** · 2026-10-03
+Status: **accepted** · 2026-10-11
+Owns: model-level-files, spinning-parts, nmf-layout
 
 ## Context
 
-On 2026-10-03 the owner replaced the `CommandStation`, `Shipyard` and `ResearchLab` sources of both sets with five levels each, `<Model>_L1.glb` to `<Model>_L5.glb`, to be used as the structures grow. Phase 3 grows them ([ADR-064](ADR-064-structure-upgrades.md)).
+The owner's `CommandStation`, `Shipyard` and `ResearchLab` sources of both sets have five levels each, `<Model>_L1.glb` to `<Model>_L5.glb` (owner, 2026-10-03), which the structures grow through ([ADR-064](ADR-064-structure-upgrades.md)).
 
-The owner's `ResearchLab` sources also have a moving part. Each is a node named `*_pivot`, and a glTF animation turns its rotation. Blender wrote each spin as five linear keys a quarter turn apart, ending a whole turn from where it starts. A script read every source on 2026-10-03:
+The owner's `ResearchLab` sources also have a moving part. Each is a node named `*_pivot`, and a glTF animation turns its rotation. Blender writes each spin as five linear keys a quarter turn apart, ending a whole turn from where it starts. A script read every source on 2026-10-03:
 
 - **Human**: the `radar_pivot` turns once in 8 s at every level. Level 5 adds a `relay_pivot_L` and a `relay_pivot_R`, which turn once in 5 s.
 - **Tarkan**: the `tilted_ring_pivot` turns once in 12 s at every level. Levels 3 to 5 add a `counter_ring_pivot`, which turns the other way once in 9 s.
 - **No other source** is animated, and no animated node holds a hardpoint.
-
-The baker refused every animation, so none of these sources could be baked.
 
 ## Decision
 
@@ -40,7 +39,8 @@ The baker refused every animation, so none of these sources could be baked.
    partCount      x { u32 firstIndex; u32 indexCount; f32 pivot[3]; f32 axis[3]; f32 periodSeconds; }
    ```
 
-   The triangles that stand still come first. The parts' runs of indices follow, one after another, to the end, each sorted by its node's name. A part turns once each period about its pivot, as `XMMatrixRotationAxis(axis, angle)` turns a point as the angle grows. The change of frame mirrors the source, so the baker reverses the source's axis. `Neuron::ParseNmf` reads only version 3, as strictly as ADR-018 decision 5 says, and every `.nmf` is baked again; version 3 added how open each vertex is ([ADR-092](ADR-092-baked-occlusion.md)). It also refuses:
+   The triangles that stand still come first. The parts' runs of indices follow, one after another, to the end, each sorted by its node's name. A part turns once each period about its pivot, as `XMMatrixRotationAxis(axis, angle)` turns a point as the angle grows. The change of frame mirrors the source, so the baker reverses the source's axis. `Neuron::ParseNmf` reads only version 3, as strictly as ADR-018 decision 5 says. It also refuses:
+   - a vertex whose three zero bytes are not zero;
    - a part's axis that is not a unit vector;
    - a period that is not positive;
    - runs that leave no triangle standing still, are not whole triangles, overlap or leave a gap, or do not reach the last index.
@@ -49,12 +49,12 @@ The baker refused every animation, so none of these sources could be baked.
 
 ## Consequences
 
-- Each of the 45 sources bakes, and `--check` proves the 45 `.nmf` files current. The 15 models with no levels and no parts change only in their header: 4 bytes and the version.
+- Each of the 45 sources bakes, and `--check` proves the 45 `.nmf` files current.
 - Every Research Lab in a match spins in step with every other, on the one clock. A phase for each structure would need the entity in `DrawModel`, and no one has asked for it.
-- `NeuronClientTests` checks the reader and its refusals, `MeshPiece`, and the sense and period of `PartWorld`. `GameAppTests` checks the level 1 file name, and that both players' Research Labs have a part. `BakeMeshes.py --self-test` checks that a part's corners turn in the game where glTF's animation turns them, a quarter turn in. It also checks that every new refusal fires.
+- `NeuronClientTests` checks the reader and its refusals, `MeshPiece`, and the sense and period of `PartWorld`. `GameAppTests` checks the level 1 file name, and that both players' Research Labs have a part. `BakeMeshes.py --self-test` checks that a part's corners turn in the game where glTF's animation turns them, a quarter turn in. It also checks that every refusal fires.
 
 ## What this forecloses
 
 - A part that moves in any way but a steady spin about a fixed axis, such as a hinge, a sweep or a slide, until the format has a version for it.
-- A hardpoint on a moving part, as before (ADR-018).
+- A hardpoint on a moving part (ADR-018).
 - A level chosen by the data. The level is the game's to set: the simulation's, which the snapshot carries ([ADR-064](ADR-064-structure-upgrades.md)).

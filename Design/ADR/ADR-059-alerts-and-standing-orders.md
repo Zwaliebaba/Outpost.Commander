@@ -1,34 +1,33 @@
 # ADR-059 — Alerts, and two standing orders the server keeps: hold a sector, and patrol
 
-Status: **accepted** · 2026-10-03
+Status: **accepted** · 2026-10-10
+Owns: alerts, standing-orders, hold-sector-order, patrol-order
 
 ## Context
 
-Phase 2 design §9 says that without tools to command it, a front of nine sectors is losses nobody saw. Gate J5 decided on 2026-10-03 that alerts and standing orders are Phase 2's, and the strategic view is not. The design lists:
+A front of many sectors loses what nobody saw. The player has to be told what happens where it is not looking, and its groups need orders the server keeps while the player looks elsewhere (owner, 2026-10-03): a group that holds a sector, coming back to it after a chase and answering any enemy in it, and a group that patrols between two points, attacking what it meets.
 
-- **alerts**: a Relay suppressed or attacked, a rig lost, an enemy group entering a held sector, each a short message and a mark on the minimap, with a key that jumps the camera to the latest;
-- **"hold this sector"**: a group returns to the sector's Relay after it chases, and answers any enemy in the sector;
-- **"patrol"**: between two points, attacking what it meets.
-
-It leaves open where each lives, how a group acts as one, what ends a standing order, and the keys.
+The rules have to say where alerts and standing orders live, how a group acts as one, what ends a standing order, and the keys that give one.
 
 ## Decision
 
-1. **Alerts are read from the server's events** ([ADR-080](ADR-080-events-and-scheduled-orders.md), which owns the detail). `Outpost::Alerts` in `GameApp` reads every snapshot's events as it arrives, and raises:
+1. **Alerts are read from the server's events** ([ADR-080](ADR-080-events-and-scheduled-orders.md) decisions 1 and 2). `Outpost::Alerts` in `GameApp` reads every snapshot's events as it arrives, and raises:
    - **Relay suppressed** and **Relay under attack**;
    - **Mining Rig lost**;
    - **Enemy ships in** a sector the player holds, or **Pirate ships in** it;
-   - **Ship retreating**, when one of the player's ships starts going back to be repaired, and **Pirates cleared**, when a sector the pirates guarded no longer is (Phase 4 design §13, [ADR-075](ADR-075-repair-and-retreat.md)).
+   - **Ship retreating**, when one of the player's ships starts going back to be repaired ([ADR-075](ADR-075-repair-and-retreat.md));
+   - **Pirates cleared**, when a sector the pirates guarded stops being guarded;
+   - an **order fired**, held back or refused, when one of the player's scheduled orders fires ([ADR-080](ADR-080-events-and-scheduled-orders.md) decision 5).
 
-   Each names its sector and keeps where it happened. One kind in one sector is not raised again within 20 seconds.
+   Each names its sector and keeps where it happened. One kind in one sector is not raised again within 20 seconds, but an order fired is told every time. What the player built and lost besides a rig, and the sectors it gained and lost, raise no alert; they are the report of a time away's ([ADR-080](ADR-080-events-and-scheduled-orders.md) decision 7). A world's lost and restarted empire is the banner's to tell ([ADR-084](ADR-084-world-without-an-end.md) decision 8).
 2. **The HUD lists the alerts** of the last 8 seconds under the territory panel, at most four, newest first, the newest a warning chip ([ADR-085](ADR-085-one-meaning-per-color.md) decision 1). It marks each place on the minimap with an outlined square in that color, drawn over the fog. **Space moves the camera to the newest alert.**
-3. **Standing orders are the server's**, as every order is (ADR-002), so they hold while the player looks elsewhere. They are two new commands:
+3. **Standing orders are the server's**, as every order is (ADR-002), so they hold while the player looks elsewhere. They are two commands:
    - **`HoldSectorCommand`** names a point. The warships hold the sector that holds it, and it is refused as `NoSector` when no sector does or the map has no territory.
    - **`PatrolCommand`** names a destination, and patrols between it and the middle of the warships when ordered.
 
    Constructors take no part, as in an attack, and a selection of only Constructors is refused as `NoShips`.
-4. **A standing order is given to a group, which acts as one.** The ships share a group number, `Simulation::m_lastStandingGroup` counting them, and keep the order's sector, or its two ends, on themselves. Once a second, each group, in the order it was given, acts with the group orders the game already has: attack-moves, laid as a formation (ADR-010, ADR-047). A group still planning a large order's paths waits for them (ADR-032).
-   - **A hold** first attack-moves to the sector's node. It then attack-moves on the nearest enemy ship its player sees in the sector, unless it is already headed within 150 m of it or a ship of it is firing. Once no enemy is left, and it stands idle more than 200 m from the node, it attack-moves back to the node. A held sector is seen whole (ADR-056), so a group holding its own sector sees all of it.
+4. **A standing order is given to a group, which acts as one.** The ships share a group number, `Simulation::m_lastStandingGroup` counting them, and keep the order's sector, or its two ends, on themselves. Once a second, each group, in the order it was given, acts with the game's group orders: attack-moves, laid as a formation (ADR-010 decision 4, ADR-047 decision 1). A group still planning a large order's paths waits for them (ADR-032).
+   - **A hold** first attack-moves to the sector's node. It then attack-moves on the nearest enemy ship its player sees in the sector, unless it is already headed within 150 m of it or a ship of it is firing. Once no enemy is left, and it stands idle more than 200 m from the node, it attack-moves back to the node. A held sector is seen whole (ADR-056 decision 9), so a group holding its own sector sees all of it.
    - **A patrol** attack-moves to its destination. Each time the whole group stands idle at one end, it attack-moves to the other.
 5. **Any other order the player gives a ship ends its standing order**: a move, an attack-move, an attack or a stop. The group orders a standing order gives do not end it. The order is state, so it replays (ADR-009). A ship retreating to be repaired keeps its standing order, and its group goes on without it until it is whole ([ADR-075](ADR-075-repair-and-retreat.md)).
 6. **Only the owner sees a ship's standing order** (`EntityView::standing`). The selection panel says "Holding a sector" or "On patrol".
@@ -40,7 +39,6 @@ It leaves open where each lives, how a group acts as one, what ends a standing o
   - `StandingOrderTests`: a group holding its sector goes to the node, answers an enemy in the far corner, and comes back; a patrol reaches its point, returns and sets out again; another order ends a standing order; and the refusals.
   - `AlertsTests`: each alert from its event, its repeat time and how long it shows.
   - `PlayerControlsTests`: the keys. `HudTests`: the list, the minimap mark and the selection's line.
-- **Not built or run on Windows here.** The alerts, Space and the H and T keys are the owner's run.
 
 ## What this forecloses
 

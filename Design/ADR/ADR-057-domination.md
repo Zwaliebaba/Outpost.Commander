@@ -1,24 +1,23 @@
 # ADR-057 — Domination: tickets drain by the nodes behind, whatever the map, and a match records how it ended
 
-Status: **accepted** · 2026-10-03
+Status: **accepted** · 2026-10-09
+Owns: domination, tickets-drain, match-ending-kind, territory-panel
 
 ## Context
 
-Phase 2 design §8 adds a second way to win beside Phase 1's: each player starts with 1,000 tickets, and every 10 seconds the player who holds fewer nodes loses 30 × the difference ÷ the number of nodes on the map. A player whose tickets reach zero loses. The owner decided the rule on 2026-10-03, and gate J4 took the numbers as starting values. The design leaves open the tickets' units, when the drain falls, what the snapshot shows, and how a client tells the two endings apart.
+A match has a second way to win beside the loss of production ([ADR-037](ADR-037-losing-all-production.md) decision 1): by tickets and nodes (owner, 2026-10-03). A player who holds fewer nodes than another loses tickets, and a player out of tickets loses. A lead of one node has to last as long on any map, whatever its number of nodes (owner, 2026-10-07). And the player has to be told who the drain takes from, how fast and when they run out, not left to work it out (owner, 2026-10-08).
 
-The second interface review of 2026-10-08 (`GameDesign/ImplementationPlan-Interface2.md`, finding 8) found the panel's "3 / 10 : 2" in need of decoding, and the drain the match is played for left as arithmetic. The owner decided gate V5 as proposed on 2026-10-08, and task UI3.3 rewrote decisions 7 and 8.
-
-On the 10 km map's 25 nodes (Phase 4 design §6) that rule made a lead of one node take 139 minutes, against 50 on the 5 km map's nine, and every AI match ended by it at a median of two hours (Phase 4 plan task 28.4). The owner decided on 2026-10-07 that a lead of one node takes 50 minutes whatever the map: the drain no longer divides by the map's nodes.
+So the rules have to say what a ticket is, when the drain falls, what a snapshot shows of it, and how a client tells one ending from another.
 
 ## Decision
 
-1. **The numbers are data**: `Tuning.json`'s `territory` object has `tickets` 1,000, `drainIntervalSeconds` 3 and `drainTicketsPerNodeDifference` 1. The loader requires them, the counts at least 1 and the interval positive.
-2. **Tickets are whole, and a drain takes the tuning data's tickets for each node a player is behind**, whatever the map's nodes. A lead of one node takes exactly 1,000 drains of 3 seconds, 50 minutes, on any map, and a lead of three about 17. Tickets are part of each player's state, so they replay with the rest (ADR-009).
-3. **The drain falls at the end of every tick that completes an interval**, after territory is worked out (ADR-056 decision 8). With 20 ticks a second, the first falls at the end of the 60th tick. Each player loses for every node it is behind the player that holds the most. With two players that is the design's rule; with more it reads the same way. A suppressed Relay counts for its owner, and a free node for no one, as territory says, and so does a node the pirates guard ([ADR-073](ADR-073-pirates.md)).
+1. **The numbers are data** (owner, 2026-10-03): `Tuning.json`'s `territory` object has `tickets`, `drainIntervalSeconds` and `drainTicketsPerNodeDifference`. The loader requires them, the counts at least 1 and the interval positive.
+2. **Tickets are whole, and a drain takes the tuning data's tickets for each node a player is behind, whatever the map's nodes** (owner, 2026-10-07), so a lead of one node lasts as long on any map. Tickets are part of each player's state, so they replay with the rest (ADR-009).
+3. **The drain falls at the end of every tick that completes an interval**, after territory is worked out (ADR-056 decision 8). Each player loses for every node it is behind the player that holds the most. A suppressed Relay counts for its owner, and a free node for no one, as territory says, and so does a node the pirates guard ([ADR-073](ADR-073-pirates.md) decision 6).
 4. **Tickets start when the bases are placed**, on a map with territory, and stop once the match is over. A world has none, and no domination ([ADR-084](ADR-084-world-without-an-end.md)).
-5. **A player out of tickets loses.** The match ends as Phase 1's does: once, with the world running on. `Simulation::EndMatch` ends it for either reason. A loss of production is still decided mid-tick, after the fight, and domination at the tick's end, so a player who loses both in one tick loses by production.
-6. **The match records how it ended**: `MatchEnding::LostProduction` or `MatchEnding::Domination`, in `Simulation::Ending` and `Snapshot::ending`.
-7. **Every snapshot carries every player's tickets**, the tickets each started with, and the drain's two numbers from the tuning data, `drainIntervalSeconds` and `drainTicketsPerNodeDifference`, which the client tells the drain by (task UI3.3). Both players see both players' tickets, as both see the territory (ADR-056 decision 10).
+5. **A player out of tickets loses.** The match ends once, with the world running on, as [ADR-020](ADR-020-ai-and-match-flow.md) decision 9 has it; `Simulation::EndMatch` ends it for either reason. A loss of production ([ADR-037](ADR-037-losing-all-production.md) decision 1) is decided mid-tick, after the fight, and domination at the tick's end, so a player who loses both in one tick loses by production.
+6. **A match records how it ended** in `Simulation::Ending` and `Snapshot::ending`: `MatchEnding::LostProduction` or `MatchEnding::Domination`. A battle matchup's endings are [ADR-083](ADR-083-battle-matchups.md) decision 7's.
+7. **Every snapshot carries every player's tickets**, the tickets each started with, and the drain's two numbers from the tuning data, `drainIntervalSeconds` and `drainTicketsPerNodeDifference`, which the client tells the drain by (owner, 2026-10-08). Both players see both players' tickets, as both see the territory (ADR-056 decision 10).
 8. **The client shows them.** The territory panel stands under the status panel's place ([ADR-066](ADR-066-production-status-on-the-hud.md)), below the Ore, in three rows:
    - **"Nodes"**, with the Command Station's cap of the map's nodes beside it in the labels' color, "cap 10 of 25", or "of 25" without a cap, and the player's nodes against the enemy's, "3 : 2", the player's in its color and the enemy's in theirs.
    - **"Tickets"**, the same way.
@@ -27,9 +26,7 @@ On the 10 km map's 25 nodes (Phase 4 design §6) that rule made a lead of one no
 
 ## Consequences
 
-- **Tests.** `DominationTests` covers the starting tickets with the drain's numbers in the snapshot, no drain at equal nodes, the first drain at 3 seconds and not before, a suppressed Relay counting, a lead of one ending the match by domination in exactly 50 minutes, the outcome standing after it, and no tickets without territory. `HudTests.ShowsTheTickets` covers the rows, and the drain ahead at the review's first screenshot's figures, 642 tickets a node behind out in 32:06, level, and behind three at 729 tickets out in 12:09, as a chip; `ShowsTheTerritory` the nodes' row with its cap; and `WireFormatTests` the drain's numbers on the wire. `HudTests` also covers the banner. The fixture for a match on the repository map, `TerritoryMatch`, is shared with `TerritoryTests`.
-- **Domination already ends some AI matches.** Measured in the Linux container as ADR-056 measured them, seeds 1 to 10 all end, at a median of 41:50, from 31:03 to 58:38. Three of the ten, which ran 50 to 87 minutes before, now end by domination at 42:00, 43:00 and 51:20, each won by player 2. The AI does not yet play for nodes (Phase 2 plan, milestone 18): the leads come from following the ore. In seed 2, followed with a probe that printed the territory every five minutes, both sides held their home and flanks until about 25 minutes. Then player 2's home rigs ran dry, and the next asteroids it chose stood in the center and the northwest, where it built Relays. Player 1 held three nodes to its five from then on and lost by domination at 51:20.
-- **Not built or run on Windows here.** CI is the first build. The panel and the banner are the owner's run.
+- **Tests.** `DominationTests` covers the starting tickets with the drain's numbers in the snapshot, no drain at equal nodes, the first drain at the end of its interval and not before, a suppressed Relay counting, a lead of one ending the match by domination in exactly 50 minutes, the outcome standing after it, and no tickets without territory. `HudTests.ShowsTheTickets` covers the rows, and the drain ahead, 642 tickets a node behind out in 32:06, level, and behind three at 729 tickets out in 12:09, as a chip; `ShowsTheTerritory` the nodes' row with its cap; and `WireFormatTests` the drain's numbers on the wire. `HudTests` also covers the banner. The fixture for a match on the repository map, `TerritoryMatch`, is shared with `TerritoryTests`.
 
 ## What this forecloses
 
