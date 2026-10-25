@@ -1,121 +1,113 @@
 # Outpost Commander — Horizon: A Galaxy That Keeps Running
 
-Status: **horizon, not a phase** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Nothing here is planned or accepted; a phase design that takes part of it up decides it there
+Status: **horizon, not a phase** · Owner: Stefan Zwaal · Nothing here is planned or accepted: a phase design that takes part of it up decides it there, and its open questions are §10's gates
 
-This document records where the owner wants the game to go in the long run, and what follows from it. It amends nothing. The [MVP](Archive/OutpostCommander-MVP.md), [Phase 1](Archive/OutpostCommander-Phase1.md), [Phase 2](Archive/OutpostCommander-Phase2.md) and [Phase 3](Archive/OutpostCommander-Phase3.md) designs say what is built and what comes next, and this document is not among the design authorities AGENTS.md names. A phase design that takes something from here becomes the authority for it, and this document is edited in place to say so.
+This document says where the owner wants the game to go in the long run, and what follows from it. It amends nothing and decides nothing. The game as built is [the living design](OutpostCommander.md), and its engineering decisions are the ADRs; this document is not among the authorities AGENTS.md names. A phase design that takes something from here becomes the authority for it, what that phase builds is the living design's, and this document keeps only what is still ahead. [The Horizon plan](ImplementationPlan-Horizon.md) proposes the phases that would build it, and [the pillars](Pillars.md) are what it is checked against.
 
 ---
 
 ## 1. What the horizon is
 
-The owner's question of 2026-10-04: how the game could evolve towards a game like **Starborne: Sovereign Space**, as a dot on the horizon rather than a plan.
+The owner's question (owner, 2026-10-04): how the game could evolve towards a game like **Starborne: Sovereign Space**, as a dot on the horizon rather than a plan.
 
 **What Starborne was.** A massively multiplayer real-time strategy game by Solid Clouds: 4,000–5,000 players on a server, a map of nearly a million hexes, rounds of two to three months, and fleets that travel for hours. It entered open beta in April 2020, could not keep its player base, and its last server closed in September 2024. Its post-mortem names bloat, and that a game which runs day and night had no way in without a client on a gaming PC: no browser and no phone (§13).
 
 **What the owner takes from it** (owner, 2026-10-04). Not the massively multiplayer part. Two things: its **scale**, a galaxy that lasts longer than a match, and its **rhythm**, a world played a few times a day rather than in one sitting. Playing against real people is not what draws the owner to it.
 
-**What it becomes.** A persistent world for a circle of friends, played in seasons of two to four weeks at first and of two to four months later (§7). While a player is online the game is played as it is today; while the player is away, the orders the player gave carry on. After a short ramp it is a war over territory, which is closer to PlanetSide, the reference Phase 2 §1 already names, than to Starborne's slow build-up over a season.
+**What it becomes.** A persistent world for a circle of friends, played in seasons of two to four weeks at first and of two to four months later (§7). While a player is online the game is played as a match is; while the player is away, the orders the player gave carry on. After a short ramp it is a war over territory, closer to PlanetSide's fights over areas of space than to Starborne's slow build-up over a season. Its first step, one system that keeps running, is built (§11; Game §world).
 
 ---
 
-## 2. Decided by the owner on 2026-10-04
+## 2. Decided by the owner (2026-10-04)
 
 - **The draw is scale and rhythm**, not playing against real people (§1).
 - **The players are a circle of friends** on one server, playing **against each other and against AI empires**.
 - **A battle is played live by whoever is present**, and fought by orders for whoever is not.
-- **Online, a player plays as today**: starts research, builds Mining Rigs and structures, queues ships. **Offline, fleets carry out orders given in advance**, in the owner's examples: defend against an attack, attack this station at 02:00, mine this field at 03:00. The owner's aim is depth of planning, and an empire that keeps running.
-- **Every action keeps today's pace**: moving and fighting, building rigs and structures, producing ships, research, and structure levels. None moves to a slower clock.
+- **Online, a player plays as in a match**: starts research, builds Mining Rigs and structures, queues ships. **Offline, fleets carry out orders given in advance**, in the owner's examples: defend against an attack, attack this station at 02:00, mine this field at 03:00. The owner's aim is depth of planning, and an empire that keeps running.
+- **Every action keeps a match's pace**: moving and fighting, building rigs and structures, producing ships, research, and structure levels. None moves to a slower clock.
 - **A season lasts two to four weeks at first, and two to four months later**, once the world keeps its state across builds and a season's arc has been shown to hold (§7). The short seasons come first because a season is the experiment: seasons of weeks give a dozen or more a year to learn from, and seasons of months three or four.
 
 ---
 
 ## 3. One world that keeps running
 
-*Proposed, not decided.*
+*Built for one system; a galaxy is proposed, not decided.*
 
-- **One simulation runs all the time.** There is no pause and no separate strategy layer above the battles. Each star system is a `Simulation` of its own, on the fixed tick it has today (ADR-002, ADR-009), and a fleet that leaves one system is handed to the next.
-- **What it costs, estimated, not measured.** The MVP's Q4 measured a mean tick of 0.88 ms in combat at 200 ships and 40 structures, on the development machine (MVP §3). Thirty systems at about a millisecond a tick, 20 ticks a second, take about 0.6 of one core. Ship counts over weeks are bounded only by what §6 decides.
-- **The dedicated server** that ADR-002 sketches hosts it, on Windows Server 2022 or later, which MsQuic's Schannel build needs (ADR-004). The shell already reaches its server over QUIC on the loopback address, so a remote server changes the address it connects to (ADR-060).
-- **A season is tied to one build.** The world is kept as periodic snapshots of every system and the command log since the last one, and ADR-009's replay on the same binary is enough to recover from a restart. A breaking patch starts a new season, so saved state never has to migrate between versions. This ends Phase 1's accepted risk 3, that there is no save and load. It holds for seasons of weeks only (§7).
+- **What is built.** A world is one system, the game's map, run without stopping by the dedicated server from its folder (Game §session.server; ADR-078). It is saved as it runs and comes back from its newest save and the commands logged since it (Game §world.persistence; ADR-077). A save is pinned to a state version, not a build (AGENTS.md R18), and a world pauses while its server is down (ADR-077 decision 9). The server needs Windows Server 2022 or later, which MsQuic's Schannel build needs (ADR-004), and a game on another machine joins it over QUIC (Game §session.join; ADR-078).
+- **One simulation runs all the time.** There is no pause beyond an outage, and no separate strategy layer above the battles. A galaxy is several star systems, each on the fixed tick (ADR-009), and a fleet that leaves one system enters the next. Whether each system is a `Simulation` of its own that hands the fleet on, or one `Simulation` holds them all, is O8's (§10).
+- **What it costs, estimated, not measured.** Thirty busy systems at about a millisecond a tick take about 0.6 of one core at the game's tick rate. The tick's budget and its measurements are in [Budgets](../Design/Budgets.md). Ship counts over weeks are bounded by the fleet cap (Game §economy.fleetcap) and by what §6 leaves open.
 
 ---
 
 ## 4. A seat is commanded by its player or by a deputy
 
-*Proposed, not decided.*
+*Built for a world of two seats; more seats are proposed, not decided.*
 
-- **A present player commands the seat. An absent player's seat is commanded by a deputy**: `Opponent`, playing by that player's directives (its research queue, its build priorities and its fleets' orders), at the full rate, around the clock. The AI empires are the same code with directives of their own.
-- **Why the deputy is needed.** Friends compete, and every action keeps today's pace (§2). Without a deputy, an empire grows with its player's hours online, and a friend with six free hours a day outgrows one who checks in three times. With one, being online buys better decisions and live battles, not more actions.
+- **What is built.** A seat is played by its player while the player is connected, and by its deputy from a minute after the player's connection is gone until the player takes the seat again (Game §world.handover; ADR-079 decision 4). An AI empire is the AI playing a seat of its own to win (Game §ai.empire). Both are played by the server, on its thread, so a world with deputies replays from its seed and its log (ADR-079 decision 2). The deputy is a keeper: it keeps its player's research, production, rigs and repairs going and defends the player's held sectors, and it never attacks, claims a sector or clears pirates (Game §ai.deputy; ADR-079 decision 6). A scheduled order its player gave fires whoever plays the seat (Game §orders.scheduled).
+- **Why the deputy is needed.** Friends compete, and every action keeps a match's pace (§2). Without a deputy, an empire grows with its player's hours online, and a friend with six free hours a day outgrows one who checks in three times. With one, being online buys better decisions and live battles, not more actions ([Pillar 5](Pillars.md)).
 - **A friend who drops out** mid-season leaves an AI empire behind rather than a hole.
-- **Deputies and AI empires run in the server process**, as clients over the `LoopbackTransport`. Today the AI runs from the shell's frame loop, which a dedicated server does not have. `Opponent` still includes only `GameProtocol` (ADR-002).
-- **The risk:** a deputy that plays much worse than its player leaves presence deciding the season after all. §9 measures how much presence buys.
+- **The risk:** a deputy that plays much worse than its player leaves presence deciding the season after all, and one that out-builds its player makes absence the better strategy. §9 measures how much presence buys in battle, and W3 and W4 of [the Phase 5 design](OutpostCommander-Phase5.md) measure both.
 
 ---
 
 ## 5. Orders that run while a player is away
 
-*Proposed, not decided.*
+*Built; how the vocabulary grows is proposed, not decided.*
 
 - **An order meets a changed world.** An attack ordered at 18:00 for 02:00 finds whatever the enemy did in between, so an order carries a condition: "attack at 02:00, unless they have reinforced; then hold." That is where the depth of planning comes from, and also how an order system grows into a programming language.
-- **The vocabulary is mostly built already:**
-  - **Triggers:** a time of day, and the events Phase 2's alerts raise: a Relay suppressed, a Relay under attack, a Mining Rig lost, enemy ships in a held sector (ADR-059).
-  - **Actions:** move, attack-move, attack and build, where "mine this field" is a rig built on it, and the two standing orders, hold a sector and patrol (ADR-059).
-  - **Retreat:** the AI's fall-back, where an attack that has lost 10% of its ships falls back (ADR-041). Without it an absent player's fleet fights to its last ship, and under Lanchester's square law that loses everything.
-- **The vocabulary is a small fixed set**: no nesting, no variables, and a new trigger or action only when a missing case keeps coming up in play. Screeps, where the orders are code, is the far end of this road.
-- **Where triggers are evaluated is a new decision.** Alerts are the client's today, computed from its snapshots (ADR-059 decision 1), and that ADR forecloses alerts made by the server without a new one. With no client connected, either the server or the deputy, from its own snapshots, evaluates them.
+- **What is built.** A scheduled order is one trigger, one action and at most one condition, kept by the server and fired once (Game §orders.scheduled; ADR-080). Its triggers are a time of day on the player's clock and events the server raises, such as a Relay suppressed or enemy ships in a held sector; the client's alerts read the same events (ADR-080 decision 1; ADR-059 decision 1). Its actions are move, attack-move, attack, the two standing orders (Game §orders.standing) and a Mining Rig built on an asteroid, which is how "mine this field at 03:00" is given.
+- **Retreat.** A ship goes back to be repaired once a hit leaves it below the threshold its design or its player set (Game §orders.retreat; ADR-075), and the AI's attack falls back once it has lost `retreatLossShare` of the ships it set out with, a setting of each difficulty's file that [the Catalogue](Reference/Catalogue.md) shows (ADR-041 decision 2). Without retreat an absent player's fleet fights to its last ship, and under Lanchester's square law that loses everything.
+- **The vocabulary is a small fixed set**: no nesting, no variables, and a new trigger or action only when a missing case keeps coming up in play (owner, 2026-10-08). Screeps, where the orders are code, is the far end of this road.
 
 ---
 
-## 6. What today's pace leaves open
+## 6. What a match's pace leaves open
 
-Every action keeps today's pace (§2), so nothing stretches over a season of two to four weeks. On the first day, with today's data:
+Every action keeps a match's pace (§2), so nothing stretches over a season of weeks. On a world's first day, with the game's data, which [the Catalogue](Reference/Catalogue.md) shows:
 
-- **Research:** Phase 3's tree is 23 topics and 2,260 s, about 38 minutes with one Lab (Phase 3 §6).
-- **Ore:** every reserve lasts 25–40 minutes at its yield, and then pays a 20% trickle for good (Phase 1 §8). Within a day of being taken, a system is on its trickle for the rest of the season.
-- **Ships:** a Small hull builds in 10 s (`Tuning.json`), so one Shipyard working around the clock under its deputy makes thousands a day. Q4 was measured at 200 ships (MVP §3).
-- **Structure levels:** Phase 3's upgrades build themselves in 30–120 s.
+- **Research:** the whole tree, at the research times of `research` in `Tuning.json`, is done with one Lab (Game §research).
+- **Ore:** each asteroid's `reserve` in `Map.json` runs dry at its yield, and the asteroid then pays the `exhaustedYieldPercent` of `Tuning.json` for good (Game §economy.reserves). Within a day of being taken, a system is on its trickle for the rest of the season.
+- **Ships:** a hull builds in its `buildSeconds` in `Tuning.json`, so one Shipyard working around the clock under its deputy could make hundreds a day; the fleet cap, not production, bounds a fleet (Game §economy.fleetcap).
+- **Structure levels:** an upgrade builds itself in the time its level gives in `Tuning.json` (Game §structures.levels).
 
 The limits and the progression of a season must therefore come from the world, not from timers. Three proposals, each open (§10):
 
-1. **Progression gated by the galaxy.** Research is recovery (MVP §2), of the technology lost with the old fleet (MVP §1). A research topic keeps today's time, but a tier opens by holding a system with a derelict in it, and the last tier by holding a precursor vault deep in contested space. The season then moves as fast as the conquest, and a vault system is the target worth a fleet, as Phase 3 §1 makes an upgraded Shipyard worth a raid. Finished topics stay finished, as today (MVP §8); what losing a vault does to a tier not yet finished is open, and so is whether Phase 3's Lab levels stay as a second gate.
-2. **Fleet size bounded by territory.** Upkeep, or a command cap tied to the nodes a player holds, as Phase 3 §7 caps nodes by the Command Station's level. A bound of some kind is unavoidable: Phase 1's accepted risk 2, that there is no unit cap, does not survive a world that produces for weeks. Its consequence: every player reaches the bound within days, and from then on income decides how fast a player recovers from a lost battle, not how large its fleet grows. Pillar 2 moves from "territory is income" to "territory is capacity and recovery".
-3. **Ore that comes back.** A mined-out field recovers over a day, or new fields appear in the galaxy. That also gives "mine this field at 03:00" its meaning: a field is worth timing only if it changes over time.
+1. **Progression gated by the galaxy** (O1). Research is recovery ([Pillar 3](Pillars.md)), of the technology lost with the old fleet. A research topic keeps its time, but a tier opens by holding a system with a derelict in it, and the last tier by holding a precursor vault deep in contested space. The season then moves as fast as the conquest, and a vault system is the target worth a fleet, as an upgraded Shipyard is worth a raid (Game §structures.levels). A derelict that recovers research is its first step (Game §neutrals.salvage). Finished topics stay finished, as in a match (Game §research); what losing a vault does to a tier not yet finished is open, and so is whether the Lab's levels (Game §research.tiers) stay as a second gate.
+2. **The bound on a fleet** (O2). A fleet is bounded by a cap on command points that the Command Station's level buys, and ships are dear (owner, 2026-10-06; Game §economy.fleetcap). Over a season every player reaches its cap on the first day, and from then on income decides how fast a player recovers from a lost battle, not how large its fleet grows: territory buys recovery more than size ([Pillar 2](Pillars.md)). A bank that nothing drains (Game §economy.bank) weakens even that, since a lost fleet is rebuilt from the bank at once. What a galaxy asks of the cap is how it works across systems.
+3. **Ore that comes back** (O3). A mined-out field recovers over a day, or new fields appear in the galaxy. That also gives "mine this field at 03:00" its meaning: a field is worth timing only if it changes over time. A bank that nothing drains makes Ore that comes back pile up the more, so the Horizon plan puts a sink or a bound on the bank before it.
 
 ---
 
 ## 7. Seasons of months
 
-*Decided by the owner on 2026-10-04: seasons of two to four weeks first, and of two to four months later (§2). What months cost is proposed, not decided.*
+*Decided: seasons of two to four weeks first, and of two to four months later (owner, 2026-10-04; §2). What months cost is proposed, not decided.*
 
 Months change three things. The rest stays as it is at weeks: one world that keeps running (§3), the deputy (§4), the orders (§5), and the server's cost, under one core. The counters last too: the simulation and the snapshot count ticks in 64 bits and entities in 32, far beyond four months of production.
 
-- **The world has to keep its state across builds.** A season of weeks can do without a breaking change. A season of months cannot, at the pace this repository moves: a crash fixed in its third week is a new binary, and ADR-009's replay holds only on the same binary. Recovery then comes from snapshots alone, and a snapshot has to load in a later build: a versioned save format for the whole of `Simulation`'s state, with an upgrade step for each version. That is the first real engineering cost of this horizon, where §3's build pin was free.
+- **A world has to load in a build that changes what it holds.** A save loads in any build of its state version (Game §world.persistence; ADR-077), so a fix that changes nothing the world holds ships mid-season. A season of months also meets changes to what the world holds, at the pace this repository moves, and then a world comes back only with an upgrade step for each state version, and a test that loads a save of every version a running season has. That is a cost on every later change to the server, and the first real engineering cost of this horizon.
 - **The ramp is still one day, so the plateau lasts months.** Two things that are optional at weeks become necessary:
   - **The galaxy needs an arc.** Progression gated by the galaxy (§6.1) has to stretch over months: regions that open at set points in the season, and a race to an end in its last weeks, for example.
-  - **An early lead must not decide the season.** Over months a lead compounds, and by the third week the rest of a season can be a foregone conclusion. Phase 2's domination tickets (Phase 2 §8) would end such a season early rather than prevent it, so a season's end needs a design of its own.
+  - **An early lead must not decide the season.** Over months a lead compounds, and by the third week the rest of a season can be a foregone conclusion. Domination (Game §territory.domination), which a world turns off, would end such a season early rather than prevent it, so a season's end needs a design of its own.
 - **The deputy carries more of it.** Over months, a friend who drops out is close to certain, and so is a player away for two weeks. Being online must still buy only better decisions (§4) over absences that long, not only overnight, so §9's measurement matters more.
 
 ---
 
 ## 8. What the game already has for it
 
-- **The server model** (ADR-002): an authoritative server, fog of war applied per player on the server, and the AI as a client that sends the same commands as a human. That last rule is what lets a deputy and an AI empire fill a seat.
-- **Territory** (Phase 2): nodes claimed by building on them, claims only next to what a player holds, half income for a sector cut off, and suppression by presence. It is the strategic layer of a galaxy at the scale of one system.
-- **Growth** (Phase 3): structure levels, and the Command Station's level capping the nodes a player holds.
-- **The designer** (MVP §7). With deputies fighting many of the battles, a fleet's composition and its orders are what a player decides, so Pillar 1 counts for more, not less.
-- **Headless play**: `GameLogicTests` plays the AI against the real server, and the Q2 check fights battles without a window (ADR-020, MVP §3). That is the harness §9 needs.
+- **The server model** (ADR-002): an authoritative server, fog of war applied per player on the server, and the AI as a player that sends the same commands as a human. That last rule is what lets a deputy and an AI empire fill a seat.
+- **A world** (Game §world): one system that keeps running on the dedicated server, saved and recovered, with a deputy in an absent seat, scheduled orders, and a player who loses restarting rather than leaving.
+- **Territory** (Game §territory): nodes claimed by building on them, claims only next to what a player holds, a share of the income for a sector cut off, and suppression by presence. It is the strategic layer of a galaxy at the scale of one system.
+- **Growth** (Game §structures.levels; Game §territory.cap): structure levels, and the Command Station's level capping the nodes a player holds and its fleet.
+- **The designer** (Game §ships.designer). With deputies fighting many of the battles, a fleet's composition and its orders are what a player decides, so [Pillar 1](Pillars.md) counts for more, not less.
+- **Headless play.** `GameLogicTests` plays the AI against the real server, and the balance check fights battles without a window (ADR-014; ADR-033 decision 6). `--world-run` runs a world with an AI in every seat, killed and recovered at random ticks (ADR-082 decision 4), and `--matchups` fights the battle matchups AI against AI (ADR-083 decision 5). That is the harness §9 and every later phase measure with.
 
 ---
 
 ## 9. The first measurement
 
-How much being present buys decides how fair the deputy is (§4), and it can be measured with what exists:
+How much being present buys decides how fair the deputy is (§4). The battle matchups measure it (Game §session.matchup; ADR-083): a handful of fleet matchups, each fought headless over many seeds with the AI's battle behavior on both sides for the baseline, and played live by the owner against the same AI. The owner's win rate above the AI-against-AI baseline is what presence buys, and it is W4 of [the Phase 5 design](OutpostCommander-Phase5.md).
 
-1. Pick a handful of fleet matchups.
-2. Run each headlessly, with the AI's battle behavior on both sides, over many seeds, as the Q2 check runs its battles. This needs a small harness.
-3. The owner plays the same matchups live against the same AI.
-
-The owner's win rate above the AI-against-AI baseline is what presence buys. If it is small, a battle fought by orders is fair enough as it is. If it is large, the battles that decide a system have to become appointments. EVE's answer would fit Phase 2: an attack on a held Relay suppresses it and starts a timer, and the deciding fight happens when the timer ends, in a window the defender chose. Phase 2's Relay that is suppressed but still held (Phase 2 §5) is half of it.
+If it is small, a battle fought by orders is fair enough as it is. If it is large, the battles that decide a system have to become appointments. EVE's answer would fit the territory: an attack on a held Relay suppresses it and starts a timer, and the deciding fight happens when the timer ends, in a window the defender chose. A Relay that is suppressed but still held (Game §territory.suppression) is half of it.
 
 Whether a front stays interesting for weeks with a few friends and their deputies is answered only by a first season.
 
@@ -123,32 +115,38 @@ Whether a front stays interesting for weeks with a few friends and their deputie
 
 ## 10. Open questions
 
-- **O1 — Progression** (§6.1): tiers opened by holding derelicts and vaults; what losing one does; whether the Lab's levels stay.
-- **O2 — The bound on fleets** (§6.2): upkeep or a command cap, and how it follows territory. On 2026-10-06 the owner chose a command cap with dearer ships; the [Phase 4 draft](Archive/OutpostCommander-Phase4.md) proposes tying it to the Command Station's level rather than to territory (its gate L2).
-- **O3 — Ore over a season** (§6.3): fields that recover, or fields that appear.
-- **O4 — The deputy's directives** (§4): what a player can tell its deputy, and how well it must play. For Phase 5 the deputy is a keeper ([Phase 5](OutpostCommander-Phase5.md) §6, gate H3, owner, 2026-10-08).
-- **O5 — Where triggers are evaluated** (§5): the server or the deputy. Decided: the server ([Phase 5](OutpostCommander-Phase5.md) §7, gate H4, owner, 2026-10-08).
-- **O6 — Diplomacy.** A free-for-all among friends and AI empires grows alliances by itself, and with them a player who decides the winner between the others. Accepted as it comes, or designed for.
-- **O7 — Reach.** A check-in needs the PC. The server can post "40 ships inbound to Kessler-3, arriving 21:40" to the friends' group chat through WinHTTP, which is in the Windows SDK, so R14 is not touched, though a dependency on a service deserves an ADR. A web view of the galaxy would reopen ADR-001 and R14.
-- **O8 — The world beyond one map.** A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems. So the 10 km world, relay jumps, forward Shipyards and pathing by sector, which Phase 3's draft had moved to a Phase 4, now wait on this horizon, and Phase 3 §3 says so (owner, 2026-10-04); Phase 3's rules are unchanged. Open: which of them a galaxy of systems still needs inside a system. **On 2026-10-06 the owner decided that a system is 10 km a side, and that the [Phase 4 draft](Archive/OutpostCommander-Phase4.md)'s map is the first one**; that draft proposes Shipyards only in held sectors in place of forward Shipyards anywhere, and leaves relay jumps here.
-- **O9 — Seasons of months** (§7): the versioned save format, the galaxy's arc over a season, and how a season ends.
+Each is the owner's. A phase design that takes one up decides it there, and [the Horizon plan](ImplementationPlan-Horizon.md) proposes in which phase.
+
+| Gate | Decision | Proposed in | Blocks | Status |
+|---|---|---|---|---|
+| O1 | **Progression** (§6.1): research tiers opened by holding systems with derelicts and a precursor vault; what losing a vault does to a tier not finished; whether the Lab's levels stay as a second gate. | this document | A galaxy's progression (the Horizon plan's Phase 6) | open |
+| O2 | **The bound on fleets** (§6.2). Decided (owner, 2026-10-06): a cap on command points that the Command Station's level buys, rather than the nodes a player holds, with dearer ships (Game §economy.fleetcap; ADR-071). Open: how the cap works across the systems of a galaxy. | this document | A galaxy's fleet cap (the Horizon plan's Phase 6) | open |
+| O3 | **Ore over a season** (§6.3): fields that recover, or fields that appear; the Horizon plan proposes a sink or a bound on the bank first. | this document | A galaxy's economy (the Horizon plan's Phase 6) | open |
+| O4 | **The deputy's directives** (§4): what a player can tell its deputy, and how well it must play. Decided for a world: the deputy is a keeper (owner, 2026-10-08; Game §ai.deputy; ADR-079 decision 6). | this document | nothing | decided 2026-10-08 |
+| O5 | **Where triggers are evaluated** (§5): the server or the deputy. Decided: the server, whose events the client's alerts read too (owner, 2026-10-08; Game §orders.scheduled; ADR-080 decision 1; ADR-059 decision 1). | this document | nothing | decided 2026-10-08 |
+| O6 | **Diplomacy.** A free-for-all among friends and AI empires grows alliances by itself, and with them a player who decides the winner between the others. Accepted as it comes, or designed for. | this document | A season with friends (the Horizon plan's Phase 7) | open |
+| O7 | **Reach.** A check-in needs the PC. The server can post "40 ships inbound to Kessler-3, arriving 21:40" to the friends' group chat through WinHTTP, which is in the Windows SDK, so R14 is not touched, though a dependency on a service deserves an ADR. A web view of the galaxy would reopen ADR-001 and R14. | this document | Notifications (the Horizon plan's Phase 7) | open |
+| O8 | **The world beyond one map.** A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems. Decided (owner, 2026-10-06): a system is as large as the game's map, `sizeMeters` in `Map.json`, and that map is the first system (Game §map); a Shipyard and a Repair Bay stand only in a held sector, rather than anywhere (Game §structures.sites). Open: how a fleet travels between systems, by a jump between linked Relays or a gate at a system's edge; whether a galaxy is one `Simulation` or one for each system (§3); and whether a system needs pathing by sector, the next step if the engine misses its budget on the game's map in Release (owner, 2026-10-07; [Budgets](../Design/Budgets.md)). | this document | A galaxy (the Horizon plan's Phase 6) | open |
+| O9 | **Seasons of months** (§7): upgrade steps between state versions, the galaxy's arc over a season, how a season ends, and how far a deputy carries a seat over absences of weeks. | this document | Seasons of months (the Horizon plan's Phase 8) | open |
 
 ---
 
 ## 11. A possible order of work
 
-*Proposed, not decided.* Each step would be a phase design of its own, with its questions and gates, as Phases 1–3 were.
+*Proposed, not decided.* Each step would be a phase design of its own, with its questions and gates.
 
-1. **A world that persists.** Today's map as one system, run without stopping by the dedicated server, recovering from a restart, with a deputy in an absent seat; the owner against the AI or one friend. Its question: does a world that keeps running while its players are away work at all? **Taken up by [Phase 5](OutpostCommander-Phase5.md)**, accepted on 2026-10-08, which decides it there.
-2. **A galaxy.** Several systems and travel between them, with §6's limits and progression.
-3. **Friends.** Seats, seasons of weeks and the notifications of O7.
-4. **Seasons of months.** A save format that loads in later builds, the galaxy's arc and a season's end (§7).
+1. **A world that persists.** The game's map as one system, run without stopping by the dedicated server, recovering from a restart, with a deputy in an absent seat; the owner against the AI or one friend. Its question: does a world that keeps running while its players are away work at all? It is built (Game §world), and its week's questions are [the Phase 5 design](OutpostCommander-Phase5.md)'s.
+2. **A galaxy.** Several systems and travel between them, with §6's limits and progression, and a strategic view of the systems. Whether one system needs a strategic view of its own is for the owner's run of the game's map to show ([the PlaytestLog](Records/PlaytestLog.md)).
+3. **Friends.** More seats, maps with spare starts so that a seat that loses can restart at another start than its own (Game §world.restart), seasons of weeks, and the notifications of O7.
+4. **Seasons of months.** A save that loads in later builds of another state version, the galaxy's arc and a season's end (§7).
+
+Whether a galaxy or friends come second is decided from Phase 5's week, as H10 of [the Phase 5 design](OutpostCommander-Phase5.md).
 
 ---
 
 ## 12. Not part of it
 
-A massively multiplayer game: public servers, live operations, moderation and monetization. Lockstep networking (ADR-002). Starborne's slow build-up over a season, given up by the decision that every action keeps today's pace (§2). Pausing the world.
+A massively multiplayer game: public servers, live operations, moderation and monetization. Lockstep networking (ADR-002). Starborne's slow build-up over a season, given up by the decision that every action keeps a match's pace (§2). Pausing the world, beyond its pause while its server is down (ADR-077 decision 9).
 
 ---
 
