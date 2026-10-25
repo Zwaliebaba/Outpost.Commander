@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{cdac461e-dc73-4ae7-b077-d2b1bfa77788}</ProjectGuid>
-    <RootNamespace>NeuronClientTests</RootNamespace>
+    <ProjectGuid>{ffba1856-7925-4f98-99d8-30febae7993f}</ProjectGuid>
+    <RootNamespace>NeuronCoreTests</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectSubType>NativeUnitTestProject</ProjectSubType>
   </PropertyGroup>
@@ -60,7 +60,7 @@
       <FloatingPointModel>Precise</FloatingPointModel>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='ARM64'">CPUExtensionRequirementsARMv80</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(SolutionDir)NeuronCore;$(SolutionDir)NeuronClient;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(SolutionDir)NeuronCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseFullPaths>true</UseFullPaths>
     </ClCompile>
     <Link>
@@ -86,24 +86,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="RepositoryAssets.h" />
+    <ClInclude Include="TemporaryHomeDirectory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="MeshDataTests.cpp" />
-    <ClCompile Include="TextureDataTests.cpp" />
-    <ClCompile Include="GlyphAtlasTests.cpp" />
-    <ClCompile Include="ScreenSegmentTests.cpp" />
-    <ClCompile Include="BloomTests.cpp" />
+    <ClCompile Include="DebugTests.cpp" />
+    <ClCompile Include="JsonTests.cpp" />
+    <ClCompile Include="JsonReaderTests.cpp" />
+    <ClCompile Include="FileSysTests.cpp" />
+    <ClCompile Include="ServerCertificateTests.cpp" />
+    <ClCompile Include="QuicChannelTests.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
+    <ProjectReference Include="..\..\NeuronCore\NeuronCore.vcxproj">
       <Project>{ea9ed838-5d41-4e78-a994-0d527f7e3980}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\NeuronClient\NeuronClient.vcxproj">
-      <Project>{4fc155ec-ba04-4915-a199-757978a2584d}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
