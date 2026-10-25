@@ -1443,7 +1443,8 @@ def lay_orders(out, panel, corner, hovered=None):
                   "StepOrder(-1)", "StepOrder(+1)", "TEXT_COLOR", "Name", "Hud.cpp:1973-1976; OrderForm::NameOf OrderForm.cpp:233-266", sample=True)
     p.text("orders.fires", p.Fit(panel["fires"], "Name", room), WINDOW_INSET, ORDERS_FIRES_TOP, "NUMBERS_COLOR", "Name", "Hud.cpp:1978, 2276-2283", sample=True,
            fmt="Fires at {hh:mm} on your clock, in {} | Fires once, the first time it happens")
-    add_button(out, "orders.give", (corner[0] + WINDOW_INSET, corner[1] + ORDERS_GIVE_TOP, room, BUTTON_H), panel["give"], hovered == "GiveOrder",
+    # LayOrders passes no hovered action to AddButton (Hud.cpp:1979), so the Give button never lights under the pointer.
+    add_button(out, "orders.give", (corner[0] + WINDOW_INSET, corner[1] + ORDERS_GIVE_TOP, room, BUTTON_H), panel["give"], False,
                "Hud.cpp:1979, 2284-2289")
 
 

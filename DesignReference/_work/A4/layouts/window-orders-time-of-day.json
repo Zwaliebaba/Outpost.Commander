@@ -5882,7 +5882,6 @@
    "action": "GiveOrder",
    "source": "Hud.cpp:1270-1275 (AddButton face); Hud.cpp:1979, 2284-2289",
    "enabled": true,
-   "hovered": true,
    "layer": 1,
    "drawList": "panels",
    "order": 355
@@ -5894,7 +5893,7 @@
    "y": 692.0,
    "w": 592.0,
    "h": 34.0,
-   "edge": "HOVER_EDGE_COLOR",
+   "edge": "EDGE_COLOR",
    "edgeWidth": 1.0,
    "source": "Hud.cpp:1276",
    "layer": 1,
