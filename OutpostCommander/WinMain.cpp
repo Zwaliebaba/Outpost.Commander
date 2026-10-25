@@ -366,10 +366,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         const Outpost::JoinTicket ticket = ReadJoinFile(_joinFile);
         std::string server = Outpost::Hud::ServerName(ticket.address.host, ticket.address.port);
         client.ShowConnecting(server);
-        joining.emplace(
-          Joining{.server = std::move(server),
-                  .transport = std::async(std::launch::async,
-                                          [ticket] { return std::make_unique<Outpost::QuicTransport>(ticket.address, ticket.player); })});
+        // The ticket goes to the thread as an argument, which std::async copies, rather than in the lambda's captures.
+        joining.emplace(Joining{.server = std::move(server),
+                                .transport = std::async(
+                                  std::launch::async, [](const Outpost::JoinTicket& _ticket)
+                                  { return std::make_unique<Outpost::QuicTransport>(_ticket.address, _ticket.player); }, ticket)});
       }
       catch (const std::exception& error)
       {
