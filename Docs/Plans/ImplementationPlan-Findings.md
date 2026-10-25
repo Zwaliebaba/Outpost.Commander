@@ -30,10 +30,10 @@ Task numbers carry the prefix RF, and gates are lettered F.
 | RF2.4 | A click selects another player's structure, for its panel | — | F16 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting the owner's run |
 | RF3.1 | The HUD draws each side in its own color | — | F1 | merged, [#117](https://github.com/Zwaliebaba/Outpost.Commander/pull/117); awaiting the runs as seat 1 and seat 2 and the owner's run |
 | RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | merged, [#118](https://github.com/Zwaliebaba/Outpost.Commander/pull/118); awaiting the owner's run |
-| RF5.1 | A refused command is told to the player | — | F10 | todo |
-| RF5.2 | A waiting scheduled order can be cancelled from the Orders window | RF5.1 | F11 | todo |
-| RF5.3 | No away report on a seat's first join | — | F12 | todo |
-| RF5.4 | Joining a world says it is connecting | — | F14 | todo |
+| RF5.1 | A refused command is told to the player | — | F10 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a dedicated server |
+| RF5.2 | A waiting scheduled order can be cancelled from the Orders window | RF5.1 | F11 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run |
+| RF5.3 | No away report on a seat's first join | — | F12 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a new world joined, left and joined again |
+| RF5.4 | Joining a world says it is connecting | — | F14 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a server that answers and one that does not |
 
 The owner's track, beside the plan:
 
