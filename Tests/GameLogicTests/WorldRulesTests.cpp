@@ -13,9 +13,11 @@ namespace
 constexpr Outpost::PlayerId BLUE = TerritoryMatch::BLUE;
 constexpr Outpost::PlayerId RED = TerritoryMatch::RED;
 constexpr std::uint32_t TICKS_PER_SECOND = TerritoryMatch::TICKS_PER_SECOND;
-// A world's hour, as the tests shorten it, and the sector next to Blue's home.
-constexpr std::uint32_t RESTART_SECONDS = 10;
+// A world's hour, as the tests shorten it: long enough for a raid's ships, sent home, to leave Blue's home sector, whose
+// edge is a kilometer from its start. The sector next to Blue's home, and Blue's home.
+constexpr std::uint32_t RESTART_SECONDS = 45;
 constexpr std::int32_t B1 = 2;
+constexpr std::int32_t A1 = 1;
 
 // Sixteen Lance ships of _attacker's in a ring 180 m round _center, inside the Lance's range and clear of a Command
 // Station, fighting to the end.
@@ -66,6 +68,16 @@ std::uint64_t LoseBlue(TerritoryMatch& _match)
   Assert::IsTrue(lost.has_value(), L"the raid takes Blue's base");
   (void)_match.World().Tick({{.player = RED, .order = Outpost::MoveCommand{.ships = raiders, .destination = _match.Start(RED)}}});
   return lost.value_or(0);
+}
+
+// Runs past the hour Blue lost on, and a little more: Blue waits, since its start is not free.
+void RunPastTheHour(TerritoryMatch& _match, std::uint64_t _lost)
+{
+  while (_match.World().CurrentTick() < _lost + ((std::uint64_t{RESTART_SECONDS} + 5) * TICKS_PER_SECOND))
+    (void)_match.World().Tick({});
+  const Outpost::Snapshot waiting = _match.World().BuildSnapshot(BLUE);
+  Assert::AreEqual(std::size_t{0}, Stations(_match, BLUE), L"its start is held");
+  Assert::IsTrue(waiting.restartTick.value_or(0) < waiting.tick, L"and it waits past the hour");
 }
 
 std::int64_t StartingOreHundredths(const TerritoryMatch& _match)
@@ -160,6 +172,85 @@ public:
     Assert::IsTrue(restarted.has_value(), L"once its start is clear");
     Assert::IsNull(match.World().FindEntity(yard), L"cleared by Blue's ships");
     Assert::AreEqual(std::size_t{1}, Stations(match, BLUE));
+  }
+
+  // Another player's warship in Blue's home sector holds Blue's start, as a structure does (owner, 2026-10-25): Blue waits
+  // past the hour while it stands there, and restarts in the first tick that finds it gone, the tick after the move that
+  // takes it out of the sector.
+  TEST_METHOD(WaitsWhileAnEnemyWarshipIsInItsStart)
+  {
+    TerritoryMatch match(false, RESTART_SECONDS);
+    const std::uint64_t lost = LoseBlue(match);
+    const Outpost::PlanePosition start = match.Start(BLUE);
+    const Outpost::EntityId warship = match.Warship(RED, {start.xMeters + 400.0f, start.zMeters + 400.0f});
+    RunPastTheHour(match, lost);
+    Assert::AreEqual(lost + (std::uint64_t{RESTART_SECONDS} * TICKS_PER_SECOND), match.World().BuildSnapshot(BLUE).restartTick.value_or(0));
+
+    (void)match.World().Tick({{.player = RED, .order = Outpost::MoveCommand{.ships = {warship}, .destination = match.Start(RED)}}});
+    bool left = false;
+    for (std::uint32_t tick = 0; tick < 120 * TICKS_PER_SECOND && !left; ++tick)
+    {
+      (void)match.World().Tick({});
+      Assert::AreEqual(std::size_t{0}, Stations(match, BLUE), L"not while it is in the sector, nor in the tick it leaves");
+      left = !match.Placement(A1).Contains(match.World().FindEntity(warship)->position);
+    }
+    Assert::IsTrue(left, L"the warship leaves");
+    (void)match.World().Tick({});
+    Assert::AreEqual(std::size_t{1}, Stations(match, BLUE), L"restarted in the tick after it left");
+    Assert::IsTrue(std::ranges::any_of(match.World().BuildSnapshot(BLUE).events, [](const Outpost::EventView& _event)
+                                       { return _event.kind == Outpost::EventKind::EmpireRestarted; }));
+  }
+
+  // A warship destroyed in Blue's home sector frees Blue's start in the tick it is destroyed: the destroyed leave before
+  // the server looks at the starts.
+  TEST_METHOD(RestartsInTheTickTheEnemyWarshipIsDestroyed)
+  {
+    TerritoryMatch match(false, RESTART_SECONDS);
+    const std::uint64_t lost = LoseBlue(match);
+    const Outpost::PlanePosition start = match.Start(BLUE);
+    const Outpost::EntityId warship = match.Warship(RED, {start.xMeters + 400.0f, start.zMeters + 400.0f});
+    RunPastTheHour(match, lost);
+
+    (void)Raid(match, BLUE, match.World().FindEntity(warship)->position);
+    std::optional<std::uint64_t> destroyed;
+    for (std::uint32_t tick = 0; tick < 120 * TICKS_PER_SECOND && !destroyed.has_value(); ++tick)
+    {
+      Assert::AreEqual(std::size_t{0}, Stations(match, BLUE), L"not while it stands");
+      (void)match.World().Tick({});
+      if (match.World().FindEntity(warship) == nullptr)
+        destroyed = match.World().CurrentTick();
+    }
+    Assert::IsTrue(destroyed.has_value(), L"Blue's ships destroy it");
+    Assert::AreEqual(std::size_t{1}, Stations(match, BLUE), L"and Blue restarts in that tick");
+    Assert::IsTrue(std::ranges::any_of(match.World().BuildSnapshot(BLUE).events, [](const Outpost::EventView& _event)
+                                       { return _event.kind == Outpost::EventKind::EmpireRestarted; }));
+  }
+
+  // Neither a pirate's warship nor another player's Constructor holds a start: with both in Blue's home sector, Blue
+  // restarts on the hour. The match has its pirates, for their designs.
+  TEST_METHOD(APirateOrAConstructorDoesNotHoldAStart)
+  {
+    TerritoryMatch match(true, RESTART_SECONDS);
+    const std::uint64_t lost = LoseBlue(match);
+    const Outpost::PlanePosition start = match.Start(BLUE);
+    const auto outpostShip =
+      std::ranges::find_if(match.World().Entities(), [](const Outpost::Entity& _entity)
+                           { return _entity.owner == Outpost::PIRATES && _entity.kind == Outpost::EntityKind::Ship; });
+    Assert::IsTrue(outpostShip != match.World().Entities().end(), L"the match has pirates");
+    const Outpost::EntityId pirate =
+      match.World().SpawnShip(Outpost::PIRATES, outpostShip->design, {start.xMeters - 700.0f, start.zMeters - 700.0f});
+    // Behind the start from Red's raiders on their way home, and out of the pirate's reach, which takes either for an enemy.
+    const Outpost::EntityId constructor = match.World().SpawnConstructor(RED, {start.xMeters + 700.0f, start.zMeters - 700.0f});
+    const std::uint64_t hour = lost + (std::uint64_t{RESTART_SECONDS} * TICKS_PER_SECOND);
+    while (match.World().CurrentTick() < hour)
+      (void)match.World().Tick({});
+    const Outpost::Entity* pirateShip = match.World().FindEntity(pirate);
+    const Outpost::Entity* redConstructor = match.World().FindEntity(constructor);
+    Assert::IsTrue(pirateShip != nullptr && match.Placement(A1).Contains(pirateShip->position), L"the pirate is in Blue's home sector");
+    Assert::IsTrue(redConstructor != nullptr && match.Placement(A1).Contains(redConstructor->position), L"and so is Red's Constructor");
+    Assert::AreEqual(std::size_t{1}, Stations(match, BLUE), L"Blue restarts on the hour");
+    Assert::IsTrue(std::ranges::any_of(match.World().BuildSnapshot(BLUE).events, [](const Outpost::EventView& _event)
+                                       { return _event.kind == Outpost::EventKind::EmpireRestarted; }));
   }
 
   // A save keeps a lost seat waiting (ADR-077): a world saved while Blue waits, and loaded, restarts it in the same tick as

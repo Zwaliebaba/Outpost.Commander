@@ -38,7 +38,8 @@ struct SeatTick
 //                                                  a scheduled order fired (ADR-080)
 //   lost <tick> player <p>                         the player lost its production (ADR-084)
 //   waiting <tick> player <p>                      its hour has passed and its start is not free
-//   restart <tick> player <p>                      its seat restarted at its start
+//   restart <tick> player <p> waited <ticks>       its seat restarted at its start, that long after its hour; the wait
+//                                                  is left out when the server came back in the tick it restarted
 //   hour <tick> player <p> ore <n> income <hundredths a second> fleet <command points> cap <n> nodes <n> researched <n>
 //        present <s> deputy <s>                    every hour of ticks: the seat's bank, income, fleet against its cap,
 //                                                  nodes held and topics researched, and the seconds of the hour its
@@ -69,6 +70,8 @@ private:
     PlayerId player;
     std::optional<SeatPlay> play;
     bool waiting = false;
+    // The tick the seat's last snapshot said it restarts at, while it has lost.
+    std::optional<std::uint64_t> restartTick;
     std::uint64_t playerTicks = 0;
     std::uint64_t deputyTicks = 0;
   };

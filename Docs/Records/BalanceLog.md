@@ -955,6 +955,22 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Method:** `OutpostServer --matchups` over `Matchups.json`'s five fleets: no bases, no fog, no retreat, and the AI's battle behavior on both sides.
 - **Source:** the Phase 5 plan (commit `a234270`, #98); ADR-083, Consequences (commit `b6d343b`, #98).
 
+### 2026-10-25 · A day of world, with a start that enemy warships hold not free (task 39.5)
+
+| Quantity | Value |
+|---|---|
+| Losses and restarts of a seat | Red lost its base 3 times, at hours 15.6, 16.7 and 22.9, and restarted twice; Blue never lost |
+| How long each restart waited past its hour | the first restart none, at hour 16.6; the second 184,269 ticks, 2.56 hours, at hour 20.2; the third loss was still waiting at the end of the day, 0.06 hours after its hour |
+| How long a restarted base stood | the first 3,980 ticks, 3.3 minutes; the second 195,651 ticks, 2.7 hours |
+| The day's end | Blue 617,985 Ore, 11 nodes, its fleet 48 of its cap of 50; Red 4,277 Ore, 3 nodes, no warship; both had researched every topic; 677 battles in the straight world's log |
+| Recovery | killed after ticks 148,264, 157,123, 189,738, 591,824, 752,200, 754,665, 862,814, 989,411, 1,455,187 and 1,613,540, it came back at 148,242, 157,104, 189,726, 591,600, 751,200, 754,382, 862,800, 989,402, 1,454,400 and 1,613,515, and ended equal |
+
+- **Build:** Task 39.5: `OutpostServer --world-run` built by clang 18 at `-O2` in the Linux container; 288 s for the two worlds
+- **Seeds:** seed 1; the Normal AI in both seats; 24 hours; the default 10 kills
+- **Method:** `OutpostServer --world-run`, read from the straight world's log with `Tools/WorldLog.py`: its `lost`, `waiting` and `restart` records, whose `waited` is the ticks between the restart's tick and the hour its snapshot carried the tick before. The killed world's log holds the same losses and restarts, and a second `waiting` record for the wait a recovery at tick 1,454,400 came back into.
+- **Source:** the Phase 5 plan, task 39.5.
+- **Note:** The play differs from the day of 2026-10-08 from hour 0, whose Red lost first at hour 7: the server code has changed since, not only by this task.
+
 ## Performance
 
 Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time, and how long the checks take to run.

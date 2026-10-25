@@ -15,6 +15,7 @@ A world needs two instruments: one that says how it went, and one that shows it 
 ## Decision
 
 1. **The world's server writes its log** (`WorldLog`) to `World.log` in the world's folder, appending, a line a record with every time in ticks. The records are listed in `WorldLog.h`: `start`, `save`, `seat`, `order`, `lost`, `waiting`, `restart`, `hour` and `battle`.
+   - A `restart` says how long past its hour the seat waited for its start to be free ([ADR-084](ADR-084-world-without-an-end.md) decision 4), from the restart tick its snapshot carried the tick before. A server that came back in the tick the seat restarted has not seen it, and leaves the wait out.
    - It reads what the server knows after each tick: each connection's snapshot, built once for both its player and the log, and who played the seat (`SeatPlay`).
      - A seat whose deputy plays it is the deputy's.
      - A seat its player plays, or a loopback client, is the player's.

@@ -1281,7 +1281,7 @@ A world is a match that does not end. It runs on a dedicated server that the own
 
 ### The world log [§world.log]
 
-- **The server writes a world log beside the saves,** a line a record, every time in ticks: the world's start and each recovery, each save and how long it held up the server's thread, each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart, every hour each seat's record, and each battle (ADR-082 decision 1).
+- **The server writes a world log beside the saves,** a line a record, every time in ticks: the world's start and each recovery, each save and how long it held up the server's thread, each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart with how long it waited past its hour, every hour each seat's record, and each battle (ADR-082 decision 1).
 - **A seat's hour** is its Ore, its income, its command points against its fleet cap, its nodes and its topics researched, with the seconds of the hour its player and its deputy played it (ADR-082 decision 3).
 - **A battle** is an engagement between two seats in one sector, ended by 30 seconds without a shot there; a side was present when its player played the seat at any of its shots. Shots at or by the pirates are no battle (ADR-082 decision 2).
 - **The log is not saved:** a recovery writes where the world came back from, and a battle the server did not see begin is not recorded (ADR-082).
@@ -1298,7 +1298,7 @@ A world is a match that does not end. It runs on a dedicated server that the own
 
 - **A player who loses in a world is told so in the tick it does.** Its banner says "Empire fallen", and under it "It restarts at your start in" and the time left, or "It restarts once your start is clear of the enemy" while it waits, with the way back to the menu (ADR-084 decisions 3 and 7). Neither the alerts nor the report of a time away tell it (ADR-084 decision 8).
 - **An hour of ticks after it lost, its seat restarts at its own start, once the start is free** (ADR-084 decision 4), and at no other start (ADR-084).
-- **A start is free while no other player holds its home sector and no other player's structure stands in it.** Enemy warships on it do not keep it from being free: the base is placed among them (ADR-084 decision 4). While the start is not free, the seat waits.
+- **A start is free while no other player holds its home sector, has a structure standing in it, or has a warship in it** (ADR-084 decision 4). A pirate's ship and a Constructor do not hold a start. While the start is not free, the seat waits, and it restarts in the first tick that finds the start free; a restarted base is not spared after that (ADR-084).
 - **A restarted seat gets a Command Station on its start and the starting Constructors in front of it,** placed as at the world's start, and its Ore is raised to the starting Ore when it has less ([Catalogue: rules](Reference/Catalogue.md#rules); ADR-084 decision 4).
 - **It keeps everything else:** its research, its designs, its Ore above the starting Ore, and its ships and structures that still stand (ADR-084 decision 4). A rig in a sector it still holds goes on earning while it waits (ADR-084).
 - **A player that finishes a Shipyard of its own while it waits stands again,** and does not restart (ADR-084 decision 4).

@@ -38,7 +38,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
 | 39.3 | The battle matchups | — | — | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
 | 39.4 | W1–W6 | all above | — | the container's part done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's week |
-| 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | todo |
+| 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | in review; awaiting the owner's run |
 
 ### Milestone order
 
@@ -261,6 +261,12 @@ The container measures W2 with the deputies in, W3 again and the length of a wor
 
 - **ADR:** [ADR-084](../ADR/ADR-084-world-without-an-end.md) decision 4, edited in place; Game §world.restart.
 - **Done when:** `WorldRulesTests` hold a lost seat while another player's warship is in its home sector, restart it on the tick that warship leaves or is destroyed, and do not hold it for a pirate or a Constructor; the container's `--world-run` of a day records how long each restart waited, in the world log and BalanceLog.md. *Owner run:* a restart in play, seen once the enemy's fleet has gone.
+- **As built:** recorded in ADR-084 decision 4; ADR-082 decision 1 edited in place for the restart's wait.
+  - `Simulation::IsStartFree` counts another player's warship in the start's sector, or within the ground a map without sectors uses, as it counts a structure. The server looks at the starts before the ships move and after the destroyed leave, so a seat restarts in the tick after the move that takes the warship out, and in the tick the warship is destroyed.
+  - The world log's `restart` record says how long past its hour the seat waited (`waited <ticks>`), and `Tools/WorldLog.py` sums the waits up.
+  - The tests' hour is 45 s, from 10, so that a raid's ships sent home leave Blue's home sector before it.
+  - **Run in the container.** `GameLogicTests` passes, 332 tests, apart from the 8 `QuicTransportTests`, which need QUIC; `OpponentTests` 32, `GameProtocolTests` 21 and `NeuronServerTests` 11 pass. Each new test was checked against a broken build: warships not counted, a pirate's counted, and a Constructor counted.
+  - **A day of world, killed 10 times,** ended equal to the world run straight through. Red lost 3 times and restarted twice: once on the hour, and once after waiting 2.56 hours for Blue's warships to leave its start; the base that waited stood 2.7 hours, where the first fell in 3.3 minutes (BalanceLog.md, 2026-10-25).
 
 ### As built
 
