@@ -43,7 +43,4 @@
       <Filter>Data</Filter>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>

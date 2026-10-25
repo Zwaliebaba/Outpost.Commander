@@ -59,7 +59,4 @@
     <ClCompile Include="TerritoryMatch.cpp" />
     <ClCompile Include="WorldMatch.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>
