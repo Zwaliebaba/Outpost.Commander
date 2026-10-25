@@ -198,6 +198,20 @@ public:
     sectors[2].holder = {};
     Assert::IsTrue(Outpost::PlaceGhost(bay, WEST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a bay in its own sector");
     Assert::IsFalse(Outpost::PlaceGhost(bay, EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a bay in a free sector");
+
+    // So are a Research Lab's and a Defence Platform's, so that neither creeps into another player's sectors; and nothing
+    // else needs a held sector by its kind.
+    for (const Outpost::StructureKind kind : {Outpost::StructureKind::ResearchLab, Outpost::StructureKind::DefensePlatform})
+    {
+      const Outpost::StructureTypeView type{.structure = kind, .nameUtf8 = "Held", .radiusMeters = 30.0f};
+      Assert::IsTrue(Outpost::NeedsHeldSector(kind));
+      Assert::IsTrue(Outpost::PlaceGhost(type, WEST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"in its own sector");
+      Assert::IsFalse(Outpost::PlaceGhost(type, EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"in a free sector");
+      Assert::IsTrue(Outpost::PlaceGhost(type, EAST, world, MAP_SIZE_METERS).valid, L"without sectors, anywhere");
+    }
+    for (const Outpost::StructureKind kind :
+         {Outpost::StructureKind::CommandStation, Outpost::StructureKind::MiningRig, Outpost::StructureKind::Relay})
+      Assert::IsFalse(Outpost::NeedsHeldSector(kind));
   }
 
   // ADR-016's rules as the ghost shows them: inside the map, and overlapping no asteroid, field or structure.

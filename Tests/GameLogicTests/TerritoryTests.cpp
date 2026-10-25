@@ -154,6 +154,29 @@ public:
                    L"its home");
   }
 
+  // ADR-056 decision 5: so may a Research Lab and a Defence Platform, so that neither creeps into another player's
+  // sectors.
+  TEST_METHOD(ALabAndAPlatformNeedAHeldSector)
+  {
+    TerritoryMatch match;
+    match.Run(1);
+    const Outpost::PlanePosition free{.xMeters = -2000.0f, .zMeters = -4400.0f};
+    for (const Outpost::StructureKind kind : {Outpost::StructureKind::ResearchLab, Outpost::StructureKind::DefensePlatform})
+      Assert::IsTrue(match.Build(BLUE, kind, free) == Outpost::CommandResult::SectorNotHeld, L"a free sector");
+    (void)match.Relay(RED, B1);
+    match.Run(1);
+    for (const Outpost::StructureKind kind : {Outpost::StructureKind::ResearchLab, Outpost::StructureKind::DefensePlatform})
+      Assert::IsTrue(match.Build(BLUE, kind, free) == Outpost::CommandResult::SectorNotHeld, L"the enemy's sector");
+    Assert::IsTrue(match.Build(RED, Outpost::StructureKind::DefensePlatform, free) == Outpost::CommandResult::Applied,
+                   L"a sector its Relay holds");
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::ResearchLab, {.xMeters = -3400.0f, .zMeters = -4400.0f}) ==
+                     Outpost::CommandResult::Applied,
+                   L"a Lab at its home");
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::DefensePlatform, {.xMeters = -3400.0f, .zMeters = -4250.0f}) ==
+                     Outpost::CommandResult::Applied,
+                   L"a platform at its home");
+  }
+
   // A rig in a sector held by the other player earns nothing, and draws nothing from its asteroid (ADR-056 decision 5).
   TEST_METHOD(ARigInTheEnemysSectorEarnsNothing)
   {

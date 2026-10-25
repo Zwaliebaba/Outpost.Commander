@@ -2116,9 +2116,8 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
   if (m_mapHalfSizeMeters > 0.0f && (std::abs(_position.xMeters) + _radiusMeters > m_mapHalfSizeMeters ||
                                      std::abs(_position.zMeters) + _radiusMeters > m_mapHalfSizeMeters))
     return CommandResult::InvalidPlacement;
-  // A Shipyard or a Repair Bay stands only in a sector its player holds, so that production follows territory
-  // (ADR-056 decision 5).
-  if ((_kind == StructureKind::Shipyard || _kind == StructureKind::RepairBay) && HasTerritory())
+  // Some structures stand only in a sector their player holds (ADR-056 decision 5).
+  if (NeedsHeldSector(_kind) && HasTerritory())
   {
     const Sector* sector = SectorAt(_position);
     if (sector == nullptr || sector->holder != _player)
