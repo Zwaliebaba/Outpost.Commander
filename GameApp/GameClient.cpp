@@ -717,7 +717,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     else if (const std::optional<StandingOrder> standing = m_controls.ArmedStanding(); standing.has_value())
       armed = *standing == StandingOrder::HoldSector ? Hud::ActionKind::HoldSector : Hud::ActionKind::Patrol;
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
-                                         hovered, m_ticksPerSecond, armed);
+                                         hovered, m_ticksPerSecond, armed, m_controls.IsBuildFolded());
     content.fog = m_fog.CellsPerSide() > 0;
     // The bars over the entities that show one, each placed by the camera above its model on the screen, for the HUD to lay
     // out (interface plan 2, task UI4.1).
@@ -840,6 +840,9 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
   {
   case Hud::ActionKind::Build:
     m_controls.ArmPlacement(_action.structure, m_entities);
+    break;
+  case Hud::ActionKind::OpenBuild:
+    m_controls.OpenBuild();
     break;
   case Hud::ActionKind::Queue:
     for (std::uint32_t ship = 0; ship < _action.count; ++ship)

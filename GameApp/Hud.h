@@ -96,6 +96,8 @@ public:
   {
     // Arms placing a structure for the selected Constructors.
     Build,
+    // Opens the selected Constructors' structures, folded into one button once the selection was given an order (ADR-088).
+    OpenBuild,
     // Queues a job at a Shipyard or the Command Station.
     Queue,
     // Queues a topic at the Research Lab.
@@ -765,11 +767,12 @@ public:
   // _hovered is the button under the pointer, and a part's previews the design it would make.
   // _ticksPerSecond is the server's rate, which tells how long ago a remembered structure was last seen; with none, its
   // age is not told. _armed is the order the controls have armed for the next left-click, AttackMove, HoldSector or
-  // Patrol, whose button is lit (interface plan 2, task UI4.2).
+  // Patrol, whose button is lit (interface plan 2, task UI4.2). With _buildFolded, the Constructors' structures are one
+  // Build button (ADR-088).
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
                                         std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0,
-                                        std::optional<ActionKind> _armed = std::nullopt);
+                                        std::optional<ActionKind> _armed = std::nullopt, bool _buildFolded = false);
 
   // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
   // (Phase 1 design §12).

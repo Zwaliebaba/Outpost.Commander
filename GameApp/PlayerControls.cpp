@@ -84,6 +84,11 @@ void Outpost::PlayerControls::ArmPlacement(StructureKind _structure, std::span<c
     m_placing = _structure;
 }
 
+void Outpost::PlayerControls::OpenBuild() noexcept
+{
+  m_buildFolded = false;
+}
+
 void Outpost::PlayerControls::Queue(EntityId _producer, DesignId _design)
 {
   Give(QueueShipCommand{.producer = _producer, .design = _design});
@@ -123,7 +128,7 @@ void Outpost::PlayerControls::ArmStanding(StandingOrder _standing, std::span<con
 void Outpost::PlayerControls::Stop(std::span<const EntityView> _entities)
 {
   if (std::vector<EntityId> ships = SelectedShips(_entities); !ships.empty())
-    Give(StopCommand{.ships = std::move(ships)});
+    GiveToShips(StopCommand{.ships = std::move(ships)});
 }
 
 void Outpost::PlayerControls::SetRetreat(RetreatThreshold _retreat, std::span<const EntityView> _entities)
@@ -136,14 +141,14 @@ void Outpost::PlayerControls::MoveTo(PlanePosition _destination, std::span<const
 {
   std::vector<EntityId> ships = SelectedShips(_entities);
   if (!ships.empty())
-    Give(MoveCommand{.ships = std::move(ships), .destination = _destination});
+    GiveToShips(MoveCommand{.ships = std::move(ships), .destination = _destination});
 }
 
 void Outpost::PlayerControls::Schedule(const OrderForm& _form, std::chrono::sys_seconds _now, const PlayerClock& _clock,
                                        const Snapshot& _newest, std::span<const EntityView> _entities)
 {
   if (std::optional<ScheduleOrderCommand> order = _form.Command(m_selected, _now, _clock, _newest, _entities))
-    Give(std::move(*order));
+    GiveToShips(std::move(*order));
 }
 
 std::vector<Outpost::EntityId> Outpost::PlayerControls::SelectedShips(std::span<const EntityView> _entities) const
@@ -185,7 +190,7 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
       _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
     std::vector<EntityId> ships = SelectedShips(_frame.entities);
     if (destination.has_value() && !ships.empty())
-      Give(AttackMoveCommand{.ships = std::move(ships), .destination = *destination});
+      GiveToShips(AttackMoveCommand{.ships = std::move(ships), .destination = *destination});
     return;
   }
   // So does a standing order (ADR-059): a hold names the sector the click is in, and the server finds it.
@@ -199,9 +204,9 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
     if (!point.has_value() || ships.empty())
       return;
     if (standing == StandingOrder::HoldSector)
-      Give(HoldSectorCommand{.ships = std::move(ships), .position = *point});
+      GiveToShips(HoldSectorCommand{.ships = std::move(ships), .position = *point});
     else
-      Give(PatrolCommand{.ships = std::move(ships), .destination = *point});
+      GiveToShips(PatrolCommand{.ships = std::move(ships), .destination = *point});
     return;
   }
   // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed. A
@@ -221,7 +226,14 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
       return;
     std::vector<EntityId> constructors = SelectedConstructors(_frame.entities);
     if (site.has_value() && !constructors.empty())
-      Give(BuildStructureCommand{.constructors = std::move(constructors), .structure = *m_placing, .position = *site});
+    {
+      BuildStructureCommand build{.constructors = std::move(constructors), .structure = *m_placing, .position = *site};
+      // Shift keeps the structures open with the placement (ADR-088).
+      if (_event.shift)
+        Give(std::move(build));
+      else
+        GiveToShips(std::move(build));
+    }
     if (!_event.shift)
       m_placing.reset();
     return;
@@ -318,9 +330,9 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
     if (friendly.has_value())
     {
       std::erase_if(ships, [&constructors](EntityId _id) { return std::ranges::find(constructors, _id) != constructors.end(); });
-      Give(RepairCommand{.constructors = std::move(constructors), .target = *friendly});
+      GiveToShips(RepairCommand{.constructors = std::move(constructors), .target = *friendly});
       if (const EntityView* target = Find(_frame.entities, *friendly); target != nullptr && !ships.empty())
-        Give(MoveCommand{.ships = std::move(ships), .destination = target->position});
+        GiveToShips(MoveCommand{.ships = std::move(ships), .destination = target->position});
       return;
     }
     // A derelict under the cursor is salvaged, the rest of the selection going there too (Phase 4 design §9, ADR-074).
@@ -329,9 +341,9 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
     if (derelict.has_value())
     {
       std::erase_if(ships, [&constructors](EntityId _id) { return std::ranges::find(constructors, _id) != constructors.end(); });
-      Give(SalvageCommand{.constructors = std::move(constructors), .derelict = *derelict});
+      GiveToShips(SalvageCommand{.constructors = std::move(constructors), .derelict = *derelict});
       if (const EntityView* target = Find(_frame.entities, *derelict); target != nullptr && !ships.empty())
-        Give(MoveCommand{.ships = std::move(ships), .destination = target->position});
+        GiveToShips(MoveCommand{.ships = std::move(ships), .destination = target->position});
       return;
     }
   }
@@ -346,14 +358,14 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
   }
   if (enemy.has_value())
   {
-    Give(AttackCommand{.ships = std::move(ships), .target = *enemy});
+    GiveToShips(AttackCommand{.ships = std::move(ships), .target = *enemy});
     return;
   }
   const std::optional<PlanePosition> destination = _frame.camera.GroundPointAtPixel(x, y, _frame.viewport);
   if (destination.has_value())
   {
     m_lastMove = MoveOrder{.ships = ships, .inputRead = _event.read};
-    Give(MoveCommand{.ships = std::move(ships), .destination = *destination});
+    GiveToShips(MoveCommand{.ships = std::move(ships), .destination = *destination});
   }
 }
 
@@ -415,6 +427,8 @@ void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Fram
 
 void Outpost::PlayerControls::Select(std::vector<EntityId> _ships, bool _add)
 {
+  // Selecting again, even the same ships, opens the Constructors' structures (ADR-088).
+  m_buildFolded = false;
   if (_add)
     _ships.insert(_ships.end(), m_selected.begin(), m_selected.end());
   std::ranges::sort(_ships);
@@ -429,6 +443,7 @@ void Outpost::PlayerControls::SelectAlone(EntityId _entity)
   m_attackMoveArmed = false;
   m_standingArmed.reset();
   m_placing.reset();
+  m_buildFolded = false;
   m_lastClickedShip.reset();
 }
 
@@ -436,6 +451,13 @@ void Outpost::PlayerControls::Give(Order _order)
 {
   // The server fills in the player from the connection (ADR-002).
   m_commands.push_back({.player = {}, .order = std::move(_order)});
+}
+
+void Outpost::PlayerControls::GiveToShips(Order _order)
+{
+  Give(std::move(_order));
+  // The Constructors have been told what to do, so their structures fold into the HUD's Build button until asked for.
+  m_buildFolded = true;
 }
 
 void Outpost::PlayerControls::Prune(const Frame& _frame)

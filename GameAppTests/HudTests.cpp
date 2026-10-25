@@ -891,6 +891,49 @@ public:
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
   }
 
+  // ADR-088: once the selection is given an order, the Constructors' structures fold into one Build button, which opens
+  // them again; a warship's orders and the retreat stay, and a selection without a Constructor has no Build.
+  TEST_METHOD(FoldsTheStructuresIntoBuild)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .buildable = true, .cost = 300},
+                             {.structure = Outpost::StructureKind::MiningRig, .nameUtf8 = "Mining Rig", .buildable = true, .cost = 50}};
+    Outpost::EntityView constructor = Ship(9, {}, 30000, 30000);
+    constructor.role = Outpost::ShipRole::Constructor;
+    std::vector<Outpost::EntityView> entities{Ship(1, LINE, 100, 100), constructor};
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{1}, Outpost::EntityId{9}};
+    const auto describe = [&](bool _folded)
+    { return Outpost::Hud::Describe(newest, entities, selected, std::nullopt, nullptr, std::nullopt, 0, std::nullopt, _folded); };
+    const auto labels = [](const Outpost::Hud::Content& _content)
+    {
+      std::vector<std::string> words;
+      words.reserve(_content.buttons.size());
+      for (const Outpost::Hud::Button& button : _content.buttons)
+        words.push_back(button.label);
+      return words;
+    };
+    const Outpost::Hud::Action openBuild{.kind = Outpost::Hud::ActionKind::OpenBuild};
+
+    Assert::IsTrue(labels(describe(false)) == std::vector<std::string>{"Attack-move", "Patrol", "Stop", "Shipyard|300", "Mining Rig|50"});
+    const Outpost::Hud::Content folded = describe(true);
+    Assert::IsTrue(labels(folded) == std::vector<std::string>{"Attack-move", "Patrol", "Stop", "Build"});
+    Assert::IsTrue(folded.buttons.back().action == openBuild);
+    Assert::IsTrue(folded.buttons.back().enabled);
+    Assert::IsTrue(folded.retreat.has_value(), L"the retreat stays under it");
+
+    // A button to press, round its word.
+    const Outpost::Hud::Layout layout = Lay(folded, 1920, 1080);
+    const auto pressed = std::ranges::find(layout.actions, openBuild, [](const auto& _entry) { return _entry.second; });
+    Assert::IsTrue(pressed != layout.actions.end());
+    const Outpost::Hud::Rect& area = pressed->first;
+    const Outpost::Hud::Text& word = TextOf(layout, "Build");
+    Assert::IsTrue(area.Contains(word.left + 1.0f, word.top + 1.0f));
+    Assert::IsTrue(layout.ActionAt(area.left + 5.0f, area.top + 5.0f) == openBuild);
+
+    entities.pop_back();
+    Assert::IsTrue(labels(describe(true)) == std::vector<std::string>{"Attack-move", "Patrol", "Stop"}, L"no Constructor, no Build");
+  }
+
   // ADR-073: a sector the pirates guard is shown as theirs on the minimap, and counts for neither side; their ships and
   // structures are marked in their color.
   // ADR-074: a derelict under the pointer says what it holds, and a topic recovered by salvage says so on its card.
