@@ -5,7 +5,7 @@ Owns: warning-chip, build-bar-color, ore-gem
 
 ## Context
 
-The player's own warnings and the enemy's figures stand side by side on the HUD, and their colors are close: `WARNING_COLOR` stands at an sRGB hue of 17.5° and `ENEMY_COLOR` at 14.6°, computed from the two linear constants in `Hud.cpp` encoded to sRGB. A warning written as plain text in its color, over an enemy's figure, reads as the same salmon. A warning has to differ from the enemy's figures by more than a hue (owner, 2026-10-08).
+The player's own warnings and the enemy's figures stand side by side on the HUD, and their colors are close: `WARNING_COLOR` stands at an sRGB hue of 17.5° and the Tarkan set's orange-red, player 2's, at 16.3°, computed from the linear colors in `Hud.cpp` and `Models.json` encoded to sRGB. A warning written as plain text in its color, over an enemy's figure, reads as the same salmon. A warning has to differ from the enemy's figures by more than a hue (owner, 2026-10-08).
 
 A structure's build progress in a blue near the player's own would make an enemy's site read as the player's.
 
@@ -14,14 +14,14 @@ A blast's particles are amber diamonds, a filled square on a corner ([ADR-026](A
 ## Decision
 
 1. **A warning is a chip.**
-   - A chip is its words in the windows' navy, `WINDOW_COLOR`, on a filled tag of `WARNING_COLOR`. The tag reaches 4 units beyond the words on either side and covers their whole line, so a descender stays on it. `Painter::Chip` draws it, and nothing else in the HUD draws a filled tag behind its words in that color, so a warning differs from the enemy's figures by its shape and its fill, not by a hue 3° away.
+   - A chip is its words in the windows' navy, `WINDOW_COLOR`, on a filled tag of `WARNING_COLOR`. The tag reaches 4 units beyond the words on either side and covers their whole line, so a descender stays on it. `Painter::Chip` draws it, and nothing else in the HUD draws a filled tag behind its words in that color, so a warning differs from the enemy's figures by its shape and its fill, not by a hue a degree away.
    - **It marks every warning that stands where the enemy's figures do:**
      - **an idle Research Lab or Shipyards that could start work now,** "Research Lab IDLE" and the Shipyards' "IDLE 2" ([ADR-066](ADR-066-production-status-on-the-hud.md) decision 2). A status line is a list of runs, each plain or a chip (`Hud::StatusRun`); a plain run is cut short to leave room for the runs after it, and a chip never is;
      - **an income of nothing,** "+0/s", right-aligned where the income stands. Any income above nothing is in the figures' blue;
      - **the newest alert** ([ADR-059](ADR-059-alerts-and-standing-orders.md) decision 2). Its tag starts 4 units left of the other lines, so its words stay in line with theirs. The older alerts are in the text's color;
      - **the drain on the player's own tickets** on the territory panel ([ADR-057](ADR-057-domination.md) decision 8);
      - **"No word from the server"** under the tag that says where the match runs ([ADR-086](ADR-086-where-the-match-runs.md) decision 2).
-   - **The enemy's figures stay plain text** in `ENEMY_COLOR`.
+   - **The enemy's figures stay plain text** in the enemy's color ([ADR-043](ADR-043-hud-in-the-windows-look.md) decision 7).
    - **Two warnings are plain text in the warning's color,** since each stands where no enemy figure does: a name the designer refuses, in its own field, and the main menu's notice, which wraps over several lines.
    - The chip's words stand at 10.3:1 against its tag, computed as WCAG's ratio of the two linear colors.
 2. **Build progress is a neutral light gray.** The bar under a structure's health bar that shows the share built is (0.5, 0.52, 0.55) linear on every side's structures, so that an enemy's site never reads as the player's. It is the HUD's `BUILD_BAR_COLOR`, named once, since the HUD draws the bars ([ADR-088](ADR-088-selection-and-commands.md) decision 5). The HUD's own progress fills (`BAR_FILL_COLOR`) are blue, since they stand on the player's own buttons and queues.

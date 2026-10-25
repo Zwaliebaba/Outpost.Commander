@@ -8,7 +8,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 
 ## Color
 
-- **One color has one meaning.** In the HUD and on the minimap, whose a thing is, is its color: the player's own blue (`OWN_COLOR`), the enemy's red (`ENEMY_COLOR`) and the pirates' violet (`PIRATE_COLOR`); Ore's gold (`GOLD_COLOR`) is for ore alone ([ADR-085](ADR/ADR-085-one-meaning-per-color.md), [ADR-043](ADR/ADR-043-hud-in-the-windows-look.md) decision 7, [ADR-073](ADR/ADR-073-pirates.md) decision 10).
+- **One color has one meaning.** In the HUD and on the minimap, whose a thing is, is its color: each player's its set's in `Models.json`, as the world draws it (`Hud::SideColorsOf`), and the pirates' violet (`PIRATE_COLOR`); Ore's gold (`GOLD_COLOR`) is for ore alone ([ADR-085](ADR/ADR-085-one-meaning-per-color.md), [ADR-043](ADR/ADR-043-hud-in-the-windows-look.md) decision 7, [ADR-073](ADR/ADR-073-pirates.md) decision 10).
 - **In the world, a side's models are drawn in its set's color,** which `Models.json` gives each seat, and a structure in that color taken toward gray ([ADR-011](ADR/ADR-011-meshes-and-shading.md) decision 3, [ADR-040](ADR/ADR-040-lines-over-dark-faces.md) decision 4).
 - **Nothing that is no side's takes a side's color:** a blast runs from white-yellow to amber ([ADR-026](ADR/ADR-026-explosions-and-particles.md) decision 8), tracers, flashes and sparks are yellow ([ADR-034](ADR/ADR-034-shot-looks.md) decision 4), and a drive's exhaust is none of the sides' colors ([ADR-019](ADR/ADR-019-glows-and-exhaust.md) decision 3).
 - **A beam is its shooter's side's color, lightened toward white,** so a beam says who fires it ([ADR-034](ADR/ADR-034-shot-looks.md) decision 4).
