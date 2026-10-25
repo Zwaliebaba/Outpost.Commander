@@ -89,7 +89,8 @@ From [ImplementationPlan-Look.md](../Plans/ImplementationPlan-Look.md), whose ru
 | Run | Build and configuration | What to look at | Acceptance | Source |
 |---|---|---|---|---|
 | Owner run: occlusion baked into every vertex, in the game | The game; the plan names no configuration | Faces darkened in their recesses, and lines never; the Shipyards' bays and docks, the Command Station's crown, the ground round cockpits, fins and wing roots; the Tarkan Shipyard's frame, near black at `OCCLUSION_STRENGTH` 1 | The owner's run accepts it; the owner may want `OCCLUSION_STRENGTH` lower (ADR-092). The look has been judged only in an offline render of seven models. | Task LV2.1 (merged in #108) |
-| Runs and owner runs of the trim and light paints, two-tone lines, beacons, the fleets' plates, and the health bars where the plates are not, once each is built | The game | Each task's look | Rule 5: each is run and looked at, and the owner's run accepts it. The tasks are todo, and LV4 waits for gate A7. | Tasks LV2.2, LV2.3, LV3.1 and LV4.1 to LV4.3 |
+| Run and owner run: the trim and light paints, and two-tone lines | The game, with a source painted in Blender with `trim` and `light` materials and baked | Trim faces and lines neutral, as light as the side's color, beside the team color's; light faces and lines a warm white that glows, unlit, in a recess as in the open; a seam between body and trim in the side's line color; a structure under construction with its lights lit | Rule 5: the owner's run accepts it. Every shipped source has one material, `team`, so the game draws as it did until a model is painted (ADR-095). | Tasks LV2.2 and LV2.3 |
+| Runs and owner runs of beacons, the fleets' plates, and the health bars where the plates are not, once each is built | The game | Each task's look | Rule 5: each is run and looked at, and the owner's run accepts it. | Tasks LV3.1 and LV4.1 to LV4.3 |
 
 ### The findings plan
 

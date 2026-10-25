@@ -13,10 +13,10 @@ Each draw costs command-list recording on the CPU and front-end work on the GPU,
 
 1. **Every object drawn is an instance.**
    - `MeshPipeline` keeps one slot per frame in flight of `MAX_FRAME_INSTANCES` instances (16,384) in an upload buffer, mapped for its lifetime.
-   - `MeshPipeline::Instance` is the world matrix, the color and the lift: 96 bytes, which is `struct Object` in the shaders.
+   - `MeshPipeline::Instance` is the world matrix, the colors of the three paints, the lift and whether the third paint glows ([ADR-095](ADR-095-paints-team-trim-and-light.md) decision 3): 128 bytes, which is `struct Object` in the shaders.
    - The root signature has three parameters: the frame's constants, one root constant saying where a draw's instances start in the frame's slot, and the frame's slot as a root shader resource view.
    - The vertex shaders read `objects[firstObject + SV_InstanceID]`. The world matrix is held as four `float4` rows, so no matrix packing rule is involved.
-   - The color reaches the pixel shader as a non-interpolated vertex output.
+   - The vertex's paint's color reaches the pixel shader as a non-interpolated vertex output, and so does whether it glows.
 2. **A batch draws each mesh's copies together.** `DrawMeshes` takes a span of `MeshDraw`s, each a mesh and an instance, for faces. `DrawLines` takes the same for lines.
    - Either one puts each mesh's instances one after another in the slot, and draws them with one `DrawIndexedInstanced`.
    - The meshes are drawn in the order they first appear in the batch.

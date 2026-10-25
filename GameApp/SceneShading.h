@@ -66,4 +66,33 @@ inline constexpr float STRUCTURE_FILL_SHADE = 0.22f;
 
 // _color _share of the way to a gray as light as it is, by the luminance weights of linear sRGB.
 [[nodiscard]] DirectX::XMFLOAT4 TowardGray(const DirectX::XMFLOAT4& _color, float _share) noexcept;
+
+// A model's faces take one of three paints, by their materials' names in its source, which are the mesh's paints 0, 1 and
+// 2 (Neuron::MeshVertex::paint, ADR-095). Team is the model's color, as every face was before paints. Trim is neutral:
+// the gray as light as the team color, so that it shades and lines as the team color does and the side still reads from
+// the body. Light is LIGHT_PAINT_COLOR, a warm white that no light reaches and no shade darkens, bright enough for the
+// glow to take it (ADR-091): a window or a lamp. Its lines are the same color.
+inline constexpr DirectX::XMFLOAT4 LIGHT_PAINT_COLOR{1.0f, 0.86f, 0.62f, 1.0f};
+
+// The color each paint takes, of a model's faces or of its lines.
+struct PaintColors
+{
+  DirectX::XMFLOAT4 team;
+  DirectX::XMFLOAT4 trim;
+  DirectX::XMFLOAT4 light;
+};
+
+// The neutral color a model's trim takes where its team color is _color.
+[[nodiscard]] DirectX::XMFLOAT4 TrimColor(const DirectX::XMFLOAT4& _color) noexcept;
+
+// A model's faces where its color is _color: team and trim each Shaded by _fillShade, and light as it is.
+[[nodiscard]] PaintColors FacePaints(const DirectX::XMFLOAT4& _color, float _fillShade) noexcept;
+
+// A model's lines where its color is _color: team and trim each an EdgeColor of _brightness and _whiteShare, and light as
+// it is.
+[[nodiscard]] PaintColors LinePaints(const DirectX::XMFLOAT4& _color, float _brightness, float _whiteShare) noexcept;
+
+// A copy of a model's mesh, its faces or its lines, at _world in _paints, its light glowing.
+[[nodiscard]] Neuron::MeshPipeline::Instance PaintedInstance(const DirectX::XMFLOAT4X4& _world, const PaintColors& _paints,
+                                                             float _liftShare) noexcept;
 } // namespace Outpost

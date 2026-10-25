@@ -1605,6 +1605,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **A structure stands back from the ships:** its side's color is taken toward gray and its faces are darker, so the ships are the brightest and most saturated things of their side's color (ADR-040 decision 4).
 - **A structure under construction is drawn darker, and brightens as it is built** (ADR-040 decision 1).
 - **The Research Lab's radar and rings spin,** each part about its own axis at its own steady rate, every Lab and every Relay in step with the others; a placement ghost spins too (ADR-045 decisions 2 and 4).
+- **A model's faces take one of three paints,** by their materials' names in its source: team, its side's color; trim, the gray as light as that color; and light, a warm white that no light reaches, so that it glows. A structure under construction keeps its lights lit (ADR-095 decisions 1 and 4).
 
 #### Rocks and fields [§look.models.rocks]
 
@@ -1621,6 +1622,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **A rock's lines are brighter than its faces but never outshine the fleets' lines** (ADR-040 decision 1).
 - **A line is drawn a little toward the eye,** so it shows over the face it lies on and never stands off a silhouette (ADR-040 decision 2).
 - **A line never hides another line** (ADR-027 decision 3).
+- **A line takes its faces' paint:** a team line in its side's line color, a trim line in the trim's, and a light line in the light's; a line between two paints is team (ADR-095 decision 5).
 - **An explosion's shards take the faces' color** (ADR-040 decision 4; Game §look.explosions).
 
 ### Light [§look.light]
@@ -1633,7 +1635,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 
 ### Glow [§look.glow]
 
-- **What is bright glows, as a vector screen's phosphor does:** the lines on a model's lit side, the selection's ring, the exhaust, the shots, the blasts and the brightest stars. The faces, the grid and the borders stay under it, and a rock's lines glow less than a ship's (ADR-091 decisions 1 and 3).
+- **What is bright glows, as a vector screen's phosphor does:** the lines on a model's lit side, a model's lights, the selection's ring, the exhaust, the shots, the blasts and the brightest stars. The faces, the grid and the borders stay under it, and a rock's lines glow less than a ship's (ADR-091 decisions 1 and 3).
 - **The glow stays close to what is bright,** brightening the faces a few pixels from a lit line and fading out beyond (ADR-091 decision 3).
 - **The interface never glows** (ADR-091 decision 1).
 

@@ -13,10 +13,10 @@
 
 namespace
 {
-// The .nmf layout, version 3 (ADR-018, ADR-045, ADR-092). Sizes are in bytes. A vertex is its position and its normal,
-// then how open it is, from 0 to OPEN_STEPS, and three bytes of zero.
+// The .nmf layout, version 4 (ADR-018, ADR-045, ADR-092, ADR-095). Sizes are in bytes. A vertex is its position and its
+// normal, then how open it is, from 0 to OPEN_STEPS, its paint, and two bytes of zero.
 constexpr std::array<std::uint8_t, 4> NMF_MAGIC{'N', 'M', 'F', '\0'};
-constexpr std::uint32_t NMF_VERSION = 3;
+constexpr std::uint32_t NMF_VERSION = 4;
 constexpr size_t FILE_VERTEX_FLOAT_BYTES = 6 * sizeof(float);
 constexpr size_t FILE_VERTEX_BYTES = FILE_VERTEX_FLOAT_BYTES + 4;
 constexpr float OPEN_STEPS = 255.0f;
@@ -175,9 +175,12 @@ Neuron::MeshData Neuron::ParseNmf(std::span<const std::uint8_t> _bytes, std::str
     MeshVertex& vertex = mesh.vertices[i];
     std::memcpy(&vertex.position, record.data(), sizeof(vertex.position));
     std::memcpy(&vertex.normal, record.data() + sizeof(vertex.position), sizeof(vertex.normal));
-    if (record[FILE_VERTEX_FLOAT_BYTES + 1] != 0 || record[FILE_VERTEX_FLOAT_BYTES + 2] != 0 || record[FILE_VERTEX_FLOAT_BYTES + 3] != 0)
+    if (record[FILE_VERTEX_FLOAT_BYTES + 2] != 0 || record[FILE_VERTEX_FLOAT_BYTES + 3] != 0)
       reader.Fail("a vertex's padding is not zero");
     vertex.openness = static_cast<float>(record[FILE_VERTEX_FLOAT_BYTES]) / OPEN_STEPS;
+    vertex.paint = record[FILE_VERTEX_FLOAT_BYTES + 1];
+    if (vertex.paint >= MESH_PAINT_COUNT)
+      reader.Fail("a vertex's paint is not one of the three");
   }
   for (const MeshVertex& vertex : mesh.vertices)
   {
@@ -329,14 +332,15 @@ Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngle
   for (std::uint32_t i = 0; i < vertexCount; ++i)
     cornerOf[i] = cornerOfRun[runOf[i]];
 
-  // Each triangle's side, by its two corners in order, with the triangle's normal. A triangle with no area has none. Sorted
-  // by corners, ties kept in the order of the triangles, the sides of one edge come together with their faces' normals in
-  // that order.
+  // Each triangle's side, by its two corners in order, with the triangle's normal and paint, its first vertex's: a source's
+  // triangle has one paint (ADR-095). A triangle with no area has none. Sorted by corners, ties kept in the order of the
+  // triangles, the sides of one edge come together with their faces' normals in that order.
   struct Side
   {
     std::uint32_t from = 0;
     std::uint32_t to = 0;
     DirectX::XMFLOAT3 normal{};
+    std::uint32_t paint = 0;
   };
   std::vector<Side> sides;
   sides.reserve(_mesh.indices.size());
@@ -354,7 +358,8 @@ Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngle
     {
       const std::uint32_t from = triangle[side];
       const std::uint32_t to = triangle[(side + 1) % 3];
-      sides.push_back({.from = std::min(from, to), .to = std::max(from, to), .normal = normal});
+      sides.push_back(
+        {.from = std::min(from, to), .to = std::max(from, to), .normal = normal, .paint = _mesh.vertices[_mesh.indices[i]].paint});
     }
   }
   std::ranges::stable_sort(sides, [](const Side& _a, const Side& _b) { return _a.from != _b.from ? _a.from < _b.from : _a.to < _b.to; });
@@ -386,6 +391,9 @@ Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngle
                                      : DirectX::XMLoadFloat3(&edge.front().normal);
     MeshVertex vertex{};
     DirectX::XMStoreFloat3(&vertex.normal, mean);
+    // Where its faces' paints differ, the line takes the first paint (ADR-095).
+    vertex.paint =
+      std::ranges::all_of(edge, [&edge](const Side& _side) { return _side.paint == edge.front().paint; }) ? edge.front().paint : 0;
     for (const std::uint32_t corner : {edge.front().from, edge.front().to})
     {
       vertex.position = corners[corner];

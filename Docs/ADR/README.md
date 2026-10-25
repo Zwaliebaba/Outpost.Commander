@@ -99,3 +99,4 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-092 | [The baker works out how open each vertex is, and a face's light is darkened by it](ADR-092-baked-occlusion.md) | `baked-occlusion`, `vertex-openness`, `occlusion-strength` |
 | ADR-093 | [A failed assertion names where it failed and ends the process at once, in every configuration](ADR-093-a-failed-assertion-ends-the-process.md) | `assertions`, `fail-fast`, `exception-vs-assertion` |
 | ADR-094 | [A refused command is told to the player who gave it, as an event, in words](ADR-094-a-refused-command-is-told.md) | `command-refusals`, `refusal-words` |
+| ADR-095 | [A model's faces take one of three paints, team, trim and light, and each line takes its faces' paint](ADR-095-paints-team-trim-and-light.md) | `mesh-paints`, `paint-colors`, `two-tone-lines` |

@@ -5,10 +5,11 @@ namespace Neuron
 class Mesh;
 class Renderer;
 
-// Draws meshes flat-lit in one color each (ADR-011), by a key light and a fill (ADR-090): a root signature, a pipeline
-// state, and a constant buffer per frame in flight for the camera and the light. Every object drawn is an instance: where
-// it is and its color are written into the frame's slot of an upload buffer, and the copies of one mesh drawn together are
-// one instanced draw (ADR-053). It knows no game concept: the caller says where each mesh is, its color and the light.
+// Draws meshes flat-lit in the colors of their vertices' paints (ADR-011, ADR-095), by a key light and a fill (ADR-090): a
+// root signature, a pipeline state, and a constant buffer per frame in flight for the camera and the light. Every object
+// drawn is an instance: where it is and its colors are written into the frame's slot of an upload buffer, and the copies of
+// one mesh drawn together are one instanced draw (ADR-053). It knows no game concept: the caller says where each mesh is,
+// its colors and the light.
 class MeshPipeline : NonCopyable
 {
 public:
@@ -39,17 +40,34 @@ public:
     float unused3;
   };
 
-  // Where one copy of a mesh is drawn and how: its world matrix, which may turn, move and scale uniformly, its linear
-  // color, and the share of its distance a line is pulled toward the eye (DrawLines). The layout matches struct Object in
+  // Where one copy of a mesh is drawn and how: its world matrix, which may turn, move and scale uniformly; the linear color
+  // each of its vertices' paints takes, the first, second and third (MeshVertex::paint, ADR-095); whether the third
+  // glows, drawn in its color as it is, which no light reaches and no shade darkens, at 1, or is lit as the others are, at
+  // 0; and the share of its distance a line is pulled toward the eye (DrawLines). The layout matches struct Object in
   // Shader/MeshVS.hlsl and Shader/MeshLineVS.hlsl.
   struct Instance
   {
     DirectX::XMFLOAT4X4 world;
     DirectX::XMFLOAT4 color;
+    DirectX::XMFLOAT4 secondColor;
+    DirectX::XMFLOAT4 thirdColor;
     float liftShare;
-    float unused0;
+    float thirdGlows;
     float unused1;
     float unused2;
+
+    // A copy in one color whatever its vertices' paints, none glowing, as every copy was drawn before paints.
+    [[nodiscard]] static Instance InOneColor(const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color, float _liftShare) noexcept
+    {
+      return {.world = _world,
+              .color = _color,
+              .secondColor = _color,
+              .thirdColor = _color,
+              .liftShare = _liftShare,
+              .thirdGlows = 0.0f,
+              .unused1 = 0.0f,
+              .unused2 = 0.0f};
+    }
   };
 
   // A mesh and one copy of it, for drawing many in a batch.
@@ -72,7 +90,7 @@ public:
   // as BeginDrawing left them: what was drawn earlier in the frame keeps its instances and vertices. Draw calls follow.
   void Resume(ID3D12GraphicsCommandList* _commandList) const;
 
-  // Draws _mesh placed by _world, which may turn, move and scale uniformly, in a linear color.
+  // Draws _mesh placed by _world, which may turn, move and scale uniformly, in one linear color, whatever its paints.
   void Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color);
 
   // Draws every one of _draws as Draw does, each mesh's copies together in one instanced draw, the meshes in the order they
@@ -82,13 +100,13 @@ public:
   // Vertices one frame's DrawTriangles calls can take between them.
   static constexpr UINT MAX_FRAME_VERTICES = 65536;
 
-  // Draws a triangle list made on the CPU this frame, already in the world, in a linear color: geometry that changes every
+  // Draws a triangle list made on the CPU this frame, already in the world, in one linear color, whatever its paints: geometry that changes every
   // frame, such as an explosion's shards (ADR-026). The vertices are copied into this frame's slot of an upload buffer,
   // so they need not outlive the call. A call that would take the frame past MAX_FRAME_VERTICES draws nothing and returns
   // false. Only after BeginDrawing.
   bool DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color);
 
-  // Draws _lines, a line list such as BuildCreaseLines makes, placed by _world, as one-pixel lines in a linear color, as
+  // Draws _lines, a line list such as BuildCreaseLines makes, placed by _world, as one-pixel lines in one linear color, as
   // bright as the light on a mesh is there but in their own hue (ADR-090). They are tested against the depth of what is
   // drawn but write none, so the far side of a mesh hides its own lines. Each vertex is pulled _liftShare of its distance
   // toward the eye, which moves it nowhere on the screen but puts it in front of the surface it lies on: Direct3D gives a

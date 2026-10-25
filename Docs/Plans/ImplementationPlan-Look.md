@@ -45,8 +45,8 @@ Task numbers carry the prefix LV, and gates are lettered A.
 | LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11 |
 | LV1.2 | A phosphor glow | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11, zoomed in and out |
 | LV2.1 | Occlusion baked into every vertex | LV1 | A3 | merged, [#108](https://github.com/Zwaliebaba/Outpost.Commander/pull/108); awaiting the owner's run |
-| LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | todo |
-| LV2.3 | Two-tone lines | LV2.2 | A4 | todo |
+| LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | in review; awaiting a run and the owner's run |
+| LV2.3 | Two-tone lines | LV2.2 | A4 | in review; awaiting a run and the owner's run |
 | LV3.1 | Beacons | LV2.2 | A5 | todo |
 | LV4.1 | Fleets on the screen | — | A6, A7 | todo |
 | LV4.2 | Plates over the fleets | LV4.1 | A7 | todo |
@@ -151,6 +151,17 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 - **Goal:** finding 5, in the vector look.
 - **Scope:** a line takes its faces' paint: team lines in the side's line color, trim lines in a neutral one, light lines in the light's. A line between two paints takes `team`'s. `BuildCreaseLines` carries the paint.
 - **Acceptance:** `MeshDataTests`: a crease between two paints, and between two of one paint.
+
+### LV2.2 and LV2.3 — As built (2026-10-25)
+
+[ADR-095](../ADR/ADR-095-paints-team-trim-and-light.md); ADR-011, ADR-018, ADR-045, ADR-053 and ADR-092 edited in place.
+
+- **The paints by number in the engine:** `MeshVertex::paint`, and three colors on each `MeshPipeline::Instance` with whether the third glows. `Instance::InOneColor` keeps every one-color draw as it was: rings, borders, the grid, memories and shards.
+- **The colors:** trim is the gray as light as the team color, `TrimColor`; light is (1.0, 0.86, 0.62), luminance 0.87, unlit, over the glow's threshold. A structure being built keeps its lights lit, which ADR-095 leaves open to a later decision.
+- **Contrast:** trim lines stand 3.27–3.47:1 over trim faces on ships and 3.67–3.92:1 on structures, computed as `SceneShadingTests` computes it; the test holds them to the floors.
+- **A rim's line,** which has one face, takes that face's paint, which LV2.3's scope did not say.
+- **The bake:** NMF version 4. Every source has one material, `team`, so every `.nmf` differs from its version 3 only in its version, and the game draws as it did until the owner paints a model. A bake of every source took 14 s on 4 cores.
+- **Run in the container:** `NeuronClientTests` 44 and `GameAppTests` 301 pass, built by clang 18 against stand-ins; `BakeMeshes.py --self-test` and `--check` pass; `MeshPipeline.cpp` and `GameClient.cpp` compile there, unlinked, which caught the instance's size assertion. Each new test was checked against a broken build: lines all in the first paint, the paint not read, a paint of 3 allowed, and trim not neutral. **The shaders were not compiled** in the container; CI's `FXCompile` builds them. Not yet seen on screen.
 
 ---
 

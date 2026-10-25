@@ -293,7 +293,7 @@ DirectX::XMFLOAT4X4 WorldMatrix(const DirectX::XMFLOAT3& _position, float _headi
 // One copy of a mesh as the mesh pipeline draws it (ADR-053).
 Neuron::MeshPipeline::Instance MeshInstance(const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color, float _liftShare) noexcept
 {
-  return {.world = _world, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
+  return Neuron::MeshPipeline::Instance::InOneColor(_world, _color, _liftShare);
 }
 
 // The entity of _entities with this identifier, or nullptr. Every snapshot lists its entities in identifier order, and the
@@ -1573,14 +1573,15 @@ void Outpost::GameClient::QueueModel(std::string_view _set, std::string_view _mo
                                      const DirectX::XMFLOAT4& _color, float _fillShade, int _level)
 {
   const bool rock = _set == ASTEROID_SET;
-  const DirectX::XMFLOAT4 edgeColor =
-    rock ? EdgeColor(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : EdgeColor(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
+  // Each face and line in its paint: team, trim or light (ADR-095).
+  const PaintColors faces = FacePaints(_color, _fillShade);
+  const PaintColors lines = rock ? LinePaints(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : LinePaints(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
   for (const ModelPiece& piece : ModelPieces(_set, _model, _level))
   {
     const DirectX::XMFLOAT4X4 world = PieceWorld(piece, _world);
-    m_faceDraws.push_back({.mesh = piece.faces.get(), .instance = MeshInstance(world, Shaded(_color, _fillShade), 0.0f)});
+    m_faceDraws.push_back({.mesh = piece.faces.get(), .instance = PaintedInstance(world, faces, 0.0f)});
     if (piece.edges != nullptr)
-      m_lineDraws.push_back({.mesh = piece.edges.get(), .instance = MeshInstance(world, edgeColor, LINE_LIFT_SHARE)});
+      m_lineDraws.push_back({.mesh = piece.edges.get(), .instance = PaintedInstance(world, lines, LINE_LIFT_SHARE)});
   }
 }
 
