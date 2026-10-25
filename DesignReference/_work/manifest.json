@@ -1,0 +1,21 @@
+{
+  "repo": "Zwaliebaba/Outpost.Commander",
+  "head": {
+    "sha": "a053fe294d91dc885bbb061c2f34d76ca6897738",
+    "short": "a053fe2",
+    "commitDate": "2026-10-25T08:33:55+01:00",
+    "subject": "Merge branch 'main' of https://github.com/Zwaliebaba/Outpost.Commander"
+  },
+  "branch": "claude/youthful-einstein-0dn33s",
+  "referenceBuiltOn": "2026-10-25",
+  "scope": "MVP as amended by Phases 1-5, ImplementationPlan-Interface.md, ImplementationPlan-Interface2.md, ImplementationPlan-Look.md (built tasks only), code and data at HEAD",
+  "excluded": [
+    "GameDesign/OutpostCommander-Horizon.md",
+    "GameDesign/ImplementationPlan-Horizon.md",
+    "GameDesign/ImplementationPlan-SelfPlay.md",
+    "Design/SelfPlayNetwork.md",
+    "Design/ADR/ADR-063-self-play-probe.md",
+    "Look plan LV2.2, LV2.3, LV3.1, LV4.1-LV4.3 (status todo at HEAD: paint slots, two-tone lines, beacons, fleet plates)"
+  ],
+  "environment": "Linux cloud container: no MSBuild, no Windows, no GPU; the game was not built or run"
+}
