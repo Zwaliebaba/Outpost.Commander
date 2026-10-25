@@ -159,9 +159,9 @@ def main():
       "**Repair Bay** (tinted, above): 23 entries each.")
   out("- **Pirate**: Tarkan's 21 meshes in the Pirate violet, since `\"meshes\": \"Tarkan\"` gives the set all of Tarkan's models "
       "(`ModelCatalog.cpp:223-230`) and `LoadClientAssets` loads every one. *In play* the simulation spawns pirates only as "
-      "Defense Platforms (`GameLogic/Simulation.cpp:843`) and hull 1 / hull 2 ships (`Tuning.json` `pirates.outposts[].ships`); "
-      "the pirates' Command Station, Shipyard, Research Lab, Mining Rig, Large hull and Constructor are loaded but nothing "
-      "spawns them. No Relay or Repair Bay for Pirate (only players build them).")
+      "Defense Platforms (`GameLogic/Simulation.cpp:843`) and ships (`Simulation.cpp:868`) of hull 1 and hull 2 (`Tuning.json` "
+      "`pirates.outposts[].ships`); no other spawn site in `GameLogic/` gives `PIRATES` anything, so the pirates' Command "
+      "Station, Shipyard, Research Lab, Mining Rig, Large hull and Constructor are loaded but never drawn in a match. No Relay or Repair Bay for Pirate (only players build them).")
   out("- **Wreck**: only the three hulls, Small, Medium, Large, from the Human meshes in gray: a derelict is drawn by its hull's "
       "model (`GameClient.cpp:1628-1639`, ADR-074, ADR-011 decision 3), although `\"meshes\": \"Human\"` gives the Wreck set all "
       "21 Human meshes (and loads them). A derelict is drawn with ship colors (`FILL_SHADE`), scaled to `2 × radius / lengthMeters`.")
@@ -333,7 +333,7 @@ def main():
   for item in [
     "**The brief's GLB path.** `OutpostCommander/Assets/Models/` holds `.nmf` files, not GLBs; rendered from the `.nmf` (above).",
     "**Wreck renders only the hulls.** `Models.json` gives the Wreck set all 21 Human meshes (and the game loads them all), but only the three hull models are ever drawn as derelicts (`GameClient.cpp:1628-1639`). If the lead wants all 21 in gray, `render_all.py` drops them at `entries()` (one condition).",
-    "**Pirate structures other than the Defense Platform** are rendered because the data loads them, but nothing in `GameLogic/` spawns them (`Simulation.cpp:843` spawns only Defense Platforms for `PIRATES`). Whether they can ever appear is A1/A2's to settle.",
+    "**Pirate structures other than the Defense Platform** are rendered because the data loads them, but no spawn site in `GameLogic/` gives them to `PIRATES` (`Simulation.cpp:843` Defense Platforms, `Simulation.cpp:868` ships of the hulls `Tuning.json` `pirates.outposts` names, 1 and 2; the stress and measurement loads spawn for players 1 and 2 only). Confirming that no other path can is A1/A2's.",
     "**The look is approximate**: line width (2 px against 1 px), orthographic against a 45° perspective, 2×2 supersampling against 4× MSAA, and the glow replayed on a catalogue-sized image rather than at the game's screen scale, so it reads stronger relative to the model than in the game at the default zoom. No in-game capture exists to compare against; the owner's run is the reference.",
     "**Field rocks** are darker than an ore asteroid (`FIELD_SHADE` 0.7, `GameClient.cpp:1522`); only the ore-asteroid look is rendered.",
     "**Mining Rig** is rendered alone; in the game it stands tilted on its rock's surface (ADR-044, `RigStance`, `GameClient.cpp:1718-`).",
