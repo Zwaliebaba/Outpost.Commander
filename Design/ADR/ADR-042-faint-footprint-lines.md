@@ -22,7 +22,7 @@ The owner decided on 2026-10-03 to make the rings thin and faint, at full streng
    - It is 1.3 times the footprint radius, the size of the selection ring, in its side's color at 0.35 at most. How it fades as the camera comes in is [ADR-046](ADR-046-second-look-at-the-screen.md)'s.
    - It has 96 segments, and the models' lines draw it (`MeshPipeline::DrawLines`), unpulled since nothing lies under it.
    - A structure the player only remembers stands on none, since it may not be there ([ADR-081](ADR-081-territory-and-memory-over-the-fog.md)).
-2. **Some rings are at full strength**, in the color of a structure's own lines (`EdgeColor`, ADR-040):
+2. **Some rings are at full strength**, in the color of its side's ship lines (`EdgeColor` of the side's color, ADR-040), a little stronger in hue than the structure's own lines, which are drawn toward gray (owner, 2026-10-25):
    - Under the structure the pointer is on. It is picked as a click picks it (`PickEntity`), and not through the HUD.
    - Under every structure while one is being placed, since then the player is choosing where it stands among them.
 3. **The selection takes the place of the line.** A selected structure's green ring takes the place of its line, and stays the strongest mark on the ground. It is a fixed width on the screen, which [ADR-067](ADR-067-selection-ring-at-a-fixed-width.md) owns. The placement ghost keeps its band.
