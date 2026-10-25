@@ -22,7 +22,7 @@ The game needs to know where things attach to a model: where a shot leaves a shi
 
 - **Every model winds as Direct3D expects.** `GameAppTests` checks that at least 99% of each shipped model's triangles wind clockwise about their normals.
 - **Editing is Blender's import, edit and export, then a bake.** A source exported without +Y Up turns the model on its side, and the bake cannot see that. A wrong front shows on screen, and is fixed in the source rather than in data.
-- **`GameAppTests` checks that every model has the hardpoints its role needs** in both players' sets: a gun and an exhaust on each hull, an exhaust on the Constructor, and a gun on the two armed structures.
+- **`GameAppTests` checks that every model has the hardpoints its role needs** in both players' sets: a gun and an exhaust on each hull, an exhaust on the Constructor, and a gun on the two armed structures. It also checks that every shipped exhaust points out of the back of its model, within 45 degrees of straight back and away from its center. An exporter that writes an empty's facing on its node's +z rather than +y leaves the arrow pointing up, and the bake cannot see that either.
 - **The server never reads a mesh.** Hardpoints are presentation, and `GameLogic` cannot include `NeuronClient` (ADR-002). The reader needs no GPU, so it can move to `NeuronCore` on the day the server needs one, for docking say.
 
 ## What this forecloses
