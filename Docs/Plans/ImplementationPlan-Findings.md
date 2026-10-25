@@ -40,7 +40,7 @@ The owner's track, beside the plan:
 | Item | What | Gate | Status |
 |---|---|---|---|
 | RF-O1 | Rework the Human Command Station's L1–L5 art toward a square plan, and bake it again | F2 | done from the owner's model sheet, and run by the owner on 2026-10-25 |
-| RF-O2 | Remove the Mining Rig's `gun` hardpoint, and bake it again | F8 | todo |
+| RF-O2 | Remove the Mining Rig's `gun` hardpoint, and bake it again | F8 | done in the Linux container: `hp_gun` taken out of both sets' sources' glTF, their meshes and buffers left as they were, and both rigs baked again; their vertices and indices are byte for byte the same, and `--check` passes |
 | RF-O3 | Look at the designer's Large hull card at 1080p with Cascadia Mono installed | F15 | todo |
 
 ### Milestone order
