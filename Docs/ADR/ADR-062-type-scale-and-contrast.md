@@ -31,7 +31,7 @@ The HUD's figures and labels are what a player decides by. Xbox Accessibility Gu
 
 ## Consequences
 
-- **The designer takes a large share of the screen.** With the mockup's three weapons, the designer is 818 × 810 units: 43% of a 1080p screen's width and 75% of its height. With five weapons and the module row, it is 818 × 913, which is 43% and 85%. These figures come from `ExtentOf`'s arithmetic, not from a screen.
+- **The designer takes a large share of the screen.** With the mockup's three weapons, the designer is 818 × 810 units: 43% of a 1080p screen's width and 75% of its height. With five weapons and the module row, it is 818 × 913, which is 43% and 85%, and 818 × 938 with the Sensors bar a module with sight adds, 87% of the height. These figures come from `ExtentOf`'s arithmetic, not from a screen.
 - **A production card is 211 units wide**, two to a row in production's 478, computed from the window's padding and gap. A name wider than the card is cut short with three dots (ADR-061).
 - **The contrast figures are computed, not measured on a screen.** They come from the colors in `Hud.cpp` with WCAG's formula. The render target encodes the linear colors to sRGB, which is what makes them the displayed ones.
 - **The large text keeps the same 4.5:1 floor as the small text.** WCAG would accept 3:1 for the title face, but the title face is under 15 px at 1280×720.

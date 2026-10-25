@@ -265,10 +265,16 @@ void Outpost::PlayerControls::OnLeftUp(const Neuron::InputEvent& _event, const F
     PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [player](const EntityView& _ship) { return _ship.owner == player; });
   if (!picked.has_value())
   {
-    // One of the player's structures is selected on its own, for its queue and its state (ADR-013 decision 5).
-    const std::optional<EntityId> structure =
+    // One of the player's structures is selected on its own, for its queue and its state (ADR-013 decision 5); failing that,
+    // another player's, seen or remembered, for its panel alone (ADR-081 decision 4).
+    std::optional<EntityId> structure =
       PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
                  [player](const EntityView& _entity) { return _entity.kind == EntityKind::Structure && _entity.owner == player; });
+    if (!structure.has_value())
+    {
+      structure = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [player](const EntityView& _entity)
+                             { return _entity.kind == EntityKind::Structure && _entity.owner.IsValid() && _entity.owner != player; });
+    }
     if (structure.has_value())
       m_selected = {*structure};
     else if (!_event.shift)
@@ -471,7 +477,15 @@ void Outpost::PlayerControls::Prune(const Frame& _frame)
   // Before the first snapshot there is nothing to check against.
   if (_frame.entities.empty())
     return;
-  std::erase_if(m_selected, gone);
+  // Another player's structure, selected alone, stays while it is seen or remembered (ADR-081 decision 4); a control group
+  // keeps only the player's own.
+  const auto othersStructure = [&_frame](EntityId _id)
+  {
+    const EntityView* entity = Find(_frame.entities, _id);
+    return entity != nullptr && entity->kind == EntityKind::Structure && entity->owner.IsValid() && entity->owner != _frame.player;
+  };
+  if (m_selected.size() != 1 || !othersStructure(m_selected.front()))
+    std::erase_if(m_selected, gone);
   for (std::vector<EntityId>& group : m_groups)
     std::erase_if(group, gone);
 }

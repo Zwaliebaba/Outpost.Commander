@@ -30,7 +30,7 @@ The owner chose on 2026-10-08 to show the territory and the edge of sight in the
 4. **What the player only remembers is drawn as a memory.**
    - In the world, a remembered structure or derelict is drawn over the fog as its lines alone. It has no faces, no health or build bar, and no footprint ring, in its side's color halfway to gray at 0.6.
    - Under the pointer, it says what it is and how long ago it was seen: "Shipyard · last seen 4:12 ago, 34% built". A remembered derelict's hint ends with its age too. Without the server's tick rate, the age reads "last seen earlier".
-   - `Hud::Describe` lays out a remembered structure's selection panel with "Last seen 4:12 ago" first, and what follows as it was then: "34% built when seen", "Hit points 1,200 / 3,000 when seen". A click selects only the player's own structures ([ADR-013](ADR-013-client-view-and-controls.md) decision 5), so no click opens it.
+   - `Hud::Describe` lays out a remembered structure's selection panel with "Last seen 4:12 ago" first, and what follows as it was then: "34% built when seen", "Hit points 1,200 / 3,000 when seen". A click on another player's structure, seen or remembered, selects it alone and opens this panel ([ADR-013](ADR-013-client-view-and-controls.md) decision 5; owner, 2026-10-25), which offers no button.
    - On the minimap, a memory is a cross in its side's color, 8 units across, drawn over the fog. What is seen stays a filled square under the fog, and an ore asteroid an outline.
 5. **The mesh pipeline can be bound again within a frame.** `MeshPipeline::Resume` binds it after another pipeline drew, such as the ground mask, without resetting the frame's instances and vertices as `BeginDrawing` would. The territory and the memories are drawn after it, once the fog is down.
 6. **The ground's fog is darker than the minimap's.**
@@ -51,11 +51,12 @@ The owner chose on 2026-10-08 to show the territory and the edge of sight in the
   - `FogTests.RemembersWhenAStructureWasLastSeen`: the tick is the last snapshot that showed the structure, and it stands while the structure stays out of sight. `WireFormatTests` carries the field. `WorldStateTests.TheLayoutIsTheVersions` holds the layout's hash.
   - `TerritoryMarksTests`: each border drawn once; the outlines inset; the patterns; the claimable nodes against the ghost, and none while a Relay cannot be built; nothing without sectors.
   - `HudTests`:
-    - `DescribesAMemoryWithItsAge`;
+    - `DescribesAMemoryWithItsAge`, with another player's finished Shipyard, seen or remembered, offering no button;
     - `DescribesADerelict`, with its age;
     - `DrawsAMemoryAsACrossOverTheFog`;
     - `DrawsTheTerritoryOnTheMinimap`, with the border's contrast, no mark on a node, and the claimable sector's outline only while a Relay is placed.
   - `FogOfWarTests.DarkensWhatWasSeenBeforeOnTheGround`.
+  - `PlayerControlsTests.SelectsAnotherPlayersStructureForItsPanel`: a click selects it alone, Shift or not, seen or remembered; it gives no order, joins no control group, and leaves the selection once forgotten.
 - **Every line and ring is an instance** of the frame's 16,384 (`MeshPipeline::MAX_FRAME_INSTANCES`). On the repository's map ([Catalogue: sectors](../Reference/Catalogue.md#sectors)) that is at most 60 lattice sides, 100 outline sides and 50 rings.
 
 ## What this forecloses

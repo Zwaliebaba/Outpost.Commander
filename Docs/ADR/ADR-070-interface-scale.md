@@ -22,7 +22,7 @@ Owns: interface-scale-factor, interface-fit-check
 
 ## Consequences
 
-- **The designer limits the factor.** With five weapons and the module row it is 913 units tall, so every 16:9 screen, 1080p or 2160p alike, reaches 110% in a match and no further. A 3:2 screen such as 2880×1920 reaches 125%. The menu reaches 125% on a 16:9 screen. The orders window, 560 units tall, does not change these limits, since the designer is the tallest. These figures are computed from `ExtentOf` and `ControlsHeight`, not measured on a screen.
+- **The designer limits the factor.** With five weapons and the module row it is 913 units tall, 938 with the Sensors bar of the tuning data's Sensor Array, so every 16:9 screen, 1080p or 2160p alike, reaches 110% in a match and no further. A 3:2 screen such as 2880×1920 reaches 125%. The menu reaches 125% on a 16:9 screen. The orders window, 560 units tall, does not change these limits, since the designer is the tallest. These figures are computed from `ExtentOf` and `ControlsHeight`, not measured on a screen.
 - **200% is not reached.** That would need the designer to scroll or reflow, and it does neither. Text at 110% of 13 units is 14.3 px at 1080p, short of the guideline's 18.
 - **At 110%, windows overlap at first.** Production, research and the designer stand side by side only at 100%. A window opens at its default place, measured in the smaller reference screen, and the player moves it.
 - **The fit is checked only when it can change**: on a key, on a new size of screen, and as a match starts or ends. Checking lays the designer out once, without text.

@@ -5,8 +5,9 @@ namespace Outpost
 // The player's controls, turned from input into selection and orders (ADR-013 decision 5). Selection and control groups are
 // client state; orders leave as Commands for the transport (ADR-002).
 //
-//   Left-click selects a ship, or one of the player's structures, a left-drag selects the player's ships in the box,
-//   Shift adds, and a double-click selects every visible ship of that design. Right-click moves the selected ships, or
+//   Left-click selects one of the player's ships, or one of its structures; failing both, another player's structure, seen
+//   or remembered, alone, for a panel that takes no orders (ADR-081 decision 4). A left-drag selects the player's ships in
+//   the box, Shift adds, and a double-click selects every visible ship of that design. Right-click moves the selected ships, or
 //   attacks an enemy ship or structure under the cursor; selected Constructors right-clicked on one of the player's own
 //   ships or structures that is damaged or under construction repair or build it (ADR-016 decision 5). A, then a left-click,
 //   attack-moves; Escape cancels it. H, then a left-click, holds the sector clicked in, and T, then a left-click, patrols
@@ -128,7 +129,7 @@ private:
   // The selection's ships, and the Constructors among them.
   [[nodiscard]] std::vector<EntityId> SelectedShips(std::span<const EntityView> _entities) const;
   [[nodiscard]] std::vector<EntityId> SelectedConstructors(std::span<const EntityView> _entities) const;
-  // Drops ships that are gone or no longer the player's.
+  // Drops ships and structures that are gone or no longer the player's, except another player's structure selected alone.
   void Prune(const Frame& _frame);
 
   std::vector<EntityId> m_selected;

@@ -991,6 +991,21 @@ public:
     const Outpost::Hud::Content now = Outpost::Hud::Describe(newest, live, selected, std::nullopt, nullptr, std::nullopt, 20);
     Assert::AreEqual(std::string("Under construction, 34%"), now.selection.at(1), L"one seen now tells no age");
     Assert::IsFalse(now.marks.front().remembered);
+
+    // Another player's finished Shipyard, selected by a click, offers no button and says nothing of its queue
+    // (ADR-066 decision 4), seen or remembered.
+    for (const bool remembered : {false, true})
+    {
+      Outpost::EntityView finished = seen;
+      finished.builtPermille = Outpost::PERMILLE;
+      finished.remembered = remembered;
+      finished.queue = {{.design = SWARM}};
+      const std::vector<Outpost::EntityView> theirs{finished};
+      const Outpost::Hud::Content panel = Outpost::Hud::Describe(newest, theirs, selected, std::nullopt, nullptr, std::nullopt, 20);
+      Assert::AreEqual(std::string("Shipyard"), panel.selection.front());
+      Assert::IsTrue(panel.buttons.empty());
+      Assert::IsFalse(std::ranges::any_of(panel.selection, [](const std::string& _line) { return _line.starts_with("Building"); }));
+    }
   }
 
   // ADR-081 decision 4: on the minimap a memory is a cross in its side's color, drawn over the fog so that the
@@ -1988,6 +2003,38 @@ public:
     Assert::IsTrue(frame.top >= 0.0f && frame.top + frame.height <= 1080.0f, std::to_wstring(frame.top + frame.height).c_str());
   }
 
+  // ADR-058 decision 7: the designer reserves a row for each bar it draws, so its last, Build, ends above the footer with a
+  // module that has sight, whose Sensors bar is the seventh, as without one.
+  TEST_METHOD(ReservesARowForEachBarItDraws)
+  {
+    const auto layOut = [](bool _sensor)
+    {
+      Outpost::Snapshot newest = DesignerSnapshot(true, true);
+      if (_sensor)
+        newest.modules = {{.id = Outpost::ModuleId{1}, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .available = true}};
+      Outpost::Designer designer;
+      designer.Update(newest);
+      Outpost::Hud::Content content;
+      content.designer = DesignerOf(newest, designer);
+      Assert::AreEqual(_sensor ? size_t{7} : size_t{6}, content.designer->bars.size());
+      return Lay(content, 1920, 1080);
+    };
+    constexpr float BAR_ROW_PIXELS = 25.0f;
+    for (const bool sensor : {false, true})
+    {
+      const Outpost::Hud::Layout layout = layOut(sensor);
+      const auto build = std::ranges::find(layout.texts, std::string("Build"), &Outpost::Hud::Text::text);
+      Assert::IsTrue(build != layout.texts.end(), L"the Build bar's label");
+      const auto queue =
+        std::ranges::find(layout.actions, Outpost::Hud::ActionKind::Queue, [](const auto& _entry) { return _entry.second.kind; });
+      Assert::IsTrue(queue != layout.actions.end(), L"Queue, in the footer");
+      // A bar's label stands 2 units under its row's top.
+      const float rowEnd = build->top - 2.0f + BAR_ROW_PIXELS;
+      const std::wstring where = std::format(L"Build's row ends at {}, the footer starts at {}", rowEnd, queue->first.top);
+      Assert::IsTrue(rowEnd <= queue->first.top + 0.01f, where.c_str());
+    }
+  }
+
   TEST_METHOD(LaysTheDesignerOutAfterTheMockup)
   {
     const auto layOut = [](const Outpost::Snapshot& _newest)
@@ -2823,6 +2870,24 @@ public:
     content.orders = panel;
     layout = Lay(content, 1920, 1080);
     Assert::IsTrue(gives());
+
+    // Give lights under the pointer as the HUD's own buttons do (ADR-088 decision 1): its four edges, and none without it.
+    const auto litEdgesOfGive = [&panel](const Outpost::Hud::Layout& _layout)
+    {
+      const auto give = std::ranges::find(_layout.actions, panel.give.action, [](const auto& _press) { return _press.second; });
+      Assert::IsTrue(give != _layout.actions.end());
+      const Outpost::Hud::Rect& area = give->first;
+      const auto litInside = [&area](const Outpost::Hud::Rect& _panel)
+      {
+        const bool lit = _panel.color.x == 0.25f && _panel.color.y == 0.43f && _panel.color.z == 0.76f;
+        const bool across = _panel.left >= area.left - 0.5f && _panel.left + _panel.width <= area.left + area.width + 0.5f;
+        const bool down = _panel.top >= area.top - 0.5f && _panel.top + _panel.height <= area.top + area.height + 0.5f;
+        return lit && across && down;
+      };
+      return std::ranges::count_if(_layout.panels, litInside);
+    };
+    Assert::AreEqual(std::ptrdiff_t{0}, litEdgesOfGive(layout), L"unlit without the pointer");
+    Assert::AreEqual(std::ptrdiff_t{4}, litEdgesOfGive(Lay(content, 1920, 1080, {}, nullptr, 1.0f, panel.give.action)));
   }
 
   // ADR-080 decision 9: the selection's panel names the scheduled order its ship waits on, whole.
@@ -3766,6 +3831,13 @@ public:
     Assert::AreEqual(1.1f, Hud::StepInterface(1.1f, 1, &newest, 3840, 2160), L"the same at any 16:9 size");
     Assert::AreEqual(1.25f, Hud::StepInterface(1.1f, 1, &newest, 2880, 1920));
     Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 1, &newest, 2880, 1920));
+
+    // A module with sight adds the Sensors bar's row, 938 units as the tuning data's components lay it out, and 110% still
+    // fits 16:9.
+    Outpost::Snapshot sensed = newest;
+    sensed.modules = {{.id = Outpost::ModuleId{1}, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .available = true}};
+    Assert::IsTrue(Hud::WindowsFit(&sensed, 1920, 1080, 1.1f));
+    Assert::AreEqual(1.1f, Hud::StepInterface(1.0f, 1, &sensed, 1920, 1080));
 
     // Down a step at a time, never below the first; and a match that starts at a step its designer does not fit at comes
     // down to one it does.
