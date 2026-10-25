@@ -1,0 +1,70 @@
+[
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34_512.png",
+  "seconds": 9.7,
+  "metersPerPixel": 0.056198366730097295,
+  "lineCount": 324,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top_512.png",
+  "seconds": 9.8,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 324,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_top_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 324,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_34_512.png",
+  "seconds": 8.8,
+  "metersPerPixel": 0.0524518089480908,
+  "lineCount": 324,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ }
+]

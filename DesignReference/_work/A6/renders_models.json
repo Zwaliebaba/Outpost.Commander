@@ -1,0 +1,70 @@
+[
+ {
+  "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34.png",
+  "set": "Tarkan",
+  "model": "Shipyard_L3",
+  "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+  "view": "34",
+  "size": [
+   1024,
+   1024
+  ],
+  "kind": "model render",
+  "metersPerPixel": 0.056198366730097295,
+  "label": "approximation of the in-game look"
+ },
+ {
+  "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34_512.png",
+  "set": "Tarkan",
+  "model": "Shipyard_L3",
+  "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+  "view": "34",
+  "size": [
+   512,
+   512
+  ],
+  "kind": "model render, web size",
+  "metersPerPixel": 0.11239673346019459,
+  "label": "approximation of the in-game look"
+ },
+ {
+  "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top.png",
+  "set": "Tarkan",
+  "model": "Shipyard_L3",
+  "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+  "view": "top",
+  "size": [
+   1024,
+   1024
+  ],
+  "kind": "model render",
+  "metersPerPixel": 0.06975446428571429,
+  "label": "approximation of the in-game look"
+ },
+ {
+  "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top_512.png",
+  "set": "Tarkan",
+  "model": "Shipyard_L3",
+  "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+  "view": "top",
+  "size": [
+   512,
+   512
+  ],
+  "kind": "model render, web size",
+  "metersPerPixel": 0.13950892857142858,
+  "label": "approximation of the in-game look"
+ },
+ {
+  "file": "DesignReference/_work/assets/sheets/Tarkan.png",
+  "set": "Tarkan",
+  "model": "all",
+  "view": "34 and top",
+  "size": [
+   2048,
+   416
+  ],
+  "kind": "set sheet",
+  "label": "approximation of the in-game look"
+ }
+]

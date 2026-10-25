@@ -1,0 +1,4639 @@
+[
+ {
+  "set": "Human",
+  "entry": "Small",
+  "meshes": "Human",
+  "model": "Small",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 20,
+  "lengthKey": "Models.json: sets[0].models[0].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/Small.nmf",
+  "glb": "Art/Models/Human/Small.glb",
+  "variantOf": null,
+  "vertexCount": 210,
+  "triangles": 70,
+  "boundsMin": [
+   -17.0,
+   -2.5,
+   -22.0
+  ],
+  "boundsMax": [
+   24.0,
+   5.0,
+   22.0
+  ],
+  "fitScale": 0.4878048896789551,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -10.0,
+   -1.829,
+   -10.732
+  ],
+  "fittedMax": [
+   10.0,
+   1.829,
+   10.732
+  ],
+  "fittedExtentsMeters": [
+   20.0,
+   3.659,
+   21.463
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 74,
+  "meanOpenness": 0.623,
+  "nmfSha256": "85794298786440732a14948944294d096afb76485817e6bf216e096177c491b8",
+  "glbSha256": "f24b5edbe6c63f1eac79b55edfeac76c65aee1de37024e15b381de6ad5f04b8b",
+  "nmfBytes": 6884,
+  "glbBytes": 6128
+ },
+ {
+  "set": "Human",
+  "entry": "Medium",
+  "meshes": "Human",
+  "model": "Medium",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 35,
+  "lengthKey": "Models.json: sets[0].models[1].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+  "glb": "Art/Models/Human/Medium.glb",
+  "variantOf": null,
+  "vertexCount": 480,
+  "triangles": 160,
+  "boundsMin": [
+   -56.35,
+   -8.0,
+   -24.0
+  ],
+  "boundsMax": [
+   56.0,
+   16.0,
+   24.0
+  ],
+  "fitScale": 0.31152647733688354,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -17.5,
+   -3.738,
+   -7.477
+  ],
+  "fittedMax": [
+   17.5,
+   3.738,
+   7.477
+  ],
+  "fittedExtentsMeters": [
+   35.0,
+   7.477,
+   14.953
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 161,
+  "meanOpenness": 0.58,
+  "nmfSha256": "e48701e03b2adf762b60823f37ccf198e0f1d8f49d72cd68c0ec8175ba76efb8",
+  "glbSha256": "cb0d77b27e45a9a3c824a7daf7e45ae6a4a779ff6773e6aef8ad48e3bb4b7761",
+  "nmfBytes": 15524,
+  "glbBytes": 12608
+ },
+ {
+  "set": "Human",
+  "entry": "Large",
+  "meshes": "Human",
+  "model": "Large",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[2].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/Large.nmf",
+  "glb": "Art/Models/Human/Large.glb",
+  "variantOf": null,
+  "vertexCount": 768,
+  "triangles": 256,
+  "boundsMin": [
+   -150.5,
+   -70.0,
+   -66.0
+  ],
+  "boundsMax": [
+   180.0,
+   61.0,
+   66.0
+  ],
+  "fitScale": 0.18154311180114746,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -11.891,
+   -11.982
+  ],
+  "fittedMax": [
+   30.0,
+   11.891,
+   11.982
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   23.782,
+   23.964
+  ],
+  "hardpoints": {
+   "exhaust": 2,
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 259,
+  "meanOpenness": 0.609,
+  "nmfSha256": "7a1ad022ff25c8db24110c530f1cbf961333a677851ba70e7f0b37c01e7003e1",
+  "glbSha256": "906659feba011d75f7912d61b77d086594309d71cda911797630ecb96481f4c3",
+  "nmfBytes": 24832,
+  "glbBytes": 19712
+ },
+ {
+  "set": "Human",
+  "entry": "Constructor",
+  "meshes": "Human",
+  "model": "Constructor",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 24,
+  "lengthKey": "Models.json: sets[0].models[3].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/Constructor.nmf",
+  "glb": "Art/Models/Human/Constructor.glb",
+  "variantOf": null,
+  "vertexCount": 798,
+  "triangles": 266,
+  "boundsMin": [
+   -40.35,
+   -11.4103,
+   -13.8193
+  ],
+  "boundsMax": [
+   55.4296,
+   12.8,
+   13.8193
+  ],
+  "fitScale": 0.2505752742290497,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -12.0,
+   -3.033,
+   -3.463
+  ],
+  "fittedMax": [
+   12.0,
+   3.033,
+   3.463
+  ],
+  "fittedExtentsMeters": [
+   24.0,
+   6.067,
+   6.926
+  ],
+  "hardpoints": {
+   "exhaust": 1
+  },
+  "parts": [],
+  "creaseLines": 227,
+  "meanOpenness": 0.656,
+  "nmfSha256": "f4f29815cb67d974bcfb1c701c18b971360e61e80edf565d907009927aba52da",
+  "glbSha256": "6e232b9c2ac8257e58397d084f328b671f9169afee4f30814d1f727512d77a46",
+  "nmfBytes": 25612,
+  "glbBytes": 20192
+ },
+ {
+  "set": "Human",
+  "entry": "CommandStation_L1",
+  "meshes": "Human",
+  "model": "CommandStation",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/CommandStation_L1.nmf",
+  "glb": "Art/Models/Human/CommandStation_L1.glb",
+  "variantOf": null,
+  "vertexCount": 1560,
+  "triangles": 520,
+  "boundsMin": [
+   -237.0,
+   -266.0,
+   -454.0
+  ],
+  "boundsMax": [
+   214.8246,
+   339.9546,
+   454.0
+  ],
+  "fitScale": 0.13279490172863007,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -40.234,
+   -60.289
+  ],
+  "fittedMax": [
+   30.0,
+   40.234,
+   60.289
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   80.468,
+   120.578
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 580,
+  "meanOpenness": 0.68,
+  "nmfSha256": "7eee9eacd6f3a3b9d2b4e43c7b2267862bb29d2be2bd0f25cbcd8b1e42f88db0",
+  "glbSha256": "e72ed35984354814e9fb71c66975ef3059964f8cdc48cb3cad0320ece866aae8",
+  "nmfBytes": 50080,
+  "glbBytes": 38776
+ },
+ {
+  "set": "Human",
+  "entry": "CommandStation_L2",
+  "meshes": "Human",
+  "model": "CommandStation",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/CommandStation_L2.nmf",
+  "glb": "Art/Models/Human/CommandStation_L2.glb",
+  "variantOf": null,
+  "vertexCount": 1560,
+  "triangles": 520,
+  "boundsMin": [
+   -262.0,
+   -266.0,
+   -454.0
+  ],
+  "boundsMax": [
+   237.9215,
+   339.9546,
+   454.0
+  ],
+  "fitScale": 0.13279490172863007,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 120.57777404785156,
+  "fittedMin": [
+   -33.194,
+   -40.234,
+   -60.289
+  ],
+  "fittedMax": [
+   33.194,
+   40.234,
+   60.289
+  ],
+  "fittedExtentsMeters": [
+   66.387,
+   80.468,
+   120.578
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 580,
+  "meanOpenness": 0.68,
+  "nmfSha256": "eeb08a628e361aec5e1bd64a28688c67ea2ebe6dd976d52585abc40d04761081",
+  "glbSha256": "837f67c69d60043b9a96b2cc969e1ba890557b568d6ab6580f1c61983b1ca3ee",
+  "nmfBytes": 50080,
+  "glbBytes": 38776
+ },
+ {
+  "set": "Human",
+  "entry": "CommandStation_L3",
+  "meshes": "Human",
+  "model": "CommandStation",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/CommandStation_L3.nmf",
+  "glb": "Art/Models/Human/CommandStation_L3.glb",
+  "variantOf": null,
+  "vertexCount": 1560,
+  "triangles": 520,
+  "boundsMin": [
+   -287.0,
+   -266.0,
+   -454.0
+  ],
+  "boundsMax": [
+   261.0185,
+   339.9546,
+   454.0
+  ],
+  "fitScale": 0.13279490172863007,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 120.57777404785156,
+  "fittedMin": [
+   -36.387,
+   -40.234,
+   -60.289
+  ],
+  "fittedMax": [
+   36.387,
+   40.234,
+   60.289
+  ],
+  "fittedExtentsMeters": [
+   72.774,
+   80.468,
+   120.578
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 580,
+  "meanOpenness": 0.684,
+  "nmfSha256": "430ed6a71cb862d35aa9bbd8ca4d819a78f4a96b9008500c056d049a404dac22",
+  "glbSha256": "120c88f6654a24e2cd34579ea51068629b38656ad1f1d6dfbf5f82a22d1c1e9e",
+  "nmfBytes": 50080,
+  "glbBytes": 38780
+ },
+ {
+  "set": "Human",
+  "entry": "CommandStation_L4",
+  "meshes": "Human",
+  "model": "CommandStation",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/CommandStation_L4.nmf",
+  "glb": "Art/Models/Human/CommandStation_L4.glb",
+  "variantOf": null,
+  "vertexCount": 2484,
+  "triangles": 828,
+  "boundsMin": [
+   -400.0,
+   -266.0,
+   -454.0
+  ],
+  "boundsMax": [
+   420.0,
+   339.9546,
+   454.0
+  ],
+  "fitScale": 0.13279490172863007,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 120.57777404785156,
+  "fittedMin": [
+   -54.446,
+   -40.234,
+   -60.289
+  ],
+  "fittedMax": [
+   54.446,
+   40.234,
+   60.289
+  ],
+  "fittedExtentsMeters": [
+   108.892,
+   80.468,
+   120.578
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 916,
+  "meanOpenness": 0.65,
+  "nmfSha256": "b0b8fdd20ee8c33bd41a39bc130842c664ffb83f93be6de22bd962b82a6ed863",
+  "glbSha256": "908de7018444f8c880f8c905ed70e13c048109b7f26a4233a570fe30420f4618",
+  "nmfBytes": 79780,
+  "glbBytes": 61424
+ },
+ {
+  "set": "Human",
+  "entry": "CommandStation_L5",
+  "meshes": "Human",
+  "model": "CommandStation",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/CommandStation_L5.nmf",
+  "glb": "Art/Models/Human/CommandStation_L5.glb",
+  "variantOf": null,
+  "vertexCount": 3096,
+  "triangles": 1032,
+  "boundsMin": [
+   -411.9298,
+   -266.0,
+   -454.0
+  ],
+  "boundsMax": [
+   420.0,
+   339.9546,
+   454.0
+  ],
+  "fitScale": 0.13279490172863007,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 120.57777404785156,
+  "fittedMin": [
+   -55.238,
+   -40.234,
+   -60.289
+  ],
+  "fittedMax": [
+   55.238,
+   40.234,
+   60.289
+  ],
+  "fittedExtentsMeters": [
+   110.476,
+   80.468,
+   120.578
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 1108,
+  "meanOpenness": 0.617,
+  "nmfSha256": "d23056eb89861734765bbdb0a6f7bc8f8e7c0ecb6f0e156754279bda0887bd14",
+  "glbSha256": "13d271861670956dd8a9521c5e3af0db43848875dc99cb790c8b8209e4f610b3",
+  "nmfBytes": 99364,
+  "glbBytes": 76124
+ },
+ {
+  "set": "Human",
+  "entry": "Shipyard_L1",
+  "meshes": "Human",
+  "model": "Shipyard",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+  "glb": "Art/Models/Human/Shipyard_L1.glb",
+  "variantOf": null,
+  "vertexCount": 1176,
+  "triangles": 392,
+  "boundsMin": [
+   -310.0,
+   -60.0,
+   -75.0
+  ],
+  "boundsMax": [
+   252.0,
+   70.0,
+   75.0
+  ],
+  "fitScale": 0.10676156729459763,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -6.94,
+   -8.007
+  ],
+  "fittedMax": [
+   30.0,
+   6.94,
+   8.007
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   13.879,
+   16.014
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 382,
+  "meanOpenness": 0.693,
+  "nmfSha256": "fbdb987184c7a389eb926085735fc516fee8de9df5532ab31bb0080e5e62ed55",
+  "glbSha256": "3a7d8a4c37f8d26299bd510a6d2dd462aa824ed9c0335f0c7fa28ddeb7000ce0",
+  "nmfBytes": 37660,
+  "glbBytes": 29052
+ },
+ {
+  "set": "Human",
+  "entry": "Shipyard_L2",
+  "meshes": "Human",
+  "model": "Shipyard",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/Shipyard_L2.nmf",
+  "glb": "Art/Models/Human/Shipyard_L2.glb",
+  "variantOf": null,
+  "vertexCount": 1368,
+  "triangles": 456,
+  "boundsMin": [
+   -310.0,
+   -60.0,
+   -95.0
+  ],
+  "boundsMax": [
+   252.0,
+   70.0,
+   95.0
+  ],
+  "fitScale": 0.10676156729459763,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -6.94,
+   -10.142
+  ],
+  "fittedMax": [
+   30.0,
+   6.94,
+   10.142
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   13.879,
+   20.285
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 442,
+  "meanOpenness": 0.682,
+  "nmfSha256": "0aa1bb52ba428307fc97513dc3b61de10133a2884be3b146452873d339d1f47f",
+  "glbSha256": "0c57e5bec70f39e372e5ad3f99dc4f0092e5a444a7e82dfc68d2b84267c700a1",
+  "nmfBytes": 43804,
+  "glbBytes": 33660
+ },
+ {
+  "set": "Human",
+  "entry": "Shipyard_L3",
+  "meshes": "Human",
+  "model": "Shipyard",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/Shipyard_L3.nmf",
+  "glb": "Art/Models/Human/Shipyard_L3.glb",
+  "variantOf": null,
+  "vertexCount": 2316,
+  "triangles": 772,
+  "boundsMin": [
+   -310.0,
+   -60.0,
+   -95.0
+  ],
+  "boundsMax": [
+   252.0,
+   70.0,
+   245.0
+  ],
+  "fitScale": 0.10676156729459763,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -6.94,
+   -18.149
+  ],
+  "fittedMax": [
+   30.0,
+   6.94,
+   18.149
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   13.879,
+   36.299
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 754,
+  "meanOpenness": 0.68,
+  "nmfSha256": "4e991df3cdf86831a6b6c6187989adf01b6d9ae5d9da98f643373b050579282f",
+  "glbSha256": "bef2f95d7088fe50c067b0100b68faa703f4874a29bd532a0c58aa379d5b5c62",
+  "nmfBytes": 74140,
+  "glbBytes": 56412
+ },
+ {
+  "set": "Human",
+  "entry": "Shipyard_L4",
+  "meshes": "Human",
+  "model": "Shipyard",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/Shipyard_L4.nmf",
+  "glb": "Art/Models/Human/Shipyard_L4.glb",
+  "variantOf": null,
+  "vertexCount": 2760,
+  "triangles": 920,
+  "boundsMin": [
+   -365.0,
+   -60.0,
+   -95.0
+  ],
+  "boundsMax": [
+   252.0,
+   70.0,
+   245.0
+  ],
+  "fitScale": 0.0972447320818901,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -6.321,
+   -16.532
+  ],
+  "fittedMax": [
+   30.0,
+   6.321,
+   16.532
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   12.642,
+   33.063
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 886,
+  "meanOpenness": 0.646,
+  "nmfSha256": "c1d81bdc89ac5b3d8be02efd83de3b93822600c2be3c48feed8d54a4d275a9ec",
+  "glbSha256": "eba973f3a3138a9fbe3bc59febbffa42eecbaf2e2f82589e6ae733f0c76137f7",
+  "nmfBytes": 88348,
+  "glbBytes": 67068
+ },
+ {
+  "set": "Human",
+  "entry": "Shipyard_L5",
+  "meshes": "Human",
+  "model": "Shipyard",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/Shipyard_L5.nmf",
+  "glb": "Art/Models/Human/Shipyard_L5.glb",
+  "variantOf": null,
+  "vertexCount": 3708,
+  "triangles": 1236,
+  "boundsMin": [
+   -365.0,
+   -60.0,
+   -245.0
+  ],
+  "boundsMax": [
+   252.0,
+   70.0,
+   245.0
+  ],
+  "fitScale": 0.0972447320818901,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -6.321,
+   -23.825
+  ],
+  "fittedMax": [
+   30.0,
+   6.321,
+   23.825
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   12.642,
+   47.65
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 1198,
+  "meanOpenness": 0.65,
+  "nmfSha256": "2f4be19d4a86bd2a5e26f4d6d7534c84fdb4ea8c46d9419595c3543bedc236e7",
+  "glbSha256": "b09980cbf7ef5ed92d553943d104b9bd6447ec0fb780089853829af19fade9a6",
+  "nmfBytes": 118684,
+  "glbBytes": 89824
+ },
+ {
+  "set": "Human",
+  "entry": "ResearchLab_L1",
+  "meshes": "Human",
+  "model": "ResearchLab",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[0].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+  "glb": "Art/Models/Human/ResearchLab_L1.glb",
+  "variantOf": null,
+  "vertexCount": 864,
+  "triangles": 288,
+  "boundsMin": [
+   -116.0,
+   -50.1651,
+   -118.0
+  ],
+  "boundsMax": [
+   116.0,
+   136.5948,
+   118.0
+  ],
+  "fitScale": 0.0517241396009922,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -6.0,
+   -4.83,
+   -6.103
+  ],
+  "fittedMax": [
+   6.0,
+   4.83,
+   6.103
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   9.66,
+   12.207
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 8.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 40
+   }
+  ],
+  "creaseLines": 250,
+  "meanOpenness": 0.622,
+  "nmfSha256": "7820cb0e8ef27460dbdde498043b369464db6f5566c863fefd84537ffc038a9d",
+  "glbSha256": "cd6efa2d7b3dc91127094c5243cc3e6a775fe5646957a88c48edbe558e18c12f",
+  "nmfBytes": 27712,
+  "glbBytes": 22816
+ },
+ {
+  "set": "Human",
+  "entry": "ResearchLab_L2",
+  "meshes": "Human",
+  "model": "ResearchLab",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[0].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/ResearchLab_L2.nmf",
+  "glb": "Art/Models/Human/ResearchLab_L2.glb",
+  "variantOf": null,
+  "vertexCount": 1032,
+  "triangles": 344,
+  "boundsMin": [
+   -118.0,
+   -50.1651,
+   -118.0
+  ],
+  "boundsMax": [
+   118.0,
+   136.5948,
+   118.0
+  ],
+  "fitScale": 0.0517241396009922,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.206896781921387,
+  "fittedMin": [
+   -6.103,
+   -4.83,
+   -6.103
+  ],
+  "fittedMax": [
+   6.103,
+   4.83,
+   6.103
+  ],
+  "fittedExtentsMeters": [
+   12.207,
+   9.66,
+   12.207
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 8.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 40
+   }
+  ],
+  "creaseLines": 298,
+  "meanOpenness": 0.608,
+  "nmfSha256": "d7e930aa72d0cc8bf952f0ca7d788166af87c800bb11647e6da92bc21556a310",
+  "glbSha256": "324b6181186280169f09910fae8f2619be9a6da0750c88b9378458c68f46bae3",
+  "nmfBytes": 33088,
+  "glbBytes": 26848
+ },
+ {
+  "set": "Human",
+  "entry": "ResearchLab_L3",
+  "meshes": "Human",
+  "model": "ResearchLab",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[0].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/ResearchLab_L3.nmf",
+  "glb": "Art/Models/Human/ResearchLab_L3.glb",
+  "variantOf": null,
+  "vertexCount": 1440,
+  "triangles": 480,
+  "boundsMin": [
+   -177.0,
+   -50.1651,
+   -177.0
+  ],
+  "boundsMax": [
+   177.0,
+   136.5948,
+   177.0
+  ],
+  "fitScale": 0.03448275849223137,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.206896781921387,
+  "fittedMin": [
+   -6.103,
+   -3.22,
+   -6.103
+  ],
+  "fittedMax": [
+   6.103,
+   3.22,
+   6.103
+  ],
+  "fittedExtentsMeters": [
+   12.207,
+   6.44,
+   12.207
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 8.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 40
+   }
+  ],
+  "creaseLines": 418,
+  "meanOpenness": 0.575,
+  "nmfSha256": "f8b0a7cbcd1252931521e79508b88db10ad482498654aa5bc0d993bc616801c6",
+  "glbSha256": "c4bb3e36fac80ed17171571319e424263e4202bf60c2174b950bb6c90d85e4ea",
+  "nmfBytes": 46144,
+  "glbBytes": 36644
+ },
+ {
+  "set": "Human",
+  "entry": "ResearchLab_L4",
+  "meshes": "Human",
+  "model": "ResearchLab",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[0].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/ResearchLab_L4.nmf",
+  "glb": "Art/Models/Human/ResearchLab_L4.glb",
+  "variantOf": null,
+  "vertexCount": 1728,
+  "triangles": 576,
+  "boundsMin": [
+   -189.5,
+   -50.1651,
+   -189.5
+  ],
+  "boundsMax": [
+   189.5,
+   136.5948,
+   189.5
+  ],
+  "fitScale": 0.032208170741796494,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.206896781921387,
+  "fittedMin": [
+   -6.103,
+   -3.008,
+   -6.103
+  ],
+  "fittedMax": [
+   6.103,
+   3.008,
+   6.103
+  ],
+  "fittedExtentsMeters": [
+   12.207,
+   6.015,
+   12.207
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 8.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 40
+   }
+  ],
+  "creaseLines": 514,
+  "meanOpenness": 0.547,
+  "nmfSha256": "f5e015d17dbcefe41d8cf93f9d27e06b0b1a863051b9cd2b49f01afd768bdaf3",
+  "glbSha256": "f8fcf98ca5ff92f6fdb0e5ca8683be36f0e191b4dd91459bcf1eebdbea92f782",
+  "nmfBytes": 55360,
+  "glbBytes": 43564
+ },
+ {
+  "set": "Human",
+  "entry": "ResearchLab_L5",
+  "meshes": "Human",
+  "model": "ResearchLab",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[0].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/ResearchLab_L5.nmf",
+  "glb": "Art/Models/Human/ResearchLab_L5.glb",
+  "variantOf": null,
+  "vertexCount": 2112,
+  "triangles": 704,
+  "boundsMin": [
+   -189.5,
+   -50.1651,
+   -190.1579
+  ],
+  "boundsMax": [
+   189.5,
+   136.5948,
+   190.1579
+  ],
+  "fitScale": 0.0320967398583889,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.206896781921387,
+  "fittedMin": [
+   -6.082,
+   -2.997,
+   -6.103
+  ],
+  "fittedMax": [
+   6.082,
+   2.997,
+   6.103
+  ],
+  "fittedExtentsMeters": [
+   12.165,
+   5.994,
+   12.207
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 8.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 40
+   },
+   {
+    "periodSeconds": 5.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 24
+   },
+   {
+    "periodSeconds": 5.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 24
+   }
+  ],
+  "creaseLines": 622,
+  "meanOpenness": 0.549,
+  "nmfSha256": "50f58bcb4ea902b80bca0973036366248a1bf3faa56107580d0499ff7232862c",
+  "glbSha256": "0ac84bf062de70a9eadbba3400db0fe66d7ec610afc292e14566c38fc1d18784",
+  "nmfBytes": 67720,
+  "glbBytes": 55252
+ },
+ {
+  "set": "Human",
+  "entry": "MiningRig",
+  "meshes": "Human",
+  "model": "MiningRig",
+  "level": 0,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 4,
+  "lengthKey": "Models.json: sets[0].models[7].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/MiningRig.nmf",
+  "glb": "Art/Models/Human/MiningRig.glb",
+  "variantOf": null,
+  "vertexCount": 786,
+  "triangles": 262,
+  "boundsMin": [
+   -80.041,
+   -80.0,
+   -91.8041
+  ],
+  "boundsMax": [
+   80.041,
+   57.552,
+   91.8041
+  ],
+  "fitScale": 0.024987194687128067,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -2.0,
+   -1.719,
+   -2.294
+  ],
+  "fittedMax": [
+   2.0,
+   1.719,
+   2.294
+  ],
+  "fittedExtentsMeters": [
+   4.0,
+   3.437,
+   4.588
+  ],
+  "hardpoints": {
+   "gun": 1
+  },
+  "parts": [],
+  "creaseLines": 258,
+  "meanOpenness": 0.616,
+  "nmfSha256": "13abd16e8fee250349a6fea4d76c057b408339d4dc5adbc3317a59acdee3c2d3",
+  "glbSha256": "6dae1994b9785b2cee4d8fe79b245e7387b8539c611383547820366ed42bd6b2",
+  "nmfBytes": 25224,
+  "glbBytes": 19832
+ },
+ {
+  "set": "Human",
+  "entry": "DefensePlatform",
+  "meshes": "Human",
+  "model": "DefensePlatform",
+  "level": 0,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "lengthMeters": 4,
+  "lengthKey": "Models.json: sets[0].models[8].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/DefensePlatform.nmf",
+  "glb": "Art/Models/Human/DefensePlatform.glb",
+  "variantOf": null,
+  "vertexCount": 1320,
+  "triangles": 440,
+  "boundsMin": [
+   -102.0,
+   -30.5,
+   -102.0
+  ],
+  "boundsMax": [
+   102.0,
+   65.1266,
+   102.0
+  ],
+  "fitScale": 0.019607843831181526,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -2.0,
+   -0.938,
+   -2.0
+  ],
+  "fittedMax": [
+   2.0,
+   0.938,
+   2.0
+  ],
+  "fittedExtentsMeters": [
+   4.0,
+   1.875,
+   4.0
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 418,
+  "meanOpenness": 0.574,
+  "nmfSha256": "ba0d32b481ac76b2b51d76dc4ba2a2bf242d6a768b2721ee5494a16749af7c76",
+  "glbSha256": "0e02357fe0f347ee9d74f306326c61d791e2f8378464167c7bcd4d35e3b10a14",
+  "nmfBytes": 42532,
+  "glbBytes": 33616
+ },
+ {
+  "set": "Human",
+  "entry": "Relay",
+  "meshes": "Human",
+  "model": "ResearchLab",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.6,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "tintKey": "Models.json: structures[5].tint",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[0].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+  "glb": "Art/Models/Human/ResearchLab_L1.glb",
+  "variantOf": "ResearchLab_L1",
+  "vertexCount": 864,
+  "triangles": 288,
+  "boundsMin": [
+   -116.0,
+   -50.1651,
+   -118.0
+  ],
+  "boundsMax": [
+   116.0,
+   136.5948,
+   118.0
+  ],
+  "fitScale": 0.0517241396009922,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -6.0,
+   -4.83,
+   -6.103
+  ],
+  "fittedMax": [
+   6.0,
+   4.83,
+   6.103
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   9.66,
+   12.207
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 8.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 40
+   }
+  ],
+  "creaseLines": 250,
+  "meanOpenness": 0.622,
+  "nmfSha256": "7820cb0e8ef27460dbdde498043b369464db6f5566c863fefd84537ffc038a9d",
+  "glbSha256": "cd6efa2d7b3dc91127094c5243cc3e6a775fe5646957a88c48edbe558e18c12f",
+  "nmfBytes": 27712,
+  "glbBytes": 22816
+ },
+ {
+  "set": "Human",
+  "entry": "RepairBay",
+  "meshes": "Human",
+  "model": "Shipyard",
+  "level": 1,
+  "kind": "structure",
+  "tint": 0.6,
+  "color": [
+   0.18,
+   0.42,
+   0.95
+  ],
+  "colorKey": "Models.json: sets[0].color",
+  "tintKey": "Models.json: structures[6].tint",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+  "glb": "Art/Models/Human/Shipyard_L1.glb",
+  "variantOf": "Shipyard_L1",
+  "vertexCount": 1176,
+  "triangles": 392,
+  "boundsMin": [
+   -310.0,
+   -60.0,
+   -75.0
+  ],
+  "boundsMax": [
+   252.0,
+   70.0,
+   75.0
+  ],
+  "fitScale": 0.10676156729459763,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -6.94,
+   -8.007
+  ],
+  "fittedMax": [
+   30.0,
+   6.94,
+   8.007
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   13.879,
+   16.014
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 382,
+  "meanOpenness": 0.693,
+  "nmfSha256": "fbdb987184c7a389eb926085735fc516fee8de9df5532ab31bb0080e5e62ed55",
+  "glbSha256": "3a7d8a4c37f8d26299bd510a6d2dd462aa824ed9c0335f0c7fa28ddeb7000ce0",
+  "nmfBytes": 37660,
+  "glbBytes": 29052
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Small",
+  "meshes": "Tarkan",
+  "model": "Small",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 20,
+  "lengthKey": "Models.json: sets[1].models[0].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+  "glb": "Art/Models/Tarkan/Small.glb",
+  "variantOf": null,
+  "vertexCount": 300,
+  "triangles": 100,
+  "boundsMin": [
+   -10.0,
+   -2.1,
+   -10.4
+  ],
+  "boundsMax": [
+   10.0,
+   2.4,
+   10.4
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -10.0,
+   -2.25,
+   -10.4
+  ],
+  "fittedMax": [
+   10.0,
+   2.25,
+   10.4
+  ],
+  "fittedExtentsMeters": [
+   20.0,
+   4.5,
+   20.8
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 112,
+  "meanOpenness": 0.822,
+  "nmfSha256": "470ccbb0a142605019028bc59a747d8f077c2f1b787d729edf89957736054cf9",
+  "glbSha256": "8a6621b402364f5e12d1a68c36776ba7e61fe7bc67c8ba2172ec38f3dd39ffc1",
+  "nmfBytes": 9764,
+  "glbBytes": 8408
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Medium",
+  "meshes": "Tarkan",
+  "model": "Medium",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 35,
+  "lengthKey": "Models.json: sets[1].models[1].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+  "glb": "Art/Models/Tarkan/Medium.glb",
+  "variantOf": null,
+  "vertexCount": 282,
+  "triangles": 94,
+  "boundsMin": [
+   -17.5,
+   -3.4,
+   -15.4
+  ],
+  "boundsMax": [
+   17.5,
+   4.6,
+   15.4
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -17.5,
+   -4.0,
+   -15.4
+  ],
+  "fittedMax": [
+   17.5,
+   4.0,
+   15.4
+  ],
+  "fittedExtentsMeters": [
+   35.0,
+   8.0,
+   30.8
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 105,
+  "meanOpenness": 0.844,
+  "nmfSha256": "8280a792dfe13b8b08a676c1694c383da7696b7efa9c8446131246dbe0c093b2",
+  "glbSha256": "0c2d4d471afdd88fe4999cb9285cb8ffd1fc6924b30db7bf5460196d7bcd06f5",
+  "nmfBytes": 9188,
+  "glbBytes": 8000
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Large",
+  "meshes": "Tarkan",
+  "model": "Large",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[2].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+  "glb": "Art/Models/Tarkan/Large.glb",
+  "variantOf": null,
+  "vertexCount": 426,
+  "triangles": 142,
+  "boundsMin": [
+   -30.0,
+   -5.4,
+   -27.0
+  ],
+  "boundsMax": [
+   30.0,
+   8.4,
+   27.0
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -6.9,
+   -27.0
+  ],
+  "fittedMax": [
+   30.0,
+   6.9,
+   27.0
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   13.8,
+   54.0
+  ],
+  "hardpoints": {
+   "exhaust": 2,
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 136,
+  "meanOpenness": 0.772,
+  "nmfSha256": "97f2a5d905d1de3ac87b58bd4569c97e7d94b214cf9215f03cc24c5e0dd905c6",
+  "glbSha256": "d02afa23c8a2c1aa14b51fe547e62916d32e57c427aac0e6d0b2b10951e5e711",
+  "nmfBytes": 13888,
+  "glbBytes": 11592
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Constructor",
+  "meshes": "Tarkan",
+  "model": "Constructor",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 24,
+  "lengthKey": "Models.json: sets[1].models[3].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+  "glb": "Art/Models/Tarkan/Constructor.glb",
+  "variantOf": null,
+  "vertexCount": 606,
+  "triangles": 202,
+  "boundsMin": [
+   -12.0,
+   -3.8,
+   -11.2942
+  ],
+  "boundsMax": [
+   12.0,
+   5.4,
+   11.2942
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -12.0,
+   -4.6,
+   -11.294
+  ],
+  "fittedMax": [
+   12.0,
+   4.6,
+   11.294
+  ],
+  "fittedExtentsMeters": [
+   24.0,
+   9.2,
+   22.588
+  ],
+  "hardpoints": {
+   "exhaust": 1
+  },
+  "parts": [],
+  "creaseLines": 223,
+  "meanOpenness": 0.713,
+  "nmfSha256": "1c480a6131c675d9f737e5f915aacb08edfefa810a46911dfd05e36319ef51fb",
+  "glbSha256": "6c84399103ef14f84a6068b762a513125798539b63005ad63ee714fa4f234fc0",
+  "nmfBytes": 19468,
+  "glbBytes": 15652
+ },
+ {
+  "set": "Tarkan",
+  "entry": "CommandStation_L1",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L1.glb",
+  "variantOf": null,
+  "vertexCount": 654,
+  "triangles": 218,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.720725953578949,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 210,
+  "meanOpenness": 0.729,
+  "nmfSha256": "93fc521439537d0606a301bc5e4090daa36f4d4ecff6b2fa2a1e11e1e8c333f2",
+  "glbSha256": "57099d6449114ffe915834b34fe69565d134f6b14b98bd1fbfe5f3da37d035a1",
+  "nmfBytes": 21088,
+  "glbBytes": 17376
+ },
+ {
+  "set": "Tarkan",
+  "entry": "CommandStation_L2",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L2.glb",
+  "variantOf": null,
+  "vertexCount": 654,
+  "triangles": 218,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 210,
+  "meanOpenness": 0.68,
+  "nmfSha256": "c4cd70faec948f7e70124d646bc75a301d168710d74da75c42003b322c37bbd5",
+  "glbSha256": "0115230aaf5ad48ddeb92387dfdb4824e7fd0f9c7cf4d395d99b89116856d0ba",
+  "nmfBytes": 21088,
+  "glbBytes": 17376
+ },
+ {
+  "set": "Tarkan",
+  "entry": "CommandStation_L3",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L3.glb",
+  "variantOf": null,
+  "vertexCount": 654,
+  "triangles": 218,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 210,
+  "meanOpenness": 0.632,
+  "nmfSha256": "b8a007a4463d319dac6d7f31247a540f6c6b43ccc41476024db3de2629c95e3b",
+  "glbSha256": "5c08207d06c3227f349bd2dcd38485a6510ebfaac76a0ea6b0c2a80280ae85a7",
+  "nmfBytes": 21088,
+  "glbBytes": 17376
+ },
+ {
+  "set": "Tarkan",
+  "entry": "CommandStation_L4",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L4.glb",
+  "variantOf": null,
+  "vertexCount": 708,
+  "triangles": 236,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 234,
+  "meanOpenness": 0.597,
+  "nmfSha256": "fcccf5239fdc12a9cd38cce7fd2e41d643f99752db9c8b4f529d173c87e6ea2b",
+  "glbSha256": "b551e292af90e5b8de148c544e41f8c126edeebb22cb23ddf8dbbed407c0ddab",
+  "nmfBytes": 22948,
+  "glbBytes": 19444
+ },
+ {
+  "set": "Tarkan",
+  "entry": "CommandStation_L5",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L5.glb",
+  "variantOf": null,
+  "vertexCount": 708,
+  "triangles": 236,
+  "boundsMin": [
+   -43.4,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   43.4,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -31.28,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   31.28,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   62.559,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 234,
+  "meanOpenness": 0.56,
+  "nmfSha256": "ad6d975d934f94c231ffeae659a81e68b7724ebb12e3c7e166e30ff824f4d829",
+  "glbSha256": "cc62210b6ecc715b59ebd6dc24c5ef3de5b072d44e02f905b6fc9e5874601dd1",
+  "nmfBytes": 22948,
+  "glbBytes": 19444
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Shipyard_L1",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L1.glb",
+  "variantOf": null,
+  "vertexCount": 564,
+  "triangles": 188,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -13.0
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   13.0
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -9.75
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   9.75
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   19.5
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 182,
+  "meanOpenness": 0.613,
+  "nmfSha256": "d6fb926624af4bfd3caca6df032033a7c3ed6a2efe77ee59bf6e203dad591abf",
+  "glbSha256": "f3a7286e62ae43f75905a22d4784fed890489ffefebea17dcc4ac6fcb3d3fa9a",
+  "nmfBytes": 18076,
+  "glbBytes": 14380
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Shipyard_L2",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L2.glb",
+  "variantOf": null,
+  "vertexCount": 612,
+  "triangles": 204,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -13.2
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   13.2
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -9.9
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   9.9
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   19.8
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 200,
+  "meanOpenness": 0.495,
+  "nmfSha256": "601ee46585459a7ef827216d5a44e11d84bea84a8516f0b0661fe7ed252dc569",
+  "glbSha256": "c3a4c4e10448331a3d84c61ac5c9b2ca574f375205105dc752734e8cd6c8516a",
+  "nmfBytes": 19612,
+  "glbBytes": 15564
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Shipyard_L3",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L3.glb",
+  "variantOf": null,
+  "vertexCount": 1008,
+  "triangles": 336,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -13.2
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   32.9
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -17.288
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   17.288
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   34.575
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 324,
+  "meanOpenness": 0.507,
+  "nmfSha256": "78156eeae5d5e670aea5ded5884d2c2c02a4aaf20a91429ae3607d0c404596b2",
+  "glbSha256": "38f254d6ed7f38cfe613390692ac9c92cee2bb0666cb78189c5a82c0106d4901",
+  "nmfBytes": 32284,
+  "glbBytes": 25056
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Shipyard_L4",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L4.glb",
+  "variantOf": null,
+  "vertexCount": 1404,
+  "triangles": 468,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -32.9
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   32.9
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -24.675
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   24.675
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   49.35
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 448,
+  "meanOpenness": 0.513,
+  "nmfSha256": "bd569daf5802ba7170cff0a46dbaf1308110715dde28d9e976029d290197c9d0",
+  "glbSha256": "c79bde3fb86606bb216212191ae5c56f9e34edb38f6fc2ac5880f28ff2a1e9a4",
+  "nmfBytes": 44956,
+  "glbBytes": 34560
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Shipyard_L5",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L5.glb",
+  "variantOf": null,
+  "vertexCount": 1404,
+  "triangles": 468,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -32.9
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   32.9
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -24.675
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   24.675
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   49.35
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 448,
+  "meanOpenness": 0.517,
+  "nmfSha256": "20c8e27e6544efbdb79b334a4931fccec65cc42fd792b1ea2fabc4edeaa1886e",
+  "glbSha256": "403f8fdb1b561b903c9e30697337c7ed56972156e1d77cdf677445d7a67bede5",
+  "nmfBytes": 44956,
+  "glbBytes": 34560
+ },
+ {
+  "set": "Tarkan",
+  "entry": "ResearchLab_L1",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L1.glb",
+  "variantOf": null,
+  "vertexCount": 720,
+  "triangles": 240,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 198,
+  "meanOpenness": 0.883,
+  "nmfSha256": "7047f0d5ccbc3138553169bbc282a920ef4d6b60f2223e96128b438953090aa3",
+  "glbSha256": "496f51d97a6b36a53240556b7cc14f9b3f9b9fcda3badebb1a3dedfcbec3868e",
+  "nmfBytes": 23104,
+  "glbBytes": 19368
+ },
+ {
+  "set": "Tarkan",
+  "entry": "ResearchLab_L2",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L2.glb",
+  "variantOf": null,
+  "vertexCount": 720,
+  "triangles": 240,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 198,
+  "meanOpenness": 0.868,
+  "nmfSha256": "60abadbcc32b31188462aa991ada553dc6144d4775244a47207827edf57dc8fb",
+  "glbSha256": "8d3399d5de7cb27874833ef3079e0621199270a396d67c7b5bf2e4c4bac84bcb",
+  "nmfBytes": 23104,
+  "glbBytes": 19368
+ },
+ {
+  "set": "Tarkan",
+  "entry": "ResearchLab_L3",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L3.glb",
+  "variantOf": null,
+  "vertexCount": 1008,
+  "triangles": 336,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 9.0,
+    "axis": [
+     -0.0,
+     -1.0,
+     -0.0
+    ],
+    "triangles": 96
+   },
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 270,
+  "meanOpenness": 0.821,
+  "nmfSha256": "190664067da7ce46ed762dddacb5a282eaedcd1b0908b8a7eafc690b724b8f30",
+  "glbSha256": "a5f3757432051fd10970736e276ff44bc41167048c58436fdf5ba355193e5994",
+  "nmfBytes": 32356,
+  "glbBytes": 27532
+ },
+ {
+  "set": "Tarkan",
+  "entry": "ResearchLab_L4",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L4.glb",
+  "variantOf": null,
+  "vertexCount": 1008,
+  "triangles": 336,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 9.0,
+    "axis": [
+     -0.0,
+     -1.0,
+     -0.0
+    ],
+    "triangles": 96
+   },
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 270,
+  "meanOpenness": 0.786,
+  "nmfSha256": "c128fdee55d8c7a8843d898964bdb677b147ede3af83fb5ebffe9bc78bef53b2",
+  "glbSha256": "8caa6b8d85c3384a08a1b749153c590228eadaf45349b816d68549421bcba7e3",
+  "nmfBytes": 32356,
+  "glbBytes": 27532
+ },
+ {
+  "set": "Tarkan",
+  "entry": "ResearchLab_L5",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L5.glb",
+  "variantOf": null,
+  "vertexCount": 1140,
+  "triangles": 380,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 9.0,
+    "axis": [
+     -0.0,
+     -1.0,
+     -0.0
+    ],
+    "triangles": 96
+   },
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 306,
+  "meanOpenness": 0.732,
+  "nmfSha256": "43d10d1d047abc3a4898f6a2ee2effc9ef6498ecce80ca6cb2cf923f977215f9",
+  "glbSha256": "d6d81aee130dfa9e57c3e8fadab8041a6f28247946849136edc4b1a076e7dd24",
+  "nmfBytes": 36580,
+  "glbBytes": 30700
+ },
+ {
+  "set": "Tarkan",
+  "entry": "MiningRig",
+  "meshes": "Tarkan",
+  "model": "MiningRig",
+  "level": 0,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 4,
+  "lengthKey": "Models.json: sets[1].models[7].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+  "glb": "Art/Models/Tarkan/MiningRig.glb",
+  "variantOf": null,
+  "vertexCount": 498,
+  "triangles": 166,
+  "boundsMin": [
+   -26.6697,
+   -17.0,
+   -20.6401
+  ],
+  "boundsMax": [
+   19.0,
+   10.5,
+   20.6401
+  ],
+  "fitScale": 0.08758541941642761,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -2.0,
+   -1.204,
+   -1.808
+  ],
+  "fittedMax": [
+   2.0,
+   1.204,
+   1.808
+  ],
+  "fittedExtentsMeters": [
+   4.0,
+   2.409,
+   3.616
+  ],
+  "hardpoints": {
+   "gun": 1
+  },
+  "parts": [],
+  "creaseLines": 162,
+  "meanOpenness": 0.817,
+  "nmfSha256": "47f18c4446d9e8b0d2f1272dc499bfeb8de07be08a22c83dad274799a543824e",
+  "glbSha256": "ddad49ec6dea89f1d0e7514b8b34be59d687846e5bcf9d0579a10d0119ee76cf",
+  "nmfBytes": 16008,
+  "glbBytes": 12896
+ },
+ {
+  "set": "Tarkan",
+  "entry": "DefensePlatform",
+  "meshes": "Tarkan",
+  "model": "DefensePlatform",
+  "level": 0,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "lengthMeters": 4,
+  "lengthKey": "Models.json: sets[1].models[8].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+  "glb": "Art/Models/Tarkan/DefensePlatform.glb",
+  "variantOf": null,
+  "vertexCount": 252,
+  "triangles": 84,
+  "boundsMin": [
+   -17.3205,
+   -8.0,
+   -20.0
+  ],
+  "boundsMax": [
+   17.3205,
+   8.0,
+   20.0
+  ],
+  "fitScale": 0.11547011137008667,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -2.0,
+   -0.924,
+   -2.309
+  ],
+  "fittedMax": [
+   2.0,
+   0.924,
+   2.309
+  ],
+  "fittedExtentsMeters": [
+   4.0,
+   1.848,
+   4.619
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 108,
+  "meanOpenness": 0.773,
+  "nmfSha256": "6b12435ac85621f8ddd5437e3535cdf02f40c1a2b61121095b98bfefedd854eb",
+  "glbSha256": "a0ad8870c4495050db389210c51a1c07bff0e83eeae47b0201a61e1889c76b09",
+  "nmfBytes": 8356,
+  "glbBytes": 8476
+ },
+ {
+  "set": "Tarkan",
+  "entry": "Relay",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.6,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "tintKey": "Models.json: structures[5].tint",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L1.glb",
+  "variantOf": "ResearchLab_L1",
+  "vertexCount": 720,
+  "triangles": 240,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 198,
+  "meanOpenness": 0.883,
+  "nmfSha256": "7047f0d5ccbc3138553169bbc282a920ef4d6b60f2223e96128b438953090aa3",
+  "glbSha256": "496f51d97a6b36a53240556b7cc14f9b3f9b9fcda3badebb1a3dedfcbec3868e",
+  "nmfBytes": 23104,
+  "glbBytes": 19368
+ },
+ {
+  "set": "Tarkan",
+  "entry": "RepairBay",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 1,
+  "kind": "structure",
+  "tint": 0.6,
+  "color": [
+   0.9,
+   0.25,
+   0.12
+  ],
+  "colorKey": "Models.json: sets[1].color",
+  "tintKey": "Models.json: structures[6].tint",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L1.glb",
+  "variantOf": "Shipyard_L1",
+  "vertexCount": 564,
+  "triangles": 188,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -13.0
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   13.0
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -9.75
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   9.75
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   19.5
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 182,
+  "meanOpenness": 0.613,
+  "nmfSha256": "d6fb926624af4bfd3caca6df032033a7c3ed6a2efe77ee59bf6e203dad591abf",
+  "glbSha256": "f3a7286e62ae43f75905a22d4784fed890489ffefebea17dcc4ac6fcb3d3fa9a",
+  "nmfBytes": 18076,
+  "glbBytes": 14380
+ },
+ {
+  "set": "Pirate",
+  "entry": "Small",
+  "meshes": "Tarkan",
+  "model": "Small",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 20,
+  "lengthKey": "Models.json: sets[1].models[0].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+  "glb": "Art/Models/Tarkan/Small.glb",
+  "variantOf": null,
+  "vertexCount": 300,
+  "triangles": 100,
+  "boundsMin": [
+   -10.0,
+   -2.1,
+   -10.4
+  ],
+  "boundsMax": [
+   10.0,
+   2.4,
+   10.4
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -10.0,
+   -2.25,
+   -10.4
+  ],
+  "fittedMax": [
+   10.0,
+   2.25,
+   10.4
+  ],
+  "fittedExtentsMeters": [
+   20.0,
+   4.5,
+   20.8
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 112,
+  "meanOpenness": 0.822,
+  "nmfSha256": "470ccbb0a142605019028bc59a747d8f077c2f1b787d729edf89957736054cf9",
+  "glbSha256": "8a6621b402364f5e12d1a68c36776ba7e61fe7bc67c8ba2172ec38f3dd39ffc1",
+  "nmfBytes": 9764,
+  "glbBytes": 8408
+ },
+ {
+  "set": "Pirate",
+  "entry": "Medium",
+  "meshes": "Tarkan",
+  "model": "Medium",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 35,
+  "lengthKey": "Models.json: sets[1].models[1].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+  "glb": "Art/Models/Tarkan/Medium.glb",
+  "variantOf": null,
+  "vertexCount": 282,
+  "triangles": 94,
+  "boundsMin": [
+   -17.5,
+   -3.4,
+   -15.4
+  ],
+  "boundsMax": [
+   17.5,
+   4.6,
+   15.4
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -17.5,
+   -4.0,
+   -15.4
+  ],
+  "fittedMax": [
+   17.5,
+   4.0,
+   15.4
+  ],
+  "fittedExtentsMeters": [
+   35.0,
+   8.0,
+   30.8
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 105,
+  "meanOpenness": 0.844,
+  "nmfSha256": "8280a792dfe13b8b08a676c1694c383da7696b7efa9c8446131246dbe0c093b2",
+  "glbSha256": "0c2d4d471afdd88fe4999cb9285cb8ffd1fc6924b30db7bf5460196d7bcd06f5",
+  "nmfBytes": 9188,
+  "glbBytes": 8000
+ },
+ {
+  "set": "Pirate",
+  "entry": "Large",
+  "meshes": "Tarkan",
+  "model": "Large",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[2].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+  "glb": "Art/Models/Tarkan/Large.glb",
+  "variantOf": null,
+  "vertexCount": 426,
+  "triangles": 142,
+  "boundsMin": [
+   -30.0,
+   -5.4,
+   -27.0
+  ],
+  "boundsMax": [
+   30.0,
+   8.4,
+   27.0
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -6.9,
+   -27.0
+  ],
+  "fittedMax": [
+   30.0,
+   6.9,
+   27.0
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   13.8,
+   54.0
+  ],
+  "hardpoints": {
+   "exhaust": 2,
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 136,
+  "meanOpenness": 0.772,
+  "nmfSha256": "97f2a5d905d1de3ac87b58bd4569c97e7d94b214cf9215f03cc24c5e0dd905c6",
+  "glbSha256": "d02afa23c8a2c1aa14b51fe547e62916d32e57c427aac0e6d0b2b10951e5e711",
+  "nmfBytes": 13888,
+  "glbBytes": 11592
+ },
+ {
+  "set": "Pirate",
+  "entry": "Constructor",
+  "meshes": "Tarkan",
+  "model": "Constructor",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 24,
+  "lengthKey": "Models.json: sets[1].models[3].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+  "glb": "Art/Models/Tarkan/Constructor.glb",
+  "variantOf": null,
+  "vertexCount": 606,
+  "triangles": 202,
+  "boundsMin": [
+   -12.0,
+   -3.8,
+   -11.2942
+  ],
+  "boundsMax": [
+   12.0,
+   5.4,
+   11.2942
+  ],
+  "fitScale": 1.0,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -12.0,
+   -4.6,
+   -11.294
+  ],
+  "fittedMax": [
+   12.0,
+   4.6,
+   11.294
+  ],
+  "fittedExtentsMeters": [
+   24.0,
+   9.2,
+   22.588
+  ],
+  "hardpoints": {
+   "exhaust": 1
+  },
+  "parts": [],
+  "creaseLines": 223,
+  "meanOpenness": 0.713,
+  "nmfSha256": "1c480a6131c675d9f737e5f915aacb08edfefa810a46911dfd05e36319ef51fb",
+  "glbSha256": "6c84399103ef14f84a6068b762a513125798539b63005ad63ee714fa4f234fc0",
+  "nmfBytes": 19468,
+  "glbBytes": 15652
+ },
+ {
+  "set": "Pirate",
+  "entry": "CommandStation_L1",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L1.glb",
+  "variantOf": null,
+  "vertexCount": 654,
+  "triangles": 218,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.720725953578949,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 210,
+  "meanOpenness": 0.729,
+  "nmfSha256": "93fc521439537d0606a301bc5e4090daa36f4d4ecff6b2fa2a1e11e1e8c333f2",
+  "glbSha256": "57099d6449114ffe915834b34fe69565d134f6b14b98bd1fbfe5f3da37d035a1",
+  "nmfBytes": 21088,
+  "glbBytes": 17376
+ },
+ {
+  "set": "Pirate",
+  "entry": "CommandStation_L2",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L2.glb",
+  "variantOf": null,
+  "vertexCount": 654,
+  "triangles": 218,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 210,
+  "meanOpenness": 0.68,
+  "nmfSha256": "c4cd70faec948f7e70124d646bc75a301d168710d74da75c42003b322c37bbd5",
+  "glbSha256": "0115230aaf5ad48ddeb92387dfdb4824e7fd0f9c7cf4d395d99b89116856d0ba",
+  "nmfBytes": 21088,
+  "glbBytes": 17376
+ },
+ {
+  "set": "Pirate",
+  "entry": "CommandStation_L3",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L3.glb",
+  "variantOf": null,
+  "vertexCount": 654,
+  "triangles": 218,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 210,
+  "meanOpenness": 0.632,
+  "nmfSha256": "b8a007a4463d319dac6d7f31247a540f6c6b43ccc41476024db3de2629c95e3b",
+  "glbSha256": "5c08207d06c3227f349bd2dcd38485a6510ebfaac76a0ea6b0c2a80280ae85a7",
+  "nmfBytes": 21088,
+  "glbBytes": 17376
+ },
+ {
+  "set": "Pirate",
+  "entry": "CommandStation_L4",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L4.glb",
+  "variantOf": null,
+  "vertexCount": 708,
+  "triangles": 236,
+  "boundsMin": [
+   -41.6247,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   41.6247,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -30.0,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   30.0,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 234,
+  "meanOpenness": 0.597,
+  "nmfSha256": "fcccf5239fdc12a9cd38cce7fd2e41d643f99752db9c8b4f529d173c87e6ea2b",
+  "glbSha256": "b551e292af90e5b8de148c544e41f8c126edeebb22cb23ddf8dbbed407c0ddab",
+  "nmfBytes": 22948,
+  "glbBytes": 19444
+ },
+ {
+  "set": "Pirate",
+  "entry": "CommandStation_L5",
+  "meshes": "Tarkan",
+  "model": "CommandStation",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+  "glb": "Art/Models/Tarkan/CommandStation_L5.glb",
+  "variantOf": null,
+  "vertexCount": 708,
+  "triangles": 236,
+  "boundsMin": [
+   -43.4,
+   -12.0,
+   -44.6
+  ],
+  "boundsMax": [
+   43.4,
+   26.0,
+   44.6
+  ],
+  "fitScale": 0.7207258939743042,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 64.28874969482422,
+  "fittedMin": [
+   -31.28,
+   -13.694,
+   -32.144
+  ],
+  "fittedMax": [
+   31.28,
+   13.694,
+   32.144
+  ],
+  "fittedExtentsMeters": [
+   62.559,
+   27.388,
+   64.289
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 234,
+  "meanOpenness": 0.56,
+  "nmfSha256": "ad6d975d934f94c231ffeae659a81e68b7724ebb12e3c7e166e30ff824f4d829",
+  "glbSha256": "cc62210b6ecc715b59ebd6dc24c5ef3de5b072d44e02f905b6fc9e5874601dd1",
+  "nmfBytes": 22948,
+  "glbBytes": 19444
+ },
+ {
+  "set": "Pirate",
+  "entry": "Shipyard_L1",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L1.glb",
+  "variantOf": null,
+  "vertexCount": 564,
+  "triangles": 188,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -13.0
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   13.0
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -9.75
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   9.75
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   19.5
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 182,
+  "meanOpenness": 0.613,
+  "nmfSha256": "d6fb926624af4bfd3caca6df032033a7c3ed6a2efe77ee59bf6e203dad591abf",
+  "glbSha256": "f3a7286e62ae43f75905a22d4784fed890489ffefebea17dcc4ac6fcb3d3fa9a",
+  "nmfBytes": 18076,
+  "glbBytes": 14380
+ },
+ {
+  "set": "Pirate",
+  "entry": "Shipyard_L2",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L2.glb",
+  "variantOf": null,
+  "vertexCount": 612,
+  "triangles": 204,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -13.2
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   13.2
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -9.9
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   9.9
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   19.8
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 200,
+  "meanOpenness": 0.495,
+  "nmfSha256": "601ee46585459a7ef827216d5a44e11d84bea84a8516f0b0661fe7ed252dc569",
+  "glbSha256": "c3a4c4e10448331a3d84c61ac5c9b2ca574f375205105dc752734e8cd6c8516a",
+  "nmfBytes": 19612,
+  "glbBytes": 15564
+ },
+ {
+  "set": "Pirate",
+  "entry": "Shipyard_L3",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L3.glb",
+  "variantOf": null,
+  "vertexCount": 1008,
+  "triangles": 336,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -13.2
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   32.9
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -17.288
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   17.288
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   34.575
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 324,
+  "meanOpenness": 0.507,
+  "nmfSha256": "78156eeae5d5e670aea5ded5884d2c2c02a4aaf20a91429ae3607d0c404596b2",
+  "glbSha256": "38f254d6ed7f38cfe613390692ac9c92cee2bb0666cb78189c5a82c0106d4901",
+  "nmfBytes": 32284,
+  "glbBytes": 25056
+ },
+ {
+  "set": "Pirate",
+  "entry": "Shipyard_L4",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L4.glb",
+  "variantOf": null,
+  "vertexCount": 1404,
+  "triangles": 468,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -32.9
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   32.9
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -24.675
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   24.675
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   49.35
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 448,
+  "meanOpenness": 0.513,
+  "nmfSha256": "bd569daf5802ba7170cff0a46dbaf1308110715dde28d9e976029d290197c9d0",
+  "glbSha256": "c79bde3fb86606bb216212191ae5c56f9e34edb38f6fc2ac5880f28ff2a1e9a4",
+  "nmfBytes": 44956,
+  "glbBytes": 34560
+ },
+ {
+  "set": "Pirate",
+  "entry": "Shipyard_L5",
+  "meshes": "Tarkan",
+  "model": "Shipyard",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+  "glb": "Art/Models/Tarkan/Shipyard_L5.glb",
+  "variantOf": null,
+  "vertexCount": 1404,
+  "triangles": 468,
+  "boundsMin": [
+   -40.0,
+   -12.5,
+   -32.9
+  ],
+  "boundsMax": [
+   40.0,
+   10.5,
+   32.9
+  ],
+  "fitScale": 0.75,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 60.0,
+  "fittedMin": [
+   -30.0,
+   -8.625,
+   -24.675
+  ],
+  "fittedMax": [
+   30.0,
+   8.625,
+   24.675
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   17.25,
+   49.35
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 448,
+  "meanOpenness": 0.517,
+  "nmfSha256": "20c8e27e6544efbdb79b334a4931fccec65cc42fd792b1ea2fabc4edeaa1886e",
+  "glbSha256": "403f8fdb1b561b903c9e30697337c7ed56972156e1d77cdf677445d7a67bede5",
+  "nmfBytes": 44956,
+  "glbBytes": 34560
+ },
+ {
+  "set": "Pirate",
+  "entry": "ResearchLab_L1",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 1,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L1.glb",
+  "variantOf": null,
+  "vertexCount": 720,
+  "triangles": 240,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 198,
+  "meanOpenness": 0.883,
+  "nmfSha256": "7047f0d5ccbc3138553169bbc282a920ef4d6b60f2223e96128b438953090aa3",
+  "glbSha256": "496f51d97a6b36a53240556b7cc14f9b3f9b9fcda3badebb1a3dedfcbec3868e",
+  "nmfBytes": 23104,
+  "glbBytes": 19368
+ },
+ {
+  "set": "Pirate",
+  "entry": "ResearchLab_L2",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 2,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L2.glb",
+  "variantOf": null,
+  "vertexCount": 720,
+  "triangles": 240,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 198,
+  "meanOpenness": 0.868,
+  "nmfSha256": "60abadbcc32b31188462aa991ada553dc6144d4775244a47207827edf57dc8fb",
+  "glbSha256": "8d3399d5de7cb27874833ef3079e0621199270a396d67c7b5bf2e4c4bac84bcb",
+  "nmfBytes": 23104,
+  "glbBytes": 19368
+ },
+ {
+  "set": "Pirate",
+  "entry": "ResearchLab_L3",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 3,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L3.glb",
+  "variantOf": null,
+  "vertexCount": 1008,
+  "triangles": 336,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 9.0,
+    "axis": [
+     -0.0,
+     -1.0,
+     -0.0
+    ],
+    "triangles": 96
+   },
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 270,
+  "meanOpenness": 0.821,
+  "nmfSha256": "190664067da7ce46ed762dddacb5a282eaedcd1b0908b8a7eafc690b724b8f30",
+  "glbSha256": "a5f3757432051fd10970736e276ff44bc41167048c58436fdf5ba355193e5994",
+  "nmfBytes": 32356,
+  "glbBytes": 27532
+ },
+ {
+  "set": "Pirate",
+  "entry": "ResearchLab_L4",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 4,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L4.glb",
+  "variantOf": null,
+  "vertexCount": 1008,
+  "triangles": 336,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 9.0,
+    "axis": [
+     -0.0,
+     -1.0,
+     -0.0
+    ],
+    "triangles": 96
+   },
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 270,
+  "meanOpenness": 0.786,
+  "nmfSha256": "c128fdee55d8c7a8843d898964bdb677b147ede3af83fb5ebffe9bc78bef53b2",
+  "glbSha256": "8caa6b8d85c3384a08a1b749153c590228eadaf45349b816d68549421bcba7e3",
+  "nmfBytes": 32356,
+  "glbBytes": 27532
+ },
+ {
+  "set": "Pirate",
+  "entry": "ResearchLab_L5",
+  "meshes": "Tarkan",
+  "model": "ResearchLab",
+  "level": 5,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 12,
+  "lengthKey": "Models.json: sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 5,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+  "glb": "Art/Models/Tarkan/ResearchLab_L5.glb",
+  "variantOf": null,
+  "vertexCount": 1140,
+  "triangles": 380,
+  "boundsMin": [
+   -30.0,
+   -15.25,
+   -30.0
+  ],
+  "boundsMax": [
+   30.0,
+   14.0,
+   30.0
+  ],
+  "fitScale": 0.20000000298023224,
+  "fitRule": "FitMeshAcross(level 1 widest)",
+  "firstLevelWidestMeters": 12.0,
+  "fittedMin": [
+   -6.0,
+   -2.925,
+   -6.0
+  ],
+  "fittedMax": [
+   6.0,
+   2.925,
+   6.0
+  ],
+  "fittedExtentsMeters": [
+   12.0,
+   5.85,
+   12.0
+  ],
+  "hardpoints": {},
+  "parts": [
+   {
+    "periodSeconds": 9.0,
+    "axis": [
+     -0.0,
+     -1.0,
+     -0.0
+    ],
+    "triangles": 96
+   },
+   {
+    "periodSeconds": 12.0,
+    "axis": [
+     -0.0,
+     1.0,
+     -0.0
+    ],
+    "triangles": 96
+   }
+  ],
+  "creaseLines": 306,
+  "meanOpenness": 0.732,
+  "nmfSha256": "43d10d1d047abc3a4898f6a2ee2effc9ef6498ecce80ca6cb2cf923f977215f9",
+  "glbSha256": "d6d81aee130dfa9e57c3e8fadab8041a6f28247946849136edc4b1a076e7dd24",
+  "nmfBytes": 36580,
+  "glbBytes": 30700
+ },
+ {
+  "set": "Pirate",
+  "entry": "MiningRig",
+  "meshes": "Tarkan",
+  "model": "MiningRig",
+  "level": 0,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 4,
+  "lengthKey": "Models.json: sets[1].models[7].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+  "glb": "Art/Models/Tarkan/MiningRig.glb",
+  "variantOf": null,
+  "vertexCount": 498,
+  "triangles": 166,
+  "boundsMin": [
+   -26.6697,
+   -17.0,
+   -20.6401
+  ],
+  "boundsMax": [
+   19.0,
+   10.5,
+   20.6401
+  ],
+  "fitScale": 0.08758541941642761,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -2.0,
+   -1.204,
+   -1.808
+  ],
+  "fittedMax": [
+   2.0,
+   1.204,
+   1.808
+  ],
+  "fittedExtentsMeters": [
+   4.0,
+   2.409,
+   3.616
+  ],
+  "hardpoints": {
+   "gun": 1
+  },
+  "parts": [],
+  "creaseLines": 162,
+  "meanOpenness": 0.817,
+  "nmfSha256": "47f18c4446d9e8b0d2f1272dc499bfeb8de07be08a22c83dad274799a543824e",
+  "glbSha256": "ddad49ec6dea89f1d0e7514b8b34be59d687846e5bcf9d0579a10d0119ee76cf",
+  "nmfBytes": 16008,
+  "glbBytes": 12896
+ },
+ {
+  "set": "Pirate",
+  "entry": "DefensePlatform",
+  "meshes": "Tarkan",
+  "model": "DefensePlatform",
+  "level": 0,
+  "kind": "structure",
+  "tint": 1.0,
+  "color": [
+   0.62,
+   0.22,
+   0.9
+  ],
+  "colorKey": "Models.json: sets[2].color",
+  "lengthMeters": 4,
+  "lengthKey": "Models.json: sets[1].models[8].lengthMeters (borrowed via sets[2].meshes = \"Tarkan\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+  "glb": "Art/Models/Tarkan/DefensePlatform.glb",
+  "variantOf": null,
+  "vertexCount": 252,
+  "triangles": 84,
+  "boundsMin": [
+   -17.3205,
+   -8.0,
+   -20.0
+  ],
+  "boundsMax": [
+   17.3205,
+   8.0,
+   20.0
+  ],
+  "fitScale": 0.11547011137008667,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -2.0,
+   -0.924,
+   -2.309
+  ],
+  "fittedMax": [
+   2.0,
+   0.924,
+   2.309
+  ],
+  "fittedExtentsMeters": [
+   4.0,
+   1.848,
+   4.619
+  ],
+  "hardpoints": {
+   "gun": 6
+  },
+  "parts": [],
+  "creaseLines": 108,
+  "meanOpenness": 0.773,
+  "nmfSha256": "6b12435ac85621f8ddd5437e3535cdf02f40c1a2b61121095b98bfefedd854eb",
+  "glbSha256": "a0ad8870c4495050db389210c51a1c07bff0e83eeae47b0201a61e1889c76b09",
+  "nmfBytes": 8356,
+  "glbBytes": 8476
+ },
+ {
+  "set": "Wreck",
+  "entry": "Small",
+  "meshes": "Human",
+  "model": "Small",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.4,
+   0.4,
+   0.42
+  ],
+  "colorKey": "Models.json: sets[3].color",
+  "lengthMeters": 20,
+  "lengthKey": "Models.json: sets[0].models[0].lengthMeters (borrowed via sets[3].meshes = \"Human\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/Small.nmf",
+  "glb": "Art/Models/Human/Small.glb",
+  "variantOf": null,
+  "vertexCount": 210,
+  "triangles": 70,
+  "boundsMin": [
+   -17.0,
+   -2.5,
+   -22.0
+  ],
+  "boundsMax": [
+   24.0,
+   5.0,
+   22.0
+  ],
+  "fitScale": 0.4878048896789551,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -10.0,
+   -1.829,
+   -10.732
+  ],
+  "fittedMax": [
+   10.0,
+   1.829,
+   10.732
+  ],
+  "fittedExtentsMeters": [
+   20.0,
+   3.659,
+   21.463
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 74,
+  "meanOpenness": 0.623,
+  "nmfSha256": "85794298786440732a14948944294d096afb76485817e6bf216e096177c491b8",
+  "glbSha256": "f24b5edbe6c63f1eac79b55edfeac76c65aee1de37024e15b381de6ad5f04b8b",
+  "nmfBytes": 6884,
+  "glbBytes": 6128
+ },
+ {
+  "set": "Wreck",
+  "entry": "Medium",
+  "meshes": "Human",
+  "model": "Medium",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.4,
+   0.4,
+   0.42
+  ],
+  "colorKey": "Models.json: sets[3].color",
+  "lengthMeters": 35,
+  "lengthKey": "Models.json: sets[0].models[1].lengthMeters (borrowed via sets[3].meshes = \"Human\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+  "glb": "Art/Models/Human/Medium.glb",
+  "variantOf": null,
+  "vertexCount": 480,
+  "triangles": 160,
+  "boundsMin": [
+   -56.35,
+   -8.0,
+   -24.0
+  ],
+  "boundsMax": [
+   56.0,
+   16.0,
+   24.0
+  ],
+  "fitScale": 0.31152647733688354,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -17.5,
+   -3.738,
+   -7.477
+  ],
+  "fittedMax": [
+   17.5,
+   3.738,
+   7.477
+  ],
+  "fittedExtentsMeters": [
+   35.0,
+   7.477,
+   14.953
+  ],
+  "hardpoints": {
+   "exhaust": 1,
+   "gun": 2
+  },
+  "parts": [],
+  "creaseLines": 161,
+  "meanOpenness": 0.58,
+  "nmfSha256": "e48701e03b2adf762b60823f37ccf198e0f1d8f49d72cd68c0ec8175ba76efb8",
+  "glbSha256": "cb0d77b27e45a9a3c824a7daf7e45ae6a4a779ff6773e6aef8ad48e3bb4b7761",
+  "nmfBytes": 15524,
+  "glbBytes": 12608
+ },
+ {
+  "set": "Wreck",
+  "entry": "Large",
+  "meshes": "Human",
+  "model": "Large",
+  "level": 0,
+  "kind": "ship",
+  "tint": 1.0,
+  "color": [
+   0.4,
+   0.4,
+   0.42
+  ],
+  "colorKey": "Models.json: sets[3].color",
+  "lengthMeters": 60,
+  "lengthKey": "Models.json: sets[0].models[2].lengthMeters (borrowed via sets[3].meshes = \"Human\")",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Human/Large.nmf",
+  "glb": "Art/Models/Human/Large.glb",
+  "variantOf": null,
+  "vertexCount": 768,
+  "triangles": 256,
+  "boundsMin": [
+   -150.5,
+   -70.0,
+   -66.0
+  ],
+  "boundsMax": [
+   180.0,
+   61.0,
+   66.0
+  ],
+  "fitScale": 0.18154311180114746,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -30.0,
+   -11.891,
+   -11.982
+  ],
+  "fittedMax": [
+   30.0,
+   11.891,
+   11.982
+  ],
+  "fittedExtentsMeters": [
+   60.0,
+   23.782,
+   23.964
+  ],
+  "hardpoints": {
+   "exhaust": 2,
+   "gun": 3
+  },
+  "parts": [],
+  "creaseLines": 259,
+  "meanOpenness": 0.609,
+  "nmfSha256": "7a1ad022ff25c8db24110c530f1cbf961333a677851ba70e7f0b37c01e7003e1",
+  "glbSha256": "906659feba011d75f7912d61b77d086594309d71cda911797630ecb96481f4c3",
+  "nmfBytes": 24832,
+  "glbBytes": 19712
+ },
+ {
+  "set": "Asteroids",
+  "entry": "Small",
+  "meshes": "Asteroids",
+  "model": "Small",
+  "level": 0,
+  "kind": "rock",
+  "tint": 1.0,
+  "color": [
+   0.35,
+   0.32,
+   0.3
+  ],
+  "colorKey": "Models.json: sets[4].color",
+  "lengthMeters": 2,
+  "lengthKey": "Models.json: sets[4].models[0].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Asteroids/Small.nmf",
+  "glb": "Art/Models/Asteroids/Small.glb",
+  "variantOf": null,
+  "vertexCount": 96,
+  "triangles": 32,
+  "boundsMin": [
+   -1.0622,
+   -0.6069,
+   -0.6893
+  ],
+  "boundsMax": [
+   1.0687,
+   0.6449,
+   0.702
+  ],
+  "fitScale": 0.938572883605957,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -1.0,
+   -0.587,
+   -0.653
+  ],
+  "fittedMax": [
+   1.0,
+   0.587,
+   0.653
+  ],
+  "fittedExtentsMeters": [
+   2.0,
+   1.175,
+   1.306
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 43,
+  "meanOpenness": 1.0,
+  "nmfSha256": "31ed16ad0999372eb106e32f3156a879ab644034717c68d440bbad2f6524911e",
+  "glbSha256": "bc232119a4087ebb205a788b1b4bbb9993f65e5fc63155f94cf95d9f18c838db",
+  "nmfBytes": 3100,
+  "glbBytes": 3344
+ },
+ {
+  "set": "Asteroids",
+  "entry": "Medium",
+  "meshes": "Asteroids",
+  "model": "Medium",
+  "level": 0,
+  "kind": "rock",
+  "tint": 1.0,
+  "color": [
+   0.35,
+   0.32,
+   0.3
+  ],
+  "colorKey": "Models.json: sets[4].color",
+  "lengthMeters": 2,
+  "lengthKey": "Models.json: sets[4].models[1].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Asteroids/Medium.nmf",
+  "glb": "Art/Models/Asteroids/Medium.glb",
+  "variantOf": null,
+  "vertexCount": 162,
+  "triangles": 54,
+  "boundsMin": [
+   -1.0927,
+   -0.683,
+   -0.7938
+  ],
+  "boundsMax": [
+   0.9924,
+   0.6842,
+   0.8879
+  ],
+  "fitScale": 0.9591941833496094,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -1.0,
+   -0.656,
+   -0.807
+  ],
+  "fittedMax": [
+   1.0,
+   0.656,
+   0.807
+  ],
+  "fittedExtentsMeters": [
+   2.0,
+   1.311,
+   1.613
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 67,
+  "meanOpenness": 1.0,
+  "nmfSha256": "43f1d7556e6e9723836ac30aca875ca31cd1dd6c1e312122e1f5e04d20cd2b9c",
+  "glbSha256": "f211fa12a19a975594a7a03e81caa0389b7ec2c242dea3e24e8b5b7142188b01",
+  "nmfBytes": 5212,
+  "glbBytes": 5064
+ },
+ {
+  "set": "Asteroids",
+  "entry": "Large",
+  "meshes": "Asteroids",
+  "model": "Large",
+  "level": 0,
+  "kind": "rock",
+  "tint": 1.0,
+  "color": [
+   0.35,
+   0.32,
+   0.3
+  ],
+  "colorKey": "Models.json: sets[4].color",
+  "lengthMeters": 2,
+  "lengthKey": "Models.json: sets[4].models[2].lengthMeters",
+  "levels": 0,
+  "nmf": "OutpostCommander/Assets/Models/Asteroids/Large.nmf",
+  "glb": "Art/Models/Asteroids/Large.glb",
+  "variantOf": null,
+  "vertexCount": 234,
+  "triangles": 78,
+  "boundsMin": [
+   -1.0546,
+   -0.7412,
+   -0.8322
+  ],
+  "boundsMax": [
+   1.2517,
+   0.7256,
+   0.854
+  ],
+  "fitScale": 0.8671942949295044,
+  "fitRule": "FitMesh(lengthMeters)",
+  "firstLevelWidestMeters": null,
+  "fittedMin": [
+   -1.0,
+   -0.636,
+   -0.731
+  ],
+  "fittedMax": [
+   1.0,
+   0.636,
+   0.731
+  ],
+  "fittedExtentsMeters": [
+   2.0,
+   1.272,
+   1.462
+  ],
+  "hardpoints": {},
+  "parts": [],
+  "creaseLines": 81,
+  "meanOpenness": 1.0,
+  "nmfSha256": "2a1adfe2b450ff20fd61ee44686b628dacc870d5202378a146a3aa6ba97271f7",
+  "glbSha256": "60dfe2b03f661b43a7c6be639f282a72f74b5e6fb2a0e261cd5ae96525db2de6",
+  "nmfBytes": 7516,
+  "glbBytes": 6936
+ }
+]
