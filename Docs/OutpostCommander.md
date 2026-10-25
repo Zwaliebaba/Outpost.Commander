@@ -1654,6 +1654,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **Each nozzle shows a core and a plume of three puffs streaming behind it,** which grow longer and brighter as the ship goes faster, up to about an Ion Medium's cruise (ADR-019 decision 2).
 - **An exhaust is light:** it adds to what is behind it, and a hull hides the part of it that lies behind the hull (ADR-019 decision 1).
 - **An enemy's exhaust shows its drive as well,** since every snapshot carries each warship's drive (ADR-019 decision 4).
+- **A model may carry beacons, lights that blink in its side's line color,** a fifth of a second in every 1.6 seconds, each entity at its own moment, so that a building says whose it is. A structure being built shows none, nor does one remembered (ADR-018 decision 9).
 
 ### Shots [§look.shots]
 

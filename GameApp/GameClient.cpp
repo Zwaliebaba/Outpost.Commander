@@ -1806,6 +1806,20 @@ void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12Gra
     }
     AddExhaustGlows(ModelHardpoints(placed->set->name, *placed->model), placed->pose, *color, speedShare, m_frameGlows);
   }
+  // Each ship's and seen structure's beacons, blinking in its side's line color on the view's clock (ADR-018 decision 9).
+  // A remembered structure shows none, nor does a wreck.
+  const double seconds = m_view.ViewTick() / m_ticksPerSecond;
+  for (const EntityView& entity : m_entities)
+  {
+    if (entity.remembered || (entity.kind != EntityKind::Ship && entity.kind != EntityKind::Structure))
+      continue;
+    const std::optional<PlacedModel> placed = PlaceModel(entity);
+    if (!placed.has_value())
+      continue;
+    AddBeaconGlows(ModelHardpoints(placed->set->name, *placed->model, placed->level), placed->World(), placed->pose.scale,
+                   EdgeColor(placed->set->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE), entity.id, seconds, entity.builtPermille,
+                   m_frameGlows);
+  }
   const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
   const auto [right, up] = m_camera.ScreenAxes(aspectRatio);
   const DirectX::XMFLOAT4X4 viewProjection = m_camera.ViewProjection(aspectRatio);

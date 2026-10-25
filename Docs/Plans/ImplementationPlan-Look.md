@@ -47,7 +47,7 @@ Task numbers carry the prefix LV, and gates are lettered A.
 | LV2.1 | Occlusion baked into every vertex | LV1 | A3 | merged, [#108](https://github.com/Zwaliebaba/Outpost.Commander/pull/108); awaiting the owner's run |
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | in review; awaiting a run and the owner's run |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | in review; awaiting a run and the owner's run |
-| LV3.1 | Beacons | LV2.2 | A5 | todo |
+| LV3.1 | Beacons | LV2.2 | A5 | in review; awaiting a run and the owner's run |
 | LV4.1 | Fleets on the screen | — | A6, A7 | todo |
 | LV4.2 | Plates over the fleets | LV4.1 | A7 | todo |
 | LV4.3 | Health bars where the plates are not | LV4.2 | A7 | todo |
@@ -177,6 +177,12 @@ The owner's models are a track of their own beside the plan: chunky proportions,
   - **A beacon on a structure being built does not blink**, and a remembered structure's shows none.
 - **ADR:** ADR-018's foreclosure of lights is rewritten.
 - **Acceptance:** `HardpointsTests`: the tag's kind, the blink's on and off times, two identifiers out of phase, none while built.
+- **As built (2026-10-25):** ADR-018 decision 9, and decision 4's tags.
+  - Lit 0.2 s of every 1.6 s, its phase stepped by the golden ratio's fraction from one identifier to the next, so identifiers within three of each other never light together; the test checks every pair of identifiers 1 to 42 three apart or nearer.
+  - A glow 2.5 lamp radii across, 0.9 of the side's ship line color, the color a lit footprint ring takes ([ADR-042](../ADR/ADR-042-faint-footprint-lines.md) decision 2). It is placed by the model's world matrix, so a Mining Rig's stance carries it.
+  - Ships and seen structures blink, a pirate's too; a structure being built, a remembered one and a wreck show none.
+  - No shipped model has an `hp_beacon` yet, so nothing blinks until the owner adds one in Blender and bakes it.
+  - **Run in the container:** `GameAppTests` passes, 304 tests, built by clang 18 against stand-ins; `GameClient.cpp`, which draws the beacons, compiles there unlinked. Each new test was checked against a broken build: one phase for every entity, lit twice as long, and lit while built. Not yet seen on screen.
 
 ---
 

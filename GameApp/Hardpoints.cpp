@@ -8,6 +8,14 @@ namespace
 {
 constexpr std::string_view GUN_TAG = "gun";
 constexpr std::string_view EXHAUST_TAG = "exhaust";
+constexpr std::string_view BEACON_TAG = "beacon";
+// A beacon's glow, in lamp radii, and its brightness: a point of light that reads at the default zoom without washing the
+// mast out.
+constexpr float BEACON_GLOW_RADII = 2.5f;
+constexpr float BEACON_BRIGHTNESS = 0.9f;
+// The step from one identifier's phase to the next's, a share of the period: the golden ratio's fraction, which keeps
+// neighbors' phases far apart.
+constexpr double BEACON_PHASE_STEP = 0.6180339887498949;
 
 // Placeholder looks for an exhaust, chosen to read from the RTS camera (Game §look.exhaust): presentation, not tuning, so they
 // live here, as the combat effects' do. Sizes are in nozzle radii.
@@ -48,6 +56,8 @@ std::optional<Outpost::HardpointKind> Outpost::HardpointKindOf(std::string_view 
     return HardpointKind::Gun;
   if (_tag == EXHAUST_TAG)
     return HardpointKind::Exhaust;
+  if (_tag == BEACON_TAG)
+    return HardpointKind::Beacon;
   return std::nullopt;
 }
 
@@ -218,6 +228,31 @@ std::optional<Outpost::PlanePosition> Outpost::NearestMuzzle(std::span<const Neu
     return std::nullopt;
   std::ranges::stable_sort(guns, {}, &std::pair<float, PlanePosition>::first);
   return guns[_gun % guns.size()].second;
+}
+
+bool Outpost::IsBeaconLit(EntityId _entity, double _seconds) noexcept
+{
+  const double phase = std::fmod(static_cast<double>(_entity.value) * BEACON_PHASE_STEP, 1.0) * BEACON_PERIOD_SECONDS;
+  const double into = std::fmod(_seconds + phase, BEACON_PERIOD_SECONDS);
+  return (into < 0.0 ? into + BEACON_PERIOD_SECONDS : into) < BEACON_ON_SECONDS;
+}
+
+void Outpost::AddBeaconGlows(std::span<const Neuron::MeshHardpoint> _hardpoints, const DirectX::XMFLOAT4X4& _world, float _scale,
+                             const DirectX::XMFLOAT4& _color, EntityId _entity, double _seconds, std::int32_t _builtPermille,
+                             std::vector<Neuron::GlowPipeline::Glow>& _glows)
+{
+  if (_builtPermille < PERMILLE || !IsBeaconLit(_entity, _seconds))
+    return;
+  const DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&_world);
+  for (const Neuron::MeshHardpoint& hardpoint : _hardpoints)
+  {
+    if (HardpointKindOf(hardpoint.tag) != HardpointKind::Beacon)
+      continue;
+    DirectX::XMFLOAT3 position;
+    DirectX::XMStoreFloat3(&position, DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&hardpoint.position), world));
+    _glows.push_back(
+      {.position = position, .radiusMeters = hardpoint.size * _scale * BEACON_GLOW_RADII, .color = Scaled(_color, BEACON_BRIGHTNESS)});
+  }
 }
 
 void Outpost::AddExhaustGlows(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose, const DirectX::XMFLOAT4& _color,
