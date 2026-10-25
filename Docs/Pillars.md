@@ -1,6 +1,6 @@
 # Outpost Commander — Pillars
 
-Owner: Stefan Zwaal · Drafted from the game as built and [the horizon](Horizon.md); whether the owner accepts them is §6's gate
+Owner: Stefan Zwaal · Drafted from the game as built and [the horizon](Horizon.md); accepted by the owner on 2026-10-25, §6's gate
 
 A pillar is what a design decision is checked against. Each pillar below is a one-line statement, what it asks of a decision, and the chapters of [the living design](OutpostCommander.md) it bears on. Where the game as built strains a pillar, the pillar says so: a strain is for the owner to weigh, and a pillar does not hide it. What the game is, rule by rule, is the living design (Game §overview).
 
@@ -44,7 +44,7 @@ It asks that what a player needs in order to decide be on the screen, in the wor
 
 Bears on: Game §interface, Game §sight, Game §territory.shown, Game §look, Game §map.plane.
 
-**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A world has no tickets, so there the territory alone says who is winning. A player in a world's second seat sees its own ships in the Tarkan set's orange-red in the world and in blue on the minimap; which of the two a player's own side should be is the owner's to decide ([open decisions](Reference/OpenDecisions.md)).
+**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A world has no tickets, so there the territory alone says who is winning. Each side keeps its set's color everywhere, the HUD following the world (owner, 2026-10-25), so a player in a world's second seat sees its own side in the Tarkan set's orange-red; until the HUD is brought to that, its minimap draws a player's own side in blue.
 
 ## 5. Being there buys decisions, not actions
 
@@ -62,4 +62,4 @@ Bears on: Game §world, Game §ai.deputy, Game §orders.standing, Game §orders.
 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
-| P1 | The pillars, as proposed here | this document | nothing | open |
+| P1 | The pillars, as proposed here | this document | nothing | decided 2026-10-25 |

@@ -35,7 +35,7 @@ W1, W4 and W6 are the owner's week, and so is W5's attack in play. W2's tick is 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
 | H10 | Whether a galaxy or friends come next, decided from W6 and the week's world log (§4) | [the Horizon plan](ImplementationPlan-Horizon.md) | The next phase design: a galaxy, or a season with friends on one system ([the horizon](../Horizon.md) §11) | open |
-| H11 | Whether a start with enemy warships on it is free, or a restarted base is spared for a while (§5) | [the Phase 5 plan](ImplementationPlan-Phase5.md) | A change to when a lost seat restarts, and to what meets it there (Game §world.restart; ADR-084 decision 4); nothing built waits on it | open |
+| H11 | Whether a start with enemy warships on it is free, or a restarted base is spared for a while (§5). **Decided on 2026-10-25:** a start is not free while another player's warships are in its home sector; the seat waits, as it waits for another player's structure. | [the Phase 5 plan](ImplementationPlan-Phase5.md) | A change to when a lost seat restarts, and to what meets it there (Game §world.restart; ADR-084 decision 4); nothing built waits on it | decided 2026-10-25 |
 
 ## 4. H10: a galaxy or friends next
 
@@ -45,4 +45,4 @@ The horizon puts a galaxy before friends (its §11). The Horizon plan keeps that
 
 A seat that loses in a world restarts at its own start an hour of ticks later, once the start is free: no other player holds its home sector, and no other player's structure stands in it (ADR-084 decision 4; Game §world.restart). Enemy warships on the start do not keep it from being free, so the new base is placed among them. In the world run's day of world, the warships that had taken a base took most of the restarted bases again within seconds ([the BalanceLog](../Records/BalanceLog.md)).
 
-The question is the owner's: whether that stands; whether a start is not free while enemy warships hold it, so that the seat waits until they leave or are destroyed, as it waits for an enemy structure; or whether a restarted base is spared for a while. Until it is decided, the rule is ADR-084 decision 4's. A restart at another start waits on a map with spare starts ([the horizon](../Horizon.md) §11).
+The owner decided on 2026-10-25 that a start is not free while another player's warships are in its home sector: the seat waits until they leave or are destroyed, as it waits for another player's structure, and is not spared once it restarts. Task 39.5 of [the Phase 5 plan](ImplementationPlan-Phase5.md) builds it; until then, the rule is ADR-084 decision 4's. A restart at another start waits on a map with spare starts ([the horizon](../Horizon.md) §11).

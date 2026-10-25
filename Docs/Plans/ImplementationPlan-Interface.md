@@ -54,6 +54,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 15.3 | The designer's preview in figures | 14.2 | — | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting the owner's run |
 | 15.4 | Windows open where there is room | — | — | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting a run |
 | 15.5 | The selection ring at a fixed width | — | K3 | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting the owner's run |
+| 15.6 | A locked part previews what its topic buys | 15.3 | K8 | todo |
 | 16.1 | The windows' headers and bodies | 14.2 | — | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
 | 16.2 | The minimap's marks and size | — | K5 | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
 | 16.3 | What a production card says | 14.2 | K5 | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
@@ -81,7 +82,7 @@ Each is an owner decision, proposed in the task it gates, or, for K8, in what th
 | K5 | The review's smaller looks, each yes or no: the gateway's gold stripe (16.1); the minimap's outlined ore, lighter fields and 300 units (16.2); a production card's build time and strength against each hull (16.3); the brightest stars kept as ADR-028's crosses, shortened, or drawn as dots (16.6). Yes to each, as proposed (owner, 2026-10-03), with 16.6's choice among its three made at the owner's run: ADR-028's crosses are kept (owner, 2026-10-05). The gateway's stripe lapsed: Phase 3 removes the gateway topics ([ADR-033](../ADR/ADR-033-research-tiers.md) decision 2), and the owner chose Phase 3 over 16.1 (owner, 2026-10-04). | 16.2, 16.3, 16.6 | — | decided 2026-10-05 |
 | K6 | Short names for the four starting designs, as 16.5 proposes from the designs' own nicknames (Game §ships.designs.starting). As proposed (owner, 2026-10-03), with Line or Lancer left to 16.5 to put to the owner; Lancer (owner, 2026-10-05). | 16.5 | — | decided 2026-10-05 |
 | K7 | Whether the player can scale the interface beyond the screen's fit (ADR-006), how and how far, or not now. As proposed: Ctrl+= and Ctrl+- as far as the windows fit. | 17.1 | — | decided 2026-10-03 |
-| K8 | **Previewing a locked part.** A locked card takes no click, so hovering it previews nothing. A preview would show what a topic buys before it is researched. Whether it joins 15.3's preview. It was not in the review. | this plan's "Not in this plan" | — | open |
+| K8 | **Previewing a locked part.** A locked card takes no click, so hovering it previews nothing. A preview would show what a topic buys before it is researched. Whether it joins 15.3's preview. It was not in the review. **Decided on 2026-10-25:** it joins it, as task 15.6. | this plan's "Not in this plan" | 15.6 | decided 2026-10-25 |
 
 ---
 
@@ -187,6 +188,18 @@ Each is an owner decision, proposed in the task it gates, or, for K8, in what th
 - **Verify:** CI; run, near and far; **owner run.**
 - **As built (2026-10-05):** [ADR-067](../ADR/ADR-067-selection-ring-at-a-fixed-width.md), which rewrites ADR-042 decision 3 in place. The ring is one-pixel lines a pixel apart, as many as 3 units at the HUD's scale, from `Camera::MetersPerPixelAt`. Written without MSVC; not yet seen on screen.
 
+### 15.6 — A locked part previews what its topic buys
+
+- **Gate:** K8.
+- **Goal:** hovering a locked card previews the design it would make, as hovering an open one does (15.3), so the player sees what a topic buys before researching it.
+- **Scope:**
+  - A locked card answers the pointer: its figures replace the bars' and the damage card's with the previewed ones and their signed changes, as 15.3 lays them out, at the player's research as it stands.
+  - It still takes no click, and its hatching and "RESEARCH · LARGE HULL" line stay. It does not light as a pickable card does (ADR-088).
+  - The help line names the topic while it is hovered, so the preview is not read as a pick.
+- **ADR:** [ADR-017](../ADR/ADR-017-research-and-the-designer.md) decision 7, edited in place; Game §ships.designer.figures.
+- **Acceptance:** `HudTests`: hovering a locked hull, drive, weapon and module previews its figures; a click on it changes nothing; 14.1's tests with a locked card hovered.
+- **Verify:** CI; run; **owner run.**
+
 ---
 
 ## Milestone 16 — Polish
@@ -281,7 +294,6 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as the owner's secon
 ## Not in this plan
 
 - **What the enemy's fleet is armed with.** The review asked whether a player can tell from a battle. That is what scouting shows, with the Sensor Array (Game §ships.modules), not the HUD's.
-- **Previewing a locked part.** The designer leaves it undone: a locked card takes no click, so hovering it previews nothing. It would show what a topic buys before it is researched. It was not in the review, and whether it joins 15.3 is gate K8.
 - **Flashes and motion.** Stills cannot show them. A battle at the peak ship counts, watched for flashing, belongs in an owner run, and what it finds becomes a task.
 - **The rest of the warm colors.** Gold, amber, the Fair rating, hurt health and the attack-move ring are all warm, but each is used consistently; only the gateway's edge misled, and Phase 3 removes the gateways.
 - **Keys for building.** No Build button has a key. Giving them keys is a design question, not a finding of the review.

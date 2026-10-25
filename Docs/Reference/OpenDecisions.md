@@ -4,19 +4,13 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-24 gates are open, in 8 documents.
+18 gates are open, in 6 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
 | Gate | Decision | Blocks |
 |---|---|---|
 | O9 | **Seasons of months** (§7): upgrade steps between state versions, the galaxy's arc over a season, how a season ends, and how far a deputy carries a seat over absences of weeks. | Seasons of months (§7; §11) |
-
-## [`Docs/Pillars.md`](../Pillars.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| P1 | The pillars, as proposed here | nothing |
 
 ## [`Docs/Plans/ImplementationPlan-Horizon.md`](../Plans/ImplementationPlan-Horizon.md)
 
@@ -33,12 +27,6 @@ Every owner decision that is still open: each row of a gate table whose Status i
 | F3 | **Diplomacy** (horizon O6): accepted as it comes, or designed for. Proposed: as it comes, with the world log recording who fought whom. | Phase 7's design |
 | F4 | **Reach** (horizon O7): the server posts to the friends' group chat through WinHTTP, in the Windows SDK, so R14 holds. Which service, and which events are worth a message. The dependency on a service is an ADR. | Milestone 50, notifications |
 | F5 | **Bandwidth:** what a snapshot takes each connected player, as [the budgets](../Budgets.md) measure it. Proposed: acceptable for friends on broadband; if it is not, deltas, or datagrams for state that may be dropped, are a new protocol version ([ADR-060](../ADR/ADR-060-quic-in-process.md)). | Milestone 48, seats for N players over the network |
-
-## [`Docs/Plans/ImplementationPlan-Interface.md`](../Plans/ImplementationPlan-Interface.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| K8 | **Previewing a locked part.** A locked card takes no click, so hovering it previews nothing. A preview would show what a topic buys before it is researched. Whether it joins 15.3's preview. It was not in the review. | — |
 
 ## [`Docs/Plans/ImplementationPlan-Look.md`](../Plans/ImplementationPlan-Look.md)
 
@@ -57,15 +45,11 @@ Every owner decision that is still open: each row of a gate table whose Status i
 | Gate | Decision | Blocks |
 |---|---|---|
 | H10 | Whether a galaxy or friends come next, decided from W6 and the week's world log (§4) | The next phase design: a galaxy, or a season with friends on one system ([the horizon](../Horizon.md) §11) |
-| H11 | Whether a start with enemy warships on it is free, or a restarted base is spared for a while (§5) | A change to when a lost seat restarts, and to what meets it there (Game §world.restart; ADR-084 decision 4); nothing built waits on it |
 
 ## [`Docs/Plans/SelfPlayNetwork.md`](../Plans/SelfPlayNetwork.md)
 
 | Gate | Decision | Blocks |
 |---|---|---|
-| N1 | The trainer's library: PyTorch on the CPU, or NumPy with the gradients written by hand. Either is a tool's dependency that the game never links (R14). Proposed: PyTorch, whose gradients and optimizer are used and tested far more widely than code written for this tool would be. | SP2.1, and the trainer of SP2.3 |
 | N2 | The decision step: 5, 10 or 30 seconds. Proposed: 10 seconds. | SP2.1, and the observation and the trajectories of SP2.2 and SP2.3 |
 | N3 | The heads: the six of §6, with Phase 3's levels in the investment head and the defence reflex, the scout and placement left to the body; or the defence as a seventh head. Proposed: the six, since the defence reflex is a reaction within a second, not a decision. | SP2.1, and the heads of SP2.2 |
-| N4 | The AI's draws, each seeded from the seed, the seat, the tick and the head: `Neuron::Random` moved from `NeuronServer` to `NeuronCore`, or a copy in `Opponent`. Proposed: the move, which keeps one generator, already pinned by `RandomTests`. | SP2.1, and the AI's draws in SP2.2 |
 | N5 | The budget: how many hours of the laptop a run gets. Proposed: 35 hours for the plan of §12, run over several nights with `--resume`. | SP2.1, and the owner's run of SP2.4 |
-| N6 | Whether a learned policy should ever command a seat in a season: the deputy, or an AI empire (horizon §4). Proposed: no. A player must be able to predict the deputy left in charge, and see why it lost a fleet overnight; a scripted deputy that follows its player's directives can be read that way, and a learned policy cannot. The network stays the probe, and the deputy's benchmark (§13). | SP2.1; and any learned policy in a seat |
