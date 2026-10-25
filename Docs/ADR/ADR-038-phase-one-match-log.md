@@ -9,7 +9,7 @@ The owner's runs, and the figures of matches between two AIs, are read from a lo
 
 A figure of matches between two AIs has to repeat from its seeds. Three things stand in the way:
 
-- **The server is paced by wall time.** Started, it ticks on its own thread at 20 Hz (ADR-025), so a 60-minute match takes 60 minutes.
+- **The server is paced by wall time.** Started, it ticks on its own thread at the tuning data's `tickHz` ([Catalogue: rules](../Reference/Catalogue.md#rules), ADR-025), so a 60-minute match takes 60 minutes.
 - **Its timing is not reproducible.** The AI reads snapshots on the client's thread, so when its commands land depends on timing, and the match does not reproduce from its seed.
 - **Only the executable can hold both halves.** The AI is in `Opponent` and the log is in `GameApp`. Of the projects that run the server, only the executable may include both (AGENTS.md §2): `GameLogicTests` may not include `GameApp`.
 
@@ -26,7 +26,7 @@ A figure of matches between two AIs has to repeat from its seeds. Three things s
    - `sector <tick> sector <id> holder <player or 0>`: a sector's holder changed, the homes' at the start included. Both players see the territory alike (ADR-056 decision 10).
    - `tickets <tick> player <player> tickets <count>`: with each `fleet` record, on a map with territory.
    - `upgrade <tick> player <player> structure <id> <kind> level <level> <started, finished or lost>`: from the owner's own snapshots, the first in which a level is under way, the first that shows it in, and the one whose destroyed structures show the structure lost with it under way ([ADR-064](ADR-064-structure-upgrades.md)).
-   - `attacked <tick> player <owner> structure <id> <kind> level <level>`: the first shot at a structure at a level above 1, once for each structure and level, from the snapshot that shows the shot and its target.
+   - `attacked <tick> player <owner> structure <id> <kind> level <level>`: the first shot at a structure at a level above 1, once for each structure and level, from the snapshot that shows the shot and its target. A shot by or at a pirate is not one: the `pirates` record counts it.
    - A structure's kind is one word: `station`, `shipyard`, `lab`, `rig`, `platform`, `relay` or `bay`.
    - `stall <tick> ticks <count>`: written with the peaks on a map with territory, the ticks during which both players were at their node caps, a Relay site counting, and held as many nodes as each other. A tick counts once both players' snapshots of it are in.
    - `salvaged <tick> player <player> derelict <id> ore <ore>`: a derelict that one of the player's Constructors was within 30 m of in one of its snapshots, beyond both footprints, and that is gone from its next. A derelict leaves only by its salvage ([ADR-074](ADR-074-salvage.md)), and a player sees what its Constructors are at, so the snapshots tell who salvaged it without the server saying. The 30 m is the server's 20 m reach for work and a margin for a snapshot's age. Two players' crews at one derelict would both count.

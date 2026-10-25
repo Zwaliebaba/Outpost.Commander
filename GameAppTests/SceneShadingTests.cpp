@@ -17,11 +17,11 @@ namespace GameAppTests
 namespace
 {
 // How far a model's lines must stand over its faces, as WCAG's ratio of their luminances, on every face the camera can see:
-// ADR-040's worst for each kind of model, less a margin (ADR-090).
+// the least ratio of each kind of model, less a margin (ADR-090).
 constexpr float SHIP_FLOOR = 2.7f;
 constexpr float STRUCTURE_FLOOR = 3.3f;
 constexpr float ROCK_FLOOR = 2.3f;
-// ADR-040's ambient floor, which no face the camera can see falls below.
+// The light's floor, which no face the camera can see falls below (ADR-090 decision 3).
 constexpr float LEAST_LIGHT = 0.3f;
 // The light on a face that looks straight up is this close to gray: its brightest channel at most this many times its
 // dimmest.

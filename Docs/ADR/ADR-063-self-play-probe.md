@@ -43,7 +43,7 @@ A script that runs those matches has to name each side's settings, the seeds, th
 6. **The report measures the champion against the packaged settings** on seeds 1 to 40, from both seats. The search never plays those seeds. It gives the champion's win share with its 95% interval, which is how much the scripted AI's numbers leave on the table. It also lists both sides' numbers, their research orders, and what each side did: when it opened tiers 2 and 3, when it first finished each level of its Command Station, Shipyards and Research Lab, its peak fleet, what it built most, and how its matches ended.
 7. **The search runs on the Release|x64 build.** Players get that binary, and a match reproduces on one binary only (ADR-009), so a search is read on the build it ran on. The script runs one match a process, as many at once as the machine has cores, at below-normal priority, so that the laptop stays usable. It saves its state after every generation, and `--resume` goes on from there.
 8. **The search changes nothing in the game.** `Opponent.json` changes only by the owner's decision, as ADR-020 has it. A champion that wins too easily is reported as a question for the rules, not shipped as the AI.
-9. **The network comes after, and only if the knobs leave headroom.** It decides macro and fleet tactics on top of the scripted AI's body, as the owner asked. Its inputs, outputs, training loop and weights file are decisions for a new ADR.
+9. *(retired)*
 
 ## Consequences
 

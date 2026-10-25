@@ -56,7 +56,7 @@ The owner chose on 2026-10-08 to show the territory and the edge of sight in the
     - `DrawsAMemoryAsACrossOverTheFog`;
     - `DrawsTheTerritoryOnTheMinimap`, with the border's contrast, no mark on a node, and the claimable sector's outline only while a Relay is placed.
   - `FogOfWarTests.DarkensWhatWasSeenBeforeOnTheGround`.
-- **Every line and ring is an instance** of the frame's 16,384 (`MeshPipeline::MAX_FRAME_INSTANCES`). On the 10 km map's 25 sectors that is at most 60 lattice sides, 100 outline sides and 50 rings.
+- **Every line and ring is an instance** of the frame's 16,384 (`MeshPipeline::MAX_FRAME_INSTANCES`). On the repository's map ([Catalogue: sectors](../Reference/Catalogue.md#sectors)) that is at most 60 lattice sides, 100 outline sides and 50 rings.
 
 ## What this forecloses
 

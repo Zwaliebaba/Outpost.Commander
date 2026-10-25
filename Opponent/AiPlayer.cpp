@@ -1195,7 +1195,7 @@ bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore
 
 bool Outpost::AiPlayer::UpgradeStationForFleet(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders)
 {
-  // A level builds itself for most of a minute, so it looks one round of its Shipyards ahead: a ship of its production
+  // A level takes a while to build, so it looks one round of its Shipyards ahead: a ship of its production
   // design from each.
   const auto shipyards =
     std::ranges::count_if(_snapshot.entities, [this](const EntityView& _entity)

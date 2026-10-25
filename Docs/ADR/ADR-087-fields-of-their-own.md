@@ -24,7 +24,7 @@ So each field's rocks are laid out from its identifier, and smaller rocks close 
 ## Consequences
 
 - **The gaps the eye sees are narrower than the bound,** since the bound takes every rock at its narrowest. A ship's footprint fits through no gap in the ring.
-- **Every field of the 10 km map needs fillers:** 14 to 18 rocks a field, 15.7 on average, 1,254 over its 80 fields, computed by `FieldLayout` from `Map.json`'s field radii with the identifiers 1 to 80, at a reach of 0.60 and a gap of 16 m. They add instances, not draw calls.
+- **Every field of the repository's map needs fillers:** 14 to 18 rocks a field, 15.7 on average, 1,254 over its 80 fields, computed by `FieldLayout` from `Map.json`'s field radii with the identifiers 1 to 80, at a reach of 0.60 and a gap of 16 m. They add instances, not draw calls.
 - **The ring is a polygon of rocks,** the fillers standing on the straight line between two of the ring's, inside the circle the ring rocks lie on.
 - **Tests:** `FieldLayoutTests` checks one field laid out the same twice; two fields laid out apart, and rings of five, six, seven and eight among 200; every rock inside its circle at 150 m and 180 m over 200 fields each; no gap on the ring wider than 16 m at a reach of 0.60, the last rock to the first included, with fillers in some; and `NarrowestReach` on a 2 × 1 block, a square and no vertices. `GameClient`'s use of them needs D3D12, so it has no test; CI builds it.
 

@@ -9,8 +9,8 @@ namespace Outpost
 // KEY_WRAP, and a cool fill blends from SKY_FILL on a face that looks up to GROUND_FILL on one that looks down. Each is a
 // linear color with its brightness in it. A face takes the light's color, so the side that faces the key is warm and its
 // shade is cool. A line takes only the light's brightness, so it keeps its side's hue, and every line the scene draws keeps
-// its own color: the grid, the borders, the rings. Where the camera can look, no face gets less light than ADR-040's ambient
-// floor of 0.3, so a model's lines stand over its faces as they did, and a face that looks straight up is lit nearly gray, so
+// its own color: the grid, the borders, the rings. Where the camera can look, no face gets less light than the floor of
+// ADR-090 decision 3, so a model's lines stand over its faces as they did, and a face that looks straight up is lit nearly gray, so
 // a mark that lies flat keeps its color.
 inline constexpr DirectX::XMFLOAT3 TOWARD_KEY{-0.4f, 0.8f, 0.45f};
 inline constexpr DirectX::XMFLOAT3 KEY_COLOR{0.627f, 0.539f, 0.427f};

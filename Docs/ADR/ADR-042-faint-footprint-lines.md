@@ -16,10 +16,10 @@ The owner decided that the rings are thin and faint, at full strength only under
 ## Decision
 
 1. **A structure's ring is a line one pixel wide at any zoom.**
-   - It is 1.3 times the footprint radius, the size of the selection ring, in its side's color at 0.35 at most.
+   - It is 1.3 times the footprint radius, the size of the selection ring. At rest it is drawn at its resting strength at most: its side's color at 0.35.
    - It has 96 segments, and the models' lines draw it (`MeshPipeline::DrawLines`), unpulled since nothing lies under it.
-   - **A resting ring is for the far view** (owner, 2026-10-03). It is at full strength while its radius is at most 3% of the view's width, and fades to nothing by 6.5% of it, so that up close the bases are not ringed.
-2. **Some rings are at full strength**, in the color of a structure's own lines (`EdgeColor`, [ADR-040](ADR-040-lines-over-dark-faces.md) decision 1), at any zoom:
+   - **A resting ring is for the far view** (owner, 2026-10-03). It is at its resting strength while its radius is at most 3% of the view's width, and fades from it to nothing by 6.5% of it, so that up close the bases are not ringed.
+2. **Some rings are at full strength**, which is the color of the structure's own lines (`EdgeColor`, [ADR-040](ADR-040-lines-over-dark-faces.md) decision 1), at any zoom:
    - Under the structure the pointer is on. It is picked as a click picks it (`PickEntity`), and not through the HUD.
    - Under every structure while one is being placed, since then the player is choosing where it stands among them.
 3. **The selection takes the place of the line.** A selected structure's ring takes the place of its line, and stays the strongest mark on the ground; the selection's ring is [ADR-067](ADR-067-selection-ring-at-a-fixed-width.md)'s.
@@ -45,4 +45,4 @@ The owner decided that the rings are thin and faint, at full strength only under
 
 - A blended overlay pipeline, without a new decision.
 - A ring under every structure at the strength of the selection.
-- A resting ring at full strength at close zoom, and a resting ring under a rig, without a new decision.
+- A resting ring that shows at close zoom, and a resting ring under a rig, without a new decision.

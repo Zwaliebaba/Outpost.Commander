@@ -83,7 +83,7 @@ A session is everything between starting the game and closing it: the menu, a sk
 
 - **A world runs on `OutpostServer`, a console program that is not packaged** and runs from a folder with the game's data beside it (ADR-078 decision 1).
 - **`OutpostServer --new-world <folder>` makes a world:** its settings, `World.json`, with a seat for each of the map's starts. It refuses a folder that holds a world already (ADR-078 decisions 1 and 2).
-  - `--host` is the name or address players reach the machine at, `localhost` unless given; `--address` the address the server listens on, `0.0.0.0` unless given; `--port` its UDP port, 45000 unless given; and `--seed` the world's seed, the system clock's unless given (ADR-078 decision 2).
+  - `--host` is the name or address players reach the machine at, `localhost` unless given; `--address` the address the server listens on, `0.0.0.0` unless given; `--port` its UDP port, 45000 unless given (ADR-078 decision 2); and `--seed` the world's seed, the system clock's unless given (ADR-078 decision 1).
   - `--ai <player>[:Easy|Normal|Hard]` gives a seat to an AI empire, Normal unless named (ADR-078 decision 1; ADR-079 decision 7).
 - **`OutpostServer <folder>` runs the world,** coming back from its newest save (Game §world.persistence). It hosts an AI empire for each AI seat and a deputy for each player's seat (ADR-079 decision 7; Game §world.handover), and writes a join file, `Join-Player<n>.json`, for each player's seat into the folder each time it runs. The owner hands each player its file (ADR-078 decision 8).
 - **Ctrl+C, Ctrl+Break, closing the console, signing out and shutting down all stop it,** and it writes the world's last save as it stops (ADR-078 decision 1). A failure on the server's thread ends the process with its message (ADR-078 decision 1; ADR-025 decision 5).
@@ -329,14 +329,14 @@ Territory is what the two players fight over between their bases. Each sector of
 
 ## Structures [§structures]
 
-A player's base is its structures. Its Command Station stands on its start from the first tick, and its Constructors build everything else: Shipyards for warships, one Research Lab, Mining Rigs for Ore, Defence Platforms to hold what it has, Relays to claim territory and Repair Bays to keep its fleet. Three kinds grow. The Command Station, the Shipyard and the Research Lab are upgraded a level at a time, each level building itself while the structure keeps working, and what a level gives makes an upgraded structure a target worth a raid: it is lost with the structure. What a structure costs is Game §economy, how it fights Game §combat, and how a Constructor is ordered to build Game §orders.
+A player's base is its structures. Its Command Station stands on its start from the first tick, and its Constructors build everything else: Shipyards for warships, a Research Lab, Mining Rigs for Ore, Defence Platforms to hold what it has, Relays to claim territory and Repair Bays to keep its fleet. Three kinds grow. The Command Station, the Shipyard and the Research Lab are upgraded a level at a time, each level building itself while the structure keeps working, and what a level gives makes an upgraded structure a target worth a raid: it is lost with the structure. What a structure costs is Game §economy, how it fights Game §combat, and how a Constructor is ordered to build Game §orders.
 
 ### The kinds [§structures.kinds]
 
 - **There are seven kinds of structure** (ADR-016 decision 2; ADR-056 decision 2; ADR-075 decision 1):
   - the **Command Station**, the base, which builds Constructors and carries the Defence gun (Game §structures.station);
   - the **Shipyard**, which builds warships of the player's saved designs (Game §structures.shipyard);
-  - the **Research Lab**, one to a player, which researches (Game §structures.lab; Game §research);
+  - the **Research Lab**, which researches (Game §structures.lab; Game §research);
   - the **Mining Rig**, which stands on an ore asteroid and earns its Ore (Game §economy.rigs);
   - the **Defence Platform**, a Defence gun that does not move (Game §structures.platform);
   - the **Relay**, which claims and holds a sector's node, unarmed (Game §territory.claim);
@@ -353,10 +353,10 @@ A player's base is its structures. Its Command Station stands on its start from 
 - **The structure is paid for when the order is given.** Its whole cost is taken at once, and an order the player cannot pay for is refused at no cost (ADR-016 decision 4; Game §economy.costs).
 - **Where a structure may stand** (ADR-016 decision 4):
   - its footprint stays inside the map's edge, and overlaps no asteroid, no asteroid field, no structure of either player and no derelict (ADR-074 decision 1);
-  - a Mining Rig instead snaps to the ore asteroid whose edge is within 40 m of the point given, which must hold no rig, and stands at its center (Game §economy.rigs);
+  - a Mining Rig stands instead where Game §economy.rigs says;
   - a Relay snaps to its sector's node (ADR-056 decision 4; Game §territory.claim);
   - a Mining Rig, a Shipyard and a Repair Bay may stand only in a sector the player holds, so production follows territory (ADR-056 decision 5; ADR-075 decision 1; Game §territory.gives);
-  - a player may have one Research Lab, one under construction counting (Game §structures.lab).
+  - how many Research Labs a player may have is Game §structures.lab.
 - **Ships do not stop a placement.** A ship that the new site covers is pushed out of it (ADR-016 decision 4; ADR-054 decision 8).
 
 ### Sites [§structures.sites]
@@ -364,7 +364,7 @@ A player's base is its structures. Its Command Station stands on its start from 
 - **A site appears when the order is given.** It blocks movement from then on and can be attacked, and it starts with a tenth of its hit points (ADR-016 decision 4).
 - **Constructors build it.** A Constructor works once its footprint is within 20 m of the site's. One Constructor takes the structure's time, and each further one on the site adds a share of one more ([Catalogue: constructor](Reference/Catalogue.md#constructor); ADR-016 decision 5). Rapid Construction raises the rate (ADR-033 decision 4; Game §research.upgrades). Further Constructors join a site as they join a repair (Game §orders.constructors).
 - **The site's hit points rise with the work, from a tenth to full**, so damage taken while it is built stays taken (ADR-016 decision 5).
-- **A structure under construction does nothing but stand, block and take damage.** It does not produce, research, fire, repair ships, earn or hold a sector (ADR-016 decision 5; ADR-056 decision 3; ADR-075 decision 3). A Research Lab site counts as the player's one Lab, and a Relay site counts toward the node cap (ADR-016 decision 4; Game §territory.cap).
+- **A structure under construction does nothing but stand, block and take damage.** It does not produce, research, fire, repair ships, earn or hold a sector (ADR-016 decision 5; ADR-056 decision 3; ADR-075 decision 3). A Research Lab site and a Relay site count toward their limits (Game §structures.lab; Game §territory.cap).
 - **A site destroyed before it is finished loses its Ore**; nothing is refunded (ADR-016 decision 6; Game §economy.costs).
 
 ### Hit points and armor [§structures.hitpoints]
@@ -395,7 +395,7 @@ A player's base is its structures. Its Command Station stands on its start from 
 - **The Command Station and the Defence Platform carry the Defence gun** ([Catalogue: structureWeapons](Reference/Catalogue.md#structureWeapons)). Once built, each fires by the rules ships fire by (ADR-016 decision 7; Game §combat.structures).
 - **The Command Station gains guns with its levels** (ADR-064 decision 11; Game §structures.station).
 - **Defence Autoloader raises the gun's fire rate**, on every armed structure its player has (ADR-033 decision 4; Game §research.upgrades).
-- **The Defence gun outranges the Lance and falls short of the Missile Rack** (ADR-016 decision 7), and no research changes a range (ADR-017 decision 4), so Missile Racks break a defended position from beyond its guns (Game §combat.range).
+- **Where the Defence gun's range stands among the weapons' is Game §combat.range.**
 - **Every other kind is unarmed** and fights only by being shot at (ADR-016 decision 7; ADR-056 decision 2).
 
 ### Levels [§structures.levels]
@@ -480,7 +480,7 @@ A player's base is its structures. Its Command Station stands on its start from 
 ### The Defence Platform [§structures.platform]
 
 - **A Defence Platform is a Defence gun that does not move**, armored, with no levels ([Catalogue: structures](Reference/Catalogue.md#structures); ADR-016 decision 7; ADR-064 decision 1).
-- **It is how a player fortifies a node, a rig or its base.** A lone platform outlasts a light raid and destroys it, and breaking one takes heavier weapons that take its fire while they do, or Missile Racks, which outrange it (ADR-016 decision 7; Game §combat.range).
+- **It is how a player fortifies a node, a rig or its base.** A lone platform outlasts a light raid and destroys it, and breaking one takes heavier weapons that take its fire while they do, or the weapon that outranges it (ADR-016 decision 7; Game §combat.range).
 
 ---
 
@@ -527,7 +527,7 @@ Every warship is a design: a hull, a drive and a weapon, and a module or none. T
   - the **Flak Battery**: a splash at a middle range; it breaks a swarm of Small hulls and still tells against a Medium hull's armor;
   - the **Rail Cannon**: a very heavy, very slow hit that outranges the Lance; it kills heavy hulls, and most of it is wasted on a Small one.
 - **A design carries one weapon, a turret that fires in any direction** (ADR-014 decision 9; Game §combat.turrets).
-- **No research changes a weapon's range, and the Defence gun outranges the Lance and not the Missile Rack** (ADR-016 decision 7; Game §combat.range).
+- **How the weapons' ranges and the Defence gun's stand against each other is Game §combat.range.**
 - **Research raises a weapon's fire rate, never its hit or its range** (ADR-017 decisions 2 and 4; Game §research.upgrades).
 
 ### Modules [§ships.modules]
@@ -716,11 +716,11 @@ Ships and armed structures fight by a few fixed rules that the server plays ever
 
 ## Research [§research]
 
-A player's one Research Lab works through a queue of topics, each paid for in Ore when it starts and taking its own time. A topic either raises a rate or unlocks a component, and what a player researches decides which designs it can build. The topics come in three tiers, and the Lab's levels open the second and the third. What research does is its player's alone.
+A player's Research Lab works through a queue of topics, each paid for in Ore when it starts and taking its own time. A topic either raises a rate or unlocks a component, and what a player researches decides which designs it can build. The topics come in three tiers, and the Lab's levels open the second and the third. What research does is its player's alone.
 
 ### The Research Lab [§research.lab]
 
-- **A player researches in its one Research Lab** (ADR-016 decision 4; Game §structures.lab).
+- **A player researches in its Research Lab** (ADR-017 decision 1; Game §structures.lab).
 - **The Lab researches only once it is finished**, and keeps researching while its next level is built (ADR-017 decision 1; ADR-064 decision 3).
 - **The queue belongs to the Lab.** A Lab destroyed takes its queue with it, and the topic under way is lost with its Ore. Research already finished stays finished (ADR-017 decision 1).
 - **A Lab destroyed also takes its levels**, and the tiers they opened close with them (Game §structures.lab; Game §research.tiers).
@@ -1119,9 +1119,7 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 
 - **The AI plays at Easy, Normal or Hard:** a skirmish at the difficulty the menu's button named, and a world's AI empire at its seat's difficulty (ADR-065 decisions 1 and 4; ADR-079 decision 7; Game §session.menu).
 - **Each difficulty is a settings file of its own:** Normal is `Opponent.json`, and `OpponentEasy.json` and `OpponentHard.json` stand beside it, each whole and read as strictly as the tuning data. The server never reads them: they are how one player plays, not the match's rules (ADR-065 decision 1; ADR-020 decision 2).
-- **Every difficulty plays the same rules; only the numbers differ** ([Catalogue: constructors](Reference/Catalogue.md#constructors), [Catalogue: contestedAsteroids](Reference/Catalogue.md#contestedAsteroids), [Catalogue: incomePerShipyardOrePerSecond](Reference/Catalogue.md#incomePerShipyardOrePerSecond), [Catalogue: shipyardQueueJobs](Reference/Catalogue.md#shipyardQueueJobs), [Catalogue: reviewIntervalSeconds](Reference/Catalogue.md#reviewIntervalSeconds), [Catalogue: attackGroupShips](Reference/Catalogue.md#attackGroupShips), [Catalogue: retreatLossShare](Reference/Catalogue.md#retreatLossShare), [Catalogue: attackWithoutLeadShare](Reference/Catalogue.md#attackWithoutLeadShare), [Catalogue: attackCapShare](Reference/Catalogue.md#attackCapShare), [Catalogue: raidShips](Reference/Catalogue.md#raidShips), [Catalogue: claimSectors](Reference/Catalogue.md#claimSectors), [Catalogue: pirateMargin](Reference/Catalogue.md#pirateMargin)).
-  - **Easy has a smaller hand.** Against Normal it keeps fewer Constructors, takes fewer contested rigs, builds fewer Shipyards for its income, keeps fewer jobs queued, reviews the enemy's fleet less often, waits for a larger reserve before its main attack, and a larger one again without a lead, waits under the fleet cap for all the room the cap leaves it rather than a share of it, falls back after fewer losses, wants a larger margin over a pirate outpost, sends no raids and claims no sector beyond those its rigs take it to (ADR-065 decision 2; ADR-041 decisions 1 and 2; ADR-076 decision 3).
-  - **Hard fights harder for territory.** Against Normal it keeps more Constructors, reviews the enemy's fleet more often, raids with more ships, attacks with a smaller group that falls back after fewer losses, and wants a smaller margin over a pirate outpost (ADR-065 decision 3; ADR-041 decisions 1 and 2; ADR-076 decision 3).
+- **Every difficulty plays the same rules; only the numbers differ.** How Easy and Hard differ from Normal is ADR-065 decisions 2 and 3, and each file's numbers stand side by side in [Catalogue: Opponent](Reference/Catalogue.md#opponent).
 - **A deputy plays from Normal's file,** whatever the difficulty of the world's AI empires (ADR-079 decision 6).
 
 ### Its base [§ai.base]
@@ -1156,7 +1154,7 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 ### Structure levels [§ai.levels]
 
 - **Its Command Station grows for the nodes it wants.** A Relay of its plan that the node cap holds back has the station's next level ordered in its place in the plan's order, and the station goes no higher for nodes while it wants no further one. Which claim waits for which level follows from the station's node caps ([Catalogue: structures](Reference/Catalogue.md#structures); ADR-020 decision 14; Game §territory.cap).
-- **It grows for the fleet too.** The station is also upgraded when the fleet cap would hold back a round of its Shipyards, a ship of its production design from each, since a level takes most of a minute to build (ADR-020 decision 15; Game §economy.fleetcap).
+- **It grows for the fleet too.** The station is also upgraded when the fleet cap would hold back a round of its Shipyards, a ship of its production design from each, since a level takes a while to build ([Catalogue: Command Station levels](Reference/Catalogue.md#command-station-levels); ADR-020 decision 15; Game §economy.fleetcap).
 - **Its Shipyards grow to the hull it builds.** A Shipyard below the level its production design's hull needs is upgraded, one Shipyard and one level at a time, and the design is queued only at Shipyards of that level. Its default design is a Medium hull, so its first Shipyard is upgraded before its first warship of that design; its scout, a Small hull, is built at level 1 (ADR-020 decision 14; Game §structures.shipyard).
 - **Its Research Lab grows for its research order.** The Lab is upgraded when the next topic of its order is of a tier the Lab has not opened, once what the level requires is researched, and to the level that gives a second slot once its open tier has reached its settings' tier while two topics of its order are left ([Catalogue: secondSlotTier](Reference/Catalogue.md#secondSlotTier); ADR-020 decision 14).
 - **An upgrade it cannot yet pay for holds back new production,** so that the Ore gathers for it. An upgrade never takes the Ore of a structure of its plan that waits for a Constructor (ADR-020 decision 14).
@@ -1256,8 +1254,8 @@ A world is a match that does not end. It runs on a dedicated server that the own
 - **A player's seat is its deputy's until the player first takes it** (ADR-079 decision 4).
 - **The player plays the seat while its newest connection is open, and for 60 s of ticks after the server sees that connection gone.** A connection the game closes is seen gone at once; one whose game vanished is seen gone once the transport's idle timeout ends it. After the 60 s the deputy plays the seat until the player takes it again, which hands it back at once (ADR-079 decision 4). So a connection dropped and taken up again within the minute never sees the deputy.
 - **The deputy is a keeper:** it keeps the empire running and defends its held sectors, and goes no further (ADR-079 decision 6; Game §ai.deputy).
-- **Orders are the server's, whoever plays the seat.** What the deputy ordered stands until the player changes it, and the player's standing and scheduled orders go on while the deputy plays: the deputy leaves alone a ship that retreats, has an order or a standing order, or waits on a scheduled order, and the server fires a scheduled order whoever plays the seat (ADR-079 decisions 2 and 6; ADR-080 decision 5; Game §orders.scheduled.firing).
-- **While the player plays, the deputy watches** and learns from it, such as what each Shipyard last built, and gives no order (ADR-079 decisions 1 and 6).
+- **Orders are the server's, whoever plays the seat.** What the deputy ordered stands until the player changes it, and the player's standing and scheduled orders go on while the deputy plays: the deputy leaves the player's orders standing (Game §ai.deputy), and the server fires a scheduled order whoever plays the seat (ADR-079 decision 2; ADR-080 decision 5; Game §orders.scheduled.firing).
+- **While the player plays, the deputy only watches;** what it learns is Game §ai.deputy (ADR-079 decision 1).
 
 ### What the player missed [§world.away]
 
@@ -1447,10 +1445,10 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **The selection is a ring round each selected ship or structure,** 1.3 times its footprint, 3 reference units wide at any zoom at the screen's own scale: green, or amber while attack-move or a standing order waits for its click (ADR-067 decisions 1 and 2). A Mining Rig's selection ring is its asteroid's, since a click anywhere on the rock selects the rig (ADR-042 decision 4).
 - **A drag box is its outline on the ground,** covering the ground the box on the screen covers (ADR-013 decision 5).
 - **Every structure stands on a faint ring,** a line a pixel wide at 1.3 times its footprint in its side's color, which puts it on the ground and says its size (ADR-042 decision 1).
-  - **The ring is for the far view.** It is at full strength while its radius is at most 3% of the view's width and gone from 6.5%, so up close the bases are not ringed (ADR-042 decision 1).
-  - **It is at full strength, in the color of the structure's own lines, under the pointer and under every structure while one is placed** (ADR-042 decisions 1 and 2).
+  - **The ring is for the far view.** It is at its resting strength, faint in its side's color, while its radius is at most 3% of the view's width, and gone from 6.5%, so up close the bases are not ringed (ADR-042 decision 1).
+  - **It is at full strength, in the color of the structure's own lines, under the pointer and under every structure while one is placed** (ADR-042 decision 2).
   - **A selected structure's selection ring takes its place** (ADR-042 decision 3).
-  - **A Mining Rig's ring is its own footprint's, laid over its rock,** and shows only under the pointer and while a structure is placed (ADR-042 decision 4).
+  - **A Mining Rig's ring is its own footprint's, laid over its rock,** and shows only under the pointer and while a structure is placed, at full strength (ADR-042 decision 4).
   - **A structure the player only remembers stands on no ring** (ADR-081 decision 4).
 - **Bars stand over ships and structures on the screen** (ADR-088 decision 5):
   - a health bar over one that is hurt, and over every ship and structure while Alt is held;
@@ -1463,7 +1461,7 @@ On a map with sectors, the territory panel stands under the status panel's place
   - every side of every sector once, a line a pixel wide, brighter than the grid and never wider;
   - inside each held or guarded sector, an outline in its holder's color at half its strength, a little in from the border, so that where two holders' sectors meet both outlines show;
   - a suppressed sector's outline dashed and a cut-off one's dotted, one both suppressed and cut off dashed; a guarded sector's in the pirates' color;
-  - while the player places a Relay, two rings on each node it could claim now, in the color of its own lines, the outer the size of a Relay's footprint ring, so the Relay's ghost stands in them, and no mark on any other node. Whether a node can be claimed is the one rule the Relay's ghost and the minimap use too (ADR-081 decision 2).
+  - while the player places a Relay, two rings on each node it could claim now, in the color of its own lines, the outer the size of a Relay's footprint ring, so the Relay's ghost stands in them, and no mark on any other node (ADR-081 decision 3). Whether a node can be claimed is the one rule the Relay's ghost and the minimap use too (ADR-081 decision 2).
 - **What the player only remembers is drawn as a memory over the fog** (Game §sight.drawn).
 
 ### Alerts [§interface.alerts]

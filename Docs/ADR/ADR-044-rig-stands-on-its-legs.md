@@ -17,7 +17,7 @@ Where it tilts about matters. Tilted about its middle, its origin, which stands 
    - Then it lifts the rig until no foot is under the rock.
    - A rig on three legs then stands on all three. A rig on four rests on those the rock lets it, and none is in the rock.
 2. **The tilt is at most 0.5 radians either way**, about 29°.
-3. **Where it is drawn:** `Stance` holds the pivot, the bank, the pitch and the lift. `StanceMatrix` draws a mesh where a pose and a stance put it, and `StandPoint` puts a point where the matrix does. The rig and its explosion's shards are drawn with them.
+3. **Where it is drawn:** `Stance` holds the pivot, the bank, the pitch and the lift. `StanceMatrix` draws a mesh where a pose and a stance put it, and `StandPoint`, followed by `PlacePoint` at a scale of 1, puts a point where the matrix does. The rig and its explosion's shards are drawn with them.
 4. **Only a Mining Rig stands this way.** Its feet are its lowest points out past half its half length from its middle, within 5% of its height of the lowest of them (`RIG_FOOT_RADIUS_SHARE`, `RIG_FOOT_HEIGHT_SHARE`): its legs' tips, not a drill under its middle. A rig without feet over the rock stands its lowest point on the rock's top.
 
 ## Consequences

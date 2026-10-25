@@ -55,7 +55,7 @@ constexpr float LINE_LIFT_SHARE = 0.002f;
 // line one pixel wide at any zoom, RING_LINE_SEGMENTS long, in its side's color at FOOTPRINT_RING_SHADE. Under the
 // pointer, and under every structure while one is placed, it takes the color of the structure's own lines. Selected, the
 // selection's green ring takes its place (ADR-042). At rest it is there for the far view, where a structure is small, and
-// fades as the camera comes in: at full strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
+// fades as the camera comes in: at its resting strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
 // and gone from RING_GONE_VIEW_SHARE. A Mining Rig's ring, its own footprint's laid over its rock, shows only under the
 // pointer and while a structure is placed (owner, 2026-10-03, ADR-042 decision 4).
 constexpr float FOOTPRINT_RING_SHADE = 0.35f;

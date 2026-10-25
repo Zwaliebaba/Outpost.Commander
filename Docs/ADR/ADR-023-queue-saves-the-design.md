@@ -19,7 +19,7 @@ The server queues only saved designs (`QueueShipCommand` names a `DesignId`), an
 
 - A new design is one click from the first ship, as a saved one is.
 - The server refuses to queue a design that is not saved, and checks the save.
-- The first ship of a new design is queued one snapshot after the click, one tick in process: 50 ms at 20 ticks a second, by count. Over a network it is one round trip.
+- The first ship of a new design is queued one snapshot after the click, one tick in process, by count: a second divided by the tuning data's `tickHz` ([Catalogue: rules](../Reference/Catalogue.md#rules)). Over a network it is one round trip.
 - Queuing a new design always saves it, so the player's design list grows with every combination they build.
 - `GameAppTests` checks it: `DesignerTests.QueuesADesignOnceItIsSaved` and `HudTests.QueuesNShipsAtTheTarget`.
 
