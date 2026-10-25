@@ -1,8 +1,1164 @@
 [
  {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Small_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Small_34_512.png",
+  "seconds": 9.0,
+  "metersPerPixel": 0.02434112268439485,
+  "lineCount": 74,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Medium_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Medium_top_512.png",
+  "seconds": 9.2,
+  "metersPerPixel": 0.04069010329874347,
+  "lineCount": 161,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Small_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Small_top_512.png",
+  "seconds": 9.2,
+  "metersPerPixel": 0.024952817087372146,
+  "lineCount": 74,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Medium_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Medium_34_512.png",
+  "seconds": 9.5,
+  "metersPerPixel": 0.03508498464964341,
+  "lineCount": 161,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Large_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Large_top_512.png",
+  "seconds": 6.5,
+  "metersPerPixel": 0.0697544624840486,
+  "lineCount": 259,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Constructor_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Constructor_34_512.png",
+  "seconds": 7.0,
+  "metersPerPixel": 0.02295559648821187,
+  "lineCount": 227,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Large_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Large_34_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.057382818904295634,
+  "lineCount": 259,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Constructor_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Constructor_top_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.0279017846604759,
+  "lineCount": 227,
+  "faceColor": [
+   0.054,
+   0.126,
+   0.285
+  ],
+  "lineColor": [
+   0.473157894736842,
+   0.6373684210526316,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L1_34_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.10763761749214691,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L1_top_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.14018063007998058,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L2_34_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.10763761749214691,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L2_top_512.png",
+  "seconds": 6.8,
+  "metersPerPixel": 0.14018063007998058,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L3_34_512.png",
+  "seconds": 6.7,
+  "metersPerPixel": 0.10763761749214691,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L3_top_512.png",
+  "seconds": 6.5,
+  "metersPerPixel": 0.14018063007998058,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L4_34_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.12446847661557466,
+  "lineCount": 916,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L4_top_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.14018063007998058,
+  "lineCount": 916,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L5_top_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.14018063007998058,
+  "lineCount": 1108,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/CommandStation_L5_34_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.12719069731919463,
+  "lineCount": 1108,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L1_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.06975446523851826,
+  "lineCount": 382,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L1_34_512.png",
+  "seconds": 9.5,
+  "metersPerPixel": 0.05985563945685186,
+  "lineCount": 382,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L2_top_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.06975446523851826,
+  "lineCount": 442,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L2_34_512.png",
+  "seconds": 9.1,
+  "metersPerPixel": 0.06336623414640329,
+  "lineCount": 442,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L3_34_512.png",
+  "seconds": 9.6,
+  "metersPerPixel": 0.07205495600304307,
+  "lineCount": 754,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L3_top_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.06975446523851826,
+  "lineCount": 754,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L4_top_512.png",
+  "seconds": 8.9,
+  "metersPerPixel": 0.06975446393057826,
+  "lineCount": 886,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L4_34_512.png",
+  "seconds": 10.8,
+  "metersPerPixel": 0.06563190358898817,
+  "lineCount": 886,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L5_top_512.png",
+  "seconds": 9.6,
+  "metersPerPixel": 0.06975446393057826,
+  "lineCount": 1198,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L5_34_512.png",
+  "seconds": 11.5,
+  "metersPerPixel": 0.07922194452702469,
+  "lineCount": 1198,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L1_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.013950895380193888,
+  "lineCount": 250,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L1_top_512.png",
+  "seconds": 8.7,
+  "metersPerPixel": 0.014191425950793063,
+  "lineCount": 250,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L2_34_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.013950895380193888,
+  "lineCount": 298,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L2_top_512.png",
+  "seconds": 8.7,
+  "metersPerPixel": 0.014191425950793063,
+  "lineCount": 298,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L3_34_512.png",
+  "seconds": 8.7,
+  "metersPerPixel": 0.013707864488877656,
+  "lineCount": 418,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L3_top_512.png",
+  "seconds": 9.4,
+  "metersPerPixel": 0.014191425439743659,
+  "lineCount": 418,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L4_34_512.png",
+  "seconds": 9.5,
+  "metersPerPixel": 0.012803652006629553,
+  "lineCount": 514,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L4_top_512.png",
+  "seconds": 8.2,
+  "metersPerPixel": 0.014191425677944652,
+  "lineCount": 514,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L5_34_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.012759355102425346,
+  "lineCount": 622,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/ResearchLab_L5_top_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.014191426205576028,
+  "lineCount": 622,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/MiningRig_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/MiningRig_34_512.png",
+  "seconds": 6.4,
+  "metersPerPixel": 0.006267046447386706,
+  "lineCount": 258,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/MiningRig_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/MiningRig_top_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.005333721448780767,
+  "lineCount": 258,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/DefensePlatform_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/DefensePlatform_34_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.0033849705413757994,
+  "lineCount": 418,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/DefensePlatform_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/DefensePlatform_top_512.png",
+  "seconds": 6.2,
+  "metersPerPixel": 0.004650297783622851,
+  "lineCount": 418,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Relay_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Relay_34_512.png",
+  "seconds": 6.2,
+  "metersPerPixel": 0.013950895380193888,
+  "lineCount": 250,
+  "faceColor": [
+   0.0884653264,
+   0.1433773264,
+   0.1902813264
+  ],
+  "lineColor": [
+   0.6521970849578858,
+   0.839776185205318,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Relay_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Relay_top_512.png",
+  "seconds": 6.2,
+  "metersPerPixel": 0.014191425950793063,
+  "lineCount": 250,
+  "faceColor": [
+   0.0884653264,
+   0.1433773264,
+   0.1902813264
+  ],
+  "lineColor": [
+   0.6521970849578858,
+   0.839776185205318,
+   0.9999999999999999
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/RepairBay_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/RepairBay_top_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.06975446523851826,
+  "lineCount": 382,
+  "faceColor": [
+   0.034258580399999995,
+   0.0548505804,
+   0.1003245804
+  ],
+  "lineColor": [
+   0.52165164,
+   0.64333164,
+   0.91204164
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/RepairBay_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/RepairBay_34_512.png",
+  "seconds": 8.7,
+  "metersPerPixel": 0.05985563945685186,
+  "lineCount": 382,
+  "faceColor": [
+   0.034258580399999995,
+   0.0548505804,
+   0.1003245804
+  ],
+  "lineColor": [
+   0.52165164,
+   0.64333164,
+   0.91204164
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Small_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Small_34_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.02482634004948361,
+  "lineCount": 112,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Small_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Small_top_512.png",
+  "seconds": 7.0,
+  "metersPerPixel": 0.02418154673207374,
+  "lineCount": 112,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Medium_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Medium_34_512.png",
+  "seconds": 5.9,
+  "metersPerPixel": 0.03888363895669831,
+  "lineCount": 105,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Medium_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Medium_top_512.png",
+  "seconds": 6.1,
+  "metersPerPixel": 0.04069010416666667,
+  "lineCount": 105,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Large_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Large_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.0683957458312412,
+  "lineCount": 136,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Large_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Large_top_512.png",
+  "seconds": 8.2,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 136,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Constructor_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Constructor_34_512.png",
+  "seconds": 9.3,
+  "metersPerPixel": 0.02849883109548281,
+  "lineCount": 223,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Constructor_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Constructor_top_512.png",
+  "seconds": 9.0,
+  "metersPerPixel": 0.027901785714285716,
+  "lineCount": 223,
+  "faceColor": [
+   0.27,
+   0.075,
+   0.036
+  ],
+  "lineColor": [
+   1.0,
+   0.5305555555555556,
+   0.43666666666666665
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L1_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.07479612411977717,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L1_top_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.07474045858882207,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L2_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L2_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L3_34_512.png",
+  "seconds": 8.6,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L3_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L4_34_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L4_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L5_34_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L5_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L1_top_512.png",
+  "seconds": 6.7,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 182,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L1_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.049323854714463426,
+  "lineCount": 182,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L2_34_512.png",
+  "seconds": 7.2,
+  "metersPerPixel": 0.049323854714463426,
+  "lineCount": 200,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L2_top_512.png",
+  "seconds": 6.4,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 200,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
   "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34.png",
   "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34_512.png",
-  "seconds": 9.7,
+  "seconds": 8.0,
   "metersPerPixel": 0.056198366730097295,
   "lineCount": 324,
   "faceColor": [
@@ -19,7 +1175,7 @@
  {
   "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top.png",
   "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top_512.png",
-  "seconds": 9.8,
+  "seconds": 7.7,
   "metersPerPixel": 0.06975446428571429,
   "lineCount": 324,
   "faceColor": [
@@ -34,11 +1190,2000 @@
   ]
  },
  {
-  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_top.png",
-  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_top_512.png",
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L4_top_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L4_34_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.06307287874573117,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L5_top_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Shipyard_L5_34_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.07034814802169792,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_34_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_34_512.png",
   "seconds": 8.4,
-  "metersPerPixel": 0.06510416666666667,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_34_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_top_512.png",
+  "seconds": 9.2,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_34_512.png",
+  "seconds": 9.1,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_top_512.png",
+  "seconds": 9.3,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_34_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 306,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_top_512.png",
+  "seconds": 10.3,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 306,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/MiningRig_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/MiningRig_34_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.0047826559927651065,
+  "lineCount": 162,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/DefensePlatform_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/DefensePlatform_34_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.005186733975111627,
+  "lineCount": 108,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/MiningRig_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/MiningRig_top_512.png",
+  "seconds": 8.8,
+  "metersPerPixel": 0.004650297483781482,
+  "lineCount": 162,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/DefensePlatform_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/DefensePlatform_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.005369703839754774,
+  "lineCount": 108,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/RepairBay_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/RepairBay_34_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.049323854714463426,
+  "lineCount": 182,
+  "faceColor": [
+   0.0947207448,
+   0.0389507448,
+   0.0277967448
+  ],
+  "lineColor": [
+   0.8610976800000001,
+   0.53154768,
+   0.46563768
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Relay_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Relay_top_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 198,
+  "faceColor": [
+   0.1824657648,
+   0.09666576480000001,
+   0.0669217648
+  ],
+  "lineColor": [
+   1.0,
+   0.6943536226583147,
+   0.5883962118465305
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Relay_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/Relay_34_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 198,
+  "faceColor": [
+   0.1824657648,
+   0.09666576480000001,
+   0.0669217648
+  ],
+  "lineColor": [
+   1.0,
+   0.6943536226583147,
+   0.5883962118465305
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/RepairBay_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/RepairBay_top_512.png",
+  "seconds": 6.3,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 182,
+  "faceColor": [
+   0.0947207448,
+   0.0389507448,
+   0.0277967448
+  ],
+  "lineColor": [
+   0.8610976800000001,
+   0.53154768,
+   0.46563768
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Medium_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Medium_34_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.03888363895669831,
+  "lineCount": 105,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Small_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Small_34_512.png",
+  "seconds": 7.2,
+  "metersPerPixel": 0.02482634004948361,
+  "lineCount": 112,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Small_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Small_top_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.02418154673207374,
+  "lineCount": 112,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Medium_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Medium_top_512.png",
+  "seconds": 6.4,
+  "metersPerPixel": 0.04069010416666667,
+  "lineCount": 105,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Large_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Large_34_512.png",
+  "seconds": 7.2,
+  "metersPerPixel": 0.0683957458312412,
+  "lineCount": 136,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Large_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Large_top_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 136,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Constructor_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Constructor_34_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.02849883109548281,
+  "lineCount": 223,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Constructor_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Constructor_top_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.027901785714285716,
+  "lineCount": 223,
+  "faceColor": [
+   0.186,
+   0.066,
+   0.27
+  ],
+  "lineColor": [
+   0.7977777777777778,
+   0.508888888888889,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L1_top_512.png",
+  "seconds": 6.4,
+  "metersPerPixel": 0.07474045858882207,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L1_34_512.png",
+  "seconds": 7.0,
+  "metersPerPixel": 0.07479612411977717,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L2_34_512.png",
+  "seconds": 6.4,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L2_top_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L3_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L4_34_512.png",
+  "seconds": 7.5,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L3_34_512.png",
+  "seconds": 8.2,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L4_top_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L5_34_512.png",
+  "seconds": 6.8,
+  "metersPerPixel": 0.07479611793407455,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L1_34_512.png",
+  "seconds": 7.5,
+  "metersPerPixel": 0.049323854714463426,
+  "lineCount": 182,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L5_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.07474045240772305,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L1_top_512.png",
+  "seconds": 6.1,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 182,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L2_top_512.png",
+  "seconds": 5.8,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 200,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L2_34_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.049323854714463426,
+  "lineCount": 200,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L3_top_512.png",
+  "seconds": 7.2,
+  "metersPerPixel": 0.06975446428571429,
   "lineCount": 324,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L3_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.056198366730097295,
+  "lineCount": 324,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L4_top_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L4_34_512.png",
+  "seconds": 9.3,
+  "metersPerPixel": 0.06307287874573117,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L5_34_512.png",
+  "seconds": 9.7,
+  "metersPerPixel": 0.07034814802169792,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/Shipyard_L5_top_512.png",
+  "seconds": 9.4,
+  "metersPerPixel": 0.06975446428571429,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L1_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L1_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L2_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L2_top_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L3_34_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L3_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L4_34_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L4_top_512.png",
+  "seconds": 9.3,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L5_34_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.013475540576071341,
+  "lineCount": 306,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L5_top_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.013950893065027361,
+  "lineCount": 306,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/MiningRig_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/MiningRig_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.0047826559927651065,
+  "lineCount": 162,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/MiningRig_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/MiningRig_top_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.004650297483781482,
+  "lineCount": 162,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/DefensePlatform_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/DefensePlatform_34_512.png",
+  "seconds": 7.2,
+  "metersPerPixel": 0.005186733975111627,
+  "lineCount": 108,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/DefensePlatform_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/DefensePlatform_top_512.png",
+  "seconds": 6.8,
+  "metersPerPixel": 0.005369703839754774,
+  "lineCount": 108,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Small_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Small_34_512.png",
+  "seconds": 5.9,
+  "metersPerPixel": 0.02434112268439485,
+  "lineCount": 74,
+  "faceColor": [
+   0.12,
+   0.12,
+   0.126
+  ],
+  "lineColor": [
+   0.8140000000000001,
+   0.8140000000000001,
+   0.84
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Small_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Small_top_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.024952817087372146,
+  "lineCount": 74,
+  "faceColor": [
+   0.12,
+   0.12,
+   0.126
+  ],
+  "lineColor": [
+   0.8140000000000001,
+   0.8140000000000001,
+   0.84
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Medium_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Medium_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.03508498464964341,
+  "lineCount": 161,
+  "faceColor": [
+   0.12,
+   0.12,
+   0.126
+  ],
+  "lineColor": [
+   0.8140000000000001,
+   0.8140000000000001,
+   0.84
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Medium_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Medium_top_512.png",
+  "seconds": 7.4,
+  "metersPerPixel": 0.04069010329874347,
+  "lineCount": 161,
+  "faceColor": [
+   0.12,
+   0.12,
+   0.126
+  ],
+  "lineColor": [
+   0.8140000000000001,
+   0.8140000000000001,
+   0.84
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Large_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Large_34_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.057382818904295634,
+  "lineCount": 259,
+  "faceColor": [
+   0.12,
+   0.12,
+   0.126
+  ],
+  "lineColor": [
+   0.8140000000000001,
+   0.8140000000000001,
+   0.84
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Large_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Wreck/Large_top_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.0697544624840486,
+  "lineCount": 259,
+  "faceColor": [
+   0.12,
+   0.12,
+   0.126
+  ],
+  "lineColor": [
+   0.8140000000000001,
+   0.8140000000000001,
+   0.84
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Small_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Small_34_512.png",
+  "seconds": 8.2,
+  "metersPerPixel": 0.001647987670107742,
+  "lineCount": 43,
+  "faceColor": [
+   0.0525,
+   0.048,
+   0.045
+  ],
+  "lineColor": [
+   0.4725,
+   0.43200000000000005,
+   0.405
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Medium_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Medium_34_512.png",
+  "seconds": 7.2,
+  "metersPerPixel": 0.0019533914602269872,
+  "lineCount": 67,
+  "faceColor": [
+   0.0525,
+   0.048,
+   0.045
+  ],
+  "lineColor": [
+   0.4725,
+   0.43200000000000005,
+   0.405
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Small_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Small_top_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.002325148747428507,
+  "lineCount": 43,
+  "faceColor": [
+   0.0525,
+   0.048,
+   0.045
+  ],
+  "lineColor": [
+   0.4725,
+   0.43200000000000005,
+   0.405
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Medium_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Medium_top_512.png",
+  "seconds": 8.9,
+  "metersPerPixel": 0.0023251488181811704,
+  "lineCount": 67,
+  "faceColor": [
+   0.0525,
+   0.048,
+   0.045
+  ],
+  "lineColor": [
+   0.4725,
+   0.43200000000000005,
+   0.405
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Large_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Large_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.002045144348232696,
+  "lineCount": 81,
+  "faceColor": [
+   0.0525,
+   0.048,
+   0.045
+  ],
+  "lineColor": [
+   0.4725,
+   0.43200000000000005,
+   0.405
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Large_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/assets/models/Asteroids/Large_top_512.png",
+  "seconds": 9.0,
+  "metersPerPixel": 0.0023251488167553925,
+  "lineCount": 81,
+  "faceColor": [
+   0.0525,
+   0.048,
+   0.045
+  ],
+  "lineColor": [
+   0.4725,
+   0.43200000000000005,
+   0.405
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L1_34_512.png",
+  "seconds": 9.0,
+  "metersPerPixel": 0.11871131749791498,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L2_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.11871131749791498,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L3_34_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.11871131749791498,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L4_34_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.11871131749791498,
+  "lineCount": 916,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L5_34_512.png",
+  "seconds": 8.6,
+  "metersPerPixel": 0.11871131749791498,
+  "lineCount": 1108,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L1_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.13083525474131522,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L2_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.13083525474131522,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L3_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.13083525474131522,
+  "lineCount": 580,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L4_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.13083525474131522,
+  "lineCount": 916,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_CommandStation_L5_top_512.png",
+  "seconds": 8.9,
+  "metersPerPixel": 0.13083525474131522,
+  "lineCount": 1108,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L1_34_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.07394048155855637,
+  "lineCount": 382,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L2_34_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.07394048155855637,
+  "lineCount": 442,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L3_34_512.png",
+  "seconds": 10.4,
+  "metersPerPixel": 0.07394048155855637,
+  "lineCount": 754,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L4_34_512.png",
+  "seconds": 10.1,
+  "metersPerPixel": 0.07394048155855637,
+  "lineCount": 886,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L1_top_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.06510416755595037,
+  "lineCount": 382,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L2_top_512.png",
+  "seconds": 7.5,
+  "metersPerPixel": 0.06510416755595037,
+  "lineCount": 442,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L5_34_512.png",
+  "seconds": 12.0,
+  "metersPerPixel": 0.07394048155855637,
+  "lineCount": 1198,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L3_top_512.png",
+  "seconds": 9.1,
+  "metersPerPixel": 0.06510416755595037,
+  "lineCount": 754,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L4_top_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.06510416755595037,
+  "lineCount": 886,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L1_34_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.013020835688180962,
+  "lineCount": 250,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_Shipyard_L5_top_512.png",
+  "seconds": 10.0,
+  "metersPerPixel": 0.06510416755595037,
+  "lineCount": 1198,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L2_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.013020835688180962,
+  "lineCount": 298,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L3_34_512.png",
+  "seconds": 6.6,
+  "metersPerPixel": 0.013020835688180962,
+  "lineCount": 418,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L4_34_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.013020835688180962,
+  "lineCount": 514,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L5_34_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.013020835688180962,
+  "lineCount": 622,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L1_top_512.png",
+  "seconds": 7.5,
+  "metersPerPixel": 0.013245331125204294,
+  "lineCount": 250,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L2_top_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.013245331125204294,
+  "lineCount": 298,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L3_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.013245331125204294,
+  "lineCount": 418,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L4_top_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.013245331125204294,
+  "lineCount": 514,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L1_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Human_ResearchLab_L5_top_512.png",
+  "seconds": 8.2,
+  "metersPerPixel": 0.013245331125204294,
+  "lineCount": 622,
+  "faceColor": [
+   0.05709763399999999,
+   0.091417634,
+   0.167207634
+  ],
+  "lineColor": [
+   0.5719603328637495,
+   0.7053752940490744,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L2_34_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L3_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L5_34_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L4_34_512.png",
+  "seconds": 8.8,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L1_top_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L2_top_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L3_top_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 210,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L4_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L1_34_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 182,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_CommandStation_L5_top_512.png",
+  "seconds": 8.2,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 234,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L2_34_512.png",
+  "seconds": 6.7,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 200,
   "faceColor": [
    0.157867908,
    0.064917908,
@@ -53,8 +3198,8 @@
  {
   "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_34.png",
   "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_34_512.png",
-  "seconds": 8.8,
-  "metersPerPixel": 0.0524518089480908,
+  "seconds": 7.2,
+  "metersPerPixel": 0.06565827148691805,
   "lineCount": 324,
   "faceColor": [
    0.157867908,
@@ -65,6 +3210,805 @@
    1.0,
    0.6172908049177417,
    0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L4_34_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L5_34_512.png",
+  "seconds": 8.7,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L1_top_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 182,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L2_top_512.png",
+  "seconds": 7.9,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 200,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L3_top_512.png",
+  "seconds": 8.1,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 324,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L4_top_512.png",
+  "seconds": 8.6,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_Shipyard_L5_top_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 448,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L1_34_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L2_34_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L3_34_512.png",
+  "seconds": 7.0,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L4_34_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L5_34_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 306,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L1_top_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L2_top_512.png",
+  "seconds": 7.1,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 198,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L3_top_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L4_top_512.png",
+  "seconds": 8.7,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 270,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Tarkan_ResearchLab_L5_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 306,
+  "faceColor": [
+   0.157867908,
+   0.064917908,
+   0.046327908
+  ],
+  "lineColor": [
+   1.0,
+   0.6172908049177417,
+   0.5407489659012901
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L1_34_512.png",
+  "seconds": 6.8,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L2_34_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L3_34_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L4_34_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L5_34_512.png",
+  "seconds": 8.2,
+  "metersPerPixel": 0.06980971584512535,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L1_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L2_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L3_top_512.png",
+  "seconds": 6.5,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 210,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L4_top_512.png",
+  "seconds": 7.8,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_CommandStation_L5_top_512.png",
+  "seconds": 7.3,
+  "metersPerPixel": 0.06975776134956727,
+  "lineCount": 234,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L1_34_512.png",
+  "seconds": 6.6,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 182,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L2_34_512.png",
+  "seconds": 6.8,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 200,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L3_34_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 324,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L4_34_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L1_top_512.png",
+  "seconds": 6.9,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 182,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L5_34_512.png",
+  "seconds": 9.8,
+  "metersPerPixel": 0.06565827148691805,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L2_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 200,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L3_top_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 324,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L4_top_512.png",
+  "seconds": 7.6,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_Shipyard_L5_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.06510416666666667,
+  "lineCount": 448,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L1_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L1_34_512.png",
+  "seconds": 8.0,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L3_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L3_34_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L2_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L2_34_512.png",
+  "seconds": 8.8,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L4_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L4_34_512.png",
+  "seconds": 8.3,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L5_34.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L5_34_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.012577171204333252,
+  "lineCount": 306,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L2_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L2_top_512.png",
+  "seconds": 8.5,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L1_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L1_top_512.png",
+  "seconds": 9.0,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 198,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L3_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L3_top_512.png",
+  "seconds": 8.4,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L4_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L4_top_512.png",
+  "seconds": 7.7,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 270,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
+  ]
+ },
+ {
+  "out": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L5_top.png",
+  "small": "/home/user/Outpost.Commander/DesignReference/_work/A6/tool/_tiles/Pirate_ResearchLab_L5_top_512.png",
+  "seconds": 7.0,
+  "metersPerPixel": 0.01302083352735887,
+  "lineCount": 306,
+  "faceColor": [
+   0.11592847199999999,
+   0.058728472000000004,
+   0.155968472
+  ],
+  "lineColor": [
+   0.8331329424064626,
+   0.5947514315585524,
+   1.0
   ]
  }
 ]

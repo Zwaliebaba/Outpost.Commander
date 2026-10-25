@@ -1,0 +1,4871 @@
+{
+ "agent": "A6",
+ "head": "a053fe294d91dc885bbb061c2f34d76ca6897738",
+ "renderer": "Python 3 + numpy software rasterizer, DesignReference/_work/A6/tool/nmfrender.py",
+ "note": "Every model render and sheet is an approximation of the in-game look.",
+ "count": 329,
+ "missing": [],
+ "images": [
+  {
+   "file": "DesignReference/_work/assets/models/Human/Small_34.png",
+   "set": "Human",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02434112268439485,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Small_34_512.png",
+   "set": "Human",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.0486822453687897,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Small_top.png",
+   "set": "Human",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.024952817087372146,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Small_top_512.png",
+   "set": "Human",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.04990563417474429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Medium_34.png",
+   "set": "Human",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.03508498464964341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Medium_34_512.png",
+   "set": "Human",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.07016996929928682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Medium_top.png",
+   "set": "Human",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.04069010329874347,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Medium_top_512.png",
+   "set": "Human",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.08138020659748695,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Large_34.png",
+   "set": "Human",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.057382818904295634,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Large_34_512.png",
+   "set": "Human",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.11476563780859127,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Large_top.png",
+   "set": "Human",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0697544624840486,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Large_top_512.png",
+   "set": "Human",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1395089249680972,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Constructor_34.png",
+   "set": "Human",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Human/Constructor.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02295559648821187,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Constructor_34_512.png",
+   "set": "Human",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Human/Constructor.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.04591119297642374,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Constructor_top.png",
+   "set": "Human",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Human/Constructor.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0279017846604759,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Constructor_top_512.png",
+   "set": "Human",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Human/Constructor.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.0558035693209518,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L1_34.png",
+   "set": "Human",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.10763761749214691,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L1_34_512.png",
+   "set": "Human",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.21527523498429382,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L1_top.png",
+   "set": "Human",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.14018063007998058,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L1_top_512.png",
+   "set": "Human",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.28036126015996116,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L2_34.png",
+   "set": "Human",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.10763761749214691,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L2_34_512.png",
+   "set": "Human",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.21527523498429382,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L2_top.png",
+   "set": "Human",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.14018063007998058,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L2_top_512.png",
+   "set": "Human",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.28036126015996116,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L3_34.png",
+   "set": "Human",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.10763761749214691,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L3_34_512.png",
+   "set": "Human",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.21527523498429382,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L3_top.png",
+   "set": "Human",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.14018063007998058,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L3_top_512.png",
+   "set": "Human",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.28036126015996116,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L4_34.png",
+   "set": "Human",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.12446847661557466,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L4_34_512.png",
+   "set": "Human",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.2489369532311493,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L4_top.png",
+   "set": "Human",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.14018063007998058,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L4_top_512.png",
+   "set": "Human",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.28036126015996116,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L5_34.png",
+   "set": "Human",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.12719069731919463,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L5_34_512.png",
+   "set": "Human",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.25438139463838927,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L5_top.png",
+   "set": "Human",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.14018063007998058,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/CommandStation_L5_top_512.png",
+   "set": "Human",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/CommandStation_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.28036126015996116,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L1_34.png",
+   "set": "Human",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.05985563945685186,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L1_34_512.png",
+   "set": "Human",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.11971127891370371,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L1_top.png",
+   "set": "Human",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446523851826,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L1_top_512.png",
+   "set": "Human",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950893047703652,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L2_34.png",
+   "set": "Human",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06336623414640329,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L2_34_512.png",
+   "set": "Human",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.12673246829280657,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L2_top.png",
+   "set": "Human",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446523851826,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L2_top_512.png",
+   "set": "Human",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950893047703652,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L3_34.png",
+   "set": "Human",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07205495600304307,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L3_34_512.png",
+   "set": "Human",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.14410991200608614,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L3_top.png",
+   "set": "Human",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446523851826,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L3_top_512.png",
+   "set": "Human",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950893047703652,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L4_34.png",
+   "set": "Human",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06563190358898817,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L4_34_512.png",
+   "set": "Human",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13126380717797634,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L4_top.png",
+   "set": "Human",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446393057826,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L4_top_512.png",
+   "set": "Human",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1395089278611565,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L5_34.png",
+   "set": "Human",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07922194452702469,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L5_34_512.png",
+   "set": "Human",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.15844388905404938,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L5_top.png",
+   "set": "Human",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446393057826,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Shipyard_L5_top_512.png",
+   "set": "Human",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1395089278611565,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L1_34.png",
+   "set": "Human",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950895380193888,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L1_34_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901790760387776,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L1_top.png",
+   "set": "Human",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.014191425950793063,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L1_top_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.028382851901586126,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L2_34.png",
+   "set": "Human",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950895380193888,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L2_34_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901790760387776,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L2_top.png",
+   "set": "Human",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.014191425950793063,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L2_top_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.028382851901586126,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L3_34.png",
+   "set": "Human",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013707864488877656,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L3_34_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.02741572897775531,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L3_top.png",
+   "set": "Human",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.014191425439743659,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L3_top_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.028382850879487317,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L4_34.png",
+   "set": "Human",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.012803652006629553,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L4_34_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.025607304013259106,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L4_top.png",
+   "set": "Human",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.014191425677944652,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L4_top_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.028382851355889305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L5_34.png",
+   "set": "Human",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.012759355102425346,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L5_34_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.025518710204850692,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L5_top.png",
+   "set": "Human",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.014191426205576028,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/ResearchLab_L5_top_512.png",
+   "set": "Human",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.028382852411152057,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/MiningRig_34.png",
+   "set": "Human",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Human/MiningRig.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.006267046447386706,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/MiningRig_34_512.png",
+   "set": "Human",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Human/MiningRig.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.012534092894773412,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/MiningRig_top.png",
+   "set": "Human",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Human/MiningRig.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.005333721448780767,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/MiningRig_top_512.png",
+   "set": "Human",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Human/MiningRig.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.010667442897561535,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/DefensePlatform_34.png",
+   "set": "Human",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Human/DefensePlatform.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0033849705413757994,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/DefensePlatform_34_512.png",
+   "set": "Human",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Human/DefensePlatform.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.006769941082751599,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/DefensePlatform_top.png",
+   "set": "Human",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Human/DefensePlatform.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.004650297783622851,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/DefensePlatform_top_512.png",
+   "set": "Human",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Human/DefensePlatform.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.009300595567245702,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Relay_34.png",
+   "set": "Human",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950895380193888,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Relay_34_512.png",
+   "set": "Human",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901790760387776,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Relay_top.png",
+   "set": "Human",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.014191425950793063,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/Relay_top_512.png",
+   "set": "Human",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Human/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.028382851901586126,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/RepairBay_34.png",
+   "set": "Human",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.05985563945685186,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/RepairBay_34_512.png",
+   "set": "Human",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.11971127891370371,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/RepairBay_top.png",
+   "set": "Human",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446523851826,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Human/RepairBay_top_512.png",
+   "set": "Human",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Human/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950893047703652,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Small_34.png",
+   "set": "Tarkan",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02482634004948361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Small_34_512.png",
+   "set": "Tarkan",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.04965268009896722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Small_top.png",
+   "set": "Tarkan",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02418154673207374,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Small_top_512.png",
+   "set": "Tarkan",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.04836309346414748,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Medium_34.png",
+   "set": "Tarkan",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.03888363895669831,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Medium_34_512.png",
+   "set": "Tarkan",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.07776727791339662,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Medium_top.png",
+   "set": "Tarkan",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.04069010416666667,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Medium_top_512.png",
+   "set": "Tarkan",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.08138020833333334,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Large_34.png",
+   "set": "Tarkan",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0683957458312412,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Large_34_512.png",
+   "set": "Tarkan",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1367914916624824,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Large_top.png",
+   "set": "Tarkan",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Large_top_512.png",
+   "set": "Tarkan",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Constructor_34.png",
+   "set": "Tarkan",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02849883109548281,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Constructor_34_512.png",
+   "set": "Tarkan",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.05699766219096562,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Constructor_top.png",
+   "set": "Tarkan",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.027901785714285716,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Constructor_top_512.png",
+   "set": "Tarkan",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.05580357142857143,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L1_34.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479612411977717,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L1_34_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.14959224823955433,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L1_top.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045858882207,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L1_top_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.14948091717764414,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L2_34.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L2_34_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L2_top.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L2_top_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L3_34.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L3_34_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L3_top.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L3_top_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L4_34.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L4_34_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L4_top.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L4_top_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L5_34.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L5_34_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L5_top.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/CommandStation_L5_top_512.png",
+   "set": "Tarkan",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L1_34.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.049323854714463426,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L1_34_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.09864770942892685,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L1_top.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L1_top_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L2_34.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.049323854714463426,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L2_34_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.09864770942892685,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L2_top.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L2_top_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.056198366730097295,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_34_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.11239673346019459,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L3_top_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L4_34.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06307287874573117,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L4_34_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.12614575749146234,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L4_top.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L4_top_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L5_34.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07034814802169792,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L5_34_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.14069629604339584,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L5_top.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Shipyard_L5_top_512.png",
+   "set": "Tarkan",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_34.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_34_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_top.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L1_top_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_34.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_34_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_top.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L2_top_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_34.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_34_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_top.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L3_top_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_34.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_34_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_top.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_top_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_34.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_34_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_top.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/ResearchLab_L5_top_512.png",
+   "set": "Tarkan",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/MiningRig_34.png",
+   "set": "Tarkan",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0047826559927651065,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/MiningRig_34_512.png",
+   "set": "Tarkan",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.009565311985530213,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/MiningRig_top.png",
+   "set": "Tarkan",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.004650297483781482,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/MiningRig_top_512.png",
+   "set": "Tarkan",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.009300594967562964,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/DefensePlatform_34.png",
+   "set": "Tarkan",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.005186733975111627,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/DefensePlatform_34_512.png",
+   "set": "Tarkan",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.010373467950223253,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/DefensePlatform_top.png",
+   "set": "Tarkan",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.005369703839754774,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/DefensePlatform_top_512.png",
+   "set": "Tarkan",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.010739407679509549,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Relay_34.png",
+   "set": "Tarkan",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Relay_34_512.png",
+   "set": "Tarkan",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Relay_top.png",
+   "set": "Tarkan",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/Relay_top_512.png",
+   "set": "Tarkan",
+   "model": "Relay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/RepairBay_34.png",
+   "set": "Tarkan",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.049323854714463426,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/RepairBay_34_512.png",
+   "set": "Tarkan",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.09864770942892685,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/RepairBay_top.png",
+   "set": "Tarkan",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Tarkan/RepairBay_top_512.png",
+   "set": "Tarkan",
+   "model": "RepairBay",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Small_34.png",
+   "set": "Pirate",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02482634004948361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Small_34_512.png",
+   "set": "Pirate",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.04965268009896722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Small_top.png",
+   "set": "Pirate",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02418154673207374,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Small_top_512.png",
+   "set": "Pirate",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Small.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.04836309346414748,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Medium_34.png",
+   "set": "Pirate",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.03888363895669831,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Medium_34_512.png",
+   "set": "Pirate",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.07776727791339662,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Medium_top.png",
+   "set": "Pirate",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.04069010416666667,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Medium_top_512.png",
+   "set": "Pirate",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Medium.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.08138020833333334,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Large_34.png",
+   "set": "Pirate",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0683957458312412,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Large_34_512.png",
+   "set": "Pirate",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1367914916624824,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Large_top.png",
+   "set": "Pirate",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Large_top_512.png",
+   "set": "Pirate",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Large.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Constructor_34.png",
+   "set": "Pirate",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02849883109548281,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Constructor_34_512.png",
+   "set": "Pirate",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.05699766219096562,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Constructor_top.png",
+   "set": "Pirate",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.027901785714285716,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Constructor_top_512.png",
+   "set": "Pirate",
+   "model": "Constructor",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Constructor.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.05580357142857143,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L1_34.png",
+   "set": "Pirate",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479612411977717,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L1_34_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.14959224823955433,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L1_top.png",
+   "set": "Pirate",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045858882207,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L1_top_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.14948091717764414,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L2_34.png",
+   "set": "Pirate",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L2_34_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L2_top.png",
+   "set": "Pirate",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L2_top_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L3_34.png",
+   "set": "Pirate",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L3_34_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L3_top.png",
+   "set": "Pirate",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L3_top_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L4_34.png",
+   "set": "Pirate",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L4_34_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L4_top.png",
+   "set": "Pirate",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L4_top_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L5_34.png",
+   "set": "Pirate",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07479611793407455,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L5_34_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1495922358681491,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L5_top.png",
+   "set": "Pirate",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07474045240772305,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/CommandStation_L5_top_512.png",
+   "set": "Pirate",
+   "model": "CommandStation_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/CommandStation_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1494809048154461,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L1_34.png",
+   "set": "Pirate",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.049323854714463426,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L1_34_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.09864770942892685,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L1_top.png",
+   "set": "Pirate",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L1_top_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L2_34.png",
+   "set": "Pirate",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.049323854714463426,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L2_34_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.09864770942892685,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L2_top.png",
+   "set": "Pirate",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L2_top_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L3_34.png",
+   "set": "Pirate",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.056198366730097295,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L3_34_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.11239673346019459,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L3_top.png",
+   "set": "Pirate",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L3_top_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L4_34.png",
+   "set": "Pirate",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06307287874573117,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L4_34_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.12614575749146234,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L4_top.png",
+   "set": "Pirate",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L4_top_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L5_34.png",
+   "set": "Pirate",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.07034814802169792,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L5_34_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.14069629604339584,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L5_top.png",
+   "set": "Pirate",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.06975446428571429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/Shipyard_L5_top_512.png",
+   "set": "Pirate",
+   "model": "Shipyard_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/Shipyard_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.13950892857142858,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L1_34.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L1_34_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L1_top.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L1_top_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L1",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L1.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L2_34.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L2_34_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L2_top.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L2_top_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L2",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L2.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L3_34.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L3_34_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L3_top.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L3_top_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L3",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L3.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L4_34.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L4_34_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L4_top.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L4_top_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L4",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L4.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L5_34.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013475540576071341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L5_34_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.026951081152142682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L5_top.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.013950893065027361,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/ResearchLab_L5_top_512.png",
+   "set": "Pirate",
+   "model": "ResearchLab_L5",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/ResearchLab_L5.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.027901786130054722,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/MiningRig_34.png",
+   "set": "Pirate",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0047826559927651065,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/MiningRig_34_512.png",
+   "set": "Pirate",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.009565311985530213,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/MiningRig_top.png",
+   "set": "Pirate",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.004650297483781482,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/MiningRig_top_512.png",
+   "set": "Pirate",
+   "model": "MiningRig",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/MiningRig.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.009300594967562964,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/DefensePlatform_34.png",
+   "set": "Pirate",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.005186733975111627,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/DefensePlatform_34_512.png",
+   "set": "Pirate",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.010373467950223253,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/DefensePlatform_top.png",
+   "set": "Pirate",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.005369703839754774,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Pirate/DefensePlatform_top_512.png",
+   "set": "Pirate",
+   "model": "DefensePlatform",
+   "mesh": "OutpostCommander/Assets/Models/Tarkan/DefensePlatform.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.010739407679509549,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Small_34.png",
+   "set": "Wreck",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.02434112268439485,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Small_34_512.png",
+   "set": "Wreck",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.0486822453687897,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Small_top.png",
+   "set": "Wreck",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.024952817087372146,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Small_top_512.png",
+   "set": "Wreck",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Human/Small.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.04990563417474429,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Medium_34.png",
+   "set": "Wreck",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.03508498464964341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Medium_34_512.png",
+   "set": "Wreck",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.07016996929928682,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Medium_top.png",
+   "set": "Wreck",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.04069010329874347,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Medium_top_512.png",
+   "set": "Wreck",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Human/Medium.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.08138020659748695,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Large_34.png",
+   "set": "Wreck",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.057382818904295634,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Large_34_512.png",
+   "set": "Wreck",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.11476563780859127,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Large_top.png",
+   "set": "Wreck",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0697544624840486,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Wreck/Large_top_512.png",
+   "set": "Wreck",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Human/Large.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.1395089249680972,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Small_34.png",
+   "set": "Asteroids",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Small.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.001647987670107742,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Small_34_512.png",
+   "set": "Asteroids",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Small.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.003295975340215484,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Small_top.png",
+   "set": "Asteroids",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Small.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.002325148747428507,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Small_top_512.png",
+   "set": "Asteroids",
+   "model": "Small",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Small.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.004650297494857014,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Medium_34.png",
+   "set": "Asteroids",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Medium.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0019533914602269872,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Medium_34_512.png",
+   "set": "Asteroids",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Medium.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.0039067829204539745,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Medium_top.png",
+   "set": "Asteroids",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Medium.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0023251488181811704,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Medium_top_512.png",
+   "set": "Asteroids",
+   "model": "Medium",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Medium.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.004650297636362341,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Large_34.png",
+   "set": "Asteroids",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Large.nmf",
+   "view": "34",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.002045144348232696,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Large_34_512.png",
+   "set": "Asteroids",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Large.nmf",
+   "view": "34",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.004090288696465392,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Large_top.png",
+   "set": "Asteroids",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Large.nmf",
+   "view": "top",
+   "size": [
+    1024,
+    1024
+   ],
+   "kind": "model render",
+   "metersPerPixel": 0.0023251488167553925,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/models/Asteroids/Large_top_512.png",
+   "set": "Asteroids",
+   "model": "Large",
+   "mesh": "OutpostCommander/Assets/Models/Asteroids/Large.nmf",
+   "view": "top",
+   "size": [
+    512,
+    512
+   ],
+   "kind": "model render, web size",
+   "metersPerPixel": 0.004650297633510785,
+   "label": "approximation of the in-game look",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Human_CommandStation_levels.png",
+   "set": "Human",
+   "model": "CommandStation",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Human_Shipyard_levels.png",
+   "set": "Human",
+   "model": "Shipyard",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Human_ResearchLab_levels.png",
+   "set": "Human",
+   "model": "ResearchLab",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Tarkan_CommandStation_levels.png",
+   "set": "Tarkan",
+   "model": "CommandStation",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Tarkan_Shipyard_levels.png",
+   "set": "Tarkan",
+   "model": "Shipyard",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Tarkan_ResearchLab_levels.png",
+   "set": "Tarkan",
+   "model": "ResearchLab",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Pirate_CommandStation_levels.png",
+   "set": "Pirate",
+   "model": "CommandStation",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Pirate_Shipyard_levels.png",
+   "set": "Pirate",
+   "model": "Shipyard",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Pirate_ResearchLab_levels.png",
+   "set": "Pirate",
+   "model": "ResearchLab",
+   "view": "34 and top, L1-L5",
+   "size": [
+    2000,
+    978
+   ],
+   "kind": "level sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Human.png",
+   "set": "Human",
+   "model": "all",
+   "view": "34 and top",
+   "size": [
+    2048,
+    1916
+   ],
+   "kind": "set sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Tarkan.png",
+   "set": "Tarkan",
+   "model": "all",
+   "view": "34 and top",
+   "size": [
+    2048,
+    1916
+   ],
+   "kind": "set sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Pirate.png",
+   "set": "Pirate",
+   "model": "all",
+   "view": "34 and top",
+   "size": [
+    2048,
+    1916
+   ],
+   "kind": "set sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Wreck.png",
+   "set": "Wreck",
+   "model": "all",
+   "view": "34 and top",
+   "size": [
+    2048,
+    416
+   ],
+   "kind": "set sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/sheets/Asteroids.png",
+   "set": "Asteroids",
+   "model": "all",
+   "view": "34 and top",
+   "size": [
+    2048,
+    416
+   ],
+   "kind": "set sheet",
+   "label": "approximation of the in-game look",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/Particle.png",
+   "set": null,
+   "model": "Particle",
+   "view": null,
+   "size": [
+    16,
+    16
+   ],
+   "kind": "texture as stored",
+   "source": "OutpostCommander/Assets/Textures/Particle.dds",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/Particle_on_dark.png",
+   "set": null,
+   "model": "Particle",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha-blended over a dark checker, enlarged",
+   "source": "OutpostCommander/Assets/Textures/Particle.dds",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/Particle_alpha.png",
+   "set": null,
+   "model": "Particle",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha as gray, enlarged",
+   "source": "OutpostCommander/Assets/Textures/Particle.dds",
+   "mode": "L"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/cloudyglow.png",
+   "set": null,
+   "model": "cloudyglow",
+   "view": null,
+   "size": [
+    128,
+    128
+   ],
+   "kind": "texture as stored",
+   "source": "OutpostCommander/Assets/Textures/cloudyglow.dds",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/cloudyglow_on_dark.png",
+   "set": null,
+   "model": "cloudyglow",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha-blended over a dark checker, enlarged",
+   "source": "OutpostCommander/Assets/Textures/cloudyglow.dds",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/cloudyglow_alpha.png",
+   "set": null,
+   "model": "cloudyglow",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha as gray, enlarged",
+   "source": "OutpostCommander/Assets/Textures/cloudyglow.dds",
+   "mode": "L"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/glow.png",
+   "set": null,
+   "model": "glow",
+   "view": null,
+   "size": [
+    128,
+    128
+   ],
+   "kind": "texture as stored",
+   "source": "OutpostCommander/Assets/Textures/glow.dds",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/glow_on_dark.png",
+   "set": null,
+   "model": "glow",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha-blended over a dark checker, enlarged",
+   "source": "OutpostCommander/Assets/Textures/glow.dds",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/glow_alpha.png",
+   "set": null,
+   "model": "glow",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha as gray, enlarged",
+   "source": "OutpostCommander/Assets/Textures/glow.dds",
+   "mode": "L"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/laser.png",
+   "set": null,
+   "model": "laser",
+   "view": null,
+   "size": [
+    128,
+    32
+   ],
+   "kind": "texture as stored",
+   "source": "OutpostCommander/Assets/Textures/laser.dds",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/laser_on_dark.png",
+   "set": null,
+   "model": "laser",
+   "view": null,
+   "size": [
+    512,
+    128
+   ],
+   "kind": "texture alpha-blended over a dark checker, enlarged",
+   "source": "OutpostCommander/Assets/Textures/laser.dds",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/laser_alpha.png",
+   "set": null,
+   "model": "laser",
+   "view": null,
+   "size": [
+    512,
+    128
+   ],
+   "kind": "texture alpha as gray, enlarged",
+   "source": "OutpostCommander/Assets/Textures/laser.dds",
+   "mode": "L"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/starburst.png",
+   "set": null,
+   "model": "starburst",
+   "view": null,
+   "size": [
+    128,
+    128
+   ],
+   "kind": "texture as stored",
+   "source": "OutpostCommander/Assets/Textures/starburst.dds",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/starburst_on_dark.png",
+   "set": null,
+   "model": "starburst",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha-blended over a dark checker, enlarged",
+   "source": "OutpostCommander/Assets/Textures/starburst.dds",
+   "mode": "RGB"
+  },
+  {
+   "file": "DesignReference/_work/assets/textures/starburst_alpha.png",
+   "set": null,
+   "model": "starburst",
+   "view": null,
+   "size": [
+    512,
+    512
+   ],
+   "kind": "texture alpha as gray, enlarged",
+   "source": "OutpostCommander/Assets/Textures/starburst.dds",
+   "mode": "L"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/LockScreenLogo.scale-200.png",
+   "set": null,
+   "model": "LockScreenLogo.scale-200",
+   "view": null,
+   "size": [
+    48,
+    48
+   ],
+   "kind": "app logo (copied as is)",
+   "source": "OutpostCommander/Assets/LockScreenLogo.scale-200.png",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/SplashScreen.scale-200.png",
+   "set": null,
+   "model": "SplashScreen.scale-200",
+   "view": null,
+   "size": [
+    1240,
+    600
+   ],
+   "kind": "app logo (copied as is)",
+   "source": "OutpostCommander/Assets/SplashScreen.scale-200.png",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/Square150x150Logo.scale-200.png",
+   "set": null,
+   "model": "Square150x150Logo.scale-200",
+   "view": null,
+   "size": [
+    300,
+    300
+   ],
+   "kind": "app logo (copied as is)",
+   "source": "OutpostCommander/Assets/Square150x150Logo.scale-200.png",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/Square44x44Logo.scale-200.png",
+   "set": null,
+   "model": "Square44x44Logo.scale-200",
+   "view": null,
+   "size": [
+    88,
+    88
+   ],
+   "kind": "app logo (copied as is)",
+   "source": "OutpostCommander/Assets/Square44x44Logo.scale-200.png",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/Square44x44Logo.targetsize-24_altform-unplated.png",
+   "set": null,
+   "model": "Square44x44Logo.targetsize-24_altform-unplated",
+   "view": null,
+   "size": [
+    24,
+    24
+   ],
+   "kind": "app logo (copied as is)",
+   "source": "OutpostCommander/Assets/Square44x44Logo.targetsize-24_altform-unplated.png",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/StoreLogo.png",
+   "set": null,
+   "model": "StoreLogo",
+   "view": null,
+   "size": [
+    50,
+    50
+   ],
+   "kind": "app logo (copied as is)",
+   "source": "OutpostCommander/Assets/StoreLogo.png",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/Wide310x150Logo.scale-200.png",
+   "set": null,
+   "model": "Wide310x150Logo.scale-200",
+   "view": null,
+   "size": [
+    620,
+    300
+   ],
+   "kind": "app logo (copied as is)",
+   "source": "OutpostCommander/Assets/Wide310x150Logo.scale-200.png",
+   "mode": "RGBA"
+  },
+  {
+   "file": "DesignReference/_work/assets/logos/_logos_on_dark_and_white.png",
+   "set": null,
+   "model": "logos",
+   "view": null,
+   "size": [
+    2200,
+    1960
+   ],
+   "kind": "logo sheet (each logo on near-black, then on white)",
+   "source": null,
+   "mode": "RGB"
+  }
+ ]
+}
