@@ -342,26 +342,58 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       client.StartMatch();
       lastFrame = std::chrono::steady_clock::now();
     };
-    // A world on a dedicated server: the player's connection alone, to the seat its join file names (ADR-078). A join that
-    // fails goes back to the menu, saying why.
+    // A world on a dedicated server: the player's connection alone, to the seat its join file names (ADR-078). The connection
+    // is made on a thread of its own while the menu says so, and the frame loop takes it once it is welcomed or has failed
+    // (ADR-078 decision 9). A join that fails goes back to the menu, saying why.
     const std::filesystem::path documentsJoinFile = DocumentsJoinFile();
     const auto offerWorld = [&] { client.OfferWorld(!documentsJoinFile.empty() && std::filesystem::exists(documentsJoinFile)); };
+    struct Joining
+    {
+      std::string server;
+      std::future<std::unique_ptr<Outpost::QuicTransport>> transport;
+    };
+    std::optional<Joining> joining;
+    const auto failedJoin = [&](const std::exception& _error)
+    {
+      match.reset();
+      offerWorld();
+      client.ShowMenu(std::format("Could not join the world: {}", _error.what()));
+    };
     const auto joinWorld = [&](const std::filesystem::path& _joinFile)
     {
       try
       {
         const Outpost::JoinTicket ticket = ReadJoinFile(_joinFile);
+        std::string server = Outpost::Hud::ServerName(ticket.address.host, ticket.address.port);
+        client.ShowConnecting(server);
+        joining.emplace(
+          Joining{.server = std::move(server),
+                  .transport = std::async(std::launch::async,
+                                          [ticket] { return std::make_unique<Outpost::QuicTransport>(ticket.address, ticket.player); })});
+      }
+      catch (const std::exception& error)
+      {
+        failedJoin(error);
+      }
+    };
+    // A join that has ended, welcomed or not, becomes the match or the menu's notice.
+    const auto finishJoin = [&]
+    {
+      if (!joining || joining->transport.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+        return;
+      try
+      {
+        std::unique_ptr<Outpost::QuicTransport> player = joining->transport.get();
         match.emplace();
-        match->player = std::make_unique<Outpost::QuicTransport>(ticket.address, ticket.player);
-        client.StartMatch(Outpost::Hud::ServerName(ticket.address.host, ticket.address.port));
+        match->player = std::move(player);
+        client.StartMatch(joining->server);
         lastFrame = std::chrono::steady_clock::now();
       }
       catch (const std::exception& error)
       {
-        match.reset();
-        offerWorld();
-        client.ShowMenu(std::format("Could not join the world: {}", error.what()));
+        failedJoin(error);
       }
+      joining.reset();
     };
     offerWorld();
     if (joinOnStart)
@@ -385,6 +417,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 
       if (!window.ProcessMessages())
         break;
+      finishJoin();
 
       const auto now = std::chrono::steady_clock::now();
       const auto elapsed = now - lastFrame;
@@ -485,7 +518,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         switch (*request)
         {
         case Outpost::GameClient::Request::StartSkirmish:
-          if (!match)
+          if (!match && !joining)
             startMatch();
           break;
         case Outpost::GameClient::Request::BackToMenu:
@@ -503,7 +536,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           }
           break;
         case Outpost::GameClient::Request::JoinWorld:
-          if (!match)
+          if (!match && !joining)
             joinWorld(documentsJoinFile);
           break;
         case Outpost::GameClient::Request::Quit:

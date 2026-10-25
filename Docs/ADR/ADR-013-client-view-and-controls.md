@@ -37,7 +37,7 @@ ADR-002 decision 5 has the client draw only snapshots, never server state, and A
 ## Consequences
 
 - **What a player sees is at least one tick old.** An order is sent as soon as it is given, and the server applies it at its next tick.
-- **The protocol cannot tell the client that a command was rejected.** A rejected order is simply not obeyed.
+- **A rejected order is not obeyed, and its player is told why** ([ADR-094](ADR-094-a-refused-command-is-told.md)).
 - **Picking measures a footprint at the focus's scale.** A ship far toward the horizon is picked with a slightly generous circle.
 
 ## What this forecloses

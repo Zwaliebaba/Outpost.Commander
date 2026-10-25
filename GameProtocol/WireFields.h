@@ -158,6 +158,14 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, CancelScheduledOrderCommand>
+auto Fields(Self& _value)
+{
+  auto& [order] = _value;
+  return std::tie(order);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Command>
 auto Fields(Self& _value)
 {
@@ -291,8 +299,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, EventView>
 auto Fields(Self& _value)
 {
-  auto& [kind, sector, position, subject, structure, other, order, action, outcome] = _value;
-  return std::tie(kind, sector, position, subject, structure, other, order, action, outcome);
+  auto& [kind, sector, position, subject, structure, other, order, action, outcome, refusal] = _value;
+  return std::tie(kind, sector, position, subject, structure, other, order, action, outcome, refusal);
 }
 
 template <typename Self>
@@ -380,7 +388,12 @@ constexpr MatchEnding LastOf(MatchEnding) noexcept
 
 constexpr EventKind LastOf(EventKind) noexcept
 {
-  return EventKind::EmpireRestarted;
+  return EventKind::CommandRefused;
+}
+
+constexpr CommandResult LastOf(CommandResult) noexcept
+{
+  return CommandResult::NotYetSupported;
 }
 
 constexpr OrderOutcome LastOf(OrderOutcome) noexcept

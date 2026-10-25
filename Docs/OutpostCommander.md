@@ -92,7 +92,8 @@ A session is everything between starting the game and closing it: the menu, a sk
 
 ### Joining a world [§session.join]
 
-- **The game joins a world from a join file:** `--join <file>`, or the menu's Join world, which reads `Outpost Commander\Join.json` in the player's documents (ADR-078 decision 9). A join file holds the host, the port, the SHA-256 of the world's certificate, the seat's token and the player (ADR-078 decision 8).
+- **The game joins a world from a join file:** `--join <file>`, or the menu's Join world, which reads `Outpost Commander\Join.json` in the player's documents (ADR-078 decision 9).
+- **While a join connects, the menu says so,** "Connecting to 203.0.113.5:4433...", and only Quit can be pressed; the game keeps drawing, and the menu answers, until the server welcomes the player or the join fails (ADR-078 decision 9; ADR-086 decision 1). A join file holds the host, the port, the SHA-256 of the world's certificate, the seat's token and the player (ADR-078 decision 8).
 - **The game accepts only the certificate the join file names** (ADR-060 decision 6).
 - **A joined world is the player's connection alone:** no server, rival or AI runs in the game (ADR-078 decision 9). The player plays the seat as it plays a skirmish, under that world's rules (Game §world).
 - **A seat is taken with its token, at any time while the world runs** (ADR-078 decisions 3 and 4). The first snapshot after the seat is taken shows everything the player sees and remembers; the shots and destructions of the ticks it missed are not shown (ADR-078 decision 4).
@@ -901,7 +902,7 @@ A player commands its ships by orders, and only by orders. An order is given to 
 
 - **An order is a command to the server, never a change.** The server checks it against ownership, cost and legality, applies it at the start of its next tick, or refuses it (ADR-002 decision 2). The player's own game, the AI, a deputy and a scheduled order all give orders the same way (ADR-002 decision 7; ADR-079 decision 2; ADR-080 decision 5).
 - **An order leaves as soon as it is given,** and the screen shows the world one tick behind the newest snapshot, so a ship visibly answers about a tick after the server applied the order (ADR-013 decision 3; ADR-002 decision 5).
-- **A refused order is not obeyed, and nothing says so.** The server tells no client that it refused a command; only a scheduled order says, as it fires, that it was refused (ADR-020 decision 7; ADR-080 decision 5).
+- **A refused order is not obeyed, and the player who gave it is told why,** in words, as an alert; a scheduled order refused as it fires says so as it fires (ADR-094; ADR-080 decision 5; Game §interface.alerts).
 - **Orders go to the selected ships.** A selected structure takes no ship order (ADR-013 decision 5).
 
 ### Selecting [§orders.selection]
@@ -981,7 +982,8 @@ A scheduled order is an order given in advance that the server carries out later
 - **The server keeps it, as it keeps a standing order, with the ships that wait on it** (ADR-080 decision 5).
 - **At the end of the tick its trigger fires, it gives its ships its action** through the path a player's order takes, and is gone: a scheduled order fires once (ADR-080 decision 5).
 - **Its event says what it did:** as given, held back by its condition, or refused, as when an attack's target is gone or a rig's sector is not held. The alert tells it every time (ADR-059 decision 1; ADR-080 decision 5; Game §interface.alerts).
-- **A ship waits on one scheduled order at a time.** Any order the player gives it takes it out, and so does a new scheduled order; setting its retreat does not. An order none waits on any more is dropped, and so is one whose ships are all gone (ADR-080 decision 5).
+- **A ship waits on one scheduled order at a time.** Any order the player gives it takes it out, and so does a new scheduled order; setting its retreat does not. An order none waits on any more is dropped, and so is one whose ships are all gone, so the orders are bounded by the ships (ADR-080 decision 5).
+- **The player can cancel a scheduled order** from the orders window: it is gone at once and never fires, and its ships keep what they were doing (ADR-080 decision 5).
 - **Giving a scheduled order gives its ships nothing to do until it fires:** they keep their orders, their standing order and their retreat until then (ADR-080 decision 5; ADR-075 decision 6).
 - **A deputy leaves alone a ship that waits on one,** and the server fires it whoever plays the seat (ADR-079 decision 6; ADR-080 decision 5; Game §world.handover).
 - **Only its owner sees it** (ADR-080 decision 5).
@@ -996,7 +998,7 @@ A scheduled order is an order given in advance that the server carries out later
 #### The orders window [§orders.scheduled.window]
 
 - **O opens and closes the orders window** (ADR-080 decision 9; ADR-031; [Controls](Reference/Controls.md)).
-- **It lists the seat's scheduled orders,** the first six, each with how many ships wait on it (ADR-080 decision 9).
+- **It lists the seat's scheduled orders,** the first six, each with how many ships wait on it and a button that cancels it, and says beside the list that any order to their ships takes them out (ADR-080 decisions 5 and 9).
 - **Its form gives the selection a new one, a field at a time with arrows:** the trigger; a time of day's hour, and its minute in steps of five, or the held sector an event trigger watches; the action; the sector whose node a move, attack-move, patrol or hold goes to; an attack's or a rig's target in that sector; and the condition (ADR-080 decision 9).
 - **It says when the order fires on the player's clock and how long until then,** and its button says why it cannot give the order while it cannot (ADR-080 decision 9).
 - **The form starts at an attack-move at 02:00,** and keeps its picks while the window is closed, for the match (ADR-080 decision 9).
@@ -1259,10 +1261,10 @@ A world is a match that does not end. It runs on a dedicated server that the own
 
 ### What the player missed [§world.away]
 
-- **While the deputy plays a seat, the server keeps the seat's report of the time away:** the ships and structures built and lost, the sectors gained and lost as the player comes back to them, a sector gained and lost again being in neither, and the last 16 scheduled orders that fired (ADR-080 decision 7).
-- **The player's first snapshot after it takes the seat again carries the report, once** (ADR-080 decision 7).
+- **While the deputy plays a seat its player has held, the server keeps the seat's report of the time away:** the ships and structures built and lost, the sectors gained and lost as the player comes back to them, a sector gained and lost again being in neither, and the last 16 scheduled orders that fired (ADR-080 decision 7).
+- **The player's first snapshot after it takes the seat again carries the report, once.** A player's first join of a seat carries none, since the deputy played it from the world's start for an empire the player never had (ADR-080 decision 7; ADR-079 decision 4).
 - **The away window opens by itself when the report arrives:** how long the player was away, what was built and lost, the sectors gained and lost by name, and each order that fired, as its alert says it. Closing the window drops the report (ADR-080 decision 9; Game §interface.windows.orders).
-- **The report is saved with the world,** so a restart while the player is away loses none of it (ADR-080 decision 7; ADR-077 decision 5).
+- **The report is saved with the world,** and so is which seats have been held, so a restart while the player is away loses none of it (ADR-080 decision 7; ADR-077 decision 5).
 - **It tells what the seat's events tell:** what the deputy built and lost and the orders that fired, not what the enemy did beyond it (ADR-080).
 
 ### Saves and recovery [§world.persistence]
@@ -1475,11 +1477,12 @@ On a map with sectors, the territory panel stands under the status panel's place
   - "Pirates cleared: North", when a sector the pirates guarded is guarded no more;
   - "Order fired:", "Order held back:" or "Order refused:" and the scheduled order's action (Game §orders.scheduled.firing).
   - A place in no sector is "the field".
-- **One kind of alert in one sector is not raised again within 20 seconds;** a scheduled order is told every time it fires (ADR-059 decision 1).
+- **A command the server refuses is told as an alert, in the player's words,** to the player who gave it alone: "Not enough Ore", "Not in a held sector", "At the node cap: upgrade the Command Station". It names no sector and has no place. A scheduled order refused when it is given is told the same way (ADR-094).
+- **One kind of alert in one sector is not raised again within 20 seconds;** a scheduled order is told every time it fires, and a refusal told again takes the older one's place at once (ADR-059 decision 1; ADR-094 decision 4).
 - **Nothing else raises an alert:** what the player builds, the ships and structures it loses other than a Mining Rig, and the sectors it gains and loses go to the report of a time away, and an empire's fall to the banner (ADR-059 decision 1; ADR-084 decision 8; Game §world.away).
 - **The HUD lists the alerts of the last 8 seconds under the territory panel,** at most four, newest first, the newest a chip (ADR-059 decision 2; ADR-085 decision 1).
-- **Each alert's place is marked on the minimap** over the fog (ADR-059 decision 2).
-- **Space moves the camera to the newest alert,** whether or not it is still listed (ADR-059 decision 2).
+- **Each alert's place is marked on the minimap** over the fog; a refusal has none (ADR-059 decision 2; ADR-094 decision 4).
+- **Space moves the camera to the newest alert that has a place,** whether or not it is still listed (ADR-059 decision 2; ADR-094 decision 4).
 
 ### Windows [§interface.windows]
 

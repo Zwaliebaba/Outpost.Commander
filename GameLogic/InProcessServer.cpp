@@ -479,7 +479,7 @@ void Outpost::InProcessServer::RunTick()
   // A world's log keeps them before they are applied, so that a world killed after this tick comes back with them (ADR-077).
   if (m_world)
     m_world->Log(m_simulation.CurrentTick(), commands);
-  // A rejected command changes nothing. The protocol cannot tell the client yet; that arrives with the task that needs it.
+  // A refused command changes nothing, and its player hears why in its snapshot (ADR-094).
   (void)m_simulation.Tick(commands, &m_profiler);
   if (m_world && m_simulation.CurrentTick() % (std::uint64_t{WORLD_SAVE_SECONDS} * TicksPerSecond()) == 0)
     SaveWorld();

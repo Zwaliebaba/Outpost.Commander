@@ -25,7 +25,9 @@ public:
     Outpost::AwayReports reports;
     Outpost::Snapshot present = SnapshotOf(BLUE, 10, {{.kind = Outpost::EventKind::ShipBuilt}});
     reports.Take(present, false);
-    Assert::IsTrue(reports.Reports().empty() && !present.away.has_value(), L"nothing while the player plays");
+    Assert::IsTrue(reports.Reports().reports.empty() && !present.away.has_value(), L"nothing while the player plays");
+    Outpost::Snapshot redPresent = SnapshotOf(RED, 10);
+    reports.Take(redPresent, false);
 
     Outpost::Snapshot first = SnapshotOf(BLUE, 20, {{.kind = Outpost::EventKind::ShipBuilt}});
     reports.Take(first, true);
@@ -33,7 +35,7 @@ public:
     reports.Take(second, true);
     Outpost::Snapshot other = SnapshotOf(RED, 21, {{.kind = Outpost::EventKind::ShipLost}});
     reports.Take(other, true);
-    Assert::AreEqual(std::size_t{2}, reports.Reports().size(), L"a report a seat");
+    Assert::AreEqual(std::size_t{2}, reports.Reports().reports.size(), L"a report a seat");
     Assert::IsFalse(first.away.has_value() || second.away.has_value(), L"the deputy's snapshots carry none");
 
     Outpost::Snapshot back = SnapshotOf(BLUE, 22);
@@ -46,14 +48,44 @@ public:
     Outpost::Snapshot next = SnapshotOf(BLUE, 23);
     reports.Take(next, false);
     Assert::IsFalse(next.away.has_value(), L"once");
-    Assert::IsTrue(reports.Reports().size() == 1 && reports.Reports()[0].first == RED, L"the other seat's stays");
+    Assert::IsTrue(reports.Reports().reports.size() == 1 && reports.Reports().reports[0].first == RED, L"the other seat's stays");
+  }
+
+  // ADR-079 decision 4: a seat nobody has held is its deputy's from the world's start, and its player's first join carries
+  // no report of it; once the player has held the seat, a time away is reported. A save keeps which seats were held.
+  TEST_METHOD(ReportsNothingOnASeatsFirstJoin)
+  {
+    Outpost::AwayReports reports;
+    for (std::uint64_t tick = 1; tick <= 3; ++tick)
+    {
+      Outpost::Snapshot played = SnapshotOf(BLUE, tick, {{.kind = Outpost::EventKind::ShipBuilt}});
+      reports.Take(played, true);
+    }
+    Assert::IsTrue(reports.Reports() == Outpost::SeatReports{}, L"no report of a seat nobody has held");
+    Outpost::Snapshot first = SnapshotOf(BLUE, 4);
+    reports.Take(first, false);
+    Assert::IsFalse(first.away.has_value(), L"the first join carries none");
+
+    Outpost::Snapshot away = SnapshotOf(BLUE, 5, {{.kind = Outpost::EventKind::ShipLost}});
+    reports.Take(away, true);
+    Outpost::Snapshot back = SnapshotOf(BLUE, 6);
+    reports.Take(back, false);
+    Assert::IsTrue(back.away.has_value() && back.away->sinceTick == 5 && back.away->shipsLost == 1, L"a later return does");
+
+    Outpost::AwayReports restored;
+    restored.Restore({.held = {BLUE}});
+    Outpost::Snapshot afterRestart = SnapshotOf(BLUE, 7, {{.kind = Outpost::EventKind::ShipLost}});
+    restored.Take(afterRestart, true);
+    Outpost::Snapshot backAgain = SnapshotOf(BLUE, 8);
+    restored.Take(backAgain, false);
+    Assert::IsTrue(backAgain.away.has_value(), L"a seat a save says was held is reported on");
   }
 
   // A report a save kept goes on from where it was, and is handed over as any other.
   TEST_METHOD(GoesOnFromARestoredReport)
   {
     Outpost::AwayReports reports;
-    reports.Restore({{BLUE, {.sinceTick = 5, .shipsBuilt = 3}}});
+    reports.Restore({.reports = {{BLUE, {.sinceTick = 5, .shipsBuilt = 3}}}});
     Outpost::Snapshot played = SnapshotOf(BLUE, 40, {{.kind = Outpost::EventKind::ShipBuilt}});
     reports.Take(played, true);
     Outpost::Snapshot back = SnapshotOf(BLUE, 41);

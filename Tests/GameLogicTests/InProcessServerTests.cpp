@@ -96,6 +96,44 @@ public:
     Assert::IsTrue(log[0].command.player == BLUE && log[1].command.player == BLUE);
   }
 
+  // ADR-094: a command the server refuses is told, with why, to the player whose connection sent it, and to no other, in
+  // the snapshot of the tick it was refused at; a scheduled order refused when given is told the same way.
+  TEST_METHOD(TellsARefusalToItsPlayerAlone)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
+    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, SMALL_ION, {});
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
+    const auto refusals = [](const std::vector<Outpost::Snapshot>& _snapshots)
+    {
+      std::vector<Outpost::CommandResult> found;
+      for (const Outpost::Snapshot& snapshot : _snapshots)
+      {
+        for (const Outpost::EventView& event : snapshot.events)
+        {
+          if (event.kind == Outpost::EventKind::CommandRefused)
+            found.push_back(event.refusal);
+        }
+      }
+      return found;
+    };
+
+    blue->Send({.order = Outpost::MoveCommand{.ships = {redShip}, .destination = {.xMeters = 5.0f}}});
+    blue->Send({.order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {.xMeters = 7.0f}}});
+    blue->Send({.order = Outpost::ScheduleOrderCommand{.ships = {blueShip},
+                                                       .trigger = {.kind = Outpost::ScheduledTriggerKind::EnemyInSector, .sector = 9999}}});
+    server.Step();
+    Assert::IsTrue(refusals(blue->Receive()) == std::vector{Outpost::CommandResult::NotOwned, Outpost::CommandResult::NoSector},
+                   L"blue hears of its own two, in order, and not of the order applied");
+    Assert::IsTrue(refusals(red->Receive()).empty(), L"red hears of none");
+
+    red->Send({.order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {}}});
+    server.Step();
+    Assert::IsTrue(refusals(blue->Receive()).empty(), L"once told, not again");
+    Assert::IsTrue(refusals(red->Receive()) == std::vector{Outpost::CommandResult::NotOwned});
+  }
+
   // ADR-080: a scheduled order's time of day becomes the first tick at or after its moment, as the host's wall clock reads
   // now; a moment past is now, and one further than a week ahead a week ahead.
   TEST_METHOD(MakesAMomentItsTick)

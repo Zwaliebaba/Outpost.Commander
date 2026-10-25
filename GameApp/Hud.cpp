@@ -1953,6 +1953,9 @@ constexpr float ORDER_ARROW_TOP = 3.0f;
 constexpr float ORDER_TEXT_TOP = 6.0f;
 constexpr float ORDER_LABEL_TOP = 9.0f;
 
+// What the line beside WAITING says.
+constexpr std::string_view ORDERS_LEAVE_NOTE = "Any order to its ships takes them out";
+
 // Where the form's label stands, and the window's height.
 constexpr float ORDERS_FORM_TOP =
   Hud::TITLE_BAR_UNITS + PADDING + NAME_LINE_UNITS + (static_cast<float>(Hud::ORDERS_SHOWN + 1) * NAME_LINE_UNITS) + SECTION_GAP;
@@ -1972,12 +1975,19 @@ void LayOrders(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud
   const float room = ORDERS_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
   float top = Hud::TITLE_BAR_UNITS + PADDING;
   paint.Text("WAITING", WINDOW_INSET, top + 3.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  // Beside the label, that a ship given another order leaves the one it waits on, as the cancel button takes them all out.
+  paint.RightText(paint.Fit(std::string(ORDERS_LEAVE_NOTE), Hud::Typeface::Name, room / 2.0f), ORDERS_WINDOW_WIDTH - WINDOW_INSET, top,
+                  DIM_TEXT_COLOR, Hud::Typeface::Name);
   top += NAME_LINE_UNITS;
   if (_panel.scheduled.empty())
     paint.Text("None", WINDOW_INSET, top, DIM_TEXT_COLOR, Hud::Typeface::Name);
-  for (const std::string& line : _panel.scheduled)
+  // Each order with its cancel button at the line's right end, the line cut short to leave room for it.
+  const float cancelLeft = ORDERS_WINDOW_WIDTH - WINDOW_INSET - SMALL_BUTTON_UNITS;
+  for (const Hud::ScheduledLine& line : _panel.scheduled)
   {
-    paint.Text(paint.Fit(line, Hud::Typeface::Name, room), WINDOW_INSET, top, TEXT_COLOR, Hud::Typeface::Name);
+    paint.Text(paint.Fit(line.text, Hud::Typeface::Name, cancelLeft - ARROW_GAP_UNITS - WINDOW_INSET), WINDOW_INSET, top, TEXT_COLOR,
+               Hud::Typeface::Name);
+    paint.SmallButton("X", cancelLeft, top - 1.0f, true, {.kind = Hud::ActionKind::CancelOrder, .order = line.order});
     top += NAME_LINE_UNITS;
   }
   if (_panel.more > 0)
@@ -2257,7 +2267,7 @@ Hud::OrdersPanel Hud::DescribeOrders(const Snapshot& _newest, std::span<const En
     }
     std::string text = DescribeScheduledOrder(order, _newest, _clock);
     text.front() = static_cast<char>(std::toupper(static_cast<unsigned char>(text.front())));
-    panel.scheduled.push_back(std::format("{}{}{}", text, DOT, ships(order.ships.size())));
+    panel.scheduled.push_back({.text = std::format("{}{}{}", text, DOT, ships(order.ships.size())), .order = order.id});
   }
 
   const auto sectorName = [&_newest](std::int32_t _sector, std::string_view _none)
@@ -2351,11 +2361,15 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
                               {.label = "Hard skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Hard}}};
   if (_state.joinWorld)
     buttons.push_back({.label = "Join world", .action = {.kind = ActionKind::JoinWorld}});
+  // While a join connects, nothing else starts.
+  const bool connecting = !_state.connecting.empty();
+  for (Button& button : buttons)
+    button.enabled = !connecting;
   buttons.push_back({.label = "Quit", .action = {.kind = ActionKind::Quit}});
   // The notice, such as why the last game ended, wrapped to the menu's width under its subtitle.
   const std::vector<std::string> notice =
     _state.notice.empty() ? std::vector<std::string>() : _metrics.Wrap(Typeface::Name, _state.notice, MENU_WIDTH - (2.0f * PADDING));
-  const auto noticeUnits = static_cast<float>(notice.size()) * NAME_LINE_UNITS;
+  const auto noticeUnits = (static_cast<float>(notice.size()) + (connecting ? 1.0f : 0.0f)) * NAME_LINE_UNITS;
   const auto count = static_cast<float>(buttons.size());
   const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + noticeUnits + BUTTON_GAP + (count * BUTTON_HEIGHT) +
                             ((count - 1.0f) * BUTTON_GAP);
@@ -2366,6 +2380,12 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
   paint.Text("Outpost Commander", PADDING, PADDING, GOLD_COLOR, Typeface::Title);
   paint.Text("A skirmish against the AI", PADDING, PADDING + TITLE_LINE_UNITS, DIM_TEXT_COLOR, Typeface::Name);
   float top = PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS;
+  if (connecting)
+  {
+    paint.Text(paint.Fit(std::format("Connecting to {}...", _state.connecting), Typeface::Name, MENU_WIDTH - (2.0f * PADDING)), PADDING,
+               top, TEXT_COLOR, Typeface::Name);
+    top += NAME_LINE_UNITS;
+  }
   for (const std::string& line : notice)
   {
     paint.Text(line, PADDING, top, WARNING_COLOR, Typeface::Name);
@@ -3637,10 +3657,12 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       layout.panels.push_back({at.x - (arm / 2.0f), at.y - (across / 2.0f), arm, across, color});
     }
 
-    // Each alert's place, as an outlined square over everything else (ADR-059).
+    // Each alert's place, as an outlined square over everything else (ADR-059); a refusal has none (ADR-094).
     for (const auto& [text, position] : _content.alerts)
     {
-      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(position);
+      if (!position.has_value())
+        continue;
+      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(*position);
       const float half = ALERT_MARK_UNITS * scale / 2.0f;
       const float side = 2.0f * half;
       layout.panels.push_back({at.x - half, at.y - half, side, sectorLine, WARNING_COLOR});

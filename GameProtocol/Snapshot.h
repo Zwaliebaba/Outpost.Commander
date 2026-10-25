@@ -400,7 +400,9 @@ enum class EventKind : std::uint8_t
   // In a world, the player lost its Command Station and its last finished Shipyard, and its seat restarted at its start an
   // hour later (ADR-084 decisions 3 and 4); each names the start's sector and the start.
   EmpireLost,
-  EmpireRestarted
+  EmpireRestarted,
+  // The server refused a command the player gave this tick, for its refusal's reason (ADR-094).
+  CommandRefused
 };
 
 // What became of a scheduled order that fired (ADR-080).
@@ -432,6 +434,8 @@ struct EventView
   std::uint32_t order = 0;
   ScheduledActionKind action = ScheduledActionKind::Move;
   OrderOutcome outcome = OrderOutcome::AsGiven;
+  // A command refused: why.
+  CommandResult refusal = CommandResult::Applied;
 
   friend bool operator==(const EventView&, const EventView&) = default;
 };
@@ -510,6 +514,7 @@ struct AwayReport
     case EventKind::EnemyEntered:
     case EventKind::ShipRetreating:
     case EventKind::PiratesCleared:
+    case EventKind::CommandRefused:
       break;
     }
   }

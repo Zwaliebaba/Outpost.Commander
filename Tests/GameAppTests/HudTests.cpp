@@ -257,8 +257,9 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
                                    .give = {.label = "Give to 99 ships|", .enabled = false, .note = "NO ENEMY SEEN THERE"}};
   for (std::size_t order = 0; order < Outpost::Hud::ORDERS_SHOWN; ++order)
   {
-    orders.scheduled.push_back("When the Relay in " + LongestName('S') + " is threatened, Mining Rig in " + LongestName('T') +
-                               ", unless over 60 enemy CP");
+    orders.scheduled.push_back(
+      {.text = "When the Relay in " + LongestName('S') + " is threatened, Mining Rig in " + LongestName('T') + ", unless over 60 enemy CP",
+       .order = static_cast<std::uint32_t>(order + 1)});
   }
   for (const auto& [label, field] :
        std::array<std::pair<const char*, Outpost::OrderField>, Outpost::Hud::ORDER_ROWS>{{{"WHEN", Outpost::OrderField::Trigger},
@@ -2881,10 +2882,11 @@ public:
   TEST_METHOD(ListsTheAlerts)
   {
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
-    content.alerts = {{"Relay suppressed: South", {.xMeters = 0.0f, .zMeters = -500.0f}}, {"Enemy ships in West", {}}};
+    content.alerts = {{"Relay suppressed: South", Outpost::PlanePosition{.xMeters = 0.0f, .zMeters = -500.0f}},
+                      {"Not enough Ore", std::nullopt}};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const auto newest = std::ranges::find(layout.texts, std::string("Relay suppressed: South"), &Outpost::Hud::Text::text);
-    const auto older = std::ranges::find(layout.texts, std::string("Enemy ships in West"), &Outpost::Hud::Text::text);
+    const auto older = std::ranges::find(layout.texts, std::string("Not enough Ore"), &Outpost::Hud::Text::text);
     Assert::IsTrue(newest != layout.texts.end() && older != layout.texts.end());
     Assert::IsTrue(newest->top < older->top, L"newest first");
     Assert::IsTrue(IsChip(layout, *newest) && !IsChip(layout, *older), L"the newest a chip");
@@ -2894,10 +2896,19 @@ public:
       std::ranges::any_of(layout.panels, [&](const Outpost::Hud::Rect& _panel)
                           { return _panel.left < at.x && _panel.left + _panel.width > at.x && _panel.top < at.y && _panel.height < 3.0f; }),
       L"a mark round the alert's place");
+    // ADR-094: a refusal has no place, and no mark: only the one alert's four sides are in the warning's color on the map.
+    const auto marks = std::ranges::count_if(layout.panels,
+                                             [&](const Outpost::Hud::Rect& _panel)
+                                             {
+                                               return layout.minimap.Contains(_panel.left + 0.5f, _panel.top + 0.5f) &&
+                                                      _panel.color.x == 1.0f && _panel.color.y == 0.5f && _panel.color.z == 0.35f;
+                                             });
+    Assert::AreEqual(std::ptrdiff_t{4}, marks, L"no mark for the refusal");
   }
 
   // ADR-080 decision 9: the orders window lists the seat's scheduled orders, the first ORDERS_SHOWN with how many ships
-  // wait on each and how many more there are; and lays out the form, a row a field with the arrows that step it either way,
+  // wait on each and a button that cancels each, says that any order to their ships takes them out, and how many more there
+  // are; and lays out the form, a row a field with the arrows that step it either way,
   // when the order fires, and the button that gives it to the selection's warships, which says why it cannot while it
   // cannot.
   TEST_METHOD(LaysOutTheOrdersWindow)
@@ -2917,7 +2928,8 @@ public:
     Outpost::Hud::OrdersPanel panel = Outpost::Hud::DescribeOrders(newest, newest.entities, {}, form, clock, now);
     Assert::AreEqual(Outpost::Hud::ORDERS_SHOWN, panel.scheduled.size());
     Assert::AreEqual(std::size_t{2}, panel.more);
-    Assert::AreEqual(std::string("At 02:00, attack-move to North \xC2\xB7 2 ships"), panel.scheduled.front());
+    Assert::AreEqual(std::string("At 02:00, attack-move to North \xC2\xB7 2 ships"), panel.scheduled.front().text);
+    Assert::AreEqual(1u, panel.scheduled.front().order);
     const auto labelsOf = [](const Outpost::Hud::OrdersPanel& _panel)
     {
       std::vector<std::string> labels;
@@ -2957,8 +2969,24 @@ public:
                                  [](const auto& _action) { return _action.second.kind == Outpost::Hud::ActionKind::GiveOrder; });
     };
     Assert::IsFalse(gives(), L"nothing to give it to");
-    for (const std::string text : {"SELECT WARSHIPS", "and 2 more", "Fires at 02:00 on your clock, in 1:00:00"})
+    for (const std::string text :
+         {"SELECT WARSHIPS", "and 2 more", "Fires at 02:00 on your clock, in 1:00:00", "Any order to its ships takes them out"})
       Assert::IsTrue(std::ranges::find(layout.texts, text, &Outpost::Hud::Text::text) != layout.texts.end());
+    // A cancel button at the right end of each listed order's line, level with it, and none for the orders not listed.
+    for (const Outpost::Hud::ScheduledLine& line : panel.scheduled)
+    {
+      const auto cancel =
+        std::ranges::find(layout.actions, Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::CancelOrder, .order = line.order},
+                          [](const auto& _press) { return _press.second; });
+      Assert::IsTrue(cancel != layout.actions.end(), std::format(L"order {} has a cancel", line.order).c_str());
+      const auto text =
+        std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("At 02:00"); });
+      Assert::IsTrue(text != layout.texts.end());
+      Assert::IsTrue(cancel->first.left > text->left + 300.0f, L"at its line's right end");
+    }
+    Assert::AreEqual(Outpost::Hud::ORDERS_SHOWN,
+                     static_cast<std::size_t>(std::ranges::count_if(
+                       layout.actions, [](const auto& _press) { return _press.second.kind == Outpost::Hud::ActionKind::CancelOrder; })));
 
     // An event trigger watches a sector, and an attack takes a target there.
     form.Step(Outpost::OrderField::Trigger, 1, newest, newest.entities);
@@ -3136,6 +3164,23 @@ public:
                      Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StartSkirmish, .difficulty = Outpost::Difficulty::Easy});
       Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Outpost Commander"; }));
       Assert::IsFalse(layout.minimap.width > 0.0f);
+    }
+  }
+
+  // ADR-078 decision 9: while a join connects, the menu says to which server under its subtitle, and only Quit can be
+  // pressed; the skirmishes and Join world stay, dim.
+  TEST_METHOD(SaysAJoinIsConnecting)
+  {
+    const Outpost::Hud::Layout layout = LayMenu(1920, 1080, 1.0f, {.joinWorld = true, .connecting = "203.0.113.5:4433"});
+    const Outpost::Hud::Text& line = TextOf(layout, "Connecting to 203.0.113.5:4433...");
+    Assert::IsTrue(line.top > TextOf(layout, "A skirmish against the AI").top, L"under the subtitle");
+    Assert::AreEqual(size_t{1}, layout.actions.size(), L"one button can be pressed");
+    Assert::IsTrue(layout.actions[0].second.kind == Outpost::Hud::ActionKind::Quit, L"Quit");
+    Assert::IsTrue(line.top + 10.0f < layout.actions[0].first.top);
+    for (const std::string_view label : {"Easy skirmish", "Normal skirmish", "Hard skirmish", "Join world"})
+    {
+      const Outpost::Hud::Text& shown = TextOf(layout, label);
+      Assert::IsTrue(shown.top > line.top, L"the others stay, under the line");
     }
   }
 

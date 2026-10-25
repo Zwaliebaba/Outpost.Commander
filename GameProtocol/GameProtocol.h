@@ -24,6 +24,7 @@
 #include "StructureKind.h"
 #include "RetreatThreshold.h"
 #include "Command.h"
+#include "CommandResult.h"
 #include "Snapshot.h"
 #include "DesignStats.h"
 #include "Placement.h"

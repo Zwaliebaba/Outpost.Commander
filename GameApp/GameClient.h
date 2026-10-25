@@ -71,6 +71,10 @@ public:
   // (ADR-078).
   void ShowMenu(std::string _notice = {});
 
+  // Shows the main menu while a join connects to _server, Hud::ServerName's: it says so, and offers only Quit, until
+  // StartMatch or ShowMenu (ADR-078 decision 9).
+  void ShowConnecting(std::string _server);
+
   // Whether the menu offers to join a world: whether the player has a join file (ADR-078).
   void OfferWorld(bool _available) noexcept
   {
@@ -265,6 +269,8 @@ private:
   // What the menu says and offers besides its skirmishes (ADR-078).
   std::string m_menuNotice;
   bool m_offerWorld = false;
+  // The server a join connects to, while it does.
+  std::string m_connecting;
   // Where the match runs, and how long since its last snapshot came, for the HUD's tag (ADR-086).
   std::string m_server;
   float m_silentSeconds = 0.0f;

@@ -59,6 +59,42 @@ std::vector<std::string> Texts(const Outpost::Alerts& _alerts, std::uint64_t _ti
 TEST_CLASS(AlertsTests)
 {
 public:
+  // ADR-094: a command the server refused is told in its words, with no place: the key goes to the newest alert that has
+  // one. Told again, a refusal takes the older one's place at once, and another refusal is told beside it.
+  TEST_METHOD(TellsARefusalInWords)
+  {
+    Outpost::Alerts alerts;
+    const Outpost::EventView entered{
+      .kind = Outpost::EventKind::EnemyEntered, .sector = 2, .position = {.xMeters = 300.0f, .zMeters = -800.0f}, .other = ENEMY};
+    alerts.Observe(With(At(1), entered), TICKS_PER_SECOND);
+    const Outpost::EventView poor{.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::NotEnoughOre};
+    alerts.Observe(With(At(2), poor), TICKS_PER_SECOND);
+    Assert::IsTrue(Texts(alerts, 2) == std::vector<std::string>{"Not enough Ore", "Enemy ships in South"});
+    Assert::IsFalse(alerts.Shown(2, TICKS_PER_SECOND).front().position.has_value(), L"a refusal has no place");
+    Assert::IsTrue(alerts.Newest()->position == Outpost::PlanePosition{.xMeters = 300.0f, .zMeters = -800.0f},
+                   L"the key goes to the newest alert with a place");
+
+    alerts.Observe(With(At(3), {.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::SectorNotHeld}),
+                   TICKS_PER_SECOND);
+    alerts.Observe(With(At(4), poor), TICKS_PER_SECOND);
+    Assert::IsTrue(Texts(alerts, 4) == std::vector<std::string>{"Not enough Ore", "Not in a held sector", "Enemy ships in South"},
+                   L"told again at once, in the older one's place");
+  }
+
+  // ADR-094: every reason the server gives has words of its own.
+  TEST_METHOD(SaysEveryRefusalInWords)
+  {
+    std::vector<std::string_view> said;
+    for (auto value = static_cast<std::uint8_t>(Outpost::CommandResult::NoShips);
+         value <= static_cast<std::uint8_t>(Outpost::CommandResult::NotYetSupported); ++value)
+    {
+      const std::string_view words = Outpost::DescribeRefusal(static_cast<Outpost::CommandResult>(value));
+      Assert::IsFalse(words.empty() || words == "Refused");
+      Assert::IsTrue(std::ranges::find(said, words) == said.end(), std::wstring(words.begin(), words.end()).c_str());
+      said.push_back(words);
+    }
+  }
+
   TEST_METHOD(AlertsToEnemyShipsInAHeldSectorOnce)
   {
     Outpost::Alerts alerts;

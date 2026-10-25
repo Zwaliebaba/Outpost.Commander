@@ -9,6 +9,96 @@ namespace
 constexpr std::size_t KEPT_ALERTS = 16;
 } // namespace
 
+std::string_view Outpost::DescribeRefusal(CommandResult _refusal) noexcept
+{
+  switch (_refusal)
+  {
+  case CommandResult::Applied:
+    return "Done";
+  case CommandResult::NoShips:
+    return "No ships to order";
+  case CommandResult::UnknownEntity:
+    return "It is gone";
+  case CommandResult::NotAShip:
+    return "Only ships take that order";
+  case CommandResult::NotOwned:
+    return "Not your ship";
+  case CommandResult::InvalidPosition:
+    return "Not a place on the map";
+  case CommandResult::UnknownTarget:
+    return "The target is gone";
+  case CommandResult::NotAnEnemy:
+    return "Not an enemy";
+  case CommandResult::NotAConstructor:
+    return "Only Constructors build and repair";
+  case CommandResult::NotBuildable:
+    return "That is not built by Constructors";
+  case CommandResult::InvalidPlacement:
+    return "It cannot stand there";
+  case CommandResult::NotEnoughOre:
+    return "Not enough Ore";
+  case CommandResult::LimitReached:
+    return "You have a Research Lab already";
+  case CommandResult::NotRepairable:
+    return "Nothing there to repair";
+  case CommandResult::NotAProducer:
+    return "Only your Shipyards and Command Station build";
+  case CommandResult::UnknownDesign:
+    return "No such design";
+  case CommandResult::QueueFull:
+    return "The queue is full";
+  case CommandResult::NotALab:
+    return "Not your Research Lab";
+  case CommandResult::UnknownTopic:
+    return "No such topic";
+  case CommandResult::UnknownComponent:
+    return "No such part";
+  case CommandResult::AlreadyResearched:
+    return "Researched or queued already";
+  case CommandResult::PrerequisiteMissing:
+    return "Needs a topic researched first";
+  case CommandResult::InvalidName:
+    return "That name cannot be used";
+  case CommandResult::ComponentLocked:
+    return "A part is not unlocked yet";
+  case CommandResult::DuplicateDesign:
+    return "You have that design already";
+  case CommandResult::ComponentsFixed:
+    return "A design's parts cannot change";
+  case CommandResult::NotVisible:
+    return "Not in sight";
+  case CommandResult::NotAdjacent:
+    return "Not next to your territory";
+  case CommandResult::SectorNotHeld:
+    return "Not in a held sector";
+  case CommandResult::NoSector:
+    return "Not in a sector";
+  case CommandResult::NotUpgradable:
+    return "It cannot be upgraded";
+  case CommandResult::UnderConstruction:
+    return "Still being built";
+  case CommandResult::AlreadyUpgrading:
+    return "Upgrading already";
+  case CommandResult::TopLevel:
+    return "At its highest level";
+  case CommandResult::LevelTooLow:
+    return "Needs a higher level";
+  case CommandResult::CapReached:
+    return "At the node cap: upgrade the Command Station";
+  case CommandResult::Guarded:
+    return "The pirates guard that sector";
+  case CommandResult::NotSalvageable:
+    return "Nothing there to salvage";
+  case CommandResult::InvalidCondition:
+    return "That condition cannot be met";
+  case CommandResult::UnknownOrder:
+    return "That order has fired or gone";
+  case CommandResult::NotYetSupported:
+    return "Not in the game yet";
+  }
+  return "Refused";
+}
+
 std::string Outpost::DescribeScheduledAction(ScheduledActionKind _action, std::string_view _where)
 {
   switch (_action)
@@ -49,13 +139,16 @@ void Outpost::Alerts::Reset() noexcept
   m_alerts.clear();
 }
 
-void Outpost::Alerts::Raise(Kind _kind, std::string _text, PlanePosition _position, std::int32_t _sector, std::uint64_t _tick,
-                            std::uint32_t _ticksPerSecond)
+void Outpost::Alerts::Raise(Kind _kind, std::string _text, std::optional<PlanePosition> _position, std::int32_t _sector,
+                            std::uint64_t _tick, std::uint32_t _ticksPerSecond)
 {
+  // A refusal of the same words told again takes the older one's place, so that each refusal is told at once.
+  if (_kind == Kind::Refused)
+    std::erase_if(m_alerts, [&_text](const Alert& _alert) { return _alert.kind == Kind::Refused && _alert.text == _text; });
   const std::uint64_t repeatTicks = std::uint64_t{REPEAT_SECONDS} * _ticksPerSecond;
   // Every order fired is told, however close together.
   const bool repeated =
-    _kind != Kind::OrderFired &&
+    _kind != Kind::OrderFired && _kind != Kind::Refused &&
     std::ranges::any_of(m_alerts, [&](const Alert& _alert)
                         { return _alert.kind == _kind && _alert.sector == _sector && _tick < _alert.tick + repeatTicks; });
   if (repeated)
@@ -96,6 +189,9 @@ void Outpost::Alerts::Observe(const Snapshot& _snapshot, std::uint32_t _ticksPer
       break;
     case EventKind::OrderFired:
       raise(Kind::OrderFired, DescribeFiredOrder(event, where));
+      break;
+    case EventKind::CommandRefused:
+      Raise(Kind::Refused, std::string(DescribeRefusal(event.refusal)), std::nullopt, 0, _snapshot.tick, _ticksPerSecond);
       break;
     // What the player built and lost, and the sectors it gained and lost, go to its report of a time away (ADR-080
     // decision 7), not to an alert; and a world's lost and restarted empire is the banner's to tell (ADR-084 decision 8).

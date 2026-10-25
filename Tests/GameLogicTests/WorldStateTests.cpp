@@ -14,7 +14,7 @@ using Bytes = std::vector<std::byte>;
 // seats' reports beside it. Until the game is live, WORLD_STATE_VERSION stays 1, and a change to either records its new
 // hash here in place of version 1's (owner, 2026-10-09); a save carries its layout's hash, so a save of the old layout is
 // refused. Once live, a change raises WORLD_STATE_VERSION and records the new version's hash here, below the old.
-constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 1> LAYOUTS{{{1, 0xC7C5E5F3DF7A3234ull}}};
+constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 1> LAYOUTS{{{1, 0x71BEA80ED9D5E354ull}}};
 
 // _bytes with their checksum made again, as a save altered on purpose would have it.
 Bytes Rechecked(Bytes _bytes)
@@ -68,24 +68,27 @@ public:
     Assert::IsTrue(NextSnapshots(loaded) == NextSnapshots(world), L"and shows the players the same");
   }
 
-  // ADR-080 decision 7: a save keeps each seat's report of a time away beside the state, and gives them back.
+  // ADR-080 decision 7: a save keeps each seat's report of a time away beside the state, and the seats their players have
+  // held, and gives them back.
   TEST_METHOD(KeepsTheSeatsReports)
   {
     WorldMatch match(5);
     match.Run(1.0);
     const Outpost::SeatReports reports{
-      {Outpost::PlayerId{2},
-       {.sinceTick = 7,
-        .shipsLost = 3,
-        .sectorsGained = {4},
-        .ordersFired = {{.kind = Outpost::EventKind::OrderFired, .order = 9, .outcome = Outpost::OrderOutcome::HeldInstead}}}},
-      {Outpost::PlayerId{1}, {.sinceTick = 8, .structuresBuilt = 1}}};
+      .reports = {{Outpost::PlayerId{2},
+                   {.sinceTick = 7,
+                    .shipsLost = 3,
+                    .sectorsGained = {4},
+                    .ordersFired = {{.kind = Outpost::EventKind::OrderFired, .order = 9, .outcome = Outpost::OrderOutcome::HeldInstead}}}},
+                  {Outpost::PlayerId{1}, {.sinceTick = 8, .structuresBuilt = 1}}},
+      .held = {Outpost::PlayerId{2}, Outpost::PlayerId{1}}};
     const Bytes saved = Outpost::EncodeWorld(match.Server().World(), match.Identity(), reports);
     Outpost::Simulation loaded = match.Blank();
     Assert::IsTrue(Outpost::DecodeWorld(saved, match.Identity(), loaded) == reports);
     Assert::IsTrue(loaded == match.Server().World());
     Outpost::Simulation again = match.Blank();
-    Assert::IsTrue(Outpost::DecodeWorld(Outpost::EncodeWorld(match.Server().World(), match.Identity()), match.Identity(), again).empty(),
+    Assert::IsTrue(Outpost::DecodeWorld(Outpost::EncodeWorld(match.Server().World(), match.Identity()), match.Identity(), again) ==
+                     Outpost::SeatReports{},
                    L"a world with none keeps none");
   }
 

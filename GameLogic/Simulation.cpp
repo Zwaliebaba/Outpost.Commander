@@ -368,7 +368,8 @@ void Outpost::Simulation::Raise(PlayerId _player, EventView _event)
 {
   if (FindPlayer(_player) == nullptr)
     return;
-  if (_event.sector == 0)
+  // A refusal has no place (ADR-094).
+  if (_event.sector == 0 && _event.kind != EventKind::CommandRefused)
   {
     if (const Sector* sector = SectorAt(_event.position))
       _event.sector = sector->placement.id;
@@ -934,7 +935,12 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     // order their ships again (ADR-032).
     FinishPlannedOrders();
     for (const Command& command : _commands)
+    {
       results.push_back(ApplyOrder(command.player, command.order));
+      // The player who gave a command the server refuses hears why (ADR-094).
+      if (results.back() != CommandResult::Applied)
+        Raise(command.player, {.kind = EventKind::CommandRefused, .refusal = results.back()});
+    }
   }
 
   // The world advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
@@ -3220,7 +3226,7 @@ Outpost::CommandResult Outpost::Simulation::ApplyOrder(PlayerId _player, const O
       if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
                     std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand> ||
                     std::is_same_v<OrderType, HoldSectorCommand> || std::is_same_v<OrderType, PatrolCommand> ||
-                    std::is_same_v<OrderType, ScheduleOrderCommand>)
+                    std::is_same_v<OrderType, ScheduleOrderCommand> || std::is_same_v<OrderType, CancelScheduledOrderCommand>)
         return Apply(_player, _given);
       else
         return m_tuning ? Apply(_player, _given) : CommandResult::NotYetSupported;
@@ -3317,6 +3323,15 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Schedu
                                .action = _schedule.action,
                                .unlessCommandPoints = _schedule.unlessCommandPoints});
   return CommandResult::Applied;
+}
+
+// A cancel takes one of the player's scheduled orders away, and its ships wait on it no longer, keeping what they are doing
+// (ADR-080 decision 5).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const CancelScheduledOrderCommand& _cancel)
+{
+  const auto canceled =
+    std::erase_if(m_scheduledOrders, [&](const ScheduledOrder& _order) { return _order.id == _cancel.order && _order.player == _player; });
+  return canceled > 0 ? CommandResult::Applied : CommandResult::UnknownOrder;
 }
 
 void Outpost::Simulation::LeaveScheduledOrders(const std::vector<EntityId>& _ships)

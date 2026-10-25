@@ -38,6 +38,9 @@
     <ClInclude Include="Command.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="CommandResult.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
     <ClInclude Include="Snapshot.h">
       <Filter>Snapshots</Filter>
     </ClInclude>

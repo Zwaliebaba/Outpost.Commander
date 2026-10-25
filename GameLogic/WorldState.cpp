@@ -34,6 +34,14 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, SeatReports>
+auto Fields(Self& _value)
+{
+  auto& [reports, held] = _value;
+  return std::tie(reports, held);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, ShipMovement>
 auto Fields(Self& _value)
 {

@@ -474,6 +474,7 @@ void Outpost::GameClient::StartMatch(std::string _server)
   ClearMatch();
   m_server = std::move(_server);
   m_menuNotice.clear();
+  m_connecting.clear();
   m_screen = Screen::Match;
 }
 
@@ -481,7 +482,14 @@ void Outpost::GameClient::ShowMenu(std::string _notice)
 {
   ClearMatch();
   m_menuNotice = std::move(_notice);
+  m_connecting.clear();
   m_screen = Screen::Menu;
+}
+
+void Outpost::GameClient::ShowConnecting(std::string _server)
+{
+  ShowMenu();
+  m_connecting = std::move(_server);
 }
 
 void Outpost::GameClient::ClearMatch()
@@ -581,7 +589,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     // The menu is all there is: a press on its buttons, and nothing for the camera or the controls.
     m_hudLayout = Hud::LayMenu(metrics, _viewportWidthPixels, _viewportHeightPixels, m_interfaceFactor,
-                               {.joinWorld = m_offerWorld, .notice = m_menuNotice});
+                               {.joinWorld = m_offerWorld, .notice = m_menuNotice, .connecting = m_connecting});
     if (!_input.active)
       return;
     for (const Neuron::InputEvent& event : _input.events)
@@ -661,7 +669,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     else if (keyDown && event->key == KEY_LATEST_ALERT)
     {
       if (const Alerts::Alert* alert = m_alerts.Newest())
-        m_camera.SetFocus(alert->position.xMeters, alert->position.zMeters);
+        m_camera.SetFocus(alert->position->xMeters, alert->position->zMeters);
       event = input.events.erase(event);
     }
     else if (toggled.has_value() && !m_view.IsEmpty())
@@ -957,6 +965,9 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::GiveOrder:
     m_controls.Schedule(m_orderForm, WallClockNow(), m_clock, m_view.Newest(), m_knownEntities);
+    break;
+  case Hud::ActionKind::CancelOrder:
+    m_controls.CancelScheduled(_action.order);
     break;
   case Hud::ActionKind::Select:
     if (const auto selected = std::ranges::find(m_entities, _action.entity, &EntityView::id); selected != m_entities.end())

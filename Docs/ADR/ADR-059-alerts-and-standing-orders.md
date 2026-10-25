@@ -17,10 +17,11 @@ The rules have to say where alerts and standing orders live, how a group acts as
    - **Enemy ships in** a sector the player holds, or **Pirate ships in** it;
    - **Ship retreating**, when one of the player's ships starts going back to be repaired ([ADR-075](ADR-075-repair-and-retreat.md));
    - **Pirates cleared**, when a sector the pirates guarded stops being guarded;
-   - an **order fired**, held back or refused, when one of the player's scheduled orders fires ([ADR-080](ADR-080-events-and-scheduled-orders.md) decision 5).
+   - an **order fired**, held back or refused, when one of the player's scheduled orders fires ([ADR-080](ADR-080-events-and-scheduled-orders.md) decision 5);
+   - a **command refused**, in the player's words, with no place ([ADR-094](ADR-094-a-refused-command-is-told.md)).
 
-   Each names its sector and keeps where it happened. One kind in one sector is not raised again within 20 seconds, but an order fired is told every time. What the player built and lost besides a rig, and the sectors it gained and lost, raise no alert; they are the report of a time away's ([ADR-080](ADR-080-events-and-scheduled-orders.md) decision 7). A world's lost and restarted empire is the banner's to tell ([ADR-084](ADR-084-world-without-an-end.md) decision 8).
-2. **The HUD lists the alerts** of the last 8 seconds under the territory panel, at most four, newest first, the newest a warning chip ([ADR-085](ADR-085-one-meaning-per-color.md) decision 1). It marks each place on the minimap with an outlined square in that color, drawn over the fog. **Space moves the camera to the newest alert.**
+   Each names its sector and keeps where it happened, but a refusal, which has neither. One kind in one sector is not raised again within 20 seconds, but an order fired is told every time. What the player built and lost besides a rig, and the sectors it gained and lost, raise no alert; they are the report of a time away's ([ADR-080](ADR-080-events-and-scheduled-orders.md) decision 7). A world's lost and restarted empire is the banner's to tell ([ADR-084](ADR-084-world-without-an-end.md) decision 8).
+2. **The HUD lists the alerts** of the last 8 seconds under the territory panel, at most four, newest first, the newest a warning chip ([ADR-085](ADR-085-one-meaning-per-color.md) decision 1). It marks each place on the minimap with an outlined square in that color, drawn over the fog. **Space moves the camera to the newest alert** that has a place.
 3. **Standing orders are the server's**, as every order is (ADR-002), so they hold while the player looks elsewhere. They are two commands:
    - **`HoldSectorCommand`** names a point. The warships hold the sector that holds it, and it is refused as `NoSector` when no sector does or the map has no territory.
    - **`PatrolCommand`** names a destination, and patrols between it and the middle of the warships when ordered.

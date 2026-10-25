@@ -168,6 +168,8 @@ Outpost::Snapshot FullSnapshot()
                                  .outcome = Outpost::OrderOutcome::Refused};
   snapshot.events.push_back(fired);
   snapshot.events.push_back({.kind = Outpost::EventKind::EmpireRestarted, .sector = 115});
+  // The last kind of event, a refusal, with the last reason (ADR-094).
+  snapshot.events.push_back({.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::NotYetSupported});
   snapshot.restartTick = 116;
   snapshot.scheduled.push_back({.id = 101,
                                 .ships = {Outpost::EntityId{102}},
@@ -228,7 +230,8 @@ public:
         .ships = ships,
         .trigger = {.kind = Outpost::ScheduledTriggerKind::RigLost, .sector = 23, .utcSeconds = 1'790'000'000, .tick = 24},
         .action = {.kind = Outpost::ScheduledActionKind::BuildRig, .position = {.xMeters = 25.0f}, .target = Outpost::EntityId{26}},
-        .unlessCommandPoints = 27}};
+        .unlessCommandPoints = 27},
+      Outpost::CancelScheduledOrderCommand{.order = 28}};
     Assert::AreEqual(std::variant_size_v<Outpost::Order>, orders.size(), L"every alternative once");
     for (size_t i = 0; i < orders.size(); ++i)
     {
@@ -281,8 +284,11 @@ public:
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);
     Assert::AreEqual(96, snapshot.startingTickets);
     Assert::IsTrue(snapshot.drainIntervalSeconds == 3.25 && snapshot.drainTicketsPerNodeDifference == 97, L"the drain (task UI3.3)");
-    Assert::IsTrue(snapshot.events.size() == 2 && snapshot.events[1].kind == Outpost::EventKind::EmpireRestarted,
-                   L"the last kind of event");
+    Assert::IsTrue(snapshot.events.size() == 3 && snapshot.events[1].kind == Outpost::EventKind::EmpireRestarted,
+                   L"a world's restarted seat");
+    Assert::IsTrue(snapshot.events[2].kind == Outpost::EventKind::CommandRefused &&
+                     snapshot.events[2].refusal == Outpost::CommandResult::NotYetSupported,
+                   L"the last kind of event, with the last reason");
     Assert::AreEqual(std::uint64_t{116}, snapshot.restartTick.value_or(0), L"when a world's lost seat restarts");
     Assert::AreEqual(55.5, snapshot.constructorBuildSeconds, L"the Constructor's build time (ADR-068)");
     Assert::IsTrue(snapshot.entities[1].kind == Outpost::EntityKind::Derelict, L"the last kind of entity (ADR-074)");
@@ -351,7 +357,7 @@ public:
       Assert::ExpectException<Neuron::Exception>([&changed] { (void)Outpost::DecodeMessage(changed); });
     };
     refused(0, std::byte{4});    // a fifth kind of message
-    refused(5, std::byte{14});   // a fifteenth order
+    refused(5, std::byte{16});   // a seventeenth order
     refused(6, std::byte{0xFF}); // more constructors than bytes
     refused(10, std::byte{7});   // a structure past the Repair Bay, the last
   }
