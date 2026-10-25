@@ -940,6 +940,8 @@ constexpr float CARD_LOCK_FROM_FOOT = 20.0f;
 constexpr float SECTION_GAP = 20.0f;
 constexpr float SECTION_LABEL_HEIGHT = 26.0f;
 constexpr float BAR_ROW_HEIGHT = 25.0f;
+// Hit points, armor, speed, range, cost and build time.
+constexpr std::size_t BAR_ROWS_OF_EVERY_DESIGN = 6;
 constexpr float BAR_LEFT = 104.0f;
 // A previewed figure and its change, "1,680 (+1,482)", end at BAR_VALUE_RIGHT clear of the bar.
 constexpr float BAR_WIDTH = 90.0f;
@@ -1086,7 +1088,10 @@ DesignerExtent ExtentOf(const Hud::DesignerPanel& _panel) noexcept
   }
   extent.slotsEnd = y - SLOT_GAP;
   extent.sectionsTop = extent.slotsEnd + SECTION_GAP;
-  const float bars = SECTION_LABEL_HEIGHT + (6.0f * BAR_ROW_HEIGHT);
+  // A row for each bar drawn, and never fewer than the six every design has, so that the window keeps its height while no
+  // design is picked; a module with sight adds the seventh (ADR-058 decision 7).
+  const auto barRows = static_cast<float>(std::max<std::size_t>(_panel.bars.size(), BAR_ROWS_OF_EVERY_DESIGN));
+  const float bars = SECTION_LABEL_HEIGHT + (barRows * BAR_ROW_HEIGHT);
   const float damage = SECTION_LABEL_HEIGHT + DAMAGE_CARD_HEIGHT + (2.0f * PADDING);
   extent.footerTop = extent.sectionsTop + std::max(bars, damage) + PADDING;
   extent.height = extent.footerTop + FOOTER_HEIGHT + SECTION_GAP;
@@ -1945,8 +1950,9 @@ constexpr float ORDERS_FIRES_TOP = ORDERS_ROWS_TOP + (static_cast<float>(Hud::OR
 constexpr float ORDERS_GIVE_TOP = ORDERS_FIRES_TOP + NAME_LINE_UNITS + PANEL_GAP;
 constexpr float ORDERS_WINDOW_HEIGHT = ORDERS_GIVE_TOP + BUTTON_HEIGHT + PADDING;
 
+// Give lights under the pointer, _giveHovered, as the HUD's own buttons do (ADR-088 decision 1).
 void LayOrders(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::OrdersPanel& _panel,
-               Outpost::WindowManager::Point _corner, float _scale)
+               Outpost::WindowManager::Point _corner, float _scale, bool _giveHovered)
 {
   (void)OpenWindow(_layout, Outpost::WindowKind::Orders, std::string(), _corner, ORDERS_WINDOW_WIDTH,
                    ORDERS_WINDOW_HEIGHT - Hud::TITLE_BAR_UNITS, _scale);
@@ -1978,7 +1984,8 @@ void LayOrders(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud
                         {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = 1}, TEXT_COLOR, Hud::Typeface::Name);
   }
   paint.Text(paint.Fit(_panel.fires, Hud::Typeface::Name, room), WINDOW_INSET, ORDERS_FIRES_TOP, NUMBERS_COLOR, Hud::Typeface::Name);
-  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET, ORDERS_GIVE_TOP, room, BUTTON_HEIGHT, CARD_COLOR), _panel.give);
+  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET, ORDERS_GIVE_TOP, room, BUTTON_HEIGHT, CARD_COLOR), _panel.give,
+            _panel.give.enabled && _giveHovered);
 }
 
 // The away window (ADR-080 decision 9): how long the player was away, in the title face, and what happened, a line each.
@@ -3677,8 +3684,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     else if (kind == WindowKind::Orders && _content.orders.has_value())
     {
       LayOrders(layout, _metrics, *_content.orders,
-                place(kind, {.xUnits = screenWidthUnits - MARGIN - ORDERS_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, ORDERS_WINDOW_WIDTH),
-                scale);
+                place(kind, {.xUnits = screenWidthUnits - MARGIN - ORDERS_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, ORDERS_WINDOW_WIDTH), scale,
+                hovered(_content.orders->give.action));
     }
     else if (kind == WindowKind::Away && _content.away.has_value())
     {

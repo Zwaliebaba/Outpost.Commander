@@ -92,7 +92,7 @@ struct KeyBinding
   const auto then = [](std::uint8_t _key) { return std::format("{}, then click", KeyName(_key)); };
   return {
     {.keys = "SELECTING AND ORDERS", .does = ""},
-    {.keys = "Click", .does = "Select a ship, or a structure of yours"},
+    {.keys = "Click", .does = "Select a ship of yours, or any structure"},
     {.keys = "Drag", .does = "Select your ships in the box"},
     {.keys = "Shift+click", .does = "Add to the selection"},
     {.keys = "Double-click", .does = "Select every ship of that design in view"},

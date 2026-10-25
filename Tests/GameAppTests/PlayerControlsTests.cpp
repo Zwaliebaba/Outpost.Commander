@@ -407,11 +407,47 @@ public:
     driver.Click(driver.WorldView()[0]);
     driver.Click(driver.WorldView()[7]);
     Assert::IsTrue((Ids{STATION}) == driver.Selected());
-    driver.Click(driver.WorldView()[8]);
-    Assert::IsTrue(driver.Selected().empty(), L"an enemy structure is not selected");
     driver.Drag(0, 0, 1919, 1079);
     const Ids boxed = driver.Selected();
     Assert::IsTrue(std::ranges::find(boxed, STATION) == boxed.end());
+    Assert::IsTrue(std::ranges::find(boxed, ENEMY_YARD) == boxed.end());
+  }
+
+  // ADR-081 decision 4: a click on another player's structure, seen or remembered, selects it alone for its panel. It takes
+  // no order, joins no control group and no box, and leaves the selection once it is gone.
+  TEST_METHOD(SelectsAnotherPlayersStructureForItsPanel)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    const Outpost::EntityView yard = driver.WorldView()[8];
+    driver.Click(driver.WorldView()[0]);
+    driver.Click(yard, VK_LBUTTON, true);
+    Assert::IsTrue((Ids{ENEMY_YARD}) == driver.Selected(), L"alone, even with Shift");
+    driver.Hover(0, 0);
+    Assert::IsTrue((Ids{ENEMY_YARD}) == driver.Selected(), L"kept from frame to frame");
+
+    // No order goes anywhere while it is selected.
+    (void)driver.Controls().TakeCommands();
+    driver.ClickPixel(960, 540, VK_RBUTTON);
+    driver.Key('S');
+    Assert::IsTrue(driver.Controls().TakeCommands().empty());
+
+    // A control group keeps only the player's own.
+    driver.Key('3', true);
+    driver.Click(driver.WorldView()[0]);
+    driver.Wait(1000);
+    driver.Key('3');
+    Assert::IsTrue(driver.Selected().empty());
+
+    // Remembered under fog, it is still selected by a click, and kept; once forgotten, it goes.
+    driver.WorldView()[8].remembered = true;
+    driver.Click(driver.WorldView()[8]);
+    Assert::IsTrue((Ids{ENEMY_YARD}) == driver.Selected());
+    driver.Hover(0, 0);
+    Assert::IsTrue((Ids{ENEMY_YARD}) == driver.Selected());
+    driver.WorldView().erase(driver.WorldView().begin() + 8);
+    driver.Hover(0, 0);
+    Assert::IsTrue(driver.Selected().empty());
   }
 
   // ADR-066 decision 1: the HUD selects one of my structures alone, as the status line selects the Command Station
