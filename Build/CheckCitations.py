@@ -23,11 +23,12 @@ only what lasts may be cited:
 
 The existence checks, adr, decision, key and link, hold everywhere. The form check holds in the code, the ADRs, the
 living design and the living references: source comments and docstrings, Docs/ADR/*.md, Docs/OutpostCommander.md,
-Docs/Glossary.md, Docs/StyleGuide.md, Docs/Pillars.md, Docs/Budgets.md, Docs/Reference/*.md, AGENTS.md and CLAUDE.md.
+Docs/Glossary.md, Docs/StyleGuide.md, Docs/Pillars.md, Docs/Budgets.md, Docs/Horizon.md, Docs/Reference/*.md, AGENTS.md
+and CLAUDE.md.
 Its criteria hold in source comments and the ADRs only, where an outcome is never the thing to cite. Everything under
-Docs/Plans/ (the plans, the open phase's design and the self-play network's blueprint) and Docs/Records/, the Horizon
-(Docs/Horizon.md) and Docs/Reference/OpenDecisions.md, which GenerateDocs.py writes from the gate tables, may cite
-anything, as long as it exists.
+Docs/Plans/ (the plans, the open phase's design and the self-play network's blueprint) and Docs/Records/, and
+Docs/Reference/OpenDecisions.md, which GenerateDocs.py writes from the gate tables, may cite anything, as long as it
+exists.
 
 What it reads: every .h, .cpp, .hlsl, .py and .md file git tracks, and every new one it does not ignore, so a file not
 yet added is read before you push. In a .h, .cpp or .hlsl file it reads the comments and nothing else; in a .py file,
@@ -80,7 +81,7 @@ SKIPPED_DIRECTORIES = ("CompiledShader",)
 # Where only what lasts may be cited: these documents, every .md directly in these directories but the exempt ones,
 # and source comments.
 FORM_DOCUMENTS = {"AGENTS.md", "CLAUDE.md", LIVING_DESIGN, "Docs/Glossary.md", "Docs/StyleGuide.md", "Docs/Pillars.md",
-                  "Docs/Budgets.md"}
+                  "Docs/Budgets.md", "Docs/Horizon.md"}
 FORM_DIRECTORIES = (ADR_DIRECTORY, REFERENCE_DIRECTORY)
 FORM_EXEMPT = {OPEN_DECISIONS}
 
@@ -781,6 +782,8 @@ SELF_TEST_CASES = (
    lambda r: append(r, "Docs/OutpostCommander.md", "\nAs Phase 4 §2 has it.\n")),
   ("form", "the MVP's design in the glossary",
    lambda r: append(r, "Docs/Glossary.md", "\nAs the MVP design says.\n")),
+  ("form", "a milestone and a phase's design in the Horizon",
+   lambda r: write(r, "Docs/Horizon.md", "# Horizon\n\nAfter milestone 39, the Phase 6 design.\n")),
   ("form", "a bare design section in a C++ comment", lambda r: append(r, "Lib/Thing.cpp", "// As design §4 says.\n")),
   ("form", "a task in a header's comment", lambda r: append(r, "Lib/Thing.h", "// The Controls window (task 16.4).\n")),
   ("form", "a Look task in AGENTS.md", lambda r: append(r, "AGENTS.md", "\nAs LV2.1 built it.\n")),
@@ -814,8 +817,6 @@ SELF_TEST_QUIET = (
   ("a source file that is build output", lambda r: append(r, "Lib/CompiledShader/ThingPS.h", "// ADR-099, gate H8\n")),
   ("a document outside the form check's reach",
    lambda r: write(r, "Docs/Plans/SelfPlayNetwork.md", "# Net\n\ntask 3.4\n")),
-  ("a milestone and a phase's design in the Horizon",
-   lambda r: write(r, "Docs/Horizon.md", "# Horizon\n\nAfter milestone 39, the Phase 6 design.\n")),
   ("a gate and a task in the generated open decisions, though the other references refuse them",
    lambda r: write(r, OPEN_DECISIONS, "# Open decisions\n\n| Gate | Decision | Blocks |\n|---|---|---|\n"
                                       "| H8 | As gate H8 asks. | task 3.4 |\n")),
