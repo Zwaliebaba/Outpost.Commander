@@ -141,13 +141,18 @@ const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureK
 }
 
 // The nearest place to _preferred, in rings around it, where a structure of _type keeps _gapMeters clear of every blocker
-// and of the map's edge, and where the rules of _snapshot's map let its player build one: a Shipyard only in a sector the
-// player holds (ADR-020 decision 19).
+// and of the map's edge, and where the rules of _snapshot's map let its player build one: what NeedsHeldSector names only
+// in a sector the player holds (ADR-020 decision 19). With _plannedIn, the sector that point is in counts as held, for a
+// structure planned there before it is, which waits until it is (IsReady).
 std::optional<PlanePosition> FindPlace(const Outpost::StructureTypeView& _type, PlanePosition _preferred,
-                                       std::span<const EntityView> _blockers, const Snapshot& _snapshot, float _gapMeters)
+                                       std::span<const EntityView> _blockers, const Snapshot& _snapshot, float _gapMeters,
+                                       std::optional<PlanePosition> _plannedIn = std::nullopt)
 {
   Outpost::StructureTypeView padded = _type;
   padded.radiusMeters += _gapMeters;
+  std::vector<Outpost::SectorView> sectors = _snapshot.sectors;
+  if (const Outpost::SectorView* planned = _plannedIn.has_value() ? Outpost::FindSector(_snapshot.sectors, *_plannedIn) : nullptr)
+    sectors[static_cast<size_t>(planned - _snapshot.sectors.data())].holder = _snapshot.player;
   for (int ring = 0; ring <= SEARCH_RINGS; ++ring)
   {
     const int samples = ring == 0 ? 1 : 8 * ring;
@@ -156,7 +161,7 @@ std::optional<PlanePosition> FindPlace(const Outpost::StructureTypeView& _type, 
       const float angle = 2.0f * std::numbers::pi_v<float> * static_cast<float>(sample) / static_cast<float>(samples);
       const float meters = static_cast<float>(ring) * SEARCH_STEP_METERS;
       const PlanePosition place = Along(_preferred, std::cos(angle), std::sin(angle), meters);
-      if (Outpost::PlaceGhost(padded, place, _blockers, _snapshot.mapSizeMeters, _snapshot.sectors, _snapshot.player).valid)
+      if (Outpost::PlaceGhost(padded, place, _blockers, _snapshot.mapSizeMeters, sectors, _snapshot.player).valid)
         return place;
     }
   }
@@ -672,9 +677,11 @@ void Outpost::AiPlayer::AddPlatformBeside(const Snapshot& _snapshot, PlanePositi
                                         rigRadius + type->radiusMeters + static_cast<float>(m_settings.structureGapMeters));
   slot.radiusMeters = type->radiusMeters;
   const std::optional<PlanePosition> adopted = Adoptable(_snapshot, StructureKind::DefensePlatform, preferred);
+  // A rig's sector may not be held yet when its platform is planned: the platform stands in it, or in a sector the AI
+  // holds, and waits for it (IsReady).
   const std::optional<PlanePosition> place = adopted.has_value() ? adopted
                                                                  : FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot,
-                                                                             static_cast<float>(m_settings.structureGapMeters));
+                                                                             static_cast<float>(m_settings.structureGapMeters), at);
   slot.position = place.value_or(preferred);
   slot.abandoned = !place.has_value();
   m_slots.push_back(slot);
@@ -875,7 +882,8 @@ bool Outpost::AiPlayer::IsReady(const Slot& _slot, const Snapshot& _snapshot) co
   if (_snapshot.sectors.empty())
     return true;
   const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
-  if (_slot.structure == StructureKind::MiningRig)
+  // A rig, and what stands only in a sector its player holds, wait for the AI to hold theirs (ADR-056 decision 5).
+  if (_slot.structure == StructureKind::MiningRig || NeedsHeldSector(_slot.structure))
     return sector != nullptr && sector->holder == m_player;
   if (_slot.structure != StructureKind::Relay)
     return true;

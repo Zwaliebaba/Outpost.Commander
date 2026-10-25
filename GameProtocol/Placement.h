@@ -6,7 +6,7 @@ namespace Outpost
 // rules to what the snapshot shows (ADR-016): the footprint stays inside the map and overlaps no asteroid, field, structure
 // or derelict (ADR-074), and a Mining Rig snaps to a free ore asteroid within RIG_SNAP_METERS of the cursor. On a map with
 // sectors (ADR-056), a Relay snaps to the node site of the sector under the cursor, which must be adjacent to one the
-// player holds, a rig's asteroid and a Shipyard must be in a sector the player holds (ADR-056 decision 5); and a Relay waits
+// player holds, a rig's asteroid and what NeedsHeldSector names must be in a sector the player holds (ADR-056 decision 5); and a Relay waits
 // while the player is at its Command Station's node cap (ADR-064 decision 11), or while pirates guard the sector
 // (ADR-073 decision 7). The server decides; this only lets the ghost show green or red, and a rig on its asteroid or a
 // Relay on its node.
@@ -16,6 +16,16 @@ struct GhostPlacement
   float radiusMeters = 0.0f;
   bool valid = false;
 };
+
+// Whether a structure of _kind stands only in a sector its player holds, on a map with sectors (ADR-056 decision 5): a
+// Shipyard and a Repair Bay, so that production follows territory, and a Research Lab and a Defence Platform, so that
+// neither creeps into another player's sectors. A Mining Rig's asteroid must be in one too, which PlaceGhost judges by
+// the asteroid.
+[[nodiscard]] constexpr bool NeedsHeldSector(StructureKind _kind) noexcept
+{
+  return _kind == StructureKind::Shipyard || _kind == StructureKind::RepairBay || _kind == StructureKind::ResearchLab ||
+         _kind == StructureKind::DefensePlatform;
+}
 
 // The ghost of _type with the cursor at _cursor on the ground, over the snapshot's _entities on a map _mapSizeMeters
 // across, for _player, with the snapshot's _sectors and the player's _nodeCap, or none for zero.

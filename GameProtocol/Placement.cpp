@@ -59,9 +59,8 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
 
   const float half = _mapSizeMeters / 2.0f;
   const bool inside = std::abs(_cursor.xMeters) + _type.radiusMeters <= half && std::abs(_cursor.zMeters) + _type.radiusMeters <= half;
-  // On a map with sectors, a Shipyard or a Repair Bay stands only in a sector the player holds, so that production follows
-  // territory (ADR-056 decision 5).
-  if ((_type.structure == StructureKind::Shipyard || _type.structure == StructureKind::RepairBay) && !_sectors.empty())
+  // On a map with sectors, some structures stand only in a sector the player holds (ADR-056 decision 5).
+  if (NeedsHeldSector(_type.structure) && !_sectors.empty())
   {
     const SectorView* sector = FindSector(_sectors, _cursor);
     if (sector == nullptr || sector->holder != _player)
