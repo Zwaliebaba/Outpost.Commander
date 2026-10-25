@@ -1,0 +1,281 @@
+
+Type
+Faces
+ | Hud::Typeface
+ | Family list (the first installed one is used)
+ | Weight
+ | Stretch
+ | Size (reference units = px at 1080p)
+ | Line pitch the layout uses
+ | Body
+ | Segoe UI
+ | 600
+ | Normal
+ | 20 (FONT_UNITS, Hud.h:26)
+ | —
+ | Title
+ | Bahnschrift
+ | 700
+ | SemiCondensed
+ | 22
+ | TITLE_LINE_UNITS 30 (Hud.cpp:65)
+ | Label
+ | Bahnschrift
+ | 600
+ | Normal
+ | 13
+ | — (placed per use)
+ | Name
+ | Bahnschrift
+ | 600
+ | Normal
+ | 16
+ | NAME_LINE_UNITS 22 (Hud.cpp:66)
+ | Figure
+ | Cascadia Mono → Consolas
+ | 600 (Consolas meets it with its bold, Hud.cpp:3005)
+ | Normal
+ | 14
+ | FIGURE_LINE_UNITS 17 (Hud.cpp:67)
+ | LargeFigure
+ | Cascadia Mono → Consolas
+ | 700
+ | Normal
+ | 28
+ | —
+ | Detail
+ | Cascadia Mono → Consolas
+ | 400
+ | Normal
+ | 13
+ | TOPIC_LINE_UNITS 18 on topic cards (Hud.cpp:1628)
+How the faces are made:
+- None installed: a face none of whose families is installed throws, and the game stops (GlyphAtlas.cpp:229-246; ADR-030 d2).
+- Rasterizing: DirectWrite draws grayscale coverage, NATURAL_SYMMETRIC (GlyphAtlas.cpp:288-290), at max(1, round(units × scale)) px (UiPipeline.cpp:28-31). The atlas is drawn again when the scale moves any face by a whole pixel (ADR-015 d3).
+- Characters: printable ASCII plus U+00B7 · and U+00D7 ×. Anything else shows ? (GlyphAtlas.h:62-67).
+- Whole pixels: advances, the pen, the top and the tracking are whole pixels (GlyphAtlas.cpp:276; UiPipeline.cpp:270-272).
+- Line box: the line box is ceil(ascent + descent + lineGap) from the font's metrics (GlyphAtlas.cpp:258-259). Its value per face is Not specified: it depends on the installed font.
+Type scale · reference units, 1920×1080 at factor 1.0
+ | Face | Size | Specimen and role | Source
+ | Body | 20 units · 600 | Rasterized, drawn by no text
+Body (default face of Hud::Text) | Hud.h:26,46; Hud.cpp:3010 ADR-030 decision 1; ADR-062 decision 1 (stays 20)
+ | Title | 22 units · 700 | Outpost Commander 1,240
+Title: window subject, panel first line, Ore stockpile, Ore box, Queue label and cost, close mark, menu title, outcome title, away "since" | Hud.h:46; Hud.cpp:3011 ADR-062 decision 1 (stays 22); ADR-043 decision 2
+ | Label | 13 units · 600 | PERFORMANCE · QUEUE · 0 / 5
+Label: small spaced capitals (section labels, title-bar labels, NAME, SAVED, RETREAT, row labels, units) with tracking; untracked for arrow marks, key caps, chip names, armor/reach, notes, lock and need lines, strength initials, WAITING FOR ORE | Hud.h:46; Hud.cpp:3012 ADR-062 decision 1 (12 -> 13)
+ | Name | 16 units · 600 | Shipyards · BUILDING 2 · WAITING 0
+Name: button labels, card and design names, HUD panel lines (status, territory, alerts, hint, connection), selection lines after the first, queue rows, Controls, orders and away lines, menu subtitle and notice, HUD retreat cells, stepper | Hud.h:46; Hud.cpp:3013 ADR-062 decision 1 (stays 16); ADR-043 decision 2
+ | Figure | 14 units · 600 | +14.5/s 29 / 30
+Figure: costs (with the gem), income, territory and status figures, stat values, queue percent and index, name count, damage change | Hud.h:46; Hud.cpp:3014 ADR-062 decision 1 (13 -> 14 at 600)
+ | LargeFigure | 28 units · 700 | 34.4
+LargeFigure: a damage card's per-ship damage per second | Hud.h:46; Hud.cpp:1526,3015 ADR-062 decision 1 (stays 28)
+ | Detail | 13 units · 400 | 220 HP · ARM 2 · 60m/s
+Detail: a part card's numbers and note, chip code, per-100-ore, designer hint, Queue detail, production code line and time, topic effect lines and time | Hud.h:46; Hud.cpp:3016 ADR-062 decision 1 (11 -> 13)
+Contrast: text on the panel it sits on
+Method, the same as ADR-062 d3 and HudTests.cpp:318-360:
+- The ratio is WCAG's (L1 + 0.05) / (L2 + 0.05).
+- L = 0.2126R + 0.7152G + 0.0722B, taken straight from the linear constants. They are already linear sRGB, so nothing is decoded.
+- Each ground is composited over black at its alpha, in linear.
+- A hatched ground is counted twice, once as stripe and once as gap.
+- The pairs are those the code draws (use sites in tokens.json). The ratios are computed by A5.
+ | Text
+ | Ground
+ | Ratio (gap / stripe)
+ | ADR figure
+ | Agrees
+ | TEXT_COLOR
+ | window / card / field / picked
+ | 14.66 / 13.14 / 16.23 / 8.25
+ | —
+ | 
+ | TEXT_COLOR
+ | hatched header band
+ | 14.66 / 10.01
+ | —
+ | 
+ | TEXT_COLOR
+ | close box
+ | 13.14
+ | —
+ | 
+ | DIM_TEXT_COLOR
+ | window / field
+ | 7.90 / 8.74
+ | —
+ | 
+ | DIM_TEXT_COLOR
+ | disabled arrow button over the window / over a stripe
+ | 4.86 / 4.66
+ | —
+ | 
+ | WARNING_COLOR (plain)
+ | window / field
+ | 10.25 / 11.35
+ | —
+ | 
+ | WINDOW_COLOR (chip words)
+ | WARNING_COLOR tag
+ | 10.25
+ | 10.3 (ADR-085 d1)
+ | yes
+ | LABEL_COLOR
+ | window / field / card
+ | 5.31 / 5.88 / 4.76
+ | 4.8–5.9 for the labels; 5.9 for the name's count on the field (ADR-062 d3)
+ | yes
+ | ROW_LABEL_COLOR
+ | window / field / card
+ | 8.45 / 9.35 / 7.57
+ | —
+ | 
+ | HEADER_LABEL_COLOR
+ | hatched title bar
+ | 8.45 / 5.77
+ | 5.8 on stripes (ADR-062 d3)
+ | yes
+ | NUMBERS_COLOR
+ | window / card / picked
+ | 12.81 / 11.48 / 7.20
+ | —
+ | 
+ | SOFT_COLOR
+ | field
+ | 7.25
+ | —
+ | 
+ | CODE_COLOR
+ | card
+ | 4.86
+ | —
+ | 
+ | ACCENT_COLOR
+ | picked / window
+ | 5.88 / 10.45
+ | 5.9 for the shown chip's code (ADR-062 d3)
+ | yes
+ | GOLD_COLOR
+ | window / field / card / picked
+ | 9.67 / 10.70 / 8.66 / 5.44
+ | —
+ | 
+ | GOLD_COLOR
+ | Queue face / stripes
+ | 5.28 / 4.64
+ | 4.6 (ADR-062 d3)
+ | yes
+ | LOCKED_TEXT_COLOR
+ | locked body / stripes
+ | 5.08 / 4.62
+ | 5.1 / 4.6 (ADR-062 d3)
+ | yes
+ | LOCKED_TEXT_COLOR
+ | field (dim card)
+ | 5.34
+ | 5.3 (ADR-062 d3)
+ | yes
+ | AMBER_COLOR
+ | locked body / stripes; card
+ | 7.22 / 6.56; 6.14
+ | —
+ | 
+ | GOOD_COLOR
+ | window / field
+ | 11.61 / 12.86
+ | —
+ | 
+ | POOR_COLOR
+ | window / field
+ | 4.58 / 5.07
+ | 4.6 on a window (ADR-062 d3)
+ | yes
+ | QUEUE_TEXT_COLOR
+ | Queue face / stripes
+ | 8.74 / 7.68
+ | —
+ | 
+ | QUEUE_EDGE_COLOR ("SAVED")
+ | field
+ | 5.02
+ | —
+ | 
+ | OWN_COLOR / ENEMY_COLOR
+ | window
+ | 10.51 / 8.78
+ | —
+ | 
+Checks on the ADRs' other figures:
+- Locked text's luminance is 0.2537 / 0.873 = 29% of live text's. ADR-062 says 29%: yes.
+- Every pair is at 4.5:1 or more. The least is POOR_COLOR on the window, at 4.58.
+Minimap marks against the map. The ground is MAP_COLOR at 0.95 over WINDOW_COLOR over black, L = 0.0367.
+ | Mark
+ | Ratio
+ | ADR figure
+ | Agrees
+ | Own
+ | 7.63
+ | —
+ | 
+ | Enemy
+ | 6.37
+ | —
+ | 
+ | Pirate
+ | 7.04
+ | —
+ | 
+ | Derelict
+ | 7.76
+ | —
+ | 
+ | Neutral
+ | 5.48
+ | —
+ | 
+ | Ore
+ | 3.52
+ | —
+ | 
+ | Dry
+ | 3.13
+ | 3.1 (ADR-068 d2)
+ | yes
+ | Field
+ | 2.09
+ | 2.1 (ADR-068 d2)
+ | yes
+ | Lattice
+ | 2.06
+ | 2.06 (interface plan 2, UI1.4)
+ | yes
+ | The view (composited)
+ | 8.94
+ | —
+ | 
+Health fills on a side's back (×0.3):
+ | Back
+ | Health good
+ | Health fair
+ | Health poor
+ | Build bar
+ | Human
+ | 4.19
+ | 4.47
+ | 2.36
+ | 3.30
+ | Tarkan
+ | 4.41
+ | 4.71
+ | 2.48
+ | 3.47
+ | Pirate
+ | 4.62
+ | 4.93
+ | 2.60
+ | 3.63
+ | Gray fallback
+ | 5.55
+ | 5.93
+ | 3.12
+ | 4.37
+ADR-088 d5 gives the bars' red as 2.36 and their amber as 4.47 or more, and the figures' colors would stand at 1.67 and 3.32. Computed here: 1.67 and 3.32. That agrees.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

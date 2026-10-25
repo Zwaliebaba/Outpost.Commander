@@ -1,0 +1,123 @@
+
+Interface scale and the mockup
+Interface scale
+The steps. Hud::INTERFACE_STEPS are 100, 110, 125, 150, 175 and 200 % (Hud.h:861; ADR-070 d2). The brief's "100/110/125%" matches what a 16:9 screen reaches (see below), not the list of steps. Ctrl+= takes the next step and Ctrl+- the one before (KeyBindings.h:41-42; GameClient.cpp:779-799). The factor starts at 100% (GameClient.h:347), lasts until the game closes, and is never written to disk (ADR-070 d5).
+What scales. Hud::Scale = factor × min(width/1920, height/1080) (Hud.cpp:3029-3033). Everything the HUD lays out scales with it, and each anchor is computed in the smaller reference screen (width/scale, height/scale):
+- the menu, every HUD panel and every window;
+- text, which is rasterized again at the new size (ADR-070 d6, UiPipeline::UseScale GameClient.cpp:577-579);
+- hit-testing and window positions (ToUnits, GameClient.cpp:1034-1038).
+What does not scale.
+- The bars over entities (Hud.cpp:3096; ADR-088 d5).
+- The selection ring (ADR-067).
+- The stars (GameClient.cpp:1140). ADR-070 d7.
+What limits it (Hud::WindowsFit, Hud.cpp:3035-3054; StepInterface, 3056-3073).
+- A step up is taken only while these fit the screen less 2 × 16 margins:
+ - the Controls window (700 × 762), always;
+ - in a match, also the Orders window (640 × 560), the Away window at 20 lines (600 × 530), and the designer laid out for the match's components (818 × 913 with Tuning.json).
+- A step down is always taken.
+- Re-fit. A new screen size, or a match starting or ending, takes the factor down to the largest step that fits (GameClient.cpp:792-798).
+Computed reach. These figures come from the arithmetic, not from a screen.
+ | Screen
+ | Where
+ | Reaches
+ | Why
+ | 16:9
+ | Menu
+ | 125%
+ | Controls: 762 + 32 = 794 fits 1080/1.25 = 864, but not 1080/1.5 = 720
+ | 16:9
+ | Match
+ | 110%
+ | The designer: 913 + 32 = 945 fits 981.8, but not 864
+ | 2880×1920
+ | Match
+ | 125%
+ | ADR-070 says so too
+ | 4:3, e.g. 1600×1200
+ | Match
+ | ≈150%
+ | Not stated in any document
+Effects of scaling.
+- At 110%, the windows overlap at their default places (ADR-070 Consequences). Research's slot 1 ends at 1070 units, past the designer's default x of 911.
+- Layout files: menu-scale-125.json and hud-scale-110.json. In the latter, the selection panel is ≈589.3, 813.8, 323.4, 248.6 and the minimap 17.6, 732.4, 330, 330.
+The designer mockup
+[IMG /_blob/cc2aa2f51f17ff6ec9bce92620de249a alt=The owner's designer mockup]
+GameDesign/Mockups/ShipDesigner.png: evidence, not ground truth; the code differs as below.
+The mockup is 727 × 702 px, drawn at the reference scale (Hud.cpp:910-911). Code wins every difference.
+ | #
+ | Mockup shows
+ | Code at HEAD
+ | Why (source)
+ | 1
+ | Ore as a ◆ diamond
+ | A cut gem
+ | ADR-085 d3
+ | 2
+ | Gold sampled at #F7D364, linear (0.93, 0.651, 0.127) (the "2582" box, the Queue "87")
+ | GOLD_COLOR #F7BC3C, (0.93, 0.50, 0.045)
+ | No document records the change. Hud.cpp:976 lists the block as "sampled from it". See Conflicts C10.
+ | 3
+ | White text sampled at #DEE6F2
+ | TEXT_COLOR #EAF1FA
+ | TEXT_COLOR is the HUD's own (Hud.cpp:14-16), not from the mockup block
+ | 4
+ | Title-bar labels in the label blue #8293AE
+ | HEADER_LABEL_COLOR #ACBACD
+ | ADR-062 d3, raised to 5.8:1
+ | 5
+ | Title bar: a ground of #222A3C with stripes of #2A3243
+ | WINDOW_COLOR #181E2B with TITLE_HATCH_COLOR stripes #303A50, 2 of every 7 units
+ | Not documented
+ | 6
+ | 727 wide; cards about 190
+ | 818 wide; cards 220
+ | ADR-062 d4
+ | 7
+ | "SHIPYARD 01 · DESIGNER"; "QUEUE · 0 BUILT"
+ | "< SHIPYARD 01 > · DESIGNER"; "QUEUE · 0 / 5" over the slots, with "BUILT · 0" beside
+ | ADR-068 d1
+ | 8
+ | No close box
+ | A 36 × 36 close box with "×"
+ | ADR-031 d3
+ | 9
+ | Three slot rows
+ | Four: the module row
+ | Phase 2 design §10
+ | 10
+ | A picked card with a lighter top (#3C5377 to #334767)
+ | Solid PICKED_COLOR #334767
+ | Not documented; the code draws solid fills only (Hud.h:630-637)
+ | 11
+ | Stat bars with gradient fills
+ | Solid BAR_FILL_COLOR
+ | Not documented (same reason)
+ | 12
+ | "DAMAGE / S AFTER ARMOR · VS HULL"
+ | "· VS A FORMATION", plus "×N ships" reach
+ | Hud.cpp:1510, 1527-1529
+ | 13
+ | Footer: Rename, stepper, Queue
+ | Rename, a RETREAT row of three, stepper, Queue
+ | Phase 4 design §10; interface plan 2 UI4.3
+ | 14
+ | "SAVED" green sampled near #74D580
+ | QUEUE_EDGE_COLOR #559361
+ | Not documented
+ | 15
+ | Queue face sampled at (0.033–0.038, 0.114–0.13, 0.045–0.05)
+ | QUEUE_COLOR and its hatch, 0.65 of the mockup's
+ | ADR-062 d3
+ | 16
+ | Locked text (0.15, 0.19, 0.26); worse red (0.75, 0.08, 0.044)
+ | (0.20, 0.26, 0.35); (0.80, 0.09, 0.05)
+ | ADR-062 d3
+What matches the mockup to within rounding:
+- WINDOW_EDGE_COLOR, sampled at #8AB0E2
+- QUEUE_TEXT_COLOR, #EDFFEF
+- FIELD_, CARD_, LOCKED_, BAR_TRACK_ and PICKED_COLOR (the lower part of the picked card)
+- LABEL_, SOFT_, AMBER_, GOOD_ and FAIR_COLOR
+- ACCENT_COLOR, close to the mockup
+- the hint "Hover any part to preview its effect."
+Method: Pillow pixel counts in regions of the PNG, decoded from sRGB to linear.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

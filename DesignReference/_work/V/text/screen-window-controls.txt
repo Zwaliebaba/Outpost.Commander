@@ -1,0 +1,90 @@
+
+The Controls window (F1), at its default place in the middle of the screen
+1,000
++0/s
+Nodes
+cap 4 of 25
+1
+1 : 
+Tickets
+1,000
+1,000 : 
+No drain
+Local skirmish
+×
+CONTROLS
+SELECTING AND ORDERS
+Click
+Select a ship, or a structure of yours
+Drag
+Select your ships in the box
+Shift+click
+Add to the selection
+Double-click
+Select every ship of that design in view
+Right-click
+Move, attack, or build and repair with Constructors
+A, then click
+Attack-move
+H, then click
+Hold the sector clicked in
+T, then click
+Patrol to the point clicked
+S
+Stop
+Ctrl+0-9
+Make a control group
+0-9
+Select a group; twice, look at it
+Shift+click
+Place a structure and keep placing
+CAMERA
+Up Down Left Right
+Pan
+Screen edge
+Pan, while the pointer is held in the window
+Middle-drag
+Pan
+Wheel
+Zoom
+Q and E
+Turn
+Minimap click
+Look there
+Minimap right-click
+Send the selection there
+Space
+Look at the newest alert
+WINDOWS
+D
+Ship designer
+P
+Production
+R
+Research
+O
+Scheduled orders
+F1
+These controls
+Esc
+Close the front window, or cancel an order
+Alt, held
+Every health bar
+Ctrl+= and Ctrl+-
+The interface larger and smaller
+1
+2
+3
+4
+5
+6
+window · controls · factor 1
+The Controls window (F1), at its default place in the middle of the screen
+- 1Ore panelThe stockpile as the gem and figure in GOLD_COLOR, written one way everywhere; the income in NUMBERS_COLOR, a warning chip at +0/s. The word Ore is not written.Hud.cpp:3143-3157; ADR-043 d3; ADR-047 d5; ADR-085 d1
+- 2TerritoryNodes held, own : enemy, against the Command Station's cap; domination tickets while both sides have them; the drain, a chip when it is the player's. Only on a map with sectors.Hud.cpp:3167-3213; ADR-056; ADR-057
+- 3Where the match runsLocal skirmish, or Server host:port. After 2 s without a snapshot a chip counts the silence. Never on the menu.Hud.cpp:3320-3337; Hud.h:469; ADR-086
+- 4Minimap10,000 m in 284 units (35.2 m a unit): sector wash, marks, fog, the sector lattice, held and guarded outlines, remembered crosses, alerts and the camera's view.Hud.cpp:3456-3630; ADR-068 d2; ADR-081
+- 5Window chromeOpaque WINDOW_COLOR body, hatched title bar (drag it), close box, corner brackets. Esc closes the front window; a press brings a window to the front.Hud.cpp:871-899; ADR-031; WindowManager.cpp
+- 6ControlsEvery key and mouse action the game reads in a match, built from KeyBindings.h so it cannot name a key the code does not read.Hud.cpp:1888-1926; KeyBindings.h:93-125; ADR-068 d4
+Geometry derived from Hud.cpp by A4's derive_layouts.py, not dumped from the game: 76 of 229 elements depend on DirectWrite text measurement and are estimated. Content values are samples built from Tuning.json and Map.json. Dashed boxes and numbered discs in #FF2D95 are this reference's annotations, not the game.
+DesignReference/_work/A4/layouts/window-controls.json

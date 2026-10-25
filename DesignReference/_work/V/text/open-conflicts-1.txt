@@ -1,0 +1,126 @@
+
+Conflicts, part 1 of 3
+Conflicts · part 1 of 3
+Conflicts
+Agent R (reconciliation). HEAD a053fe294d91dc885bbb061c2f34d76ca6897738 (2026-10-25T08:33:55+01:00). Built from A1–A7 and checked against the repository. Every entry was deduplicated across agents: "Reported by" credits each agent that raised it, and "lead" marks the lead's notes.
+How to read an entry.
+- Sides give file:line and the value each states.
+- Reference shows is the code's or the data's value. That is what the reference prints (ground rule 3).
+- Class is one of these:
+ - code-vs-intent: the code differs from the latest decision. It may be a defect or an undocumented decision.
+ - stale-doc: an ADR, a code comment or the brief should say what the code does.
+ - superseded: an earlier document that a later phase or ADR already overrides. Informational only.
+ - agent-disagreement: two agents describe the code differently.
+- OWNER? is yes when the entry changes what a screen shows or a core rule, and is plausibly a code defect rather than a stale doc.
+- R checked says what R verified itself in the repository.
+Order: OWNER?=yes first (C-001 to C-005), then code-vs-intent (none without OWNER), then stale-doc (C-006 to C-036a), then superseded (C-037 to C-064), then agent-disagreement (C-065 to C-067).
+Short names: Phase1.md and the others stand for GameDesign/Archive/OutpostCommander-PhaseN.md, MVP.md for GameDesign/Archive/OutpostCommander-MVP.md, and Phase5.md for GameDesign/OutpostCommander-Phase5.md. Plan5.md is GameDesign/ImplementationPlan-Phase5.md, PlanUI1.md is GameDesign/ImplementationPlan-Interface.md, PlanUI2.md is GameDesign/ImplementationPlan-Interface2.md, and PlanLook.md is GameDesign/ImplementationPlan-Look.md. ADRs are Design/ADR/ADR-NNN-*.md.
+OWNER? = yes
+C-001 — The HUD's side colors are code constants, not the data's side colors, and for seat 2 they contradict the world
+- Claim: Ground rule 6 says colors come from data. ADR-011 decision 3 says the set's color is the team color. The minimap and the territory figures do not read Models.json.
+- Sides:
+- Data (OutpostCommander/Assets/Models.json:5, 20, 35, 40; players at :53-56). The scene draws each side by player number (GameApp/ModelCatalog.cpp:304-316, SetForPlayer):
+- Human (0.18, 0.42, 0.95) #76ADF9, player 1
+- Tarkan (0.9, 0.25, 0.12) #F38961, player 2
+- Pirate (0.62, 0.22, 0.9) #CE81F3
+- Wreck (0.4, 0.4, 0.42) #AAAAAD
+- HUD constants (GameApp/Hud.cpp:26-30). They are relative to the viewer. The minimap marks use them at Hud.cpp:3477, 3508-3511, 3602, and the territory figures at Hud.cpp:3191-3192:
+- OWN_COLOR (0.35, 0.65, 1.0) #A0D3FF
+- ENEMY_COLOR (1.0, 0.38, 0.25) #FFA689
+- PIRATE_COLOR (0.78, 0.45, 1.0) #E5B3FF
+- DERELICT_COLOR (0.62, 0.62, 0.66) #CECED4
+- Decision. ADR-043:36 (decision 7): "blue is the player's, red the enemy's". ADR-011:15 (decision 3): "blue for the player's Human set, orange-red for the AI's Tarkan set". GameApp/ModelCatalog.h:21 calls the color "provisional until team colors are decided".
+- Where they clash. In a world, seat 2 can be a human's: OutpostServer --new-world gives every map start a token unless --ai names it (OutpostServer/Main.cpp:136-150), and Join-Player2.json is written for it (A3 §10). That player sees its own ships and structures drawn Tarkan red-orange in the world, but blue (OWN_COLOR) on the minimap and in its node figure. Its enemy is drawn Human blue in the world but red (ENEMY_COLOR) on the minimap. In a skirmish the human is always player 1 (OutpostCommander/WinMain.cpp:27-28), so the hues agree there, but the values never match (#A0D3FF against #76ADF9).
+- Reference shows: the HUD's constants on the HUD and minimap, and Models.json in the world. Both are listed, with the hex of each.
+- Reported by: A5 (Open, "The HUD's side colors are not data"), A4 (minimap color names), A7 (side colors), lead.
+- Class: code-vs-intent · OWNER? yes
+- R checked: Hud.cpp:19-30, ModelCatalog.cpp:304-316, Models.json:1-58, OutpostServer/Main.cpp:130-150. Hex values recomputed (sRGB, IEC 61966-2-1).
+C-002 — The Human Command Station is drawn about 181 m across its 90 m footprint
+- Claim: ADR-064 means every structure level to stand within its footprint. The Human Command Station, at every level, is drawn about twice as deep as its footprint is wide.
+- Sides:
+- Decision.
+- ADR-064:28 (decision 8): "Every level is drawn within level 1's ground … Level 1 is fitted to the model's length along its front."
+- ADR-064:49 (Consequences): "Fitted by its length alone … a level whose depth grows more than its length overhangs its footprint … where level 1 is square."
+- GameApp/GameClient.cpp:1658-1664: "Drawn across its kind's footprint", scale = 2 × footprint radius ÷ lengthMeters.
+- Code and art.
+- Level 1 is fitted by its x length alone (GameApp/ModelCatalog.cpp:382-385 → NeuronClient/MeshData.cpp:219-225, FitMesh).
+- Human/CommandStation_L1.nmf measures x 451.82 by z 908.00 mesh units, z/x = 2.01 (R parsed the NMF).
+- So L1 is 60 m along x and 120.6 m along z, drawn at ×1.5 (Tuning.json:40, footprint radius 45): 90 m by 181 m against a 90 m footprint.
+- L2 to L5 take L1's widest (120.6 m), so they stand 181 m deep too (A6 per-model table).
+- Why. The owner replaced every mesh in commit 09638bc ("New shaders added", 2026-10-04 16:55 +0200). That was after ADR-064's measurements of 2026-10-04 were written (commit 7d2b2fc, 15:07 +0200). ADR-064's "level 1 is square" describes the replaced art.
+- Reference shows: the code's fit: 90 m by about 181 m for the Human station at every level. Tarkan is 90 by 96 m at L1–L4 and 94 by 96 m at L5.
+- Reported by: A6 (Open, "Some structures reach well past their footprint"), lead.
+- Class: code-vs-intent · OWNER? yes
+- R checked: the NMF extents of all ten Command Station levels (Human z/x 2.01, 1.82, 1.66, 1.11, 1.09; Tarkan 1.07 to 1.03); the fit code paths above; git log on the GLB and on the ADR. Smaller overhangs, within 15%, are gap G-052.
+C-003 — The designer's seventh stat row (Build) runs into its footer
+- Claim: A Sensors bar was added, and "the window still fits". The layout reserves room for six bars but draws seven.
+- Sides:
+- Decision. ADR-058:17 (decision 7): "A Sensors bar shows the module's sight … The window still fits a screen of 1,080 lines."
+- Reserved room. GameApp/Hud.cpp:1087 (ExtentOf): bars = SECTION_LABEL_HEIGHT + 6 × BAR_ROW_HEIGHT = 26 + 150 = 176. The footer starts at sections + max(176, 146) + 12 = S + 188 (Hud.cpp:63, 939-948, 1085-1090).
+- Drawn rows. Hud.cpp:763-779: Hit points, Armor, Speed, Range, Sensors (whenever best.sensor > 0), Cost, Build. best is taken over every design, so it includes the Sensor Array, whose sight is 700 m (Tuning.json:33). That makes seven rows in every match. Row i starts at S + 26 + 25i (Hud.cpp:1491), so Build runs from S + 176 to S + 201, past the footer's S + 188.
+- Reference shows: the code's layout, with the Build row overlapping the top of the RENAME / RETREAT footer by about 13 units. This is derived from the code. Nobody has seen it on a screen.
+- Reported by: A4 (Open 2).
+- Class: code-vs-intent · OWNER? yes
+- R checked: the constants and the arithmetic above.
+C-004 — The color of a lit footprint ring
+- Claim: A lit ring (under the pointer, or while placing) should be "in the color of a structure's own lines".
+- Sides:
+- Decision. ADR-042:24 (decision 2): "in the color of a structure's own lines (EdgeColor, ADR-040)".
+- Code. GameApp/GameClient.cpp:1376 uses EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE), which is the side's ship-line color. A structure's own lines are EdgeColor(TowardGray(side, STRUCTURE_GRAY_SHARE 0.35)) (GameClient.cpp:1577 with :1561; ADR-040:20, decision 4).
+- Values (Human). The ring is (0.473, 0.637, 1.0) #B7D1FF. The structure line is (0.572, 0.705, 1.0) #C7DBFF.
+- Reference shows: the code's: the ship-line color.
+- Reported by: A7 (Conflict 4).
+- Class: code-vs-intent · OWNER? yes (minor: a shade of the same hue)
+- R checked: GameClient.cpp:1361-1397, ADR-042:20-30, ADR-040:17-20.
+C-005 — The Large hull card's numbers line may be cut short at 1080p
+- Claim: The part cards were widened "so a hull's numbers fit at the detail size".
+- Sides:
+- Decision. ADR-062:27 (decision 4): cards from 190 to 220 units "so a hull's numbers fit … like '1,400 HP · ARM 24 · 25m/s'".
+- Code.
+- The numbers are fitted to CARD_WIDTH − 24 = 196 units (GameApp/Hud.cpp:1459, 1467-1468), in the Detail face: Cascadia Mono 400 at 13 units (Hud.cpp:3016).
+- Advances are rounded to whole pixels (NeuronClient/GlyphAtlas.cpp:276).
+- 1,200 HP · ARM 14 · 25m/s is 25 characters. At an assumed Cascadia Mono advance of 1200/2048 em (7.6 px, rounded to 8), that is 200 px against 196, so Fit would cut it.
+- Reference shows: the code's layout. Whether the line is cut is Not determinable here: the advance is quoted from memory, there is no font in the container, and no HudTests assertion covers this line (R grepped GameAppTests/HudTests.cpp). With Consolas, at 7 px, it fits.
+- Reported by: A4 (Open 3, C17).
+- Class: code-vs-intent (unproven) · OWNER? yes. This is a check on a Windows screen.
+- R checked: the code path and constants. The font metric is unverified.
+code-vs-intent with OWNER? = no
+None. Every code-vs-intent entry found is screen-visible, so all five are listed above.
+stale-doc
+C-006 — The Command Station's gun hardpoints
+- Sides:
+- Phase3.md:125 (gate K6): "the Human Command Station's 4 hardpoints at level 1 and 12 at level 5 and the Tarkan's 3 and 6".
+- ADR-064:44 (decision 11): "the Human station's 4 to 12 and the Tarkan's 3 to 6".
+- Meshes: OutpostCommander/Assets/Models/{Human,Tarkan}/CommandStation_L1..L5.nmf carry 3, 3, 3, 6, 6 gun hardpoints in both sets, and the GLB sources agree (A2 count_hardpoints.py).
+- Reference shows: 3, 3, 3, 6, 6 in both sets. The number of guns that fire, 1 / 1 / 2 / 2 / 3, is Tuning.json:41, 44, 46 (Tuning.cpp:754-763).
+- Why stale: the owner's own art replacement, 09638bc (2026-10-04 16:55 +0200), came after these texts were written (7d2b2fc, 15:07 +0200). Hardpoints only change where a shot leaves from (Hardpoints.cpp:205-220).
+- Reported by: A2 (Conflict 1), lead. Class: stale-doc · OWNER? no
+- R checked: the NMF hardpoint counts, parsed. git log and git show 7d2b2fc on the ADR.
+C-007 — "Level 1 is square" in ADR-064's measurement
+- Sides: ADR-064:49 gives the Human Command Station's depth at 1.57× its length at L2–L3 and 1.13–1.14× at L4–L5, "where level 1 is square". The shipped NMFs give z/x of 2.01, 1.82, 1.66, 1.11 and 1.09 (R parse).
+- Reference shows: the shipped meshes' extents (A6 table). The consequence is C-002.
+- Reported by: R (found while checking the lead's note on A6). Class: stale-doc · OWNER? no
+C-008 — Protocol and world-state version numbers in ADRs
+- Sides:
+- ADR-064:26: "The protocol's version is 5".
+- ADR-071:16: "The protocol's version is 7".
+- ADR-081:49: "WorldStateTests.TheLayoutIsTheVersions holds version 5's hash".
+- ADR-084:33: "WorldStateTests record the layout of version 6".
+- Against them: AGENTS.md R18 ("Until the game is live, the version stays 1", owner 2026-10-09); ADR-060:17 and ADR-077:24 (both stay 1); Phase5.md:81.
+- Code: GameLogic/WorldState.h:9 WORLD_STATE_VERSION = 1, GameProtocol/WireFormat.h:7 PROTOCOL_VERSION = 1, and GameLogicTests/WorldStateTests.cpp:160-170 ("under version 1 until the game is live").
+- Reference shows: 1 and 1.
+- Reported by: A3 (Conflict 2), lead. R added ADR-064, ADR-071 and ADR-081.
+- Class: stale-doc · OWNER? no. AGENTS.md is authority 1, and the code follows it.
+C-009 — Command Station next-level panel text in ADR-064
+- Sides: ADR-064:44 gives "L3: 10 nodes, 2 Defence guns, 7,000 hit points". GameApp/Hud.cpp:2655-2677 adds the fleet cap (ADR-071): "L3: 10 nodes, 2 Defence guns, fleet 30, 7,000 hit points".
+- Reference shows: the code's text. Reported by: A2 (Conflict 4). Class: stale-doc · OWNER? no
+C-010 — Who builds a structure's level (code comment)
+- Sides: GameProtocol/Snapshot.h:250-252 (comment on StructureLevelView): "how long one Constructor takes to build it". ADR-064:23 (decision 3) and GameLogic/Simulation.cpp:2650-2668: a level builds itself, and no Constructor works on it.
+- Reference shows: the level builds itself over its buildSeconds. Reported by: A2 (Conflict 3). Class: stale-doc (code comment) · OWNER? no
+C-011 — Flak Battery splash in ADR-034
+- Sides:
+- ADR-034:7 (Context): "a ring as wide as its 20 m".
+- Tuning.json:29: splashRadiusMeters 26. ADR-014:22 and Phase1.md:89 agree (tuned from 20 to 26).
+- The ring is drawn at the shot's splash (CombatEffects.cpp:179-187).
+- Reference shows: 26 m. Reported by: A2 (Conflict 2), A7 (Conflict 7). Class: stale-doc · OWNER? no
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,98 @@
+
+Windows: common rules
+Floating windows
+Kinds. Designer, Research, Production, Controls, Orders and Away (WindowManager.h:7-18; ADR-031; ADR-068 d4; ADR-080).
+Frame. Every window is drawn by OpenWindow (Hud.cpp:871-899):
+ | Part
+ | Rect, in window units
+ | Color
+ | Behavior
+ | Body
+ | 0, 0, w, 36 + body
+ | WINDOW_COLOR, opaque (Hud.cpp:839-840)
+ | —
+ | Title bar
+ | 0, 0, w − 36, 36
+ | TITLE_HATCH_COLOR, hatched: stripes 2 units wide every 7, rising right (Hud.h:640-641; ADR-030 d6)
+ | The window is dragged by it
+ | Close box
+ | w − 36, 0, 36, 36
+ | CLOSE_BOX_COLOR
+ | Closes the window
+ | Close mark
+ | × in the Title face at (w − 25, 5)
+ | TEXT_COLOR
+ | —
+ | Corner brackets
+ | 12×12 at each corner
+ | WINDOW_EDGE_COLOR
+ | —
+- Name in the title bar. Each window writes its name at (24, 11) in the Label face, tracking 2, HEADER_LABEL_COLOR. No window passes OpenWindow a title of its own.
+- Header band. The designer, production and research windows continue the hatching to y 72, with a 1-unit EDGE_COLOR line at y 71 (HeaderBand, Hud.cpp:1237-1241).
+- Ore box. The same three windows show the player's Ore in a box: w − 24 − 116, 38, 116, 30, FIELD_COLOR with an EDGE_COLOR outline, holding the gem and figure in the Title face, GOLD_COLOR, right edge at w − 34, y 39 (OreBox, Hud.cpp:1244-1249; data Snapshot::ore).
+Default placement (Hud.cpp:3632-3687), in reference units at factor 1.0.
+ | Window
+ | Default top-left corner
+ | Size
+ | Source
+ | Designer
+ | (1920 − 16 − 818, 16) = (1086, 16)
+ | 818 × H; H = 913 with Tuning.json's components
+ | Hud.cpp:3655-3659
+ | Production
+ | the first free slot under the Ore. Slot 0: (16, 178). Slot 1: (16 + 16 + 560, 178) = (592, 178)
+ | 478 × H
+ | Hud.cpp:3643-3651, 3662-3663; WINDOWS_TOP = 16 + 44 + 8 + 94 + 16 = 178 (Hud.cpp:1635)
+ | Research
+ | slot 0: (16, 178); slot 1: (16 + 16 + 478, 178) = (510, 178)
+ | 560 × H
+ | Hud.cpp:3664-3665
+ | Controls
+ | centred: ((1920 − 700)/2, max(16, (1080 − 762)/2)) = (610, 159)
+ | 700 × 762
+ | Hud.cpp:3666-3672
+ | Orders
+ | (1920 − 16 − 640, 178) = (1264, 178)
+ | 640 × 560
+ | Hud.cpp:3673-3679
+ | Away
+ | centred: (660, (1080 − H)/2)
+ | 600 × (90 + 22·lines), lines ≤ 20
+ | Hud.cpp:3680-3686
+Slots. A production or research window not yet moved takes the first of the two slots that no open window holds; moving it frees its slot (WindowManager.cpp:6-21, 67-75; task 15.4). At factor 1.0, production, research and the designer stand side by side with nothing to spare: 16 + 478 + 16 + 560 + 16 + 818 + 16 = 1920 (ADR-062 d6). window-three-windows-default.json lays out all three.
+Layering (ADR-031 d4).
+- Windows are drawn back to front in WindowManager order (Hud.cpp:3636-3637). Without a manager, as in the tests, the order is Production, Research, Designer, Controls, Orders, Away (Hud.cpp:3634-3635).
+- A window covers the text of the windows behind it.
+- A left press anywhere on a window brings it to the front (GameClient.cpp:998; WindowManager.cpp:89-93).
+- Only the front layer under the pointer takes a click.
+Drag (ADR-031 d2, d5).
+- A left press on the title bar, where no button sits, grabs the window (GameClient.cpp:993-996). It follows the pointer until the button is released (GameClient.cpp:978-982, 1024-1025; WindowManager.cpp:67-87).
+- Kept on screen by Hud::KeepOnScreen (Hud.cpp:2420-2426): x is held between 120 − w and screenWidth − 120 (WINDOW_KEPT_ON_SCREEN_UNITS, Hud.h:646), and y between 0 and screenHeight − 36.
+- GameClient settles the manager on the clamped place every frame (GameClient.cpp:773-774; WindowManager.cpp:56-60).
+Close.
+- The close box (GameClient.cpp:987-991).
+- Esc closes the front window and goes no further (GameClient.cpp:659-660; WindowManager.cpp:41-47). While the designer's name takes typing, Esc is the designer's first: it drops what was typed (GameClient.cpp:641, 819-835; Designer.cpp:246-250).
+- The window's own key toggles it (GameClient.cpp:645-674), but only once the match has a snapshot (GameClient.cpp:667).
+Keys (KeyBindings.h:27-32).
+ | Key
+ | Window
+ | D
+ | Designer
+ | P
+ | Production
+ | R
+ | Research
+ | F1
+ | Controls
+ | O
+ | Orders
+The Away window has no key: it opens itself.
+What a window aims at.
+- Opening the designer or production while one structure is selected aims it at that structure (ToggleWindow, GameClient.cpp:801-817).
+- The selection panel's buttons aim them too (GameClient.cpp:896-899, 917-923).
+- Selecting a Shipyard while the designer is open re-aims it, and selecting a producer while production is open re-aims that (GameClient.cpp:698-706).
+Lifetime (owner, 2026-10-02; ADR-031 d1).
+- Positions last until the game closes, and are never written to disk.
+- Leaving a match closes every window but keeps their places (WindowManager.cpp:49-54; GameClient.cpp:508).
+- The match runs on while any window is open.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

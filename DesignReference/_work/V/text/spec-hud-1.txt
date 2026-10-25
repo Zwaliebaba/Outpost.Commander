@@ -1,0 +1,346 @@
+
+HUD: Ore, status, territory, alerts, hint, connection
+The match HUD
+Purpose. The HUD shows the player's state at a glance: Ore, what production and research are doing, the territory, alerts, where the match runs, the selection with its commands, and the minimap (ADR-015 d4, ADR-043, ADR-066, ADR-086, ADR-088). It is laid out afresh every frame by Hud::Lay (Hud.cpp:3075-3689) from Hud::Describe's content (Hud.cpp:2453-2834) and from what GameClient::Update adds (GameClient.cpp:719-772).
+Layers and clicks.
+- Entity bars. The bars over entities are drawn first, under every panel (layer −1, Layout::bars). They take no click and cover nothing (Hud.cpp:3095-3126; Hud.h:730-732).
+- The HUD is layer 0. Each window is a further layer, back to front (Hud.h:714-760).
+- Draw order. Within a layer: panels, then lines, then sprites, then texts (GameClient.cpp:1300-1336).
+- A press on any HUD panel is the HUD's. It never reaches the world, while releases always do (GameClient.cpp:681-688; Layout::Covers Hud.cpp:2363-2366; ADR-015 d5).
+- Clicks go to the front layer only. A HUD button under a window takes no click (ActionAt Hud.cpp:2368-2377).
+- Hover. The action under the pointer is found in the last frame's layout (GameClient.cpp:711-712). It lights the HUD's enabled button, the retreat cell, the ship bar, the status line and the banner button that take it (ADR-088 d1; Hud.cpp:3129-3131).
+Anchors. These are at factor 1.0; at another factor, multiply every value by it (§ Interface scale).
+ | Panel
+ | Anchor
+ | Rect (example state)
+ | Width rule
+ | Source
+ | Ore
+ | top-left
+ | 16, 16, ≈380, 44
+ | the column's width
+ | Hud.cpp:3143-3157
+ | Status (production column)
+ | under the Ore
+ | 16, 68, ≈380, 20 + rows (94 kept)
+ | the column's width
+ | Hud.cpp:3159-3161, 3239-3308
+ | Territory
+ | under the status panel's kept place
+ | 16, 170, ≈380, 20 + 22·rows
+ | the column's width
+ | Hud.cpp:3167-3213
+ | Alerts
+ | under the territory, 8 apart
+ | 16, 170 + territory + 8, ≈380, 20 + 22·n
+ | the column's width
+ | Hud.cpp:3217-3238
+ | Hint
+ | top middle
+ | 640, 16, 640, 44
+ | fixed 640
+ | Hud.cpp:3311-3316
+ | Where the match runs
+ | top-right
+ | 1920 − 16 − w, 16, ≈w, 42 or 64
+ | its words
+ | Hud.cpp:3320-3337
+ | End banner
+ | top middle, under the Ore line
+ | 700, 68, 520, 116
+ | fixed 520
+ | Hud.cpp:3340-3350
+ | Selection
+ | bottom middle; the pair is centred
+ | x = pairLeft, y = 1064 − h
+ | 280-560 by its lines
+ | Hud.cpp:3357-3426
+ | Commands (buttons)
+ | against the selection's right edge, bottom-aligned
+ | x = pairLeft + selection width, w 380
+ | fixed 380
+ | Hud.cpp:3427-3453
+ | Minimap
+ | bottom-left
+ | 16, 764, 300, 300
+ | fixed
+ | Hud.cpp:3456-3630
+The column
+The Ore, status, territory and alerts panels share one width, columnUnits (Hud.cpp:3134-3139; ADR-066 d3). It is the largest of three values:
+- 380 (COLUMN_LEAST_UNITS, Hud.cpp:132);
+- the longest research topic's name (Snapshot::research[].nameUtf8) in the Name face, plus the width of +99 in the Figure face, plus 6, plus 24;
+- the widest of three fixed lines in the Name face, plus 8 and 24 (Hud.cpp:133-135): Shipyards · BUILDING 99 · WAITING 99 · IDLE 99, Shipyards at the fleet cap · Station upgrading, 100% and Research: every open topic done.
+≈380 by estimate: the widest line comes to ≈364, under the floor. The real figure depends on Bahnschrift's metrics and is not stated anywhere; ADR-066 gives only the 380 floor.
+Ore panel
+Purpose. The stockpile, written one way everywhere (ADR-043 d3), and the income, which is a warning chip when it is nothing (ADR-047 d5, ADR-085 d1).
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect
+ | Source
+ | ore.frame
+ | panel
+ | —
+ | —
+ | WINDOW_COLOR
+ | 16, 16, ≈380, 44
+ | Hud.cpp:3144
+ | ore.stockpile.gem
+ | sprite OreMark (cut gem, ADR-085 d3; Hud::Sprites Hud.cpp:3020-3027)
+ | —
+ | —
+ | GOLD_COLOR
+ | 28, 30.25, 13, 13 (side = round(22 × 0.6))
+ | Hud.cpp:3145, 1228-1232
+ | ore.stockpile.figure
+ | text, Title
+ | {WithThousands(ore)}, e.g. 1,000
+ | Snapshot::ore (Snapshot.h:539)
+ | GOLD_COLOR
+ | 46, 23, ≈, ≈27
+ | Hud.cpp:3145, 1233, 2114-2125
+ | ore.income
+ | text, Figure, right edge at column − 12
+ | +{n}/s when whole hundredths, else +{n.n}/s
+ | Snapshot::oreIncomeHundredthsPerSecond (Snapshot.h:540)
+ | NUMBERS_COLOR
+ | right edge ≈384, y 31.5, h ≈17
+ | Hud.cpp:3146-3151
+ | ore.income.chip
+ | chip: a tag, and the words on it
+ | +0/s
+ | income ≤ 0
+ | tag WARNING_COLOR, words WINDOW_COLOR
+ | tag ≈344, 31.5, ≈40, 17; words at tag x + 4
+ | Hud.cpp:3152-3156, 1162-1168
+States.
+- Income above 0: plain text in NUMBERS_COLOR.
+- Income of nothing: the chip.
+- The word "Ore" is not written (ADR-043 d3).
+- The gem stays put as the figure grows (ADR-046 d4).
+Status panel
+Purpose. What the Research Lab and the Shipyards are doing, and the fleet against its cap. Each line is a place to click (ADR-066).
+Content (StatusLinesOf, Hud.cpp:281-414). Each line is a list of runs, each plain or a chip (StatusRun, Hud.h:473-479). A line may have a bar (StatusBar, Hud.h:483-490).
+ | Line
+ | When
+ | Runs (verbatim)
+ | Bar
+ | Click
+ | Source
+ | Research, under way
+ | A finished Lab of the player's has a queue
+ | {topic name}; then · waiting for Ore when the front job is at 0
+ | Under the words: share jobPermille/1000; figure +{n} when more topics are queued
+ | OpenResearch
+ | Hud.cpp:301-312
+ | Research, idle, a topic open
+ | The Lab's queue is empty, and some topic is open (IsOpen, Hud.cpp:258-266)
+ | Research Lab then the chip IDLE
+ | —
+ | OpenResearch
+ | Hud.cpp:296-297
+ | Research, all done
+ | The queue is empty and no topic is open
+ | Research: every open topic done
+ | —
+ | OpenResearch
+ | Hud.cpp:298-299
+ | Shipyards at the cap
+ | fleetCap > 0, and a Shipyard waits on the cap or no saved design fits
+ | Shipyards at the fleet cap, plus · Station upgrading, {p}% or · Station L{n}: +{cp}
+ | —
+ | Select the Command Station, or else OpenProduction at the first Shipyard
+ | Hud.cpp:370-400
+ | Shipyards, counts
+ | A finished Shipyard exists and the cap does not hold them back
+ | Shipyards · BUILDING {b} · WAITING {w} · then IDLE {i}. IDLE {i} is a chip only when an idle Shipyard could start a ship now; otherwise it is plain
+ | —
+ | OpenProduction at the first idle Shipyard by number, or at the first
+ | Hud.cpp:403-410, 336-346
+ | Fleet
+ | fleetCap > 0, under the Shipyards' line
+ | Fleet
+ | Beside the words: share commandPoints/fleetCap; figure {cp} / {cap}
+ | Same as the Shipyards' line
+ | Hud.cpp:373-380, 399, 411-412
+Geometry (Hud.cpp:3241-3308).
+- Panel. At 16, 68, the column's width wide, and 20 + Σ(22, plus 8 when the bar sits under the words) tall. Its place is always kept at 94 units (STATUS_PANEL_KEPT_UNITS, Hud.cpp:149), so the panels below do not move.
+- Words. In the Name face, TEXT_COLOR, from x 12, starting 10 down and following each other. A plain run is cut short to leave room for the runs after it; a chip never is.
+- Chips. A tag 4 units wider than the words on each side, and 22 tall, in WARNING_COLOR, with the words in WINDOW_COLOR (Hud.cpp:1162-1168).
+- Figure. In the Figure face, NUMBERS_COLOR, right edge at column − 12, top at the line + 4.5.
+- Bar under the words. 12, line + 24, column − 24, 4.
+- Bar beside the words. From 8 after the words to 8 before the figure, 6 thick, at the line + 8. When the bar is under the words, the words stop 6 short of the figure instead (Hud.cpp:3270).
+- Bar colors. Track BAR_TRACK_COLOR, fill BAR_FILL_COLOR.
+- Press area. Each line's row spans the panel's width; the first row starts at the panel's top and the last ends at its bottom. Under the pointer the row is drawn in CARD_COLOR, and so is any other row whose click is the same (ADR-088 d1).
+Example (hud-busy-warships.json, all sample values).
+ | id
+ | Label
+ | Rect
+ | status.frame
+ | —
+ | 16, 68, ≈380, 94
+ | row 0 words
+ | Large Hull
+ | 28, 78
+ | row 0 figure
+ | +2
+ | right edge 384, y 82.5
+ | row 0 bar
+ | —
+ | 28, 102, ≈356, 4
+ | row 1 words
+ | Shipyards · BUILDING 2 · WAITING 0 ·
+ | 28, 108
+ | row 1 chip
+ | IDLE 1
+ | tag ≈286, 108, ≈55, 22
+ | row 2 words
+ | Fleet
+ | 28, 130
+ | row 2 bar
+ | —
+ | ≈71, 138, ≈249, 6
+ | row 2 figure
+ | 29 / 30
+ | right edge 384, y 134.5
+States.
+- No finished Lab and no finished Shipyard: no panel is drawn, but its place is kept.
+- With a finished Lab, each of the three Lab lines above.
+- With a Shipyard: the counts with or without the chip, or the line at the cap.
+- The fleet line appears when the match sets a cap.
+- The Command Station never has a status line (ADR-066 Consequences).
+Territory panel
+Purpose. The nodes each side holds against the map's, the player's cap, the domination tickets, and the drain (ADR-056, ADR-057, interface plan 2, task UI3.3). It shows only on a map with sectors (Hud.cpp:2476).
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect (match start)
+ | Source
+ | territory.frame
+ | panel
+ | —
+ | —
+ | WINDOW_COLOR
+ | 16, 170, ≈380, 20 + 22·rows (86 with 3 rows)
+ | Hud.cpp:3176-3177
+ | territory.nodes.label
+ | text, Name
+ | Nodes
+ | —
+ | TEXT_COLOR
+ | 28, 180
+ | Hud.cpp:3188, 3196
+ | territory.nodes.note
+ | text, Name
+ | cap {cap} of {nodes}, or of {nodes} with no cap
+ | Snapshot::nodeCap (Snapshot.h:562), Snapshot::sectors.size()
+ | LABEL_COLOR
+ | after the label + 6
+ | Hud.cpp:3189-3190, 3194-3195
+ | territory.nodes.own
+ | text, Figure
+ | {own} :
+ | sectors whose SectorView::holder is the player (Hud.cpp:2483-2488)
+ | OWN_COLOR
+ | right edge at the enemy figure's left; y 184.5
+ | Hud.cpp:3183-3192
+ | territory.nodes.enemy
+ | text, Figure
+ | {enemy}
+ | sectors the enemy holds; a pirate-guarded sector counts for neither side (Hud.cpp:2486)
+ | ENEMY_COLOR
+ | right edge ≈384, y 184.5
+ | Hud.cpp:3191
+ | territory.tickets.*
+ | as Nodes
+ | Tickets, {own:,} :, {enemy:,}
+ | Snapshot::tickets (Snapshot.h:581); only while both players have tickets, never in a world (ADR-084)
+ | as Nodes
+ | row at y 202
+ | Hud.cpp:3198-3202
+ | territory.drain
+ | text, Name; or a chip when it is the player's drain
+ | No drain, or {You\|Enemy} -{n} a minute · out in {m}:{ss}
+ | drainIntervalSeconds, drainTicketsPerNodeDifference (Snapshot.h:586-587); Tuning.json territory.drainIntervalSeconds 3 and drainTicketsPerNodeDifference 1
+ | plain TEXT_COLOR; chip WARNING_COLOR + WINDOW_COLOR
+ | row at y 224; a chip tag starts at x 24
+ | Hud.cpp:3203-3212, 2506-2526
+Example. At the start of a skirmish (Tuning.json territory.tickets 1000, Command Station nodes 4): Nodes cap 4 of 25 1 : 1, Tickets 1,000 : 1,000, No drain.
+Alerts panel
+Purpose. What the player should know about fronts it is not looking at (ADR-059 d1-d2). The newest alert is a warning chip (ADR-085 d1).
+What shows.
+- The alerts of the last 8 seconds (Alerts::SHOWN_SECONDS, Alerts.h:15), at most 4 (SHOWN_ALERTS, Alerts.h:18), newest first.
+- One kind of alert in one sector is not raised again within 20 s (REPEAT_SECONDS, Alerts.h:16), except a fired order (Alerts.cpp:57-60).
+Geometry.
+- Panel: 16, 170 + territory height + 8, column, 20 + 22·n. Without a territory panel it starts at y 170 (Hud.cpp:3219-3224).
+- Newest line: a chip whose tag starts at x 8, so its words line up with the others at x 12 (Hud.cpp:3228-3233).
+- Older lines: in the Name face, TEXT_COLOR, at x 12.
+- Lines take no click: the panel adds no press (Hud.cpp:3217-3238), but like any panel it covers clicks.
+- Space moves the camera to the newest alert (GameClient.cpp:661-666; KeyBindings.h:36).
+- On the minimap, each alert is a 14-unit square outlined in WARNING_COLOR (Hud.cpp:3608-3617).
+Texts (Alerts.cpp:76-98; {sector} is SectorView::nameUtf8, or the field, Alerts.cpp:73):
+- Relay suppressed: {sector}
+- Relay under attack: {sector}
+- Mining Rig lost: {sector}
+- Enemy ships in {sector} or Pirate ships in {sector}
+- Ship retreating: {sector}
+- Pirates cleared: {sector}
+- Order fired: {action}, Order held back: {action} or Order refused: {action} (Alerts.cpp:32-45), where {action} is one of move to {}, attack-move to {}, attack in {}, hold {}, patrol to {} or Mining Rig in {} (Alerts.cpp:12-29).
+Example (hud-busy-warships.json): panel 16, 264, ≈380, 86; chip Enemy ships in B2, with its tag at 24, 274, ≈134, 22.
+Hint
+Purpose. What a click on the ground will do, or what lies under the pointer.
+Geometry (Hud.cpp:3311-3316): panel 640, 16, 640, 44; the text is in the Name face, TEXT_COLOR, at 652, 27, cut short at 616 units.
+Texts, by priority. The placement text wins, because the hover texts are set only while the hint is empty (GameClient.cpp:742-743).
+ | Situation
+ | Text (verbatim format)
+ | Source
+ | A placement is armed
+ | Placing {structure name}: left-click to build, right-click to cancel (a structure when the type is unknown)
+ | Hud.cpp:2551
+ | Placing a Relay at the node cap
+ | Relay: at the node cap; upgrade the Command Station to claim more
+ | Hud.cpp:2553-2554
+ | Pointer over a derelict
+ | Derelict: {ore:,} Ore, then , and part of {topic}'s research time if any, · salvaged {p}% if begun, and (last seen {m:ss} ago) or (last seen earlier) when it is only remembered
+ | Hud.cpp:2135-2145, 455-460
+ | Pointer over a remembered structure
+ | {structure name} · last seen {m:ss} ago, or · last seen earlier, then , {p}% built when unfinished
+ | Hud.cpp:2160-2168
+Where the match runs
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect
+ | Source
+ | connection.frame
+ | panel
+ | —
+ | —
+ | WINDOW_COLOR
+ | right edge at 1904, y 16; w = min(text, 360) + 24; while silent, w is at least the width of No word from the server · 999 s + 8 + 24; h = 42, or 64 while silent. Skirmish ≈1780, 16, 124, 42
+ | Hud.cpp:3325-3330, 158-159
+ | connection.where
+ | text, Name
+ | Local skirmish, or Server {host}:{port} (an IPv6 host is written [{host}]:{port})
+ | GameClient::m_server ← StartMatch(Hud::ServerName(...)) (WinMain.cpp:356; Hud.cpp:2221-2224)
+ | TEXT_COLOR
+ | x+12, y 26; cut at 360
+ | Hud.cpp:3323, 3331
+ | connection.silent
+ | chip
+ | No word from the server · {s} s (s capped at 999)
+ | GameClient::m_silentSeconds, reset by each snapshot and counted by frame time (GameClient.cpp:530-531, 600, 739); shown from 2 s (SILENT_SECONDS, Hud.h:469)
+ | tag WARNING_COLOR, words WINDOW_COLOR
+ | tag at x+8, y 48, ≈, 22
+ | Hud.cpp:3332-3336
+Behavior.
+- The tag takes no click.
+- The designer, at its default place, covers it (ADR-086 d3).
+- The tag is never on the menu.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,93 @@
+
+Controls
+Outpost Commander · design reference · 16
+Controls
+Every binding the Controls window lists (28 actions under 3 headings), grouped as the window groups them. The window is built from KeyBindings.h, so it cannot name a key the code does not read (ADR-068 d4).
+Sources: KeyBindings.h:93-125 Hud.cpp:1888-1926 A4 §4.4
+SELECTING AND ORDERS · 12 actions
+ClickSelect a ship, or a structure of yoursKeyBindings.h:94
+DragSelect your ships in the boxKeyBindings.h:95
+Shift+clickAdd to the selectionKeyBindings.h:96
+Double-clickSelect every ship of that design in viewKeyBindings.h:97
+Right-clickMove, attack, or build and repair with ConstructorsKeyBindings.h:98
+A, then clickAttack-moveKeyBindings.h:99
+H, then clickHold the sector clicked inKeyBindings.h:100
+T, then clickPatrol to the point clickedKeyBindings.h:101
+SStopKeyBindings.h:102
+Ctrl+0-9Make a control groupKeyBindings.h:103
+0-9Select a group; twice, look at itKeyBindings.h:104
+Shift+clickPlace a structure and keep placingKeyBindings.h:105
+CAMERA · 8 actions
+Up Down Left RightPanKeyBindings.h:107-108
+Screen edgePan, while the pointer is held in the windowKeyBindings.h:109
+Middle-dragPanKeyBindings.h:110
+WheelZoomKeyBindings.h:111
+Q and ETurnKeyBindings.h:112
+Minimap clickLook thereKeyBindings.h:113
+Minimap right-clickSend the selection thereKeyBindings.h:114
+SpaceLook at the newest alertKeyBindings.h:115
+WINDOWS · 8 actions
+DShip designerKeyBindings.h:117
+PProductionKeyBindings.h:118
+RResearchKeyBindings.h:119
+OScheduled ordersKeyBindings.h:120
+F1These controlsKeyBindings.h:121
+EscClose the front window, or cancel an orderKeyBindings.h:122
+Alt, heldEvery health barKeyBindings.h:123
+Ctrl+= and Ctrl+-The interface larger and smallerKeyBindings.h:124-125
+Keys and mouse for orders
+ | Keys
+ | Does (verbatim)
+ | Source
+ | Click
+ | "Select a ship, or a structure of yours"
+ | KeyBindings.h:94
+ | Drag
+ | "Select your ships in the box"
+ | KeyBindings.h:95
+ | Shift+click
+ | "Add to the selection"
+ | KeyBindings.h:96
+ | Double-click
+ | "Select every ship of that design in view"
+ | KeyBindings.h:97
+ | Right-click
+ | "Move, attack, or build and repair with Constructors"
+ | KeyBindings.h:98
+ | A, then click
+ | "Attack-move"
+ | KeyBindings.h:10,99
+ | H, then click
+ | "Hold the sector clicked in"
+ | KeyBindings.h:12,100
+ | T, then click
+ | "Patrol to the point clicked"
+ | KeyBindings.h:13,101
+ | S
+ | "Stop"
+ | KeyBindings.h:11,102
+ | Ctrl+0-9
+ | "Make a control group"
+ | KeyBindings.h:103
+ | 0-9
+ | "Select a group; twice, look at it"
+ | KeyBindings.h:104
+ | Shift+click
+ | "Place a structure and keep placing"
+ | KeyBindings.h:105
+ | Minimap right-click
+ | "Send the selection there"
+ | KeyBindings.h:114
+ | Space
+ | "Look at the newest alert"
+ | KeyBindings.h:36,115
+ | O
+ | "Scheduled orders" (opens or closes the orders window)
+ | KeyBindings.h:32,120, GameClient.cpp:657-658
+ | Esc
+ | "Close the front window, or cancel an order"
+ | KeyBindings.h:34,122, GameClient.cpp:659-661, PlayerControls.cpp:362-367
+- P is taken by the production window, so patrol is T (ADR-059 §Decision 7, KeyBindings.h:28).
+- What arms the next click. A, H and T each arm the next left-click and replace whatever was armed before. A press on the ground then gives the order. Right-click or Escape cancels it (PlayerControls.cpp:107-121, 180-206, 291-292, 362-367).
+- Ctrl blocks the order keys. A, H, T and S act only without Ctrl (PlayerControls.cpp:369-383).
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

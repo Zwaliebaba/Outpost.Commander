@@ -1,0 +1,124 @@
+
+Conflicts, part 3 of 3
+Conflicts · part 3 of 3
+C-043 — The map's size, sectors and asteroids
+- Sides: MVP.md:135: about 2,000 × 2,000 m and about 12 asteroids. Phase1.md:212-221: 5 km and 24 asteroids, 285,000 Ore. Phase2.md:65: nine sectors. Phase4.md:248 and ADR-036 decision 4: 10 km and 25 sectors.
+- Reference shows: Map.json: 10,000 m, 25 sectors, 40 ore asteroids, 459,000 Ore (derived). Reported by: A1 (C6). Class: superseded · OWNER? no
+C-044 — Derelict Ore range
+- Sides: Phase4.md:307, 402 (gate L8) and ADR-074:10 (Context): 300 to 900. Phase4.md:311 (as built) and ADR-074 (owner, 2026-10-07): 300 / 450 / 600 / 750.
+- Reference shows: Map.json:165-168: 300 / 450 / 600 / 750. Outpost wrecks give 600 and 1,200 (Tuning.json:124, 127). Reported by: A1 (C7). Class: superseded · OWNER? no
+C-045 — Where a cleared outpost's derelict lies
+- Sides: Phase4.md:289: "where its largest structure stood". Phase4.md:296 and ADR-074:48 (decision 6): where its last Defence Platform fell, the first in identifier order if the last fall together.
+- Reference shows: Simulation.cpp:1738-1764, which matches ADR-074: the first destroyed pirate structure of the sector in the tick its last structure fell. Reported by: A1 (C8). Class: superseded · OWNER? no
+- R checked: Simulation.cpp:1738-1764 and its comment.
+C-046 — Deep Core Survey
+- Sides:
+- Phase1.md:142 ("Every asteroid's ore reserve +30%") and Phase1.md:204 ("adds 30% to every reserve … including what is left").
+- ADR-035:13 (decision 3): the reserve is not raised. The researcher's rigs draw a 1.3rd less for the same Ore. ADR-035:7 (Context) restates the design.
+- On screen, the research card's effect reads "Asteroid ore reserves +30%" (GameLogic/Research.cpp:167-168).
+- Reference shows: the reserve figure is not raised, and the draw is divided by 1.3 (Simulation.cpp:3023-3024). A player's "Ore left" does not jump by 30%; it drains more slowly. The effect text is shown verbatim.
+- Reported by: A1 (C9). Class: superseded (the ADR chose the mechanism) · OWNER? no
+- R checked: ADR-035:7, 13, Simulation.cpp:3015-3027, Research.cpp:164-170.
+C-047 — The MVP's win condition
+- Sides: MVP.md:159, 498: losing the Command Station loses. Phase1.md:70 and ADR-037 decision 1: neither a Command Station nor a finished Shipyard.
+- Reference shows: Simulation.cpp:3683-3710. Reported by: A1 (C11). Class: superseded · OWNER? no
+C-048 — Depletion in the MVP
+- Sides: MVP.md:146, 439: no depletion. Phase1.md:202-206: reserves.
+- Reference shows: Map.json reserves and Simulation.cpp:3015-3027. Reported by: A1 (C12). Class: superseded · OWNER? no
+C-049 — Ore a home-only player earns
+- Sides: Phase4.md:15 ("Three home rigs pay 15 Ore/s") describes the game before Phase 4's change. Phase4.md:216 gives home 3.5.
+- Reference shows: 3 × 3.5 = 10.5 Ore/s before research (derived). Reported by: A1 (C13). Class: superseded · OWNER? no
+C-050 — Does the designer show shots to kill?
+- Sides: MVP.md:224 lists "damage per second after armour, shots to kill, range and cost". Phase1.md:272-281 lists the window's contents without shots to kill. Hud.cpp:585-807 has no such figure.
+- Reference shows: no shots-to-kill figure. Reported by: A2 (Conflict 5). Class: superseded · OWNER? no
+C-051 — Component costs
+- Sides:
+- MVP.md:346-355, 337: Small 32, Medium 110, Mass Driver 35, Lance 85, Missile Rack 130; Large 300.
+- Phase1.md:89, 90, 107: Flak Battery 60, Rail Cannon 150, Pulse Drive 40.
+- Phase2.md:132: Sensor Array 40.
+- Phase 4 §4 tripled them, and ADR-058:37 says "three times Phase 2's 40".
+- Reference shows: Tuning.json:16-33: hulls 96 / 330 / 900; drives 60 / 240 / 120; weapons 105 / 255 / 390 / 180 / 450; Sensor Array 120. Reported by: A2 (Conflicts 7, 8, 9). Class: superseded · OWNER? no
+C-052 — The research tree's size and totals
+- Sides: Phase1.md:119, 139, 148, 157: 25 topics with gateways 9 and 18, 2,590 s. Phase1.md:51, 319: the AI researches about 25 topics. MVP.md:246: the whole tree takes 11½ min (690 s). Against them: Phase3.md:153, ADR-033:12, ADR-082 Consequences ("all 23 topics") and Opponent.json:16 (23 topics).
+- Reference shows: Tuning.json:65-112: 23 topics, 2,260 s, 6,800 Ore. Reported by: A2 (Conflicts 10, 11), A3 (Conflict 8). Class: superseded · OWNER? no
+C-053 — Armor on unarmed structures
+- Sides: MVP.md:170: "Every other structure has no armour". Tuning.json:62-63: Relay 10, Repair Bay 5.
+- Reference shows: 10 and 5. The Shipyard, Research Lab and Mining Rig have 0. Reported by: A2 (Conflict 12). Class: superseded · OWNER? no
+C-054 — How later structure levels are fitted
+- Sides: Phase3.md:65: each level's mesh "is fitted to the kind's length as level 1's is". ADR-064:28 (decision 8): FitMeshAcross to level 1's widest. ModelCatalog.cpp:382-385.
+- Reference shows: FitMeshAcross. Reported by: A2 (Conflict 14), A6 (Size row). Class: superseded · OWNER? no
+C-055 — When the AI's first scout sets out
+- Sides: Phase2.md:151: "in the first two minutes". ADR-020:49: "in the first three minutes, at about 2:30" (a measured outcome).
+- Reference shows: no time rule in code. The scout is queued ahead of warships and of a structure waiting for Ore (AiPlayer.cpp:1071-1101). Reported by: A3 (Conflict 3). Class: superseded · OWNER? no
+C-056 — The AI's attack group, fall-back and regroup
+- Sides: MVP.md:300 (gate G9): 12 ships. Phase1.md:324-325: 20 ships, a 30% fall-back, 120 s. ADR-041 decisions 1–2.
+- Reference shows: Opponent.json:2-5: 25 + 12 per tier, 0.15, 240 s (Normal). Reported by: A3 (Conflicts 4, 5). Class: superseded · OWNER? no
+C-057 — AI difficulty out of scope, and the menu's contents
+- Sides: MVP.md:304, 403: no difficulty setting. MVP.md:289: "Menu: Start skirmish, Quit. Nothing else." Against them: ADR-065 decision 4, ADR-078 decision 9, and Hud.cpp:2329-2334.
+- Reference shows: "Easy skirmish", "Normal skirmish", "Hard skirmish", "Join world" (with a join file) and "Quit". Reported by: A3 (Conflicts 6, 7), A4 (C9). Class: superseded · OWNER? no
+C-058 — The AI's salvage crew
+- Sides: Phase4.md:353: "its first Constructors on salvage trips" (plural). ADR-076:12, 30: one Constructor at a time.
+- Reference shows: one at a time (AiPlayer.cpp:1835-1891). Reported by: A3 (Conflict 10). Class: superseded · OWNER? no
+C-059 — Number of actions in the Controls window
+- Sides: PlanUI1.md:240: "26 actions under three headings". KeyBindings.h:93-125: 28 actions (12 + 8 + 8). O and Ctrl+= / Ctrl+- came later.
+- Reference shows: 28 actions, 3 headings, 762 units tall. Reported by: A3 (Conflict 12), A4 (C14). Class: superseded · OWNER? no
+C-060 — Interface details superseded by later ADRs and plans
+- Sides:
+- Designer size. Phase1.md:310: about 38% × 65% of the screen. ADR-062:39: 818 × 913 (43% × 85%).
+- Designer header. Phase1.md:268 and the mockup: "SHIPYARD 01 · DESIGNER" and "QUEUE · 0 BUILT". ADR-068 decision 1 and Hud.cpp:1365-1373: "< SHIPYARD 01 > · DESIGNER", "QUEUE · 0 / 5", "BUILT · 0".
+- Damage heading. The mockup: "DAMAGE / S AFTER ARMOR · VS HULL". Hud.cpp:1510: "… · VS A FORMATION".
+- Income of nothing. Phase1.md:307: in the warning's color. ADR-085 decision 1 and Hud.cpp:3152-3156: a chip.
+- Idle status line. PlanUI1.md:134: in the warning's color. PlanUI2.md UI2.1 and Hud.cpp:3277-3280: a chip.
+- Health bar size. Phase1.md:307: "a bar keeps a least size". ADR-088 decision 5 and Hud.cpp:3096-3100: a fixed 32 × 5 at the back buffer's scale.
+- Status line and window top. PlanUI1.md:143 (task 15.1): "Shipyards: 2 building, 1 waiting for Ore, 1 IDLE", windows at 148. ADR-066 decisions 1 and 3 and Hud.cpp:403-410, 1635: "Shipyards · BUILDING 2 · WAITING 1 · IDLE 1", windows at 178.
+- Reference shows: the code's in every case. Reported by: A4 (C6, C7, C8, C10, C11, C15), A5 (C9, Mockup row 12). Class: superseded · OWNER? no
+C-061 — The MVP's camera and sky
+- Sides:
+- MVP.md:139, 510: widest view 1,600 m. Camera.json:4 gives 3,000 m, and Phase4.md:400 (gate L6) set it.
+- MVP.md:324: "the brightest few have the spikes of a starburst". ADR-028:14-15, GameClient.cpp:466 (Shape::Cross) and StarCrossPS.hlsl: one-pixel crosses. starburst.dds is not drawn.
+- MVP.md:324: "a barely visible gray grid". GameClient.cpp:32 (0.012, 0.013, 0.019), and ADR-028 calls it "dim blue-gray".
+- Reference shows: 3,000 m; crosses; (0.012, 0.013, 0.019). Reported by: A7 (Conflicts 2, 3, 8). Class: superseded · OWNER? no
+C-062 — Ore's gold against the mockup
+- Sides: The mockup (GameDesign/Mockups/ShipDesigner.png, sampled by A5) has gold #F7D364, linear (0.93, 0.651, 0.127). Hud.cpp:986 has GOLD_COLOR (0.93, 0.50, 0.045) #F7BC3C, under the comment at Hud.cpp:976 ("The mockup's colors … sampled from it"). ImplementationPlan-Phase1.md:210: "Ore stays the HUD's gold outside the windows". ADR-062 decision 3: "The gold stays the gold of every other cost."
+- Reference shows: #F7BC3C. The mockup is evidence, not ground truth. Reported by: A5 (C10, Mockup row 2). Class: superseded (the code comment is stale) · OWNER? no
+C-063 — Other mockup differences with no recorded decision
+- Sides: The mockup shows a title-bar ground #222A3C with stripes #2A3243, gradient fills on the picked card and stat bars, and "SAVED" in about #74D580. The code has WINDOW_COLOR with TITLE_HATCH_COLOR stripes, solid fills only (Hud.h:630-637), and QUEUE_EDGE_COLOR #559361.
+- Reference shows: the code's. Reported by: A5 (Mockup rows 5, 10, 11, 14). Class: superseded (the mockup is evidence) · OWNER? no
+C-064 — Scope of difficulty in the Phase 3 design
+- Sides: The Phase 3 design does not mention difficulty. It came from plan task 26.1 (ImplementationPlan-Phase3.md:255-262) and is recorded in ADR-065.
+- Reference shows: three difficulties (OpponentEasy.json, Opponent.json, OpponentHard.json). Reported by: A3 (Conflict 6, note). Class: superseded (informational) · OWNER? no
+agent-disagreement
+C-065 — "Defence Platform" against "Defense Platform" in the agents' prose
+- Sides: A1, A2 and A4 write Defence Platform and Defence gun, as the data does (Tuning.json:37, 61). A6 (A6.md:54, 260) and A7 (A7.md:291, 455) write "Defense Platform". The code kind is DefensePlatform (AGENTS.md R11), and the brief writes "Defense Platform".
+- Which is right: the screen shows Defence Platform (build button Hud.cpp:2821 with the type's nameUtf8 from Tuning.json:61). The reference spells it so, and uses DefensePlatform only for the code identifier.
+- Reported by: A4 (C16). R found it in A6 and A7. Class: agent-disagreement · OWNER? no
+C-066 — How a research topic card looks when its tier is not open
+- Sides:
+- A2 (Research tree, rules): "A topic not yet open is dim, and its first need reads 'RESEARCH LAB L2' … Each card reads 'TIER n · s'".
+- A4 (§4.3): a blocked topic is drawn on LOCKED_COLOR with LOCKED_HATCH_COLOR stripes. Its needs read NEEDS · RESEARCH LAB L2, then + {Y}. The TIER {t} · {s} s line shows only when nothing is needed.
+- Which is right: A4. Hud.cpp:1849-1855 gives a blocked card the hatched face. Hud.cpp:1872-1881 writes "NEEDS·" and draws the time line only if (!blocked). Hud.cpp:2971-2972 inserts RESEARCH LAB L{n} first among the needs.
+- Reported by: R (cross-check). Class: agent-disagreement · OWNER? no
+C-067 — Do derelicts carry bars?
+- Sides: A7 (Open 5): "whether derelicts carry hit points in the snapshot is Not specified in the sources read". A1 and A2: a derelict has no hit points (ADR-074:27, decision 1).
+- Which is right: A1 and A2. Hud::BarOver (Hud.cpp:2176) shows a health bar only when maxHitPointsHundredths > 0. EntityView::builtPermille defaults to PERMILLE (Snapshot.h:102), so no build bar either. A derelict shows no bar.
+- Reported by: R (cross-check). Class: agent-disagreement · OWNER? no
+Counts
+ | Class
+ | Entries
+ | OWNER? = yes
+ | code-vs-intent
+ | 5 (C-001 to C-005)
+ | 5
+ | stale-doc
+ | 32 (C-006 to C-036a)
+ | 0
+ | superseded
+ | 28 (C-037 to C-064)
+ | 0
+ | agent-disagreement
+ | 3 (C-065 to C-067)
+ | 0
+ | All
+ | 68
+ | 5
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

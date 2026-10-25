@@ -1,0 +1,362 @@
+
+Scheduled orders, Away, the deputy
+Scheduled orders
+4.1 What one is
+ | Rule
+ | Value
+ | Source
+ | Shape
+ | One trigger, one action, at most one condition, given to a selection
+ | Phase5.md:107, ADR-080 §Decision 4, Command.h:194-202
+ | Kept by
+ | The server, as state, the way a standing order is kept. It fires once and is dropped.
+ | Phase5.md:107, ADR-080 §Decision 5
+ | When it fires
+ | At the end of the tick in which its trigger's event is raised, after vision and territory
+ | Simulation.cpp:985-986, Simulation.cpp:3323-3436
+ | Event triggers
+ | Fire only on an event raised after the order was given. Enemy ships already in the sector do not fire it until they come again.
+ | ADR-080 §Decision 4
+ | One order per ship
+ | A ship waits on one scheduled order at a time. A new scheduled order takes it out of the last.
+ | Simulation.cpp:3304-3305, ADR-080 §Decision 5
+ | What takes a ship out
+ | Any order the player gives it. Setting its retreat does not.
+ | Simulation.cpp:3240-3258, ADR-080 §Decision 5
+ | Dropped
+ | An order no ship waits on any more, or one whose ships are all gone or no longer the player's
+ | Simulation.cpp:3316-3321, 3357-3368
+ | Who takes part
+ | Warships, or Constructors for a rig
+ | Simulation.cpp:3281-3289
+ | Who sees it
+ | Only its owner (Snapshot::scheduled, EntityView::scheduledOrder)
+ | ADR-080 §Decision 5, Snapshot.h:137-138, 527-528
+ | Who fires it
+ | The server, whoever plays the seat. A deputy leaves alone a ship that waits on one.
+ | ADR-079 §Decision 6, Deputy.cpp:53-59
+ | Fires more than once?
+ | Never. A time of day is a moment, not a recurring hour: "another night needs another order".
+ | ADR-080 §Consequences, ADR-080 §What this forecloses
+ | Limit on how many
+ | Not specified: no cap on the number of scheduled orders a seat may hold was found in Simulation.cpp:3274-3313. The window lists the first 6.
+ | Hud.h:526
+4.2 Triggers (4)
+ | Trigger
+ | Form name (verbatim)
+ | In words (verbatim)
+ | Fires on
+ | Source
+ | TimeOfDay
+ | "At a time of day"
+ | "at {HH:MM}"
+ | Its tick: trigger.tick <= tick
+ | OrderForm.cpp:237-238, 296-298, 3330-3331
+ | EnemyInSector
+ | "Enemies enter a sector"
+ | "when enemies enter {sector}"
+ | EnemyEntered in the watched sector
+ | OrderForm.cpp:239-240, 299-301, Simulation.cpp:3338-3339
+ | RelayThreatened
+ | "A Relay is threatened"
+ | "when the Relay in {sector} is threatened"
+ | RelaySuppressed or RelayAttacked in the watched sector
+ | OrderForm.cpp:241-242, 302-304, Simulation.cpp:3340-3341
+ | RigLost
+ | "A Mining Rig is lost"
+ | "when a Mining Rig in {sector} is lost"
+ | StructureLost of a Mining Rig in the watched sector
+ | OrderForm.cpp:243-244, 305-307, Simulation.cpp:3342-3343
+How a time of day becomes a tick:
+- The client turns the hour and minute into the next moment after now on the player's clock and sends it as seconds since 1970 UTC (OrderForm.cpp:217-218, ADR-080 §Decision 6).
+- The host makes it a tick as the command arrives: the first tick at or after the moment, rounded up. A moment past is the current tick. One more than a week ahead is held to a week (WEEK_SECONDS = 604800). The tick a client writes is never trusted (InProcessServer.cpp:338-351, 468-473).
+- An order that a pause has pushed past its time fires late, at its tick (Phase5.md:117).
+The player's clock is the system's time zone, with summer time, from the standard library's database, or UTC where the database cannot say (PlayerClock.cpp:45-55). A reading the clock skips as summer time starts is the moment it skips at; a reading it shows twice as summer time ends is the first (PlayerClock.h:27-29, PlayerClock.cpp:85-89).
+An event trigger watches one sector the player holds. An order whose sector is not the map's, or given on a map without territory, is refused as NoSector (Simulation.cpp:3290-3291).
+4.3 Actions (6)
+ | Action
+ | Form name (verbatim)
+ | Given to the ships as
+ | Where
+ | Source
+ | Move
+ | "Move"
+ | MoveCommand
+ | The action sector's node
+ | OrderForm.cpp:253-254, 229, Simulation.cpp:3398-3400
+ | AttackMove
+ | "Attack-move"
+ | AttackMoveCommand
+ | The node
+ | Simulation.cpp:3401-3403
+ | Attack
+ | "Attack"
+ | AttackCommand on the target fixed when the order was given
+ | The target, where it stands when the order fires
+ | Simulation.cpp:3376-3381, 3404-3406
+ | HoldSector
+ | "Hold the sector"
+ | HoldSectorCommand
+ | The node
+ | Simulation.cpp:3407-3409
+ | Patrol
+ | "Patrol"
+ | PatrolCommand
+ | The node, as the far end
+ | Simulation.cpp:3410-3412
+ | BuildRig
+ | "Build a Mining Rig"
+ | BuildStructureCommand (Mining Rig), given to Constructors
+ | The asteroid picked
+ | Simulation.cpp:3413-3415, OrderForm.cpp:221-227
+- No click on the map. A move goes to a sector's node, not to a point the player clicks: "the form has no click on the map" (ADR-080 §Consequences).
+- The target is fixed when the order is given (owner, 2026-10-08) (Phase5.md:114).
+4.4 The condition
+ | Rule
+ | Value
+ | Source
+ | Meaning
+ | "unless the enemy warships the player sees in the action's sector take more than a number of command points the player sets; then hold the sector the ships are in"
+ | Phase5.md:116
+ | What is counted
+ | The command points of enemy and pirate warships the player sees in the action's sector, by their hull: Small 1, Medium 2, Large 4
+ | Simulation.cpp:3382-3395, Tuning.json: hulls[].commandPoints
+ | Held back
+ | More points than the limit: the ships hold the sector they are in, at the middle of them, and the event's outcome is HeldInstead
+ | Simulation.cpp:3393-3397
+ | Values in the form
+ | None ("Never"), or 0 to 60 command points in steps of 2
+ | OrderForm.h:27-29, OrderForm.cpp:116-121
+ | Refused when
+ | Fewer than 0 points (InvalidCondition)
+ | Simulation.cpp:3300-3301
+ | Outside every sector
+ | The count is 0, so the order is never held back
+ | Simulation.cpp:3385-3392
+4.5 Refusals of a ScheduleOrderCommand
+The server applies these at the command; the player is not told of them (§1.3).
+ | Result
+ | When
+ | Source
+ | NoShips / NotOwned / UnknownEntity / NotAShip
+ | The ship checks (ValidateShips) fail, or no warship is left (no Constructor for a rig)
+ | Simulation.cpp:3276-3289
+ | NotAConstructor
+ | A rig order names a ship that is not a Constructor
+ | ADR-080 §Decision 4, Simulation.cpp:3277
+ | NoSector
+ | An event trigger's sector is not the map's; or a hold outside every sector
+ | Simulation.cpp:3290-3291, 3298-3299
+ | InvalidPosition
+ | The action's position is not finite
+ | Simulation.cpp:3292-3293
+ | UnknownTarget / NotAnEnemy
+ | An attack's target is gone, or is not an enemy's
+ | Simulation.cpp:3294-3297
+ | InvalidCondition
+ | A condition below 0
+ | Simulation.cpp:3300-3301
+A refusal when the order fires is told: "Order refused: …" (Simulation.cpp:3417-3434, Alerts.cpp:39-40).
+4.6 Writing one in the Orders window (O)
+ | Element
+ | Text (verbatim)
+ | Source
+ | Window header
+ | "SCHEDULED ORDERS"
+ | Hud.cpp:1952
+ | List label
+ | "WAITING"
+ | Hud.cpp:1955
+ | Empty list
+ | "None"
+ | Hud.cpp:1957-1958
+ | List line
+ | "{Order in words, first letter capitalized} · {n} ship(s)". For example: "At 02:00, attack-move to C3, unless over 8 enemy CP · 3 ships". The first 6 are shown.
+ | Hud.cpp:2231-2241, OrderForm.cpp:291-315, Hud.h:526
+ | More
+ | "and {n} more"
+ | Hud.cpp:1964-1965
+ | Form label
+ | "NEW ORDER FOR THE SELECTION"
+ | Hud.cpp:1967
+ | WHEN
+ | Trigger name (§4.2)
+ | Hud.cpp:2248
+ | HOUR / MINUTE
+ | Time triggers only: "{HH}" 0–23, "{MM}" in steps of 5
+ | Hud.cpp:2250-2254, OrderForm.cpp:94-99
+ | WATCHING
+ | Event triggers only: a sector the player holds, or "None held"
+ | Hud.cpp:2255-2257, OrderForm.cpp:134-143
+ | DO
+ | Action name (§4.3)
+ | Hud.cpp:2258
+ | WHERE
+ | Maps with sectors only: any sector of the map, or "None"
+ | Hud.cpp:2259-2260, OrderForm.cpp:110-111
+ | TARGET
+ | Attack and rig only: "{name} ({i} of {n})" or "None there". An attack's targets are the enemy's and the pirates' structures and then their ships in that sector. A rig's are the asteroids with Ore left as the player knows them.
+ | Hud.cpp:2261-2270, OrderForm.cpp:145-172
+ | Target names
+ | "Pirate {name}" for the pirates'; "{Hull} ship"; a structure's name; "Asteroid, Ore {n}" or "Asteroid"
+ | OrderForm.cpp:269-289
+ | UNLESS
+ | "Over {n} enemy CP there", or "Never"
+ | Hud.cpp:2271-2274
+ | When it fires
+ | "Fires at {HH:MM} on your clock, in {m:ss or h:mm:ss}", or "Fires once, the first time it happens"
+ | Hud.cpp:2276-2283
+ | Button
+ | "Give to {n} ship(s)", or "Give the order"
+ | Hud.cpp:2284-2290
+ | Why the button is dim
+ | "SELECT CONSTRUCTORS", "SELECT WARSHIPS", "NO SECTOR HELD", "NO ASTEROID THERE", "NO ENEMY SEEN THERE", "NO SECTOR"
+ | OrderForm.cpp:188-205
+- How fields are edited. Each field steps with arrows both ways and wraps round its ends. The condition steps from none, through 0 to 60, and back to none (OrderForm.cpp:83-125).
+- What the form starts at: a time of day at 02:00, the action Attack-move, and no condition (OrderForm.h:103-111).
+- The form keeps its picks while the window is closed. It resets with each new match (GameClient.cpp:512).
+- Who receives the order. Only the selection's warships, or its Constructors for a rig (OrderForm.cpp:174-186).
+The Away report
+ | Aspect
+ | Value
+ | Source
+ | Kept by
+ | The host (AwayReports), from the events of every snapshot while the seat's deputy plays, from the first such tick
+ | AwayReports.cpp:37-53, ADR-080 §Decision 7
+ | Survives a restart
+ | Yes. A save keeps the seats' reports beside the state (owner, 2026-10-08).
+ | ADR-077 §Decision 5, InProcessServer.cpp:597, 640, Phase5.md:155
+ | Handed over
+ | Once, with the player's first snapshot after it takes the seat again (Snapshot::away)
+ | AwayReports.cpp:40-47, Snapshot.h:529-531
+ | When it shows
+ | The away window opens itself when the report arrives, in the middle of the screen
+ | GameClient.cpp:537-544, Hud.cpp:3680-3685
+ | How it goes
+ | Closing the window drops the report
+ | GameClient.cpp:763-765
+ | Header
+ | "WHILE YOU WERE AWAY"
+ | Hud.cpp:1997
+ | First line (title face)
+ | "Away for {m:ss or h:mm:ss}": from the tick the deputy took the seat to the tick the report arrived
+ | Hud.cpp:2293-2297, 2127-2133
+ | Lines
+ | "Built {n ship(s) / no ships} and {n structure(s) / no structures}"; "Lost … and …"; "Sectors gained: {names}" if any; "Sectors lost: {names}" if any; then each fired order as its alert says it
+ | Hud.cpp:2298-2320
+ | Sectors
+ | One gained and lost again is in neither list
+ | Snapshot.h:466-484
+ | Orders listed
+ | At most the last 16 fired (REPORTED_ORDERS); the window holds 4 + 16 lines
+ | Snapshot.h:468, 499-502, Hud.h:539
+ | What it does not tell
+ | What the enemy did beyond the seat's own events
+ | ADR-080 §Consequences
+First join of a world. A seat nobody has taken yet is the deputy's from the start (SeatController.cpp:35-36). So, by the same code, the player's first join of a world also carries a report from the deputy's first tick (AwayReports.cpp:49-50).
+The seat controller and the deputy
+6.1 Who plays a seat
+ | Rule
+ | Value
+ | Source
+ | One controller at a time
+ | The player, or the deputy
+ | Phase5.md:95, SeatController.h:5-8
+ | A seat never taken
+ | The deputy's from the start
+ | SeatController.cpp:35-36
+ | While the player is connected
+ | The player's, while the newest connection is open
+ | SeatController.cpp:37-38
+ | Hand-over
+ | 60 s of ticks (DEPUTY_DELAY_SECONDS) after the server sees the connection gone (QuicChannel::HasGone)
+ | Server.h:31-32, SeatController.cpp:39-45, InProcessServer.cpp:528-529
+ | When a connection is seen gone
+ | A connection that closes, at once. One whose client vanished, when MsQuic's idle timeout ends it: 30 s by MsQuic's default, which the code does not set.
+ | ADR-079 §Decision 4, QuicChannel.cpp:342-343, 557-558
+ | Hand-back
+ | At once, when the player takes the seat again with its token
+ | SeatController.cpp:37-38, ADR-079 §Decision 4
+ | A new connection that goes
+ | The delay starts again from when that newer connection was seen gone
+ | SeatController.cpp:39-44
+ | What the deputy ordered
+ | Stands until the player changes it
+ | Phase5.md:95
+ | Where it runs
+ | On the server's thread, after each tick, with that tick's snapshot. Its orders apply at the next tick and are logged as a player's.
+ | ADR-079 §Decision 2, InProcessServer.cpp:564-576
+ | Settings
+ | The Normal AI's settings (Opponent.json), for its research order and its defence hold
+ | OutpostServer/Main.cpp:185-188, ADR-079 §Decision 6
+ | Hosted for
+ | Every player's seat in OutpostServer
+ | OutpostServer/Main.cpp:198-199
+While the player plays, the deputy watches and gives no order (HostedPlayer.h:20-21, Deputy.cpp:128-138).
+6.2 What the deputy does (once a second)
+ | Keeper rule
+ | Detail
+ | Source
+ | Research
+ | A Lab with a slot free takes the next topic of the AI's research order, then the first topic of the tuning data's that it can take
+ | Deputy.cpp:236-264
+ | Production
+ | A finished Shipyard with an empty queue gets one job: the design it last queued, learned whether the deputy played or watched. A Shipyard it never saw build gets the design most of the player's warships are of, the oldest of a tie. Nothing if the Shipyard's level cannot build it.
+ | Deputy.cpp:191-206, 266-307
+ | Waiting jobs
+ | The job waits for the Ore and the fleet cap as any job does
+ | Deputy.cpp:288-289
+ | Command Station
+ | Upgraded once the Ore is there, when the cap holds a Shipyard's next ship back
+ | Deputy.cpp:229-230, 309-323
+ | Constructors
+ | Keeps as many as the player had when the deputy took the seat, counting those queued at the Command Station (owner, 2026-10-08)
+ | Deputy.cpp:143-149, 325-332, Phase5.md:96
+ | Rigs
+ | Rebuilds a Mining Rig it saw stand, with the 2 nearest idle Constructors, on an asteroid that still holds ore, in a sector the player holds and the pirates do not guard. It waits 3 s to see the site before ordering again.
+ | Deputy.cpp:14-18, 334-373
+ | Repairs
+ | Each damaged structure, and each site nobody builds, gets the nearest idle Constructor
+ | Deputy.cpp:375-398
+ | Defence
+ | Idle warships attack-move at enemy warships, the pirates' among them, in the held sector that has the most; or at whatever fired on a player structure in a held sector. "Idle" means no order, no standing order, not retreating and no scheduled order.
+ | Deputy.cpp:53-59, 400-477
+ | End of a defence
+ | 10 s (defenseHoldSeconds) after the attack was last seen, or at once when the sector is lost. Each defender then moves back to where it stood (owner, 2026-10-08). A defender that stopped more than 150 m short is sent again.
+ | Deputy.cpp:20, 437-466, Opponent.json:13
+ | Never
+ | Attacks, raids, claims a sector, clears pirates or salvages, except by a scheduled order the player gave
+ | ADR-079 §Decision 6, Deputy.h:18-19
+ | Leaves alone
+ | A ship that retreats, or has an order, a standing order or a scheduled order
+ | Deputy.cpp:55-59
+ | Each turn starts afresh
+ | Its Constructor count, repairs and defenders belong to the turn. What it learned while watching (each Shipyard's last design, where the rigs stood) it keeps, but not across a server restart.
+ | Deputy.cpp:143-154, ADR-079 §Decision 6, ADR-079 §Consequences
+The deputy plays on when its player's seat restarts after a loss; it lays no plan (ADR-084 §Decision 6).
+6.3 How the seat comes back
+The player joins with its join file, from the menu's "Join world" or --join (§11). The newest connection holds the seat (InProcessServer.cpp:318-321). The deputy hands the seat back at once. The first snapshot carries the away report, and its window opens (§5).
+Away → deputy → return
+1The player's connection goes
+The player's connection goes; the server sees it gone (QuicChannel::HasGone) (InProcessServer.cpp:528).
+2The player still holds the seat
+The player still holds the seat for 60 s of ticks (SeatController.cpp:39-45).
+3After 60 s the deputy plays.
+After 60 s the deputy plays.
+– Its turn begins: it counts the Constructors to keep, and clears last turn's defenders (Deputy.cpp:143-154).
+– The host starts the away report at this tick (AwayReports.cpp:49-50).
+4While away:
+While away:
+– The deputy keeps research, production, Constructors, rigs and repairs, and defends held sectors, once a second (§6.2).
+– Scheduled orders fire whoever plays (ADR-079 §Decision 6).
+– Events go into the report.
+– A save every 60 s keeps the report (ADR-077 §Decision 5).
+5If the player's empire falls
+If the player's empire falls, it is told (EmpireLost) and restarts an hour later once its start is free; the deputy plays on (§13.3).
+6The player takes the seat again
+The player takes the seat again (§14.2 step 8). The deputy hands back at once (SeatController.cpp:37-38).
+7The first snapshot carries the report
+The first snapshot carries the report, and the window "WHILE YOU WERE AWAY" opens with "Away for h:mm:ss" and its lines (GameClient.cpp:537-544, Hud.cpp:2293-2320).
+8The player closes the window
+The player closes the window, and the report is gone (GameClient.cpp:763-765). Whatever the deputy ordered stands until the player changes it (Phase5.md:95).
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

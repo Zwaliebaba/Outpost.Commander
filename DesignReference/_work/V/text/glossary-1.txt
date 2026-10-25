@@ -1,0 +1,417 @@
+
+Glossary, part 1 of 2
+Glossary · part 1 of 2
+Glossary
+Agent R (reconciliation). HEAD a053fe294d91dc885bbb061c2f34d76ca6897738 (2026-10-25T08:33:55+01:00).
+How terms are spelled. Each term is written exactly as the game writes it on screen or in its data, with capitals as shown. A term that never appears on screen is in italics and gives its code or document name. "Variants" lists other spellings in the design documents, the code or the brief.
+Sources. Tuning.json, Map.json, Models.json and Opponent*.json are under OutpostCommander/Assets/. Code paths are from the repository root. MVP.md, Phase1.md to Phase4.md are in GameDesign/Archive/, and Phase5.md is GameDesign/OutpostCommander-Phase5.md.
+Spelling rule. The game's own nouns keep British spelling in data and on screen: Defence, Armour. Identifiers use the SDK's American spelling: DefensePlatform, armor (AGENTS.md R11). Where a screen label is an identifier-style word, it is American: the Designer's "Armor" bar (Hud.cpp:767).
+ | Term
+ | Definition
+ | Source
+ | Variants
+ | 25%, 50%, Never
+ | The three retreat settings on the selection panel: retreat below a quarter or half of full hit points, or never. 25% is the default. In the Designer they read 25%, 50%, NEVER.
+ | Hud.cpp:470-476, 1557-1564; GameProtocol/RetreatThreshold.h:7-30
+ | code Quarter, Half, Never
+ | A Mining Rig is lost
+ | A scheduled order's trigger: a Mining Rig in the watched sector is destroyed.
+ | OrderForm.cpp:244; Simulation.cpp:3342-3343
+ | in words "when a Mining Rig in {sector} is lost"
+ | A Relay is threatened
+ | A scheduled order's trigger: the watched sector's Relay is suppressed or hit.
+ | OrderForm.cpp:242; Simulation.cpp:3340-3341
+ | 
+ | A1 … E5
+ | The 25 sectors' names: columns A–E west to east, rows 1–5 south to north. A1 is player 1's home and E5 player 2's.
+ | Map.json: sectors[].name (lines 98-149)
+ | 
+ | Ablative Armour
+ | Tier 3 research topic 20: hull hit points +5%. Requires Composite Plating.
+ | Tuning.json:100-101
+ | code armor
+ | AI empire
+ | An AI that plays a world's seat on the server's thread, at Easy, Normal or Hard.
+ | OutpostServer/Main.cpp:195 ("Player {n} is an AI empire"); ADR-079 decision 3
+ | 
+ | Alerts
+ | The HUD's list of up to 4 events of the last 8 s, newest first; the newest is a warning chip. Space looks at the newest.
+ | Alerts.h:15-18; Hud.cpp:3215-3238; KeyBindings.h:115
+ | 
+ | Alt, held
+ | Shows every health bar.
+ | KeyBindings.h:123
+ | 
+ | ARM
+ | Armor, as the Designer's cards write it ("ARM 14").
+ | Hud.cpp:651, 796
+ | 
+ | Armor
+ | Flat damage taken off each hit, down to a quarter of the hit. Integer hundredths in the simulation.
+ | DesignStats.h:16-21; Designer bar Hud.cpp:767
+ | design docs "armour"; code armor
+ | Asteroid
+ | An ore asteroid in the Orders window's target list ("Asteroid, Ore {n}").
+ | OrderForm.cpp:274-275
+ | ore asteroid
+ | asteroid field
+ | A cluster of rocks that blocks movement, radius 150 m or 180 m; 80 on the map.
+ | Map.json: asteroidFields (lines 16-97); ADR-087
+ | "field"
+ | At a time of day
+ | A scheduled order's trigger: fires at an hour and minute on the player's clock, once.
+ | OrderForm.cpp:238; InProcessServer.cpp:338-351
+ | in words "at {HH:MM}"
+ | Attack
+ | Order: close on one enemy ship or structure and fire until it dies. Right-click on an enemy. Also a scheduled-order action.
+ | Command.h:15-20; OrderForm.cpp:258
+ | "attack in {sector}"
+ | Attack-move
+ | Order: move, stopping at weapon range to fire at any enemy met. A, then click.
+ | KeyBindings.h:99; Hud.cpp:2798; Command.h:22-27
+ | "attack-move to {sector}"
+ | Automated Shipyards
+ | Tier 1 topic 8: Shipyard build speed +25%. Requires Improved Extraction.
+ | Tuning.json:80-81
+ | 
+ | Away for
+ | The Away window's first line: how long the deputy held the seat.
+ | Hud.cpp:2297
+ | 
+ | away report
+ | What happened while the deputy played the seat, handed over once on return: built, lost, sectors gained and lost, fired orders.
+ | GameLogic/AwayReports.cpp; Snapshot.h:454-502; ADR-080 decision 7
+ | 
+ | Back to menu
+ | The end banner's button. It ends the match's server and shows the menu.
+ | Hud.cpp:3349; WinMain.cpp:491-504
+ | 
+ | banner
+ | The end-of-match panel: Victory, Defeat, Draw or Empire fallen.
+ | Hud.cpp:2185-2219, 3340-3350
+ | 
+ | battle matchup
+ | A developer setup: two fixed fleets with no bases (--matchup, --matchups). Not part of play.
+ | Matchups.json; ADR-083
+ | 
+ | battle (world log)
+ | Two seats firing at each other in one sector within 10 s, ended by 30 s without such a shot. A World.log record.
+ | WorldLog.h:55-57; ADR-082 decision 2
+ | 
+ | between
+ | Sector kind with 2 contested asteroids: D2 and B4.
+ | Map.json:155
+ | 
+ | Brawler
+ | Starting design: Medium + Ion + Mass Driver. It is also the AI's default design.
+ | Tuning.json:116; Opponent.json:17
+ | 
+ | BUILD
+ | The production window's label over its cards.
+ | Hud.cpp:1730
+ | 
+ | Build
+ | The Designer's build-time bar, in s.
+ | Hud.cpp:779
+ | 
+ | Build a Mining Rig
+ | Scheduled-order action given to Constructors: a rig on the picked asteroid.
+ | OrderForm.cpp:264
+ | "Mining Rig in {sector}"
+ | BUILT
+ | The Designer header's count of ships the targeted Shipyard has built ("BUILT · n").
+ | Hud.cpp:1372; Snapshot.h:109-112
+ | 
+ | By domination.
+ | Banner detail when the match ended by domination.
+ | Hud.cpp:2207
+ | 
+ | camp
+ | A pirate outpost of 1 Defence Platform and 3 Small Ion Mass Driver ships, on 2 of the 4 contested pairs. Its wreck pays 600 Ore.
+ | Tuning.json:123-124; Map.json:160
+ | 
+ | cap
+ | The node cap in the territory panel ("cap 4 of 25").
+ | Hud.cpp:3195
+ | 
+ | center
+ | Sector kind of C3: 4 contested asteroids and a pirate stronghold.
+ | Map.json:156, 162
+ | "centre" not used
+ | Coilgun Mass Drivers
+ | Tier 3 topic 21: Mass Driver fire rate +10%. Requires Mass Driver Calibration.
+ | Tuning.json:102-103
+ | 
+ | command log
+ | A world's per-save log of every tick's commands, Commands-<tick>.log.
+ | WorldFolder.cpp:12-23; ADR-077 decision 7
+ | 
+ | command points
+ | A warship's weight under the fleet cap: Small 1, Medium 2, Large 4. Written CP on screen.
+ | Tuning.json:16-18; ADR-071
+ | CP
+ | Command Station
+ | A player's starting base on its start. It cannot be built. It holds the home sector, builds Constructors, repairs ships and carries Defence guns. Five levels: node cap 4/7/10/13/16 and fleet cap 12/20/30/40/50.
+ | Tuning.json:40-46; ADR-064; ADR-071
+ | code CommandStation; "COMMAND STATION" (production subject, Hud.cpp:2845)
+ | Composite Plating
+ | Tier 2 topic 13: hull hit points +15%. Requires Hull Plating.
+ | Tuning.json:88-89
+ | 
+ | condition
+ | A scheduled order's optional "unless": hold instead when the enemy command points seen in the action's sector exceed a number.
+ | Simulation.cpp:3382-3397; Phase5.md:116
+ | UNLESS
+ | Constructor
+ | The one fixed unarmed design. It builds, repairs and salvages. 60 Ore and 15 s at the Command Station; 2 at start.
+ | Tuning.json:35; Hud.cpp:164
+ | 
+ | contested
+ | Sector kind with 1 contested asteroid (5.5 Ore/s, 12,000 Ore). Also that yield's name.
+ | Map.json:154; Tuning.json:8
+ | 
+ | control group
+ | Ctrl+0–9 assigns a selection; 0–9 recalls it, and a second tap looks at it.
+ | KeyBindings.h:103-104
+ | "Make a control group"
+ | Controls
+ | The window listing every key and mouse action (F1), titled "CONTROLS".
+ | KeyBindings.h:93-125; Hud.cpp:1906
+ | "These controls"
+ | Cost
+ | The Designer's cost bar ("ore" unit). Elsewhere costs are the gem and a gold figure.
+ | Hud.cpp:778; ADR-043 decision 3
+ | 
+ | CP
+ | Command points, in the Orders window ("Over {n} enemy CP there").
+ | Hud.cpp:2273; OrderForm.cpp:313
+ | command points
+ | cut off
+ | A held sector with no path of held sectors to its holder's home. Its rigs earn half.
+ | Hud.cpp:2608; Simulation.cpp:2864-2891; Tuning.json:14
+ | code cutOff
+ | DAMAGE / S AFTER ARMOR · VS A FORMATION
+ | The Designer's damage section: one card per hull.
+ | Hud.cpp:1510
+ | mockup "VS HULL"
+ | dedicated server
+ | OutpostServer, the console program that runs a world from its folder.
+ | ADR-078
+ | 
+ | Deep Core Survey
+ | Tier 2 topic 12, shown as "Asteroid ore reserves +30%". The researcher's rigs draw a 1.3rd less from a reserve.
+ | Tuning.json:86-87; Research.cpp:167-168; ADR-035 decision 3
+ | 
+ | Defeat
+ | Banner title for the loser.
+ | Hud.cpp:2199
+ | 
+ | Defence Autoloader
+ | Tier 2 topic 15: Defence gun fire rate +20%.
+ | Tuning.json:92-93
+ | 
+ | Defence gun
+ | The structure weapon: 30 damage every 1.0 s at 250 m. The Command Station carries 1–3 and the Defence Platform 1.
+ | Tuning.json:37; Hud.cpp:2659 ("{n} Defence guns")
+ | code DefenseGun; brief "Defense"
+ | Defence Platform
+ | A structure with one Defence gun: 450 Ore, 20 s, 1,500 hit points, armor 10.
+ | Tuning.json:61
+ | code DefensePlatform; brief and A6/A7 prose "Defense Platform" (C-065)
+ | deputy
+ | The keeper that plays a player's seat 60 s after the connection is lost, until the player returns.
+ | GameProtocol/Server.h:32; Opponent/Deputy.cpp; ADR-079; World.log "deputy"
+ | 
+ | Derelict
+ | A wreck of the old fleet with no owner or hit points. Constructors salvage it for Ore, and some for research time.
+ | Hud.cpp:2137; ADR-074
+ | set Wreck
+ | design
+ | A saved hull + drive + weapon (+ module), named. Its stats are derived.
+ | ADR-014; ADR-017
+ | 
+ | DESIGNER
+ | The ship designer window's title-bar label ("SHIPYARD 01 · DESIGNER").
+ | Hud.cpp:1368
+ | Ship designer, SHIP DESIGN
+ | DO
+ | The Orders window's action row.
+ | Hud.cpp:2258
+ | 
+ | domination
+ | A match's ticket race: each player loses 1 ticket every 3 s per node it is behind; at 0 it loses. Off in a world.
+ | Tuning.json:14; ADR-057; ADR-084 decision 2
+ | By domination.
+ | Draw
+ | Banner title when both players lose in one tick.
+ | Hud.cpp:2199
+ | 
+ | DRIVE
+ | The Designer's drive slot: Ion, Fusion or Pulse.
+ | Hud.cpp:658; Tuning.json:21-23
+ | 
+ | Drive Harmonics
+ | Tier 3 topic 23: ship speed +10%.
+ | Tuning.json:106-107
+ | 
+ | dry
+ | An ore asteroid whose reserve is gone. Its rig earns a 20% trickle. Drawn in rust on the minimap.
+ | Tuning.json:10; Hud.cpp:34
+ | "Ore run out: it earns a trickle"
+ | Easy skirmish, Normal skirmish, Hard skirmish
+ | The menu's three matches against the AI at each difficulty.
+ | Hud.cpp:2329-2331; ADR-065
+ | 
+ | Empire fallen
+ | A world's banner when the player has lost its production; the seat restarts an hour later.
+ | Hud.cpp:2193-2195; ADR-084 decision 7
+ | code EmpireLost
+ | Enemies enter a sector
+ | A scheduled order's trigger.
+ | OrderForm.cpp:240
+ | "when enemies enter {sector}"
+ | Enemy ships in {sector}
+ | Alert: an enemy warship entered a sector the player holds.
+ | Alerts.cpp:89
+ | 
+ | exhaust
+ | A drive's glow at each exhaust hardpoint: Ion cyan, Fusion magenta, Pulse lime.
+ | Models.json:75-80; ADR-019
+ | 
+ | field ("the field")
+ | The place an alert names when its event is in no sector.
+ | Alerts.cpp:73
+ | 
+ | Flak Battery
+ | Weapon: 20 every 0.5 s, 200 m, splash 26 m. Unlocked by tier 2 topic 11 of the same name.
+ | Tuning.json:29, 84-85
+ | 
+ | flank
+ | Sector kind beside a home, with 2 near asteroids: B1, A2, D5, E4.
+ | Map.json:152
+ | 
+ | Fleet
+ | The status column's line of command points against the fleet cap ("29 / 30").
+ | Hud.cpp:376-379
+ | 
+ | Fleet Automation
+ | Tier 3 topic 24: Shipyard build speed +25%. Requires Automated Shipyards.
+ | Tuning.json:108-109
+ | 
+ | fleet cap
+ | The most command points a player's warships, and their started jobs, may take: set by the Command Station's level.
+ | ADR-071; Hud.cpp:383, 2620
+ | "the fleet cap", "fleet {n}"
+ | fog of war
+ | What a player cannot see is hidden. Enemy structures are remembered as last seen.
+ | ADR-024; GameApp/FogOfWar.h
+ | 
+ | footprint
+ | The circle a ship or structure keeps clear; structures are drawn across it.
+ | Tuning.json footprintRadiusMeters; GameClient.cpp:1658-1664
+ | 
+ | Fusion
+ | Drive: speed ×0.8, hit points ×1.4, turn ×0.8. Unlocked by tier 1 topic 5, Fusion Drive.
+ | Tuning.json:22, 74-75
+ | 
+ | Give to {n} ship(s)
+ | The Orders window's button that gives the form's order to the selection.
+ | Hud.cpp:2286
+ | "Give the order"
+ | guarded
+ | A sector with a pirate structure in it: it cannot be claimed and its node counts for no one.
+ | Simulation.cpp:2853-2860; ADR-073 decision 6
+ | 
+ | held
+ | A sector whose node a player's finished Relay or Command Station holds.
+ | Hud.cpp:2604-2610
+ | "not held"
+ | Hit points
+ | Health; integer hundredths in the simulation, shown whole and rounded up.
+ | Hud.cpp:166-170, 764, 2587
+ | HP on cards
+ | Hold sector
+ | Standing order: hold the sector clicked in, attacking enemies seen there and returning to its node. H, then click.
+ | Hud.cpp:2800; KeyBindings.h:100
+ | "Hold the sector" (form), "Holding a sector" (panel), "hold {sector}"
+ | home
+ | Sector kind of each start, with 3 fixed asteroids (3.5 Ore/s, 7,500 Ore). Never suppressed.
+ | Map.json:9-14, 151; ADR-056 decision 6
+ | 
+ | HP
+ | Hit points on a hull card ("1,200 HP").
+ | Hud.cpp:651
+ | 
+ | HULL
+ | The Designer's hull slot: Small, Medium or Large.
+ | Hud.cpp:639; Tuning.json:16-18
+ | 
+ | Hull Plating
+ | Tier 1 topic 2: hull hit points +15%.
+ | Tuning.json:68-69
+ | 
+ | Human
+ | Model set and side of player 1: blue (0.18, 0.42, 0.95), own meshes.
+ | Models.json:4-17, 54
+ | 
+ | IDLE
+ | A warning chip: the Research Lab, or a Shipyard that could start a ship now, is doing nothing.
+ | Hud.cpp:297, 404
+ | 
+ | Improved Extraction
+ | Tier 1 topic 1: Mining Rig income +25%.
+ | Tuning.json:66-67
+ | 
+ | income
+ | Ore a second from the player's rigs, shown "+{n}/s"; a warning chip at nothing.
+ | Hud.cpp:3146-3156
+ | 
+ | Ion
+ | The starting drive: speed ×1.3, hit points ×0.9, turn ×1.25.
+ | Tuning.json:21
+ | 
+ | join file
+ | Join-Player<n>.json, written by the server: host, port, certificate, player, token.
+ | JoinTicket.cpp:37-42; ADR-078 decision 8
+ | 
+ | Join world
+ | Menu button, shown when Documents\Outpost Commander\Join.json exists. It joins a dedicated server's world.
+ | Hud.cpp:2333; WinMain.cpp:56-57, 111-123
+ | --join
+ | L1 … L5
+ | Structure levels ("· L2", "Upgrade to L3"). The Command Station goes to L5, the Shipyard to L3, the Research Lab to L4.
+ | Hud.cpp:2572, 2689; Tuning.json:41-59
+ | level
+ | Lance
+ | Weapon: 95 every 2.7 s, 220 m. It fires a beam in the side's color.
+ | Tuning.json:27; Models.json:82
+ | 
+ | Lance Capacitors
+ | Tier 2 topic 16: Lance fire rate +10%. Requires Lance Focusing.
+ | Tuning.json:94-95
+ | 
+ | Lance Focusing
+ | Tier 1 topic 4: Lance fire rate +15%.
+ | Tuning.json:72-73
+ | 
+ | Lancer
+ | Starting design: Medium + Ion + Lance.
+ | Tuning.json:117
+ | 
+ | Large
+ | Hull 3: 1,200 hit points, armor 14, 4 command points. Built at a Shipyard L3. Unlocked by tier 1 topic 6, Large Hull.
+ | Tuning.json:18, 76-77
+ | 
+ | last seen
+ | How long ago a remembered structure or derelict was seen ("last seen 4:12 ago", "last seen earlier").
+ | Hud.cpp:452-460
+ | 
+ | Local skirmish
+ | The "where the match runs" tag in a match on the game's own server.
+ | Hud.cpp:3323; ADR-086
+ | 
+ | Mass Driver
+ | The starting gun weapon: 14 every 0.4 s, 120 m.
+ | Tuning.json:26
+ | 
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

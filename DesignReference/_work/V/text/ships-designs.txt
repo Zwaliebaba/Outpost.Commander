@@ -1,0 +1,269 @@
+
+Derived stats and starting designs
+How a design's stats are derived
+A design is a hull, a drive and a weapon, with a module or none. Its stats are derived from those, never stored in the data (ADR-014 §Decision 1). The server and the designer call the same function, DesignStatsOf, on component views that the server sends with the player's research already applied (ADR-017 §Decision 5; DesignStats.h:75-95; ShipDesign.cpp:38-84).
+ | Stat
+ | Formula
+ | Source
+ | Hull view hit points
+ | llround(hull.hitPoints × 100 × hullHitPointsFactor) hundredths. Research applies before the drive.
+ | ShipDesign.cpp:42
+ | Design hit points
+ | llround(hullView.hp × drive.hitPointsFactor) hundredths
+ | DesignStats.h:86
+ | Armor
+ | hull.armor × 100 hundredths. Nothing changes it.
+ | ShipDesign.cpp:43; DesignStats.h:87
+ | Speed
+ | hull speed × shipSpeedFactor (research) × drive.speedFactor × module.speedFactor (1.0 without a module)
+ | ShipDesign.cpp:44; DesignStats.h:81-82
+ | Turn rate
+ | hull turn rate × drive.turnRateFactor. Research never changes it.
+ | DesignStats.h:83-84; ADR-033 §Decision 4
+ | Footprint
+ | the hull's
+ | DesignStats.h:85
+ | Cost
+ | hull + drive + weapon + module, in whole Ore
+ | DesignStats.h:88
+ | Build time
+ | the hull's buildSeconds. A Shipyard's job advances by shipyardBuildSpeedFactor each tick.
+ | DesignStats.h:89; Simulation.cpp:2737-2741
+ | Damage, interval, range, splash
+ | the weapon's, with the interval divided by that weapon's fire-rate factor
+ | ShipDesign.cpp:64-74; DesignStats.h:90-93
+ | Module sight
+ | the module's sightMeters, or 0
+ | DesignStats.h:94
+ | Research factors
+ | 1 + (sum of the percents on that rate) ÷ 100. Percents on one rate add (+15% and +15% make +30%). Fire-rate percents are summed per weapon.
+ | Research.cpp:50-125 (factor at l.110); ADR-033 §Decision 3
+ | Research landing
+ | When a topic finishes, every design of the player's is re-derived. Each warship keeps its share of its hit points, rounded to the nearest hundredth and never below 1, and takes its design's speed.
+ | Simulation.cpp:3105-3151; ADR-017 §Decision 2
+Every hull × drive pair (no research)
+Derived with the formulas above (derive.py). Two columns need a word:
+- Turn radius is speed ÷ turn rate in radians, at full speed. ADR-039 §Context quotes the same figures: 19.9 m for Small+Ion and 23.9 m for Large+Fusion.
+- Cost is the hull's and the drive's only; add the weapon's, and the module's if any.
+ | Hull+Drive
+ | Hit points
+ | Armor
+ | Speed (m/s)
+ | with Sensor Array
+ | Turn (°/s)
+ | Turn radius (m)
+ | Hull+drive cost (Ore)
+ | Build (s)
+ | Command points
+ | Small+Ion
+ | 198
+ | 2
+ | 78
+ | 70.2
+ | 225
+ | 19.9
+ | 156
+ | 30
+ | 1
+ | Small+Fusion
+ | 308
+ | 2
+ | 48
+ | 43.2
+ | 144
+ | 19.1
+ | 336
+ | 30
+ | 1
+ | Small+Pulse
+ | 165
+ | 2
+ | 96
+ | 86.4
+ | 270
+ | 20.4
+ | 216
+ | 30
+ | 1
+ | Medium+Ion
+ | 450
+ | 8
+ | 52
+ | 46.8
+ | 150
+ | 19.9
+ | 390
+ | 60
+ | 2
+ | Medium+Fusion
+ | 700
+ | 8
+ | 32
+ | 28.8
+ | 96
+ | 19.1
+ | 570
+ | 60
+ | 2
+ | Medium+Pulse
+ | 375
+ | 8
+ | 64
+ | 57.6
+ | 180
+ | 20.4
+ | 450
+ | 60
+ | 2
+ | Large+Ion
+ | 1,080
+ | 14
+ | 32.5
+ | 29.25
+ | 75
+ | 24.8
+ | 960
+ | 120
+ | 4
+ | Large+Fusion
+ | 1,680
+ | 14
+ | 20
+ | 18
+ | 48
+ | 23.9
+ | 1,140
+ | 120
+ | 4
+ | Large+Pulse
+ | 900
+ | 14
+ | 40
+ | 36
+ | 90
+ | 25.5
+ | 1,020
+ | 120
+ | 4
+Hit points with hull research (derive_upgraded.py; formula ShipDesign.cpp:42 × DesignStats.h:86). Hull Plating gives +15% (Tuning.json:68-69), Composite Plating another +15% (l.88-89), and Ablative Armour another +5% (l.100-101).
+ | Hull+Drive
+ | none
+ | +15%
+ | +30%
+ | +35%
+ | Small+Ion
+ | 198
+ | 227.7
+ | 257.4
+ | 267.3
+ | Small+Fusion
+ | 308
+ | 354.2
+ | 400.4
+ | 415.8
+ | Small+Pulse
+ | 165
+ | 189.75
+ | 214.5
+ | 222.75
+ | Medium+Ion
+ | 450
+ | 517.5
+ | 585
+ | 607.5
+ | Medium+Fusion
+ | 700
+ | 805
+ | 910
+ | 945
+ | Medium+Pulse
+ | 375
+ | 431.25
+ | 487.5
+ | 506.25
+ | Large+Ion
+ | 1,080
+ | 1,242
+ | 1,404
+ | 1,458
+ | Large+Fusion
+ | 1,680
+ | 1,932
+ | 2,184
+ | 2,268
+ | Large+Pulse
+ | 900
+ | 1,035
+ | 1,170
+ | 1,215
+(The HUD writes each one rounded up to a whole point, Hud.cpp:166-170.)
+Fire intervals with research (derive_upgraded.py). The simulation rounds each interval once to whole milliticks (Simulation.cpp:1572-1573); ADR-017 §Consequences says the same.
+ | Weapon
+ | Topics (percent, tier)
+ | Interval with all its topics
+ | Milliticks
+ | Mass Driver
+ | Mass Driver Calibration +10% (T1), Coilgun Mass Drivers +10% (T3)
+ | 0.4 → 0.3636 (first) → 0.3333 s (both)
+ | 7,273 → 6,667
+ | Lance
+ | Lance Focusing +15% (T1), Lance Capacitors +10% (T2)
+ | 2.7 → 2.3478 → 2.16 s
+ | 46,957 → 43,200
+ | Missile Rack
+ | Missile Guidance +15% (T2)
+ | 2.0 → 1.7391 s
+ | 34,783
+ | Flak Battery
+ | Proximity Fuses +15% (T3)
+ | 0.5 → 0.4348 s
+ | 8,696
+ | Rail Cannon
+ | none
+ | 6.0 s
+ | 120,000
+ | Defence gun
+ | Defence Autoloader +20% (T2)
+ | 1.0 → 0.8333 s
+ | 16,667
+Designs, starting designs and names
+ | Rule
+ | Value
+ | Source
+ | Starting designs
+ | Every hull × drive × weapon of components no topic unlocks, in hull, then drive, then weapon order: Small and Medium × Ion × Mass Driver and Lance, four designs
+ | ShipDesign.cpp:103-118; ADR-014 §Decision 2
+ | Their short names (ADR-069)
+ | Swarm: Small+Ion+Mass Driver, S·I·MD, 261 Ore, 30 s. Picket: Small+Ion+Lance, S·I·L, 411 Ore, 30 s. Brawler: Medium+Ion+Mass Driver, M·I·MD, 495 Ore, 60 s. Lancer: Medium+Ion+Lance, M·I·L, 645 Ore, 60 s.
+ | Tuning.json: startingDesigns l.114-117; ADR-069 §Decision 1; costs and times derived from DesignStats.h:88-89
+ | A starting design's name
+ | The short name the data gives it, or else its components' name
+ | ShipDesign.cpp:121-130; ADR-069 §Decision 3
+ | A design's full name
+ | "Hull+Drive+Weapon", then "+Module" when it has one, e.g. "Small+Ion+Mass Driver+Sensor Array". The designer uses the module's initials where the whole name would pass 32 characters.
+ | ShipDesign.cpp:132-140; Designer.cpp:122-150; ADR-058 §Decision 6
+ | A module on a starting design's components
+ | Takes the design's name and the module's initials, "Lancer+SA"
+ | Designer.cpp:134-145; ADR-069 §Decision 5
+ | Abbreviation
+ | The capital initial of each word: hulls S, M, L; drives I, F, P; weapons MD, L, MR, FB, RC; module SA. A design's code is the initials joined by "·", e.g. "S·I·MD·SA".
+ | DesignStats.h:23-37; Hud.cpp:420-432; Phase 1 §5 "What the designer shows for each"
+ | Name rule
+ | 1–32 printable ASCII characters, not all spaces
+ | Command.h:68-84; ADR-017 §Decision 6
+ | A saved design's components
+ | Never change. Other components are a new design, and a rename keeps its components.
+ | ADR-017 §Decision 6
+ | Queue on unsaved picks
+ | Saves the design first, and the queue follows once the server has it. A save not back within 40 ticks (2 s) is dropped.
+ | Designer.h:112-121; ADR-023 §Decision 1-4
+ | A design's retreat
+ | Never, Half (50%) or Quarter (25%); Quarter by default. Every ship built to the design starts with it.
+ | RetreatThreshold.h:7-30; ADR-075 §Decision 4
+ | Pirates' designs
+ | Base-level stats, with no research. Any component will do, since nothing unlocks a pirate's design.
+ | Tuning.h:257-258; Tuning.json: pirates l.119-129
+ | Matchup designs
+ | A starting design where one matches, otherwise saved as "Matchup design N". A matchup's ships never retreat.
+ | Simulation.cpp:769-782; ADR-083 §Decision 2
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

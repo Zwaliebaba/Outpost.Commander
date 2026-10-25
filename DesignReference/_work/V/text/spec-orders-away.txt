@@ -1,0 +1,124 @@
+
+Windows: Orders and Away
+Orders
+Purpose. The seat's scheduled orders, and the form that gives the selection a new one: one trigger, one action and at most one condition (Phase 5 design §7, §11; ADR-080).
+Geometry (Hud.cpp:1931-1980). The window is a fixed 640 × 560, so it does not jump as the form changes. Its default place is 1264, 178.
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect (window units)
+ | Source
+ | orders.titleLabel
+ | text, Label, tracking 2
+ | SCHEDULED ORDERS
+ | —
+ | HEADER_LABEL_COLOR
+ | 24, 11
+ | Hud.cpp:1952
+ | orders.waiting.label
+ | text, Label, tracking 2
+ | WAITING
+ | —
+ | LABEL_COLOR
+ | 24, 51
+ | Hud.cpp:1955
+ | orders.none
+ | text, Name
+ | None
+ | no scheduled orders
+ | DIM_TEXT_COLOR
+ | 24, 70
+ | Hud.cpp:1957-1958
+ | orders.scheduled
+ | text, Name, up to 6, cut at 592
+ | {When}, {action}[, unless over {n} enemy CP] · {n} ship(s). When is At {hh:mm}, When enemies enter {S}, When the Relay in {S} is threatened or When a Mining Rig in {S} is lost (first letter raised); the action is as Alerts.cpp:12-29
+ | Snapshot::scheduled (Snapshot.h:441-447, 533); PlayerClock
+ | TEXT_COLOR
+ | 24, 70 + 22·i
+ | Hud.cpp:1959-1963, 2231-2241; OrderForm.cpp:291-315
+ | orders.more
+ | text, Name
+ | and {n} more
+ | —
+ | DIM_TEXT_COLOR
+ | after the list
+ | Hud.cpp:1964-1965
+ | orders.form.label
+ | text, Label, tracking 2
+ | NEW ORDER FOR THE SELECTION
+ | —
+ | LABEL_COLOR
+ | 24, 247
+ | Hud.cpp:1967
+ | orders.row{r}.label
+ | text, Label, tracking 2
+ | WHEN, then HOUR and MINUTE (time of day) or WATCHING (an event); then DO, WHERE (maps with sectors), TARGET (Attack or Build a Mining Rig), UNLESS
+ | —
+ | ROW_LABEL_COLOR
+ | 24, 266 + 30·r + 9
+ | Hud.cpp:1972, 2248-2274
+ | orders.row{r} value
+ | stepped: < 24×24, the value in the Name face, >; always enabled
+ | WHEN: At a time of day, Enemies enter a sector, A Relay is threatened, A Mining Rig is lost. HOUR {hh} (00-23). MINUTE {mm} (by 5). WATCHING {sector} or None held. DO: Move, Attack-move, Attack, Hold the sector, Patrol, Build a Mining Rig. WHERE {sector} or None. TARGET {name} ({i} of {n}) or None there, where a name is {Structure}, {Hull} ship, Pirate {…}, or Asteroid, Ore {n}. UNLESS Over {n} enemy CP there (0-60 by 2) or Never
+ | OrderForm (OrderForm.h:23-112; Step OrderForm.cpp:83-125; NameOf 233-289); defaults 02:00, Attack-move (OrderForm.h:103-108)
+ | TEXT_COLOR
+ | < at 150, row + 3; value at 182, row + 6 (cut at 402); > after
+ | Hud.cpp:1973-1976
+ | orders.fires
+ | text, Name
+ | Fires at {hh:mm} on your clock, in {h:mm:ss}, or Fires once, the first time it happens
+ | PlayerClock::NextMoment, Reading (PlayerClock.cpp:16-35)
+ | NUMBERS_COLOR
+ | 24, 484
+ | Hud.cpp:1978, 2276-2283
+ | orders.give
+ | button (AddButton)
+ | Give to {n} ship(s), or Give the order when none can take it; note in place of a cost when dim: SELECT CONSTRUCTORS, SELECT WARSHIPS, NO SECTOR HELD, NO ASTEROID THERE, NO ENEMY SEEN THERE or NO SECTOR
+ | GiveOrder; OrderForm::ShipsFor, Missing (OrderForm.cpp:174-205)
+ | as a HUD button
+ | 24, 514, 592, 34
+ | Hud.cpp:1979, 2284-2289
+States.
+- No orders, or up to 6 listed with and {n} more after.
+- The form for a time of day (6 rows), or for an event with a target (6 rows, of the 7 kept).
+- Give enabled, or dim with its reason.
+The selection panel names the scheduled order its ships wait on (§3.8). Layout files: window-orders-time-of-day.json, window-orders-event-disabled.json.
+Away
+Purpose. What happened while the deputy played the player's seat (Phase 5 design §11).
+- Opens itself with the first snapshot that carries the report (GameClient.cpp:539-544).
+- Once closed, the report is gone (GameClient.cpp:763-765).
+Geometry (Hud.cpp:1983-2007).
+- Size. 600 × (36 + 12 + 30 + 22·n + 12), with n ≤ 20 lines (AWAY_LINES = 4 + 16, Hud.h:539).
+- Place. Centred on the screen. Example: n = 6 gives 660, 429, 600, 222.
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect (window units)
+ | Source
+ | away.titleLabel
+ | text, Label, tracking 2
+ | WHILE YOU WERE AWAY
+ | —
+ | HEADER_LABEL_COLOR
+ | 24, 11
+ | Hud.cpp:1997
+ | away.since
+ | text, Title, cut at 552
+ | Away for {m:ss} or Away for {h:mm:ss}
+ | AwayReport::sinceTick, up to the snapshot's tick (Snapshot.h:454-466)
+ | TEXT_COLOR
+ | 24, 48
+ | Hud.cpp:2000, 2297
+ | away.line
+ | text, Name
+ | Built {n ship(s)\|no ships} and {n structure(s)\|no structures}; Lost … likewise; Sectors gained: {A, B}; Sectors lost: {…}; then each fired order, as the alerts write it (Alerts.cpp:32-45)
+ | AwayReport fields
+ | NUMBERS_COLOR
+ | 24, 78 + 22·i
+ | Hud.cpp:2002-2006, 2298-2320
+Layout file: window-away.json.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

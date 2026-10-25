@@ -1,0 +1,209 @@
+
+HUD: selection, commands, minimap, bars, banner
+Selection panel
+Purpose. What is selected: its name, its state and its hit points, as figures and bars (ADR-043 d5, ADR-046 d6, ADR-066 d4, ADR-088 d4).
+Geometry (Hud.cpp:3357-3426).
+- Width. w = clamp(the widest line + 24, 280, 560). Line 0 is measured in the Title face and the others in the Name face; the width is ≈ wherever it falls between the bounds.
+- Height. h = 24 + 30 + 22·(lines − 1) + bars. Bars add 8 + rows·10 + (rows − 1)·4 for per-ship bars, or 8 + 6 for the one bar.
+- Position. pairLeft = (1920 − w − buttonsPanelWidth)/2, and at least 324 when there is a minimap (Hud.cpp:3369-3371); y = 1064 − h.
+- Line 0 is in the Title face, TEXT_COLOR, at (12, 12). Lines 1 and on are in the Name face, NUMBERS_COLOR, at (12, 42 + 22·(i − 1)). Every line is cut short at w − 24.
+- Per-ship bars (2 to 24 ships, Hud.h:566): each 17×10, in rows of 12, 4 apart, starting 8 below the lines.
+ - Track BAR_TRACK_COLOR. The fill runs from the left by the ship's share of its hit points: HEALTH_GOOD_COLOR above 0.5, HEALTH_FAIR_COLOR above 0.25, otherwise HEALTH_POOR_COLOR (Hud.cpp:1026-1029).
+ - A 1-unit outline round a bar: TEXT_COLOR for a retreating ship, HOVER_EDGE_COLOR under the pointer.
+ - A click on a bar selects that ship alone and centres the camera on it (Select, Hud.cpp:3399-3417; GameClient.cpp:957-963).
+- One bar otherwise: 12, top, w − 24, 6, in the same colors (Hud.cpp:3418-3425).
+Line content (Hud::Describe, Hud.cpp:2559-2790, and PendingOrderLine added by GameClient.cpp:769-771).
+ | Selection
+ | Lines (verbatim formats, in order)
+ | Bar
+ | One structure
+ | Line 0: {type name}, then {n:02} for a Shipyard and · L{level} for a kind that grows. A remembered structure adds Last seen {m:ss} ago or Last seen earlier. Then, when they apply: Under construction, {p}% (or {p}% built when seen); Upgrading to L{n}, {p}% (+ when seen); Hit points {hp:,} / {max:,} (+ when seen). A Mining Rig adds Ore left {n:,} or Ore run out: it earns a trickle. The player's Relay or rig adds its sector: {sector}: not held, it earns nothing, {sector}: suppressed, it earns nothing, {sector}: cut off, it earns half or {sector}: held. The player's finished Command Station or Shipyard adds Idle, Building {name} · {p}%, Building {name} · {p}% · +{n} queued, or Building {name} · waiting for Ore (or … waiting for the fleet cap). Its Lab adds Researching {topic} · {p}% (or Idle). Its next level adds L{n}: {gives}{hp:,} hit points, where gives is any of {n} nodes,, {n} Defence guns,, fleet {n},, tier {n},, a second research slot, and {Hull}[ and {Hull}] hulls,, followed by L{n} needs {topic}[ and {topic}]; at the top level, Top level.
+ | One bar, selectionHealth (Hud.cpp:2589)
+ | One ship
+ | {design name} (Constructor for a Constructor, Hud.cpp:164; Unknown design, Hud.cpp:191); Hit points {hp:,} / {max:,}; then the standing-order lines below
+ | One bar
+ | Ships of one design
+ | {n} × {design}, then Hit points …
+ | Per-ship bars for 2-24 ships, else one bar
+ | Ships of several designs
+ | {n} ships; up to 5 lines of {n} × {design}, most numerous first; and {n} more designs; Hit points …
+ | Per-ship bars for 2-24 ships, else one bar
+ | Standing orders and retreat (any ships)
+ | Holding a sector, On patrol, Retreating to be repaired (one ship) or {n} retreating to be repaired
+ | —
+ | Scheduled order (any ships)
+ | Scheduled: {order} (e.g. Scheduled: at 02:00, attack-move to C3), Scheduled: {n} orders, or Scheduled: an order (OrderForm.cpp:317-334)
+ | —
+Data sources.
+- EntityView (Snapshot.h:72-148): structure, shipyardNumber, level, builtPermille, upgradePermille, hitPointsHundredths and maxHitPointsHundredths, oreReserveHundredths, queue, research, jobPermille, remembered, lastSeenTick, standing, retreat, retreating and scheduledOrder.
+- StructureTypeView and its levels (Snapshot.h:253-282).
+- DesignView::nameUtf8.
+Example rects (all ≈ through the width):
+ | State
+ | Selection panel
+ | Two Constructors
+ | 630, 970, 280, 94
+ | One ship
+ | 630, 952, 280, 112
+ | Shipyard
+ | 630, 930, 280, 134
+ | Twelve ships
+ | 623.5, 838, ≈293, 226
+Commands beside
+Purpose.
+- A structure's window buttons and its upgrade.
+- A warship selection's orders, each with its key.
+- A Constructor selection's build buttons.
+- The retreat, as three choices.
+Sources: ADR-088 d2-d3, ADR-046 d7, Phase 1 design §12.
+Geometry (Hud.cpp:3427-3453).
+- Panel. w = 380, standing against the selection panel's right edge, bottom-aligned at y 1064.
+- Height. h = 24 + n·34 + (n − 1)·6. With a retreat row: (12 + buttons + 6) + 20 + 34 + 12.
+- Buttons. Each is 356×34, at (12, 12 + 40·i).
+- Retreat row. RETREAT in the Label face, tracking 2, ROW_LABEL_COLOR, at (12, retreatTop). While the ships differ, MIXED stands at the right edge 368, in NUMBERS_COLOR, tracking 2.
+- Retreat cells. Three cells of 116×34, 4 apart, at (12 | 132 | 252, retreatTop + 20), reading 25%, 50% and Never in the Name face (Hud.cpp:463-477, 1328-1346).
+ - The face is PICKED_COLOR for the setting and CARD_COLOR otherwise; the edge is PICKED_EDGE_COLOR, HOVER_EDGE_COLOR or EDGE_COLOR.
+ - While the ships differ, no cell is lit.
+ - A press sets that retreat for every selected ship (SetRetreat, GameClient.cpp:936-938).
+- Pair position. The pair is centred, and moves right only where it would meet the minimap (ADR-088 d2).
+Which buttons, in order (Hud.cpp:2614-2697, 2794-2828).
+ | Selection
+ | Buttons (label verbatim; \|cost shown as gem + figure)
+ | Key cap
+ | Disabled, and its note
+ | The player's finished Command Station
+ | Production; Upgrade to L{n} · {m:ss}\|{cost}
+ | P (KeyBindings.h:28)
+ | Upgrade: UPGRADING · {p}% with a progress bar while it builds; NEEDS RESEARCH when a prerequisite is missing; dim with its cost when Ore is short
+ | The player's finished Shipyard
+ | Production; Ship designer; Upgrade to L{n} · {m:ss}\|{cost}
+ | P; D (KeyBindings.h:27)
+ | as above
+ | The player's finished Research Lab
+ | Research; Upgrade to L{n} · {m:ss}\|{cost}
+ | R (KeyBindings.h:29)
+ | as above
+ | Ships, with any warship
+ | Attack-move; Hold sector (only on a map with sectors); Patrol; Stop
+ | A, H, T and S (KeyBindings.h:10-13)
+ | The armed order is drawn as a pick until it is given or cancelled (selected, Hud.cpp:2796-2797)
+ | Ships, with any Constructor
+ | {structure name}\|{cost} for each buildable type, in the snapshot's order. With Tuning.json that is Shipyard\|300, Research Lab\|200, Mining Rig\|50, Defence Platform\|450, Relay\|200 and Repair Bay\|300; the Relay is left out on a map without sectors
+ | —
+ | ONE PER PLAYER (a second Lab), NODE CAP (Relay at the cap), or dim with its cost when Ore is short (Hud.cpp:2818-2826)
+ | Any ships
+ | Retreat row
+ | —
+ | —
+Inside a button (AddButton, Hud.cpp:1264-1323).
+- Face: PICKED_COLOR when selected, CARD_COLOR when enabled, FIELD_COLOR when disabled. Only an enabled button takes a press.
+- Edge: a 1-unit outline: PICKED_EDGE_COLOR, HOVER_EDGE_COLOR (hovered and enabled), or EDGE_COLOR.
+- Label: Name face, TEXT_COLOR (or LOCKED_TEXT_COLOR when disabled), at (+12, +6), cut short only where it would meet the cost, the note or the key cap.
+- Cost: the gem and the figure in the Figure face, GOLD_COLOR (or LOCKED_TEXT_COLOR), right edge at w − 12, top at +8.5. The gem is 8×8, with 5 units between it and the figure.
+- Key cap: a 20×20 FIELD_COLOR square at (w − 32, +7), outlined in ROW_LABEL_COLOR, with the letter in the Label face in ROW_LABEL_COLOR, centred, at +2.
+- Note: Label face, LABEL_COLOR, right edge at w − 12, at +8.5.
+- Progress bar: 2, h − 5, w − 4, 3, in BAR_TRACK_COLOR and BAR_FILL_COLOR.
+Example rects.
+ | State
+ | Buttons panel
+ | Detail
+ | Constructors
+ | 910, 746, 380, 318
+ | Shipyard button 922, 758, 356, 34; retreat cells at y 1018
+ | Twelve warships
+ | ≈916.5, 826, 380, 238
+ | Attack-move 928.5, 838; its key cap ≈1252.5, 845, 20, 20
+ | Station upgrading
+ | 910, 966, 380, 98
+ | Upgrade 922, 1018, 356, 34; its progress bar 924, 1047, 352, 3
+Minimap
+Purpose. The whole map: whose sectors are whose, the marks, the fog, the alerts, and the camera's view (ADR-015 d4, ADR-043 d7, ADR-068 d2, ADR-081).
+Geometry (Hud.cpp:3456-3465).
+- The frame is 16, 764, 300, 300; the map area, MAP_COLOR, is 24, 772, 284, 284.
+- Scale. 284 units for Snapshot::mapSizeMeters, 10,000 m with Map.json sizeMeters: 0.0284 units a metre, or 35.2 m a unit.
+- Orientation. +x runs right and +z up (Hud.cpp:2432-2451).
+Draw order and looks (all in layer 0's panels; the view's segments are lines).
+1. Sector wash. Every held or pirate-guarded sector, filled in OWN_COLOR, ENEMY_COLOR or PIRATE_COLOR at alpha 0.12 (Hud.cpp:3481-3485, 42). A sector is 56.8 units square on Map.json's 5×5 grid of 2,000 m sectors.
+2. Marks. The neutral ones are drawn first, then the sided ones (Hud.cpp:3486-3528). A mark is a square of side max(least, 2·radius·0.0284). The least sides are: a ship 3, an ore asteroid 8, anything else 6 (Hud.cpp:118-120).
+ | Mark
+ | Color
+ | The player's
+ | OWN_COLOR
+ | The enemy's
+ | ENEMY_COLOR
+ | The pirates'
+ | PIRATE_COLOR
+ | A derelict
+ | DERELICT_COLOR
+ | An asteroid field (≈10.2 units for a 180 m field)
+ | ASTEROID_FIELD_COLOR
+ | An ore asteroid: an outline 2 units wide, not filled
+ | ORE_ASTEROID_COLOR
+ | A dry ore asteroid
+ | DRY_COLOR
+ | Anything else
+ | NEUTRAL_COLOR
+- Fog. A panel over the whole map area, Fill::Fog: black, as opaque as the fog texture's shade at each point (Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316; ADR-052). Only under fog of war.
+- Lattice. Every sector's border, a 1-unit outline in LATTICE_COLOR (Hud.cpp:3567-3568).
+- Held and guarded outlines. A 1-unit outline in the side's color at alpha 0.55. It is dashed (6 on, 4 off) while the sector is cut off; while it is suppressed, a hatched fill at alpha 0.35 covers the sector (Hud.cpp:3569-3580).
+- Claimable sectors. While a Relay is placed, each sector the player could claim now is outlined in OWN_COLOR, 3 units inside its border (Hud.cpp:3584-3592).
+- Remembered structures and derelicts. A cross 8 units across, with arms 2 thick, in the side's color, or DERELICT_COLOR for a neutral one (Hud.cpp:3595-3605).
+- Alerts. A 14-unit square outlined 1 unit in WARNING_COLOR (Hud.cpp:3608-3617).
+- The camera's view. The four ground corners of the screen, joined by segments 1.5 units wide in VIEW_COLOR, cut at the minimap's edge (Hud.cpp:3621-3629; GameClient.cpp:1040-1054). It is empty when a corner sees past the horizon.
+ - At the default 500 m view, unturned, the derived trapezoid is ≈25 units across its far edge, ≈10 across its near edge and ≈14 deep (from Camera.cpp:160-236 and Camera.json).
+Interactions.
+- A left press on the map area moves the camera there, and dragging keeps moving it (GameClient.cpp:1011-1015, 1026-1031).
+- A right press sends the selected ships there (GameClient.cpp:1017-1022).
+- The minimap draws only when mapSizeMeters > 0 (Hud.h:611-612).
+Bars over entities
+ADR-047 d4 and ADR-088 d5.
+Geometry (Hud.cpp:3095-3126, 98-101).
+- Size. Each bar is 32×5 at the back buffer's scale, not the player's factor. Position and size are whole pixels.
+- Stacking. The health bar stands over the build bar, 2 apart, and the pair stands 4 above the "foot". The foot is the top of the model on the screen, in the entity's column (Camera::PixelAbove, GameClient.cpp:731-737).
+- Back: the side's color × 0.3 (HEALTH_BACK_SHADE, GameClient.cpp:93-98, 727), or HEALTH_BACK_COLOR for a side the data does not name.
+- Health fill: HEALTH_GOOD_COLOR, HEALTH_FAIR_COLOR or HEALTH_POOR_COLOR.
+- Build fill: BUILD_BAR_COLOR.
+When a bar shows (Hud::BarOver, Hud.cpp:2170-2183).
+- The health bar shows while the entity is hurt, or for every entity while Alt is held (KeyBindings.h:38; GameClient.cpp:598).
+- The build bar shows while the structure is unfinished.
+- Nothing shows for what is only remembered.
+- A pair wholly off the screen is left out.
+The bars take no click. Example pairs are in hud-busy-warships.json.
+End-of-match banner
+Purpose. How the match ended. The world runs on behind the banner, and the HUD still works (ADR-020, ADR-037, ADR-057, ADR-083, ADR-084 d7).
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect
+ | Source
+ | outcome.frame
+ | panel
+ | —
+ | —
+ | WINDOW_COLOR
+ | 700, 68, 520, 116
+ | Hud.cpp:3342-3343
+ | outcome.title
+ | text, Title
+ | Victory, Defeat, Draw or Empire fallen
+ | Snapshot::matchOver, winner and player; restartTick (Snapshot.h:570-590)
+ | GOLD_COLOR
+ | 712, 80
+ | Hud.cpp:3345, 2193, 2199
+ | outcome.detail
+ | text, Name
+ | {how}Match length {m:ss}, where how is By domination., A fleet destroyed., Out of time. or nothing (a lost production). In a world: It restarts at your start in {m:ss}, or It restarts once your start is clear of the enemy
+ | Snapshot::ending, matchEndedTick, restartTick
+ | TEXT_COLOR
+ | 712, 110
+ | Hud.cpp:3346, 2194-2195, 2203-2218
+ | outcome.backToMenu
+ | button
+ | Back to menu
+ | BackToMenu
+ | as a HUD button; lit under the pointer
+ | 712, 138, 496, 34
+ | Hud.cpp:3347-3349
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

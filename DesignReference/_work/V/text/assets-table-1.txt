@@ -1,0 +1,369 @@
+
+Per-model table, part 1 of 3
+Per-model table · part 1 of 3
+Every row has two renders, <Set>/<Model>_34.png (3/4 view) and <Set>/<Model>_top.png (top view), 1024×1024 RGBA, and their web copies _34_512.png and _top_512.png, all under DesignReference/_work/assets/models/; every one is an approximation of the in-game look. Triangles are indexCount / 3 of the .nmf; vertices its vertexCount. Bounds in mesh units are the raw .nmf min → max (x front, y up, z left: Tools/BakeMeshes.py docstring, Hardpoints.h:20); fitted bounds in meters are after FitMesh/FitMeshAcross (centered, so ± half the extent). Drawn in game is the size on the map: a ship at its fitted size (ModelPose.scale = 1, Hardpoints.h:28); a structure scaled by 2 × footprintRadiusMeters / lengthMeters (GameClient.cpp:1661-1664, radius from Tuning.json via Simulation.cpp:1069); a derelict by 2 × radius / lengthMeters of that derelict; a rock by its radius (2 m mesh). Crease lines are this tool's replay of BuildCreaseLines at 10°, summed over pieces.
+ | Set
+ | Model
+ | Look
+ | Mesh (OutpostCommander/Assets/Models/…)
+ | Kind
+ | Length m (key)
+ | Tris
+ | Verts
+ | Bounds, mesh units min → max
+ | Fitted, m (x × y × z)
+ | Drawn in game, m (x × y × z)
+ | Hardpoints
+ | Spinning parts
+ | Crease lines
+ | Human
+ | Small
+ | approximation of the in-game look
+ | Human/Small.nmf
+ | ship
+ | 20 (sets[0].models[0].lengthMeters)
+ | 70
+ | 210
+ | (-17.00, -2.50, -22.00) → (24.00, 5.00, 22.00)
+ | 20.00 × 3.66 × 21.46
+ | 20.0 × 3.7 × 21.5 (×1)
+ | exhaust ×1, gun ×2
+ | 0
+ | 74
+ | Human
+ | Medium
+ | approximation of the in-game look
+ | Human/Medium.nmf
+ | ship
+ | 35 (sets[0].models[1].lengthMeters)
+ | 160
+ | 480
+ | (-56.35, -8.00, -24.00) → (56.00, 16.00, 24.00)
+ | 35.00 × 7.48 × 14.95
+ | 35.0 × 7.5 × 15.0 (×1)
+ | exhaust ×1, gun ×2
+ | 0
+ | 161
+ | Human
+ | Large
+ | approximation of the in-game look
+ | Human/Large.nmf
+ | ship
+ | 60 (sets[0].models[2].lengthMeters)
+ | 256
+ | 768
+ | (-150.50, -70.00, -66.00) → (180.00, 61.00, 66.00)
+ | 60.00 × 23.78 × 23.96
+ | 60.0 × 23.8 × 24.0 (×1)
+ | exhaust ×2, gun ×3
+ | 0
+ | 259
+ | Human
+ | Constructor
+ | approximation of the in-game look
+ | Human/Constructor.nmf
+ | ship
+ | 24 (sets[0].models[3].lengthMeters)
+ | 266
+ | 798
+ | (-40.35, -11.41, -13.82) → (55.43, 12.80, 13.82)
+ | 24.00 × 6.07 × 6.93
+ | 24.0 × 6.1 × 6.9 (×1)
+ | exhaust ×1
+ | 0
+ | 227
+ | Human
+ | CommandStation_L1
+ | approximation of the in-game look
+ | Human/CommandStation_L1.nmf
+ | structure
+ | 60 (sets[0].models[4].lengthMeters)
+ | 520
+ | 1560
+ | (-237.00, -266.00, -454.00) → (214.82, 339.95, 454.00)
+ | 60.00 × 80.47 × 120.58
+ | 90.0 × 120.7 × 180.9 (×1.5; Tuning.json: structures[0].footprintRadiusMeters = 45)
+ | gun ×3
+ | 0
+ | 580
+ | Human
+ | CommandStation_L2
+ | approximation of the in-game look
+ | Human/CommandStation_L2.nmf
+ | structure
+ | 60 (sets[0].models[4].lengthMeters)
+ | 520
+ | 1560
+ | (-262.00, -266.00, -454.00) → (237.92, 339.95, 454.00)
+ | 66.39 × 80.47 × 120.58, across L1's widest 120.58 m
+ | 99.6 × 120.7 × 180.9 (×1.5; Tuning.json: structures[0].footprintRadiusMeters = 45)
+ | gun ×3
+ | 0
+ | 580
+ | Human
+ | CommandStation_L3
+ | approximation of the in-game look
+ | Human/CommandStation_L3.nmf
+ | structure
+ | 60 (sets[0].models[4].lengthMeters)
+ | 520
+ | 1560
+ | (-287.00, -266.00, -454.00) → (261.02, 339.95, 454.00)
+ | 72.77 × 80.47 × 120.58, across L1's widest 120.58 m
+ | 109.2 × 120.7 × 180.9 (×1.5; Tuning.json: structures[0].footprintRadiusMeters = 45)
+ | gun ×3
+ | 0
+ | 580
+ | Human
+ | CommandStation_L4
+ | approximation of the in-game look
+ | Human/CommandStation_L4.nmf
+ | structure
+ | 60 (sets[0].models[4].lengthMeters)
+ | 828
+ | 2484
+ | (-400.00, -266.00, -454.00) → (420.00, 339.95, 454.00)
+ | 108.89 × 80.47 × 120.58, across L1's widest 120.58 m
+ | 163.3 × 120.7 × 180.9 (×1.5; Tuning.json: structures[0].footprintRadiusMeters = 45)
+ | gun ×6
+ | 0
+ | 916
+ | Human
+ | CommandStation_L5
+ | approximation of the in-game look
+ | Human/CommandStation_L5.nmf
+ | structure
+ | 60 (sets[0].models[4].lengthMeters)
+ | 1032
+ | 3096
+ | (-411.93, -266.00, -454.00) → (420.00, 339.95, 454.00)
+ | 110.48 × 80.47 × 120.58, across L1's widest 120.58 m
+ | 165.7 × 120.7 × 180.9 (×1.5; Tuning.json: structures[0].footprintRadiusMeters = 45)
+ | gun ×6
+ | 0
+ | 1108
+ | Human
+ | Shipyard_L1
+ | approximation of the in-game look
+ | Human/Shipyard_L1.nmf
+ | structure
+ | 60 (sets[0].models[5].lengthMeters)
+ | 392
+ | 1176
+ | (-310.00, -60.00, -75.00) → (252.00, 70.00, 75.00)
+ | 60.00 × 13.88 × 16.01
+ | 80.0 × 18.5 × 21.4 (×1.33; Tuning.json: structures[1].footprintRadiusMeters = 40)
+ | none
+ | 0
+ | 382
+ | Human
+ | Shipyard_L2
+ | approximation of the in-game look
+ | Human/Shipyard_L2.nmf
+ | structure
+ | 60 (sets[0].models[5].lengthMeters)
+ | 456
+ | 1368
+ | (-310.00, -60.00, -95.00) → (252.00, 70.00, 95.00)
+ | 60.00 × 13.88 × 20.29, across L1's widest 60.00 m
+ | 80.0 × 18.5 × 27.0 (×1.33; Tuning.json: structures[1].footprintRadiusMeters = 40)
+ | none
+ | 0
+ | 442
+ | Human
+ | Shipyard_L3
+ | approximation of the in-game look
+ | Human/Shipyard_L3.nmf
+ | structure
+ | 60 (sets[0].models[5].lengthMeters)
+ | 772
+ | 2316
+ | (-310.00, -60.00, -95.00) → (252.00, 70.00, 245.00)
+ | 60.00 × 13.88 × 36.30, across L1's widest 60.00 m
+ | 80.0 × 18.5 × 48.4 (×1.33; Tuning.json: structures[1].footprintRadiusMeters = 40)
+ | none
+ | 0
+ | 754
+ | Human
+ | Shipyard_L4
+ | approximation of the in-game look
+ | Human/Shipyard_L4.nmf
+ | structure
+ | 60 (sets[0].models[5].lengthMeters)
+ | 920
+ | 2760
+ | (-365.00, -60.00, -95.00) → (252.00, 70.00, 245.00)
+ | 60.00 × 12.64 × 33.06, across L1's widest 60.00 m
+ | 80.0 × 16.9 × 44.1 (×1.33; Tuning.json: structures[1].footprintRadiusMeters = 40)
+ | none
+ | 0
+ | 886
+ | Human
+ | Shipyard_L5
+ | approximation of the in-game look
+ | Human/Shipyard_L5.nmf
+ | structure
+ | 60 (sets[0].models[5].lengthMeters)
+ | 1236
+ | 3708
+ | (-365.00, -60.00, -245.00) → (252.00, 70.00, 245.00)
+ | 60.00 × 12.64 × 47.65, across L1's widest 60.00 m
+ | 80.0 × 16.9 × 63.5 (×1.33; Tuning.json: structures[1].footprintRadiusMeters = 40)
+ | none
+ | 0
+ | 1198
+ | Human
+ | ResearchLab_L1
+ | approximation of the in-game look
+ | Human/ResearchLab_L1.nmf
+ | structure
+ | 12 (sets[0].models[6].lengthMeters)
+ | 288
+ | 864
+ | (-116.00, -50.17, -118.00) → (116.00, 136.59, 118.00)
+ | 12.00 × 9.66 × 12.21
+ | 60.0 × 48.3 × 61.0 (×5; Tuning.json: structures[2].footprintRadiusMeters = 30)
+ | none
+ | 1: 40 tris, 8 s about (-0, 1, -0)
+ | 250
+ | Human
+ | ResearchLab_L2
+ | approximation of the in-game look
+ | Human/ResearchLab_L2.nmf
+ | structure
+ | 12 (sets[0].models[6].lengthMeters)
+ | 344
+ | 1032
+ | (-118.00, -50.17, -118.00) → (118.00, 136.59, 118.00)
+ | 12.21 × 9.66 × 12.21, across L1's widest 12.21 m
+ | 61.0 × 48.3 × 61.0 (×5; Tuning.json: structures[2].footprintRadiusMeters = 30)
+ | none
+ | 1: 40 tris, 8 s about (-0, 1, -0)
+ | 298
+ | Human
+ | ResearchLab_L3
+ | approximation of the in-game look
+ | Human/ResearchLab_L3.nmf
+ | structure
+ | 12 (sets[0].models[6].lengthMeters)
+ | 480
+ | 1440
+ | (-177.00, -50.17, -177.00) → (177.00, 136.59, 177.00)
+ | 12.21 × 6.44 × 12.21, across L1's widest 12.21 m
+ | 61.0 × 32.2 × 61.0 (×5; Tuning.json: structures[2].footprintRadiusMeters = 30)
+ | none
+ | 1: 40 tris, 8 s about (-0, 1, -0)
+ | 418
+ | Human
+ | ResearchLab_L4
+ | approximation of the in-game look
+ | Human/ResearchLab_L4.nmf
+ | structure
+ | 12 (sets[0].models[6].lengthMeters)
+ | 576
+ | 1728
+ | (-189.50, -50.17, -189.50) → (189.50, 136.59, 189.50)
+ | 12.21 × 6.01 × 12.21, across L1's widest 12.21 m
+ | 61.0 × 30.1 × 61.0 (×5; Tuning.json: structures[2].footprintRadiusMeters = 30)
+ | none
+ | 1: 40 tris, 8 s about (-0, 1, -0)
+ | 514
+ | Human
+ | ResearchLab_L5
+ | approximation of the in-game look
+ | Human/ResearchLab_L5.nmf
+ | structure
+ | 12 (sets[0].models[6].lengthMeters)
+ | 704
+ | 2112
+ | (-189.50, -50.17, -190.16) → (189.50, 136.59, 190.16)
+ | 12.16 × 5.99 × 12.21, across L1's widest 12.21 m
+ | 60.8 × 30.0 × 61.0 (×5; Tuning.json: structures[2].footprintRadiusMeters = 30)
+ | none
+ | 3: 40 tris, 8 s about (-0, 1, -0); 24 tris, 5 s about (-0, 1, -0); 24 tris, 5 s about (-0, 1, -0)
+ | 622
+ | Human
+ | MiningRig
+ | approximation of the in-game look
+ | Human/MiningRig.nmf
+ | structure
+ | 4 (sets[0].models[7].lengthMeters)
+ | 262
+ | 786
+ | (-80.04, -80.00, -91.80) → (80.04, 57.55, 91.80)
+ | 4.00 × 3.44 × 4.59
+ | 50.0 × 43.0 × 57.4 (×12.5; Tuning.json: structures[3].footprintRadiusMeters = 25)
+ | gun ×1
+ | 0
+ | 258
+ | Human
+ | DefensePlatform
+ | approximation of the in-game look
+ | Human/DefensePlatform.nmf
+ | structure
+ | 4 (sets[0].models[8].lengthMeters)
+ | 440
+ | 1320
+ | (-102.00, -30.50, -102.00) → (102.00, 65.13, 102.00)
+ | 4.00 × 1.88 × 4.00
+ | 40.0 × 18.8 × 40.0 (×10; Tuning.json: structures[4].footprintRadiusMeters = 20)
+ | gun ×6
+ | 0
+ | 418
+ | Human
+ | Relay (ResearchLab_L1 mesh, tint 1.6, structures[5].tint)
+ | approximation of the in-game look
+ | Human/ResearchLab_L1.nmf
+ | structure
+ | 12 (sets[0].models[6].lengthMeters)
+ | 288
+ | 864
+ | (-116.00, -50.17, -118.00) → (116.00, 136.59, 118.00)
+ | 12.00 × 9.66 × 12.21
+ | 60.0 × 48.3 × 61.0 (×5; Tuning.json: structures[5].footprintRadiusMeters = 30)
+ | none
+ | 1: 40 tris, 8 s about (-0, 1, -0)
+ | 250
+ | Human
+ | RepairBay (Shipyard_L1 mesh, tint 0.6, structures[6].tint)
+ | approximation of the in-game look
+ | Human/Shipyard_L1.nmf
+ | structure
+ | 60 (sets[0].models[5].lengthMeters)
+ | 392
+ | 1176
+ | (-310.00, -60.00, -75.00) → (252.00, 70.00, 75.00)
+ | 60.00 × 13.88 × 16.01
+ | 60.0 × 13.9 × 16.0 (×1; Tuning.json: structures[6].footprintRadiusMeters = 30)
+ | none
+ | 0
+ | 382
+ | Tarkan
+ | Small
+ | approximation of the in-game look
+ | Tarkan/Small.nmf
+ | ship
+ | 20 (sets[1].models[0].lengthMeters)
+ | 100
+ | 300
+ | (-10.00, -2.10, -10.40) → (10.00, 2.40, 10.40)
+ | 20.00 × 4.50 × 20.80
+ | 20.0 × 4.5 × 20.8 (×1)
+ | exhaust ×1, gun ×2
+ | 0
+ | 112
+ | Tarkan
+ | Medium
+ | approximation of the in-game look
+ | Tarkan/Medium.nmf
+ | ship
+ | 35 (sets[1].models[1].lengthMeters)
+ | 94
+ | 282
+ | (-17.50, -3.40, -15.40) → (17.50, 4.60, 15.40)
+ | 35.00 × 8.00 × 30.80
+ | 35.0 × 8.0 × 30.8 (×1)
+ | exhaust ×1, gun ×2
+ | 0
+ | 105
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

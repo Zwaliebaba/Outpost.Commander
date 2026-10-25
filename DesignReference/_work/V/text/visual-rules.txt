@@ -1,0 +1,325 @@
+
+Rules, spacing and frame
+Rules
+One meaning per color (ADR-085)
+ | Meaning
+ | Token(s)
+ | Source
+ | The player's own side, on the HUD
+ | OWN_COLOR
+ | Hud.cpp:21-23
+ | The enemy, on the HUD (plain text, never a chip)
+ | ENEMY_COLOR
+ | ADR-085 d1
+ | Pirates, on the HUD
+ | PIRATE_COLOR
+ | ADR-073 d10
+ | Derelict
+ | DERELICT_COLOR (minimap); Wreck set (world)
+ | ADR-074
+ | A side in the world
+ | Models.json set color (Human, Tarkan, Pirate, Wreck)
+ | Models.json:5-40
+ | Ore (every amount, with the gem)
+ | GOLD_COLOR; on the minimap ORE_ASTEROID_COLOR (darkened), DRY_COLOR (run out)
+ | ADR-043 d3, d7; ADR-085 d3
+ | Warning, the player's own problem
+ | WARNING_COLOR, as a chip's tag
+ | ADR-085 d1
+ | Build progress (no side's)
+ | BUILD_BAR_COLOR
+ | ADR-085 d2
+ | The player's own progress or measure
+ | BAR_FILL_COLOR
+ | ADR-085 d2
+ | Health
+ | HEALTH_GOOD_, HEALTH_FAIR_, HEALTH_POOR_COLOR
+ | ADR-088 d5
+ | Better / worse; Good / Fair / Poor rating
+ | GOOD_COLOR / POOR_COLOR; GOOD_, FAIR_, POOR_COLOR
+ | Hud.cpp:1031-1041
+ | Waits on something first (research, Ore, the fleet cap)
+ | AMBER_COLOR
+ | Phase 1 design "The look"; Hud.cpp:1477-1478, 1695, 1874-1876
+ | Current pick or lit choice
+ | PICKED_COLOR + PICKED_EDGE_COLOR; ACCENT_COLOR for its name
+ | Hud.cpp:990-991, 1440
+ | What a click takes, under the pointer
+ | HOVER_EDGE_COLOR (= WINDOW_EDGE_COLOR); CARD_COLOR row for a status line
+ | ADR-088 (UI4.4)
+ | Commit (Queue; a saved design)
+ | QUEUE_* greens
+ | Hud.cpp:1007-1012
+ | Locked or unaffordable
+ | LOCKED_*; LOCKED_TEXT_COLOR
+ | ADR-062 d3
+ | Window chrome
+ | WINDOW_COLOR, TITLE_HATCH_COLOR, CLOSE_BOX_COLOR, WINDOW_EDGE_COLOR
+ | ADR-031 d3
+ | Selected in the world / armed order
+ | SELECTION_COLOR / ATTACK_MOVE_COLOR
+ | GameClient.cpp:77-90
+ | Placement valid / invalid
+ | GHOST_VALID_COLOR / GHOST_INVALID_COLOR
+ | GameClient.cpp:121-123
+What ADR-085 actually enforces is three things:
+- a warning is a chip, which no other element draws;
+- build progress is gray;
+- Ore's glyph is a gem, which no other element shares.
+ADR-085 "What this forecloses": "A warning written as plain text in WARNING_COLOR beside an enemy figure. A chip in any other color, or behind anything but a warning."
+Two plain-text warnings remain by decision: a refused name (Hud.cpp:1392) and the menu notice (Hud.cpp:2351), both in ADR-085 d1. See Open for the hue families that more than one meaning shares.
+The interface never glows (ADR-091 d1, "forecloses")
+The code guarantees it by the frame's order:
+- The scene, then the interface. WinMain.cpp:514-518 calls BeginFrame, then client.Render (the scene), then renderer.BeginInterface(), then client.RenderInterface, then EndFrame.
+- The glow is made before any interface exists. Renderer::BeginInterface (Renderer.cpp:416-450) makes the bloom from the scene target's shader view alone (m_bloom->Draw(..., ShaderViewGpu(m_sceneView), ...), Renderer.cpp:435). It then resolves the scene with the glow added into the back buffer.
+- The UI draws onto the finished image. UiPipeline's pipeline state renders straight into the back buffer at one sample with no depth (UiPipeline.cpp:131-138). Nothing reads the back buffer back into the bloom.
+- There is no other path. EndFrame calls BeginInterface if nothing did (Renderer.cpp:464), so the order holds on every frame.
+The entity bars are part of the UI layout, so they never glow either (GameClient.cpp:1297-1299). The selection ring, the footprint rings, the beams and the exhausts are scene, and they do glow (ADR-091 consequences).
+Ore is written one way (ADR-043 d3)
+- The form: the gem then the figure, grouped in thousands, in GOLD_COLOR, through Painter::GemAndFigure and GemAndFigureFrom (Hud.cpp:1216-1235).
+- Where: the stockpile (Hud.cpp:3145, the word "Ore" dropped), a window's Ore box (:1248), a HUD button's cost (:1322), a part card's cost (:1465), the Queue cost (:1597), a production option's cost (:1751) and a topic's cost (:1864).
+- Fixed gem place: the stockpile is written from the panel's left, so the gem stays put as the figure grows (ADR-046; Hud.cpp:3145).
+- Exceptions: see Open.
+Spacing and frame
+The reference frame is 1920×1080 units (Hud.h:23-24; ADR-006 d5).
+- The scale is factor × min(w/1920, h/1080) (Hud.cpp:3029-3033).
+- On a non-16:9 screen the spare room goes between the anchors, because each anchor is placed in width/scale × height/scale units (Hud.cpp:3085-3086).
+- The interface factor (ADR-070) steps through 1.0, 1.1, 1.25, 1.5, 1.75 and 2.0 (Hud.h:861). It starts at 1.0, and Ctrl+= and Ctrl+- step it.
+- It steps up only while the designer (laid out for every component), the Controls window, and the orders and away windows at their tallest all fit between the margins. On the menu, the Controls window alone must fit (Hud.h:863-866; Hud.cpp:3035-3054).
+- It comes down to the largest step that fits when the screen size changes or a match starts or ends (Hud.cpp:3056-3073).
+- What the factor does not scale: the entity bars (Scale is called without the factor, Hud.cpp:3096), the selection ring (GameClient.cpp:1443) and the stars (ADR-070 d7).
+- Pixel snapping:
+- Snapped to whole pixels: text, sprites (UiPipeline.cpp:270-272, 304) and the entity bars (Hud.cpp:3098-3106).
+- Not snapped: panels and 1-unit outlines (UiPipeline.cpp:236-241). See Open.
+Spacing (reference units, Hud.cpp):
+ | Constant
+ | Value
+ | Line
+ | Meaning
+ | MARGIN
+ | 16
+ | 62
+ | From the screen's edge to every anchored panel; between windows standing side by side
+ | PADDING
+ | 12
+ | 63
+ | From a panel's edge to its content
+ | PANEL_GAP
+ | 8
+ | 141
+ | Between stacked HUD panels; from the minimap to the selection
+ | TERRITORY_INSET_UNITS
+ | 10
+ | 142
+ | Room above and below the lines of the status, territory, alerts and connection panels
+ | ORE_PANEL_HEIGHT
+ | 44
+ | 72
+ | 
+ | COLUMN_LEAST_UNITS
+ | 380
+ | 132
+ | The least width of the column under the Ore; it grows to its widest line
+ | STATUS_PANEL_KEPT_UNITS
+ | 94
+ | 149
+ | The room kept for the status panel
+ | Selection panel width
+ | 280 to 560
+ | 75-76
+ | 
+ | BUTTON_PANEL_WIDTH
+ | 380
+ | 104
+ | 
+ | BUTTON_HEIGHT
+ | 34
+ | 105
+ | 
+ | BUTTON_GAP
+ | 6
+ | 106
+ | 
+ | BUTTON_INSET
+ | 12
+ | 107
+ | 
+ | MINIMAP_SIZE
+ | 300
+ | 114
+ | 
+ | MINIMAP_PADDING
+ | 8
+ | 115
+ | 
+ | HINT_PANEL_WIDTH
+ | 640
+ | 126
+ | 
+ | BANNER_WIDTH
+ | 520
+ | 154
+ | 
+ | MENU_WIDTH
+ | 440
+ | 161
+ | 
+ | CONNECTION_MOST_UNITS
+ | 360
+ | 158
+ | 
+ | FIT_GAP_UNITS
+ | 6
+ | 959
+ | Room a line cut short keeps from what stands beside it
+ | CHIP_PAD_UNITS
+ | 4
+ | 962
+ | 
+Window constants:
+ | Constant
+ | Value
+ | Source
+ | TITLE_BAR_UNITS
+ | 36
+ | Hud.h:645
+ | WINDOW_KEPT_ON_SCREEN_UNITS
+ | 120
+ | Hud.h:646
+ | WINDOW_INSET, DESIGNER_INSET
+ | 24
+ | Hud.cpp:1608, 914
+ | DESIGNER_HEADER
+ | 72
+ | Hud.cpp:916
+ | SECTION_TOP
+ | 84
+ | Hud.cpp:1610
+ | SECTION_BODY_GAP, SECTION_GAP
+ | 20
+ | Hud.cpp:1611, 938
+ | CARD_SPACING
+ | 8
+ | Hud.cpp:1631
+ | CARD_INSET
+ | 12
+ | Hud.cpp:1633
+ | WINDOWS_TOP
+ | 154 (16 + 44 + 8 + 94 + 16)
+ | Hud.cpp:1635
+Window widths:
+ | Window
+ | Width
+ | Source
+ | Designer
+ | 818
+ | Hud.cpp:913
+ | Production
+ | 478 (1920 − 4×16 − 818 − 560)
+ | Hud.cpp:1607
+ | Research
+ | 560
+ | Hud.cpp:1606
+ | Controls
+ | 700
+ | Hud.cpp:1888
+ | Orders
+ | 640 (560 tall, computed from :1939-1944)
+ | Hud.cpp:1931
+ | Away
+ | 600
+ | Hud.cpp:1983
+Every designer, production, research and orders constant is in tokens.json space.windows.
+Anchors (Hud.cpp):
+ | What
+ | Where
+ | Line
+ | Ore panel
+ | top-left (16, 16)
+ | 3144
+ | Status panel
+ | under the Ore panel
+ | 3250
+ | Territory panel
+ | under the status panel's kept place
+ | 3177
+ | Alerts
+ | under territory
+ | 3224
+ | Hint
+ | top-middle
+ | 3313
+ | Connection tag
+ | top-right
+ | 3330
+ | Match-end banner
+ | top-middle, under the Ore line
+ | 3343
+ | Selection and buttons
+ | one pair at the bottom-middle, kept right of the minimap
+ | 3369-3371
+ | Minimap
+ | bottom-left
+ | 3458
+ | Designer
+ | top-right at first
+ | 3658
+ | Production and research
+ | side by side at WINDOWS_TOP
+ | 3646-3650
+ | Orders
+ | right, at WINDOWS_TOP
+ | 3677
+ | Controls and away
+ | centered
+ | 3669, 3683
+ | Menu
+ | centered
+ | 2342
+Line widths (reference units):
+ | Line
+ | Width
+ | Source
+ | Outlines, dividers, header-band edge (LINE_UNITS)
+ | 1
+ | Hud.cpp:952
+ | Minimap sector lines and alert squares (SECTOR_LINE_UNITS)
+ | 1
+ | Hud.cpp:45
+ | The minimap's view (VIEW_LINE_UNITS)
+ | 1.5
+ | Hud.cpp:121
+ | An ore asteroid's outline (ORE_OUTLINE_UNITS)
+ | 2
+ | Hud.cpp:123
+ | A remembered structure's cross (MEMORY_MARK_UNITS × MEMORY_ARM_UNITS)
+ | 8 across, arms 2
+ | Hud.cpp:58-59
+ | A cut-off sector's dashes (CUT_OFF_DASH_UNITS / CUT_OFF_GAP_UNITS)
+ | dash 6, gap 4
+ | Hud.cpp:53-54
+ | A claimable sector's inset (CLAIMABLE_INSET_UNITS)
+ | 3
+ | Hud.cpp:55
+ | An alert's square (ALERT_MARK_UNITS)
+ | 14
+ | Hud.cpp:151
+ | Least mark size: ship / structure / ore
+ | 3 / 6 / 8
+ | Hud.cpp:118-120
+ | A sprite's stroke
+ | 1/12 of its pixel size, at least 1 px
+ | GlyphAtlas.cpp:24, 315
+In the scene:
+- The grid and the model lines are 1 px at any zoom (ADR-028 d1).
+- The selection ring is round(3 × screen scale) one-pixel rings, a pixel apart (GameClient.cpp:82, 1443-1456; ADR-067).
+- A drag box is made of bands 1.5 m wide (GameClient.cpp:88).
+Corner bracket:
+- It is an L along the top and left edges (GlyphAtlas.h:31-32), mirrored for the other three corners (Hud.cpp:852-867).
+- It is drawn CORNER_UNITS 12 square (Hud.cpp:844) and rasterized at 12 units (Hud.cpp:3024), in WINDOW_EDGE_COLOR. Its stroke is 1 px at 1080p.
+Hatching:
+- HATCH_STRIPE_UNITS is 2 and HATCH_PERIOD_UNITS is 7 (Hud.h:639-641), times the layout scale with the factor included (GameClient.cpp:1307-1309).
+- UiPS.hlsl:23-27 stripes a pixel where fmod(x + y, period) < stripe, in back-buffer pixels. The stripes are diagonal at 45° and rise to the right. They are laid on the screen, so neighboring hatched panels line up (ADR-030 d6).
+- Along a row, 2 of every 7 units are striped. Across a stripe it is about 1.41 of every 4.95 units (computed by A5).
+- Only the stripes are drawn, so the gaps show the panel underneath.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

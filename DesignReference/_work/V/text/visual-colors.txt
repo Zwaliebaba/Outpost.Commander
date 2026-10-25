@@ -1,0 +1,237 @@
+
+Color tokens
+Outpost Commander · design reference · 12
+Visual language
+The design system the game draws its interface with: one meaning per color, the type scale and its contrast, the components and their states, and how it scales.
+Sources: Hud.cpp Hud.h GameClient.cpp A5 tokens.json ADR-030/043/061/062/085/090/091
+How a color reaches the screen
+- Every color constant is linear. The back buffer is R8G8B8A8_UNORM (Renderer.cpp:22). It is written through an R8G8B8A8_UNORM_SRGB render-target view (Renderer.h:25, Renderer.cpp:658-661), so the hardware encodes the shader's linear output to sRGB. UiPS.hlsl:4 says so: "The color is linear; the render target encodes it to sRGB."
+- So the hex to draw with is the sRGB encoding of the constant. The hex column below is exactly that.
+- Blending is straight alpha (UiPipeline.cpp:110-116). Through an sRGB view it happens in linear light. A translucent constant (alpha < 1) is shown composited where its ground is known (hexComposited in tokens.json).
+- HUD and window colors are final. They are drawn after the scene's glow is added (§Rules), so nothing changes them.
+- Scene colors (GameClient.cpp, Models.json) are not final. They are multiplied by the scene light:
+- a line takes the luminance of the light (MeshLinePS.hlsl:42);
+- a face takes the light per channel (MeshPS.hlsl:43);
+- then the bloom is added in the resolve (ADR-091).
+- A scene hex is the unlit constant. For a mark lying flat on the ground (normal up), tokens.json also gives hexLitFlat. A flat line is multiplied by 0.8846 and a flat face by (0.8951, 0.8767, 0.9320), computed by A5 from SceneShading.cpp:7-25. ADR-090 decision 3 gives the face light as (0.895, 0.877, 0.932).
+Color tokens · 61 tokens, each with its one meaning
+TEXT_COLOR#EAF1FA
+Primary light text: words and figures that are live on any panel, card or button.
+GameApp/Hud.cpp:16
+DIM_TEXT_COLOR#ADB3BC
+Dim text: a control that does nothing now, or an empty list.
+GameApp/Hud.cpp:17
+DISABLED_BUTTON_COLOR#3F4550
+Face of a small arrow button that cannot step (alpha 0.85).
+GameApp/Hud.cpp:18
+WARNING_COLOR#FFBCA0
+Warning: the player's own problem. As a filled chip tag behind dark words; as plain text only for a refused design name and the menu notice; as the minimap's alert squares.
+GameApp/Hud.cpp:20
+MAP_COLOR#27384B
+The minimap's map square (alpha 0.95).
+GameApp/Hud.cpp:25
+OWN_COLOR#A0D3FF
+The player's own side on the HUD: minimap marks, sector wash/outline/hatch, own territory figures, claimable-sector outline.
+GameApp/Hud.cpp:26
+ENEMY_COLOR#FFA689
+The enemy side on the HUD: minimap marks, sector wash/outline/hatch, enemy territory figures (plain text, never a chip).
+GameApp/Hud.cpp:27
+PIRATE_COLOR#E5B3FF
+The pirates on the HUD: minimap marks and the wash/outline/hatch of a guarded sector (violet).
+GameApp/Hud.cpp:28
+DERELICT_COLOR#CECED4
+A derelict on the minimap, light gray, whoever's it was.
+GameApp/Hud.cpp:30
+NEUTRAL_COLOR#B3ADAA
+Any other neutral minimap mark not named by a more specific color.
+GameApp/Hud.cpp:31
+ORE_ASTEROID_COLOR#AD8427
+An ore asteroid on the minimap: Ore's gold, darkened; drawn as an outlined square.
+GameApp/Hud.cpp:32
+DRY_COLOR#997C6B
+An ore asteroid that has run out, as far as the player knows: darker, warmed toward rust.
+GameApp/Hud.cpp:34
+ASTEROID_FIELD_COLOR#656569
+An asteroid field on the minimap: only in the way, darker than ore.
+GameApp/Hud.cpp:38
+VIEW_COLOR#EDF3FF
+The camera's view outline on the minimap (alpha 0.8).
+GameApp/Hud.cpp:39
+LATTICE_COLOR#5D6573
+Every sector's border on the minimap, over the fog, under held outlines.
+GameApp/Hud.cpp:52
+WINDOW_COLOR#181E2B
+The windows' navy: every window body and HUD panel body (opaque); also the dark words on a warning chip.
+GameApp/Hud.cpp:840
+TITLE_HATCH_COLOR#303A50
+Stripes of a window's title bar and of a header band that runs on under it.
+GameApp/Hud.cpp:841
+CLOSE_BOX_COLOR#1F2739
+A window's close box at the title bar's right end.
+GameApp/Hud.cpp:842
+WINDOW_EDGE_COLOR#89AFE2
+Window chrome: the four corner brackets of every window and HUD panel.
+GameApp/Hud.cpp:843
+LABEL_COLOR#8193AD
+Labels: section labels in spaced capitals, units, notes and secondary words.
+GameApp/Hud.cpp:978
+ROW_LABEL_COLOR#ACBACD
+Row labels: the label at the head of a row (stat names, RETREAT, order rows, strength initials, key caps).
+GameApp/Hud.cpp:979
+HEADER_LABEL_COLOR#ACBACD
+Alias of ROW_LABEL_COLOR: a label on a window's hatched title bar or header band, raised to stand at 4.5:1 on its stripes.
+GameApp/Hud.cpp:981
+NUMBERS_COLOR#D3E3F7
+Secondary light text: a card's numbers and the lines under a panel's first line.
+GameApp/Hud.cpp:982
+SOFT_COLOR#93A4BC
+Soft detail: a damage card's per-100-ore line.
+GameApp/Hud.cpp:983
+CODE_COLOR#7695C0
+A design's code, its components' initials "S·I·MD".
+GameApp/Hud.cpp:984
+ACCENT_COLOR#AAD0FF
+Accent blue: the current pick's name, a shown chip's code, and keys in the Controls window.
+GameApp/Hud.cpp:985
+GOLD_COLOR#F7BC3C
+Ore: the gem and the figure wherever an amount of Ore is written; also the game's name and a match's outcome title.
+GameApp/Hud.cpp:986
+FIELD_COLOR#10141B
+Field: the darkest inset - text fields, boxes, a disabled button's face, a damage card.
+GameApp/Hud.cpp:987
+CARD_COLOR#1F2739
+Card: the face of anything that can be clicked (card, button, chip, row), and a hovered status row.
+GameApp/Hud.cpp:988
+EDGE_COLOR#2D364B
+Edge: the 1-unit outline round a card, button, field or box; dividers.
+GameApp/Hud.cpp:989
+PICKED_COLOR#334767
+Picked: the face of the current pick or lit choice.
+GameApp/Hud.cpp:990
+PICKED_EDGE_COLOR#A0C5F3
+Picked edge: the outline of the current pick, and of the name field while typing.
+GameApp/Hud.cpp:991
+HOVER_EDGE_COLOR#89AFE2
+Alias of WINDOW_EDGE_COLOR: the edge of what a click takes, under the pointer, short of a pick's.
+GameApp/Hud.cpp:994
+LOCKED_COLOR#141922
+Locked: the face of a card research has yet to unlock (or a topic that needs something).
+GameApp/Hud.cpp:995
+LOCKED_HATCH_COLOR#1D222B
+Stripes over a locked card.
+GameApp/Hud.cpp:996
+LOCKED_TEXT_COLOR#7C8BA0
+Locked/unaffordable text: words and figures of something that cannot be taken now.
+GameApp/Hud.cpp:999
+AMBER_COLOR#CE9E55
+Amber: what waits on something first - the research that unlocks a part, a topic's prerequisites, a job waiting for Ore or the fleet cap.
+GameApp/Hud.cpp:1000
+GOOD_COLOR#6CF34D
+Better / Good: a hovered part's change for the better, and a Good rating.
+GameApp/Hud.cpp:1001
+FAIR_COLOR#F3B52D
+Fair rating.
+GameApp/Hud.cpp:1002
+POOR_COLOR#E7553F
+Worse / Poor: a hovered part's change for the worse, and a Poor rating.
+GameApp/Hud.cpp:1004
+BAR_TRACK_COLOR#0D1018
+A bar's empty track (and an unlit strength segment).
+GameApp/Hud.cpp:1005
+BAR_FILL_COLOR#7395C8
+The player's own progress and measures: a filled bar on its own buttons, queues, status lines and design numbers.
+GameApp/Hud.cpp:1006
+QUEUE_COLOR#2B5031
+The Queue button's green face: the commit action.
+GameApp/Hud.cpp:1009
+QUEUE_HATCH_COLOR#34593B
+Stripes over the Queue button.
+GameApp/Hud.cpp:1010
+QUEUE_EDGE_COLOR#559361
+Green edge of the commit action; also the "SAVED" state of the Save button.
+GameApp/Hud.cpp:1011
+QUEUE_TEXT_COLOR#EDFFEF
+Words on the Queue button.
+GameApp/Hud.cpp:1012
+SLOT_FILLED_COLOR#6C89B3
+A filled slot of a Shipyard's queue in the designer's header.
+GameApp/Hud.cpp:1013
+BUILD_BAR_COLOR#BCBFC4
+Build progress over an entity on the screen: a light gray that is no side's.
+GameApp/Hud.cpp:1016
+HEALTH_GOOD_COLOR#7CED95
+Health above half, on every health bar.
+GameApp/Hud.cpp:1022
+HEALTH_FAIR_COLOR#FFDA59
+Health above a quarter, up to half.
+GameApp/Hud.cpp:1023
+HEALTH_POOR_COLOR#F97C6C
+Health at a quarter or less.
+GameApp/Hud.cpp:1024
+GRID_COLOR#1D1E26
+The ground grid: a line every 100 m, a pixel wide, a dim blue-gray.
+GameApp/GameClient.cpp:32
+SELECTION_COLOR#89F9A0
+The selection ring round each selected ship or structure.
+GameApp/GameClient.cpp:89
+ATTACK_MOVE_COLOR#FFD359
+The selection ring while an order (attack-move, hold sector, patrol) waits for its click.
+GameApp/GameClient.cpp:90
+DRAG_BOX_COLOR#89F9A0
+A drag box's outline on the ground (1.5 m bands).
+GameApp/GameClient.cpp:91
+HEALTH_BACK_COLOR#505050
+Back of the bars over an entity whose side the data does not name.
+GameApp/GameClient.cpp:97
+TERRITORY_LATTICE_COLOR#383A47
+Every sector border in the world, one pixel wide, brighter than the grid.
+GameApp/GameClient.cpp:109
+GHOST_VALID_COLOR#7CE195
+A placement ghost that can be placed: its disc and its model.
+GameApp/GameClient.cpp:122
+GHOST_INVALID_COLOR#ED7C6C
+A placement ghost that cannot be placed.
+GameApp/GameClient.cpp:123
+FOG_FILL (literal)#000000
+The fog over the minimap: black, as opaque as each point's shade (ADR-052).
+GameApp/Hud.cpp:3534
+CLEAR_COLOR (shell)#000000
+The scene's background before the starfield is drawn.
+OutpostCommander/WinMain.cpp:21
+Scene light and effects
+KEY_COLOR#CFC2AF
+Warm key light, from TOWARD_KEY (-0.4, 0.8, 0.45), wrap KEY_WRAP 0.3
+GameApp/SceneShading.h:16
+SKY_FILL#A3AEC7
+Cool fill on a face that looks straight up
+GameApp/SceneShading.h:18
+GROUND_FILL#9892A8
+Dimmer cool violet fill on a face that looks straight down
+GameApp/SceneShading.h:19
+faceLightLookingUp#000000
+The light a face that looks straight up receives (within 7% of gray)
+computed by A5 from SceneShading.cpp:7-19; ADR-090 decision 3 gives (0.895, 0.877, 0.932)
+lineLightLookingUp#000000
+The brightness a flat line (normal up) is multiplied by
+computed by A5 from SceneShading.cpp:21-25
+SCENE_BLOOM#000000
+GameApp/GameClient.cpp:25
+FLASH_COLOR#FFF9DA
+Muzzle flash disc (fades over 0.08 s)
+GameApp/CombatEffects.cpp:20
+TRACER_COLOR#FFEDA0
+Tracer streak; belongs to neither side (ADR-028 decision 6)
+GameApp/CombatEffects.cpp:26
+BEAM_COLOR#C4F3FF
+Beam of a shooter the client cannot place; otherwise a beam is its side's color 35% to white (GameClient.cpp:1749-1758)
+GameApp/CombatEffects.cpp:32
+SLUG_COLOR#F3F9FF
+Rail Cannon slug, a thin white line (ADR-034)
+GameApp/CombatEffects.cpp:39
+BLAST_COLOR#FFCB89
+Splash ring running out to the splash radius
+GameApp/CombatEffects.cpp:44
+SPARK_COLOR#FFDA95
+Spark where a tracer lands
+GameApp/CombatEffects.cpp:46
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

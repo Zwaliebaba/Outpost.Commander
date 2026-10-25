@@ -1,0 +1,331 @@
+
+Models, light and motion
+Model faces and lines
+Rule: every model's faces are dark and its creases are bright one-pixel lines in its own hue, pulled slightly toward the eye so they win the depth test (ADR-027, ADR-040).
+ | Property
+ | Value
+ | Source
+ | Crease threshold
+ | edges folding > 10°, plus open edges (CREASE_DEGREES)
+ | GameClient.cpp:49,380; ADR-027 §Decision 2
+ | Line width
+ | 1 px at any distance, MSAA-smoothed
+ | ADR-027 §Decision 3; MeshPipeline.cpp:101
+ | Line pull
+ | 0.2% of the way toward the eye (LINE_LIFT_SHARE 0.002)
+ | GameClient.cpp:53; MeshLineVS.hlsl:59
+ | Line depth
+ | test ≤, no write
+ | MeshPipeline.cpp:98-99
+ | Ship faces
+ | color × 0.3 (FILL_SHADE)
+ | SceneShading.h:48; GameClient.cpp:1509
+ | Ship/structure lines
+ | color ×up to 2 (EDGE_BRIGHTNESS) until brightest channel = 1, then 35% toward white (EDGE_WHITE_SHARE)
+ | SceneShading.h:45-46; SceneShading.cpp EdgeColor; GameClient.cpp:1561
+ | Structure color
+ | side color 35% toward a gray of equal luminance (STRUCTURE_GRAY_SHARE)
+ | SceneShading.h:56; GameClient.cpp:1577
+ | Structure faces
+ | that × 0.22 (STRUCTURE_FILL_SHADE)
+ | SceneShading.h:57; GameClient.cpp:1577
+ | Structure under construction
+ | color × tint × (0.35 + 0.65 × built share) (UNBUILT_SHADE 0.35), clamped at 1
+ | GameClient.cpp:101,343-349
+ | Rock faces
+ | color × 0.15 (ROCK_FILL_SHADE)
+ | SceneShading.h:51; GameClient.cpp:1516,1535
+ | Rock lines
+ | color × 1.35 (ROCK_EDGE_BRIGHTNESS), no white
+ | SceneShading.h:47; GameClient.cpp:1561
+ | Field rocks
+ | asteroid color × 0.7 (FIELD_SHADE) before the above
+ | SceneShading.h:53; GameClient.cpp:1522
+ | Lines vs faces contrast floor
+ | ships 2.7:1, structures 3.3:1, rocks 2.3:1 (test floors, computed)
+ | ADR-090 §Consequences
+Derived line and face colors (computed from SceneShading.cpp formulas and Models.json colors):
+ | Side
+ | Ship faces
+ | Ship lines
+ | Structure faces
+ | Structure lines
+ | Human
+ | (0.054, 0.126, 0.285)
+ | (0.473, 0.637, 1.000)
+ | (0.057, 0.091, 0.167)
+ | (0.572, 0.705, 1.000)
+ | Tarkan
+ | (0.270, 0.075, 0.036)
+ | (1.000, 0.531, 0.437)
+ | (0.158, 0.065, 0.046)
+ | (1.000, 0.617, 0.541)
+ | Pirate
+ | (0.186, 0.066, 0.270)
+ | (0.798, 0.509, 1.000)
+ | (0.116, 0.059, 0.156)
+ | (0.833, 0.595, 1.000)
+ | Wreck (drawn as a ship)
+ | (0.120, 0.120, 0.126)
+ | (0.814, 0.814, 0.840)
+ | —
+ | —
+ | Ore asteroid
+ | (0.052, 0.048, 0.045)
+ | (0.472, 0.432, 0.405)
+ | —
+ | —
+ | Field rock
+ | (0.037, 0.034, 0.032)
+ | (0.331, 0.302, 0.284)
+ | —
+ | —
+ADR-040 §Decision 1 states Human line (0.47, 0.64, 1.0) and Tarkan line (1.0, 0.53, 0.44), matching.
+Color constants: FILL_SHADE, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE, STRUCTURE_GRAY_SHARE, STRUCTURE_FILL_SHADE, ROCK_FILL_SHADE, ROCK_EDGE_BRIGHTNESS, FIELD_SHADE, UNBUILT_SHADE (all above).
+Example: a navy-dark hull silhouette traced in light-blue hairlines; a Tarkan hull dark brick-red traced in salmon lines; a rock nearly black with gray-brown ridges.
+Lighting
+Rule: a face is lit by a warm key from above-behind the default view's top-left (softened by a wrap) plus a fill blended from a cool sky above to a dimmer violet ground below; a line takes only that light's luminance, so it keeps its hue (ADR-090).
+ | Property
+ | Value
+ | Source
+ | Key direction
+ | TOWARD_KEY = (−0.4, 0.8, 0.45), normalized
+ | SceneShading.h:15; GameClient.cpp:1130
+ | Key color
+ | KEY_COLOR = (0.627, 0.539, 0.427) warm
+ | SceneShading.h:16
+ | Wrap
+ | KEY_WRAP = 0.3: key = saturate((n·l + 0.3)/1.3)
+ | SceneShading.h:17; MeshPS.hlsl:33-38
+ | Sky fill (face up)
+ | SKY_FILL = (0.365, 0.421, 0.571) cool
+ | SceneShading.h:18
+ | Ground fill (face down)
+ | GROUND_FILL = (0.314, 0.287, 0.389) dim violet
+ | SceneShading.h:19
+ | Fill blend
+ | lerp(ground, sky, n.y × 0.5 + 0.5)
+ | MeshPS.hlsl:35
+ | Face
+ | color × (fill + key) × occlusion term
+ | MeshPS.hlsl:40-44
+ | Line
+ | color × luminance(fill + key) (weights 0.2126, 0.7152, 0.0722)
+ | MeshLinePS.hlsl:30,40-43
+ | Least light the camera sees
+ | luminance 0.315 (old ambient 0.3); most 0.96
+ | ADR-090 §Decision 3 (computed there)
+ | Face looking straight up
+ | (0.895, 0.877, 0.932), within 7% of gray: flat marks keep their color
+ | ADR-090 §Decision 3
+ | Textures / specular
+ | none
+ | MeshPS.hlsl:1-3
+Color constants: KEY_COLOR, SKY_FILL, GROUND_FILL (SceneShading.h:16-19).
+Example: the face of a hull turned to the upper-left glows faintly warm; its underside reads cool blue-violet; its outline stays its side's pure line color.
+Baked occlusion
+Rule: the baker stores how open each vertex is (37 cosine-weighted rays within a quarter of the model's extent); a face's light is darkened by how shut in it is, a line's never (ADR-092).
+ | Property
+ | Value
+ | Source
+ | Rays
+ | 37 over the hemisphere (7×7 grid inside the disk, Malley's method)
+ | ADR-092 §Decision 1
+ | Reach
+ | a quarter of the model's largest extent
+ | ADR-092 §Decision 1
+ | Storage
+ | one byte 0–255 per vertex, NMF version 3
+ | ADR-092 §Decision 2; all 45 .nmf parsed as v3
+ | Strength
+ | OCCLUSION_STRENGTH = 1: wholly shut in is black, half shut in lit by half
+ | SceneShading.h:23; MeshPS.hlsl:42-43
+ | Lines
+ | not darkened
+ | MeshLinePS.hlsl:1-5; ADR-092 §Decision 4
+ | CPU-made vertices (rings, grid, shards)
+ | open (1)
+ | ADR-092 §Decision 3
+ | Shipped models
+ | mean openness 0.65; 13% of vertices shut in wholly; rocks ≥ 0.97 open
+ | ADR-092 §Consequences (measured in container)
+ | Between entities
+ | none (a rig is not darkened by its rock)
+ | ADR-092 §Consequences
+Example: bays, docks and wing roots of a Shipyard sink into soft black while the outer plates keep their tint; the hairlines inside the bays stay bright.
+Ships, banking
+Rule: a ship is its hull's model in its side's set, centered on its position; it banks into turns in proportion to speed × turn rate, through a critically damped spring, drawn by the client only (ADR-029); it always turns in arcs, never on the spot (ADR-039).
+ | Property
+ | Value
+ | Source
+ | Hull lengths
+ | Small 20 m, Medium 35 m, Large 60 m, Constructor 24 m
+ | Models.json:7-10,22-25
+ | Hull footprints (server)
+ | Small 8 m, Medium 14 m, Large 24 m radius; Constructor 10 m
+ | Tuning.json:16-18,35
+ | Bank target
+ | clamp(speed × turnRate / fullAt, −1, 1) × maxBank; none flying straight
+ | ShipBanking.cpp:13-19
+ | Small
+ | 50°, full at 60 m/s², settles 0.25 s
+ | Models.json:60
+ | Medium
+ | 45°, full at 26 m/s², settles 0.3 s
+ | Models.json:61
+ | Large
+ | 35°, full at 8 m/s², settles 0.4 s
+ | Models.json:62
+ | Constructor
+ | 30°, full at 55 m/s², settles 0.3 s
+ | Models.json:74
+ | Bank limit in data
+ | at most 60°
+ | ModelCatalog.cpp:86,96-98
+ | Spring rate
+ | 4 / settle time (SETTLE_RATE); ~9/10 followed after one settle time
+ | ShipBanking.h:17; ShipBanking.cpp:33; ADR-029 §Decision 3
+ | Bank sense
+ | positive (counterclockwise turn) lowers the left (+z) side
+ | ADR-029 §Decision 5
+ | What rolls with the hull
+ | guns, exhausts, crease lines, explosion shards
+ | ADR-029 §Decision 5
+ | What stays flat
+ | footprint, selection ring, bars, picking
+ | ADR-029 §Decision 5
+ | Turning
+ | forward while turning; speed × (½ + ½·cos bearing), never below half cruise on this count
+ | ADR-039 §Decision 2
+ | Coming about
+ | loop about 20 m across (Small+Ion), 24 m (Large+Fusion)
+ | ADR-039 §Decision 2
+ | Pitch / climb
+ | none: the battlefield is flat
+ | ADR-029 §What this forecloses
+Color: side color (see Side colors), faces FILL_SHADE.
+Example: a Small blue hull rolling 50° into a tight curve, its light-blue outline and cyan exhaust leaning with it, then rolling level in a quarter second.
+Structures: levels
+Rule: a structure is drawn across its kind's footprint; a model with levels draws the level the snapshot carries, each later level fitted within level 1's widest ground; a part baked as a steady spin turns on the view's clock (ADR-045).
+ | Property
+ | Value
+ | Source
+ | Fit
+ | scale = 2 × footprint radius / model length
+ | GameClient.cpp:1660-1664
+ | Levels
+ | Command Station, Shipyard, Research Lab: 5 levels each, both sets
+ | Models.json:11-13,26-28
+ | Later levels
+ | fitted across level 1's widest (x or z) extent
+ | GameClient.cpp:365-374; ModelCatalog.cpp:382-385
+ | Footprints
+ | Command Station 45 m, Shipyard 40 m, Research Lab 30 m, Mining Rig 25 m, Defense Platform 20 m, Relay 30 m, Repair Bay 30 m
+ | Tuning.json:40,48,54,60-63
+ | Human Research Lab spin
+ | one part, 8 s a turn, all levels; L5 adds two parts at 5 s
+ | .nmf parts parsed; ADR-045 §Context
+ | Tarkan Research Lab spin
+ | 12 s a turn, all levels; L3–L5 add a counter ring at 9 s turning the other way
+ | .nmf parts parsed; ADR-045 §Context
+ | Clock
+ | view tick / ticks per second: all labs spin in step
+ | GameClient.cpp:1870-1876; ADR-045 §Consequences
+ | Ghost and memory
+ | ghost spins (level 1); remembered lines spin too
+ | GameClient.cpp:1831-1832,1200
+ | No other part moves
+ | yes
+ | ADR-045 §Context
+Color: side color toward gray (STRUCTURE_GRAY_SHARE), faces STRUCTURE_FILL_SHADE.
+Example: a grayed-blue Human Research Lab whose radar dish sweeps once every 8 s.
+Mining Rig stance
+Rule: the rig is drawn at its kind's size (25 m footprint), tilted to fit its asteroid under its feet and lifted until no foot is in the rock; the drill goes in (ADR-044).
+ | Property
+ | Value
+ | Source
+ | Feet
+ | lowest vertices past 0.5 of half length, within 0.05 of height of the lowest
+ | GameClient.cpp:70-71,322-342
+ | Fit passes
+ | 3
+ | Hardpoints.cpp:36
+ | Max tilt
+ | 0.5 rad (~29°) either way
+ | Hardpoints.h:51; ADR-044 §Decision 2
+ | Without feet over rock
+ | lowest point stands on the rock's top
+ | GameClient.cpp:1724-1727
+Example: a small tripod rig perched tilted on a lumpy 45 m rock, legs on the surface.
+Derelicts
+Rule: a derelict is its hull's model from the Wreck set (Human meshes) across its radius, in Wreck gray, shaded like a ship (ADR-074 via ADR-011 §Decision 3).
+ | Property
+ | Value
+ | Source
+ | Model
+ | by hull, from derelicts set
+ | Models.json:39-41,58; GameClient.cpp:1628-1638
+ | Scale
+ | 2 × radius / model length
+ | GameClient.cpp:1638
+ | Faces / lines
+ | FILL_SHADE, EdgeColor (ship rules)
+ | GameClient.cpp:1546,1561
+ | Rings
+ | none (rings are for structures only)
+ | GameClient.cpp:1370
+ | Remembered
+ | drawn as a memory (lines only)
+ | ADR-081 §Decision 4
+Color key: Models.json: sets[name=Wreck].color (0.4, 0.4, 0.42).
+Example: a gray Human Large hull lying still, outlined in pale gray lines.
+Asteroids and asteroid fields
+Rule: an ore asteroid is one rock; a field is a cluster laid out from its identifier — a middle rock and a ring of 5–8, its gaps closed by smaller rocks so no gap is wider than the smallest hull (ADR-087); rocks are low-poly with ridges as lines (ADR-027).
+ | Property
+ | Value
+ | Source
+ | Rock meshes
+ | Small 32, Medium 54, Large 78 triangles; each 2 m long so scale = radius
+ | .nmf parsed; Models.json:47-49; ADR-027 §Decision 1
+ | Mesh by radius
+ | Small ≤ 35 m; Large ≥ 55 m; Medium between
+ | GameClient.cpp:43-44,308-320
+ | Ore asteroid sizes
+ | 45 m (home, near, contested); 60 m (rich)
+ | Map.json: oreAsteroids, sectorKinds (line 157 for rich)
+ | Field sizes
+ | 150 m and 180 m radius; 80 fields
+ | Map.json: asteroidFields
+ | Layout seed
+ | EffectRandom(FIELD_SEED_SALT ^ id)
+ | FieldLayout.cpp:12,37
+ | Middle rock
+ | radius 0.36–0.46 of field, up to 0.06 off center on each axis
+ | FieldLayout.cpp:16-18,39-42
+ | Ring
+ | 5–8 rocks, evenly spaced from a random start, jitter ≤ 0.2 step, 0.56–0.68 of radius out, 0.20–0.32 of radius in size, never past the edge
+ | FieldLayout.cpp:21-27,44-58
+ | Fillers
+ | 0.08–0.12 of field radius, evenly along the chord, as few as leave no gap > the bound
+ | FieldLayout.cpp:29-30,60-85
+ | Gap bound
+ | smallest hull's footprint diameter from the snapshot: 16 m (Small, 2 × 8 m)
+ | GameClient.cpp:1524-1529; Tuning.json:16
+ | Reach used
+ | narrowest reach of the 3 rock meshes, 0.60 at HEAD (ADR's measurement)
+ | GameClient.cpp:454; FieldLayout.cpp:89-103; ADR-087 §Decision 2
+ | Rocks a field
+ | 14–18, mean 15.7; 1,254 on the map (ADR's measurement)
+ | ADR-087 §Consequences
+ | Turn
+ | every rock its own random angle
+ | FieldLayout.cpp:42,57,83
+ | Server
+ | blocks the whole circle; the layout is the client's alone
+ | ADR-087 §Decision 3
+ | Always seen
+ | asteroids and fields are never fogged out of the snapshot
+ | ADR-024 §Decision 3
+Color key: Models.json: sets[name=Asteroids].color; constants ROCK_FILL_SHADE, ROCK_EDGE_BRIGHTNESS, FIELD_SHADE.
+Example: a 180 m field: one large dark boulder in the middle, a closed polygon of six medium rocks and small filler rocks around it, all near-black with dim gray-brown ridges.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

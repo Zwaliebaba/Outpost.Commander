@@ -1,0 +1,222 @@
+
+AI behavior
+Outpost Commander · design reference · 10
+AI & difficulty
+What the AI does as the player meets it, and how Easy, Normal and Hard differ, field by field.
+Sources: Opponent.json OpponentEasy.json OpponentHard.json A3 ADR-020/041/065/076
+AI behavior
+The AI is AiPlayer (Opponent/AiPlayer.cpp).
+- In a skirmish it plays player 2 as a client on the game's main thread (WinMain.cpp:425-437).
+- In a world it plays as an AiEmpire, on the server's thread (ADR-079 §Decision 3).
+- Cadence. It watches every snapshot for shots, and decides once a second (AiPlayer.cpp:322-333, ADR-020 §Decision 1).
+- No cheating. It reads only its own snapshot (ADR-002 §Decision 7).
+7.1 Economy and build order
+ | Phase of play
+ | Rule
+ | Value (Normal)
+ | Source
+ | Plan laid
+ | At its first decision, round its Command Station; or, with none, round its oldest Shipyard, else its oldest structure. With no structure it waits.
+ | —
+ | AiPlayer.cpp:365-378, ADR-020 §Decision 16
+ | Order of the plan
+ | Rigs on the home asteroids; then a Shipyard (side), a Research Lab (other side) and a Defence Platform (toward the center) beside the station; then rigs on the contested asteroids, each with a platform beside it; then home platforms
+ | home 3, contested 3
+ | AiPlayer.cpp:477-566, Opponent.json:9-10
+ | Contested asteroids
+ | The nearest after the home ones, leaving out those nearer the enemy's base
+ | —
+ | AiPlayer.cpp:505-517, ADR-020 §Decision 5
+ | Gaps
+ | Each place keeps clear of everything else; if taken, it is searched for in rings 20 m apart, 20 rings out
+ | 50 m
+ | Opponent.json:14, AiPlayer.cpp:24-25
+ | Crews
+ | At most 2 Constructors to a site. An order not seen as a site after 3 s is taken as refused.
+ | 2 / 3 s
+ | AiPlayer.cpp:15-18
+ | Constructors kept
+ | Queued at the Command Station until it holds this many
+ | 4
+ | Opponent.json:7, AiPlayer.cpp:402-411
+ | More Shipyards
+ | The N-th once income reaches N × 10 Ore/s. They stand behind the station, then behind it to either side, each round of three farther out. Each brings its own home platforms.
+ | 10 Ore/s
+ | Opponent.json:8, AiPlayer.cpp:743-787, ADR-020 §Decision 6
+ | Home platforms
+ | Per Shipyard, 260 m from the station toward the center, at turns of 0, ±0.5 and ±1 rad, then rings 70 m farther out; each waits for its Shipyard's income
+ | 2 per Shipyard
+ | Opponent.json:11, AiPlayer.cpp:34-39, 789-820, ADR-041 §Decision 3
+ | Ore waits
+ | Ships are not queued while the next structure waits for Ore. An upgrade it cannot pay for holds production back the same way.
+ | —
+ | AiPlayer.cpp:436-450, 467, ADR-020 §Decision 14
+ | Follows the ore
+ | When a rig's asteroid runs dry, it plans a rig, with a platform, on the nearest asteroid it knows still holds ore, outside the enemy's home
+ | —
+ | AiPlayer.cpp:704-741, ADR-020 §Decision 5
+ | Repairs
+ | Constructors left over repair damaged structures, one each
+ | —
+ | AiPlayer.cpp:452-466
+ | Research
+ | One topic at a time per free Lab slot, in researchOrder, each once its prerequisites are done and its tier is open
+ | §8.2
+ | AiPlayer.cpp:413-434
+ | Lab
+ | Upgraded when the next topic's tier is not open, and to level 4 (2 slots) once its open tier is 3
+ | secondSlotTier 3
+ | ADR-020 §Decision 14, Tuning.json: structures ResearchLab levels
+ | Shipyards' levels
+ | Upgraded to the level its production design's hull needs: level 2 for Medium, 3 for Large
+ | —
+ | ADR-020 §Decision 14, AiPlayer.cpp:1136-1157
+ | Command Station
+ | Upgraded in place of a Relay that waits on the node cap, and when the fleet cap would hold back a round of its Shipyards
+ | —
+ | AiPlayer.cpp:991-1015, 1196-1223, ADR-020 §Decision 15
+7.2 Fleet: counters, reserve, attack groups, regroup
+ | Behavior
+ | Rule
+ | Value (Normal)
+ | Source
+ | Review
+ | Every interval it takes the most common enemy design (by hull, drive and weapon) among the enemy warships seen since the last review, not the pirates'. It builds that design's first unlocked counter, else the default. With nothing seen it keeps its design. A tie goes to the lowest hull, then drive, then weapon.
+ | 60 s
+ | Opponent.json:6, AiPlayer.cpp:286-311, 384-396
+ | Queue
+ | Keeps this many jobs in each built Shipyard of the needed level; saves a design it does not have first
+ | 2
+ | Opponent.json:12, AiPlayer.cpp:1103-1133
+ | Reserve
+ | Its warships gather in a 40 m circle, 170 m from the Command Station toward the map's center. On a map with sectors they hold the front sector, or the rally's sector while it has no front.
+ | 170 m
+ | Opponent.json:15, AiPlayer.cpp:27, 1653-1677, 1691-1713
+ | Defense of its base
+ | A shot on any of its structures, built or a site, sends the reserve there with an attack-move, until 10 s after the last shot
+ | 10 s
+ | Opponent.json:13, AiPlayer.cpp:338-363, 1653-1655
+ | Attack group size
+ | 25 + 12 per tier opened past the first. Under the fleet cap: attackCapShare × the room the cap leaves for its production hull (after scouts and raid), at least 1, if fewer.
+ | 25 / 12 / 0.8
+ | Opponent.json:2-3,55, AiPlayer.cpp:1547-1565, ADR-041 §Decision 1
+ | Main attack waits
+ | For the group's size and a lead of 1 node; or a reserve of 1.5 × the group's size (or the cap's room, if less); and the regroup time
+ | 1 / 1.5
+ | Opponent.json:49-50, AiPlayer.cpp:1566-1589, ADR-041 §Decision 5
+ | Target
+ | Production first: Shipyards, then the Command Station, then the rest. Within a rank, the nearest to the group's center, each level above 1 counting as 500 m nearer. It keeps a target until it is gone or a better rank comes to light. Knowing none, it attack-moves across the map's center. It never targets the pirates.
+ | 500 m
+ | AiPlayer.cpp:123-128, 1591-1631, ADR-037 §Decision 4
+ | Close in
+ | Group ships within 500 m (+ target radius) of the target are ordered to attack it, once each
+ | 500 m
+ | AiPlayer.cpp:33, 1634-1651
+ | Fall back
+ | An attack that has lost 15% of the ships it had when it last grew moves (not attack-moves) to the rally and rejoins the reserve
+ | 0.15
+ | Opponent.json:4, AiPlayer.cpp:1479-1496
+ | Regroup
+ | After a fall-back the reserve waits before it attacks again
+ | 240 s
+ | Opponent.json:5, AiPlayer.cpp:1495
+ | Retreating ships
+ | Leave their group and get no order from the AI (any order would end the retreat)
+ | —
+ | AiPlayer.cpp:232-271, 1415-1428, ADR-041 §Decision 2
+ | Kiting
+ | Never
+ | —
+ | ADR-020 §Decision 8
+7.3 Territory: claims, front, scout, raids
+ | Behavior
+ | Rule
+ | Value (Normal)
+ | Source
+ | Claims
+ | Once its first Shipyard stands, it claims the free, unguarded sector next to its territory nearest its base: a Relay and rigs on its asteroids. One claim at a time, up to this many beyond those its rigs take it to.
+ | 2
+ | Opponent.json:52, AiPlayer.cpp:1250-1305
+ | Front
+ | A sector it holds next to an enemy's, not its home, gets platforms beside its Relay, once
+ | 1
+ | Opponent.json:51, AiPlayer.cpp:1307-1329
+ | Scout
+ | Keeps this many Small+Ion+Mass Driver+Sensor Array, queued ahead of everything
+ | 1
+ | Opponent.json:44-45, AiPlayer.cpp:1071-1101
+ | Scout, opening
+ | For the first 600 s of the world's ticks it moves (not attack-moves) through the sectors of its own half. It looks at a guarded sector from a lookout 650 m from its node, turned up to 0.7 rad, and goes on within 30 m of a lookout or 150 m of a node.
+ | 600 s
+ | Opponent.json:57, AiPlayer.cpp:41-49, 1331-1410
+ | Scout, after
+ | Attack-moves from one sector next to the enemy's home to the next
+ | —
+ | AiPlayer.cpp:1377-1384, 1404-1408
+ | Raids
+ | While the reserve holds at least 2 × this many, that many of its smallest hulls attack-move on the nearest enemy sector, not the enemy's home, where it sees no warship within 600 m of the node. Raiders near the Relay attack it.
+ | 2 ships
+ | Opponent.json:46, AiPlayer.cpp:51, 1506-1544
+ | Raid ends
+ | When the sector is no longer the enemy's, or after losing 0.5 of its ships; the next waits 180 s
+ | 0.5 / 180 s
+ | Opponent.json:47-48, AiPlayer.cpp:1434-1474
+ | Ties
+ | Two places as near are told apart by the side of the base-to-center line, so both seats mirror
+ | —
+ | AiPlayer.cpp:1681-1689, ADR-020 §Decision 13
+7.4 Pirates, salvage, Repair Bay (ADR-076)
+ | Behavior
+ | Rule
+ | Value (Normal)
+ | Source
+ | What it knows
+ | For each guarded sector, the most Ore it has seen there (ships at cost, platforms at cost) and the most platforms; more than 1 platform is a stronghold. It forgets a sector no longer guarded and never targets one it has not seen.
+ | —
+ | AiPlayer.cpp:1715-1748, ADR-076 §Decision 1
+ | Detachment
+ | Reserve ships nearest the outpost until their Ore reaches pirateMargin × the outpost's. Target: the nearest seen camp next to its territory; a stronghold only with no free sector left to claim and not at its node cap.
+ | 1.5
+ | Opponent.json:56, AiPlayer.cpp:1750-1833
+ | Keeps at it
+ | Attack-move re-ordered every 10 s until the sector is no longer guarded
+ | 10 s
+ | AiPlayer.cpp:54, 1764-1768
+ | Gives up
+ | After losing raidLossShare of its ships; moves to the rally; the next waits raidIntervalSeconds
+ | 0.5 / 180 s
+ | AiPlayer.cpp:1755-1763
+ | Order of groups
+ | One detachment at a time, chosen after the raid
+ | —
+ | AiPlayer.cpp:1545, ADR-076 §Decision 2
+ | Salvage
+ | Once it has as many rigs as homeAsteroids: one idle Constructor, the nearest, to the nearest known derelict in a held sector or a free sector next to one, never a guarded one. Sent ahead of the plan's contested rigs.
+ | —
+ | AiPlayer.cpp:1835-1891
+ | Salvage ends
+ | When the derelict is gone. Dropped after 300 s (that derelict is never chosen again), or when the Constructor is lost or turns for home.
+ | 300 s
+ | AiPlayer.cpp:60, 1840-1849
+ | Repair Bay
+ | Once it has a built Shipyard: a Bay 220 m behind the front sector's node toward its base. One per sector; a new one when the front moves; the old ones stay.
+ | 220 m
+ | AiPlayer.cpp:62, 1893-1917
+ | Otherwise
+ | It plans and claims nothing in a sector the pirates guard and does not count their warships as the enemy's fleet
+ | —
+ | ADR-020 §Decision 13, AiPlayer.cpp:347-351
+7.5 From any state, and after a loss
+ | Rule
+ | Source
+ | A new AI takes into its plan the own structures that no slot holds, within 400 m of a slot's preferred place, rather than building another beside them. Rigs and Relays stand where they are. Held Relays beyond home count as claims.
+ | AiPlayer.cpp:57, 585-624, ADR-020 §Decision 16
+ | Its player's ships join its reserve
+ | ADR-020 §Decision 16
+ | An AI empire is made afresh when its seat restarts (EmpireRestarted) and lays its plan round the new Command Station
+ | AiEmpire.h:94-99, ADR-084 §Decision 6
+ | Without its station it plays on: queues, research, plan, repairs; no Constructors
+ | ADR-037 §Decision 5, AiPlayer.cpp:370-372, 406-411
+ | Its state is never saved
+ | ADR-079 §Decision 2
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

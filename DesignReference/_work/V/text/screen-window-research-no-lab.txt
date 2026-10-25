@@ -1,0 +1,82 @@
+
+Research with no Research Lab: no topic can be queued
+1,000
++0/s
+Nodes
+cap 4 of 25
+1
+1 : 
+Tickets
+1,000
+1,000 : 
+No drain
+Local skirmish
+×
+RESEARCH
+NO RESEARCH LAB
+1,240
+TOPICS · 1-10 OF 23
+<
+>
+Improved Extraction
+150
+Mining Rig income +25%
+TIER 1 · 60 s
+Hull Plating
+150
+Hull hit points +15%
+TIER 1 · 60 s
+Mass Driver Calibration
+150
+Mass Driver fire rate +10%
+TIER 1 · 75 s
+Lance Focusing
+150
+Lance fire rate +15%
+TIER 1 · 75 s
+Fusion Drive
+200
+Unlocks the Fusion drive
+NEEDS · HULL PLATING
+Large Hull
+250
+Unlocks the Large hull
+NEEDS · HULL PLATING
+Missile Rack
+250
+Unlocks the Missile Rack
+NEEDS · MASS DRIVER CALIBRATION
+Automated Shipyards
+200
+Shipyard build speed +25%
+NEEDS · IMPROVED EXTRACTION
+Pulse Drive
+300
+Unlocks the Pulse drive
+NEEDS · RESEARCH LAB L2
+Flak Battery
+300
+Unlocks the Flak Battery
+NEEDS · RESEARCH LAB L2
++ MASS DRIVER CALIBRATION
+QUEUE · 0 / 5
+1
+2
+3
+4
+5
+6
+7
+8
+window · research-no-lab · factor 1
+Research with no Research Lab: no topic can be queued
+- 1Ore panelThe stockpile as the gem and figure in GOLD_COLOR, written one way everywhere; the income in NUMBERS_COLOR, a warning chip at +0/s. The word Ore is not written.Hud.cpp:3143-3157; ADR-043 d3; ADR-047 d5; ADR-085 d1
+- 2TerritoryNodes held, own : enemy, against the Command Station's cap; domination tickets while both sides have them; the drain, a chip when it is the player's. Only on a map with sectors.Hud.cpp:3167-3213; ADR-056; ADR-057
+- 3Where the match runsLocal skirmish, or Server host:port. After 2 s without a snapshot a chip counts the silence. Never on the menu.Hud.cpp:3320-3337; Hud.h:469; ADR-086
+- 4Minimap10,000 m in 284 units (35.2 m a unit): sector wash, marks, fog, the sector lattice, held and guarded outlines, remembered crosses, alerts and the camera's view.Hud.cpp:3456-3630; ADR-068 d2; ADR-081
+- 5Window chromeOpaque WINDOW_COLOR body, hatched title bar (drag it), close box, corner brackets. Esc closes the front window; a press brings a window to the front.Hud.cpp:871-899; ADR-031; WindowManager.cpp
+- 6Header band and Ore boxThe hatching runs on to y 72; the subject steps with < and >; the Ore box repeats the stockpile.Hud.cpp:1237-1249, 1658-1671
+- 7QueueUp to 5 jobs; the front one shows progress, WAITING FOR ORE or WAITING FOR FLEET CAP.Hud.cpp:1675-1706; Snapshot.h:42
+- 8TopicsEach topic not yet researched or queued, ten to a page. A topic that needs something is hatched and says what it needs; else its tier and time.Hud.cpp:1786-1884; ADR-061 d4; ADR-033
+Geometry derived from Hud.cpp by A4's derive_layouts.py, not dumped from the game: 75 of 267 elements depend on DirectWrite text measurement and are estimated. Content values are samples built from Tuning.json and Map.json. Dashed boxes and numbered discs in #FF2D95 are this reference's annotations, not the game.
+DesignReference/_work/A4/layouts/window-research-no-lab.json

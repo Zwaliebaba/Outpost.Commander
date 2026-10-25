@@ -1,0 +1,381 @@
+
+Hulls, drives, weapons, modules
+Outpost Commander · design reference · 06
+Ships & the Designer
+Hulls, drives, weapons and the module; how a design's stats are derived; the starting designs; damage after armor as the Designer shows it.
+Sources: Tuning.json A2 ADR-014/017/018/058/069
+Units and the clock
+ | Rule
+ | Value
+ | Source
+ | Tick rate
+ | 20 ticks a second
+ | Tuning.json: rules.tickHz (l.3)
+ | Hit points, armor and damage are integers in hundredths of a point
+ | HUNDREDTHS = 100
+ | Snapshot.h:5-7; ADR-014 §Decision 3
+ | The HUD writes hit points as whole points, rounded up, "so that a ship with a sliver left does not read as dead"
+ | (h + 99) / 100
+ | Hud.cpp:166-170
+ | A weapon reloads in thousandths of a tick
+ | MILLITICKS_PER_TICK = 1000; interval = llround(seconds × 20 × 1000) milliticks
+ | Simulation.cpp:58,1572-1573; ADR-014 §Decision 4
+ | Build, research and level work are counted in thousandths of a tick too
+ | llround(seconds × tickHz × 1000)
+ | Simulation.cpp:2181,2280,2734,3067
+ | Ore is held in hundredths
+ | costs are whole Ore × 100
+ | Simulation.cpp:2173,2274,2731; ADR-016 §Decision 1
+Hulls
+Each row is one entry of Tuning.json: hulls, lines 16–18. The mesh length is presentation data from Models.json:7-9 (Human) and 22-24 (Tarkan), and is the same in both sets.
+ | id
+ | Hull
+ | hitPoints
+ | armor
+ | speedMetersPerSecond
+ | turnRateDegreesPerSecond
+ | footprintRadiusMeters
+ | cost (Ore)
+ | buildSeconds
+ | commandPoints
+ | Shipyard level that builds it
+ | Unlocked by
+ | Mesh lengthMeters
+ | Source
+ | 1
+ | Small
+ | 220
+ | 2
+ | 60
+ | 180
+ | 8
+ | 96
+ | 30
+ | 1
+ | L1
+ | none (available from the start)
+ | 20
+ | Tuning.json: hulls[0] l.16; structures[1].hulls l.49
+ | 2
+ | Medium
+ | 500
+ | 8
+ | 40
+ | 120
+ | 14
+ | 330
+ | 60
+ | 2
+ | L2
+ | none (available from the start)
+ | 35
+ | Tuning.json: hulls[1] l.17; structures[1].levels[0].hulls l.51
+ | 3
+ | Large
+ | 1200
+ | 14
+ | 25
+ | 60
+ | 24
+ | 900
+ | 120
+ | 4
+ | L3
+ | topic 6, Large Hull
+ | 60
+ | Tuning.json: hulls[2] l.18; structures[1].levels[1].hulls l.52; research[5] l.76-77
+- The footprint is the circle a ship keeps clear, and the spacing a splash reaches across (Tuning.h:63-65). The footprints and the turn rates are final (owner, 2026-10-01, ADR-010 §Decision 8).
+- Armor never changes. No research raises armor (Tuning.cpp:364-376 UPGRADE_PAIRS; ADR-033 §What this forecloses).
+- A hull needs both its research and the Shipyard's level. The Large Hull topic decides whether a Large design can be saved. A level 3 Shipyard decides where one is built (ADR-064 §Decision 9). The server refuses a job above the Shipyard's level with LevelTooLow (Simulation.cpp:2240-2242).
+Drives
+Each row is one entry of Tuning.json: drives, lines 21–23. The exhaust color is presentation data from Models.json:76-78.
+ | id
+ | Drive
+ | speedFactor
+ | hitPointsFactor
+ | turnRateFactor
+ | cost (Ore)
+ | Unlocked by
+ | Tier
+ | Exhaust color (r, g, b)
+ | Source
+ | 1
+ | Ion
+ | 1.3
+ | 0.9
+ | 1.25
+ | 60
+ | none
+ | —
+ | 0.3, 0.85, 1.0
+ | Tuning.json: drives[0] l.21
+ | 2
+ | Fusion
+ | 0.8
+ | 1.4
+ | 0.8
+ | 240
+ | topic 5, Fusion Drive
+ | 1
+ | 1.0, 0.35, 0.85
+ | Tuning.json: drives[1] l.22; research[4] l.74-75
+ | 3
+ | Pulse
+ | 1.6
+ | 0.75
+ | 1.5
+ | 120
+ | topic 10, Pulse Drive
+ | 2
+ | 0.55, 1.0, 0.3
+ | Tuning.json: drives[2] l.23; research[8] l.82-83
+A drive has no mesh and no build time; a design's build time is its hull's (DesignStats.h:89).
+Weapons
+Each row is one entry of Tuning.json: weapons, lines 26–30. The table also derives four figures from each row:
+- Interval in ticks is fireIntervalSeconds × 20. ADR-014 §Decision 4 gives the same figures: "8, 54, 40, 10 and 120 ticks exactly".
+- Sight is rangeMeters + sight.weaponMarginMeters (50, Tuning.json:13), as Simulation.cpp:252-262 works it out.
+- Raw damage a second is damage ÷ interval, before armor.
+- Shot look comes from Models.json:82-83; a weapon the file does not list fires tracers (ADR-034 §Decision 1).
+ | id
+ | Weapon
+ | damage
+ | fireIntervalSeconds
+ | interval (ticks)
+ | rangeMeters
+ | splashRadiusMeters
+ | cost (Ore)
+ | Unlocked by
+ | Raw damage/s
+ | Sight (m)
+ | Shot look
+ | Source
+ | 1
+ | Mass Driver
+ | 14
+ | 0.4
+ | 8
+ | 120
+ | 0
+ | 105
+ | none
+ | 35.0
+ | 170
+ | tracer
+ | Tuning.json: weapons[0] l.26
+ | 2
+ | Lance
+ | 95
+ | 2.7
+ | 54
+ | 220
+ | 0
+ | 255
+ | none
+ | 35.19
+ | 270
+ | beam, in the side's color
+ | Tuning.json: weapons[1] l.27; Models.json:82
+ | 3
+ | Missile Rack
+ | 30
+ | 2.0
+ | 40
+ | 280
+ | 30
+ | 390
+ | topic 7 (tier 1)
+ | 15.0
+ | 330
+ | tracer
+ | Tuning.json: weapons[2] l.28; research[6] l.78-79
+ | 4
+ | Flak Battery
+ | 20
+ | 0.5
+ | 10
+ | 200
+ | 26
+ | 180
+ | topic 11 (tier 2)
+ | 40.0
+ | 250
+ | tracer
+ | Tuning.json: weapons[3] l.29; research[9] l.84-85
+ | 5
+ | Rail Cannon
+ | 320
+ | 6.0
+ | 120
+ | 240
+ | 0
+ | 450
+ | topic 19 (tier 3)
+ | 53.33
+ | 290
+ | slug: white, 1.5 m wide, fades over 0.4 s
+ | Tuning.json: weapons[4] l.30; Models.json:83; ADR-034 §Decision 2
+The range ladder. From shortest to longest: Mass Driver 120, Flak Battery 200, Lance 220, Rail Cannon 240, the Defence gun 250 and the Missile Rack 280. Only the Missile Rack outranges a Defence Platform. No research extends a range, and the tuning loader rejects an upgrade that would (Tuning.cpp:364-376; MVP §6:169; Phase 1 §5 "The range ladder holds").
+Modules
+ | id
+ | Module
+ | sightMeters
+ | speedFactor
+ | cost (Ore)
+ | Unlocked by
+ | Source
+ | 1
+ | Sensor Array
+ | 700
+ | 0.9
+ | 120
+ | none: every module is available from the start
+ | Tuning.json: modules[0] l.33; ADR-058 §Decision 1, 2; ShipDesign.cpp:76-84 (available = true)
+- Slots. A design has at most one module, in an optional fourth slot that is empty by default (DesignStats.h:39-48; ADR-058 §Decision 3; ADR-058 §What this forecloses).
+- Sight. A ship sees the further of the module's sight and its weapon's range plus 50 m (Simulation.cpp:255-262; ADR-058 §Decision 5).
+The structure weapon
+ | id
+ | Name
+ | damage
+ | fireIntervalSeconds
+ | rangeMeters
+ | Splash
+ | Cost
+ | Carried by
+ | Source
+ | 1
+ | Defence gun
+ | 30
+ | 1.0 (20 ticks)
+ | 250
+ | None. A structure weapon has no splash field, and its Armament leaves the splash at 0.
+ | Not specified. The gun is part of its structure and has no price of its own.
+ | Command Station (1–3 guns by level) and Defence Platform (1 gun)
+ | Tuning.json: structureWeapons[0] l.37; structures[0].structureWeapon l.40; structures[4].structureWeapon l.61; Simulation.cpp:2038-2046; Tuning.cpp:754-763 (StationGuns)
+- When it fires. A structure fires only once it is built (Simulation.cpp:2038-2039).
+- Research. Defence Autoloader (topic 15) cuts its interval to 1.0 ÷ 1.2 = 0.8333 s (Tuning.json:92-93; Simulation.cpp:2046).
+- Sight. An armed structure sees 250 + 50 = 300 m (Simulation.cpp:258-260).
+- The shot. A Defence gun's shot names no weapon, and the client draws it as a tracer (ADR-016 §Decision 7).
+The Constructor
+ | Stat
+ | Value
+ | Source
+ | hitPoints
+ | 300
+ | Tuning.json: constructor.hitPoints l.35
+ | armor
+ | 2
+ | Tuning.json: constructor.armor
+ | speedMetersPerSecond
+ | 45. Drive Harmonics multiplies it, since its speed is the rule's times the ship-speed factor.
+ | Tuning.json: constructor.speedMetersPerSecond; Simulation.cpp:3164-3167
+ | turnRateDegreesPerSecond
+ | 150, which gives a full-speed turn radius of about 17.2 m (derived: 45 ÷ 150° in radians)
+ | Tuning.json: constructor.turnRateDegreesPerSecond
+ | footprintRadiusMeters
+ | 10
+ | Tuning.json: constructor.footprintRadiusMeters
+ | cost / build time
+ | 60 Ore, 15 s, built at the Command Station only, which Automated Shipyards does not speed
+ | Tuning.json: constructor.cost, buildSeconds; Simulation.cpp:2231-2236,2714-2715,2737-2741; ADR-016 §Decision 6
+ | Starting Constructors
+ | 2 a player
+ | Tuning.json: rules.startingConstructors l.5
+ | Build rate
+ | One Constructor does a tick of work each tick. Each further one adds extraConstructorBuildShare 0.5 of a tick, so two take ⅔ of the time and three take ½. Rapid Construction raises the rate by 25%.
+ | Tuning.json: constructor.extraConstructorBuildShare; Simulation.cpp:2435-2437; ADR-016 §Decision 5
+ | Repair rate
+ | repairPercentPerSecond 2: each Constructor restores 2% of the target's maximum hit points each second, for nothing. Rapid Construction raises it by 25%.
+ | Tuning.json: constructor.repairPercentPerSecond; Simulation.cpp:2466-2468
+ | Work reach
+ | Its footprint within 20 m of the target's footprint
+ | Simulation.cpp:69,2364-2367
+ | Weapon
+ | None. It attacks nothing, and an attack order goes to the warships among the selection alone.
+ | ADR-016 §Decision 9; Simulation.cpp:2025-2032 (no design, so no armament)
+ | Command points
+ | None
+ | ADR-071 §Context; Simulation.cpp:2939-2941 (warships only)
+ | Sight
+ | 200 m, the unarmed figure
+ | Tuning.json: sight.unarmedMeters l.13; Simulation.cpp:261
+ | Retreat
+ | Quarter by default, set on a selection
+ | Simulation.cpp:641; ADR-075 §Decision 4
+ | Hull Plating
+ | Does not change it, since it has no hull
+ | ADR-017 §Decision 2
+ | Bank (presentation)
+ | 30°, full at 55 m/s², settles in 0.3 s
+ | Models.json:74
+ | Mesh
+ | Constructor, 24 m long; exhaust color 0.8, 0.8, 0.75
+ | Models.json:10,80
+Hardpoints
+A hardpoint is a glTF empty named hp_<tag>. The game knows two tags: gun, where a shot leaves from, and exhaust (ADR-018 §Decision 4; Hardpoints.h:5-16; Hardpoints.cpp:9-10,45-50).
+Hardpoints are presentation only. A shot leaves from the gun nearest its target, and gun n of a Command Station from the n-th nearest, wrapping round. Range is still measured from the ship's center (Hardpoints.h:68-73; Hardpoints.cpp:205-220).
+The table counts the hardpoints in the glTF sources (count_hardpoints.py over Art/Models/<Set>/*.glb). The counts were checked against the baked .nmf files at OutpostCommander/Assets/Models/<Set>/*.nmf, by counting tag bytes. Human and Tarkan are identical.
+ | Model
+ | gun
+ | exhaust
+ | Note
+ | Source
+ | Small
+ | 2
+ | 1
+ | 
+ | Art/Models/{Human,Tarkan}/Small.glb
+ | Medium
+ | 2
+ | 1
+ | 
+ | …/Medium.glb
+ | Large
+ | 3
+ | 2
+ | 
+ | …/Large.glb
+ | Constructor
+ | 0
+ | 1
+ | 
+ | …/Constructor.glb
+ | CommandStation L1, L2, L3
+ | 3
+ | 0
+ | 1 Defence gun at L1–L2 and 2 at L3, spread over the 3
+ | …/CommandStation_L1-3.glb
+ | CommandStation L4, L5
+ | 6
+ | 0
+ | 2 Defence guns at L4 and 3 at L5
+ | …/CommandStation_L4-5.glb
+ | Shipyard L1–L5
+ | 0
+ | 0
+ | 
+ | …/Shipyard_L*.glb
+ | ResearchLab L1–L5
+ | 0
+ | 0
+ | Has spinning parts (ADR-045 §Context)
+ | …/ResearchLab_L*.glb
+ | MiningRig
+ | 1
+ | 0
+ | The rig has no weapon in Tuning.json (l.60), so nothing fires from it
+ | …/MiningRig.glb
+ | DefensePlatform
+ | 6
+ | 0
+ | 1 Defence gun
+ | …/DefensePlatform.glb
+Model sets and colors (Models.json):
+- Human is blue (0.18, 0.42, 0.95), its own meshes (l.4-17).
+- Tarkan is orange-red (0.9, 0.25, 0.12), its own meshes (l.19-31).
+- Pirate is purple (0.62, 0.22, 0.9) on Tarkan meshes (l.34-36).
+- Wreck is grey (0.4, 0.4, 0.42) on Human meshes (l.39-41).
+- Player 1 plays Human and player 2 Tarkan (l.53-56).
+- The Relay is drawn with the ResearchLab model at tint 1.6, and the Repair Bay with the Shipyard model at tint 0.6 (l.70-71).
+- Mesh lengths: hulls 20, 35 and 60 m; Constructor 24; CommandStation 60; Shipyard 60; ResearchLab 12; MiningRig 4; DefensePlatform 4 (l.7-15).
+- CommandStation, Shipyard and ResearchLab have "levels": 5 (l.11-13).
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

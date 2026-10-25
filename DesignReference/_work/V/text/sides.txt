@@ -1,0 +1,241 @@
+
+Sides
+Outpost Commander · design reference · 03
+Sides
+Human and Tarkan with their own meshes; Pirate on Tarkan's meshes in its own color; Wreck in grey. Colors come from Models.json.
+Sources: Models.json A5 Sides A6 Sets and colors A7 Side colors
+The four sides and the rocks
+ | Color | Side | Value | Meshes | Role | Source
+ | | Human | #76ADF9
+[0.18, 0.42, 0.95] linear | own (Human) | player 1 (Models.json:54); the player's Terrakin (MVP design §11) | OutpostCommander/Assets/Models.json:5
+ | | Tarkan | #F38961
+[0.9, 0.25, 0.12] linear | own (Tarkan) | player 2 (Models.json:55); the AI's Tarkan High Command (MVP design) | OutpostCommander/Assets/Models.json:20
+ | | Pirate | #CE81F3
+[0.62, 0.22, 0.9] linear | Tarkan (Models.json:36 "meshes": "Tarkan") | the pirates (Models.json:57); violet (ADR-073 decision 10) | OutpostCommander/Assets/Models.json:35
+ | | Wreck | #AAAAAD
+[0.4, 0.4, 0.42] linear | Human (Models.json:41 "meshes": "Human") | derelicts (Models.json:58); grey (ADR-074) | OutpostCommander/Assets/Models.json:40
+ | | Asteroids | #A09995
+[0.35, 0.32, 0.3] linear | own (Small/Medium/Large rocks) | terrain; a field's rocks are x FIELD_SHADE 0.7 (SceneShading.h:51, GameClient.cpp:1522) | OutpostCommander/Assets/Models.json:45
+Side colors are linear RGB in Models.json, read by ModelCatalog (ModelCatalog.h:20-25: "The color is linear and provisional until team colors are decided (design §15)"). hex = sRGB encoding of the value. The derived colors are computed by A5 from the formulas in GameApp/SceneShading.h/.cpp and GameClient.cpp, unlit (before the scene light, fog and bloom). The player-to-set map is absolute by player number: Models.json:53-56 (player 1 Human, player 2 Tarkan), "pirates": "Pirate" (:57), "derelicts": "Wreck" (:58).
+Every model of each side
+[IMG /_blob/1ac85e225be5d2b41f9f0fe5d756249a alt=Human models]
+Human
+[IMG /_blob/02d4a772826522f21c8e5b0b10e5ad00 alt=Tarkan models]
+Tarkan
+[IMG /_blob/087bf52940f052312a112d3e34e92d82 alt=Pirate models]
+Pirate
+[IMG /_blob/2a64a0dc1eef4481ff0725d1aa8953b7 alt=Wreck models]
+Wreck
+Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.
+Sides as A5 resolved them
+These are the Models.json sets. The value is linear (ModelCatalog.h:20-21: "The color is linear and provisional until team colors are decided"). The hex is the sRGB encoding of the value, before light, fog and glow.
+ | Set
+ | Linear
+ | sRGB hex
+ | Meshes
+ | Who
+ | Source
+ | Human
+ | 0.18, 0.42, 0.95
+ | #76ADF9
+ | own
+ | player 1 (Models.json:54)
+ | Models.json:5
+ | Tarkan
+ | 0.90, 0.25, 0.12
+ | #F38961
+ | own
+ | player 2 (Models.json:55)
+ | Models.json:20
+ | Pirate
+ | 0.62, 0.22, 0.90
+ | #CE81F3
+ | Tarkan's (Models.json:36)
+ | "pirates" (Models.json:57)
+ | Models.json:35
+ | Wreck
+ | 0.40, 0.40, 0.42
+ | #AAAAAD
+ | Human's (Models.json:41)
+ | "derelicts" (Models.json:58)
+ | Models.json:40
+ | Asteroids
+ | 0.35, 0.32, 0.30
+ | #A09995
+ | own rocks
+ | terrain
+ | Models.json:45
+Derived from a side's color, unlit and computed by A5 from the formulas cited. tokens.json holds every value.
+ | Recipe (source)
+ | Human
+ | Tarkan
+ | Pirate
+ | Wreck
+ | Bar back ×0.3 (GameClient.cpp:98,727; ADR-028 d7)
+ | #426391
+ | #8E4D35
+ | #77498E
+ | — (fallback HEALTH_BACK_COLOR)
+ | Ship face ×FILL_SHADE 0.3 (SceneShading.h:47)
+ | #426391
+ | #8E4D35
+ | #77498E
+ | #616163
+ | Ship line EdgeColor(2.0, 0.35) (SceneShading.h:44-45)
+ | #B7D1FF
+ | #FFC1B0
+ | #E7BDFF
+ | #E9E9EC
+ | Structure face: TowardGray 0.35, then ×0.22 (SceneShading.h:55-56)
+ | #445572
+ | #6F483D
+ | #60456E
+ | —
+ | Structure line (GameClient.cpp:1561,1577)
+ | #C7DBFF
+ | #FFCEC2
+ | #EBCBFF
+ | —
+ | Footprint ring at rest ×0.35 (GameClient.cpp:61,1394); lit = ship line
+ | #476B9C
+ | #98533A
+ | #804E98
+ | —
+ | Sector outline in the world ×0.5 (GameClient.cpp:110,1226)
+ | #557EB7
+ | #B36345
+ | #975DB3
+ | —
+ | Beam, 35% to white (GameClient.cpp:75,1757)
+ | #B6CFFB
+ | #F8BEAF
+ | #E1BAF8
+ | —
+ | Memory: TowardGray 0.5, then ×0.6 (GameClient.cpp:119-120,1195)
+ | #7488AB
+ | #A6786C
+ | #9373A5
+ | #878788
+The other derived colors:
+- Rocks: the face is ×0.15 #413E3C, and the line is EdgeColor(1.35, 0) #B7B0AB (SceneShading.h:46,50). A field's rocks take ×0.7 first (SceneShading.h:51, GameClient.cpp:1522).
+- Tints: a Relay is ×1.6 on the ResearchLab model, and a RepairBay ×0.6 on the Shipyard model (Models.json:70-71). A structure being built is darker, by ×(0.35 + 0.65 × the share built) (GameClient.cpp:101,342-349).
+- Exhausts (Models.json:76-80; MVP §11 says "Ion is cyan, Fusion magenta"):
+- Ion #95EDFF
+- Fusion #FFA0ED
+- Pulse #C4FF95
+- the Constructor #E7E7E1
+The HUD does not read Models.json.
+- Its minimap and territory figures use OWN_, ENEMY_, PIRATE_ and DERELICT_COLOR, which are relative to the viewer.
+- The scene's sets are absolute by player number (ModelCatalog.cpp:304-316).
+- The two families differ in value for every side. Own #A0D3FF is not the same blue as Human #76ADF9. See Open.
+Sets and colors in the renders
+Colors are linear, as in the data; #hex is the sRGB the scene target shows for that linear color at full light. Face and line colors are before the light (the light multiplies them).
+ | Set
+ | Models.json color (linear)
+ | Source
+ | Meshes
+ | Drawn for
+ | Ship faces
+ | Ship lines
+ | Structure faces
+ | Structure lines
+ | Human
+ | (0.18, 0.42, 0.95) #76adf9
+ | Models.json:5 sets[0].color
+ | Human
+ | player 1 (Models.json: players[0])
+ | (0.054, 0.126, 0.285) #426391
+ | (0.473, 0.637, 1.000) #b7d1ff
+ | (0.057, 0.091, 0.167) #445572
+ | (0.572, 0.705, 1.000) #c7dbff
+ | Tarkan
+ | (0.90, 0.25, 0.12) #f38961
+ | Models.json:20 sets[1].color
+ | Tarkan
+ | player 2 (Models.json: players[1])
+ | (0.270, 0.075, 0.036) #8e4d35
+ | (1.000, 0.531, 0.437) #ffc1b0
+ | (0.158, 0.065, 0.046) #6f483d
+ | (1.000, 0.617, 0.541) #ffcec2
+ | Pirate
+ | (0.62, 0.22, 0.90) #ce81f3
+ | Models.json:35 sets[2].color
+ | Tarkan's ("meshes": "Tarkan", line 36)
+ | the pirates (Models.json: pirates)
+ | (0.186, 0.066, 0.270) #77498e
+ | (0.798, 0.509, 1.000) #e7bdff
+ | (0.116, 0.059, 0.156) #60456e
+ | (0.833, 0.595, 1.000) #ebcbff
+ | Wreck
+ | (0.40, 0.40, 0.42) #aaaaad
+ | Models.json:40 sets[3].color
+ | Human's ("meshes": "Human", line 41)
+ | derelicts (Models.json: derelicts), by hull model only
+ | (0.120, 0.120, 0.126) #616163
+ | (0.814, 0.814, 0.840) #e9e9ec
+ | not drawn (derelicts are hulls)
+ | not drawn (derelicts are hulls)
+ | Asteroids
+ | (0.35, 0.32, 0.30) #a09995
+ | Models.json:45 sets[4].color
+ | Asteroids
+ | asteroids and fields (GameClient.cpp:41 ASTEROID_SET)
+ | rock: (0.052, 0.048, 0.045) #413e3c
+ | rock: (0.472, 0.432, 0.405) #b7b0ab
+ | —
+ | —
+Checks against the ADRs: the Human ship line (0.473, 0.637, 1.000) and the Tarkan ship line (1.000, 0.531, 0.437) match ADR-040 decision 1's (0.47, 0.64, 1.0) and (1.0, 0.53, 0.44). Tinted structures: Relay = the Research Lab's L1 mesh at tint 1.6 (Models.json:70), Repair Bay = the Shipyard's L1 mesh at tint 0.6 (Models.json:71); the tint multiplies the set's color before TowardGray (GameClient.cpp:344-349, 1577), so a Human Relay's color is (0.288, 0.672, 1.000) before graying, its blue clamped. Each has no levels in Tuning.json (structures[5], structures[6]), so it draws its model's L1 (DrawnLevel, GameApp/ModelCatalog.h:158-161).
+Which models each set renders, and why:
+- Human, Tarkan: all 9 models of the set, the three levelled ones as 5 levels each (21 meshes), plus Relay and Repair Bay (tinted, above): 23 entries each.
+- Pirate: Tarkan's 21 meshes in the Pirate violet, since "meshes": "Tarkan" gives the set all of Tarkan's models (ModelCatalog.cpp:223-230) and LoadClientAssets loads every one. In play the simulation spawns pirates only as Defense Platforms (GameLogic/Simulation.cpp:843) and ships (Simulation.cpp:868) of hull 1 and hull 2 (Tuning.json pirates.outposts[].ships); no other spawn site in GameLogic/ gives PIRATES anything, so the pirates' Command Station, Shipyard, Research Lab, Mining Rig, Large hull and Constructor are loaded but never drawn in a match. No Relay or Repair Bay for Pirate (only players build them).
+- Wreck: only the three hulls, Small, Medium, Large, from the Human meshes in gray: a derelict is drawn by its hull's model (GameClient.cpp:1628-1639, ADR-074, ADR-011 decision 3), although "meshes": "Human" gives the Wreck set all 21 Human meshes (and loads them). A derelict is drawn with ship colors (FILL_SHADE), scaled to 2 × radius / lengthMeters.
+- Asteroids: Small, Medium, Large, in the ore-asteroid look.
+Side colors in the world
+Rule: a side's color is its model set's color in Models.json; Human and Tarkan have their own meshes, Pirate borrows Tarkan's meshes in violet, Wreck borrows Human's in gray (ADR-011 §Decision 3, ADR-073).
+ | Set
+ | Color
+ | Meshes
+ | Who
+ | Source
+ | Human
+ | (0.18, 0.42, 0.95) blue
+ | own
+ | player 1
+ | Models.json:4-5,54
+ | Tarkan
+ | (0.9, 0.25, 0.12) orange-red
+ | own
+ | player 2
+ | Models.json:19-20,55
+ | Pirate
+ | (0.62, 0.22, 0.9) violet
+ | Tarkan's
+ | pirates
+ | Models.json:34-36,57
+ | Wreck
+ | (0.4, 0.4, 0.42) gray
+ | Human's, by hull model
+ | derelicts
+ | Models.json:39-41,58
+ | Asteroids
+ | (0.35, 0.32, 0.3) gray-brown
+ | own (Small/Medium/Large rocks)
+ | terrain
+ | Models.json:44-50
+ | Relay
+ | Research Lab model, tint 1.6 (brighter, clamped at 1)
+ | —
+ | —
+ | Models.json:70; GameClient.cpp:343-349
+ | Repair Bay
+ | Shipyard model, tint 0.6 (darker)
+ | —
+ | —
+ | Models.json:71
+ | Max tint
+ | 2.0
+ | —
+ | —
+ | ModelCatalog.cpp:146-147
+Color keys: Models.json: sets[name=Human].color, sets[name=Tarkan].color, sets[name=Pirate].color, sets[name=Wreck].color, sets[name=Asteroids].color.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

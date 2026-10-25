@@ -1,0 +1,27 @@
+
+A world: the player's empire fell, and its seat restarts
+1,000
++0/s
+Nodes
+of 25
+9
+0 : 
+Server 203.0.113.5:4433
+Empire fallen
+It restarts at your start in 58:41
+Back to menu
+1
+2
+3
+4
+5
+hud · end-empire-fallen · factor 1
+A world: the player's empire fell, and its seat restarts
+- 1Ore panelThe stockpile as the gem and figure in GOLD_COLOR, written one way everywhere; the income in NUMBERS_COLOR, a warning chip at +0/s. The word Ore is not written.Hud.cpp:3143-3157; ADR-043 d3; ADR-047 d5; ADR-085 d1
+- 2TerritoryNodes held, own : enemy, against the Command Station's cap; domination tickets while both sides have them; the drain, a chip when it is the player's. Only on a map with sectors.Hud.cpp:3167-3213; ADR-056; ADR-057
+- 3Where the match runsLocal skirmish, or Server host:port. After 2 s without a snapshot a chip counts the silence. Never on the menu.Hud.cpp:3320-3337; Hud.h:469; ADR-086
+- 4Minimap10,000 m in 284 units (35.2 m a unit): sector wash, marks, fog, the sector lattice, held and guarded outlines, remembered crosses, alerts and the camera's view.Hud.cpp:3456-3630; ADR-068 d2; ADR-081
+- 5End-of-match bannerVictory, Defeat, Draw or, in a world, Empire fallen, with how and how long. The world runs on behind it and the HUD still works.Hud.cpp:3340-3350, 2188-2218; ADR-084 d7
+Geometry derived from Hud.cpp by A4's derive_layouts.py, not dumped from the game: 14 of 163 elements depend on DirectWrite text measurement and are estimated. Content values are samples built from Tuning.json and Map.json. The world behind the HUD (ships, grid, fog) is not drawn here; see The battlefield. Dashed boxes and numbered discs in #FF2D95 are this reference's annotations, not the game.
+- DescribeOutcome Hud.cpp:2188-2196 (ADR-084 d7).
+DesignReference/_work/A4/layouts/hud-end-empire-fallen.json

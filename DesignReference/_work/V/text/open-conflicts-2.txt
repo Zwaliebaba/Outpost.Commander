@@ -1,0 +1,116 @@
+
+Conflicts, part 2 of 3
+Conflicts · part 2 of 3
+C-012 — Unupgraded income a tick in ADR-017
+- Sides: ADR-017:35: "25 and 40 hundredths every tick" (5 and 8 Ore/s). Tuning.json:6-9: 3.5 / 4 / 5.5 / 6.5 Ore/s, which is 17.5 / 20 / 27.5 / 32.5 hundredths a tick at 20 Hz.
+- Reference shows: Tuning.json. Reported by: A2 (Conflict 13). Class: stale-doc · OWNER? no
+C-013 — How long a home reserve lasts, in ADR-035
+- Sides: ADR-035:19 (Consequences): "Matches change only after their first 25 minutes, when the home asteroids, 7,500 Ore at 5 a second, run dry; on the 5 km map". Tuning.json:6 gives 3.5 Ore/s, and Map.json:9-14 7,500 Ore. Derived: 7,500 ÷ 3.5 ≈ 2,143 s (35:43), on the 10 km map (Map.json:2).
+- Reference shows: the derived 35:43. Near 37:30, contested ≈ 36:22, rich ≈ 61:32, with no research. Reported by: A1 (C3). Class: stale-doc (the ADR's figure; the Phase 1 half is C-040) · OWNER? no
+C-014 — Whom a base repairer repairs
+- Sides:
+- ADR-075:9 (Context): "repairs up to 4 friendly warships". Phase4.md:324 says the same.
+- ADR-075 decision 3: "its player's ships". Phase4.md:333: Constructors retreat and are repaired too.
+- GameLogic/Simulation.cpp:2617-2621 repairs any damaged EntityKind::Ship of its player, Constructors included.
+- Reference shows: any of its player's ships. Reported by: A1 (C10), A2 (Conflict 15). Class: stale-doc (ADR-075 Context) · OWNER? no
+C-015 — ADR cross-reference for a world's restart
+- Sides: ADR-037:28: "a world's restart places one (ADR-081)". ADR-081 is territory and memory over the fog; the restart is ADR-084 decision 4 (Simulation.cpp:3715-3748).
+- Reference shows: ADR-084. Reported by: A3 (Conflict 9). Class: stale-doc · OWNER? no
+C-016 — Normal's attack group in ADR-065
+- Sides:
+- ADR-065:12 (decision 2): Easy "gathers 30 warships before its main attack not 20", which reads as Normal = 20.
+- ADR-065:13 (decision 3) itself says task 25.2 "has since given Normal … an attack group of 25", which Hard's file does not share.
+- Data: Opponent.json:2 25, OpponentEasy.json:2 30, OpponentHard.json:2 20. ADR-041:27 gives 25.
+- Reference shows: Easy 30, Normal 25, Hard 20. Reported by: A3 (Conflict 1). Class: stale-doc · OWNER? no
+- R checked: the three files and ADR-065:10-14.
+C-017 — Example text of a scheduled order's condition (code comment)
+- Sides: GameApp/OrderForm.h:114-115 (comment): "… unless over 8 CP". GameApp/OrderForm.cpp:313: ", unless over {n} enemy CP".
+- Reference shows: ", unless over {n} enemy CP". Reported by: A3 (Conflict 11). Class: stale-doc (code comment) · OWNER? no
+C-018 — The tick a recovered world comes back at
+- Sides: Phase5.md:84: "comes back at the last tick that applied a command". ADR-077:32: "the tick after the last command it logged". GameLogic/InProcessServer.cpp:597-614 replays each logged tick, so the world stands at the tick after the last logged one.
+- Reference shows: the ADR's wording, which matches the code. This may be wording only. Reported by: A3 (Conflict 13). Class: stale-doc · OWNER? no
+C-019 — Minimap metres per unit
+- Sides:
+- ADR-068:37: "about 18 m a unit on the 5 km map". PlanUI1.md:215 says the same.
+- GameApp/Hud.cpp:112-115 (comment): "about 36 m a unit on the 10 km map". Map.json:2 sizeMeters 10000. The map area is 284 units (Hud.cpp:3462).
+- Reference shows: 284 units for 10,000 m = 35.2 m a unit. Reported by: A4 (C1), A5 (C4). Class: stale-doc · OWNER? no
+C-020 — The asteroid field's minimap color
+- Sides: ADR-046:34 (decision 5): (0.06, 0.06, 0.065), "down from (0.13, 0.13, 0.14)". ADR-068:35 (decision 2): (0.13, 0.13, 0.14), "where it was (0.06…)". ADR-046 was not rewritten in place (AGENTS.md §6). Code: ASTEROID_FIELD_COLOR (0.13, 0.13, 0.14) (Hud.cpp:38).
+- Reference shows: (0.13, 0.13, 0.14), #656569. Reported by: A4 (C2). Class: stale-doc · OWNER? no
+C-021 — Window body opacity
+- Sides: ADR-062:41 (Consequences): "A window's body is 97% opaque". ADR-068:32 (decision 1): "opaque". Hud.cpp:839-840: WINDOW_COLOR alpha 1.0.
+- Reference shows: opaque. Reported by: A4 (C3), A5 (C1). Class: stale-doc · OWNER? no
+C-022 — What WindowsFit checks
+- Sides: ADR-070:15-19 (decision 3): the designer and the Controls window, and the Controls window alone on the menu. Hud.h:863-866 and Hud.cpp:3044-3053: in a match also the Orders window (640 × 560) and the Away window at 20 lines (600 × 530).
+- Reference shows: in a match, Controls, Orders, Away and the designer; on the menu, Controls alone. Reported by: A4 (C4), A5 (C6). Class: stale-doc · OWNER? no
+C-023 — Draw order within a layer
+- Sides: ADR-031:14 (decision 4): "panels, then its sprites, then its texts". Hud.h:714-715, GameClient.cpp:1300-1336 and ADR-015 decision 4: panels, lines, sprites, texts.
+- Reference shows: panels, lines, sprites, texts. Reported by: A4 (C5), A5 (C7). Class: stale-doc · OWNER? no
+C-024 — When the hint shows
+- Sides: ADR-015:22 (decision 4): "A hint at the top middle while a placement is armed". GameClient.cpp:742-749 and Hud.cpp:2135-2168 also show it for a derelict, or a remembered structure, under the pointer.
+- Reference shows: the placement, derelict and memory hints. Reported by: A4 (C12). Class: stale-doc · OWNER? no
+C-025 — Edge scroll
+- Sides: ADR-013:45 ("What this forecloses"): "Edge scroll or orders on W and D". Against it: ADR-012 decisions 5–6; Camera.cpp:111-125; Camera.json edgeScrollMarginPixels 4; KeyBindings.h:109 "Screen edge — Pan, while the pointer is held in the window".
+- Reference shows: edge scroll exists, while the cursor is held. Reported by: A4 (C13). Class: stale-doc (ambiguous wording) · OWNER? no
+C-026 — Ore's sprite in ADR-030
+- Sides: ADR-030:15 names "Ore's diamond" in the list of Hud::Sprites, although the same paragraph says DrawSprite draws a cut gem. Hud.cpp:3022 (SpriteShape::Gem) and ADR-085 decision 3.
+- Reference shows: a cut gem. Reported by: A5 (C2). Class: stale-doc · OWNER? no
+C-027 — Who owns the build bar
+- Sides: ADR-085:33 (Consequences): "The build bar is GameClient's … so it has no test". ADR-085:24 (decision 2) and Hud.cpp:1016, 3119: the HUD's BUILD_BAR_COLOR. ADR-088:50 names HudTests.LaysTheBarsOverTheEntities.
+- Reference shows: the HUD's constant, laid out by Hud::Lay. Reported by: A5 (C3). Class: stale-doc · OWNER? no
+C-028 — The vector grid's extent
+- Sides: ADR-028:13 (decision 1): "across the whole map, 5,000 m a side". GameClient.cpp:27-30 (GRID_HALF_EXTENT_METERS 5000, "covers the 10,000 m map"), Map.json:2 and ADR-036:15.
+- Reference shows: −5,000 to +5,000 m, 10,000 m a side. Reported by: A5 (C5), A7 (Conflict 1). Class: stale-doc · OWNER? no
+C-029 — Where a health bar stands
+- Sides: ADR-028:19 (decision 7): "just above its footprint". ADR-088:31-33 (decision 5), Camera.cpp:270-285 and GameClient.cpp:731-732: 4 units above the highest on-screen corner of the model's bounds.
+- Reference shows: above the model's bounds. Reported by: A7 (Conflict 5). Class: stale-doc · OWNER? no
+C-030 — The widest camera view in ADR-046
+- Sides: ADR-046:29: "At the widest 1,600 m view". Camera.json:4 maximumViewWidthMeters 3000; ADR-012:13, 17; Phase4.md:400 (gate L6).
+- Reference shows: 3,000 m. (The MVP half is C-061.) Reported by: A7 (Conflict 2). Class: stale-doc · OWNER? no
+C-031 — When the selection ring is amber
+- Sides: ADR-013:33 and ADR-067:13: amber "while attack-move waits". GameClient.cpp:1440-1441: amber while attack-move, Hold sector or Patrol is armed (the arming keys are ADR-059's).
+- Reference shows: amber for any of the three armed orders. Reported by: A7 (Conflict 6). Class: stale-doc · OWNER? no
+C-032 — Bahnschrift's width for labels and names
+- Sides:
+- Phase1.md:290: "Bahnschrift, condensed and semibold, for headings, labels and names". GameApp/Hud.h:29-30 (comment): "condensed Bahnschrift for titles, labels and names".
+- ADR-030:7 (Context) describes the mockup: titles condensed bold, names semibold.
+- Hud.cpp:3011-3013: Title is 700 SemiCondensed, while Label and Name are 600 at Normal width.
+- Reference shows: the code's faces. Reported by: A5 (C8). Class: stale-doc (design wording and code comment) · OWNER? no
+C-033 — Look plan finding on materials
+- Sides: PlanLook.md:32 (finding 5): "Every source today has exactly one material, team". Art/Models/Asteroids/{Small,Medium,Large}.glb have no material. The other 42 have team.
+- Reference shows: the files. Materials are not baked, so no player sees this (Tools/BakeMeshes.py docstring). Reported by: A6 (C1). Class: stale-doc · OWNER? no
+C-034 — Crease counts in ADR-027
+- Sides: ADR-027:19: "86 to 277 creases a ship and 249 to 736 a structure". A replay of BuildCreaseLines at 10° on HEAD's NMFs gives ships 74–259 and structures 108–1,198 (A6 per-model table).
+- Reference shows: A6's counts, marked as a replay. Reported by: A6 (C2). Class: stale-doc (a measurement of older meshes) · OWNER? no
+C-035 — Tarkan Medium against Large length in ADR-011
+- Sides: ADR-011:9 (Context): "The Tarkan Medium is longer than the Tarkan Large." The NMF x extents are Medium 35.0 and Large 60.0 mesh units, and Models.json:23-24 gives 35 m and 60 m.
+- Reference shows: 35 m and 60 m. Reported by: A6 (C3). Class: stale-doc (Context) · OWNER? no
+C-036 — Look plan status of LV2.1
+- Sides: PlanLook.md:47: LV2.1 "built; awaiting CI and the owner's run". git log: ff8f4ba "Merge pull request #108 … lit-vector-occlusion". Tools/BakeMeshes.py:76 and NeuronClient/MeshData.cpp:19 set NMF version 3, and --check passes (A6).
+- Reference shows: LV2.1 built (baked occlusion is in). Reported by: A6 (C4), A7 (Open 2), lead. Class: stale-doc (plan status only) · OWNER? no
+C-036a — The brief's vocabulary and interface steps
+- Sides:
+- The brief's ground rule 5 spells "Defense Platform". The screen and the data spell Defence Platform, Defence gun and Defence Autoloader (Tuning.json:37, 61, 92; Hud.cpp:2659 "{} Defence guns, "). Code identifiers spell DefensePlatform (AGENTS.md R11).
+- The brief names interface steps of 100/110/125%. Hud.h:861 and ADR-070 decision 2 give 100, 110, 125, 150, 175 and 200%. A 16:9 screen reaches 110% in a match and 125% on the menu (A4 computed reach).
+- Reference shows: "Defence" on screen and in data, and six steps. Reported by: A4 (C16, Interface scale), A5 (Open). Class: stale-doc (brief) · OWNER? no
+superseded
+C-037 — Protocol and world-state versions in the Phase 5 plan
+- Sides: Plan5.md:239: "The protocol is at version 15 and a world's state at version 6". Plan5.md:97: PROTOCOL_VERSION 11. Plan5.md:147: 12 and WORLD_STATE_VERSION 2. Superseded by the owner's 2026-10-09 decision in AGENTS.md R18, ADR-060:17, ADR-077:24 and Phase5.md:81.
+- Reference shows: 1 and 1 (WorldState.h:9, WireFormat.h:7).
+- Reported by: A3 (Conflict 2), lead. Class: superseded. A plan is a work queue, and AGENTS.md is authority 1. · OWNER? no
+C-038 — Mining Rig income rates
+- Sides: MVP.md:147 gives home 5 and contested 8. Phase1.md:216-219 gives 5, 6, 8, 10. Phase2.md:15 gives 5, 6, 8, 10. Phase4.md:216 gives 3.5, 4, 5.5, 6.5, and ADR-036 decision 3 agrees.
+- Reference shows: Tuning.json:6-9: 3.5 / 4 / 5.5 / 6.5 Ore/s. Reported by: A1 (C1). Class: superseded · OWNER? no
+C-039 — A rig's payback at home
+- Sides: MVP.md:149: "pays for itself in 10 s at home". Derived from the code: 50 ÷ 3.5 ≈ 14.3 s (Tuning.json:6, 60).
+- Reference shows: ≈14.3 s (derived). Reported by: A1 (C2). Class: superseded · OWNER? no
+C-040 — Reserve durations in Phase 1
+- Sides: Phase1.md:216-219 gives home, near and contested 25 min and rich 40 min. Phase1.md:206: "home rigs run dry around minute 25–30". Phase4.md:216 lowered the rates without restating these.
+- Reference shows: derived 35:43 / 37:30 / 36:22 / 61:32 (see C-013). Reported by: A1 (C3). Class: superseded · OWNER? no
+C-041 — Domination's drain
+- Sides: Phase2.md:110, 166 (gate J4) and ImplementationPlan-Phase2.md:131: every 10 s, 30 × the difference ÷ the map's nodes. Phase4.md:259, 377 and ADR-057 decisions 1–2: 3 s, 1 ticket a node.
+- Reference shows: Tuning.json:14 drainIntervalSeconds 3, drainTicketsPerNodeDifference 1. Reported by: A1 (C4). Class: superseded · OWNER? no
+C-042 — Node caps by Command Station level
+- Sides: Phase3.md:114-118, 122, 173 (gate K4): 3, 4, 5, 6, 7, and 3 without a station. Phase4.md:231-235, 259 (gate L4) and ADR-064:41: 4, 7, 10, 13, 16.
+- Reference shows: Tuning.json:41-46: 4 / 7 / 10 / 13 / 16, and 4 without a station (Simulation.cpp:2912-2920). Reported by: A1 (C5), A2 (Conflict 6). Class: superseded · OWNER? no
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,118 @@
+
+Glows and what is not built
+Exhaust glows
+Rule: each exhaust hardpoint makes four additive camera-facing soft glows — a core and three puffs streaming behind — in its drive's color, longer and brighter as the ship's on-screen speed rises to 50 m/s (ADR-019, ADR-034 §Decision 3).
+ | Property
+ | Value
+ | Source
+ | Ion (drive 1)
+ | (0.3, 0.85, 1.0) cyan
+ | Models.json:76 (exhausts[drive=1].color); Tuning.json drive 1 = Ion
+ | Fusion (drive 2)
+ | (1.0, 0.35, 0.85) magenta
+ | Models.json:77
+ | Pulse (drive 3)
+ | (0.55, 1.0, 0.3) lime
+ | Models.json:78; ADR-034 §Decision 3
+ | Constructor
+ | (0.8, 0.8, 0.75) pale gray
+ | Models.json:80 (constructorExhaust)
+ | Exhausts per model
+ | Small 1, Medium 1, Large 2, Constructor 1 (both sets)
+ | .nmf hardpoints parsed
+ | Full speed
+ | 50 m/s (EXHAUST_FULL_SPEED_METERS_PER_SECOND), from the view's frame-to-frame motion
+ | GameClient.cpp:127,1781-1788
+ | Core
+ | 0.3 nozzle radii out; radius 1.4 + 0.6×speed radii; brightness 0.5 + 0.7×speed
+ | Hardpoints.cpp:16-20,237-239
+ | Puffs
+ | 3, at (1.2 + 1.3 k) × length radii; radius 1.1 − 0.25 k; brightness 0.35 × (1 − k/3) × plume
+ | Hardpoints.cpp:23-31,242-249
+ | Plume length
+ | 0.4 at rest → 1.6 at full speed
+ | Hardpoints.cpp:26-27,240
+ | Plume brightness
+ | 0.3 at rest → 1 at full speed
+ | Hardpoints.cpp:31,241
+ | Falloff
+ | (1 − r²)², additive
+ | GlowPS.hlsl:13-14
+ | Depth
+ | tested ≤, no write (hulls hide what is behind)
+ | GlowPipeline.cpp:80-81
+ | Cap
+ | 4,096 glows a frame (MAX_GLOWS); past it dropped
+ | GlowPipeline.h:39
+ | Rolls with bank
+ | yes
+ | ADR-029 §Decision 5
+Color keys: Models.json: exhausts[].color, constructorExhaust.
+Example: a fast Ion fighter trailing a short cyan comet of three fading puffs; a parked Fusion hull with a dim magenta stub.
+Phosphor glow
+Rule: what is bright in the scene (luminance above 0.35, eased over a 0.15 knee) is blurred over five half-resolution levels and added back in the resolve, as a vector screen's phosphor; the interface is drawn after and never glows (ADR-091).
+ | Property
+ | Value
+ | Source
+ | Settings
+ | SCENE_BLOOM: threshold 0.35, knee 0.15, intensity 2, spread 0.6
+ | GameClient.cpp:25,420
+ | Levels
+ | 5 (LEVEL_COUNT), R11G11B10_FLOAT; first half the scene size, each half the last
+ | Bloom.h:27,30; ADR-091 §Decision 1
+ | Bright pass
+ | 2×2 scene pixels of 4 samples each, soft-knee threshold
+ | BloomBrightPS.hlsl:32-55
+ | Down
+ | 13 bilinear taps in 5 boxes
+ | ADR-091 §Decision 1
+ | Up
+ | 3×3 tent, weighted by spread, additive
+ | ADR-091 §Decision 1; Bloom.cpp:240-243
+ | Composite
+ | resolve adds level 1 through a tent × intensity / Σ level weights
+ | ResolvePS.hlsl:42-48; Bloom.cpp:86-97
+ | What glows
+ | lit-side model lines, selection ring, exhaust, beams, blasts, brightest stars; rock lines ~15% of their light
+ | ADR-091 §Consequences (computed there)
+ | What stays under
+ | faces, grid, sector borders
+ | ADR-091 §Consequences
+ | Spread of a 1-px ship line
+ | +50% one px away, +38% two px, +15% four px, within 5% at eight (ADR's numpy replay)
+ | ADR-091 §Consequences
+ | Tone map
+ | none; channels may clip toward white
+ | ADR-091 §Consequences
+ | Interface
+ | never glows
+ | ADR-091 §Decision 1
+Color constant: SCENE_BLOOM (a Neuron::BloomDesc, not a color).
+Example: every bright hairline carries a soft halo a few pixels wide; exhausts and blasts bloom; the HUD text stays razor-sharp.
+Not built at HEAD
+Verified against GameDesign/ImplementationPlan-Look.md:48-53 (status todo) and the code: grep -rni beacon over *.cpp/*.h/*.hlsl/*.py/*.json finds nothing outside DesignReference/; HardpointKind has only Gun and Exhaust (Hardpoints.h:7-13); no fleet, plate or paint code exists in GameApp/ or NeuronClient/; the NMF's three bytes after openness must be zero (MeshData.cpp:179).
+ | Task
+ | What it would be
+ | Status
+ | LV2.2
+ | Paint slots team, trim, light by material name, a byte per vertex
+ | todo (ImplementationPlan-Look.md:48)
+ | LV2.3
+ | Two-tone lines: a line takes its faces' paint
+ | todo (ImplementationPlan-Look.md:49)
+ | LV3.1
+ | Beacons: hp_beacon hardpoint blinking in its side's line color
+ | todo (ImplementationPlan-Look.md:50); confirmed absent in code
+ | LV4.1
+ | Fleets on the screen: a side's ships grouped by screen nearness
+ | todo (ImplementationPlan-Look.md:51)
+ | LV4.2
+ | Plates over the fleets: count over a disc, hit-point arc, hull glyph
+ | todo (ImplementationPlan-Look.md:52); confirmed absent in code; gate A7 open (ImplementationPlan-Look.md:78)
+ | LV4.3
+ | Health bars only where plates are not
+ | todo (ImplementationPlan-Look.md:53); bars as built are described above
+ | Look plan "Not in this plan"
+ | Ground sector plates, glowing borders and names; tone map
+ | not built (ImplementationPlan-Look.md:205-210)
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

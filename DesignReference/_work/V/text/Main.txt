@@ -1,0 +1,69 @@
+
+Cover
+GAME DESIGN REFERENCE · AS BUILT
+Outpost Commander
+Every rule, system, screen and asset of the game as it is built, drawn and annotated, each number and rule with its source.
+Commita053fe294d91dc885bbb061c2f34d76ca6897738Commit date2026-10-25T08:33:55+01:00RepositoryZwaliebaba/Outpost.CommanderCompiled2026-10-25[IMG /_blob/504eb4e8321a27fae7841f79a01bf099 alt=Human Large hull]
+Human Large hull, 3/4 view. Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.
+In this reference
+35
+screen states drawn
+every state in A4's inventory, at 1920×1080
+6
+floating windows
+Designer, Production, Research, Controls, Orders, Away
+21
+models in Models.json
+Human and Tarkan, 3 asteroids; Pirate and Wreck reuse meshes
+329
+images rendered
+A6 renders.json
+23
+research topics
+Tuning.json: research
+4,251
+source citations
+in the agents' files this canvas is built from
+68
+conflicts
+code's value shown; 5 for the owner
+79
+gaps
+Not specified, or a rule with no surface
+201
+glossary terms
+as the game spells them
+Scope and sources
+In scope
+The MVP design as amended by Phases 1 → 5, the two interface plans and the built tasks of the Look plan (LV1.1, LV1.2, LV2.1), and the code and data at HEAD.
+Out of scope
+Horizon (design and plan), self-play (plan, network blueprint, ADR-063), and what a plan lists as not built: paint slots, two-tone lines, beacons, fleet plates (Look plan LV2.2–LV4.3).
+Precedence
+For what the player sees and the numbers behind it, code and data are ground truth; ADRs record why and usually the exact values; a later phase document wins over an earlier one; plans are work queues, not authorities (AGENTS.md). Where they disagree, a page shows the code's value and the disagreement is listed in 17 Open items.
+How this was made
+Seven extraction agents read the docs, ADRs, code and data; a reconciliation pass listed every conflict and gap; this canvas is generated from their files (DesignReference/_work/, DesignReference/compose/). Nothing was built or run: the container had no Windows, MSBuild or GPU. Screen geometry is derived from Hud.cpp's arithmetic, and model images are approximations rendered from the shipped meshes.
+How to read a source
+ | Tuning.json: hulls[0].hitPoints | a key path into a data file under OutpostCommander/Assets/
+ | Hud.cpp:3143-3157 | a file and line range at HEAD; GameApp/ unless a folder is given
+ | ADR-064 §Decision 9 · ADR-085 d1 | a decision in Design/ADR/
+ | Phase4.md:120 · MVP.md:40 | a line of a design document (GameDesign/ and GameDesign/Archive/)
+ | Not specified | nothing at HEAD decides it; never filled in by inference
+ | C-0xx / G-0xx | a conflict or gap in 17 Open items, where code, ADRs and docs disagree or are silent
+Chapters
+- 02 The game
+- 03 Sides
+- 04 Economy & territory
+- 05 Structures
+- 06 Ships & the Designer
+- 07 Research
+- 08 Combat
+- 09 Orders & automation
+- 10 AI & difficulty
+- 11 The persistent world
+- 12 Visual language
+- 13 Screens
+- 14 The battlefield
+- 15 Asset catalogue
+- 16 Controls
+- 17 Open items
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

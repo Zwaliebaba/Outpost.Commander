@@ -1,0 +1,302 @@
+
+Structures
+Outpost Commander · design reference · 05
+Structures
+Every structure with its levels, costs and effects as the data gives them. Only the Command Station reaches L5; the Shipyard stops at L3 and the Research Lab at L4.
+Sources: Tuning.json: structures A2 Structures ADR-016 ADR-064
+Structures
+Common rules:
+- The base numbers come from Tuning.json: structures, lines 40–63.
+- Hit points at level L are base × (research factor + 20% × (L − 1)), with levelHitPointsPercent 20 (Tuning.json:11; Simulation.cpp:3153-3157; ADR-064 §Decision 4). The table also gives each level with Reinforced Structures (+25%, Tuning.json:90-91).
+- Levels. Only the Command Station, the Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL 5 (Tuning.h:155-156; Tuning.cpp:315-325). A kind's top level is 1 + the length of its levels list (Tuning.h:185-188).
+- An upgrade is paid when it is ordered and builds itself over the level's buildSeconds. No Constructor and no research shortens it, and the structure keeps working (Simulation.cpp:2253-2282,2650-2668; ADR-064 §Decision 2-3).
+- A level lands whole. The structure keeps its share of its hit points (ADR-064 §Decision 4).
+- A destroyed structure is rebuilt at L1 (ADR-064 §Decision 5).
+- Building. A Constructor builds a structure, which is paid in full when the order is given. The site starts at 1/10 of its hit points and rises with the work (Simulation.cpp:2145-2185,2449-2465; ADR-016 §Decision 4-5).
+- Build time with n Constructors is buildConstructorSeconds ÷ (1 + 0.5 × (n − 1)) ÷ constructor-rate factor (Simulation.cpp:2436-2437).
+- Obstacles. Every structure but the Mining Rig blocks movement (ADR-016 §Decision 8).
+- Sight. An unarmed structure sees 200 m and an armed one 300 m (Simulation.cpp:252-262).
+- The panel's next-level line reads "L{n}: {gives}{hit points} hit points" (Hud.cpp:2645-2699).
+Command Station (CommandStation)
+The Command Station is not buildable: it has no cost or buildConstructorSeconds (Tuning.json:40; Tuning.h:167-169; Simulation.cpp:2150-2151). Each player's is placed built and armed on its start (Simulation.cpp:729-747; ADR-016 §Decision 3). Its footprint is 45 m and its armor 10 at every level, and it carries the Defence gun (structureWeapon 1).
+ | 
+ | L1
+ | L2
+ | L3
+ | L4
+ | L5
+ | Source
+ | Upgrade cost (Ore)
+ | — (placed at start)
+ | 300
+ | 500
+ | 700
+ | 900
+ | Tuning.json:43-46
+ | Upgrade time (s)
+ | —
+ | 45
+ | 60
+ | 75
+ | 90
+ | Tuning.json:43-46
+ | Hit points (no research)
+ | 5,000
+ | 6,000
+ | 7,000
+ | 8,000
+ | 9,000
+ | Tuning.json:40 × Simulation.cpp:3153-3157
+ | Hit points (+25% research)
+ | 6,250
+ | 7,250
+ | 8,250
+ | 9,250
+ | 10,250
+ | same, with Tuning.json:90-91
+ | Armor
+ | 10
+ | 10
+ | 10
+ | 10
+ | 10
+ | Tuning.json:40; Phase 3 §4 (levels never add armor)
+ | Nodes held, home included
+ | 4
+ | 7
+ | 10
+ | 13
+ | 16
+ | Tuning.json:41,43-46; Tuning.cpp:732-741
+ | Defence guns
+ | 1
+ | 1 (kept from L1)
+ | 2
+ | 2 (kept)
+ | 3
+ | Tuning.json:41,44,46; Tuning.cpp:754-763
+ | Fleet cap (command points)
+ | 12
+ | 20
+ | 30
+ | 40
+ | 50
+ | Tuning.json:41,43-46; Tuning.cpp:743-752; ADR-071 §Decision 1
+ | Panel line for this level
+ | —
+ | "L2: 7 nodes, fleet 20, 6,000 hit points"
+ | "L3: 10 nodes, 2 Defence guns, fleet 30, 7,000 hit points"
+ | "L4: 13 nodes, fleet 40, 8,000 hit points"
+ | "L5: 16 nodes, 3 Defence guns, fleet 50, 9,000 hit points"
+ | Hud.cpp:2655-2677, from the snapshot's raw level values (Simulation.cpp:1072-1084). L2 and L4 name no guns.
+It also does three things at every level:
+- Builds Constructors: 60 Ore and 15 s each, up to 5 queued (Simulation.cpp:2231-2247; Snapshot.h:42).
+- Repairs ships near it, as a Repair Bay does (Simulation.cpp:2537-2543; ADR-075 §Decision 3).
+- Holds its home sector (ADR-056 §Decision 3).
+The meshes are CommandStation_L1..L5 (Models.json:11).
+Shipyard (Shipyard)
+A Constructor builds the Shipyard for 300 Ore in 40 s of one Constructor's work (Tuning.json:48). It may stand only in a sector its player holds (Simulation.cpp:2116-2123). Its footprint is 40 m and its armor 0, and it is unarmed.
+ | 
+ | L1
+ | L2
+ | L3
+ | L4
+ | L5
+ | Source
+ | Cost (Ore)
+ | 300 (build)
+ | 150
+ | 300
+ | Not specified (no level in the data)
+ | Not specified
+ | Tuning.json:48,51-52
+ | Time (s)
+ | 40 (Constructor work)
+ | 30
+ | 60
+ | —
+ | —
+ | same
+ | Hit points (no research / +25%)
+ | 2,500 / 3,125
+ | 3,000 / 3,625
+ | 3,500 / 4,125
+ | —
+ | —
+ | Simulation.cpp:3153-3157
+ | Hulls it builds
+ | Small
+ | + Medium
+ | + Large
+ | —
+ | —
+ | Tuning.json:49,51,52; Tuning.cpp:765-776
+ | Panel line
+ | —
+ | "L2: Medium hulls, 3,000 hit points"
+ | "L3: Large hulls, 3,500 hit points"
+ | —
+ | —
+ | Hud.cpp:2666-2677; ADR-064 §Decision 9
+- Its queue holds up to 5 warship jobs of the player's saved designs (Simulation.cpp:2235-2247).
+- Research speeds it. Automated Shipyards and Fleet Automation (+25% each) speed every job, the one under way included, at 1,250 and then 1,500 milliticks a tick (Simulation.cpp:2737-2741; ADR-017 §Decision 2).
+- It repairs ships near it (ADR-075 §Decision 3).
+- It is numbered 01, 02 and on, in the order its player's Shipyards were finished (Simulation.cpp:2676-2683).
+- It stops at L3 (Phase 3 §5, gate K3), though its art has 5 levels (Models.json:12).
+Research Lab (ResearchLab)
+A Constructor builds the Research Lab for 200 Ore in 30 s (Tuning.json:54). A player may have one, a site counting (Simulation.cpp:2154-2158). Its footprint is 30 m and its armor 0, and it is unarmed.
+ | 
+ | L1
+ | L2
+ | L3
+ | L4
+ | L5
+ | Source
+ | Cost (Ore)
+ | 200 (build)
+ | 400
+ | 600
+ | 800
+ | Not specified (no level in the data)
+ | Tuning.json:54,56-58
+ | Time (s)
+ | 30 (Constructor work)
+ | 60
+ | 90
+ | 120
+ | —
+ | same
+ | Topics required before ordering
+ | —
+ | 1 Improved Extraction, 2 Hull Plating
+ | 6 Large Hull
+ | none
+ | —
+ | Tuning.json:56-57; Simulation.cpp:2268-2272
+ | Hit points (no research / +25%)
+ | 1,500 / 1,875
+ | 1,800 / 2,175
+ | 2,100 / 2,475
+ | 2,400 / 2,775
+ | —
+ | Simulation.cpp:3153-3157
+ | Opens tier
+ | 1
+ | 2
+ | 3
+ | (3)
+ | —
+ | Tuning.json:56-57; Tuning.cpp:703-721
+ | Topics researched at once
+ | 1
+ | 1
+ | 1
+ | 2
+ | —
+ | Tuning.json:58; Tuning.cpp:723-730
+ | Panel line
+ | —
+ | "L2: tier 2, 1,800 hit points"
+ | "L3: tier 3, 2,100 hit points"
+ | "L4: a second research slot, 2,400 hit points"
+ | —
+ | Hud.cpp:2662-2677; ADR-064 §Decision 10
+- Its queue holds up to 5 topics, each paid when it starts. The second slot starts only once the first has started and the second's prerequisites are researched (Simulation.cpp:3044-3080; ADR-017 §Decision 1).
+- A lost Lab closes its tiers until a rebuilt one is upgraded again (ADR-033 §Consequences).
+- It stops at L4 (Phase 3 §6, gate K3), though its art has 5 levels (Models.json:13).
+Mining Rig (MiningRig)
+ | Stat
+ | Value
+ | Source
+ | Cost / build
+ | 50 Ore, 10 s
+ | Tuning.json:60
+ | Hit points / armor
+ | 800 (1,000 with +25%) / 0
+ | Tuning.json:60
+ | Footprint
+ | 25 m, or the asteroid's radius if that is larger
+ | Tuning.json:60; Simulation.cpp:664-678
+ | Levels
+ | None
+ | Tuning.cpp:319-322
+ | Placement
+ | Snaps to an ore asteroid whose edge is within 40 m. One rig to an asteroid, in a sector its player holds. Not an obstacle.
+ | StructureKind.h:21; Simulation.cpp:2081-2108; ADR-016 §Decision 4, 8
+ | Income
+ | 3.5 / 4 / 5.5 / 6.5 Ore a second by the asteroid's ring (home, near, contested, rich), and 20% once its asteroid is exhausted. These are economy rules; see A1.
+ | Tuning.json:6-10
+ | Weapon
+ | None
+ | Tuning.json:60
+Defence Platform (DefensePlatform, shown as "Defence Platform")
+ | Stat
+ | Value
+ | Source
+ | Cost / build
+ | 450 Ore, 20 s
+ | Tuning.json:61; Phase 4 §4 (tripled from 150)
+ | Hit points / armor
+ | 1,500 (1,875 with +25%) / 10
+ | Tuning.json:61
+ | Footprint
+ | 20 m
+ | Tuning.json:61
+ | Weapon
+ | One Defence gun: 30 every 1.0 s at 250 m
+ | Tuning.json:37,61; Tuning.cpp:754-763
+ | Levels
+ | None
+ | Tuning.cpp:319-322
+Relay (Relay)
+ | Stat
+ | Value
+ | Source
+ | Cost / build
+ | 200 Ore, 40 s
+ | Tuning.json:62; ADR-056 §Decision 2
+ | Hit points / armor
+ | 3,000 (3,750 with +25%) / 10
+ | Tuning.json:62
+ | Footprint
+ | 30 m
+ | Tuning.json:62
+ | Weapon / levels
+ | None / none
+ | Tuning.json:62
+ | Placement
+ | Snaps to the node of the sector it is ordered in, which must be adjacent to a held sector and under the node cap. The rules are territory's; see A1.
+ | Simulation.cpp:2072-2080,2131-2139,2168-2171
+ | Model
+ | ResearchLab model, tint 1.6
+ | Models.json:70
+Repair Bay (RepairBay)
+ | Stat
+ | Value
+ | Source
+ | Cost / build
+ | 300 Ore, 40 s
+ | Tuning.json:63; ADR-075 §Context
+ | Hit points / armor
+ | 2,000 (2,500 with +25%) / 5
+ | Tuning.json:63
+ | Footprint
+ | 30 m
+ | Tuning.json:63
+ | Weapon / levels
+ | None / none
+ | ADR-075 §Decision 1
+ | Repair
+ | Up to 4 of its player's ships whose footprint is within 150 m of its own, the most damaged first, at 3% of each ship's full hit points a second, for nothing. Research does not raise it. The Command Station and every Shipyard repair the same way.
+ | Tuning.json: shipRepair l.131; Simulation.cpp:2604-2648; ADR-075 §Decision 2-3
+ | Placement
+ | In a sector its player holds
+ | Simulation.cpp:2116-2123
+ | Model
+ | Shipyard model, tint 0.6
+ | Models.json:71
+Retreat (all ships)
+- The trigger. A hit that leaves a ship below its threshold, Half (50%) or Quarter (25%), sends it to its repairer. The repairer is the nearest Repair Bay, else the Command Station, else the nearest Shipyard. With none, the ship fights on (Simulation.cpp:2554-2589; ADR-075 §Decision 5).
+- Where it stops. 40 m beyond the repairer's footprint (Simulation.cpp:86).
+- The end. The retreat ends when the ship is whole, or when its player gives it an order (ADR-075 §Decision 6).
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

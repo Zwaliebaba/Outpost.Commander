@@ -1,0 +1,53 @@
+
+Components
+Components and their states · drawn from A5's specs with the tokens
+PRODUCTION
+×
+Window chrome
+Opaque WINDOW_COLOR body; hatched title bar in TITLE_HATCH_COLOR that drags the window; close box in CLOSE_BOX_COLOR with ×; 12-unit corner brackets in WINDOW_EDGE_COLOR. The name in the Label face, tracking 2, HEADER_LABEL_COLOR.
+Hud.cpp:871-899, 852-867; ADR-031 d3; A5 Components
+2,350+14.5/s
+HUD panel
+Every HUD panel takes the windows' look: WINDOW_COLOR body and the four corners.
+Hud.cpp:903-908; ADR-043 d1
+IDLE 1+0/s
+Warning chip
+A warning is a chip: dark WINDOW_COLOR words on a WARNING_COLOR tag, 4 units wider than its words each side, 22 tall. Plain WARNING_COLOR text only for an invalid name or the menu notice.
+Hud.cpp:1155-1168; ADR-085 d1
+Small96
+220 HP · ARM 2 · 60m/s
+Medium330
+500 HP · ARM 8 · 40m/s
+Large900
+1,200 HP · ARM 14
+RESEARCH · LARGE HULL
+Part cards: picked, normal, locked
+Picked: PICKED_COLOR face, PICKED_EDGE_COLOR edge. Normal: CARD_COLOR, EDGE_COLOR. Locked: LOCKED_COLOR hatched with LOCKED_HATCH_COLOR, words in LOCKED_TEXT_COLOR, and the research that unlocks it in AMBER_COLOR beside a checkbox. 220 × 80 (96 with a note) in the game; drawn narrower here.
+Hud.cpp:1429-1482; ADR-062 d4
+Attack-moveA
+Hold sectorH
+Shipyard300
+Defence Platform450
+Research LabONE PER PLAYER
+HUD buttons: picked, hovered, enabled, disabled
+Face PICKED_COLOR when selected, CARD_COLOR when enabled, FIELD_COLOR when disabled; edge PICKED_EDGE_COLOR, HOVER_EDGE_COLOR (hovered) or EDGE_COLOR; label in the Name face; a key cap, a cost (gem + figure) or a note at the right. No button has a pressed state: Not specified.
+Hud.cpp:1264-1323; ADR-043 d4; ADR-088 d1; A5 Open items
+25%
+50%
+Never
+Retreat as three choices
+Three cells 116 × 34, 4 apart; the setting is picked; no cell is lit while the ships differ.
+Hud.cpp:463-477, 1328-1346, 3441-3452
+over entities: health, build
+Bars
+Per-ship bars 17 × 10 in rows of 12; health fill GOOD above 1/2, FAIR above 1/4, POOR below; own progress in BAR_FILL_COLOR on BAR_TRACK_COLOR; bars over entities 32 × 5 on the side's color × 0.3, build progress in BUILD_BAR_COLOR.
+Hud.cpp:1026-1029, 3095-3126; ADR-085 d2; ADR-088 d5
+QUEUE30 s each261
+The Queue button
+The commit action: QUEUE_COLOR hatched with QUEUE_HATCH_COLOR, QUEUE_EDGE_COLOR edge, QUEUE_TEXT_COLOR words, and the cost of the count.
+Hud.cpp:826-833, 1581-1597
+P 
+Key cap, checkbox and the Ore gem
+Key cap 20 × 20 FIELD_COLOR outlined in ROW_LABEL_COLOR; the checkbox a 10-unit square outline in AMBER_COLOR; the Ore gem in GOLD_COLOR, 13 beside the Title face and 8 beside the Figure face.
+Hud.cpp:1297-1310, 3022-3024; GlyphAtlas.cpp:27; ADR-085 d3
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

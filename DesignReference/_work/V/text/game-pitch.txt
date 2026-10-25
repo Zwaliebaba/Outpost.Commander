@@ -1,0 +1,52 @@
+
+The game: pitch and pillars
+Outpost Commander · design reference · 02
+The game
+The pitch and the pillars in the owner's words, the loop the MVP set out to test, and how a match and a world run.
+Sources: MVP.md Phase1–5 designs A1
+Pitch and pillars
+The design documents are the owner's (MVP.md:3: "Owner: Stefan Zwaal").
+The pitch (MVP.md:9):
+Outpost Commander is a real-time strategy game in space, built on the model of Warzone 2100: build a base with constructor units on contested resource points, research new technology, design your own ships from components, and use them to destroy the enemy.
+The MVP's question (MVP.md:11): "The MVP exists to answer one question — is this game worth building?"
+The pillars (MVP.md:27-32, verbatim):
+- Your fleet is your design. Ships are assembled from a hull, a drive and a weapon. The best design depends on what the enemy fields, and changing it mid-match is a real decision. MVP.md:29
+- Territory is income. Ore comes from asteroids you hold. Expanding, defending and raiding mining rigs is the strategic layer. MVP.md:30
+- Research is recovery. Tech unlocks new components and upgrades. What you research determines which designs you can build. MVP.md:31
+- Readable at a glance. A flat battlefield under an RTS camera. You can always see who is where and who is winning. MVP.md:32
+Premise — marked "proposal — edit freely" (MVP.md:15): "A century ago the jump relays went dark. The colonies on the far side — the Terrakin …" and "The Kessler Reach is an asteroid belt thick with ore and the wrecks of that fleet, and whoever holds it can rebuild. … The player is an Outpost Commander: land a Command Station, mine the rocks, recover lost technology, and design the ships that will keep what you have taken." (MVP.md:17-19). The opponent faction is "The Tarkan High Command, the Tarkan for short" (MVP.md:23).
+What each later phase asked, in the owner's words (each a quoted owner question):
+ | Phase
+ | The owner's question
+ | Source
+ | 1
+ | "can a match last long enough to be a campaign of its own, and still be the same game?"
+ | Phase1.md:13
+ | 2
+ | "today a match is two players building ships and, in the end, one siege of the enemy's base. There are no real skirmishes along the way."
+ | Phase2.md:11
+ | 3
+ | "a Shipyard is upgraded before it builds bigger ships, a Command Station is upgraded to control more sectors, and a Research Lab is upgraded before it researches further." (owner's direction)
+ | Phase3.md:11
+ | 4
+ | "a match is a swarm from the first minutes. A ship should take more effort to build, so that the opening is spent finding out what is around: mining, salvage and small fights. The universe has to be much bigger for that."
+ | Phase4.md:11
+ | 5
+ | "does a world that keeps running while its player is away work at all?"
+ | Phase5.md:11
+Phase 5's one-paragraph description of a world (Phase5.md:13): "A world is today's match that does not stop. It runs on a server the owner keeps going, on Phase 4's 10 km system, with two seats … While the player is away, a deputy keeps the player's empire running, and orders the player gave in advance carry on. The server saves the world every minute and comes back from a restart with what it had."
+The loop the MVP tested, in its own words: "Is the loop — mine, build, research, design, fight — fun?" (MVP.md:40, Q1).
+The core loop
+MineBuildResearchDesignFightTHE LOOPMVP.md:40
+Is the loop — mine, build, research, design, fight — fun? MVP.md:40 (the MVP's question Q1)
+- Mine. Constructors build Mining Rigs on ore asteroids in held sectors; income flows each tick.
+A1 match loop 4; Simulation.cpp:3003-3027
+- Build. Relays claim sectors; Shipyard, Research Lab, Defence Platforms and Repair Bay; paid at the start.
+A1 match loop 5-6; Simulation.cpp:2145-2185
+- Research. Topics within the Lab's open tier; structures upgraded a level at a time.
+A1 match loop 8; ADR-064 §Decision 9-11
+- Design. Warships from saved designs: a hull, a drive, a weapon and an optional module.
+A1 match loop 9; ADR-014; ADR-058
+- Fight. Suppress and destroy Relays, defend sectors; damaged ships retreat to be repaired.
+A1 match loop 10; ADR-056 §Decision 6; ADR-075 §Decision 5
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,12 @@
+
+Structure levels as drawn
+Levels as drawn
+Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game. The art ships five levels for each; the data reaches L5, L3 and L4 (see Open items).
+[IMG /_blob/112492f86018a7328c4d165d8fb724c4 alt=Human CommandStation levels L1 to L5]
+Human · CommandStation · L1 → L5[IMG /_blob/faf3e409a7479c5fc532624b89dd0aed alt=Tarkan CommandStation levels L1 to L5]
+Tarkan · CommandStation · L1 → L5[IMG /_blob/68b9f5eaeaa81de54f77406ff955708b alt=Human Shipyard levels L1 to L5]
+Human · Shipyard · L1 → L5[IMG /_blob/d8c345870217615be782ab1d29bdfc1d alt=Tarkan Shipyard levels L1 to L5]
+Tarkan · Shipyard · L1 → L5[IMG /_blob/f5eb2f30f57bf79fd83929ed711939c6 alt=Human ResearchLab levels L1 to L5]
+Human · ResearchLab · L1 → L5[IMG /_blob/5999970e36d3177ce516f6a0b3a5bd8a alt=Tarkan ResearchLab levels L1 to L5]
+Tarkan · ResearchLab · L1 → L5
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

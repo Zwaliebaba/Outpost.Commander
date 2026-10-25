@@ -1,0 +1,364 @@
+
+The map
+The map · Map.json
+A1homeB1flankC1nearD1contestedE1richA2flankB2nearC2contestedD2betweenE2contestedA3nearB3contestedC3centerD3contestedE3nearA4contestedB4betweenC4contestedD4nearE4flankA5richB5contestedC5nearD5flankE5homestart 1start 2
+Drawn from Map.json at HEAD: 10,000 m square, 25 sectors (2 between, 1 center, 8 contested, 4 flank, 2 home, 6 near, 2 rich), 80 asteroid fields and 6 home ore asteroids. +x runs right and +z up, as the minimap draws it (Hud.cpp:2432-2451). The other ore asteroids, the pirate outposts and the derelicts are placed by the match's seed by each sector's kind, mirrored through the center (ADR-072, Map.json: sectorKinds, outposts, derelicts, placement), so no map can show them: not drawn. Map colors are the minimap's tokens.
+ | | Sector, 2,000 m square, its name and kind | Map.json: sectors[]
+ | | Node, where a Relay claims the sector | Map.json: sectors[].node; ADR-056
+ | | Adjacency: the lattice a claim grows along | Map.json: sectors[].adjacent; ADR-036
+ | | Home ore asteroid (the six Map.json places) | Map.json: oreAsteroids[]
+ | | Asteroid field, at its radius | Map.json: asteroidFields[] (80)
+ | | Start 1 and start 2 | Map.json: starts[]
+Sectors, nodes and adjacency
+ | Item
+ | Value
+ | Source
+ | Map name
+ | Not specified (Map.json has no name field)
+ | Map.json
+ | Size
+ | 10,000 m a side, centered on the origin (edges at ±5,000 m)
+ | Map.json: sizeMeters (line 2); ADR-036 §Decision 4; Phase4.md:248
+ | Minimum gap (narrowest passage)
+ | 60 m; no hull footprint may be wider (checked at server start)
+ | Map.json: minimumGapMeters (line 3); InProcessServer.cpp:142-149
+ | Starts
+ | (−4,000, −4,000) for player 1 and (4,000, 4,000) for player 2; start to start about 11.3 km
+ | Map.json: starts (lines 4-7); Phase4.md:248-249
+ | Sectors
+ | 25, on a 5×5 grid of 2 km; columns A–E west to east, rows 1–5 south to north; ids row by row, A1 = 1 … E5 = 25
+ | Map.json: sectors (lines 98-149); ADR-036 §Decision 4
+ | Node
+ | one per sector, at its center; a home's node is its start
+ | Map.json: sectors[].node; ADR-036 §Decision 4
+ | Adjacency
+ | two sectors are adjacent when they share a border (no diagonals); every adjacency is mutual (checked at load)
+ | ADR-036 §Decision 2; Phase2.md:66; checked by script over Map.json
+ | Asteroid fields (obstacles)
+ | 80, radius 150 m or 180 m; two on every border between two sectors, 470 m in from each end, leaving a passage at the middle and one at each corner
+ | Map.json: asteroidFields (lines 16-97); ADR-036 §Decision 4
+ | Ore asteroids
+ | 40 in all: 6 home (listed), 34 placed from the seed (14 near, 16 contested, 4 rich); 20 a player-half: 3 home, 7 near, 8 contested, 2 rich
+ | counted from Map.json lines 9-14, 150-157 by script; ADR-036 §Decision 4; ADR-072 §Decision 1
+ | Ore on the map
+ | 459,000
+ | derived from Map.json (6×7,500 + 14×9,000 + 16×12,000 + 4×24,000); stated in ADR-036 §Decision 4, ADR-072 §Decision 1
+ | Home asteroids' places
+ | (∓4,000, ∓3,740), (∓3,740, ∓4,000), (∓3,810, ∓3,810): about 260–269 m from the start
+ | Map.json lines 9-14
+ | Symmetry
+ | point-symmetric about the center; the mirror of a sector is the one holding its node turned half a turn
+ | ADR-072 §Decision 2; Map.cpp:216-222 (MirrorOf)
+Sector kinds
+ | Kind
+ | Ore it gets (from the seed)
+ | Sectors
+ | Pirates
+ | Derelicts
+ | Source
+ | home
+ | none drawn (its 3 listed home asteroids)
+ | A1, E5
+ | —
+ | —
+ | Map.json lines 151, 9-14
+ | flank
+ | 2 near (r 45, 9,000)
+ | B1, A2, E4, D5
+ | —
+ | 1 pair of the 2 pairs, 300 Ore, Small hull, r 20
+ | Map.json lines 152, 165
+ | near
+ | 1 near (r 45, 9,000)
+ | C1, B2, A3, E3, D4, C5
+ | —
+ | 2 pairs of the 3, 450 Ore, Medium hull, r 25
+ | Map.json lines 153, 166
+ | contested
+ | 1 contested (r 45, 12,000)
+ | D1, C2, E2, B3, D3, A4, C4, B5
+ | camp on 2 pairs of the 4
+ | 2 pairs of the 4, 600 Ore, Large hull, r 30
+ | Map.json lines 154, 160, 167
+ | between
+ | 2 contested (r 45, 12,000)
+ | D2, B4
+ | —
+ | 1 pair (the only pair), 750 Ore, Large hull, r 30
+ | Map.json lines 155, 168
+ | center
+ | 4 contested (r 45, 12,000)
+ | C3
+ | stronghold
+ | —
+ | Map.json lines 156, 162
+ | rich
+ | 2 rich (r 60, 24,000)
+ | E1, A5
+ | stronghold on the pair
+ | —
+ | Map.json lines 157, 161
+Full sector table
+Bounds are x min…max, z min…max in metres. Mirror = the sector across the center. All from Map.json: sectors (lines 99-148); mirrors by Map.cpp:216-222.
+ | Id
+ | Name
+ | Kind
+ | x
+ | z
+ | Node
+ | Adjacent
+ | Mirror
+ | 1
+ | A1
+ | home (player 1)
+ | −5000…−3000
+ | −5000…−3000
+ | (−4000, −4000)
+ | B1, A2
+ | E5
+ | 2
+ | B1
+ | flank
+ | −3000…−1000
+ | −5000…−3000
+ | (−2000, −4000)
+ | A1, C1, B2
+ | D5
+ | 3
+ | C1
+ | near
+ | −1000…1000
+ | −5000…−3000
+ | (0, −4000)
+ | B1, D1, C2
+ | C5
+ | 4
+ | D1
+ | contested
+ | 1000…3000
+ | −5000…−3000
+ | (2000, −4000)
+ | C1, E1, D2
+ | B5
+ | 5
+ | E1
+ | rich
+ | 3000…5000
+ | −5000…−3000
+ | (4000, −4000)
+ | D1, E2
+ | A5
+ | 6
+ | A2
+ | flank
+ | −5000…−3000
+ | −3000…−1000
+ | (−4000, −2000)
+ | A1, B2, A3
+ | E4
+ | 7
+ | B2
+ | near
+ | −3000…−1000
+ | −3000…−1000
+ | (−2000, −2000)
+ | B1, A2, C2, B3
+ | D4
+ | 8
+ | C2
+ | contested
+ | −1000…1000
+ | −3000…−1000
+ | (0, −2000)
+ | C1, B2, D2, C3
+ | C4
+ | 9
+ | D2
+ | between
+ | 1000…3000
+ | −3000…−1000
+ | (2000, −2000)
+ | D1, C2, E2, D3
+ | B4
+ | 10
+ | E2
+ | contested
+ | 3000…5000
+ | −3000…−1000
+ | (4000, −2000)
+ | E1, D2, E3
+ | A4
+ | 11
+ | A3
+ | near
+ | −5000…−3000
+ | −1000…1000
+ | (−4000, 0)
+ | A2, B3, A4
+ | E3
+ | 12
+ | B3
+ | contested
+ | −3000…−1000
+ | −1000…1000
+ | (−2000, 0)
+ | B2, A3, C3, B4
+ | D3
+ | 13
+ | C3
+ | center
+ | −1000…1000
+ | −1000…1000
+ | (0, 0)
+ | C2, B3, D3, C4
+ | C3 (itself)
+ | 14
+ | D3
+ | contested
+ | 1000…3000
+ | −1000…1000
+ | (2000, 0)
+ | D2, C3, E3, D4
+ | B3
+ | 15
+ | E3
+ | near
+ | 3000…5000
+ | −1000…1000
+ | (4000, 0)
+ | E2, D3, E4
+ | A3
+ | 16
+ | A4
+ | contested
+ | −5000…−3000
+ | 1000…3000
+ | (−4000, 2000)
+ | A3, B4, A5
+ | E2
+ | 17
+ | B4
+ | between
+ | −3000…−1000
+ | 1000…3000
+ | (−2000, 2000)
+ | B3, A4, C4, B5
+ | D2
+ | 18
+ | C4
+ | contested
+ | −1000…1000
+ | 1000…3000
+ | (0, 2000)
+ | C3, B4, D4, C5
+ | C2
+ | 19
+ | D4
+ | near
+ | 1000…3000
+ | 1000…3000
+ | (2000, 2000)
+ | D3, C4, E4, D5
+ | B2
+ | 20
+ | E4
+ | flank
+ | 3000…5000
+ | 1000…3000
+ | (4000, 2000)
+ | E3, D4, E5
+ | A2
+ | 21
+ | A5
+ | rich
+ | −5000…−3000
+ | 3000…5000
+ | (−4000, 4000)
+ | A4, B5
+ | E1
+ | 22
+ | B5
+ | contested
+ | −3000…−1000
+ | 3000…5000
+ | (−2000, 4000)
+ | B4, A5, C5
+ | D1
+ | 23
+ | C5
+ | near
+ | −1000…1000
+ | 3000…5000
+ | (0, 4000)
+ | C4, B5, D5
+ | C1
+ | 24
+ | D5
+ | flank
+ | 1000…3000
+ | 3000…5000
+ | (2000, 4000)
+ | D4, C5, E5
+ | B1
+ | 25
+ | E5
+ | home (player 2)
+ | 3000…5000
+ | 3000…5000
+ | (4000, 4000)
+ | E4, D5
+ | A1
+Player 1's flanks are B1 and A2; player 2's are D5 and E4 (ADR-036 §Decision 4; Map.json).
+Seeded placement and mirroring
+ | Rule
+ | Value
+ | Source
+ | Fixed in Map.json
+ | the size, the sector grid, the asteroid fields and their passages, the starts, and each home's three asteroids
+ | Phase4.md:269; ADR-072 Context
+ | Placed from the seed
+ | every other ore asteroid, every pirate outpost, every derelict, and which derelicts name a research topic
+ | Phase4.md:270; ADR-072 §Decision 3, 7, 8
+ | When
+ | once, before the match (PlaceContent(map, seed)), never during it
+ | ADR-072 §Decision 3; InProcessServer.cpp:133-135 (m_map(PlaceContent(...))); ADR-072 "What this forecloses"
+ | Generator
+ | Neuron::Random seeded with the match's seed XOR a constant, so its draws are not the simulation's own
+ | Map.cpp:17 (PLACEMENT_SEED_SALT = 0x9e3779b97f4a7c15), Map.cpp:358; ADR-072 §Decision 3
+ | Mirroring
+ | of each pair of mirrored sectors the one with the lower identifier draws, and each thing it draws is added with its mirror through the center (x, z) → (−x, −z); the center, its own mirror, draws half its count and their mirrors
+ | Map.cpp:381-419 (asteroids: lower id draws, center draws half at line 396, both added at 410-412), Map.cpp:437-438 (outposts); ADR-072 §Decision 4; Phase4.md:271
+ | Order of draws
+ | asteroids, then outposts, then derelicts, then the derelicts' topics (so adding later content changes nothing earlier)
+ | Map.cpp:381-507; ADR-072 §Decision 7-8; ADR-074 §Decision 2
+ | Asteroid inset
+ | drawn uniformly inside its sector, borderMeters 250 + its radius in from each edge
+ | Map.json: placement.borderMeters (line 171); Map.cpp:393-403; ADR-072 §Decision 5
+ | Node clearance
+ | at least 350 m from its sector's node
+ | Map.json: placement.nodeClearanceMeters (line 171); Map.cpp:405; ADR-072 §Decision 5
+ | Ore spacing
+ | at least 500 m center to center from every ore asteroid ("so that a rig has room for a Defence Platform beside it")
+ | Map.json: placement.oreSpacingMeters (line 171); Map.cpp:367-372, Map.cpp:408; ADR-072 §Decision 5
+ | Gap
+ | the map's 60 m minimum gap from every obstacle, the edge and every start, for it and its mirror
+ | Map.cpp:363-379, Map.cpp:407-408; ADR-072 §Decision 5
+ | Attempts
+ | up to 10,000 draws per asteroid or derelict; a sector with no room throws, naming the sector
+ | Map.cpp:19 (PLACEMENT_ATTEMPTS), Map.cpp:415-416; ADR-072 §Decision 5
+ | Outposts
+ | per rule, pairs drawn from the free pairs of its kind not taken by an earlier outpost rule; a camp on 2 of the 4 contested pairs; a stronghold on the rich pair and on the center
+ | Map.json: outposts (lines 159-163); Map.cpp:420-440; ADR-072 §Decision 7
+ | Derelicts
+ | per rule, pairs of its kind not taken by an earlier derelict rule (a derelict may share a sector with an outpost); one derelict a sector; placed as an asteroid is but with gap checks only (no ore spacing)
+ | Map.json: derelicts (lines 164-169); Map.cpp:442-494; ADR-072 §Decision 8; ADR-074 "What this forecloses"
+ | Derelicts naming a topic
+ | round(pairs × 33 / 100) pairs, so 2 of the 6 pairs (4 of the 12 derelicts); each pair names one topic drawn from the whole research table
+ | Map.json: derelictResearchPercent 33 (line 170); Map.cpp:495-507; ADR-074 §Decision 2; Phase4.md:312
+ | What varies by seed
+ | where each sector's asteroids lie; which start a contested asteroid of B4, D2 or the center lies nearer; which contested pairs hold a camp; which sectors hold a derelict and which topics they name. The counts by sector do not vary
+ | ADR-072 Consequences
+ | Fairness
+ | both seats get the same map, turned half a turn
+ | Phase4.md:271; ADR-073 §Decision 4 (the one asymmetry: the center stronghold's Lance ship stands about 170 m nearer player 1's start)
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

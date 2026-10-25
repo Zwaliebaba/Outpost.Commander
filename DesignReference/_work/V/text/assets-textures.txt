@@ -1,0 +1,128 @@
+
+Textures and logos
+Textures
+[IMG /_blob/02a97cb47a56c6a8167b3e0859732507 alt=Particle texture]
+Particle[IMG /_blob/28ca391224221968b8730848f4ccb64f alt=glow texture]
+glow[IMG /_blob/ede0df66176e640d8eb2992c90d58f7d alt=cloudyglow texture]
+cloudyglow[IMG /_blob/b081b4f51e0040258b97001964f0c104 alt=laser texture]
+laser[IMG /_blob/4656a394530fc7b4ee7779d03dddeffa alt=starburst texture]
+starburst
+All five are uncompressed 32-bit DDS, decoded here from the header's masks and checked against Pillow's DDS reader (identical for all five). Outputs under DesignReference/_work/assets/textures/: <name>.png (texels as stored, RGBA), <name>_on_dark.png (alpha-blended over a dark checker, enlarged nearest-neighbour), <name>_alpha.png (alpha as gray, enlarged).
+ | Texture
+ | Size
+ | Mips
+ | Format
+ | Bytes
+ | sha256
+ | Content
+ | Used by
+ | Particle.dds
+ | 16×16
+ | 1
+ | B8G8R8A8 (A8R8G8B8 masks), uncompressed
+ | 1152
+ | 1e9d2ffaaafd1a587a33f4141a305443b02485a792f95935514d9056253b15ae
+ | gray RGB 156–255, alpha 255 everywhere (a flat square with a brighter rim)
+ | the game: every particle's sprite, GameClient.cpp:14 PARTICLE_SPRITE_FILE, loaded GameClient.cpp:395-397, mips built at load; added ONE+ONE, its alpha ignored, its RGB taken from sRGB with pow 2.2 (GlowSpritePS.hlsl, GlowPipeline.cpp:72-76; ADR-026)
+ | cloudyglow.dds
+ | 128×128
+ | 1
+ | B8G8R8A8 (A8R8G8B8 masks), uncompressed
+ | 65664
+ | 82cff9213a54b30fdc5dfe35affc7be3b0ae4a1951c3cade14c58273340478e0
+ | RGB white everywhere; the shape is in alpha, 0–250
+ | no code reads it; packaged as an Image item (OutpostCommander.vcxproj:122)
+ | glow.dds
+ | 128×128
+ | 1
+ | B8G8R8A8 (A8R8G8B8 masks), uncompressed
+ | 65664
+ | 261e40fe1fa6e3754c610851017fed6119e01f831427ebcab5f0f1e807d079df
+ | RGB white everywhere; the shape is in alpha, 0–249
+ | no code reads it; packaged as an Image item (OutpostCommander.vcxproj:123)
+ | laser.dds
+ | 128×32
+ | 1
+ | B8G8R8A8 (A8R8G8B8 masks), uncompressed
+ | 16512
+ | f627f1318062e6d8e19b1fb13e70b24a227795b6a8937fb56d5bd2914af454ec
+ | RGB white everywhere; the shape is in alpha, 0–254
+ | no code reads it; packaged as an Image item (OutpostCommander.vcxproj:124)
+ | starburst.dds
+ | 128×128
+ | 1
+ | B8G8R8A8 (A8R8G8B8 masks), uncompressed
+ | 65664
+ | 44ba136ae3883239e9ae2fd5efabdf7115466bd2f57f325abc6296ae0babcf7e
+ | RGB white everywhere; the shape is in alpha, 0–255
+ | no game code; read by NeuronClientTests/TextureDataTests.cpp:91-105; packaged as content (OutpostCommander.vcxproj:171)
+App logos
+[IMG /_blob/bfc9893e1bf9f43ade2228f459ade4a2 alt=App logos on dark and white]
+The packaged logos (OutpostCommander/Assets/*.png)
+Copied as they are to DesignReference/_work/assets/logos/, plus _logos_on_dark_and_white.png, which shows each on near-black and on white with its extent outlined. Every logo is a placeholder, not game art: a single gray, RGB (191, 191, 191), with the shape in alpha alone — an outlined square with a cross through it. They are the package's tile, store and splash images (OutpostCommander/Package.appxmanifest:20, 40-43; OutpostCommander.vcxproj:116-121, 125).
+ | Logo
+ | Size
+ | Bytes
+ | sha256
+ | LockScreenLogo.scale-200.png
+ | 48×48
+ | 432
+ | 688f384ef8832609d1f4d5e7fa9f6e08a81a6f52bba2c67070e385a015dfb42b
+ | SplashScreen.scale-200.png
+ | 1240×600
+ | 5372
+ | 209a614557ff28be5a307c55ec17e2126f1ad34f54a88c5d4226441891c5892f
+ | Square150x150Logo.scale-200.png
+ | 300×300
+ | 1755
+ | 0b2ecc4b0e160157f55e43d1cd9532751cfa265be816227681c633b9c69a9381
+ | Square44x44Logo.scale-200.png
+ | 88×88
+ | 637
+ | 0be34ccbed90a09a51d56abc1b9ab279154d454e43906057b45762ba00b38854
+ | Square44x44Logo.targetsize-24_altform-unplated.png
+ | 24×24
+ | 283
+ | 7799103c81a408b8dfc465764a5a8e693ebe1048a2e0f4690ae467398390030a
+ | StoreLogo.png
+ | 50×50
+ | 456
+ | 5a44b2f15b76ff4cfcb315e8b62b2ac1e4a1f616bbfee0b8be29f9e2e116172c
+ | Wide310x150Logo.scale-200.png
+ | 620×300
+ | 2097
+ | 4938ed44d7d63f44ca959eafb942be36459939a9c679bfcbf4f5c837fdf3475c
+Open and conflicts (A6)
+- The brief's GLB path. OutpostCommander/Assets/Models/ holds .nmf files, not GLBs; rendered from the .nmf (above).
+- Wreck renders only the hulls. Models.json gives the Wreck set all 21 Human meshes (and the game loads them all), but only the three hull models are ever drawn as derelicts (GameClient.cpp:1628-1639). If the lead wants all 21 in gray, render_all.py drops them at entries() (one condition).
+- Pirate structures other than the Defense Platform are rendered because the data loads them, but no spawn site in GameLogic/ gives them to PIRATES (Simulation.cpp:843 Defense Platforms, Simulation.cpp:868 ships of the hulls Tuning.json pirates.outposts names, 1 and 2; the stress and measurement loads spawn for players 1 and 2 only). Confirming that no other path can is A1/A2's.
+- The look is approximate: line width (2 px against 1 px), orthographic against a 45° perspective, 2×2 supersampling against 4× MSAA, and the glow replayed on a catalogue-sized image rather than at the game's screen scale, so it reads stronger relative to the model than in the game at the default zoom. No in-game capture exists to compare against; the owner's run is the reference.
+- Field rocks are darker than an ore asteroid (FIELD_SHADE 0.7, GameClient.cpp:1522); only the ore-asteroid look is rendered.
+- Mining Rig is rendered alone; in the game it stands tilted on its rock's surface (ADR-044, RigStance, GameClient.cpp:1718-).
+- Structures are drawn larger than lengthMeters. A structure is drawn across its footprint, 2 × footprintRadiusMeters (GameClient.cpp:1661-1664), so e.g. a Command Station L1 is 90 m long on the map against lengthMeters 60, a Mining Rig 50 m against 4, a Research Lab 60 m against 12. The Drawn in game column gives each; ADR-011 decision 2 calls lengthMeters how big a model is, which holds for ships but not for structures. Recorded for A2/A5, not as a conflict: the code is explicit.
+- Some structures reach well past their footprint. Fitted along x only (FitMesh) and then drawn across the footprint, a model whose depth (z) exceeds its length is wider on the map than its footprint diameter. Over 10 % past it, computed from the table: Human CommandStation_L1 181 m against 90 m; Human CommandStation_L2 181 m against 90 m; Human CommandStation_L3 181 m against 90 m; Human CommandStation_L4 181 m against 90 m; Human CommandStation_L5 181 m against 90 m; Human MiningRig 57 m against 50 m; Tarkan DefensePlatform 46 m against 40 m. The Human Command Station's arms run along z, so it spans about 181 m against its 90 m footprint at every level. Whether that is intended is the owner's; recorded for A2/A5.
+- Logos are placeholders (above): if the reference shows a logo, there is none to show.
+- Three of the five textures are referenced by no code (glow, cloudyglow, laser), and starburst only by a test; they are in the package all the same.
+Each shows both sides with file:line; the code/data side is what the renders follow.
+ | #
+ | Doc / ADR says
+ | Code / data says
+ | Note
+ | C1
+ | GameDesign/ImplementationPlan-Look.md:32 (finding 5): "Every source today has exactly one material, team, and no vertex colors or texture coordinates."
+ | Art/Models/Asteroids/Small.glb, Medium.glb, Large.glb have no material (no materials in their glTF JSON); the 42 others have exactly one, team. None has texture coordinates or vertex colors (attributes POSITION and NORMAL only, checked on all 45).
+ | Not visible to the player: materials are not baked (Tools/BakeMeshes.py docstring).
+ | C2
+ | Design/ADR/ADR-027-rock-crease-lines.md:19: "The new models have 86 to 277 creases a ship and 249 to 736 a structure."
+ | Replaying BuildCreaseLines at 10° (MeshData.cpp:289-397, GameClient.cpp:49) on HEAD's .nmf files: ships 74 (Human Small) to 259 (Human Large); structures 108 (Tarkan DefensePlatform) to 1,198 (Human Shipyard_L5). Per-model counts in the table above.
+ | The ADR's figure predates the levelled structure sources (ADR-045, 2026-10-03) and later hull edits; it is a measurement of older meshes, not a decision.
+ | C3
+ | Design/ADR/ADR-011-meshes-and-shading.md:9 (Context): "The Tarkan Medium is longer than the Tarkan Large."
+ | Raw .nmf x extents: Tarkan Medium 35.0, Large 60.0 mesh units (stats.json); fitted lengths 35 m and 60 m (Models.json:23-24).
+ | Context describing the meshes of the time; the fitting it motivated still holds. Not player-visible.
+ | C4
+ | GameDesign/ImplementationPlan-Look.md:47: LV2.1 "built; awaiting CI and the owner's run".
+ | The shipped .nmf files are version 3 with the baked open byte, NMF_VERSION = 3 (Tools/BakeMeshes.py:76, NeuronClient/MeshData.cpp:19), and --check passes: LV2.1 is in the code at HEAD.
+ | A plan's status lagging the code; the renders include the occlusion.
+No conflict found between the shaders, SceneShading.h and ADR-090/091/092/040 on any number the renders use; ADR-092's mesh totals, ADR-045's spin periods, ADR-027's rock triangle counts (32, 54, 78) and ADR-011's hull lengths (1.25 × the footprint diameters 16, 28, 48 m of Tuning.json hulls[].footprintRadiusMeters 8, 14, 24) match the files.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

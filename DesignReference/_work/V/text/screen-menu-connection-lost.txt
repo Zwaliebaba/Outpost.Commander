@@ -1,0 +1,18 @@
+
+Main menu after a lost connection, saying why (ADR-078 d10)
+Outpost Commander
+A skirmish against the AI
+The connection to the server was lost: The server ended the
+game.
+Easy skirmish
+Normal skirmish
+Hard skirmish
+Join world
+Quit
+1
+menu · connection-lost · factor 1
+Main menu after a lost connection, saying why (ADR-078 d10)
+- 1Main menuOne panel 440 wide, centred: Easy, Normal and Hard skirmish, Join world when a join file exists, Quit. After a lost connection or a failed join a notice says why, in WARNING_COLOR as plain text. No hover lighting.Hud.cpp:2329-2359; ADR-065 d4; ADR-078 d9-d10; ADR-085 d1
+Geometry derived from Hud.cpp by A4's derive_layouts.py, not dumped from the game: 19 of 24 elements depend on DirectWrite text measurement and are estimated. Content values are samples built from Tuning.json and Map.json. Dashed boxes and numbered discs in #FF2D95 are this reference's annotations, not the game.
+- Notice text 'The connection to the server was lost: {reason}' from WinMain.cpp:460; sample reason from GameProtocol/WireFormat.cpp:81.
+DesignReference/_work/A4/layouts/menu-connection-lost.json

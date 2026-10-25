@@ -1,0 +1,271 @@
+
+Screens: inventory and flow
+Outpost Commander · design reference · 13
+Screens
+Every screen and window in each state, drawn at 1920×1080 from the layout Hud.cpp computes, with numbered callouts that cite the rule behind each element.
+Sources: Hud.cpp A4 layouts ADR-013/015/031/043/066/070/088
+Flow
+loaded (window shown)--join <file>, --measureload failureEasy / Normal / Hard skirmish, Join worldjoin failsQuitfirst snapshotD P R F1 O, buttons×, Esc, keysnapshot with a reportmatchOver / restartTickBack to menuno snapshot 2 sreceive throwsconnection lostLaunchMain menuExit / message boxMatch, before its firstsnapshotMatch HUDWindows: Designer, Production,Research, Controls, OrdersAway windowEnd banner: Victory, Defeat,Draw, Empire fallenHUD: No word from the serverMain menu with a notice
+ | From
+ | Trigger
+ | To
+ | Source
+ | Launch
+ | The window is hidden while the server, AI settings, assets and atlas load in parallel
+ | Main menu (default, or with Join world)
+ | WinMain.cpp:273-316, 348, 366; ADR-049
+ | Launch
+ | --join <file>
+ | Match, joined world
+ | WinMain.cpp:226-235, 367-368
+ | Launch
+ | --measure, --load, --stress
+ | Match (skirmish against the Normal AI)
+ | WinMain.cpp:251-252, 369-370; ADR-065 d4
+ | Launch, or anywhere
+ | A load failure, or a lost device
+ | Message box, then exit
+ | WinMain.cpp:95-101, 559-572
+ | Main menu
+ | Easy skirmish / Normal skirmish / Hard skirmish
+ | Match before its first snapshot, then the HUD with Local skirmish
+ | GameClient.cpp:883-886; WinMain.cpp:487-490, 319-344
+ | Main menu
+ | Join world (shown with a join file)
+ | Match on the dedicated server, tag Server {address}; the frame loop blocks up to 10 s for the welcome
+ | WinMain.cpp:505-508, 349-358; QuicTransport.cpp:9, 26-35
+ | Main menu
+ | Join fails
+ | Main menu with notice Could not join the world: {error}
+ | WinMain.cpp:359-364
+ | Main menu
+ | Quit
+ | Exit
+ | WinMain.cpp:509-511
+ | Match, before its first snapshot
+ | First snapshot
+ | HUD; the camera centres on the player's ships
+ | GameClient.cpp:548-567, 689-775
+ | HUD
+ | D / P / R / F1 / O, a window button, a status line, a ship bar, the Shipyards' line at the cap
+ | Window opened or brought to the front; the Command Station selected
+ | GameClient.cpp:645-674, 896-923, 957-963
+ | HUD
+ | First snapshot with an away report
+ | Away window opens
+ | GameClient.cpp:539-544
+ | Window
+ | ×, Esc (the front one), its key again
+ | Window closed
+ | GameClient.cpp:659-660, 801-807, 987-991
+ | HUD
+ | No snapshot for 2 s or more
+ | Tag shows the No word from the server · {s} s chip, until the next snapshot
+ | Hud.cpp:3324-3336
+ | HUD
+ | Receive throws: the connection closed, with the server's reason when it gave one
+ | Main menu with notice The connection to the server was lost: {reason}
+ | WinMain.cpp:409-416, 454-467; QuicTransport.cpp:59-75; ADR-078 d10
+ | HUD
+ | Snapshot::matchOver
+ | Banner Victory / Defeat / Draw over the running world
+ | Hud.cpp:2197-2218
+ | HUD (world)
+ | Snapshot::restartTick
+ | Banner Empire fallen; the seat restarts
+ | Hud.cpp:2188-2196; ADR-084 d7
+ | Banner
+ | Back to menu
+ | Main menu; the next skirmish's server is made if needed
+ | GameClient.cpp:890-892; WinMain.cpp:491-504
+ | Any screen
+ | Ctrl+= / Ctrl+-
+ | Same screen at the next or previous interface step
+ | GameClient.cpp:779-799
+State inventory
+ | #
+ | Screen
+ | State
+ | Layout JSON (DesignReference/_work/A4/layouts/)
+ | Trigger, with its source
+ | 1
+ | Startup
+ | Loading: no screen
+ | none: the window is hidden
+ | Launch: the window is created hidden and shown once loaded (WinMain.cpp:273-316, ADR-049 d3)
+ | 2
+ | Main menu
+ | Default
+ | menu-default.json
+ | After loading (WinMain.cpp:316, 366), or Back to menu (WinMain.cpp:491-496)
+ | 3
+ | Main menu
+ | Join file present
+ | menu-join-world.json
+ | Documents\Outpost Commander\Join.json exists (WinMain.cpp:114-123, 348)
+ | 4
+ | Main menu
+ | Lost connection, with a notice
+ | menu-connection-lost.json
+ | Receive throws (WinMain.cpp:409-416, 454-460)
+ | 5
+ | Main menu
+ | Failed join, with a notice
+ | menu-join-failed.json
+ | The join throws (WinMain.cpp:359-364)
+ | 6
+ | Main menu
+ | Interface at 125%
+ | menu-scale-125.json
+ | Ctrl+= (GameClient.cpp:779-799)
+ | 7
+ | Match
+ | Before the first snapshot
+ | match-awaiting-first-snapshot.json (no elements)
+ | StartMatch (GameClient.cpp:472-478); no HUD until a snapshot arrives (GameClient.cpp:689, 1291-1293)
+ | 8
+ | Match HUD
+ | Start of a skirmish, nothing selected
+ | hud-match-start.json
+ | The first snapshot
+ | 9
+ | Match HUD
+ | Busy: 12 warships, attack-move armed, pointer over Stop
+ | hud-busy-warships.json
+ | Example of a whole HUD
+ | 10
+ | Match HUD
+ | Busy, at 110%
+ | hud-scale-110.json
+ | Ctrl+= in a match (ADR-070)
+ | 11
+ | Match HUD
+ | Constructors selected: build buttons
+ | hud-constructors.json
+ | Selection holds a Constructor (Hud.cpp:2805-2828)
+ | 12
+ | Match HUD
+ | Placing a Relay: hint, claimable sectors
+ | hud-placing-relay.json
+ | A Build button (GameClient.cpp:841-843)
+ | 13
+ | Match HUD
+ | Relay at the node cap
+ | hud-relay-node-cap.json
+ | AtNodeCap (Hud.cpp:2547, 2553-2554, 2820)
+ | 14
+ | Match HUD
+ | One ship: one bar, Hold sector armed
+ | hud-one-ship.json
+ | A one-ship selection
+ | 15
+ | Match HUD
+ | Shipyard selected: work line, next level, key caps
+ | hud-shipyard-selected.json
+ | A structure selected on its own (Hud.cpp:2560-2702)
+ | 16
+ | Match HUD
+ | Command Station upgrading: note and progress bar
+ | hud-station-upgrading.json
+ | upgradePermille set (Hud.cpp:2693, 2696)
+ | 17
+ | Match HUD
+ | Research Lab: NEEDS RESEARCH
+ | hud-lab-needs-research.json
+ | The next level's prerequisites are missing (Hud.cpp:2679-2695)
+ | 18
+ | Match HUD
+ | Hint over a derelict
+ | hud-derelict-hint.json
+ | Pointer over a derelict (GameClient.cpp:742-749)
+ | 19
+ | Match HUD
+ | Dedicated server silent 5 s
+ | hud-server-silent.json
+ | No snapshot for at least 2 s (Hud.cpp:3324, Hud.h:469)
+ | 20
+ | Match end
+ | Victory banner
+ | hud-end-victory.json
+ | Snapshot::matchOver (Hud.cpp:2197-2218)
+ | 21
+ | Match end
+ | World: "Empire fallen" banner
+ | hud-end-empire-fallen.json
+ | Snapshot::restartTick (Hud.cpp:2188-2196)
+ | 22
+ | Window
+ | Designer, saved design loaded
+ | window-designer-default.json
+ | D, or the Ship designer button
+ | 23
+ | Window
+ | Designer, previewing a hovered part
+ | window-designer-preview.json
+ | Pointer over a part card (Hud.cpp:622-635)
+ | 24
+ | Window
+ | Designer, new picks: typing, invalid name, Needs Shipyard L2
+ | window-designer-unsaved-editing.json
+ | A press on the name field (EditName)
+ | 25
+ | Window
+ | Designer, no Shipyard
+ | window-designer-no-shipyard.json
+ | No finished Shipyard (Hud.cpp:591)
+ | 26
+ | Window
+ | Production on a Shipyard
+ | window-production-shipyard.json
+ | P, or the Production button
+ | 27
+ | Window
+ | Production on the Command Station: waiting for Ore
+ | window-production-station.json
+ | The station is the target
+ | 28
+ | Window
+ | Production with no producer
+ | window-production-none.json
+ | No finished producer (Hud.cpp:2838-2841)
+ | 29
+ | Window
+ | Research, page 1
+ | window-research-page1.json
+ | R, the Research button, or the status line
+ | 30
+ | Window
+ | Research with no Lab
+ | window-research-no-lab.json
+ | No Lab (Hud.cpp:2902)
+ | 31
+ | Window
+ | Controls
+ | window-controls.json
+ | F1
+ | 32
+ | Window
+ | Orders: time of day, Give enabled
+ | window-orders-time-of-day.json
+ | O
+ | 33
+ | Window
+ | Orders: event trigger with a target, Give dim
+ | window-orders-event-disabled.json
+ | O
+ | 34
+ | Window
+ | While you were away
+ | window-away.json
+ | A snapshot with away (GameClient.cpp:539-544)
+ | 35
+ | Windows
+ | Production, research and designer together, at their defaults
+ | window-three-windows-default.json
+ | Opened in that order
+Some states differ from a drawn one only in text or color, so they have no file of their own. Each is described in its section below.
+- Selection panel: a remembered structure, a Mining Rig, more than 24 ships, and SAVE against RENAME against UPDATE.
+- Queues: a queue waiting for the fleet cap, and a full queue.
+- Status panel: a Lab with every open topic done, and the Shipyards at the fleet cap.
+- Banners: Defeat, Draw, "A fleet destroyed." and "Out of time.".
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,146 @@
+
+Match, tick and world loops
+Match loop · player level
+1Setup
+The map's content is placed from the match's seed: asteroids, then pirate outposts, then derelicts, mirrored through the center. InProcessServer.cpp:133; Map.cpp:354-508; ADR-072 §Decision 3.
+2Players added
+with 1,000 Ore and the four starting designs saved; fog on; pirates and derelicts spawned. InProcessServer.cpp:150-167; Tuning.json: rules.startingOre, startingDesigns.
+3Bases placed
+each player's Command Station on its start (holding its home sector from the first tick) and 2 Constructors; 1,000 tickets each. Simulation.cpp:688-727; ADR-056 §Decision 3; ADR-057 §Decision 4.
+4Mine
+Constructors build Mining Rigs (50 Ore) on the three home asteroids; income flows each tick. Tuning.json line 60; Simulation.cpp:3003-3027; Phase2.md:69.
+5Claim
+Relays (200 Ore) on the two flank nodes open the near asteroids; further claims grow along the lattice, up to the Command Station's node cap. Phase2.md:53, Phase2.md:69; Simulation.cpp:2134-2140, 2170-2171.
+6Build the base
+Shipyard (in a held sector), Research Lab (one), Defence Platforms, Repair Bay; costs paid at the start, nothing refunded. Simulation.cpp:2145-2185; MVP.md:150.
+7Explore and salvage
+scouts find derelicts and pirate outposts; Constructors salvage derelicts for Ore and research; fleets clear outposts to open guarded sectors. Phase4.md:21; ADR-074 §Decision 4-5; ADR-073 §Decision 6.
+8Research and grow
+research topics within the Lab's open tier; upgrade the Command Station (nodes, fleet cap, guns), the Shipyard (hulls) and the Lab (tiers, second slot). ADR-064 §Decision 9-11; Tuning.json lines 40-58.
+9Design and produce
+warships from saved designs, each job waiting for Ore and for room under the fleet cap. Simulation.cpp:2674-2762; ADR-071 §Decision 3.
+10Fight
+suppress and destroy enemy Relays, defend held sectors; damaged ships retreat at their threshold and are repaired at a Repair Bay, the Command Station or a Shipyard. ADR-056 §Decision 6; ADR-075 §Decision 5.
+11Ore runs out
+home rigs run dry and pay the 20% trickle; income moves outward. ADR-035 §Decision 2; Phase1.md:206.
+12Domination drains
+every 3 s by the node difference; a player out of tickets loses. Simulation.cpp:3778-3805.
+13Losing production
+(no Command Station and no finished Shipyard) loses the match; a station-less player's Shipyards are revealed. Simulation.cpp:3683-3710, 316-330.
+14End
+Victory, Defeat or Draw banner with the match's length ("By domination." when so); the world runs on until the player goes back to the menu. Hud.cpp:2199-2207; ADR-020 §Decision 9.
+Tick loop · one simulation tick, code order
+1Planned large orders of the last
+Planned large orders of the last tick finish; this tick's commands are applied in order. Simulation.cpp:931-938
+2Fight
+ships and armed structures fire; hits land; retreats start; the destroyed leave; cleared outposts leave wrecks. Simulation.cpp:944-947, 1557-1738
+3DecideMatch
+(loss of production, or a world's restarts), KeepRetreats, KeepStandingOrders, GuardOutposts, ChaseTargets, ApproachWork. Simulation.cpp:948-956
+4Economy: (build
+Economy: Work (build, repair, salvage), RepairShips, BuildLevels, Produce, Research, Mine. Simulation.cpp:957-966
+5MoveShips
+, then SeparateShips, KeepShipsClear. Simulation.cpp:967-975
+6UpdateTerritory
+, then Dominate. Simulation.cpp:978-979
+7UpdateVision
+(under fog), RaiseSightings, FireScheduledOrders; a quiet tick builds one dropped path graph; the tick count advances. Simulation.cpp:980-994
+World loop · a persistent world on a dedicated server
+1Make a world
+OutpostServer --new-world <folder> makes one with a seed and the seats; OutpostServer <folder> runs it. A new world gets the world's rules (no domination, restarts). Phase5.md:64; InProcessServer.cpp:86-90.
+2Recover on start
+load the newest save that reads whole, then apply the logged commands since it, tick by tick. Phase5.md:84; WorldFolder.cpp:104-130; InProcessServer.cpp:78-83.
+3Tick
+20 a second; each tick's commands are written to the world's command log before they are applied. Tuning.json: rules.tickHz; InProcessServer.cpp:477-482; Phase5.md:83.
+4Save
+every 60 s of ticks; the newest 3 saves kept; written to a new file and renamed into place. WorldFolder.h:15 (WORLD_SAVE_SECONDS = 60), WorldFolder.h:23 (SAVES_KEPT = 3); InProcessServer.cpp:484-485; Phase5.md:82.
+5Seats
+a seat nobody has taken yet is its deputy's; a player takes its seat with its token and plays as in a match. SeatController.cpp:9-12; Phase5.md:67, Phase5.md:95.
+6Away
+60 s after the player's connection drops, the deputy (a keeper) takes the seat; scheduled orders fire on their ticks. GameProtocol/Server.h:32 (DEPUTY_DELAY_SECONDS = 60); SeatController.cpp:13-21; Phase5.md:47, Phase5.md:95-96, Phase5.md:107.
+7Return
+the player takes the seat again; the deputy gives it back; a panel says what happened while it was away; what the deputy ordered stands. Phase5.md:95, Phase5.md:155; InProcessServer.cpp:521-531.
+8Loss and restart
+a player without a Command Station or a finished Shipyard is told; an hour of ticks later, once its start is free, it restarts with a Command Station, 2 Constructors and its Ore topped up to 1,000. Simulation.cpp:3715-3748; Simulation.h:343.
+9Hourly record
+the world log writes each seat's Ore, income, fleet against its cap, nodes, topics researched, and time present and deputy-played, every hour of ticks. WorldLog.cpp:101-115; Phase5.md:137, Phase5.md:143.
+10Outage
+while the server is down the world pauses; on start it recovers (step 2). Phase5.md:85.
+11End
+a world ends only when the owner stops it. Phase5.md:127.
+Match flow (skirmish)
+ | Step
+ | Detail
+ | Source
+ | Startup
+ | The window opens on the menu, unless --join is given or a measurement switch skips it
+ | WinMain.cpp:366-370, ADR-020 §Decision 10
+ | Menu
+ | Title "Outpost Commander" (gold) and subtitle "A skirmish against the AI". Under them, any notice in the warning color, wrapped. Then the buttons: "Easy skirmish", "Normal skirmish", "Hard skirmish", "Join world" (only when a join file is in the documents), "Quit".
+ | Hud.cpp:2323-2357
+ | Start
+ | Both players take a seat on the game's own server over QUIC with new tokens. The AI of the asked difficulty plays player 2 on the client's thread. The server starts on its own thread. The tag says "Local skirmish".
+ | WinMain.cpp:319-344, Hud.cpp:3323
+ | Play
+ | Snapshots every tick at 20 Hz; the client interpolates
+ | ADR-009 §Decision 3, Tuning.json: rules.tickHz
+ | How it ends
+ | A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard, checked every tick. Or by domination on a map with territory. The winner is no player when both lose in one tick.
+ | Simulation.cpp:3683-3710, 3778-3813, ADR-037 §Decision 1
+ | End screen
+ | Banner title "Victory", "Defeat" or "Draw" (gold). Detail "{How}Match length {m:ss}", where How is "By domination. " or nothing. Button "Back to menu".
+ | Hud.cpp:2185-2219, 3339-3350
+ | After the end
+ | The world runs on, and the outcome stands
+ | ADR-020 §Decision 9
+ | Back to menu
+ | Ends the match's server, makes the next one, and shows the menu
+ | WinMain.cpp:491-504
+ | Quit
+ | Closes the game
+ | WinMain.cpp:509-511
+ | Match log
+ | Every match against the AI is appended to OutpostCommander-matches.log in the temporary folder (tooling)
+ | WinMain.cpp:41, 336-338, ADR-020 §Decision 11
+- Two banner endings belong to a developer switch. "A fleet destroyed. " and "Out of time. " come only from a battle matchup, --matchup (Hud.cpp:2209-2214).
+- Developer switches, not part of play: --measure, --load, --stress, --ai-matches, --quiet and --matchup on the game (WinMain.cpp:30-55); --world-run and --matchups on the dedicated server (OutpostServer/Main.cpp:23-27).
+Tick rate and wall time
+ | Rule
+ | Value
+ | Source
+ | Simulation tick rate
+ | 20 ticks a second
+ | Tuning.json: rules.tickHz (line 3); ADR-009 §Decision 3
+ | The tick is the simulation's only clock; wall time becomes ticks in one place, Neuron::TickHost
+ | —
+ | ADR-009 §Decision 3; InProcessServer.cpp:137-138 (host and simulation built at rules.tickHz)
+ | How wall time maps to ticks
+ | elapsed nanoseconds × ticks a second are accumulated; whole seconds' worth become due ticks, the remainder is kept exactly, so the rate does not drift
+ | NeuronServer/TickHost.cpp:26-35; ADR-009 §Decision 3
+ | One elapsed interval is clamped to at most 60 s before conversion
+ | 60 s
+ | TickHost.cpp:10 (MAX_ELAPSED_NANOSECONDS), TickHost.cpp:28
+ | Catch-up cap per Advance
+ | 5 ticks (250 ms at 20 Hz); a longer backlog is dropped, the simulation does not race to catch up
+ | InProcessServer.cpp:11 (MAX_TICKS_PER_ADVANCE = 5); TickHost.cpp:33-34; ADR-009 §Decision 4
+ | A world pauses while its server is down (the 5-tick cap means it does not catch up hours)
+ | —
+ | Phase5.md:85; Phase5.md:52 (gate H7)
+ | A scheduled order's time of day becomes a tick in the host when the command arrives (the only other place wall time meets the simulation)
+ | rounded up to the first tick at or after the moment; clamped to between now and one week ahead
+ | InProcessServer.cpp:338-350 (TickOfMoment, WEEK_SECONDS), InProcessServer.cpp:463; ADR-009 §Decision 3; Phase5.md:117
+ | Randomness
+ | Neuron::Random: xoshiro256** seeded through SplitMix64, part of the simulation's state
+ | ADR-009 §Decision 5
+ | A match's seed
+ | from the system clock, written to the debugger output
+ | ADR-009 §Decision 5
+ | A world's seed
+ | made when the world is made (OutpostServer --new-world <folder>), and read back from the save on recovery
+ | Phase5.md:64; InProcessServer.cpp:78-83
+ | Order within a tick
+ | commands applied at the start of each tick, in connection order, then send order
+ | ADR-009 §Decision 6
+ | Replay promise
+ | same binary, same seed and commands → same state, bit for bit; not across x64/ARM64 or Debug/Release
+ | ADR-009 §Decision 1
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,171 @@
+
+Ore, Mining Rigs and depletion
+Outpost Commander · design reference · 04
+Economy & territory
+Ore in hundredths, Mining Rigs and the reserves they draw down, the 10 km map of 25 sectors, territory held by Relays, domination and the fleet cap.
+Sources: Tuning.json Map.json A1 ADR-016/035/036/056/057/071/072
+Ore
+ | Item
+ | Value
+ | Source
+ | Resource
+ | One resource, Ore; a Mining Rig on an ore asteroid pays a fixed income into the owner's stockpile; no hauling
+ | MVP.md:146
+ | Stockpile unit in the simulation
+ | integer hundredths of an Ore (HUNDREDTHS = 100)
+ | ADR-016 §Decision 1; GameProtocol/Snapshot.h:7; Simulation.cpp:228-230 (AddPlayer, _ore × HUNDREDTHS)
+ | Costs
+ | whole Ore, taken as cost × 100 hundredths
+ | ADR-016 §Decision 1; Simulation.cpp:2172-2176 (structure), Simulation.cpp:2733 (queued job)
+ | Income unit
+ | hundredths of an Ore a second, summed over the player's built rigs; paid a tick's share at a time with the remainder carried
+ | Simulation.cpp:3005-3010 (Mine); ADR-016 §Decision 1; ADR-017 (cited by ADR-016)
+ | Example
+ | a home rig's 3.5 Ore/s is 17.5 hundredths a tick at 20 Hz
+ | ADR-016 §Decision 1
+ | What the client is told
+ | Ore rounded down to whole Ore; income in hundredths a second
+ | Simulation.cpp:1044; Snapshot.h:537-540; ADR-016 §Decision 1
+ | Starting Ore
+ | 1,000
+ | Tuning.json: rules.startingOre (line 4); InProcessServer.cpp:159
+ | Starting Constructors
+ | 2
+ | Tuning.json: rules.startingConstructors (line 5); Simulation.cpp:688-727
+ | Starting base
+ | a Command Station on the start, built and armed; the Constructors in a row in front of it facing the map's center
+ | ADR-016 §Decision 3; Simulation.cpp:729-747
+ | Starting designs (saved for every player)
+ | Swarm (Small+Ion+Mass Driver), Picket (Small+Ion+Lance), Brawler (Medium+Ion+Mass Driver), Lancer (Medium+Ion+Lance)
+ | Tuning.json: startingDesigns (lines 113-118); InProcessServer.cpp:160
+ | Payment rule
+ | everything is paid when the job starts; nothing is refunded; no cancel
+ | MVP.md:150; ADR-016 §Decision 4, §Decision 6, "What this forecloses"
+ | Ore stockpile cap
+ | Not specified (no cap found in code or docs)
+ | —
+ | Ore sink / bound in a world
+ | Not decided: "Whether the bank needs a sink or a bound is decided in Phase 6"
+ | Phase5.md:137
+Income rates (per built Mining Rig)
+ | Asteroid yield
+ | Ore a second
+ | Source
+ | home
+ | 3.5
+ | Tuning.json: rules.miningRigOrePerSecondHome (line 6)
+ | near
+ | 4
+ | Tuning.json: rules.miningRigOrePerSecondNear (line 7)
+ | contested
+ | 5.5
+ | Tuning.json: rules.miningRigOrePerSecondContested (line 8)
+ | rich
+ | 6.5
+ | Tuning.json: rules.miningRigOrePerSecondRich (line 9)
+These are Phase 3's 5, 6, 8 and 10 lowered by about a third (owner, 2026-10-07): Phase4.md:216, Phase4.md:203; ADR-036 §Decision 3.
+A rig's income each second = its yield's rate × its owner's mining-income factor × (20% once its asteroid is dry, else 1) × its sector's share (0 outside a held sector or in a suppressed one, 50% if cut off, else 1), rounded to the nearest hundredth. Simulation.cpp:2782-2793 (RigIncomeHundredthsPerSecond), Simulation.cpp:2971-2979 (TerritoryShare).
+- Mining-income factor: Improved Extraction, +25% (Tuning.json: research[id 1], lines 66-67). Percentages of one stat add before becoming a factor (Research.cpp:52, Research.cpp:110-117; ADR-033 per the comment).
+Mining Rigs
+ | Item
+ | Value
+ | Source
+ | Cost
+ | 50 Ore
+ | Tuning.json: structures[MiningRig].cost (line 60)
+ | Constructor build time
+ | 10 s (one Constructor; each further one adds 0.5 of a Constructor's work)
+ | Tuning.json: structures[MiningRig].buildConstructorSeconds (line 60); Tuning.json: constructor.extraConstructorBuildShare 0.5 (line 35); ADR-016 §Decision 5
+ | Hit points / armor / footprint
+ | 800 / 0 / 25 m
+ | Tuning.json line 60
+ | Where it may stand
+ | it snaps to the ore asteroid whose edge is within 40 m of the point, and stands at the asteroid's center, its footprint covering the asteroid
+ | GameProtocol/StructureKind.h:21 (RIG_SNAP_METERS = 40); Simulation.cpp:2081-2111; ADR-016 §Decision 4
+ | One rig per asteroid
+ | an asteroid that already holds a rig refuses another (InvalidPlacement)
+ | Simulation.cpp:2098-2102; MVP.md:148
+ | Held sector
+ | the asteroid must be in a sector the player holds (SectorNotHeld); placement checks the holder only, not suppression
+ | Simulation.cpp:2103-2108; ADR-056 §Decision 5; Phase2.md:53
+ | Earns only while…
+ | its player holds the sector and the sector is not suppressed; half while cut off
+ | Simulation.cpp:2971-2979; Phase2.md:68; ADR-056 §Decision 5
+ | Under construction
+ | earns nothing
+ | ADR-016 §Decision 5 ("A structure under construction does nothing but stand…"); Simulation.cpp:2774-2775 (IsBuilt)
+ | Blocks movement?
+ | no; its asteroid already is an obstacle
+ | ADR-016 §Decision 8
+ | Destroyed rig
+ | the asteroid is free to rebuild on, and the new rig mines what is left of the reserve
+ | MVP.md:148; ADR-035 Consequences ("The reserve is the asteroid's, not the rig's")
+ | Levels
+ | none (only Command Station, Shipyard, Research Lab have levels)
+ | ADR-064 §Decision 1; Tuning.json line 60 has no levels
+Ore depletion
+ | Item
+ | Value
+ | Source
+ | Every ore asteroid holds a reserve, in whole Ore in the map data; the server holds it in hundredths
+ | —
+ | ADR-035 §Decision 1-2; Simulation.cpp:186-200 (PlaceMap)
+ | A rig draws from its asteroid what it earns, divided by its owner's ore-reserve factor
+ | —
+ | Simulation.cpp:3015-3027; ADR-035 §Decision 3
+ | Exhausted asteroid
+ | its rig earns a trickle of 20% of its rate, which draws nothing
+ | Tuning.json: rules.exhaustedYieldPercent 20 (line 10); Simulation.cpp:2790-2791; ADR-035 §Decision 2-3; Phase1.md:203
+ | Improved Extraction
+ | raises income, so the reserve drains as much faster
+ | ADR-035 §Decision 3; Phase1.md:204
+ | Deep Core Survey (tier 2)
+ | ore-reserve factor 1.3: the researcher's rigs draw a 1.3rd less for the same Ore, on what is left as well as what is to come, for the researcher only and only while it mines; the reserve figure itself is not raised
+ | Tuning.json: research[id 12] (lines 86-87); Simulation.cpp:3023-3024; ADR-035 §Decision 3 (see Conflicts C9)
+ | Asteroid that never runs out
+ | one placed in code without a reserve (tests only); every repository asteroid has one
+ | ADR-035 §Decision 1; Map.json lines 9-14, 152-157
+ | An asteroid never refills
+ | —
+ | ADR-035 "What this forecloses"
+Reserves per asteroid
+ | Yield
+ | Radius
+ | Reserve (Ore)
+ | Where
+ | Source
+ | home
+ | 45 m
+ | 7,500
+ | the three listed asteroids of each home
+ | Map.json: oreAsteroids (lines 9-14)
+ | near
+ | 45 m
+ | 9,000
+ | flank (2 a sector), near (1 a sector)
+ | Map.json: sectorKinds (lines 152-153)
+ | contested
+ | 45 m
+ | 12,000
+ | contested (1), between (2), center (4)
+ | Map.json: sectorKinds (lines 154-156)
+ | rich
+ | 60 m
+ | 24,000
+ | rich (2 a sector)
+ | Map.json: sectorKinds (line 157)
+Derived time to run dry at the base rate, no research, held and not cut off (reserve ÷ rate from Tuning.json rules): home 7,500 ÷ 3.5 ≈ 2,143 s (35:43); near 9,000 ÷ 4 = 2,250 s (37:30); contested 12,000 ÷ 5.5 ≈ 2,182 s (36:22); rich 24,000 ÷ 6.5 ≈ 3,692 s (61:32). The docs still carry the Phase 1 durations (Conflicts C3).
+What a player remembers
+ | Rule
+ | Source
+ | At the end of each tick, each ore asteroid in sight of one of the player's ships or structures, or in a sector it holds that is not suppressed, updates the player's known figure
+ | Simulation.cpp:331-343 (UpdateVision); ADR-035 §Decision 4; ADR-056 §Decision 9
+ | Out of sight the player keeps the figure as it last saw it; an asteroid never seen has none
+ | ADR-035 §Decision 4; Simulation.cpp:2989-3001 (ReserveKnownTo)
+ | The snapshot carries the reserve as the player knows it, on an ore asteroid and on a Mining Rig for its asteroid (EntityView::oreReserveHundredths)
+ | ADR-035 §Decision 5; Snapshot.h:141
+ | Without fog every player knows every reserve
+ | ADR-035 §Decision 4
+ | Client: a rig's panel gives the Ore left or that it ran out; the minimap draws a dry asteroid in dark rust instead of Ore's gold (A4/A7 territory)
+ | ADR-035 §Decision 5
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

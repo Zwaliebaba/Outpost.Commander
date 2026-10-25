@@ -1,0 +1,380 @@
+
+Window: Designer
+Designer
+Purpose. Design a ship, save or rename it, and queue it at a Shipyard, with live figures (Phase 1 design §11, ADR-017, ADR-023, ADR-062, ADR-068 d1, ADR-088 d3). It is drawn after the owner's mockup, GameDesign/Mockups/ShipDesigner.png. The mockup is evidence, and the code differs from it as § Conflicts records.
+Height (ExtentOf, Hud.cpp:1075-1092).
+- Slot rows start at y 168.
+- Each row is lines × card height + (lines − 1) × 7, then 10 to the next row. There are 3 cards to a line, and a card is 80 tall, or 96 in a row where any card has a note.
+- The sections start 20 below the last row, and the footer starts at sections + max(26 + 6 × 25, 26 + 96 + 24) + 12.
+- The window ends 48 + 20 below the footer.
+With Tuning.json:
+ | Data
+ | Count
+ | Hulls
+ | 3
+ | Drives
+ | 3
+ | Weapons
+ | 5, two with splash notes
+ | Module row
+ | None, plus Sensor Array
+So the slot tops are hull 168, drive 258, weapon 348 (two lines of 96) and module 557. The sections start at S = 657, the footer at F = 845, and the window is H = 913: 1086, 16, 818, 913 at its default place (ADR-070 Consequences gives 913 too).
+Elements, in window units (add (1086, 16) for the default place).
+ | id
+ | Kind
+ | Label (verbatim)
+ | Data
+ | Color
+ | Rect
+ | Source
+ | designer.shipyard.previous / .next
+ | small button 24×24, mark Label face
+ | < and >
+ | PreviousShipyard / NextShipyard; enabled while any Shipyard exists
+ | face CARD_COLOR (DISABLED_BUTTON_COLOR when off); mark TEXT_COLOR (DIM_TEXT_COLOR)
+ | < at 24, 6; > at subject end + 8
+ | Hud.cpp:1365-1367, 1190-1213
+ | designer.shipyard.subject
+ | text, Label, tracking 2
+ | SHIPYARD {n:02} or NO SHIPYARD
+ | Designer::Target → EntityView::shipyardNumber
+ | HEADER_LABEL_COLOR
+ | 56, 11 (cut at 294)
+ | Hud.cpp:591, 1365
+ | designer.titleLabel
+ | text, Label, tracking 2
+ | · DESIGNER
+ | —
+ | HEADER_LABEL_COLOR
+ | after > + 8, y 11
+ | Hud.cpp:1368
+ | designer.title
+ | text, Title
+ | SHIP DESIGN
+ | —
+ | TEXT_COLOR
+ | 24, 40
+ | Hud.cpp:1370
+ | designer.queueLabel
+ | text, Label, tracking 2
+ | QUEUE · {n} / 5
+ | target's EntityView::queue.size(), QUEUE_LIMIT 5 (Snapshot.h:42)
+ | HEADER_LABEL_COLOR
+ | 502, 12
+ | Hud.cpp:1371, 1043-1046
+ | designer.built
+ | text, Label, right-aligned
+ | BUILT · {n}
+ | EntityView::shipsBuilt
+ | HEADER_LABEL_COLOR
+ | right edge 490, y 44
+ | Hud.cpp:1372-1373
+ | designer.queueSlot0..4
+ | panel
+ | —
+ | filled while i < queue length
+ | SLOT_FILLED_COLOR / FIELD_COLOR
+ | 502 + 33·i, 40, 30, 24
+ | Hud.cpp:1361-1364, 1374-1378
+ | header.oreBox
+ | panel, outlined
+ | gem + figure
+ | Snapshot::ore
+ | FIELD_COLOR, EDGE_COLOR, GOLD_COLOR
+ | 678, 38, 116, 30
+ | Hud.cpp:1379, 1244-1249
+ | designer.name.field
+ | field: a press starts typing
+ | —
+ | EditName
+ | FIELD_COLOR; edge PICKED_EDGE_COLOR while typing, else EDGE_COLOR
+ | 24, 84, 694, 38
+ | Hud.cpp:1385-1387
+ | designer.name.label
+ | text, Label, tracking 2
+ | NAME
+ | —
+ | LABEL_COLOR
+ | 36, 97
+ | Hud.cpp:1388
+ | designer.name.value
+ | text, Name
+ | {name}, with _ after it while typing
+ | Designer::Name (Designer.cpp:122-151): the typed name; else the matching saved design's; else {Hull}+{Drive}+{Weapon}[+{Module}], or {Design}+{module initials} (ADR-069 d5)
+ | TEXT_COLOR; WARNING_COLOR when IsValidDesignName fails (plain text, ADR-085 d1)
+ | 90, 93
+ | Hud.cpp:1389-1392
+ | designer.name.count
+ | text, Figure, right-aligned
+ | {length}/32
+ | DESIGN_NAME_LIMIT 32 (Command.h:68)
+ | LABEL_COLOR
+ | right edge 706, y 96
+ | Hud.cpp:1389, 1393
+ | designer.save
+ | button
+ | SAVE, or SAVED when the picks and name are a saved design
+ | SaveDesign; enabled only for a new design
+ | enabled: CARD_COLOR face, TEXT_COLOR. SAVED: FIELD_COLOR face, QUEUE_EDGE_COLOR edge and text. Disabled SAVE: FIELD_COLOR, DIM_TEXT_COLOR
+ | 726, 84, 68, 38; label at 738, 97, Label face, tracking 2
+ | Hud.cpp:600-605, 1394-1405
+ | designer.saved.label
+ | text, Label, tracking 2
+ | SAVED
+ | —
+ | LABEL_COLOR
+ | 24, 139
+ | Hud.cpp:1408
+ | designer.chip0..2
+ | button (LoadDesign)
+ | name: Label face, cut to fit; code: Detail face, right-aligned
+ | DesignView::nameUtf8; the code {H}·{D}·{W}[·{M}] (DesignCodeOf, Hud.cpp:422-435)
+ | face PICKED_COLOR for the design shown, else CARD_COLOR; edge PICKED_EDGE_COLOR / EDGE_COLOR; name TEXT_COLOR; code ACCENT_COLOR when shown, else CODE_COLOR
+ | 70 | 292 | 514, 132, 216, 26; name at +8, +6; code right edge at +208, +7
+ | Hud.cpp:1409-1420
+ | designer.chips.previous / .next
+ | small buttons
+ | < and >
+ | only when there are more than 3 saved designs; PreviousDesigns / NextDesigns
+ | as the small buttons above
+ | 742, 133 and 770, 133
+ | Hud.cpp:1421-1427
+ | designer.slot.{hull,drive,weapon,module}.label
+ | text, Label, tracking 2
+ | HULL, DRIVE, WEAPON, MODULE
+ | —
+ | LABEL_COLOR
+ | 24, top + 21
+ | Hud.cpp:639, 658, 675, 695, 1438
+ | designer.slot.*.picked
+ | text, Name, cut at 78
+ | the pick's name, or None for no module
+ | HullView::nameUtf8 etc.
+ | ACCENT_COLOR
+ | 24, top + 39
+ | Hud.cpp:1439-1440
+ | designer.slot.*.divider
+ | panel, 1 unit wide
+ | —
+ | —
+ | EDGE_COLOR
+ | 108, top + 6, 1, (rows' height − 12)
+ | Hud.cpp:1441
+ | designer.card.{slot}.{i}
+ | button card (no press when locked)
+ | —
+ | Pick{Hull,Drive,Weapon,Module}
+ | face PICKED_COLOR / LOCKED_COLOR + LOCKED_HATCH_COLOR hatched / CARD_COLOR; edge PICKED_EDGE_COLOR / EDGE_COLOR
+ | x 118 | 345 | 572, y top + line·(card height + 7), 220 × (80 or 96)
+ | Hud.cpp:1442-1458
+ | … .name
+ | text, Name
+ | component name, or None
+ | HullView, DriveView, WeaponView, ModuleView nameUtf8 (Tuning.json)
+ | TEXT_COLOR / LOCKED_TEXT_COLOR
+ | +12, +8
+ | Hud.cpp:1462-1463
+ | … .cost
+ | gem + figure, Figure face
+ | {cost}
+ | cost
+ | GOLD_COLOR / LOCKED_TEXT_COLOR
+ | right edge +208, +11
+ | Hud.cpp:1464-1465
+ | … .numbers
+ | text, Detail, cut at 196
+ | hull {hp:,} HP · ARM {a} · {s}m/s; drive SPD ×{f} · HP ×{f}; weapon {d} dmg / {i}s · {r}m; module SIGHT {s}m · SPD ×{f}; None No module
+ | the views' numbers
+ | NUMBERS_COLOR / LOCKED_TEXT_COLOR
+ | +12, +34
+ | Hud.cpp:651-652, 669, 686-687, 700, 714, 1467-1468
+ | … .note
+ | text, Detail
+ | splash {r}m
+ | WeaponView::splashRadiusMeters > 0
+ | as the numbers
+ | +12, +52
+ | Hud.cpp:688, 1469-1473
+ | … .lockBox / .lockedBy
+ | Checkbox sprite 10, and text in the Label face
+ | RESEARCH · {TOPIC IN CAPITALS}, or RESEARCH
+ | the topic that unlocks it (LockedBy, Hud.cpp:576-580)
+ | AMBER_COLOR
+ | box at +12, foot − 18; text at +28, foot − 20
+ | Hud.cpp:1474-1480
+ | designer.sectionDivider
+ | panel
+ | —
+ | —
+ | EDGE_COLOR
+ | 24, slots' end + 10, 770, 1
+ | Hud.cpp:1483
+ | designer.performance.label
+ | text, Label, tracking 2
+ | PERFORMANCE
+ | —
+ | LABEL_COLOR
+ | 24, S
+ | Hud.cpp:1487
+ | designer.bar.{row}.label
+ | text, Label
+ | Hit points, Armor, Speed, Range, Sensors (only when a module has sight), Cost, Build
+ | DesignStats (DesignStats.h:76-94); the scale is the best of every design (BestOfAll, Hud.cpp:494-527)
+ | ROW_LABEL_COLOR
+ | 24, S + 26 + 25·i + 2
+ | Hud.cpp:763-779, 1492
+ | … .track / .fill
+ | bars
+ | —
+ | the share of the best
+ | track BAR_TRACK_COLOR; fill BAR_FILL_COLOR; while previewing, the part added or taken in GOOD_COLOR / POOR_COLOR
+ | 104, row + 6, 90 (× share), 7
+ | Hud.cpp:1493-1501
+ | … .value
+ | text, Figure, right-aligned
+ | {v}, or while previewing {v} ({+n\|-n})
+ | —
+ | TEXT_COLOR; GOOD_COLOR / POOR_COLOR by the change
+ | right edge 316, row
+ | Hud.cpp:1503-1504, 740-754
+ | … .unit
+ | text, Label
+ | (none), (none), m/s, m, m, ore, s
+ | —
+ | LABEL_COLOR
+ | 322, row + 2
+ | Hud.cpp:1505, 764-779
+ | designer.damage.label
+ | text, Label, tracking 2
+ | DAMAGE / S AFTER ARMOR · VS A FORMATION
+ | —
+ | LABEL_COLOR
+ | 364, S
+ | Hud.cpp:1510-1511
+ | designer.damage.{hull}
+ | card
+ | —
+ | one per Snapshot::hulls
+ | FIELD_COLOR, EDGE_COLOR
+ | w = (430 − 8·(n − 1))/n = 138 for 3 hulls, at x 364 | 510 | 656; y S + 26; h 96
+ | Hud.cpp:1512-1520
+ | … .hull / .armor
+ | Name / Label (right)
+ | {hull} / ARM {a}
+ | HullView
+ | TEXT_COLOR / LABEL_COLOR
+ | +10, +8 / right edge +130, +11
+ | Hud.cpp:1521-1524, 796
+ | … .perShip
+ | text, LargeFigure
+ | {dps:.1f}
+ | FormationDamagePerSecond (DesignStats.h)
+ | TEXT_COLOR, or the change's color
+ | +10, +30
+ | Hud.cpp:1526, 797
+ | … .reach
+ | text, Label, right-aligned
+ | ×{n} ships, for a splash that reaches more than one
+ | ShipsReached
+ | LABEL_COLOR
+ | right edge +130, +28
+ | Hud.cpp:1528-1529, 801
+ | … .change
+ | text, Figure, right-aligned
+ | +{n.n} / -{n.n}, while previewing
+ | —
+ | the change's color
+ | right edge +130, +44
+ | Hud.cpp:1531-1535, 798-800
+ | … .rating
+ | bar
+ | —
+ | the share of the best against that hull: Good from 2/3, Fair from 1/3 (Hud.cpp:417-418)
+ | BAR_TRACK_COLOR + GOOD_COLOR / FAIR_COLOR / POOR_COLOR
+ | +10, +66, 118, 4
+ | Hud.cpp:1536-1537
+ | … .perOre
+ | text, Detail
+ | {n:.1f} / 100 ore
+ | —
+ | SOFT_COLOR
+ | +10, +76
+ | Hud.cpp:1538-1539, 802
+ | designer.hint
+ | text, Detail, cut at 430
+ | Hover any part to preview its effect., or Preview: with {part} instead
+ | —
+ | LABEL_COLOR
+ | 364, S + 132
+ | Hud.cpp:731-732, 1541-1542
+ | designer.rename
+ | button
+ | RENAME, or UPDATE (same name, retreat changed)
+ | SaveDesign; enabled when a saved design would change
+ | CARD_COLOR / FIELD_COLOR, edge EDGE_COLOR, label TEXT_COLOR / DIM_TEXT_COLOR, Label face, tracking 2
+ | 24, F, 90, 48; label at 38, F + 16
+ | Hud.cpp:606-609, 1546-1554
+ | designer.retreat.label
+ | text, Label, tracking 2
+ | RETREAT
+ | —
+ | ROW_LABEL_COLOR
+ | 126, F
+ | Hud.cpp:1561
+ | designer.retreat.{quarter,half,never}
+ | three cells
+ | 25%, 50%, NEVER (Label face, tracking 2)
+ | DesignRetreat; Designer::Retreat (Designer.cpp:106-112)
+ | PICKED_COLOR / CARD_COLOR, PICKED_EDGE_COLOR / EDGE_COLOR, words TEXT_COLOR
+ | 126 | 196 | 266, F + 18, 66, 30
+ | Hud.cpp:1557-1564, 1328-1346
+ | designer.fewer / .more
+ | buttons
+ | - / + (Name face)
+ | FewerShips / MoreShips; enabled while count > 1 / count < free queue slots
+ | CARD_COLOR / FIELD_COLOR, EDGE_COLOR, TEXT_COLOR / DIM_TEXT_COLOR
+ | 346, F, 36, 48 / 424, F, 36, 48; mark at +13, +13
+ | Hud.cpp:1565-1580
+ | designer.count
+ | field and text
+ | ×{n}
+ | Designer::Count (Designer.cpp:75-80)
+ | FIELD_COLOR, EDGE_COLOR, TEXT_COLOR
+ | 382, F, 42, 48; text at 392, F + 13
+ | Hud.cpp:1577-1579
+ | designer.queue
+ | button
+ | QUEUE (Title face, tracking 2)
+ | Queue for a saved design; SaveAndQueue for new picks (ADR-023)
+ | enabled: QUEUE_COLOR + QUEUE_HATCH_COLOR hatched, edge QUEUE_EDGE_COLOR, text QUEUE_TEXT_COLOR. Disabled: FIELD_COLOR, EDGE_COLOR, DIM_TEXT_COLOR
+ | 468, F, 326, 48; label at 486, F + 2
+ | Hud.cpp:826-833, 1581-1594
+ | designer.queue.detail
+ | text, Detail
+ | {t} s each; Needs Shipyard L{n}; or nothing
+ | the build time ÷ shipyardBuildSpeedFactor; HullView::shipyardLevel
+ | as the label
+ | 486, F + 31
+ | Hud.cpp:818-824, 1595
+ | designer.queue.cost
+ | gem + figure, Title face
+ | {cost × count}
+ | DesignView::cost or the stats' cost
+ | GOLD_COLOR / DIM_TEXT_COLOR
+ | right edge 778, F + 10
+ | Hud.cpp:817, 1596-1597
+States.
+- A saved design shown. SAVE reads SAVED and is lit in the Queue green; the chip is lit; RENAME is dim.
+- New picks. SAVE is enabled; RENAME is dim; QUEUE saves and then queues (ADR-023).
+- A saved design renamed. SAVE is dim; RENAME is enabled. With the same name but a changed retreat, the button reads UPDATE (Hud.cpp:606-609).
+- Typing. The field's edge is lit, and an _ follows the name. Printable ASCII only, up to 32 characters; Backspace deletes, Enter saves and stops, Esc drops what was typed (Designer.cpp:228-260). A press anywhere but the field stops typing, and so does closing the window (GameClient.cpp:1003-1005, 707-710). While the designer types, every key is its own (GameClient.cpp:819-835).
+- Invalid name. The name is in WARNING_COLOR, and SAVE and QUEUE are dim.
+- Hovering a part. Hovering an unpicked, unlocked card previews it (Hud.cpp:622-635): the bars show the change in green or red, the values read v (±n), the damage cards show the previewed design with its change, and the hint names the part.
+- Locked card. It takes no press and previews nothing (interface plan 1, "Not in this plan").
+- No Shipyard. NO SHIPYARD; the arrows are dim; QUEUE is dim; BUILT · 0.
+- Hull above the target Shipyard's level. QUEUE is dim and its detail reads Needs Shipyard L{n}; the design can still be saved (Hud.cpp:819-824).
+- Queue full. No free slot, so + is dim and QUEUE is dim.
+- Ore short. QUEUE is dim.
+- More than 3 saved designs. The chip arrows show, each dim at its end.
+Layout files: window-designer-default.json, -preview.json, -unsaved-editing.json, -no-shipyard.json.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,64 @@
+
+Contact sheets
+Outpost Commander · design reference · 15
+Asset catalogue
+Every shipped model of every set in the game's look, the level sheets, the textures and the app's logos, with lengths, triangles, bounds and hashes.
+Sources: Models.json OutpostCommander/Assets/Models/*.nmf Art/Models/*.glb A6
+Renderer
+Renderer: a software rasterizer in Python 3.13 and numpy 2.5 (DesignReference/_work/A6/tool/nmfrender.py, driven by render_all.py), not three.js: z-buffered triangles, then a depth-tested line pass, then the glow, all in linear color, encoded to sRGB at the end. No Blender, no GPU. It is the same arithmetic as the shaders, replayed per pixel.
+ | What
+ | In the game (source)
+ | Here
+ | Mesh read
+ | NMF v3: positions, normals, one open byte a vertex, u32 indices, hardpoints, parts (Tools/BakeMeshes.py docstring; NeuronClient/MeshData.cpp ParseNmf)
+ | Same layout, same checks (padding zero, version 3, no bytes left over).
+ | Size
+ | L1 or a model without levels: FitMesh to lengthMeters along x; L2–L5: FitMeshAcross level 1's widest of x and z (GameApp/ModelCatalog.cpp:382-385, GameApp/GameClient.cpp:367-372, ADR-064)
+ | Same. Bounds centered on the origin (FitMesh, FitMeshAcross, CenterAndScale, MeshData.cpp:219-254).
+ | Face light
+ | MeshPS.hlsl:33-43: fill = lerp(GROUND_FILL, SKY_FILL, n.y·0.5+0.5); key = saturate((n·l + KEY_WRAP)/(1+KEY_WRAP)); color × (fill + KEY_COLOR·key) × (1 − OCCLUSION_STRENGTH·(1 − openness))
+ | Same formula per pixel, openness interpolated across the face, normal per face (every source is flat-shaded, three vertices a triangle: ADR-092 Context).
+ | Light numbers
+ | GameApp/SceneShading.h:15-19, 23: TOWARD_KEY (−0.4, 0.8, 0.45) normalized (GameClient.cpp:1130), KEY_COLOR (0.627, 0.539, 0.427), KEY_WRAP 0.3, SKY_FILL (0.365, 0.421, 0.571), GROUND_FILL (0.314, 0.287, 0.389), OCCLUSION_STRENGTH 1 (ADR-090 decision 1, ADR-092 decision 4)
+ | Same values. The light is fixed in the world, as in the game.
+ | Line light
+ | MeshLinePS.hlsl:42: line color × luminance(LightAt(n)), weights (0.2126, 0.7152, 0.0722); never darkened by occlusion (ADR-092 decision 4)
+ | Same.
+ | Crease lines
+ | Neuron::BuildCreaseLines (NeuronClient/MeshData.cpp:289-397) at CREASE_DEGREES = 10° (GameApp/GameClient.cpp:49; ADR-027 decision 2): corners welded by exact position; a line on every edge whose two faces' normals differ by more than 10° (cosine >= cos 10° is skipped, MeshData.cpp:377), on every edge with one face, and on every edge with more than two; zero-area triangles skipped; each line's normal is the normalized mean of its faces' normals. Built per piece: the fixed triangles, then each spinning part (GameClient.cpp:374-389, ADR-045 decision 4)
+ | Same rule, same per-piece split (numpy, float32 positions).
+ | Lines over faces
+ | Each line vertex pulled LINE_LIFT_SHARE = 0.002 of the way to the eye (GameClient.cpp:53, MeshLineVS.hlsl:59), "about 2.5 pixels of depth" at the default view (ADR-040 decision 2); depth test less-or-equal, no depth write (ADR-027 decision 3)
+ | A depth bias of 2.5 output pixels toward the eye, less-or-equal test against the faces, no depth write.
+ | Face and line colors
+ | Ship and Constructor: faces Shaded(color, FILL_SHADE 0.3), lines EdgeColor(color, EDGE_BRIGHTNESS 2, EDGE_WHITE_SHARE 0.35) (GameClient.cpp:1509, 1556-1569). Structure: color = TowardGray(ModelColor(set, tint, built), STRUCTURE_GRAY_SHARE 0.35), faces at STRUCTURE_FILL_SHADE 0.22 (GameClient.cpp:1571-1579, 344-349). Derelict: the Wreck set's color as a ship (GameClient.cpp:1544-1546). Asteroid: faces ROCK_FILL_SHADE 0.15, lines EdgeColor(color, ROCK_EDGE_BRIGHTNESS 1.35, 0) (GameClient.cpp:1515-1516, 1560-1561). Constants SceneShading.h:45-57, functions SceneShading.cpp
+ | Same functions, ported. Structures fully built (builtPermille 1000). Asteroids as an ore asteroid; a field's rocks are 0.7 of that color first (FIELD_SHADE, GameClient.cpp:1522) and are not rendered separately.
+ | Culling
+ | Back faces culled, clockwise front (ADR-011 decision 7)
+ | A face is drawn when its normal faces the eye; every face's winding agrees with its normal (checked here on all 16,316 triangles, as GameAppTests holds).
+ | Antialiasing
+ | 4× MSAA, averaged in linear color (ADR-040 decision 3, ADR-050)
+ | 2×2 supersampling averaged in linear color, plus analytic coverage on the lines.
+ | Color encoding
+ | Linear colors into an R8G8B8A8_UNORM_SRGB target (ADR-040 decision 3)
+ | sRGB-encoded at the end.
+ | Glow (ADR-091)
+ | SCENE_BLOOM threshold 0.35, knee 0.15, intensity 2, spread 0.6 (GameClient.cpp:25); five half-size levels: bright pass (BloomBrightPS.hlsl), 13-tap down (BloomDownPS.hlsl), 3×3 tent up weighted by the spread (BloomUpPS.hlsl), added in the resolve × intensity / Σspreadᵏ (ResolvePS.hlsl, Bloom.cpp:86-98)
+ | Added, as a light phosphor glow: the same passes and numbers replayed with bilinear taps on the 1024-pixel image. In the transparent PNGs it is kept over the model only (an added light cannot be stored in a transparent pixel without a pale halo on a light page); on the sheets, over black, it is added whole.
+ | Camera
+ | Default yaw looks along +z, screen right +x, top +z (GameApp/Camera.cpp:13-14); pitch from 40° to 70° with zoom (Camera.json, Camera.cpp:160-165); 45° vertical field of view
+ | 3/4 view: the default yaw at the default zoom's pitch, 43.68° (view width 500 m of 150–3000 m, Camera.json), model heading 225° (nose toward the lower left). Top view: straight down, screen top +z, heading 90° (nose up). Orthographic: at the game's distance a model spans a few degrees, so this stands in for its perspective. Heading as WorldMatrix/PoseMatrix turn it (XMMatrixRotationY(−heading), GameClient.cpp:283-291, Hardpoints.cpp:54-64).
+Where this is not the game, on purpose or of necessity:
+- Lines are 2 px wide at 1024 px (about 1 px in the _512 copies). The game draws 1-pixel lines at any zoom (ADR-027 decision 3), but a model fills ~880 px here against ~80 px for a 20 m hull at the default zoom (500 m across 1920 px), so 1 px would read far thinner than the game does.
+- Each image is framed by its own projected extent (the model fills 84 % of the side), so images are not to scale with each other. The level sheets are the exception: one frame for all five levels.
+- Not drawn: the starfield and grid behind the model, banking, exhaust glows at exhaust hardpoints (ADR-019), footprint rings (ADR-042), selection, health bars, a structure under construction (darker by UNBUILT_SHADE), a Mining Rig standing on its rock (ADR-044), a remembered structure's lines-only look (MEMORY_GRAY_SHARE, MEMORY_SHADE, GameClient.cpp:119-120). Spinning parts are drawn at rest (angle 0), as the baker and the explosion take them (ADR-045 decisions 2 and 5).
+- Not built, so not drawn (ImplementationPlan-Look.md task board): paint slots, two-tone lines, beacons, fleet plates (LV2.2, LV2.3, LV3.1, LV4.1–4.3).
+- Transparent background (straight alpha, written so that it shows as rendered over black in an ordinary viewer): the sky is not there, and a model's dark faces read lighter on a white page than on the game's black.
+Sheets
+Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.[IMG /_blob/1ac85e225be5d2b41f9f0fe5d756249a alt=Human sheet]
+Human · every model, 3/4 and top[IMG /_blob/02d4a772826522f21c8e5b0b10e5ad00 alt=Tarkan sheet]
+Tarkan · every model, 3/4 and top[IMG /_blob/087bf52940f052312a112d3e34e92d82 alt=Pirate sheet]
+Pirate · every model, 3/4 and top[IMG /_blob/2a64a0dc1eef4481ff0725d1aa8953b7 alt=Wreck sheet]
+Wreck · every model, 3/4 and top[IMG /_blob/783526f6a5a01159afde8469eeb070ff alt=Asteroids sheet]
+Asteroids · every model, 3/4 and top
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

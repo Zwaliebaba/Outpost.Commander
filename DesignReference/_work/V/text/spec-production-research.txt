@@ -1,0 +1,242 @@
+
+Windows: Production and Research
+Production
+Purpose. One producer's queue, and the cards that add to it: a Constructor at the Command Station, or each saved design at a Shipyard. Arrows step through the player's finished producers (Phase 1 design §12; owner, 2026-10-03; ADR-043 d6; ADR-068 d3).
+Geometry (Hud.cpp:1606-1636, 1708-1784).
+- The window is 478 wide (PRODUCTION_WINDOW_WIDTH = 1920 − 64 − 818 − 560).
+- Cards are 211 × 74, two to a line, at x 24 or 243, y 104 + 82·line.
+- The cards stay where they are as the queue grows; the window grows at its foot.
+- Height: CardsBottom + 20 + 20 + jobs·34 + 20, where CardsBottom = 104 + max(lines, 1)·82 − 8.
+ | State
+ | Height
+ | Four cards and three jobs
+ | 422
+ | One card and two jobs
+ | 306
+ | No cards
+ | 238
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect (window units; default corner (16, 178))
+ | Source
+ | production.titleLabel
+ | text, Label, tracking 2
+ | PRODUCTION
+ | —
+ | HEADER_LABEL_COLOR
+ | 24, 11
+ | Hud.cpp:1725
+ | header.subject
+ | stepped title: < 24×24, the subject in the Title face, >
+ | COMMAND STATION, SHIPYARD {n:02} or NO PRODUCER
+ | ProductionTarget (ProductionTarget.cpp:12-60); the arrows are enabled while there is more than one producer
+ | small buttons as in the designer; subject TEXT_COLOR
+ | < 24, 43; subject at 56, 40 (cut at 244); > after it
+ | Hud.cpp:1658-1671, 2838-2845
+ | header.oreBox
+ | panel
+ | gem + figure
+ | Snapshot::ore
+ | FIELD_COLOR, GOLD_COLOR
+ | 338, 38, 116, 30
+ | Hud.cpp:1670
+ | production.build.label
+ | text, Label, tracking 2
+ | BUILD
+ | —
+ | LABEL_COLOR
+ | 24, 84
+ | Hud.cpp:1730
+ | production.option{i}
+ | button card (Queue)
+ | —
+ | a Constructor at the station; each DesignView at a Shipyard. Enabled when its level allows, the queue has room, and the Ore is there
+ | CARD_COLOR / FIELD_COLOR; edge EDGE_COLOR
+ | 24 | 243, 104 + 82·line, 211, 74
+ | Hud.cpp:1733-1743, 2855-2894
+ | … .name
+ | text, Name, cut at 187
+ | Constructor, or the design's name
+ | —
+ | TEXT_COLOR / LOCKED_TEXT_COLOR
+ | +12, +6
+ | Hud.cpp:1745-1746
+ | … .detail
+ | text, Detail
+ | {H·D·W[·M]}, or {code} · NEEDS L{n}
+ | DesignCodeOf; HullView::shipyardLevel
+ | CODE_COLOR / LOCKED_TEXT_COLOR
+ | +12, +28
+ | Hud.cpp:1747-1749, 2878
+ | … .cost
+ | gem + figure, Figure
+ | {cost}
+ | constructorCost (Snapshot.h:547) or DesignView::cost
+ | GOLD_COLOR / LOCKED_TEXT_COLOR
+ | right edge +199, +28
+ | Hud.cpp:1750-1751
+ | … .time
+ | text, Detail
+ | {t} s
+ | constructorBuildSeconds (Snapshot.h:548), or the build time ÷ shipyardBuildSpeedFactor
+ | LABEL_COLOR / LOCKED_TEXT_COLOR
+ | +12, +50
+ | Hud.cpp:1755, 2863, 2884
+ | … .strength.{S,M,L}
+ | the hull's initial (Label face) and 3 segments of 6×8, 2 apart; groups 10 apart, ending at +199
+ | S, M, L (Abbreviation of each hull's name)
+ | rated as the designer rates (ADR-068 d3): 3 segments lit for Good, 2 for Fair, 1 for Poor
+ | letter ROW_LABEL_COLOR; lit segments GOOD_COLOR / FAIR_COLOR / POOR_COLOR, unlit BAR_TRACK_COLOR; all LOCKED_TEXT_COLOR when dim
+ | segments at +55
+ | Hud.cpp:1756-1777
+ | production.hint
+ | text, Detail
+ | Build a Shipyard to make warships. (no producer) or Save a design in the ship designer to build it here. (a Shipyard, no designs)
+ | —
+ | LABEL_COLOR
+ | 24, 120
+ | Hud.cpp:1778-1782, 2838, 2896
+ | queue.label
+ | text, Label, tracking 2
+ | QUEUE · {n} / 5
+ | the producer's EntityView::queue
+ | LABEL_COLOR
+ | 24, CardsBottom + 20
+ | Hud.cpp:1677
+ | queue.row{i}
+ | card
+ | —
+ | —
+ | CARD_COLOR, EDGE_COLOR
+ | 24, top + 20 + 34·i, 430, 30
+ | Hud.cpp:1679-1683
+ | … .number / .name
+ | Figure / Name
+ | {i+1} / {job name}
+ | JobView (Snapshot.h:32-36)
+ | LABEL_COLOR / TEXT_COLOR
+ | +10, +7 / +32, +5
+ | Hud.cpp:1684-1693
+ | … front job's bar and percent
+ | bar 120×6, and Figure text
+ | {p}%
+ | EntityView::jobPermille
+ | BAR_TRACK_COLOR, BAR_FILL_COLOR, TEXT_COLOR
+ | bar at 280, +12; % right edge 444, +7
+ | Hud.cpp:1696-1704
+ | … front job waiting
+ | text, Label, right-aligned
+ | WAITING FOR ORE, or WAITING FOR FLEET CAP
+ | front job at 0 ‰; WaitsOnFleetCap (Hud.cpp:229-239)
+ | AMBER_COLOR
+ | right edge 444, +9
+ | Hud.cpp:1689, 1694-1695, 2852-2853
+States.
+- Command Station. One Constructor card; no strengths.
+- Shipyard. A card for each saved design. A design whose hull is above the Shipyard's level is dim and says NEEDS L{n}.
+- No producer. NO PRODUCER and its hint.
+- Shipyard with no designs. Its hint.
+- Queue full (5 / 5). Every card is dim.
+- Front job. It shows progress, WAITING FOR ORE, or WAITING FOR FLEET CAP.
+Layout files: window-production-shipyard.json, -station.json, -none.json.
+Research
+Purpose. The player's Research Lab, its queue, and each topic not yet researched or queued, tier by tier. A topic that needs something is hatched and says what it needs (Phase 1 design §12, Phase 3 design §6, ADR-061 d4, ADR-068 d1).
+Geometry (Hud.cpp:1786-1884).
+- The window is 560 wide. Topic cards are 252 wide, two to a line, at x 24 or 284, y 104 + line·(TH + 8). It shows 10 topics, scrolling by a row (TOPIC_COLUMNS, TOPICS_SHOWN, Hud.h:400-401; StepTopics, Hud.cpp:2991-2999).
+- Card height. TH = 28 + lines·18 + 4, where lines is the most any topic needs: its effect's wrapped lines plus max(1, its needs). It is at least 2.
+- With Tuning.json, TH = 86. "Constructor build and repair rate +25%" wraps to 2 lines in the Detail face, and with its need, "RESEARCH LAB L3", that makes 3.
+- Height. CardsBottom + 20 + 20 + jobs·34 + 20. For page 1 with two jobs: 510, 178, 560, 694.
+ | id
+ | Kind
+ | Label
+ | Data
+ | Color
+ | Rect (window units)
+ | Source
+ | research.titleLabel
+ | text, Label, tracking 2
+ | RESEARCH
+ | —
+ | HEADER_LABEL_COLOR
+ | 24, 11
+ | Hud.cpp:1825
+ | header.subject
+ | text, Title, cut at 390
+ | RESEARCH LAB, RESEARCH LAB · {p}% BUILT or NO RESEARCH LAB
+ | the player's Lab, builtPermille
+ | TEXT_COLOR
+ | 24, 40
+ | Hud.cpp:1826, 2902-2916
+ | header.oreBox
+ | panel
+ | gem + figure
+ | Snapshot::ore
+ | FIELD_COLOR, GOLD_COLOR
+ | 420, 38, 116, 30
+ | Hud.cpp:1670
+ | research.topics.label
+ | text, Label, tracking 2
+ | TOPICS · {a}-{b} OF {n}, or TOPICS when there are none
+ | —
+ | LABEL_COLOR
+ | 24, 84
+ | Hud.cpp:1828-1832
+ | research.topics.previous / .next
+ | small buttons
+ | < and >
+ | only when there are more than 10 topics; PreviousTopics / NextTopics
+ | as above
+ | 484, 78 and 512, 78
+ | Hud.cpp:1833-1840
+ | research.topic{k}
+ | card (Research)
+ | —
+ | a ResearchTopicView not researched or queued. Enabled when the Lab is built, its queue has room, nothing is needed, and the Ore is there
+ | blocked: LOCKED_COLOR + LOCKED_HATCH_COLOR hatched; enabled: CARD_COLOR; otherwise FIELD_COLOR. Edge EDGE_COLOR
+ | 24 | 284, 104 + line·94, 252, 86
+ | Hud.cpp:1842-1858, 2950-2984
+ | … .name / .cost
+ | Name / gem + figure in Figure
+ | {topic} / {cost}
+ | nameUtf8, cost (Tuning.json research[])
+ | TEXT_COLOR / LOCKED_TEXT_COLOR; GOLD_COLOR / LOCKED_TEXT_COLOR
+ | +12, +6 / right edge +240, +9
+ | Hud.cpp:1859-1864
+ | … .effect
+ | text, Detail, wrapped at 228
+ | e.g. Unlocks the Large hull, Hull hit points +15%
+ | effectUtf8 ← EffectText (GameLogic/Research.cpp:142-181)
+ | NUMBERS_COLOR / LOCKED_TEXT_COLOR
+ | +12, +28 + 18·k
+ | Hud.cpp:1865-1870, 1800-1803
+ | … .needs
+ | Checkbox 10 and Label text
+ | NEEDS · {X}, then + {Y}; X and Y may be RESEARCH LAB L{n} or a prerequisite in capitals
+ | the tier against researchTier; prerequisites
+ | AMBER_COLOR
+ | box at +12, line + 2; text at +28, line
+ | Hud.cpp:1871-1879, 2963-2972
+ | … .time
+ | text, Detail (only when nothing is needed)
+ | TIER {t} · {s} s, and · SALVAGED once recovered
+ | tier, researchSeconds, recovered (Snapshot.h:219-230)
+ | LABEL_COLOR / LOCKED_TEXT_COLOR
+ | +12, after the effect lines
+ | Hud.cpp:1880-1881, 2978-2979
+ | queue rows
+ | as production, rows 512 wide
+ | QUEUE · {n} / 5, names, {p}%, WAITING FOR ORE
+ | EntityView::research, jobPermille; secondJobPermille lights a second front row (Hud.cpp:2933-2935)
+ | as production
+ | bar at 362; right edge 526
+ | Hud.cpp:1883, 1675-1706
+States.
+- A Lab, under construction, or none.
+- The page position, with arrows when there are more than 10 topics.
+- Topics blocked, enabled, or dim (Ore short, queue full, or Lab unbuilt).
+- A second research slot (Lab L4: researchSlots 2 in Tuning.json) shows two rows in progress.
+Layout files: window-research-page1.json (21 topics: TOPICS · 1-10 OF 21), window-research-no-lab.json.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

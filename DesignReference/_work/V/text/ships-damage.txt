@@ -1,0 +1,346 @@
+
+Damage after armor
+Damage after armor
+The formula, and how the Designer shows it
+- One hit, after armor, in hundredths (DesignStats.h:18-21): HitHundredths(d, a) = max(d / 4, d − a).
+- Damage a second against one ship (DesignStats.h:98-103): DamagePerSecond = HitHundredths ÷ 100 ÷ fireIntervalSeconds. The interval is the player's, after research.
+- Ships one hit reaches (DesignStats.h:105-129): ShipsReached(splash, r). A formation stands its ships FORMATION_SPACING_RADII = 3 footprint radii apart (DesignStats.h:107; ADR-010 §Decision 4). The function counts the target and every point of a square grid at that spacing whose center lies within the splash. For Small hulls the spacing is 24 m, so the Missile Rack's 30 m and the Flak Battery's 26 m reach 5 ships. For Medium (42 m) and Large (72 m) they reach 1 (ADR-014 §Decision 12).
+- What the card shows (DesignStats.h:131-136): FormationDamagePerSecond = DamagePerSecond × ShipsReached.
+The Designer's damage section is headed "DAMAGE / S AFTER ARMOR · VS A FORMATION" (Hud.cpp:1510). It has one card per hull, in the snapshot's order (Hud.cpp:781-806, drawn at Hud.cpp:1508-1537). Each card shows:
+- the hull's name and "ARM n";
+- the figure per ship, as "{:.1f}". The figure is the formation figure. 8.75 is written "8.8" (HudTests.cpp:1718);
+- "×5 ships" when a splash reaches more than one;
+- "{x.x} / 100 ore", which is the per-ship figure × 100 ÷ the design's cost, module included;
+- a bar for the figure's share of the best any design does to that hull. The best is taken over every hull × drive × weapon, locked ones included, at the player's research (Hud.cpp:479-527).
+The bar's color gives the rating (Hud.cpp:416-418,534-538; colors Hud.cpp:1001-1004; Phase 1 §11 item 5):
+- Good (green) from ⅔ of the best;
+- Fair (amber) from ⅓;
+- Poor (red) below that.
+A hovered part previews the change per ship, e.g. "+4.4" (Hud.cpp:793-800). The production window gives each design three S/M/L marks with the same ratings (Hud.cpp:2884-2891).
+The drive and the hull of the firing design do not change the per-ship figure. Only the weapon and the player's fire-rate research do. The design's cost changes the per-Ore figure.
+Matrix 1: the weapon against each hull, no research
+These are computed from Tuning.json lines 16–18 and 26–30 by derive.py.
+- Hit is the damage after armor.
+- /s is DamagePerSecond.
+- Card is FormationDamagePerSecond, the figure the card writes.
+- Rating is the card's share of the best against that hull: 180.0 against Small (Flak Battery), 52.0 against Medium (Rail Cannon) and 51.0 against Large (Rail Cannon).
+ | Weapon
+ | vs Small (armor 2, r 8 m): hit, /s, ×reach = card, rating
+ | vs Medium (armor 8, r 14 m)
+ | vs Large (armor 14, r 24 m)
+ | Mass Driver (14 / 0.4 s)
+ | 12, 30.0, ×1 = 30.0, Poor (0.167)
+ | 6, 15.0, ×1 = 15.0, Poor (0.288)
+ | 3.5, 8.75, ×1 = 8.8, Poor (0.172)
+ | Lance (95 / 2.7 s)
+ | 93, 34.44, ×1 = 34.4, Poor (0.191)
+ | 87, 32.22, ×1 = 32.2, Fair (0.620)
+ | 81, 30.0, ×1 = 30.0, Fair (0.588)
+ | Missile Rack (30 / 2.0 s, splash 30)
+ | 28, 14.0, ×5 = 70.0, Fair (0.389)
+ | 22, 11.0, ×1 = 11.0, Poor (0.212)
+ | 16, 8.0, ×1 = 8.0, Poor (0.157)
+ | Flak Battery (20 / 0.5 s, splash 26)
+ | 18, 36.0, ×5 = 180.0, Good (1.000)
+ | 12, 24.0, ×1 = 24.0, Fair (0.462)
+ | 6, 12.0, ×1 = 12.0, Poor (0.235)
+ | Rail Cannon (320 / 6.0 s)
+ | 318, 53.0, ×1 = 53.0, Poor (0.294)
+ | 312, 52.0, ×1 = 52.0, Good (1.000)
+ | 306, 51.0, ×1 = 51.0, Good (1.000)
+Matrix 2: the same with every fire-rate topic researched
+The intervals are those of the table above (derive_upgraded.py). The best is 207.0 against Small, 52.0 against Medium and 51.0 against Large.
+ | Weapon
+ | vs Small: card, rating
+ | vs Medium
+ | vs Large
+ | Mass Driver (+20%)
+ | 36.0, Poor
+ | 18.0, Fair
+ | 10.5, Poor
+ | Lance (+25%)
+ | 43.1, Poor
+ | 40.3, Good
+ | 37.5, Good
+ | Missile Rack (+15%)
+ | 80.5, Fair
+ | 12.7, Poor
+ | 9.2, Poor
+ | Flak Battery (+15%)
+ | 207.0, Good
+ | 27.6, Fair
+ | 13.8, Poor
+ | Rail Cannon (no topic)
+ | 53.0, Poor
+ | 52.0, Good
+ | 51.0, Good
+Per 100 Ore for every design without a module, no research
+The card writes per ship × 100 ÷ cost (Hud.cpp:802), computed by designer_cards.py. A Sensor Array adds 120 Ore to the cost and nothing to the damage, so it lowers each figure by cost ÷ (cost + 120).
+ | Design
+ | Cost (Ore)
+ | vs Small
+ | vs Medium
+ | vs Large
+ | Small+Ion+Mass Driver (Swarm)
+ | 261
+ | 11.5
+ | 5.7
+ | 3.4
+ | Small+Ion+Lance (Picket)
+ | 411
+ | 8.4
+ | 7.8
+ | 7.3
+ | Small+Ion+Missile Rack
+ | 546
+ | 12.8
+ | 2.0
+ | 1.5
+ | Small+Ion+Flak Battery
+ | 336
+ | 53.6
+ | 7.1
+ | 3.6
+ | Small+Ion+Rail Cannon
+ | 606
+ | 8.7
+ | 8.6
+ | 8.4
+ | Small+Fusion+Mass Driver
+ | 441
+ | 6.8
+ | 3.4
+ | 2.0
+ | Small+Fusion+Lance
+ | 591
+ | 5.8
+ | 5.5
+ | 5.1
+ | Small+Fusion+Missile Rack
+ | 726
+ | 9.6
+ | 1.5
+ | 1.1
+ | Small+Fusion+Flak Battery
+ | 516
+ | 34.9
+ | 4.7
+ | 2.3
+ | Small+Fusion+Rail Cannon
+ | 786
+ | 6.7
+ | 6.6
+ | 6.5
+ | Small+Pulse+Mass Driver
+ | 321
+ | 9.3
+ | 4.7
+ | 2.7
+ | Small+Pulse+Lance
+ | 471
+ | 7.3
+ | 6.8
+ | 6.4
+ | Small+Pulse+Missile Rack
+ | 606
+ | 11.6
+ | 1.8
+ | 1.3
+ | Small+Pulse+Flak Battery
+ | 396
+ | 45.5
+ | 6.1
+ | 3.0
+ | Small+Pulse+Rail Cannon
+ | 666
+ | 8.0
+ | 7.8
+ | 7.7
+ | Medium+Ion+Mass Driver (Brawler)
+ | 495
+ | 6.1
+ | 3.0
+ | 1.8
+ | Medium+Ion+Lance (Lancer)
+ | 645
+ | 5.3
+ | 5.0
+ | 4.7
+ | Medium+Ion+Missile Rack
+ | 780
+ | 9.0
+ | 1.4
+ | 1.0
+ | Medium+Ion+Flak Battery
+ | 570
+ | 31.6
+ | 4.2
+ | 2.1
+ | Medium+Ion+Rail Cannon
+ | 840
+ | 6.3
+ | 6.2
+ | 6.1
+ | Medium+Fusion+Mass Driver
+ | 675
+ | 4.4
+ | 2.2
+ | 1.3
+ | Medium+Fusion+Lance
+ | 825
+ | 4.2
+ | 3.9
+ | 3.6
+ | Medium+Fusion+Missile Rack
+ | 960
+ | 7.3
+ | 1.1
+ | 0.8
+ | Medium+Fusion+Flak Battery
+ | 750
+ | 24.0
+ | 3.2
+ | 1.6
+ | Medium+Fusion+Rail Cannon
+ | 1020
+ | 5.2
+ | 5.1
+ | 5.0
+ | Medium+Pulse+Mass Driver
+ | 555
+ | 5.4
+ | 2.7
+ | 1.6
+ | Medium+Pulse+Lance
+ | 705
+ | 4.9
+ | 4.6
+ | 4.3
+ | Medium+Pulse+Missile Rack
+ | 840
+ | 8.3
+ | 1.3
+ | 1.0
+ | Medium+Pulse+Flak Battery
+ | 630
+ | 28.6
+ | 3.8
+ | 1.9
+ | Medium+Pulse+Rail Cannon
+ | 900
+ | 5.9
+ | 5.8
+ | 5.7
+ | Large+Ion+Mass Driver
+ | 1065
+ | 2.8
+ | 1.4
+ | 0.8
+ | Large+Ion+Lance
+ | 1215
+ | 2.8
+ | 2.7
+ | 2.5
+ | Large+Ion+Missile Rack
+ | 1350
+ | 5.2
+ | 0.8
+ | 0.6
+ | Large+Ion+Flak Battery
+ | 1140
+ | 15.8
+ | 2.1
+ | 1.1
+ | Large+Ion+Rail Cannon
+ | 1410
+ | 3.8
+ | 3.7
+ | 3.6
+ | Large+Fusion+Mass Driver
+ | 1245
+ | 2.4
+ | 1.2
+ | 0.7
+ | Large+Fusion+Lance
+ | 1395
+ | 2.5
+ | 2.3
+ | 2.2
+ | Large+Fusion+Missile Rack
+ | 1530
+ | 4.6
+ | 0.7
+ | 0.5
+ | Large+Fusion+Flak Battery
+ | 1320
+ | 13.6
+ | 1.8
+ | 0.9
+ | Large+Fusion+Rail Cannon
+ | 1590
+ | 3.3
+ | 3.3
+ | 3.2
+ | Large+Pulse+Mass Driver
+ | 1125
+ | 2.7
+ | 1.3
+ | 0.8
+ | Large+Pulse+Lance
+ | 1275
+ | 2.7
+ | 2.5
+ | 2.4
+ | Large+Pulse+Missile Rack
+ | 1410
+ | 5.0
+ | 0.8
+ | 0.6
+ | Large+Pulse+Flak Battery
+ | 1200
+ | 15.0
+ | 2.0
+ | 1.0
+ | Large+Pulse+Rail Cannon
+ | 1470
+ | 3.6
+ | 3.5
+ | 3.5
+Hits on targets the Designer does not show
+These come from the same formula (DesignStats.h:18-21), computed by derive.py. The game displays none of these figures; the Designer's cards cover hulls only (Hud.cpp:782-806). Each cell is the hit after armor and, in brackets, damage a second against one target.
+ | Weapon
+ | Constructor (armor 2)
+ | Shipyard, Research Lab, Mining Rig (0)
+ | Repair Bay (5)
+ | Command Station, Defence Platform, Relay (10)
+ | Mass Driver
+ | 12 (30.0)
+ | 14 (35.0)
+ | 9 (22.5)
+ | 4 (10.0)
+ | Lance
+ | 93 (34.4)
+ | 95 (35.2)
+ | 90 (33.3)
+ | 85 (31.5)
+ | Missile Rack
+ | 28 (14.0)
+ | 30 (15.0)
+ | 25 (12.5)
+ | 20 (10.0)
+ | Flak Battery
+ | 18 (36.0)
+ | 20 (40.0)
+ | 15 (30.0)
+ | 10 (20.0)
+ | Rail Cannon
+ | 318 (53.0)
+ | 320 (53.3)
+ | 315 (52.5)
+ | 310 (51.7)
+ | Defence gun (30 / 1.0 s) on Small 28, Medium 22, Large 16, Constructor 28
+ | 
+ | 
+ | 
+ | 
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

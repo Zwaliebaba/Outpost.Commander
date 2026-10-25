@@ -1,0 +1,15 @@
+
+Level sheets
+Level sheets, L1 → L5 at one scale
+Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.
+[IMG /_blob/112492f86018a7328c4d165d8fb724c4 alt=Human CommandStation levels]
+Human · CommandStation · L1 → L5[IMG /_blob/68b9f5eaeaa81de54f77406ff955708b alt=Human Shipyard levels]
+Human · Shipyard · L1 → L5[IMG /_blob/f5eb2f30f57bf79fd83929ed711939c6 alt=Human ResearchLab levels]
+Human · ResearchLab · L1 → L5[IMG /_blob/faf3e409a7479c5fc532624b89dd0aed alt=Tarkan CommandStation levels]
+Tarkan · CommandStation · L1 → L5[IMG /_blob/d8c345870217615be782ab1d29bdfc1d alt=Tarkan Shipyard levels]
+Tarkan · Shipyard · L1 → L5[IMG /_blob/5999970e36d3177ce516f6a0b3a5bd8a alt=Tarkan ResearchLab levels]
+Tarkan · ResearchLab · L1 → L5[IMG /_blob/3a675ba412d72f19527a7e5fafe421b5 alt=Pirate CommandStation levels]
+Pirate · CommandStation · L1 → L5[IMG /_blob/4ec47c9364c1832f4bf79b7554f719c2 alt=Pirate Shipyard levels]
+Pirate · Shipyard · L1 → L5[IMG /_blob/a67442e7a0c3635affb6d607dc3f2cf7 alt=Pirate ResearchLab levels]
+Pirate · ResearchLab · L1 → L5
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

@@ -1,0 +1,400 @@
+
+Selection, commands, standing orders, alerts
+Outpost Commander · design reference · 09
+Orders & automation
+Selection and commands, the two standing orders, alerts, scheduled orders, the deputy and the Away report, as the player meets them.
+Sources: A3 Phase5.md ADR-059/079/080/088
+Selection and commands
+1.1 What can be selected
+ | What
+ | How
+ | Rule
+ | Source
+ | One of the player's own ships
+ | Left-click
+ | A click picks only ships whose owner is the player. Pick tolerance: 12 px.
+ | PlayerControls.cpp:251-253, Picking.h:26
+ | One of the player's own structures
+ | Left-click where no own ship is picked
+ | It is selected on its own and replaces the selection.
+ | PlayerControls.cpp:254-266
+ | The player's ships in a box
+ | Left-drag past 6 px
+ | Ships only, own only; structures are never boxed.
+ | PlayerControls.h:22, PlayerControls.cpp:242-249, Picking.cpp:59-72
+ | Every own ship on screen of that design and hull
+ | Double-click within 400 ms
+ | A third click starts the count again.
+ | PlayerControls.h:20, PlayerControls.cpp:271-279, Picking.cpp:74-87
+ | Add to the selection, or remove from it
+ | Shift+click / Shift+drag
+ | Shift+click on a ship that is already selected takes it out. A ship clicked with Shift joins ships, not a structure.
+ | PlayerControls.cpp:267-286
+ | A control group
+ | Ctrl+0–9 assigns; 0–9 recalls
+ | A second tap within 400 ms centers the camera on the group.
+ | PlayerControls.cpp:385-414, KeyBindings.h:103-104
+ | One ship out of a selection of 2–24
+ | Click its bar on the selection panel
+ | Selects that ship alone and centers the camera on it.
+ | ADR-088 §Decision 4, GameClient.cpp:957-962
+- Enemy entities are never selected. Hovering an enemy structure or a derelict gives only a hint (GameClient.cpp:693-696, 740-748).
+- A ship or structure that is gone, or no longer the player's, is pruned from the selection and from every group (PlayerControls.cpp:441-454).
+- The Controls window's wording, "Click — Select a ship, or a structure of yours" (KeyBindings.h:94), is ambiguous about enemy ships; see §15.
+1.2 Keys and mouse for orders (Controls window, "SELECTING AND ORDERS")
+ | Keys
+ | Does (verbatim)
+ | Source
+ | Click
+ | "Select a ship, or a structure of yours"
+ | KeyBindings.h:94
+ | Drag
+ | "Select your ships in the box"
+ | KeyBindings.h:95
+ | Shift+click
+ | "Add to the selection"
+ | KeyBindings.h:96
+ | Double-click
+ | "Select every ship of that design in view"
+ | KeyBindings.h:97
+ | Right-click
+ | "Move, attack, or build and repair with Constructors"
+ | KeyBindings.h:98
+ | A, then click
+ | "Attack-move"
+ | KeyBindings.h:10,99
+ | H, then click
+ | "Hold the sector clicked in"
+ | KeyBindings.h:12,100
+ | T, then click
+ | "Patrol to the point clicked"
+ | KeyBindings.h:13,101
+ | S
+ | "Stop"
+ | KeyBindings.h:11,102
+ | Ctrl+0-9
+ | "Make a control group"
+ | KeyBindings.h:103
+ | 0-9
+ | "Select a group; twice, look at it"
+ | KeyBindings.h:104
+ | Shift+click
+ | "Place a structure and keep placing"
+ | KeyBindings.h:105
+ | Minimap right-click
+ | "Send the selection there"
+ | KeyBindings.h:114
+ | Space
+ | "Look at the newest alert"
+ | KeyBindings.h:36,115
+ | O
+ | "Scheduled orders" (opens or closes the orders window)
+ | KeyBindings.h:32,120, GameClient.cpp:657-658
+ | Esc
+ | "Close the front window, or cancel an order"
+ | KeyBindings.h:34,122, GameClient.cpp:659-661, PlayerControls.cpp:362-367
+- P is taken by the production window, so patrol is T (ADR-059 §Decision 7, KeyBindings.h:28).
+- What arms the next click. A, H and T each arm the next left-click and replace whatever was armed before. A press on the ground then gives the order. Right-click or Escape cancels it (PlayerControls.cpp:107-121, 180-206, 291-292, 362-367).
+- Ctrl blocks the order keys. A, H, T and S act only without Ctrl (PlayerControls.cpp:369-383).
+1.3 What each command does
+Every command goes to the server, which validates it and applies it at the start of its next tick, or rejects it (Command.h:5-6, ADR-002 §Decision 2). The player is not told of a refusal: "A rejected command changes nothing. The protocol cannot tell the client yet" (InProcessServer.cpp:482).
+ | Command
+ | What the player does
+ | What the server does
+ | Source
+ | Move
+ | Right-click on the ground, or right-click on the minimap
+ | "Ships head for a point, pathing around obstacles, in formation at the slowest ship's pace"
+ | Command.h:8-13, PlayerControls.cpp:352-357, PlayerControls.cpp:135-140
+ | Attack
+ | Right-click on an enemy ship, or else an enemy structure
+ | "Ships close on one enemy ship or structure and fire at it until it dies"
+ | Command.h:15-20, PlayerControls.cpp:339-350
+ | Attack-move
+ | A, then left-click; or the Attack-move button
+ | "a ship that meets an enemy stops at its own weapon range and fires"
+ | Command.h:22-27, PlayerControls.cpp:180-190
+ | Stop
+ | S, or the Stop button
+ | "Ships drop their orders and hold where they are"
+ | Command.h:29-33, PlayerControls.cpp:123-127
+ | Hold sector
+ | H, then left-click; or the Hold sector button
+ | Standing order (§2)
+ | Command.h:102-108, PlayerControls.cpp:191-206
+ | Patrol
+ | T, then left-click; or the Patrol button
+ | Standing order (§2)
+ | Command.h:110-116
+ | Build structure
+ | Constructors' build button, then left-click on the ground. Shift keeps it armed.
+ | A Mining Rig snaps to an ore asteroid within 40 m. A rig click with no known asteroid in reach leaves the placement armed.
+ | Command.h:35-41, PlayerControls.cpp:207-227, StructureKind.h:21
+ | Repair / finish
+ | Selected Constructors right-click an own ship or structure that is damaged or unfinished
+ | "Repair costs nothing." The rest of the selection moves there.
+ | Command.h:43-49, PlayerControls.cpp:306-324
+ | Salvage
+ | Constructors right-click a derelict
+ | Its Ore and part of a topic's time go to the player whose Constructors finish it.
+ | Command.h:126-132, PlayerControls.cpp:326-336
+ | Set retreat
+ | RETREAT row on the selection panel: "25%", "50%", "Never"
+ | Gives no order: "a ship retreating goes on, unless it is set never to retreat". Default is 25% (DEFAULT_RETREAT = Quarter).
+ | Command.h:134-140, RetreatThreshold.h:15, ADR-088 §Decision 3
+ | Schedule order
+ | Orders window, "Give to N ships"
+ | §4
+ | Command.h:191-202
+How orders interact:
+- Any order ends a retreat. Any order the player gives a ship, other than setting its retreat, ends the ship's retreat and takes it out of the scheduled order it waits on (Simulation.cpp:3240-3258).
+- Move, attack-move, attack and stop end a standing order (Simulation.cpp:3259-3268, ADR-059 §Decision 5).
+- A scheduled order does neither when it is given. It does not end a standing order, and it gives its ships nothing to do until it fires (Simulation.cpp:3224-3226).
+1.4 The orders beside the selection (ADR-088)
+ | Rule
+ | Source
+ | A selection with a warship offers, in this order: "Attack-move" (A), "Hold sector" (H), "Patrol" (T), "Stop" (S). Each button shows its key's cap.
+ | Hud.cpp:2795-2803, ADR-088 §Decision 2
+ | "Hold sector" is offered only on a map with sectors.
+ | Hud.cpp:2799-2800
+ | A selection of Constructors alone offers no orders. Its build buttons and retreat row follow.
+ | ADR-088 §Decision 2, Hud.cpp:2804-2830
+ | A button does what its key does, to every selected ship. Attack-move, Hold sector and Patrol arm the next left-click; Stop orders at once.
+ | ADR-088 §Decision 2, GameClient.cpp:939-950
+ | The armed order's button is lit as a pick until the order is given or canceled.
+ | ADR-088 §Decision 2, Hud.cpp:2796-2797
+ | The buttons' panel stands against the selection panel's right edge, bottom-aligned, and the pair is centered at the bottom. It moves right only where it would meet the minimap.
+ | ADR-088 §Decision 2
+ | A button under the pointer has its edge lit in (0.25, 0.43, 0.76).
+ | ADR-088 §Decision 1
+1.5 Order lines on the selection panel
+ | Line (verbatim)
+ | When
+ | Source
+ | "Holding a sector"
+ | Any selected ship holds a sector
+ | Hud.cpp:2784-2785, ADR-059 §Decision 6
+ | "On patrol"
+ | Any selected ship patrols
+ | Hud.cpp:2786-2787
+ | "Retreating to be repaired" / "{n} retreating to be repaired"
+ | One ship, or n of several, going back to be repaired
+ | Hud.cpp:2788-2790
+ | "Scheduled: {order in words}"
+ | The selection's ships wait on one scheduled order
+ | OrderForm.cpp:331-333, GameClient.cpp:769-771
+ | "Scheduled: {n} orders"
+ | They wait on more than one
+ | OrderForm.cpp:329-330
+ | "Scheduled: an order"
+ | The order is not in the snapshot's list
+ | OrderForm.cpp:333
+Only the owner sees a ship's standing order and its scheduled order (Snapshot.h:128-138).
+Standing orders
+ | Aspect
+ | Hold a sector
+ | Patrol
+ | Source
+ | How it is given
+ | H, then left-click: holds the sector clicked in. Or the Hold sector button.
+ | T, then left-click: patrols to the point clicked. Or the Patrol button.
+ | ADR-059 §Decision 7, PlayerControls.cpp:191-206
+ | Who takes part
+ | Warships only. Constructors take no part; a selection of Constructors alone is refused as NoShips.
+ | Same
+ | Simulation.cpp:3444-3446, 3470-3472, ADR-059 §Decision 3
+ | Refused when
+ | No sector holds the point, or the map has no territory (NoSector)
+ | —
+ | Simulation.cpp:3447-3449
+ | First move
+ | Attack-moves to the sector's node
+ | Attack-moves to the destination. The other end is the middle of the warships when ordered.
+ | Simulation.cpp:3450-3461, 3473-3491
+ | Kept by
+ | The server, once a second, each group in the order it was given. A group still planning its paths waits.
+ | Same
+ | Simulation.cpp:3494-3521
+ | Behavior
+ | Attack-moves on the nearest enemy ship the player sees in the sector, unless a ship of the group is firing or the group is already headed within 150 m of it. Once none is left and it stands idle more than 200 m from the node, it attack-moves back to the node.
+ | Each time the whole group stands idle at one end, it attack-moves to the other.
+ | Simulation.cpp:65-66, 3534-3567
+ | Ends when
+ | The player gives one of its ships a move, attack-move, attack or stop
+ | Same
+ | ADR-059 §Decision 5, Simulation.cpp:3259-3268
+ | Retreat
+ | A retreating ship keeps its standing order; its group goes on without it until it is whole.
+ | Same
+ | ADR-059 §Decision 5, Simulation.cpp:3498-3503
+ | Shown
+ | "Holding a sector"
+ | "On patrol"
+ | Hud.cpp:2784-2787
+- A standing order is state, so it replays and is saved. Its group number counts in m_lastStandingGroup (ADR-059 §Decision 4, ADR-077 §Decision 3).
+- The AI uses holds too. Its reserve holds its front sector with a standing order (AiPlayer.cpp:1656-1675).
+Alerts
+3.1 The rules
+ | Rule
+ | Value
+ | Source
+ | Where alerts come from
+ | The server's events in each snapshot (ADR-080); the client no longer compares snapshots
+ | Alerts.h:5-11, ADR-059 §Decision 1
+ | How long one shows
+ | 8 s (SHOWN_SECONDS)
+ | Alerts.h:15
+ | Repeats
+ | One kind in one sector is not raised again within 20 s (REPEAT_SECONDS). "Order fired" is told every time.
+ | Alerts.h:16, Alerts.cpp:55-62
+ | How many are listed
+ | At most 4 (SHOWN_ALERTS), newest first, under the territory panel. The newest is a warning chip.
+ | Alerts.h:18, Hud.cpp:3215-3238, ADR-059 §Decision 2
+ | How many are kept
+ | The last 16 (for Space)
+ | Alerts.cpp:9
+ | Minimap mark
+ | An outlined 14-unit square in the warning color at each listed alert's place, drawn over the fog
+ | Hud.cpp:151, 3607-3617
+ | Space
+ | Moves the camera to the newest alert kept, even one no longer listed
+ | GameClient.cpp:662-666, Alerts.h:50-54
+ | How one clears
+ | It ages out of the list after 8 s. There is no click to dismiss it. A new match resets the alerts.
+ | Alerts.cpp:114-124, GameClient.cpp:504
+ | Sector name
+ | The sector's name from the map (A1–E5 on the repository's map), or "the field" when the event names no sector
+ | Alerts.cpp:72-73, Map.json: sectors[].name
+3.2 Every alert kind (7)
+ | Alert kind
+ | Fires when (server event)
+ | Text (verbatim)
+ | Source
+ | RelaySuppressed
+ | EventKind::RelaySuppressed: the player's Relay's sector, held by the same player, is suppressed where it was not
+ | "Relay suppressed: {sector}"
+ | Alerts.cpp:78-80, Simulation.cpp:2902-2903
+ | RelayAttacked
+ | EventKind::RelayAttacked: an enemy's shot hits one of the player's Relays; raised once a tick per Relay
+ | "Relay under attack: {sector}"
+ | Alerts.cpp:81-83, Simulation.cpp:1660-1665
+ | RigLost
+ | EventKind::StructureLost of a Mining Rig
+ | "Mining Rig lost: {sector}"
+ | Alerts.cpp:84-87
+ | EnemyEntered
+ | EventKind::EnemyEntered: an enemy or pirate warship the player sees in a sector it holds, where it saw none at the end of the tick before
+ | "Enemy ships in {sector}" or "Pirate ships in {sector}"
+ | Alerts.cpp:88-90, Simulation.cpp:379-407
+ | ShipRetreating
+ | EventKind::ShipRetreating: a ship of the player's starts going back to be repaired
+ | "Ship retreating: {sector}"
+ | Alerts.cpp:91-93, Simulation.cpp:2580
+ | PiratesCleared
+ | EventKind::PiratesCleared: a sector the pirates guarded no longer is; every player is told
+ | "Pirates cleared: {sector}"
+ | Alerts.cpp:94-96, Simulation.cpp:2904-2908
+ | OrderFired
+ | EventKind::OrderFired: a scheduled order fired
+ | "Order fired: {action}", "Order held back: {action}" or "Order refused: {action}"
+ | Alerts.cpp:32-45, 97-99
+Action words in the "Order …" texts (Alerts.cpp:12-30):
+- "move to {sector}"
+- "attack-move to {sector}"
+- "attack in {sector}"
+- "hold {sector}"
+- "patrol to {sector}"
+- "Mining Rig in {sector}"
+3.3 Server events (14 kinds) and where each goes
+ | EventKind
+ | Raised
+ | Alert?
+ | Away report?
+ | Trigger?
+ | Source
+ | RelaySuppressed
+ | End of tick, when territory is worked out
+ | yes
+ | no
+ | RelayThreatened
+ | Snapshot.h:379-384, Simulation.cpp:2902-2903
+ | RelayAttacked
+ | While the fight is settled, once a tick per Relay
+ | yes
+ | no
+ | RelayThreatened
+ | Simulation.cpp:1660-1665
+ | EnemyEntered
+ | Once the tick's vision is known
+ | yes
+ | no
+ | EnemyInSector
+ | Simulation.cpp:379-407
+ | ShipRetreating
+ | When a retreat starts
+ | yes
+ | no
+ | —
+ | Simulation.cpp:2580
+ | PiratesCleared
+ | End of tick, to every player
+ | yes
+ | no
+ | —
+ | Simulation.cpp:2904-2908
+ | ShipBuilt
+ | A producer delivers a ship, Constructors included
+ | no
+ | counted
+ | —
+ | Simulation.cpp:2762
+ | StructureBuilt
+ | A site is finished
+ | no
+ | counted
+ | —
+ | Simulation.cpp:2459-2460
+ | ShipLost
+ | A ship is destroyed
+ | no
+ | counted
+ | —
+ | Simulation.cpp:1708
+ | StructureLost
+ | A structure is destroyed
+ | only for a Mining Rig
+ | counted
+ | RigLost (Mining Rig only)
+ | Simulation.cpp:1708, Alerts.cpp:84-87
+ | SectorGained
+ | End of tick
+ | no
+ | named
+ | —
+ | Simulation.cpp:2899-2900
+ | SectorLost
+ | End of tick
+ | no
+ | named
+ | —
+ | Simulation.cpp:2899-2900
+ | OrderFired
+ | When a scheduled order fires
+ | yes
+ | the last 16
+ | —
+ | Simulation.cpp:3426-3434
+ | EmpireLost
+ | World only, in the tick the player loses
+ | no (the banner says it)
+ | no
+ | —
+ | Simulation.cpp:3731-3737, ADR-084 §Decision 8
+ | EmpireRestarted
+ | World only, when the seat restarts
+ | no (the banner says it)
+ | no
+ | —
+ | Simulation.cpp:3744-3746
+An event with no sector of its own takes the sector its position is in, if any (Simulation.cpp:367-377). Events are not state: a save holds none, and each tick begins with none (ADR-080 §Decision 1).
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

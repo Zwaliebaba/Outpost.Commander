@@ -1,0 +1,210 @@
+
+Component anatomy, part 1
+Anatomy and sources · part 1 of 2
+Window chrome (OpenWindow, Hud.cpp:871-899; AddCorners :852-867; ADR-031 d3)
+Anatomy, in units from the window's top-left:
+- Frame: the full width × (36 + body), in WINDOW_COLOR, opaque.
+- Title bar: (0, 0, width − 36, 36), hatched in TITLE_HATCH_COLOR over the frame. The window is dragged by it.
+- Close box: (width − 36, 0, 36, 36) in CLOSE_BOX_COLOR. Its "×" is in the Title face, TEXT_COLOR, at (11, 5) inside the box.
+- Corners: four brackets, 12 units each, in WINDOW_EDGE_COLOR.
+- No other edge. A window has no outline round its frame.
+- The title: OpenWindow can draw a title at (PADDING 12, 5) in Title, but every window passes an empty one (Hud.cpp:1351, 1722, 1823, 1903, 1949, 1993). Each window writes its own label instead: Label face, HEADER_LABEL_COLOR, tracking 2, at (24, 11). The labels are "PRODUCTION", "RESEARCH", "CONTROLS", "SCHEDULED ORDERS", "WHILE YOU WERE AWAY", and the designer's "< SHIPYARD 05 > · DESIGNER".
+The header band (HeaderBand, Hud.cpp:1237-1242) is used by the designer, production and research windows:
+- It runs the hatching on from y 36 to DESIGNER_HEADER 72.
+- It ends in a 1-unit EDGE_COLOR line at y 71.
+- The subject is in Title, TEXT_COLOR, at (24, 40).
+The Ore box (OreBox, :1244-1249) is 116 × 30 at y 38, ending 24 from the right. It has a FIELD_COLOR face and an EDGE_COLOR outline, with the gem and figure in Title, GOLD_COLOR, right-aligned 10 in.
+Stepped subject (Stepped, :1202-1213), "< SHIPYARD 05 >":
+- Two arrow buttons stand round the subject, 8 units from it (ARROW_GAP_UNITS).
+- In the title bar the arrows are at y 6. On the header's title line they are at y 43 (Hud.cpp:1049-1050).
+States:
+- A window has no focused or unfocused look. The front window is only drawn last (Hud.cpp:3632-3690). Not specified otherwise.
+- There is no hover state on the chrome.
+- A window that is dragged off the screen keeps its title bar and 120 units of its width on the screen (Hud.h:646, 852-854).
+HUD panel (Frame, Hud.cpp:903-908; ADR-043 d1)
+- It is a window's body without a title bar: WINDOW_COLOR and four 12-unit corners in WINDOW_EDGE_COLOR.
+- The Ore, status, territory, alerts, hint, connection, banner, selection, buttons, minimap and menu panels are all drawn this way.
+- Ore panel (:3141-3156):
+- It is 44 tall and as wide as the column.
+- The gem and stockpile are in Title, GOLD_COLOR, from x 12.
+- The income is in Figure, NUMBERS_COLOR, right-aligned; or, at "+0/s", a warning chip.
+- Status line (:3239-3307): the row under the pointer is filled with CARD_COLOR, edge to edge. Plain runs are in Name, TEXT_COLOR. A bar's figure is in Figure, NUMBERS_COLOR.
+Warning chip (Painter::Chip, Hud.cpp:1155-1168; ADR-085 d1)
+Anatomy:
+- The tag is a filled WARNING_COLOR rectangle as wide as the words + 2 × 4 units (CHIP_PAD_UNITS), and as tall as the line: NAME_LINE_UNITS 22, or FIGURE_LINE_UNITS 17 for the income.
+- The words are in WINDOW_COLOR, 4 units in, in the line's face (Name, or Figure for the income).
+- The tag starts 4 units left of the other lines, so the chip's words line up with theirs (:3208, 3232, 3334).
+It marks:
+- a status line's IDLE run (:3277-3280)
+- an income of nothing (:3152-3155)
+- the newest alert (:3227-3232)
+- the player's own drain (:3204-3208)
+- "No word from the server · N s" (:3334-3338)
+States: none. A chip is never cut short (:3272-3279). Contrast is 10.25:1.
+Rule: no other filled tag in that color exists (ADR-085 "forecloses").
+Saved-design chip (designer, Hud.cpp:1408-1427)
+Anatomy:
+- 216 × 26 at (70 + i × 222, 132); three are shown (CHIPS_SHOWN, :211).
+- The name is in Label, TEXT_COLOR, at (8, 6).
+- The code is in Detail, right-aligned 8 in, at y 7.
+- When there are more chips, two 24-unit arrow buttons stand at the right.
+States:
+ | State
+ | Face
+ | Edge
+ | Code
+ | Not shown
+ | CARD_COLOR
+ | EDGE_COLOR
+ | CODE_COLOR
+ | Shown
+ | PICKED_COLOR
+ | PICKED_EDGE_COLOR
+ | ACCENT_COLOR
+There is no hover state: the windows' cards do not light (ADR-088 consequences).
+Part card (designer, Hud.cpp:1429-1482; ADR-062 d4)
+Anatomy:
+- 220 × 80, or 96 when any card in the row has a note (CARD_NOTE_ROOM 16). Three to a line, 7 apart, from x 118.
+- The name is in Name at (12, 8).
+- The cost is the gem and figure in Figure, right-aligned 12 in, at y 11.
+- The numbers are in Detail at (12, 34), and the note in Detail at (12, 52).
+- The lock line sits 20 units from the foot: a checkbox sprite, 10 units at x 12, then the words in Label at x 28.
+- At the head of each slot row:
+- the slot label in Label, LABEL_COLOR, tracked, at y +21;
+- the pick in Name, ACCENT_COLOR, at y +39;
+- a 1-unit EDGE_COLOR divider at x 108.
+States:
+ | State
+ | Face
+ | Edge
+ | Name
+ | Cost
+ | Numbers
+ | Other
+ | Normal
+ | CARD_COLOR
+ | EDGE_COLOR
+ | TEXT_COLOR
+ | GOLD_COLOR
+ | NUMBERS_COLOR
+ | 
+ | Picked
+ | PICKED_COLOR
+ | PICKED_EDGE_COLOR
+ | TEXT_COLOR
+ | GOLD_COLOR
+ | NUMBERS_COLOR
+ | 
+ | Locked
+ | LOCKED_COLOR + hatched LOCKED_HATCH_COLOR
+ | EDGE_COLOR
+ | LOCKED_TEXT_COLOR
+ | LOCKED_TEXT_COLOR
+ | LOCKED_TEXT_COLOR
+ | Checkbox and "RESEARCH · LARGE HULL" in AMBER_COLOR. It takes no click.
+There is no hover state.
+Production option card (Hud.cpp:1733-1779; ADR-068 d3)
+Anatomy:
+- 211 × 74 (computed: (478 − 48 − 8)/2), two to a row, 8 apart.
+- The name is in Name at (12, 6).
+- The code is in Detail, CODE_COLOR, at (12, 28). The cost is the gem and figure in Figure, right-aligned, at y 28.
+- At y 50:
+- the build time in Detail, LABEL_COLOR;
+- right-aligned, for each hull, its initial in Label, ROW_LABEL_COLOR, then three segments 6 × 8, 2 apart. The initial stands 3 from its segments and the groups 10 apart.
+- Lit segments: 3 for Good, 2 for Fair, 1 for Poor, in GOOD_, FAIR_ or POOR_COLOR. Unlit segments are BAR_TRACK_COLOR.
+States:
+ | State
+ | Face
+ | Edge
+ | Text
+ | Enabled
+ | CARD_COLOR
+ | EDGE_COLOR
+ | as above
+ | Disabled
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | all LOCKED_TEXT_COLOR, segments included
+Topic card (research, Hud.cpp:1842-1883; ADR-061 d4)
+Anatomy:
+- 252 wide (computed: (560 − 48 − 8)/2), two columns, ten cards a page.
+- Height = 28 + lines × 18 + 4. Every card is as tall as the topic needing the most lines, and at least 2 lines.
+- The name is in Name at (12, 6), and the cost in Figure right-aligned at y 9.
+- The effect lines are in Detail, NUMBERS_COLOR, from y 28, 18 apart.
+- Each need is a checkbox and "NEEDS · X", then "+ Y", in Label, AMBER_COLOR.
+- Otherwise the time is in Detail, LABEL_COLOR.
+States:
+ | State
+ | Face
+ | Edge
+ | Text
+ | Open
+ | CARD_COLOR
+ | EDGE_COLOR
+ | as above
+ | Not enabled
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | LOCKED_TEXT_COLOR
+ | Blocked (has needs)
+ | LOCKED_COLOR + hatched LOCKED_HATCH_COLOR
+ | EDGE_COLOR
+ | LOCKED_TEXT_COLOR, needs in AMBER_COLOR
+Damage card (designer, Hud.cpp:1508-1540)
+Anatomy:
+- FIELD_COLOR with an EDGE_COLOR outline, 96 tall, 8 apart, from x 364.
+- The hull is in Name, TEXT_COLOR, at (10, 8). The armor is in Label, LABEL_COLOR, right-aligned 8 in, at y 11.
+- The per-ship damage is in LargeFigure at (10, 30). The reach is in Label, LABEL_COLOR, right-aligned at y 28. The change is in Figure, right-aligned at y 44.
+- The rating bar is (w − 20) × 4 at (10, 66): BAR_TRACK_COLOR, filled with the rating's color.
+- The per-100-ore line is in Detail, SOFT_COLOR, at (10, 76).
+States: while a part is hovered, the figure and the change take GOOD_COLOR or POOR_COLOR, or TEXT_COLOR when nothing changes (ChangeColor, :1032-1035).
+HUD button (AddButton, Hud.cpp:1264-1323; ADR-043 d4)
+Anatomy:
+- 34 tall. In the HUD it is 356 wide (380 − 24); on the menu, 416; on the banner, 496.
+- The label is in Name at x 12, centered: y = (34 − 22)/2.
+- A cost after a "|" in the label is the gem and figure in Figure, right-aligned 12 in, at y = (34 − 17)/2.
+- Key cap (:1292-1301):
+- 20 × 20, right-aligned 12 in, centered;
+- FIELD_COLOR face and ROW_LABEL_COLOR outline;
+- its letter in Label, ROW_LABEL_COLOR, at y +2.
+- Progress bar: inset 2, 3 tall, along the foot. BAR_TRACK_COLOR, filled with BAR_FILL_COLOR.
+- A label is cut short with "..." only where it would meet the cost, the note or the key cap.
+States:
+ | State
+ | Face
+ | Edge
+ | Label
+ | Cost
+ | Click
+ | Normal
+ | CARD_COLOR
+ | EDGE_COLOR
+ | TEXT_COLOR
+ | GOLD_COLOR
+ | yes
+ | Hover (HUD layer and enabled only, :3130-3131)
+ | CARD_COLOR
+ | HOVER_EDGE_COLOR
+ | TEXT_COLOR
+ | GOLD_COLOR
+ | yes
+ | Selected (the armed order)
+ | PICKED_COLOR
+ | PICKED_EDGE_COLOR (beats hover)
+ | TEXT_COLOR
+ | GOLD_COLOR
+ | yes
+ | Disabled
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | LOCKED_TEXT_COLOR
+ | LOCKED_TEXT_COLOR; a note, when there is one, takes the cost's place in Label, LABEL_COLOR
+ | none
+ | Pressed
+ | Not specified: the code has no pressed look
+ | 
+ | 
+ | 
+ | 
+- The menu's buttons and the orders window's Give button are laid out without hover, so they never light (Hud.cpp:2357, 1979).
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

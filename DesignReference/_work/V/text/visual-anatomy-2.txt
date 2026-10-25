@@ -1,0 +1,203 @@
+
+Component anatomy, part 2
+Anatomy and sources · part 2 of 2
+Small arrow button (SmallButton, Hud.cpp:1190-1197)
+- 24 × 24 (SMALL_BUTTON_UNITS). The mark "<" or ">" is in Label, centered, at y 4.
+- Enabled: CARD_COLOR face and a TEXT_COLOR mark.
+- Disabled: DISABLED_BUTTON_COLOR face (α 0.85) and a DIM_TEXT_COLOR mark; it takes no click.
+- It has no outline.
+Designer footer controls (Hud.cpp:1543-1601)
+Rename/Update is 90 × 48 at x 24.
+ | State
+ | Face
+ | Edge
+ | Label (Label, tracked, at (14, 16))
+ | Enabled
+ | CARD_COLOR
+ | EDGE_COLOR
+ | TEXT_COLOR
+ | Disabled
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | DIM_TEXT_COLOR
+Retreat row:
+- It sits at x 126, 206 wide. "RETREAT" is in Label, ROW_LABEL_COLOR, tracked.
+- Below it are three cells 30 tall from y +18, 4 apart (RetreatRow, :1328-1346).
+- Lit cell: PICKED_COLOR and PICKED_EDGE_COLOR. The others: CARD_COLOR and EDGE_COLOR.
+- The words are in TEXT_COLOR, centered on a line of round(face × 1.25).
+Stepper at x 346: "−" 36 × 48, the count box 42 × 48, "+" 36 × 48.
+ | Part
+ | Face
+ | Edge
+ | Mark
+ | Steps, enabled
+ | CARD_COLOR
+ | EDGE_COLOR
+ | Name at (13, 13), TEXT_COLOR
+ | Steps, disabled
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | Name, DIM_TEXT_COLOR
+ | Count box
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | "×N" in Name, TEXT_COLOR, at +10
+Queue button: from x 468 to 794 (326 wide), 48 tall.
+ | State
+ | Face
+ | Edge
+ | "QUEUE" (Title, tracked, at (18, 2))
+ | Detail (Detail, at (18, 31))
+ | Cost (Title, right 16 in, y 10)
+ | Enabled
+ | QUEUE_COLOR + hatched QUEUE_HATCH_COLOR
+ | QUEUE_EDGE_COLOR
+ | QUEUE_TEXT_COLOR
+ | QUEUE_TEXT_COLOR
+ | GOLD_COLOR
+ | Disabled
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | DIM_TEXT_COLOR
+ | DIM_TEXT_COLOR
+ | DIM_TEXT_COLOR
+Save/Saved is 68 × 38 at the right of the name row (:1395-1405).
+ | State
+ | Face
+ | Edge
+ | Label
+ | SAVE, enabled
+ | CARD_COLOR
+ | EDGE_COLOR
+ | TEXT_COLOR
+ | SAVED
+ | FIELD_COLOR
+ | QUEUE_EDGE_COLOR
+ | QUEUE_EDGE_COLOR
+ | Disabled
+ | FIELD_COLOR
+ | EDGE_COLOR
+ | DIM_TEXT_COLOR
+Name field (:1385-1393):
+- 38 tall, with a FIELD_COLOR face. The edge is EDGE_COLOR, or PICKED_EDGE_COLOR while typing.
+- "NAME" is in Label, LABEL_COLOR, tracked, at (12, 13).
+- The name is in Name at (66, 9): TEXT_COLOR, or WARNING_COLOR when the server would refuse it. While typing, a "_" follows it.
+- The count "21/32" is in Figure, LABEL_COLOR, right-aligned.
+HUD retreat row (Hud.cpp:3441-3452)
+- "RETREAT" is in Label, ROW_LABEL_COLOR, tracked. "MIXED" is in Label, NUMBERS_COLOR, at the right while the ships differ.
+- Below are three cells, BUTTON_HEIGHT 34 tall, with their words in Name.
+- A lit cell is the same as a lit cell in the designer. A cell under the pointer takes HOVER_EDGE_COLOR.
+Queue row (QueueRows, Hud.cpp:1675-1706)
+- CARD_COLOR with an EDGE_COLOR outline, 30 tall, 4 apart.
+- The index is in Figure, LABEL_COLOR, at (10, 7). The name is in Name, TEXT_COLOR, at x 32, y 5.
+- The front job, while it runs: a bar 120 × 6 at y 12 (BAR_TRACK_COLOR filled with BAR_FILL_COLOR), and the percent in Figure, TEXT_COLOR, right-aligned.
+- While waiting: "WAITING FOR ORE" or "WAITING FOR FLEET CAP" in Label, AMBER_COLOR, right-aligned.
+Bars
+Health thresholds: above 0.5 is good, above 0.25 is fair, otherwise poor (Hud.cpp:83-84, HealthColor :1026-1029). Every health bar uses HEALTH_GOOD_, HEALTH_FAIR_ and HEALTH_POOR_COLOR (ADR-088 d5).
+ | Bar
+ | Size (units)
+ | Track or back
+ | Fill
+ | Notes
+ | Source
+ | Health over an entity
+ | 32 × 5 at the screen's scale
+ | the side's color ×0.3, or HEALTH_BACK_COLOR
+ | HealthColor
+ | Whole pixels. Stands 4 above the model's top on the screen. Fills from the left. Drawn under every panel and takes no click.
+ | Hud.cpp:3093-3126; ADR-088 d5
+ | Build over an entity (no side's)
+ | 32 × 5, under the health bar, 2 apart
+ | the side's back
+ | BUILD_BAR_COLOR
+ | While unfinished. Not drawn for what the player only remembers.
+ | Hud.cpp:3119, 2170-2183; ADR-085 d2
+ | Selection's health (one bar)
+ | panel width − 24 × 6, 8 under the lines
+ | BAR_TRACK_COLOR
+ | HealthColor
+ | When there is one entity or more than 24 ships
+ | Hud.cpp:3419-3425
+ | Ship bars (2 to 24 ships)
+ | 17 × 10, 4 apart, 12 a row
+ | BAR_TRACK_COLOR
+ | HealthColor
+ | A 1-unit outline outside it: TEXT_COLOR while the ship is retreating, HOVER_EDGE_COLOR under the pointer. A click selects that ship.
+ | Hud.cpp:3397-3418
+ | Button progress
+ | width − 4 × 3, at the foot
+ | BAR_TRACK_COLOR
+ | BAR_FILL_COLOR
+ | 
+ | Hud.cpp:1277-1287
+ | Queue row progress
+ | 120 × 6
+ | BAR_TRACK_COLOR
+ | BAR_FILL_COLOR
+ | 
+ | Hud.cpp:1697-1702
+ | Status bar
+ | under the words: 4 thick in an 8 row; beside them: 6 thick, 8 clear
+ | BAR_TRACK_COLOR
+ | BAR_FILL_COLOR
+ | 
+ | Hud.cpp:3290-3305
+ | Designer stat bar
+ | 90 × 7 at x 104
+ | BAR_TRACK_COLOR
+ | BAR_FILL_COLOR
+ | While a part is hovered, what it adds or removes shows in GOOD_COLOR or POOR_COLOR under the shared part
+ | Hud.cpp:1489-1506
+ | Damage rating bar
+ | (w − 20) × 4
+ | BAR_TRACK_COLOR
+ | GOOD_, FAIR_ or POOR_COLOR (Good from 2/3, Fair from 1/3)
+ | 
+ | Hud.cpp:1536-1537, 417-418, 535-538
+ | Strength segments
+ | 3 × (6 × 8)
+ | BAR_TRACK_COLOR (unlit)
+ | the rating's color
+ | 
+ | Hud.cpp:1757-1777
+Ore gem (ADR-085 d3; ADR-043 d3)
+- Shape: a cut gem with the corners (0.28, 0.14), (0.72, 0.14), (0.97, 0.40), (0.50, 0.94) and (0.03, 0.40) of its square, y down. Edges are smoothed over a pixel (GlyphAtlas.cpp:27, 53-56).
+- Raster size: 12 units in the atlas (Hud.cpp:3022).
+- Drawn size: round(face × 0.6) square, which is 13 units beside the Title face and 8 beside the Figure face.
+- It stands 5 units before the figure (ORE_MARK_GAP_UNITS).
+- It is centered vertically on face × 1.25.
+- Its place comes from GemAndFigure (Hud.cpp:1216-1235).
+- Color: GOLD_COLOR. A disabled card's or button's gem takes the dim color of its figure: LOCKED_TEXT_COLOR or DIM_TEXT_COLOR.
+- The figure is grouped in thousands (WithThousands, Hud.cpp:2114).
+Checkbox (Hud.cpp:3023; GlyphAtlas.cpp:329-334)
+- The outline of a square, 10 units, with a stroke of 1/12 of its size (at least 1 px).
+- It is drawn in AMBER_COLOR before a lock line or a need line.
+Fills (Hud::Fill, Hud.h:630-637)
+ | Fill
+ | What it draws
+ | Source
+ | Solid
+ | The rectangle
+ | 
+ | Hatched
+ | Only the stripes (§Hatching)
+ | UiPS.hlsl:23-27
+ | Fog
+ | The fog texture's shade as coverage, in black
+ | UiPS.hlsl:28-32; GameClient.cpp:1310-1316
+Minimap (Hud.cpp:3455-3630)
+Frame: a HUD panel 300 square. The map square inside it is 284, 8 in, in MAP_COLOR.
+Draw order:
+- The sector washes.
+- The marks: neutral first, then sided.
+- The fog.
+- Every sector border, in LATTICE_COLOR.
+- The outlines of held and guarded sectors: dashed while cut off, hatched at α 0.35 while suppressed.
+- The claimable outlines, 3 in, in OWN_COLOR.
+- The memory crosses.
+- The alert squares, in WARNING_COLOR.
+- The view, in VIEW_COLOR, 1.5 wide.
+Marks (:3498-3527):
+- A ship is a square of at least 3 units, a structure at least 6, and an ore asteroid at least 8.
+- An ore asteroid, dry or not, is a square outlined 2 units wide. Every other mark is filled.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

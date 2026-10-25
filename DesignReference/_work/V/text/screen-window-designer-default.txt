@@ -1,0 +1,167 @@
+
+The designer on Shipyard 01, the Swarm loaded (saved), nothing hovered
+1,000
++0/s
+Nodes
+cap 4 of 25
+1
+1 : 
+Tickets
+1,000
+1,000 : 
+No drain
+Local skirmish
+×
+<
+SHIPYARD 01
+>
+· DESIGNER
+SHIP DESIGN
+QUEUE · 0 / 5
+BUILT · 4
+1,240
+NAME
+Swarm
+5/32
+SAVED
+SAVED
+Swarm
+S·I·MD
+Picket
+S·I·L
+Brawler
+M·I·MD
+<
+>
+HULL
+Small
+Small
+96
+220 HP · ARM 2 · 60m/s
+Medium
+330
+500 HP · ARM 8 · 40m/s
+Large
+900
+1,200 HP · ARM 14 · 2...
+RESEARCH · LARGE HULL
+DRIVE
+Ion
+Ion
+60
+SPD ×1.3 · HP ×0.9
+Fusion
+240
+SPD ×0.8 · HP ×1.4
+RESEARCH · FUSION DRIVE
+Pulse
+120
+SPD ×1.6 · HP ×0.8
+RESEARCH · PULSE DRIVE
+WEAPON
+Mass Dri...
+Mass Driver
+105
+14 dmg / 0.4s · 120m
+Lance
+255
+95 dmg / 2.7s · 220m
+Missile Rack
+390
+30 dmg / 2s · 280m
+splash 30m
+RESEARCH · MISSILE RACK
+Flak Battery
+180
+20 dmg / 0.5s · 200m
+splash 26m
+RESEARCH · FLAK BATTERY
+Rail Cannon
+450
+320 dmg / 6s · 240m
+RESEARCH · RAIL CANNON
+MODULE
+None
+None
+0
+No module
+Sensor Array
+120
+SIGHT 700m · SPD ×0.9
+PERFORMANCE
+Hit points
+198
+Armor
+2
+Speed
+78
+m/s
+Range
+120
+m
+Sensors
+-
+m
+Cost
+261
+ore
+Build
+30
+s
+DAMAGE / S AFTER ARMOR · VS A FORMATION
+Small
+ARM 2
+30.0
+11.5 / 100 ore
+Medium
+ARM 8
+15.0
+5.7 / 100 ore
+Large
+ARM 14
+8.8
+3.4 / 100 ore
+Hover any part to preview its effect.
+RENAME
+RETREAT
+25%
+50%
+NEVER
+-
+×1
++
+QUEUE
+30 s each
+261
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+window · designer-default · factor 1
+The designer on Shipyard 01, the Swarm loaded (saved), nothing hovered
+- 1Ore panelThe stockpile as the gem and figure in GOLD_COLOR, written one way everywhere; the income in NUMBERS_COLOR, a warning chip at +0/s. The word Ore is not written.Hud.cpp:3143-3157; ADR-043 d3; ADR-047 d5; ADR-085 d1
+- 2TerritoryNodes held, own : enemy, against the Command Station's cap; domination tickets while both sides have them; the drain, a chip when it is the player's. Only on a map with sectors.Hud.cpp:3167-3213; ADR-056; ADR-057
+- 3Where the match runsLocal skirmish, or Server host:port. After 2 s without a snapshot a chip counts the silence. Never on the menu.Hud.cpp:3320-3337; Hud.h:469; ADR-086
+- 4Minimap10,000 m in 284 units (35.2 m a unit): sector wash, marks, fog, the sector lattice, held and guarded outlines, remembered crosses, alerts and the camera's view.Hud.cpp:3456-3630; ADR-068 d2; ADR-081
+- 5Window chromeOpaque WINDOW_COLOR body, hatched title bar (drag it), close box, corner brackets. Esc closes the front window; a press brings a window to the front.Hud.cpp:871-899; ADR-031; WindowManager.cpp
+- 6Header band and Ore boxThe hatching runs on to y 72; the subject steps with < and >; the Ore box repeats the stockpile.Hud.cpp:1237-1249, 1658-1671
+- 7Designer headerThe target Shipyard (stepped), its queue as five slots and the ships it has built.Hud.cpp:1361-1379; ADR-068 d1
+- 8Name and saved designsThe name field (32 characters, printable ASCII), SAVE or SAVED, and the saved designs as chips with their codes.Hud.cpp:1385-1427; Designer.cpp:122-151; ADR-069
+- 9PartsHull, drive, weapon and module cards, three to a line. A locked card is hatched and names the research that unlocks it; hovering an unlocked card previews it.Hud.cpp:1429-1482, 622-635; ADR-062 d4
+- 10PerformanceEach stat as a bar against the best of all designs; a preview shows the change in GOOD_COLOR or POOR_COLOR.Hud.cpp:1487-1505, 494-527
+- 11Damage / s after armor · vs a formationOne card per hull: per-ship damage a second, the ships a splash reaches, a Good / Fair / Poor bar and the damage per 100 Ore.Hud.cpp:1508-1540, 417-418
+- 12HintHover any part to preview its effect.Hud.cpp:731-732, 1541-1542
+- 13FooterRENAME or UPDATE, the design's retreat, how many, and QUEUE, which saves new picks first.Hud.cpp:1543-1597; ADR-023
+Geometry derived from Hud.cpp by A4's derive_layouts.py, not dumped from the game: 153 of 414 elements depend on DirectWrite text measurement and are estimated. Content values are samples built from Tuning.json and Map.json. Dashed boxes and numbered discs in #FF2D95 are this reference's annotations, not the game.
+- Default place: top-right corner (Hud.cpp:3655-3659). The designer covers the 'where the match runs' tag (ADR-086 d3).
+- Height from ExtentOf with Tuning.json's 3 hulls, 3 drives, 5 weapons (two with splash notes) and None + 1 module: 913 units (ADR-070).
+DesignReference/_work/A4/layouts/window-designer-default.json

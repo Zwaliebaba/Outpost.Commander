@@ -1,0 +1,209 @@
+
+World state, log and the week
+World state on disk
+ | Aspect
+ | Value
+ | Source
+ | A world is a folder
+ | World.json, World-<tick>.save (tick written to 20 digits), Commands-<tick>.log, World.log, Certificate.der, Certificate.key, Join-Player<n>.json
+ | WorldFolder.cpp:12-23, WorldLog.h:6, WorldSettings.h:8, ServerCertificate.cpp:24-25, WorldSettings.cpp:108-111
+ | Save interval
+ | Every 60 s of ticks (WORLD_SAVE_SECONDS), encoded between two ticks on the server's thread
+ | WorldFolder.h:15, InProcessServer.cpp:484-485, 636-650
+ | Safe write
+ | A writer thread of its own writes World-<tick>.save.partial and renames it into place, so a killed process never leaves half a save
+ | ADR-077 §Decision 7, WorldFolder.cpp:17
+ | Saves kept
+ | The newest 3 (SAVES_KEPT), with their logs
+ | WorldFolder.h:23
+ | Command log
+ | Each tick's commands are appended before the tick applies them and handed to the system (flush) before the next tick. A new file begins at each save.
+ | ADR-077 §Decision 7, InProcessServer.cpp:478-481
+ | Recovery
+ | The newest save that reads whole, then the logged commands since, tick by tick, as fast as it can. It comes back at the tick after the last logged command, then saves at once.
+ | ADR-077 §Decision 8, InProcessServer.cpp:585-618
+ | Damaged files
+ | A save cut short or altered is passed over. A record cut short at the end of the newest log is passed over; one anywhere else is refused. A folder whose saves all fail is refused, never started anew.
+ | ADR-077 §Decision 8, WorldFolder.cpp:76-96, 122-134
+ | What a save holds
+ | The tick, entities, designs, players (what each sees and remembers, their scheduled orders), the target rule, the PRNG's state, the pathfinder's obstacles, planned group orders, the standing-group counter, scheduled orders and their counter, the map's obstacles, size and sectors, outposts, how the match stands, a world's rules, each base player's start, and the seats' away reports
+ | ADR-077 §Decisions 3, 5, ADR-080 §Decision 8
+ | What a save does not hold
+ | The tick rate (in the identity), path graphs, research effects, the tuning data and the map (named by hash), the last tick's shots, destructions and events, hosted players' state, and the world log
+ | ADR-077 §Decision 3, ADR-079 §What this forecloses, ADR-082 §Consequences
+ | Header
+ | "OCWORLD\0", WORLD_STATE_VERSION, layout hash, seed, tick rate, DataHash of Tuning.json and Map.json, tick; then the state and reports; then a 64-bit FNV-1a checksum
+ | ADR-077 §Decision 5, WorldState.cpp:132-140
+ | Version pin (H8)
+ | WORLD_STATE_VERSION = 1. Until the game is live a new layout replaces version 1's hash (owner, 2026-10-09), so a save of an old layout is refused.
+ | WorldState.h:5-9, AGENTS.md R18, WorldStateTests.cpp:160-171
+ | Refusal messages
+ | "A saved world holds state version {v}, and this build reads version {1} only."; "A saved world was written by a build that lays its state out otherwise."; "A saved world is malformed: its checksum does not match, so it is cut short or altered."; "A saved world is of another world: seed …"; "The world in {folder} has no save that reads whole: …"
+ | WorldState.cpp:153-179, 286-288, WorldFolder.cpp:134
+ | Pause while down (H7)
+ | The world does not run the hours it missed. The tick host drops a backlog above 5 ticks.
+ | ADR-077 §Decision 9, InProcessServer.cpp:9-11, 137, ADR-009 §Decision 4
+ | What a killed process keeps
+ | Every save renamed into place, and the log up to the last tick that applied a command. Nothing is forced to the disk, so a lost machine keeps only what the system had written.
+ | ADR-077 §Consequences, Phase5.md:86
+ | Another build, same version
+ | Follows the same orders, not promised bit-identical; "no player can tell"
+ | ADR-077 §Consequences
+ | Measured (container)
+ | A save at minute 60 of two Normal AIs: 274–293 entities, 75–78 KB, 0.36–0.38 ms to encode. A day's 1,451 saves: 46–81 KB, median 0.30 ms, longest 6.03 ms.
+ | ADR-077 §Consequences, ADR-082 §Consequences
+The world log, the week, a player who loses
+13.1 The world log (World.log)
+One line per record; every time is in ticks (WorldLog.h:29-51).
+ | Record
+ | Format
+ | start (new)
+ | start <tick> new
+ | start (recovered)
+ | start <tick> recovered save <tick> replayed <n>
+ | save
+ | save <tick> bytes <n> encode_us <us>
+ | seat
+ | seat <tick> player <p> player\|deputy\|ai (on a change, and from the first tick)
+ | order
+ | order <tick> player <p> order <id> move\|attack-move\|attack\|hold\|patrol\|rig given\|held\|refused
+ | lost
+ | lost <tick> player <p>
+ | waiting
+ | waiting <tick> player <p>
+ | restart
+ | restart <tick> player <p>
+ | hour
+ | hour <tick> player <p> ore <n> income <hundredths/s> fleet <cp> cap <n> nodes <n> researched <n> present <s> deputy <s>, every 3,600 s
+ | battle
+ | battle <start> <end> sector <id> player <p> <play> player <p> <play>
+- A battle is two seats firing at each other in one sector within 10 s of each other. It ends after 30 s without such a shot. A side is "present" when its player played at any of its shots. Shots at or by pirates are not a battle (WorldLog.h:55-57, ADR-082 §Decision 2).
+- The log is not saved. A battle the server did not see begin is not recorded (ADR-082 §Consequences).
+13.2 The week (Phase 5's measures)
+ | #
+ | Question
+ | How it is known
+ | Source
+ | W1
+ | "Does a world survive a week?"
+ | The owner's world runs for 7 days on the dedicated server, through at least one planned restart and one killed process, and loses no command the log had written
+ | Phase5.md:30
+ | W2
+ | "What does persistence cost?"
+ | A save under 50 ms of the server's thread; U7's 99th percentile tick at most 5 ms
+ | Phase5.md:31
+ | W3
+ | "Does a deputy keep an empire running?"
+ | Idle share of Shipyards and Lab with Ore to spend, against the AI's
+ | Phase5.md:32
+ | W4
+ | "What does presence buy?"
+ | Battle matchups; income, fleet against cap, research per hour against the deputy's
+ | Phase5.md:33
+ | W5
+ | "Do orders run while away?"
+ | Tests, and "the owner judges a 02:00 attack in play"
+ | Phase5.md:34
+ | W6
+ | "Is the rhythm a game?"
+ | The owner judges whether three check-ins a day are worth making
+ | Phase5.md:35
+- Who runs what. W1, W4 and W6 are the owner's week. W2's tick figure is the owner's run in Release (Phase5.md:37).
+- Status at HEAD: "awaiting the owner's week" (Plan5.md:40, 250). H10, "A galaxy or friends next", is decided from W6 and the week's log (Phase5.md:55, 189).
+- Container figures.
+- W3 (deputy, minutes 10–20): Shipyards idle with Ore to spend 0.8–1.4% of their time and the Lab 0.2%, against the AI's 0.0–5.4% and 0.0–0.2% (ADR-079 §Consequences).
+- W2 (an hour of two Normal AI empires): 99th percentile tick 0.25–0.40 ms (ADR-079 §Consequences).
+- The bank is recorded, not changed (H9). In a day of world, Blue's bank reached 513,829 Ore at hour 23 (ADR-082 §Consequences, Phase5.md:137).
+13.3 A world without an end, and a player who loses
+ | Rule
+ | Value
+ | Source
+ | Domination
+ | Off in a world: no tickets, no drain, matchOver stays false. "A world ends when the owner stops it."
+ | ADR-084 §Decision 2, Simulation.cpp:3778-3781, 717-724, Phase5.md:127
+ | Loss
+ | Neither a Command Station nor a finished Shipyard. The player is told in the tick (EmpireLost).
+ | Simulation.cpp:3693-3707, 3731-3737, ADR-084 §Decision 3
+ | Restart time
+ | 3,600 s of ticks after the loss (RESTART_SECONDS), once the start is free
+ | Simulation.h:343, Simulation.cpp:3738-3739
+ | "Free"
+ | No other player holds the start's home sector and no other player's structure stands in it. On a map without sectors, a radius round the start. Enemy ships on it do not count.
+ | Simulation.cpp:3750-3765, ADR-084 §Consequences
+ | What it gets
+ | A Command Station and the starting Constructors (2) as at the world's start. Ore raised to the starting Ore (1,000) when it has less.
+ | Simulation.cpp:3740-3746, Tuning.json: rules.startingOre, rules.startingConstructors
+ | What it keeps
+ | Its research, designs, Ore above 1,000, and its ships and structures that still stand
+ | ADR-084 §Decision 4, Phase5.md:128
+ | Building a Shipyard meanwhile
+ | It stands again and does not restart
+ | Simulation.cpp:3725-3729
+ | Only its own start
+ | Phase 4's map has two starts
+ | Phase5.md:129, ADR-084 §What this forecloses
+ | Banner
+ | Title "Empire fallen". Detail "It restarts at your start in {m:ss or h:mm:ss}", or "It restarts once your start is clear of the enemy". Button "Back to menu".
+ | Hud.cpp:2187-2196, 3339-3350
+ | Measured
+ | In a day of world, Red lost and restarted 11 times, each on the hour and never waiting. Seven of those bases fell 12–14.5 s after their restart.
+ | ADR-084 §Consequences
+ | Open
+ | Whether a start with enemy warships on it is free is the owner's decision (gate H6)
+ | ADR-084 §Consequences, Plan5.md:247
+A world without an end
+ | Rule
+ | Value
+ | Source
+ | A world's rules
+ | set by the server for a new world before the bases are placed, and saved with the world; a match does not have them
+ | InProcessServer.cpp:88-90; Simulation.h:329-342; ADR-084 §Decision 1
+ | Domination
+ | off; no tickets; no match ends (MatchOver stays false)
+ | Simulation.cpp:719, 3780; ADR-084 §Decision 2; Phase5.md:127
+ | A world ends
+ | when the owner stops it
+ | Phase5.md:127
+ | Loss
+ | ADR-037's rule; the player is told in the tick it loses (EventKind::EmpireLost, naming the start's sector), and its lost tick is kept
+ | Simulation.cpp:3731-3737; ADR-084 §Decision 3
+ | Restart delay
+ | 3,600 s of ticks (an hour)
+ | Simulation.h:343 (RESTART_SECONDS = 3600); Simulation.cpp:3718, 3736; ADR-084 §Decision 4; Phase5.md:51 (gate H6)
+ | Where
+ | at the seat's own start only (Phase 4's map has two starts, one a seat)
+ | Phase5.md:129; ADR-084 "What this forecloses"
+ | Start is free
+ | while no other player holds the start's sector and no other player's structure stands in it; until then the seat waits, and restartTick stays at the hour that has passed
+ | Simulation.cpp:3750-3765; ADR-084 §Decision 4
+ | Enemy ships on the start
+ | do not keep it from being free
+ | ADR-084 Consequences; Simulation.cpp:3762-3763 (structures only)
+ | On restart the player gets
+ | a Command Station on its start and the starting Constructors (2) in front of it, as at the world's start
+ | Simulation.cpp:3740; ADR-084 §Decision 4
+ | Starting Ore
+ | its Ore is raised to the starting Ore (1,000) when it has less; a bank above it is kept
+ | Simulation.cpp:3742; ADR-084 §Decision 4; Phase5.md:128
+ | What is kept
+ | research, designs, Ore above the starting Ore, and its ships and structures that still stand
+ | ADR-084 §Decision 4; Phase5.md:128
+ | Standing again without a restart
+ | a player that finishes a Shipyard of its own in the meantime stands again and does not restart
+ | Simulation.cpp:3726-3730; ADR-084 §Decision 4
+ | Told
+ | EventKind::EmpireRestarted
+ | Simulation.cpp:3744-3746; ADR-084 §Decision 4
+ | Banner
+ | "Empire fallen", with "It restarts at your start in mm:ss", or "It restarts once your start is clear of the enemy"
+ | Hud.cpp:2188-2196; ADR-084 §Decision 7
+ | The client is told the restart tick
+ | Snapshot::restartTick
+ | Snapshot.h:588-590; Simulation.cpp:1122
+ | Economy in a world
+ | Phase 4's unchanged: costs, income, cap, pirates, derelicts, repair; the bank is recorded hourly
+ | Phase5.md:137; Phase5.md:54 (gate H9)
+ | Owner's open question
+ | whether a start with enemy warships on it is free is the owner's to decide (gate H6)
+ | ADR-084 Consequences
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

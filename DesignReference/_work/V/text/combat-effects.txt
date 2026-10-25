@@ -1,0 +1,160 @@
+
+Effects that carry information
+Shot looks
+Rule: a weapon not listed in Models.json: shots fires tracers; the Lance (2) fires a beam in its shooter's side's color lightened 35% toward white; the Rail Cannon (5) fires a white slug; every hit sparks, a splash weapon throws a ring out to its splash radius (ADR-034, ADR-028 §Decision 6). Effects are opaque flat shapes 6 m above the ground that fade by darkening.
+ | Property
+ | Value
+ | Source
+ | Looks by weapon
+ | Lance (2) beam; Rail Cannon (5) slug; Mass Driver (1), Missile Rack (3), Flak Battery (4) tracer
+ | Models.json:81-84; Tuning.json weapons
+ | Structure guns (Defence gun)
+ | no weapon id → tracer
+ | GameLogic/Simulation.h:598; CombatEffects.cpp:83-84
+ | Height
+ | 6 m (EFFECT_HEIGHT_METERS)
+ | CombatEffects.cpp:15
+ | Starts
+ | one tick before its snapshot, from the shooter's nearest gun hardpoint
+ | CombatEffects.cpp:80; ADR-019 §Decision 5
+ | Muzzle flash
+ | 0.08 s; tracer 3 m, beam 5 m, slug 7 m radius
+ | CombatEffects.cpp:17-19,38,123-127
+ | Tracer
+ | 0.12 s flight, 14 m streak, 2 m wide
+ | CombatEffects.cpp:23-26,159-173
+ | Beam
+ | 0.25 s, 4 m wide narrowing to 0, darkens to half
+ | CombatEffects.cpp:30-31,146-157
+ | Beam color
+ | shooter's set color lerped 35% to white (BEAM_WHITE_SHARE); BEAM_COLOR if shooter unknown
+ | GameClient.cpp:75,1749-1759; CombatEffects.cpp:32,114
+ | Slug
+ | 0.4 s, 1.5 m wide, joins gun and target at once; 7 m flash at both ends
+ | CombatEffects.cpp:36-39,131-145
+ | Spark
+ | 0.12 s, 4 m radius, at the target (after tracer flight for tracers)
+ | CombatEffects.cpp:41,45-46,176-178
+ | Splash ring
+ | 0.3 s, band 1.0–1.15 × splash radius × √progress; Missile Rack 30 m, Flak Battery 26 m
+ | CombatEffects.cpp:43-44,179-187; Tuning.json:29
+ | Fading
+ | color × (1 − progress) toward black
+ | CombatEffects.cpp:49-53
+ | Lighting
+ | lit as a face looking up, ≈ (0.895, 0.877, 0.932)
+ | GameClient.cpp:1340-1358; ADR-090 §Decision 3
+Derived beam colors (computed, GameClient.cpp:1757): Human (0.467, 0.623, 0.968); Tarkan (0.935, 0.512, 0.428); Pirate (0.753, 0.493, 0.935).
+Color constants: FLASH_COLOR (1.0, 0.95, 0.7), TRACER_COLOR (1.0, 0.85, 0.35), BEAM_COLOR (0.55, 0.9, 1.0), SLUG_COLOR (0.9, 0.95, 1.0), BLAST_COLOR (1.0, 0.6, 0.25), SPARK_COLOR (1.0, 0.7, 0.3) — CombatEffects.cpp:20,26,32,39,44,46; BEAM_WHITE_SHARE — GameClient.cpp:75.
+Example: yellow tracer streaks between ships; a pale-blue Human beam that thins and dims over a quarter second; a white rail line with flashes at both ends; an orange ring spreading 30 m around a missile hit.
+Explosions: shards
+Rule: a destroyed ship or structure breaks into its own triangles, which fly out, tumble, darken to black and shrink away over 3 s; a structure breaks three times over (ADR-026 §Decision 4).
+ | Property
+ | Value
+ | Source
+ | Life
+ | 3 s (LIFE_SECONDS)
+ | ExplosionManager.h:27
+ | Copies
+ | structure 3 (STRUCTURE_SHARD_COPIES), ship 1
+ | GameClient.cpp:130,1613
+ | Max shards
+ | 400 per explosion, all copies (MAX_SHARDS), random selection
+ | ExplosionManager.h:24; ExplosionManager.cpp:130-131
+ | Smallest shard
+ | edges summing ≥ 5% of the explosion radius (MIN_PERIMETER_RADII)
+ | ExplosionManager.cpp:30
+ | Outward speed
+ | 5 × distance from center per second (OUTWARD_SPEED_PER_SECOND)
+ | ExplosionManager.cpp:22
+ | Scatter
+ | up to 0.5 radii/s any direction (SCATTER_RADII_PER_SECOND)
+ | ExplosionManager.cpp:25
+ | Drag
+ | square of speed, k = 1.5/radius (DRAG_RADII): a rim shard flies ~2.1 radii
+ | ExplosionManager.cpp:26-28
+ | Tumble
+ | one of 5 spins per copy, up to 4 rad/s per axis, friction 0.2
+ | ExplosionManager.cpp:16-19
+ | Shrink
+ | to nothing over the last 40% (SHRINK_SHARE)
+ | ExplosionManager.cpp:32,190
+ | Color
+ | the model's face color (ship FILL_SHADE; structure toward gray × STRUCTURE_FILL_SHADE), darkening linearly
+ | GameClient.cpp:1607-1611; ExplosionManager.cpp:230
+ | Two-sided
+ | each shard drawn both ways
+ | ExplosionManager.cpp:220-226
+ | Pose
+ | as drawn, bank and stance included; spinning parts at rest
+ | ADR-029 §Decision 5; ADR-045 §Decision 5
+ | Vertex slot
+ | 65,536 vertices a frame (MAX_FRAME_VERTICES), newest first; oldest dropped
+ | MeshPipeline.h:83; GameClient.cpp:1620-1623
+ | Seed
+ | entity id and tick: one destruction always looks the same
+ | GameClient.cpp:1600
+Example: a hull bursting into dark triangular plates that spin outward about two hull-radii and fade into the black.
+Explosions: particles
+Rule: a blast reaches 1.5 × the footprint and throws a white-yellow-to-amber fireball, amber debris that leaves gray smoke, and for a structure a fast flash, all as additive diamond sprites of DeepSpaceOutpost's particle texture; never in a side's color (ADR-026, ADR-028 §Decision 5).
+ | Property
+ | Value
+ | Source
+ | Reach
+ | 1.5 × footprint radius (BLAST_REACH_RADII)
+ | ParticleSystem.cpp:52,163
+ | Fireball count
+ | 1 per meter of footprint, plus up to as many again
+ | ParticleSystem.cpp:55,165-167
+ | Fireball size / speed
+ | 0.18–0.27 reach; up to 0.67 reach/s
+ | ParticleSystem.cpp:56-58
+ | Fireball life / friction
+ | 2 s / 0.2
+ | ParticleSystem.cpp:31-32
+ | Fireball color
+ | between (0.42, 0.37, 0.23) and (0.4, 0.24, 0.08); born at (0.55, 0.52, 0.44), cools over 0.4 s
+ | ParticleSystem.cpp:31-36 (CORE)
+ | Debris count
+ | 3 + 0.25 per meter
+ | ParticleSystem.cpp:60-61
+ | Debris size / speed
+ | 0.08–0.12 reach; up to 1.0 reach/s
+ | ParticleSystem.cpp:62-64
+ | Debris life / color
+ | 6 s; between (0.22, 0.13, 0.04) and (0.337, 0.22, 0.08)
+ | ParticleSystem.cpp:37 (DEBRIS)
+ | Smoke trail
+ | every 0.1 s, 30% chance, half size, a fifth of speed; 2 s life, friction 0.6; gray (0.076)–(0.204)
+ | ParticleSystem.cpp:39,46-49 (TRAIL)
+ | Structure flash
+ | 0.5 per meter, size 0.15 reach, up to 2.5 reach/s
+ | ParticleSystem.cpp:66-68,185-193
+ | Vertical spread
+ | half the horizontal
+ | ParticleSystem.cpp:70
+ | Fade
+ | full for 75% of life, then linear to nothing
+ | ParticleSystem.cpp:42,103-109
+ | Shape
+ | diamond: quad axes = (right ± up)/2, tips a radius out
+ | GameClient.cpp:1798-1804
+ | Texture
+ | Particle.dds, 16×16, sRGB→linear, point-sampled when magnified
+ | GameClient.cpp:14; GlowSpritePS.hlsl:16-21; ADR-026 §Decision 1
+ | Blend / depth
+ | additive; tested ≤, no write
+ | GlowPipeline.cpp:72-81
+ | Cap
+ | 4,096 particles stored (MAX_PARTICLES); 4,096 glows drawn a frame
+ | ParticleSystem.h:22; GlowPipeline.h:39
+Color constants: CORE, DEBRIS, TRAIL (Look structs, ParticleSystem.cpp:31-39).
+Example: a hot near-white burst of blocky diamonds cooling to amber, a few amber sparks flying out trailing gray smoke puffs.
+The textures they draw with
+[IMG /_blob/02a97cb47a56c6a8167b3e0859732507 alt=Particle texture]
+Particle[IMG /_blob/28ca391224221968b8730848f4ccb64f alt=glow texture]
+glow[IMG /_blob/ede0df66176e640d8eb2992c90d58f7d alt=cloudyglow texture]
+cloudyglow[IMG /_blob/b081b4f51e0040258b97001964f0c104 alt=laser texture]
+laser[IMG /_blob/4656a394530fc7b4ee7779d03dddeffa alt=starburst texture]
+starburst
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

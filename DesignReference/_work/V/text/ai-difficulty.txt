@@ -1,0 +1,306 @@
+
+Easy, Normal, Hard
+Difficulty, field by field
+8.1 The three files, field by field
+There are three files: OpponentEasy.json (Easy), Opponent.json (Normal) and OpponentHard.json (Hard). All three use the same line numbers for every field (verified with grep -n). A field marked ◆ differs from Normal in that file. The Notes column gives the validation in AiSettings.cpp.
+ | Line
+ | Field
+ | Easy
+ | Normal
+ | Hard
+ | Notes
+ | 2
+ | attackGroupShips
+ | ◆ 30
+ | 25
+ | ◆ 20
+ | int ≥ 1 (AiSettings.cpp:36)
+ | 3
+ | attackGroupGrowthPerTier
+ | 12
+ | 12
+ | 12
+ | int ≥ 0
+ | 4
+ | retreatLossShare
+ | ◆ 0.1
+ | 0.15
+ | ◆ 0.1
+ | ≥ 0 and < 1 (:38-40)
+ | 5
+ | regroupSeconds
+ | 240
+ | 240
+ | 240
+ | ≥ 0
+ | 6
+ | reviewIntervalSeconds
+ | ◆ 150
+ | 60
+ | ◆ 45
+ | > 0
+ | 7
+ | constructors
+ | ◆ 3
+ | 4
+ | ◆ 5
+ | int ≥ 1
+ | 8
+ | incomePerShipyardOrePerSecond
+ | ◆ 15
+ | 10
+ | 10
+ | > 0
+ | 9
+ | homeAsteroids
+ | 3
+ | 3
+ | 3
+ | int ≥ 0
+ | 10
+ | contestedAsteroids
+ | ◆ 1
+ | 3
+ | 3
+ | int ≥ 0
+ | 11
+ | homePlatformsPerShipyard
+ | 2
+ | 2
+ | 2
+ | int ≥ 0
+ | 12
+ | shipyardQueueJobs
+ | ◆ 1
+ | 2
+ | 2
+ | 1 to 5 (QUEUE_LIMIT) (:48-50)
+ | 13
+ | defenseHoldSeconds
+ | 10
+ | 10
+ | 10
+ | > 0. The deputy uses Normal's.
+ | 14
+ | structureGapMeters
+ | 50
+ | 50
+ | 50
+ | ≥ 0
+ | 15
+ | rallyDistanceMeters
+ | 170
+ | 170
+ | 170
+ | > 0
+ | 16
+ | researchOrder
+ | same
+ | 23 topics (§8.2)
+ | same
+ | no topic twice (:55-64)
+ | 17
+ | defaultDesign
+ | same
+ | Medium+Ion+Mass Driver (Brawler)
+ | same
+ | —
+ | 18–43
+ | counters
+ | same
+ | 24 rules (§8.3)
+ | same
+ | no duplicate rule (:88-98)
+ | 44
+ | scouts
+ | 1
+ | 1
+ | 1
+ | int ≥ 0
+ | 45
+ | scoutDesign
+ | same
+ | Small+Ion+Mass Driver+Sensor Array
+ | same
+ | —
+ | 46
+ | raidShips
+ | ◆ 0
+ | 2
+ | ◆ 3
+ | int ≥ 0; 0 sends no raids
+ | 47
+ | raidLossShare
+ | 0.5
+ | 0.5
+ | 0.5
+ | ≥ 0 and < 1; also the pirate detachment's
+ | 48
+ | raidIntervalSeconds
+ | 180
+ | 180
+ | 180
+ | ≥ 0; also the pirate detachment's
+ | 49
+ | attackNodeLead
+ | 1
+ | 1
+ | 1
+ | int ≥ 0
+ | 50
+ | attackWithoutLeadShare
+ | ◆ 2.0
+ | 1.5
+ | 1.5
+ | > 0
+ | 51
+ | frontPlatforms
+ | 1
+ | 1
+ | 1
+ | int ≥ 0
+ | 52
+ | claimSectors
+ | ◆ 0
+ | 2
+ | 2
+ | int ≥ 0
+ | 53
+ | secondSlotTier
+ | 3
+ | 3
+ | 3
+ | int ≥ 1
+ | 54
+ | attackLevelMeters
+ | 500
+ | 500
+ | 500
+ | ≥ 0
+ | 55
+ | attackCapShare
+ | ◆ 1.0
+ | 0.8
+ | 0.8
+ | > 0 and ≤ 1 (:81-83)
+ | 56
+ | pirateMargin
+ | ◆ 2.0
+ | 1.5
+ | ◆ 1.2
+ | > 0
+ | 57
+ | scoutOwnHalfSeconds
+ | 600
+ | 600
+ | 600
+ | ≥ 0
+Counts:
+- 31 top-level fields in each file.
+- 12 fields differ in at least one file: attackGroupShips, retreatLossShare, reviewIntervalSeconds, constructors, incomePerShipyardOrePerSecond, contestedAsteroids, shipyardQueueJobs, raidShips, attackWithoutLeadShare, claimSectors, attackCapShare, pirateMargin.
+- Easy differs from Normal in all 12; Hard differs in 6.
+- The other 19 fields, including researchOrder and all 24 counters, are identical in all three (diff -u).
+What each difficulty means (ADR-065):
+- Easy: "the same rules with a smaller hand" (ADR-065 §Decision 2).
+- Hard: "fights harder for territory" (ADR-065 §Decision 3).
+- Neither cheats: "An AI that is helped by the rules … is a new decision" (ADR-065 §What this forecloses).
+- Where each is picked:
+- On the menu: "Easy skirmish", "Normal skirmish", "Hard skirmish" (Hud.cpp:2329-2331).
+- For a world's AI empire: --ai <player>:Easy|Normal|Hard (OutpostServer/Main.cpp:120-133).
+- The default is Normal, both on the client (GameClient.h:271) and for --ai without a difficulty (Main.cpp:125).
+- When they load. All three files are read with the first match's server, before the window shows (WinMain.cpp:281-291, ADR-065 §Decision 4).
+8.2 Research order, the same in all three (Opponent.json:16)
+Topic names are from Tuning.json: research.
+- Improved Extraction (1)
+- Hull Plating (2)
+- Fusion Drive (5)
+- Large Hull (6)
+- Mass Driver Calibration (3)
+- Lance Focusing (4)
+- Automated Shipyards (8)
+- Missile Rack (7)
+- Flak Battery (11)
+- Pulse Drive (10)
+- Composite Plating (13)
+- Lance Capacitors (16)
+- Missile Guidance (17)
+- Reinforced Structures (14)
+- Defence Autoloader (15)
+- Deep Core Survey (12)
+- Rail Cannon (19)
+- Ablative Armour (20)
+- Coilgun Mass Drivers (21)
+- Proximity Fuses (22)
+- Fleet Automation (24)
+- Drive Harmonics (23)
+- Rapid Construction (25)
+That is 23 topics, which is every topic in Tuning.json.
+8.3 Counters, the same in all three (Opponent.json:19-42)
+- Order of preference: the first answer the AI has unlocked is the one it builds (AiSettings.h:5-6, AiPlayer.cpp:308-310).
+- The default is Medium+Ion+Mass Driver (Opponent.json:17).
+- Names. Component names are from Tuning.json; starting-design names (Swarm, Picket, Brawler, Lancer) are from Tuning.json: startingDesigns.
+ | Line
+ | Enemy's most common design
+ | Answer, in order of preference
+ | 19–21
+ | Small+Ion+Mass Driver (Swarm)
+ | Medium+Ion+Flak Battery → Large+Fusion+Mass Driver → Medium+Ion+Mass Driver (Brawler)
+ | 22–24
+ | Medium+Ion+Mass Driver (Brawler)
+ | Medium+Ion+Flak Battery → Large+Fusion+Lance → Medium+Ion+Lance (Lancer)
+ | 25
+ | Medium+Ion+Lance (Lancer)
+ | Small+Ion+Mass Driver (Swarm)
+ | 26–27
+ | Small+Ion+Lance (Picket)
+ | Medium+Ion+Flak Battery → Small+Ion+Mass Driver (Swarm)
+ | 28–29
+ | Large+Fusion+Mass Driver
+ | Medium+Ion+Rail Cannon → Small+Ion+Lance (Picket)
+ | 30–31
+ | Large+Fusion+Lance
+ | Large+Fusion+Rail Cannon → Picket
+ | 32
+ | Large+Fusion+Missile Rack
+ | Picket
+ | 33–34
+ | Small+Ion+Flak Battery
+ | Medium+Ion+Missile Rack → Medium+Ion+Flak Battery
+ | 35
+ | Medium+Ion+Flak Battery
+ | Large+Fusion+Lance
+ | 36
+ | Large+Fusion+Flak Battery
+ | Large+Fusion+Lance
+ | 37
+ | Medium+Ion+Rail Cannon
+ | Picket
+ | 38
+ | Large+Fusion+Rail Cannon
+ | Picket
+ | 39
+ | Small+Ion+Rail Cannon
+ | Medium+Ion+Flak Battery
+ | 40
+ | Small+Pulse+Mass Driver
+ | Medium+Ion+Flak Battery
+ | 41
+ | Small+Pulse+Lance
+ | Medium+Ion+Flak Battery
+ | 42
+ | Small+Pulse+Flak Battery
+ | Medium+Ion+Flak Battery
+8.4 Measured outcomes (ADR-065, AI against AI only)
+ | Matchup
+ | Result
+ | Source
+ | Normal vs Easy (seeds 1–20, after task 25.2)
+ | Normal wins all 20; median 23:56; 18 by domination
+ | ADR-065 §Consequences
+ | Hard vs Normal (seeds 1–20, after task 25.2)
+ | Hard wins all 20; median 29:10; 12 by domination
+ | ADR-065 §Consequences
+ | Against a human
+ | The owner's run on 2026-10-04 found Easy beatable; nothing else is measured
+ | ADR-065 §Consequences
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

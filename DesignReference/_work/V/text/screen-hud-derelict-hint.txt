@@ -1,0 +1,29 @@
+
+The pointer over a derelict: the hint says what it holds
+1,500
++9.5/s
+Nodes
+cap 4 of 25
+1
+1 : 
+Tickets
+1,000
+1,000 : 
+No drain
+Derelict: 300 Ore, and part of Large Hull's research time · salvaged 40%
+Local skirmish
+1
+2
+3
+4
+5
+hud · derelict-hint · factor 1
+The pointer over a derelict: the hint says what it holds
+- 1Ore panelThe stockpile as the gem and figure in GOLD_COLOR, written one way everywhere; the income in NUMBERS_COLOR, a warning chip at +0/s. The word Ore is not written.Hud.cpp:3143-3157; ADR-043 d3; ADR-047 d5; ADR-085 d1
+- 2TerritoryNodes held, own : enemy, against the Command Station's cap; domination tickets while both sides have them; the drain, a chip when it is the player's. Only on a map with sectors.Hud.cpp:3167-3213; ADR-056; ADR-057
+- 3HintWhat a click on the ground will do, or what is under the pointer: a placement wins over a derelict or a remembered structure.Hud.cpp:3311-3316; GameClient.cpp:742-749
+- 4Where the match runsLocal skirmish, or Server host:port. After 2 s without a snapshot a chip counts the silence. Never on the menu.Hud.cpp:3320-3337; Hud.h:469; ADR-086
+- 5Minimap10,000 m in 284 units (35.2 m a unit): sector wash, marks, fog, the sector lattice, held and guarded outlines, remembered crosses, alerts and the camera's view.Hud.cpp:3456-3630; ADR-068 d2; ADR-081
+Geometry derived from Hud.cpp by A4's derive_layouts.py, not dumped from the game: 15 of 166 elements depend on DirectWrite text measurement and are estimated. Content values are samples built from Tuning.json and Map.json. The world behind the HUD (ships, grid, fog) is not drawn here; see The battlefield. Dashed boxes and numbered discs in #FF2D95 are this reference's annotations, not the game.
+- Hint text from Hud::DescribeDerelict (Hud.cpp:2135-2145), set in GameClient.cpp:742-749.
+DesignReference/_work/A4/layouts/hud-derelict-hint.json

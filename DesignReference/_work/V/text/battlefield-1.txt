@@ -1,0 +1,320 @@
+
+Frame, camera, sky and grid
+Outpost Commander · design reference · 14
+The battlefield
+What the world looks like and the rule behind each element: camera, sky, grid, the lit vector look, fog and memories, territory, rings, bars, exhaust and the phosphor glow.
+Sources: Camera.json GameClient.cpp NeuronClient/Shader A7 ADR-012/019/022/024/026/028/040/081/090/091/092
+The vector look, in the game's light
+[IMG /_blob/a370fcd668b12e05b4e64229f9be406e alt=Human Medium hull]
+Human Medium · Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.[IMG /_blob/81da41260631b2e54978a606cc2d9c65 alt=Tarkan Medium hull]
+Tarkan Medium · Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.
+Draw order
+One frame, in the order the commands are recorded. Source: OutpostCommander/WinMain.cpp:514-519, GameApp/GameClient.cpp:1125-1183, NeuronClient/Renderer.cpp:416-460.
+ | #
+ | What
+ | Pass / pipeline
+ | Depth
+ | Blend
+ | Source
+ | 0
+ | Clear scene target to black, depth to 1
+ | Renderer::BeginFrame(CLEAR_COLOR)
+ | cleared
+ | —
+ | WinMain.cpp:21,514; Renderer.cpp:24-26,394-395
+ | 1
+ | Sky: 49,975 Gaussian points
+ | StarPipeline Spot
+ | off
+ | additive
+ | GameClient.cpp:1148; StarPipeline.cpp:75-84
+ | 2
+ | Sky: 25 brightest stars as crosses
+ | StarPipeline Cross
+ | off
+ | additive
+ | GameClient.cpp:1149,466
+ | 3
+ | Vector grid
+ | MeshPipeline::DrawLines, unpulled
+ | test ≤, no write
+ | opaque
+ | GameClient.cpp:1155
+ | —
+ | Main menu stops here: the menu shows over the grid and the sky
+ | 
+ | 
+ | 
+ | GameClient.cpp:1156-1158
+ | 4
+ | Faces of every entity not remembered (ships, rocks, field rocks, derelicts, structures)
+ | MeshPipeline::DrawMeshes, instanced
+ | test <, write
+ | opaque
+ | GameClient.cpp:1162-1168
+ | 5
+ | Explosion shards
+ | MeshPipeline::DrawTriangles
+ | test <, write
+ | opaque
+ | GameClient.cpp:1169,1618-1624
+ | 6
+ | Every model's crease lines
+ | MeshPipeline::DrawLines, pulled 0.2%
+ | test ≤, no write
+ | opaque
+ | GameClient.cpp:1171; MeshPipeline.cpp:98-107
+ | 7
+ | Structure footprint rings; a Mining Rig's draped ring
+ | DrawLines / DrawLineList
+ | test ≤, no write
+ | opaque
+ | GameClient.cpp:1172,1361-1397
+ | 8
+ | Selection rings, then drag box
+ | DrawLines; drag box as flat strips
+ | rings ≤ no write; strips < write
+ | opaque
+ | GameClient.cpp:1173,1438-1481
+ | 9
+ | Placement ghost: band ring, then model faces
+ | MeshPipeline::Draw
+ | test <, write
+ | opaque
+ | GameClient.cpp:1174,1807-1835
+ | 10
+ | Combat effects: flashes, sparks (discs), splash rings, tracer/beam/slug bands
+ | MeshPipeline::Draw
+ | test <, write
+ | opaque
+ | GameClient.cpp:1175,1340-1358
+ | 11
+ | Glows: exhaust (soft spots), then particles (diamond sprites)
+ | GlowPipeline ×2
+ | test ≤, no write
+ | additive
+ | GameClient.cpp:1176,1772-1805; GlowPipeline.cpp:72-81
+ | 12
+ | Fog of war over the ground
+ | GroundMaskPipeline
+ | off
+ | alpha (black)
+ | GameClient.cpp:1177,1263-1287; GroundMaskPipeline.cpp:70-80
+ | 13
+ | Territory: lattice, held/guarded outlines, claimable-node rings
+ | MeshPipeline::Resume + DrawLines
+ | test ≤, no write
+ | opaque
+ | GameClient.cpp:1180-1181,1206-1256
+ | 14
+ | Memories: remembered structures and derelicts as lines only
+ | DrawLines, pulled 0.2%
+ | test ≤, no write
+ | opaque
+ | GameClient.cpp:1182,1185-1204
+ | 15
+ | Phosphor glow (bloom) built from the scene
+ | Neuron::Bloom, 9 passes
+ | —
+ | additive up-chain
+ | Renderer.cpp:431-433; ADR-091 §Decision 1
+ | 16
+ | Resolve: 4× MSAA averaged + glow added → back buffer
+ | ResolvePS.hlsl
+ | —
+ | —
+ | Renderer.cpp:435-458; ResolvePS.hlsl:34-48
+ | 17
+ | HUD: bars over entities first, then panels, lines, sprites, texts per layer
+ | UiPipeline, 1 sample, never glows
+ | —
+ | —
+ | WinMain.cpp:517-518; GameClient.cpp:1289-1338
+Example: black space, stars, a faint blue-gray grid; dark-faced models outlined in bright side-colored lines; rings on the ground; shots and blasts; fog darkens the ground; sector lines and ghost outlines of remembered bases sit on top of the fog; then the HUD.
+Frame and scene target
+Rule: the scene is drawn at the display's native resolution into a 4-sample sRGB target, resolved by a shader into the back buffer, then the interface is drawn over it; there is no HDR.
+ | Property
+ | Value
+ | Source
+ | Window
+ | Borderless full screen at start; Alt+Enter toggles a window (first 1280×720)
+ | ADR-006 §Decision 1
+ | Back buffer
+ | Native resolution; R8G8B8A8_UNORM, RTV _SRGB; no HDR
+ | ADR-006 §Decision 4
+ | Scene multisampling
+ | 4 samples a pixel (Renderer::SAMPLE_COUNT)
+ | Renderer.h:29; ADR-040 §Decision 3
+ | Depth
+ | 32-bit float, cleared to 1, less-than; back faces culled
+ | ADR-011 §Decision 7; Renderer.cpp:25-26
+ | Interface frame
+ | 1920×1080 reference units, scale min(w/1920, h/1080) × player factor
+ | ADR-006 §Decision 5; Hud.cpp:3029-3033
+ | Clear color
+ | CLEAR_COLOR = (0, 0, 0, 1); SCENE_CLEAR = (0, 0, 0, 1)
+ | WinMain.cpp:21; Renderer.cpp:24
+Example: a crisp, antialiased image filling the monitor, pure black behind everything.
+Camera
+Rule: the zoom is a view width at the focus; the pitch follows the zoom in a straight line; the camera has no inertia; all numbers are Camera.json's (ADR-012).
+ | Property
+ | Value
+ | Source
+ | Default view width
+ | 500 m
+ | Camera.json: defaultViewWidthMeters (line 2)
+ | Narrowest view
+ | 150 m
+ | Camera.json: minimumViewWidthMeters (line 3)
+ | Widest view
+ | 3,000 m
+ | Camera.json: maximumViewWidthMeters (line 4); Phase 4 gate L6 (OutpostCommander-Phase4.md:400)
+ | Pitch, fully zoomed in
+ | 40° below horizontal
+ | Camera.json: pitchAtMinimumDegrees (line 5)
+ | Pitch, fully zoomed out
+ | 70°
+ | Camera.json: pitchAtMaximumDegrees (line 6)
+ | Pitch between
+ | linear in view width: lerp(40, 70, (w − 150)/(3000 − 150))
+ | Camera.cpp:160-165; ADR-012 §Decision 2
+ | Pitch at default 500 m
+ | 43.7° (computed from Camera.cpp:160-165)
+ | —
+ | Vertical field of view
+ | 45°
+ | Camera.json: verticalFieldOfViewDegrees (line 7)
+ | Distance to focus
+ | width / (2·tan(hfov/2)), hfov from vfov × aspect
+ | Camera.cpp:298-305; ADR-012 §Decision 1
+ | Focus limit
+ | ±5,000 m on x and z (the map's edge)
+ | Camera.json: focusLimitMeters (line 8); Camera.cpp:133-147
+ | Pan speed
+ | 0.8 view widths per second
+ | Camera.json: panViewWidthsPerSecond (line 9); Camera.cpp:126-127
+ | Pan inputs
+ | Arrow keys; middle-drag (holds the ground under the cursor); edge scroll
+ | KeyBindings.h:18-21; Camera.cpp:94-127
+ | Edge-scroll margin
+ | 4 px from any screen edge
+ | Camera.json: edgeScrollMarginPixels (line 10); Camera.cpp:112-125
+ | Edge scroll only while cursor held
+ | yes; in a window there is no edge scroll
+ | Camera.cpp:111-112; ADR-012 §Decision 6
+ | Cursor held
+ | ClipCursor to the client area every frame while full screen and in the foreground; released on Alt+Tab, windowed or closed
+ | Window.cpp:241-256; ADR-012 §Decision 5
+ | Zoom per wheel notch
+ | factor 1.15
+ | Camera.json: zoomFactorPerNotch (line 11); Camera.cpp:149-153
+ | Turn
+ | Q counterclockwise, E clockwise, 90°/s about the focus
+ | Camera.json: rotateDegreesPerSecond (line 12); KeyBindings.h:22-23; Camera.cpp:129
+ | Starting orientation
+ | looks along +z: screen right = +x, screen top = +z
+ | Camera.cpp:13-14; ADR-012 §Decision 4
+ | Near / far plane
+ | near = max(1 m, 1% of distance); far = distance + 8,000 m
+ | Camera.cpp:17-19,198-200
+ | Smoothing
+ | none; moves exactly with input
+ | ADR-012 §Consequences
+ | Jump to alert
+ | Space centers the camera on the newest alert
+ | KeyBindings.h:36; GameClient.cpp:661-666
+Color constants: none.
+Example: a tilted view looking down at about 44° over a 500 m-wide patch of black space; zoomed fully out it looks down steeply at 70° over 3 km.
+Starfield
+Rule: one fixed-seed sky of 50,000 stars at infinity, spread evenly over the sphere with a natural brightness distribution; the 25 brightest are crosses, the rest Gaussian points; it never moves when the view pans, only when it turns (ADR-022, ADR-028).
+ | Property
+ | Value
+ | Source
+ | Stars in all
+ | 50,000 (STAR_COUNT), of which 25 crosses (BURST_COUNT) and 49,975 points
+ | Starfield.cpp:20-21,146-165
+ | Seed
+ | SKY_SEED = 0x5EED5EED0F5E7A25, SplitMix64
+ | Starfield.cpp:16,61-93
+ | Distribution
+ | even over the whole sphere
+ | Starfield.cpp:103-111; ADR-022 §Decision 1
+ | Brightness law
+ | count brighter than a light ∝ light^−3/2 (COUNT_POWER −1.5)
+ | Starfield.cpp:29-32
+ | Faintest star's flux
+ | MIN_FLUX = 0.018 × 0.7²
+ | Starfield.cpp:31
+ | Point spread
+ | 0.7–1.6 px standard deviation (MIN_SPREAD_PIXELS, MAX_SPREAD_PIXELS)
+ | Starfield.cpp:25-26
+ | Point peak
+ | at most 0.75 (MAX_PEAK); brighter points drawn wider, not brighter
+ | Starfield.cpp:27,162-164
+ | Point quad reach
+ | 3 standard deviations (REACH); Gaussian lowered by its rim value
+ | Starfield.cpp:28; StarPS.hlsl:12-19
+ | Tints
+ | 7 blackbody tints, 3,000 K–10,000 K, weights 0.10/0.20/0.22/0.18/0.14/0.10/0.06
+ | Starfield.cpp:51-59 (TINTS)
+ | Tint share
+ | 65% tint, rest white (TINT_SHARE 0.65)
+ | Starfield.cpp:44,124
+ | Cross radius
+ | 6–16 px on the 1920×1080 reference, by log of light
+ | Starfield.cpp:38-39,151-154; ADR-028 §Decision 3
+ | Cross peak
+ | 0.6 (BURST_PEAK)
+ | Starfield.cpp:40
+ | Cross color
+ | its tint if blue ≥ red, else white: never warm
+ | Starfield.cpp:152; ADR-046 §Decision 3
+ | Cross shape
+ | two 1-px screen-axis lines fading linearly to the tips, plus a 1-px-radius dot
+ | StarCrossPS.hlsl:15-29; ADR-028 §Decision 2
+ | Size scaling
+ | in reference pixels × HUD scale (same on every monitor)
+ | GameClient.cpp:1140-1147; ADR-022 §Decision 5
+ | Depth
+ | at infinity (w = 0), z = w/2, no depth test or write; drawn first
+ | StarVS.hlsl:34-39; StarPipeline.cpp:83-84
+ | Unused textures
+ | starburst.dds (128×128) packaged, not drawn; glow.dds not used
+ | ADR-022 §Decision 4; ADR-028 §Consequences
+ | Twinkle / parallax / galaxy
+ | none
+ | ADR-022 §What this forecloses
+Color constants: TINTS (7 entries, Starfield.cpp:51-59), e.g. 3,000 K (1.0, 0.46, 0.15) … 10,000 K (0.60, 0.71, 1.0); final color = lerp(1, tint, 0.65) × peak.
+Example: a black sky dusted with thousands of faint warm-white and blue-white specks, a handful of thin white four-armed crosses 12–32 px across.
+Vector grid
+Rule: a uniform one-pixel line every 100 m along x and z across the whole 10 km map, a dim blue-gray, unpulled and writing no depth (ADR-028 §Decision 1).
+ | Property
+ | Value
+ | Source
+ | Extent
+ | −5,000 m to +5,000 m on both axes (10,000 m a side)
+ | GameClient.cpp:27-30 (GRID_HALF_EXTENT_METERS 5000); Map.json: sizeMeters 10000
+ | Spacing
+ | 100 m (GRID_SPACING_METERS); 101 lines each way
+ | GameClient.cpp:31,173-179
+ | Width
+ | 1 px at any zoom, multisampled
+ | ADR-027 §Decision 3; ADR-040 §Decision 3
+ | Major lines
+ | none (nothing marks 500 m)
+ | ADR-028 §Consequences
+ | Pull toward eye
+ | 0
+ | GameClient.cpp:1154-1155; ADR-040 §Decision 2
+ | Lighting
+ | as a line facing up: takes the light's luminance only
+ | MeshLinePS.hlsl:40-43; ADR-090 §Decision 2
+ | On screen
+ | about (26, 27, 34) sRGB lit from above (ADR's figure, not measured)
+ | ADR-028 §Decision 1
+ | Fade
+ | under fog: out of sight the grid falls to ~7/255 (ADR's computation)
+ | ADR-081 §Decision 6
+Color constant: GRID_COLOR = (0.012, 0.013, 0.019, 1.0) — GameClient.cpp:32.
+Example: barely visible hairlines in a 100 m square lattice that slides as the camera pans and ends at the map's edge.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

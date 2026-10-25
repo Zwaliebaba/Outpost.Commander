@@ -1,0 +1,195 @@
+
+Research
+Outpost Commander · design reference · 07
+Research
+Twenty-three topics in three tiers, opened by the Research Lab's levels; a topic that needs another is drawn hatched, as the Research window draws it.
+Sources: Tuning.json: research A2 Research tree ADR-033
+The tree · drawn from Tuning.json: research
+TIER 1
+Improved Extraction150
+miningRig · income +25%
+TIER 1 · 60 s · id 1
+Tuning.json: research[0]
+Hull Plating150
+allHulls · hitPoints +15%
+TIER 1 · 60 s · id 2
+Tuning.json: research[1]
+Mass Driver Calibration150
+weapon 1 (Mass Driver) · fireRate +10%
+TIER 1 · 75 s · id 3
+Tuning.json: research[2]
+Lance Focusing150
+weapon 2 (Lance) · fireRate +15%
+TIER 1 · 75 s · id 4
+Tuning.json: research[3]
+Fusion Drive200
+unlockDrive 2 · Fusion
+TIER 1 · 90 s · id 5
+NEEDS · HULL PLATING
+Tuning.json: research[4]
+Large Hull250
+unlockHull 3 · Large
+TIER 1 · 120 s · id 6
+NEEDS · HULL PLATING
+Tuning.json: research[5]
+Missile Rack250
+unlockWeapon 3 · Missile Rack
+TIER 1 · 120 s · id 7
+NEEDS · MASS DRIVER CALIBRATION
+Tuning.json: research[6]
+Automated Shipyards200
+shipyards · buildSpeed +25%
+TIER 1 · 90 s · id 8
+NEEDS · IMPROVED EXTRACTION
+Tuning.json: research[7]
+TIER 2
+Pulse Drive300
+unlockDrive 3 · Pulse
+TIER 2 · 100 s · id 10
+Tuning.json: research[8]
+Flak Battery300
+unlockWeapon 4 · Flak Battery
+TIER 2 · 100 s · id 11
+NEEDS · MASS DRIVER CALIBRATION
+Tuning.json: research[9]
+Deep Core Survey300
+asteroids · oreReserve +30%
+TIER 2 · 90 s · id 12
+NEEDS · IMPROVED EXTRACTION
+Tuning.json: research[10]
+Composite Plating300
+allHulls · hitPoints +15%
+TIER 2 · 90 s · id 13
+NEEDS · HULL PLATING
+Tuning.json: research[11]
+Reinforced Structures250
+allStructures · hitPoints +25%
+TIER 2 · 90 s · id 14
+Tuning.json: research[12]
+Defence Autoloader250
+structureWeapon 1 · fireRate +20%
+TIER 2 · 90 s · id 15
+Tuning.json: research[13]
+Lance Capacitors300
+weapon 2 (Lance) · fireRate +10%
+TIER 2 · 90 s · id 16
+NEEDS · LANCE FOCUSING
+Tuning.json: research[14]
+Missile Guidance300
+weapon 3 (Missile Rack) · fireRate +15%
+TIER 2 · 90 s · id 17
+NEEDS · MISSILE RACK
+Tuning.json: research[15]
+TIER 3
+Rail Cannon500
+unlockWeapon 5 · Rail Cannon
+TIER 3 · 150 s · id 19
+NEEDS · LANCE FOCUSING
+Tuning.json: research[16]
+Ablative Armour450
+allHulls · hitPoints +5%
+TIER 3 · 120 s · id 20
+NEEDS · COMPOSITE PLATING
+Tuning.json: research[17]
+Coilgun Mass Drivers400
+weapon 1 (Mass Driver) · fireRate +10%
+TIER 3 · 110 s · id 21
+NEEDS · MASS DRIVER CALIBRATION
+Tuning.json: research[18]
+Proximity Fuses400
+weapon 4 (Flak Battery) · fireRate +15%
+TIER 3 · 110 s · id 22
+NEEDS · FLAK BATTERY
+Tuning.json: research[19]
+Drive Harmonics450
+allShips · speed +10%
+TIER 3 · 120 s · id 23
+Tuning.json: research[20]
+Fleet Automation450
+shipyards · buildSpeed +25%
+TIER 3 · 120 s · id 24
+NEEDS · AUTOMATED SHIPYARDS
+Tuning.json: research[21]
+Rapid Construction350
+constructors · buildRate +25%
+TIER 3 · 100 s · id 25
+Tuning.json: research[22]
+Research tree as A2 traced it
+Rules.
+- Tier 1 is open from the start. A Research Lab at L2 opens tier 2, and one at L3 opens tier 3 (ADR-033 §Decision 2; Tuning.cpp:703-712).
+- A topic is refused while its tier is not open (LevelTooLow, Simulation.cpp:3190-3192), or while a prerequisite is neither researched nor queued ahead of it (Simulation.cpp:3181-3189).
+- A topic is paid when it starts (Simulation.cpp:3062-3067).
+- An upgrade applies at once to every existing ship and structure of the player (Simulation.cpp:3105-3141).
+- Percents on one rate add (ADR-033 §Decision 3).
+- The research window lists topics tier by tier. A topic not yet open is dim, and its first need reads "RESEARCH LAB L2" or "RESEARCH LAB L3" (Hud.cpp:2969-2986). Each card reads "TIER n · s" (Hud.cpp:2978).
+- The effect texts below are EffectText's (Research.cpp:142-179).
+Topic IDs 9 and 18, the gateways Relay Archives and Precursor Vault, are gone and their IDs are not reused (ADR-033 §Decision 2). "req" names a topic's prerequisites by ID; each entry gives its Ore and its research time. Every line's source is Tuning.json: research[i], lines 66–111.
+TIER 1 — open with the Research Lab at L1 (690 s, 1,500 Ore, 8 topics)
+├─ 1 Improved Extraction req — 150 Ore 60 s Mining Rig income +25%
+│ ├─ 8 Automated Shipyards req 1 200 Ore 90 s Shipyard build speed +25%
+│ └─ (L2 Lab requirement)
+├─ 2 Hull Plating req — 150 Ore 60 s Hull hit points +15%
+│ ├─ 5 Fusion Drive req 2 200 Ore 90 s Unlocks the Fusion drive
+│ ├─ 6 Large Hull req 2 250 Ore 120 s Unlocks the Large hull ── (L3 Lab requirement)
+│ └─ (L2 Lab requirement)
+├─ 3 Mass Driver Calibration req — 150 Ore 75 s Mass Driver fire rate +10%
+│ └─ 7 Missile Rack req 3 250 Ore 120 s Unlocks the Missile Rack
+└─ 4 Lance Focusing req — 150 Ore 75 s Lance fire rate +15%
+RESEARCH LAB L2 — 400 Ore, 60 s, requires 1 and 2 → opens TIER 2 (740 s, 2,300 Ore, 8 topics)
+├─ 10 Pulse Drive req — 300 Ore 100 s Unlocks the Pulse drive
+├─ 11 Flak Battery req 3 300 Ore 100 s Unlocks the Flak Battery
+├─ 12 Deep Core Survey req 1 300 Ore 90 s Asteroid ore reserves +30%
+├─ 13 Composite Plating req 2 300 Ore 90 s Hull hit points +15%
+├─ 14 Reinforced Structures req — 250 Ore 90 s Structure hit points +25%
+├─ 15 Defence Autoloader req — 250 Ore 90 s Defence gun fire rate +20%
+├─ 16 Lance Capacitors req 4 300 Ore 90 s Lance fire rate +10%
+└─ 17 Missile Guidance req 7 300 Ore 90 s Missile Rack fire rate +15%
+RESEARCH LAB L3 — 600 Ore, 90 s, requires 6 → opens TIER 3 (830 s, 3,000 Ore, 7 topics)
+├─ 19 Rail Cannon req 4 500 Ore 150 s Unlocks the Rail Cannon
+├─ 20 Ablative Armour req 13 450 Ore 120 s Hull hit points +5%
+├─ 21 Coilgun Mass Drivers req 3 400 Ore 110 s Mass Driver fire rate +10%
+├─ 22 Proximity Fuses req 11 400 Ore 110 s Flak Battery fire rate +15%
+├─ 23 Drive Harmonics req — 450 Ore 120 s Ship speed +10% (turn rates unchanged)
+├─ 24 Fleet Automation req 8 450 Ore 120 s Shipyard build speed +25%
+└─ 25 Rapid Construction req — 350 Ore 100 s Constructor build and repair rate +25%
+RESEARCH LAB L4 — 800 Ore, 120 s → a second research slot
+ | Totals
+ | Topics
+ | Research time
+ | Ore
+ | Source
+ | Tier 1
+ | 8
+ | 690 s
+ | 1,500
+ | sum of Tuning.json:66-81
+ | Tier 2
+ | 8
+ | 740 s
+ | 2,300
+ | sum of Tuning.json:82-97
+ | Tier 3
+ | 7
+ | 830 s
+ | 3,000
+ | sum of Tuning.json:98-111
+ | All
+ | 23
+ | 2,260 s
+ | 6,800
+ | matches ADR-064 §Consequences ("2,260 s") and Phase 3 §6 ("23 topics, in 2,260 s")
+ | Lab upgrades L2 to L4
+ | —
+ | 270 s (60 + 90 + 120)
+ | 1,800
+ | Tuning.json:56-58
+What each kind of upgrade applies to (Research.h:5-28; ADR-033 §Decision 4):
+- Hull hit points go on all hulls, before the drive's factor. They do not reach the Constructor or structures.
+- Fire rate divides that weapon's interval, from its next shot; a reload under way is not shortened.
+- Structure hit points go on every structure, whose standing ones keep their share.
+- The Defence gun's fire rate divides its interval when it fires.
+- Ship speed goes on every warship, through its hull speed, and on the Constructor. Turn rates are unchanged, and a move under way keeps its pace.
+- The Constructor's rate raises both its build work and its repair.
+- Shipyard build speed speeds Shipyard jobs only, not the Command Station's.
+- Mining income and ore reserve are economy; see A1.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.

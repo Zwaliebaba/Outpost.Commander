@@ -1,0 +1,117 @@
+
+Main menu and startup
+Main menu
+Purpose. The game opens on the menu. The player starts a skirmish against the AI at a difficulty, joins a world on a dedicated server, or quits (ADR-020 d10, ADR-065 d4, ADR-078 d9). After a lost connection or a failed join, the menu also says why (ADR-078 d10).
+Geometry. The menu is one panel, 440 units wide (MENU_WIDTH, Hud.cpp:161), centred on the screen (Hud.cpp:2342-2343). Its height is 2·12 + 30 + 22 + 22·(notice lines) + 6 + n·34 + (n−1)·6, where n is the number of buttons (Hud.cpp:2340-2341):
+ | State
+ | Panel
+ | Buttons start at
+ | Default, 4 buttons
+ | 740, 422, 440, 236
+ | y 492
+ | Join world, 5 buttons
+ | 740, 402, 440, 276
+ | y 472
+ | Notice of ≈2 lines, with Join world
+ | ≈740, 380, 440, 320 (the notice wraps at 416 units, Hud.cpp:2336-2337)
+ | ≈y 514
+The menu has no hover lighting: LayMenu takes no hovered action (Hud.h:833-839), and ADR-088's Consequences say "the menu's buttons are as they were".
+ | id
+ | Kind
+ | Label (verbatim)
+ | Data
+ | Color
+ | Rect (default)
+ | Source
+ | menu.frame
+ | panel
+ | —
+ | —
+ | WINDOW_COLOR
+ | 740, 422, 440, 236
+ | Hud.cpp:2344
+ | menu.title
+ | text, Title
+ | Outpost Commander
+ | —
+ | GOLD_COLOR
+ | 752, 434, ≈171, ≈27
+ | Hud.cpp:2346
+ | menu.subtitle
+ | text, Name
+ | A skirmish against the AI
+ | —
+ | DIM_TEXT_COLOR
+ | 752, 464, ≈, ≈19
+ | Hud.cpp:2347
+ | menu.notice
+ | text, Name, one line each, wrapped to 416
+ | {notice}: The connection to the server was lost: {reason} or Could not join the world: {error}
+ | Hud::MenuState::notice (Hud.h:823-827) ← GameClient::ShowMenu (GameClient.cpp:480-485) ← WinMain.cpp:460 / 363; reasons from WireFormat.cpp:81-89 and QuicTransport.cpp:15, 34, 41
+ | WARNING_COLOR, plain text and not a chip (ADR-085 d1)
+ | 752, 486 + 22·i
+ | Hud.cpp:2336-2338, 2349-2353
+ | menu.easyskirmish
+ | button
+ | Easy skirmish
+ | StartSkirmish, Difficulty::Easy
+ | face CARD_COLOR, edge EDGE_COLOR, label TEXT_COLOR
+ | 752, 492, 416, 34
+ | Hud.cpp:2329, 2355-2359
+ | menu.normalskirmish
+ | button
+ | Normal skirmish
+ | StartSkirmish, Normal
+ | as above
+ | 752, 532, 416, 34
+ | Hud.cpp:2330
+ | menu.hardskirmish
+ | button
+ | Hard skirmish
+ | StartSkirmish, Hard
+ | as above
+ | 752, 572, 416, 34
+ | Hud.cpp:2331
+ | menu.joinworld
+ | button, only when a join file is present
+ | Join world
+ | JoinWorld; MenuState::joinWorld ← OfferWorld (GameClient.h:75-78; WinMain.cpp:348)
+ | as above
+ | 752, 612, 416, 34
+ | Hud.cpp:2332-2333
+ | menu.quit
+ | button
+ | Quit
+ | Quit
+ | as above
+ | 752, 612, 416, 34 (y 652 with Join world)
+ | Hud.cpp:2334
+Inside a menu button (AddButton, Hud.cpp:1264-1323): the face fills the button; the edge is a 1-unit outline (Hud.cpp:1176-1182); the label is in the Name face at (+12, +6) and cut short at 392 units (Hud.cpp:1290, 1316).
+Interactions.
+- A left press on a button raises a request (GameClient.cpp:587-594, 883-895), which the shell acts on (WinMain.cpp:483-513).
+- No key does anything on the menu, except Ctrl+= and Ctrl+-, which scale the interface (GameClient.cpp:574, 779-799).
+What surrounds it.
+- The menu is drawn over the empty grid and the sky (GameClient.cpp:1138-1158).
+- There is no "where the match runs" tag on the menu; ADR-086 forecloses one.
+- Owner, 2026-10-05: no Controls line on the menu (ADR-068 Context and d4).
+Startup
+- Not specified: a loading screen. None exists. The window is created hidden, and shown once four things are ready (WinMain.cpp:273-316; ADR-049 decisions 2-3):
+- the first server and the AI settings, made in parallel;
+- the client's assets;
+- the interface atlas;
+- the GPU uploads.
+ADR-049's Consequences "forecloses a window that shows anything before the game has loaded", and leave a loading screen open.
+- A failure while loading shows a Windows message box captioned Outpost Commander, with the error, and the game exits (WinMain.cpp:22, 95-101, 559-572). This is not a game screen.
+- Switches that skip the menu.
+ - --measure, --load and --stress start a match at once (WinMain.cpp:251-252, 369-370).
+ - --join <file> joins at once (WinMain.cpp:226-235, 367-368).
+- A match before its first snapshot (match-awaiting-first-snapshot.json, no elements).
+ - StartMatch clears the layout (GameClient.cpp:472-478, 517).
+ - Update lays the HUD out only once the view holds a snapshot (GameClient.cpp:689-775), and DrawHud draws nothing while fontPixels is 0 (GameClient.cpp:1291-1293).
+ - So the screen shows the sky and the grid only (GameClient.cpp:1138-1158).
+ - The camera centres on the player's ships with the first snapshot (GameClient.cpp:548-567).
+- Joining a world is synchronous.
+ - JoinWorld builds the QuicTransport inside the frame loop (WinMain.cpp:505-508 → 349-358).
+ - Its constructor waits up to WELCOME_TIMEOUT, 10,000 ms, for the server's welcome (QuicTransport.cpp:9, 26-35).
+ - No frame is drawn meanwhile, so the last menu frame stays on screen. Not specified: a "connecting" indicator.
+As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.
