@@ -16,6 +16,8 @@ constexpr float TOLERANCE = 1e-4f;
 constexpr DirectX::XMFLOAT3 UP{0.0f, 1.0f, 0.0f};
 constexpr DirectX::XMFLOAT3 BACK{-1.0f, 0.0f, 0.0f};
 constexpr DirectX::XMFLOAT4 CYAN{0.3f, 0.85f, 1.0f, 1.0f};
+// An exhaust points back when its arrow is within 45 degrees of -x, the back of its model: the cosine of 45 degrees.
+constexpr float BACK_COSINE = std::numbers::sqrt2_v<float> / 2.0f;
 
 // A 20 m ship's hardpoints: a gun at the bow and one at the stern, and an exhaust at the stern pointing back.
 std::vector<Neuron::MeshHardpoint> TwoGunsAndAnExhaust()
@@ -284,6 +286,40 @@ public:
         Assert::IsTrue(count(mesh, Outpost::HardpointKind::Gun) > 0);
       }
     }
+  }
+
+  // Every exhaust the game ships points out of the back of its model, so that its plume streams behind the hull (ADR-019)
+  // rather than up from it or across it: its arrow leans back, and away from the model's center.
+  TEST_METHOD(EveryShippedExhaustPointsBehindItsModel)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    size_t exhausts = 0;
+    for (const Outpost::ModelSet& set : catalog.sets)
+    {
+      for (const Outpost::ModelEntry& model : set.models)
+      {
+        const Neuron::MeshData first = ReadRepositoryModel(set, model);
+        const float widest = std::max(first.Extents().x, first.Extents().z);
+        for (int level = Outpost::FIRST_MODEL_LEVEL; level <= Outpost::ModelLevels(model); ++level)
+        {
+          // A fitted mesh's center is the origin, so a hardpoint's position is where it stands from the center.
+          const Neuron::MeshData mesh = level == Outpost::FIRST_MODEL_LEVEL ? first : ReadRepositoryModel(set, model, level, widest);
+          const std::string narrow = std::format("{}/{} level {}", set.name, model.name, level);
+          const std::wstring where(narrow.begin(), narrow.end());
+          for (const Neuron::MeshHardpoint& hardpoint : mesh.hardpoints)
+          {
+            if (Outpost::HardpointKindOf(hardpoint.tag) != Outpost::HardpointKind::Exhaust)
+              continue;
+            ++exhausts;
+            const DirectX::XMFLOAT3& forward = hardpoint.forward;
+            const DirectX::XMFLOAT3& at = hardpoint.position;
+            Assert::IsTrue(-forward.x >= BACK_COSINE, where.c_str());
+            Assert::IsTrue((forward.x * at.x) + (forward.y * at.y) + (forward.z * at.z) > 0.0f, where.c_str());
+          }
+        }
+      }
+    }
+    Assert::IsTrue(exhausts > 0, L"no model ships an exhaust");
   }
 
   // A tag the game does not know stops the model loading, naming the file, rather than being ignored.
