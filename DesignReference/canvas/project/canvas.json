@@ -92,7 +92,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 2220,
+   "h": 2239,
    "title": "The game: pitch and pillars",
    "page": "p02"
   },
@@ -100,7 +100,7 @@
    "x": 1520,
    "y": 0,
    "w": 1440,
-   "h": 4017,
+   "h": 4039,
    "title": "Match, tick and world loops",
    "page": "p02"
   },
@@ -108,7 +108,7 @@
    "x": 3040,
    "y": 0,
    "w": 1440,
-   "h": 4852,
+   "h": 4834,
    "title": "Glossary, part 1 of 2",
    "page": "p02"
   },
@@ -124,7 +124,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 5113,
+   "h": 5155,
    "title": "Sides",
    "page": "p03"
   },
@@ -156,7 +156,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 4404,
+   "h": 4423,
    "title": "Structures",
    "page": "p05"
   },
@@ -172,7 +172,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 5570,
+   "h": 5045,
    "title": "Hulls, drives, weapons, modules",
    "page": "p06"
   },
@@ -204,7 +204,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 6480,
+   "h": 6577,
    "title": "Combat",
    "page": "p08"
   },
@@ -220,7 +220,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 5701,
+   "h": 5776,
    "title": "Selection, commands, standing orders, alerts",
    "page": "p09"
   },
@@ -228,7 +228,7 @@
    "x": 1520,
    "y": 0,
    "w": 1440,
-   "h": 6284,
+   "h": 6383,
    "title": "Scheduled orders, Away, the deputy",
    "page": "p09"
   },
@@ -236,7 +236,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 3541,
+   "h": 3559,
    "title": "AI behavior",
    "page": "p10"
   },
@@ -252,7 +252,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 3075,
+   "h": 3059,
    "title": "The persistent world",
    "page": "p11"
   },
@@ -260,7 +260,7 @@
    "x": 1520,
    "y": 0,
    "w": 1440,
-   "h": 3977,
+   "h": 4073,
    "title": "World state, log and the week",
    "page": "p11"
   },
@@ -268,7 +268,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 4104,
+   "h": 4139,
    "title": "Color tokens",
    "page": "p12"
   },
@@ -292,7 +292,7 @@
    "x": 4560,
    "y": 0,
    "w": 1440,
-   "h": 4572,
+   "h": 4608,
    "title": "Component anatomy, part 1",
    "page": "p12"
   },
@@ -306,7 +306,7 @@
   },
   "visual-rules.dc.html": {
    "x": 0,
-   "y": 4692,
+   "y": 4728,
    "w": 1440,
    "h": 4971,
    "title": "Rules, spacing and frame",
@@ -314,7 +314,7 @@
   },
   "visual-scale.dc.html": {
    "x": 1520,
-   "y": 4692,
+   "y": 4728,
    "w": 1440,
    "h": 3383,
    "title": "Interface scale and the mockup",
@@ -324,7 +324,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 3936,
+   "h": 4006,
    "title": "Screens: inventory and flow",
    "page": "p13"
   },
@@ -354,7 +354,7 @@
   },
   "screen-menu-connection-lost.dc.html": {
    "x": 0,
-   "y": 4056,
+   "y": 4126,
    "w": 2440,
    "h": 1137,
    "title": "Main menu after a lost connection, saying why (ADR-078 d10)",
@@ -362,7 +362,7 @@
   },
   "screen-menu-join-failed.dc.html": {
    "x": 2520,
-   "y": 4056,
+   "y": 4126,
    "w": 2440,
    "h": 1137,
    "title": "Main menu after a join that failed (WinMain.cpp:359-364)",
@@ -370,7 +370,7 @@
   },
   "screen-menu-scale-125.dc.html": {
    "x": 5040,
-   "y": 4056,
+   "y": 4126,
    "w": 2440,
    "h": 1137,
    "title": "Main menu at interface factor 125%, the largest the menu reaches on 16:9 (ADR-070)",
@@ -378,7 +378,7 @@
   },
   "screen-match-awaiting-first-snapshot.dc.html": {
    "x": 7560,
-   "y": 4056,
+   "y": 4126,
    "w": 2440,
    "h": 1137,
    "title": "A match started, before its first snapshot",
@@ -386,7 +386,7 @@
   },
   "screen-hud-match-start.dc.html": {
    "x": 0,
-   "y": 5313,
+   "y": 5383,
    "w": 2440,
    "h": 1137,
    "title": "First snapshot of a Normal skirmish: nothing selected",
@@ -394,273 +394,273 @@
   },
   "screen-hud-busy-warships.dc.html": {
    "x": 2520,
-   "y": 5313,
+   "y": 5383,
    "w": 2440,
-   "h": 1425,
+   "h": 1786,
    "title": "Mid-match: twelve warships of three designs selected, attack-move armed, the pointer over Stop",
    "page": "p13"
   },
   "screen-hud-scale-110.dc.html": {
    "x": 5040,
-   "y": 5313,
+   "y": 5383,
    "w": 2440,
-   "h": 1334,
+   "h": 1786,
    "title": "The busy state at interface factor 110%, the most a match reaches on 16:9 (ADR-070 Consequences)",
    "page": "p13"
   },
   "screen-hud-constructors.dc.html": {
    "x": 7560,
-   "y": 5313,
+   "y": 5383,
    "w": 2440,
-   "h": 1137,
+   "h": 1230,
    "title": "Two Constructors selected: build buttons with their costs, and the retreat row",
    "page": "p13"
   },
   "screen-hud-placing-relay.dc.html": {
    "x": 0,
-   "y": 6858,
+   "y": 7289,
    "w": 2440,
-   "h": 1137,
+   "h": 1385,
    "title": "A Relay's placement armed: the hint, and the sectors it could claim outlined on the minimap",
    "page": "p13"
   },
   "screen-hud-relay-node-cap.dc.html": {
    "x": 2520,
-   "y": 6858,
+   "y": 7289,
    "w": 2440,
-   "h": 1137,
+   "h": 1469,
    "title": "Placing a Relay at the node cap: the hint says why, and the Relay button says NODE CAP",
    "page": "p13"
   },
   "screen-hud-one-ship.dc.html": {
    "x": 5040,
-   "y": 6858,
+   "y": 7289,
    "w": 2440,
-   "h": 1137,
+   "h": 1430,
    "title": "One Lancer selected, holding a sector, hurt; Hold sector armed",
    "page": "p13"
   },
   "screen-hud-shipyard-selected.dc.html": {
    "x": 7560,
-   "y": 6858,
+   "y": 7289,
    "w": 2440,
-   "h": 1137,
+   "h": 1380,
    "title": "A finished Shipyard selected: its work line, its next level and its window buttons with key caps",
    "page": "p13"
   },
   "screen-hud-station-upgrading.dc.html": {
    "x": 0,
-   "y": 8115,
+   "y": 8878,
    "w": 2440,
-   "h": 1137,
+   "h": 1297,
    "title": "The Command Station selected while its upgrade is built: the button says UPGRADING with its bar",
    "page": "p13"
   },
   "screen-hud-lab-needs-research.dc.html": {
    "x": 2520,
-   "y": 8115,
+   "y": 8878,
    "w": 2440,
-   "h": 1137,
+   "h": 1463,
    "title": "The Research Lab selected: its next level needs research, so Upgrade says NEEDS RESEARCH",
    "page": "p13"
   },
   "screen-hud-derelict-hint.dc.html": {
    "x": 5040,
-   "y": 8115,
+   "y": 8878,
    "w": 2440,
-   "h": 1137,
+   "h": 1264,
    "title": "The pointer over a derelict: the hint says what it holds",
    "page": "p13"
   },
   "screen-hud-server-silent.dc.html": {
    "x": 7560,
-   "y": 8115,
+   "y": 8878,
    "w": 2440,
-   "h": 1137,
+   "h": 1140,
    "title": "A world on a dedicated server whose snapshots stopped 5 s ago",
    "page": "p13"
   },
   "screen-hud-end-victory.dc.html": {
    "x": 0,
-   "y": 9372,
+   "y": 10461,
    "w": 2440,
-   "h": 1137,
+   "h": 1488,
    "title": "The match's end: Victory by domination, the world running on behind it",
    "page": "p13"
   },
   "screen-hud-end-empire-fallen.dc.html": {
    "x": 2520,
-   "y": 9372,
+   "y": 10461,
    "w": 2440,
-   "h": 1137,
+   "h": 1251,
    "title": "A world: the player's empire fell, and its seat restarts",
    "page": "p13"
   },
   "screen-window-designer-default.dc.html": {
    "x": 5040,
-   "y": 9372,
+   "y": 10461,
    "w": 2440,
-   "h": 1664,
+   "h": 2111,
    "title": "The designer on Shipyard 01, the Swarm loaded (saved), nothing hovered",
    "page": "p13"
   },
   "screen-window-designer-preview.dc.html": {
    "x": 7560,
-   "y": 9372,
+   "y": 10461,
    "w": 2440,
-   "h": 1601,
+   "h": 2049,
    "title": "The designer with the Lance card under the pointer: bars and damage cards preview the change",
    "page": "p13"
   },
   "screen-window-designer-unsaved-editing.dc.html": {
    "x": 0,
-   "y": 11156,
+   "y": 12692,
    "w": 2440,
-   "h": 1685,
-   "title": "New picks (Medium + Ion + Lance + Sensor Array), the name being typed, too long for the server",
+   "h": 2253,
+   "title": "New picks (Medium + Ion + Lance + Sensor Array), the name typed away to nothing, so invalid; Queue says Needs Shipyard L",
    "page": "p13"
   },
   "screen-window-designer-no-shipyard.dc.html": {
    "x": 2520,
-   "y": 11156,
+   "y": 12692,
    "w": 2440,
-   "h": 1573,
+   "h": 1858,
    "title": "The designer with no finished Shipyard: arrows dim, Queue dim, no slots filled",
    "page": "p13"
   },
   "screen-window-production-shipyard.dc.html": {
    "x": 5040,
-   "y": 11156,
+   "y": 12692,
    "w": 2440,
-   "h": 1137,
+   "h": 1562,
    "title": "Production on Shipyard 02 (L1): four starting designs, two dim as NEEDS L2, a queue of three",
    "page": "p13"
   },
   "screen-window-production-station.dc.html": {
    "x": 7560,
-   "y": 11156,
+   "y": 12692,
    "w": 2440,
-   "h": 1137,
+   "h": 1418,
    "title": "Production on the Command Station: the Constructor card, the front job waiting for Ore",
    "page": "p13"
   },
   "screen-window-production-none.dc.html": {
    "x": 0,
-   "y": 12961,
+   "y": 15065,
    "w": 2440,
-   "h": 1137,
-   "title": "Production with no finished producer: the hint",
+   "h": 1613,
+   "title": "Production with no finished producer, after the empire fell in a world: the hint",
    "page": "p13"
   },
   "screen-window-research-page1.dc.html": {
    "x": 2520,
-   "y": 12961,
+   "y": 15065,
    "w": 2440,
-   "h": 1137,
+   "h": 1583,
    "title": "Research: the first page of topics, tier-2 topics needing the Lab's level, a queue of two",
    "page": "p13"
   },
   "screen-window-research-no-lab.dc.html": {
    "x": 5040,
-   "y": 12961,
+   "y": 15065,
    "w": 2440,
-   "h": 1137,
+   "h": 1419,
    "title": "Research with no Research Lab: no topic can be queued",
    "page": "p13"
   },
   "screen-window-controls.dc.html": {
    "x": 7560,
-   "y": 12961,
+   "y": 15065,
    "w": 2440,
-   "h": 1137,
+   "h": 1189,
    "title": "The Controls window (F1), at its default place in the middle of the screen",
    "page": "p13"
   },
   "screen-window-orders-time-of-day.dc.html": {
    "x": 0,
-   "y": 14218,
+   "y": 16798,
    "w": 2440,
-   "h": 1648,
+   "h": 2059,
    "title": "Orders (O): two orders waiting; a time-of-day attack-move ready to give to 12 ships",
    "page": "p13"
   },
   "screen-window-orders-event-disabled.dc.html": {
    "x": 2520,
-   "y": 14218,
+   "y": 16798,
    "w": 2440,
-   "h": 1137,
+   "h": 1666,
    "title": "Orders: an event trigger with a target, nothing selected that can take it (Give the order dim, SELECT WARSHIPS)",
    "page": "p13"
   },
   "screen-window-away.dc.html": {
    "x": 5040,
-   "y": 14218,
+   "y": 16798,
    "w": 2440,
-   "h": 1137,
+   "h": 1558,
    "title": "While you were away: opened by itself with the first snapshot after the seat is taken again (GameClient.cpp:539-544)",
    "page": "p13"
   },
   "screen-window-three-windows-default.dc.html": {
    "x": 7560,
-   "y": 14218,
+   "y": 16798,
    "w": 2440,
-   "h": 2528,
+   "h": 3042,
    "title": "Production, research and the designer open together, each at its default place (ADR-062 d6: side by side at 100%)",
    "page": "p13"
   },
   "spec-menu.dc.html": {
    "x": 0,
-   "y": 16866,
+   "y": 19960,
    "w": 1440,
-   "h": 1950,
+   "h": 1972,
    "title": "Main menu and startup",
    "page": "p13"
   },
   "spec-hud-1.dc.html": {
    "x": 1520,
-   "y": 16866,
+   "y": 19960,
    "w": 1440,
-   "h": 5207,
+   "h": 5225,
    "title": "HUD: Ore, status, territory, alerts, hint, connection",
    "page": "p13"
   },
   "spec-hud-2.dc.html": {
    "x": 3040,
-   "y": 16866,
+   "y": 19960,
    "w": 1440,
-   "h": 4737,
+   "h": 5093,
    "title": "HUD: selection, commands, minimap, bars, banner",
    "page": "p13"
   },
   "spec-windows.dc.html": {
    "x": 4560,
-   "y": 16866,
+   "y": 19960,
    "w": 1440,
-   "h": 1847,
+   "h": 1866,
    "title": "Windows: common rules",
    "page": "p13"
   },
   "spec-designer.dc.html": {
    "x": 0,
-   "y": 22193,
+   "y": 25305,
    "w": 1440,
-   "h": 4394,
+   "h": 4543,
    "title": "Window: Designer",
    "page": "p13"
   },
   "spec-production-research.dc.html": {
    "x": 1520,
-   "y": 22193,
+   "y": 25305,
    "w": 1440,
-   "h": 3010,
+   "h": 3234,
    "title": "Windows: Production and Research",
    "page": "p13"
   },
   "spec-orders-away.dc.html": {
    "x": 3040,
-   "y": 22193,
+   "y": 25305,
    "w": 1440,
-   "h": 2058,
+   "h": 2143,
    "title": "Windows: Orders and Away",
    "page": "p13"
   },
@@ -668,7 +668,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 5297,
+   "h": 5313,
    "title": "Frame, camera, sky and grid",
    "page": "p14"
   },
@@ -700,7 +700,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 6515,
+   "h": 6634,
    "title": "Contact sheets",
    "page": "p15"
   },
@@ -708,7 +708,7 @@
    "x": 1520,
    "y": 0,
    "w": 1440,
-   "h": 2187,
+   "h": 2211,
    "title": "Level sheets",
    "page": "p15"
   },
@@ -716,7 +716,7 @@
    "x": 3040,
    "y": 0,
    "w": 1440,
-   "h": 3577,
+   "h": 3305,
    "title": "Per-model table, part 1 of 3",
    "page": "p15"
   },
@@ -724,7 +724,7 @@
    "x": 4560,
    "y": 0,
    "w": 1440,
-   "h": 3459,
+   "h": 2896,
    "title": "Per-model table, part 2 of 3",
    "page": "p15"
   },
@@ -732,13 +732,13 @@
    "x": 6080,
    "y": 0,
    "w": 1440,
-   "h": 3387,
+   "h": 2923,
    "title": "Per-model table, part 3 of 3",
    "page": "p15"
   },
   "assets-files.dc.html": {
    "x": 0,
-   "y": 6635,
+   "y": 6754,
    "w": 1440,
    "h": 3838,
    "title": "Mesh files, hashes, duplicates",
@@ -746,9 +746,9 @@
   },
   "assets-textures.dc.html": {
    "x": 1520,
-   "y": 6635,
+   "y": 6754,
    "w": 1440,
-   "h": 4030,
+   "h": 4066,
    "title": "Textures and logos",
    "page": "p15"
   },
@@ -764,7 +764,7 @@
    "x": 0,
    "y": 0,
    "w": 1440,
-   "h": 3833,
+   "h": 3948,
    "title": "Open items: for the owner",
    "page": "p17"
   },

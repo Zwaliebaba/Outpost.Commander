@@ -11,7 +11,11 @@
  "pixelsPerReferenceUnit": 1.0,
  "geometry": "derived from GameApp/Hud.cpp arithmetic by derive_layouts.py; not dumped from the game (no build in this container). Elements with measured:false depend on DirectWrite text measurement (ADR-061) and are estimated.",
  "drawOrder": "layer -1 (entity bars) first; then layer 0 (HUD) and each window layer back to front; within a layer every 'panels' element (panel/outline/bar/button) in order, then 'lines', then 'sprites', then 'texts' (Hud.h:714-760, GameClient.cpp:1289-1338).",
- "notes": [],
+ "notes": [
+  "A Lancer's Medium hull needs a Shipyard at L2, so a finished Shipyard stands and the status panel shows the Shipyards' and the fleet's lines.",
+  "No Lab, so no Hull Plating: the Lancer's maximum is 500 x 0.9 = 450 (DesignStats.h:86).",
+  "Map content is seed 342's, a sample (a match's seed is the clock, WinMain.cpp:134-139): the 7 sectors pirates guard at the start of every match, camps on the contested pairs D1/B5 and E2/A4 and strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073); and all 40 ore asteroids, Map.json's 6 home ones and the 34 the seed places by Map.json sectorKinds and placement (Map.cpp:381-419), drawn under the fog since the map's asteroids are always seen (Simulation.cpp:245-247; Hud.cpp:3486-3528). A held sector shows its Relay on its node, and each rig the income implies stands on its asteroid."
+ ],
  "layers": [
   0
  ],
@@ -142,11 +146,11 @@
   {
    "id": "ore.income",
    "kind": "text",
-   "x": 336.0,
+   "x": 328.0,
    "y": 31.5,
-   "w": 48.0,
+   "w": 56.0,
    "h": 17.0,
-   "label": "+9.5/s",
+   "label": "+18.5/s",
    "typeface": "Figure",
    "size": 14.0,
    "family": "Cascadia Mono 600 (else Consolas)",
@@ -295,7 +299,7 @@
    "y": 184.5,
    "w": 8.0,
    "h": 17.0,
-   "label": "1",
+   "label": "3",
    "typeface": "Figure",
    "size": 14.0,
    "family": "Cascadia Mono 600 (else Consolas)",
@@ -315,7 +319,7 @@
    "y": 184.5,
    "w": 32.0,
    "h": 17.0,
-   "label": "1 : ",
+   "label": "3 : ",
    "typeface": "Figure",
    "size": 14.0,
    "family": "Cascadia Mono 600 (else Consolas)",
@@ -351,11 +355,11 @@
   {
    "id": "territory.tickets.enemy",
    "kind": "text",
-   "x": 344.0,
+   "x": 360.0,
    "y": 206.5,
-   "w": 40.0,
+   "w": 24.0,
    "h": 17.0,
-   "label": "1,000",
+   "label": "988",
    "typeface": "Figure",
    "size": 14.0,
    "family": "Cascadia Mono 600 (else Consolas)",
@@ -371,11 +375,11 @@
   {
    "id": "territory.tickets.own",
    "kind": "text",
-   "x": 280.0,
+   "x": 312.0,
    "y": 206.5,
-   "w": 64.0,
+   "w": 48.0,
    "h": 17.0,
-   "label": "1,000 : ",
+   "label": "994 : ",
    "typeface": "Figure",
    "size": 14.0,
    "family": "Cascadia Mono 600 (else Consolas)",
@@ -384,7 +388,7 @@
    "sample": true,
    "format": "{} : ",
    "measured": false,
-   "estimate": "right edge = column width - 12, column width estimated; right edge exact at 328.0 units; left follows the estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
+   "estimate": "right edge = column width - 12, column width estimated; right edge exact at 344.0 units; left follows the estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
    "order": 19
@@ -409,6 +413,218 @@
    "order": 20
   },
   {
+   "id": "status.frame",
+   "kind": "panel",
+   "x": 16.0,
+   "y": 68.0,
+   "w": 380.0,
+   "h": 64.0,
+   "color": "WINDOW_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:905 (Frame); status panel",
+   "measured": false,
+   "estimate": "column width = max(380, longest research name + '+99', widest of COLUMN_WIDEST_LINES) measured by DirectWrite (Hud.cpp:3134-3139); estimated",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 21
+  },
+  {
+   "id": "corner.tl#3",
+   "kind": "sprite",
+   "x": 16.0,
+   "y": 68.0,
+   "w": 12.0,
+   "h": 12.0,
+   "sprite": "Corner",
+   "color": "WINDOW_EDGE_COLOR",
+   "mirror": {
+    "x": false,
+    "y": false
+   },
+   "source": "Hud.cpp:852-866 (AddCorners); status panel",
+   "layer": 0,
+   "drawList": "sprites",
+   "order": 22
+  },
+  {
+   "id": "corner.bl#3",
+   "kind": "sprite",
+   "x": 16.0,
+   "y": 120.0,
+   "w": 12.0,
+   "h": 12.0,
+   "sprite": "Corner",
+   "color": "WINDOW_EDGE_COLOR",
+   "mirror": {
+    "x": false,
+    "y": true
+   },
+   "source": "Hud.cpp:852-866 (AddCorners); status panel",
+   "layer": 0,
+   "drawList": "sprites",
+   "order": 23
+  },
+  {
+   "id": "corner.tr#3",
+   "kind": "sprite",
+   "x": 384.0,
+   "y": 68.0,
+   "w": 12.0,
+   "h": 12.0,
+   "sprite": "Corner",
+   "color": "WINDOW_EDGE_COLOR",
+   "mirror": {
+    "x": true,
+    "y": false
+   },
+   "source": "Hud.cpp:852-866 (AddCorners); status panel",
+   "layer": 0,
+   "drawList": "sprites",
+   "order": 24
+  },
+  {
+   "id": "corner.br#3",
+   "kind": "sprite",
+   "x": 384.0,
+   "y": 120.0,
+   "w": 12.0,
+   "h": 12.0,
+   "sprite": "Corner",
+   "color": "WINDOW_EDGE_COLOR",
+   "mirror": {
+    "x": true,
+    "y": true
+   },
+   "source": "Hud.cpp:852-866 (AddCorners); status panel",
+   "layer": 0,
+   "drawList": "sprites",
+   "order": 25
+  },
+  {
+   "id": "status.row0",
+   "kind": "button",
+   "x": 16.0,
+   "y": 68.0,
+   "w": 380.0,
+   "h": 32.0,
+   "fill": "none",
+   "action": "OpenProduction",
+   "source": "Hud.cpp:3259-3263 (the line's row takes the click; drawn on CARD_COLOR only under the pointer, else a press area only)",
+   "measured": false,
+   "estimate": "width = column width, estimated",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 26
+  },
+  {
+   "id": "status.row0.words",
+   "kind": "text",
+   "x": 28.0,
+   "y": 78.0,
+   "w": 305.0,
+   "h": 19.0,
+   "label": "Shipyards · BUILDING 1 · WAITING 0 · IDLE 0",
+   "typeface": "Name",
+   "size": 16.0,
+   "family": "Bahnschrift 600",
+   "color": "TEXT_COLOR",
+   "source": "Hud.cpp:3285-3288; StatusLinesOf Hud.cpp:403-410",
+   "sample": true,
+   "measured": false,
+   "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
+   "layer": 0,
+   "drawList": "texts",
+   "order": 27
+  },
+  {
+   "id": "status.row1",
+   "kind": "button",
+   "x": 16.0,
+   "y": 100.0,
+   "w": 380.0,
+   "h": 32.0,
+   "fill": "none",
+   "action": "OpenProduction",
+   "source": "Hud.cpp:3259-3263 (the line's row takes the click; drawn on CARD_COLOR only under the pointer, else a press area only)",
+   "measured": false,
+   "estimate": "width = column width, estimated",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 28
+  },
+  {
+   "id": "status.row1.figure",
+   "kind": "text",
+   "x": 336.0,
+   "y": 104.5,
+   "w": 48.0,
+   "h": 17.0,
+   "label": "9 / 12",
+   "typeface": "Figure",
+   "size": 14.0,
+   "family": "Cascadia Mono 600 (else Consolas)",
+   "color": "NUMBERS_COLOR",
+   "source": "Hud.cpp:3266-3269",
+   "sample": true,
+   "measured": false,
+   "estimate": "right edge = column width - 12, column width estimated; right edge exact at 368.0 units; left follows the estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
+   "layer": 0,
+   "drawList": "texts",
+   "order": 29
+  },
+  {
+   "id": "status.row1.words",
+   "kind": "text",
+   "x": 28.0,
+   "y": 100.0,
+   "w": 35.0,
+   "h": 19.0,
+   "label": "Fleet",
+   "typeface": "Name",
+   "size": 16.0,
+   "family": "Bahnschrift 600",
+   "color": "TEXT_COLOR",
+   "source": "Hud.cpp:3285-3288; StatusLinesOf Hud.cpp:373-380, 411-412",
+   "measured": false,
+   "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
+   "layer": 0,
+   "drawList": "texts",
+   "order": 30
+  },
+  {
+   "id": "status.row1.bar.track",
+   "kind": "bar",
+   "x": 71.0,
+   "y": 108.0,
+   "w": 257.0,
+   "h": 6.0,
+   "color": "BAR_TRACK_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3291-3301",
+   "measured": false,
+   "estimate": "starts after the words' estimated width",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 31
+  },
+  {
+   "id": "status.row1.bar.fill",
+   "kind": "bar",
+   "x": 71.0,
+   "y": 108.0,
+   "w": 192.75,
+   "h": 6.0,
+   "color": "BAR_FILL_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3302-3303",
+   "sample": true,
+   "measured": false,
+   "estimate": "share of the estimated track",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 32
+  },
+  {
    "id": "connection.frame",
    "kind": "panel",
    "x": 1780.0,
@@ -422,10 +638,10 @@
    "estimate": "width = text width + 24, measured by DirectWrite; estimated (right edge exact at screen width - 16)",
    "layer": 0,
    "drawList": "panels",
-   "order": 21
+   "order": 33
   },
   {
-   "id": "corner.tl#3",
+   "id": "corner.tl#4",
    "kind": "sprite",
    "x": 1780.0,
    "y": 16.0,
@@ -440,10 +656,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); where the match runs (ADR-086)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 22
+   "order": 34
   },
   {
-   "id": "corner.bl#3",
+   "id": "corner.bl#4",
    "kind": "sprite",
    "x": 1780.0,
    "y": 46.0,
@@ -458,10 +674,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); where the match runs (ADR-086)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 23
+   "order": 35
   },
   {
-   "id": "corner.tr#3",
+   "id": "corner.tr#4",
    "kind": "sprite",
    "x": 1892.0,
    "y": 16.0,
@@ -476,10 +692,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); where the match runs (ADR-086)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 24
+   "order": 36
   },
   {
-   "id": "corner.br#3",
+   "id": "corner.br#4",
    "kind": "sprite",
    "x": 1892.0,
    "y": 46.0,
@@ -494,7 +710,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); where the match runs (ADR-086)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 25
+   "order": 37
   },
   {
    "id": "connection.where",
@@ -513,7 +729,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 26
+   "order": 38
   },
   {
    "id": "selection.frame",
@@ -527,10 +743,10 @@
    "source": "Hud.cpp:905 (Frame); selection panel",
    "layer": 0,
    "drawList": "panels",
-   "order": 27
+   "order": 39
   },
   {
-   "id": "corner.tl#4",
+   "id": "corner.tl#5",
    "kind": "sprite",
    "x": 630.0,
    "y": 952.0,
@@ -545,10 +761,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); selection panel",
    "layer": 0,
    "drawList": "sprites",
-   "order": 28
+   "order": 40
   },
   {
-   "id": "corner.bl#4",
+   "id": "corner.bl#5",
    "kind": "sprite",
    "x": 630.0,
    "y": 1052.0,
@@ -563,10 +779,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); selection panel",
    "layer": 0,
    "drawList": "sprites",
-   "order": 29
+   "order": 41
   },
   {
-   "id": "corner.tr#4",
+   "id": "corner.tr#5",
    "kind": "sprite",
    "x": 898.0,
    "y": 952.0,
@@ -581,10 +797,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); selection panel",
    "layer": 0,
    "drawList": "sprites",
-   "order": 30
+   "order": 42
   },
   {
-   "id": "corner.br#4",
+   "id": "corner.br#5",
    "kind": "sprite",
    "x": 898.0,
    "y": 1052.0,
@@ -599,7 +815,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); selection panel",
    "layer": 0,
    "drawList": "sprites",
-   "order": 31
+   "order": 43
   },
   {
    "id": "selection.title",
@@ -619,7 +835,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 32
+   "order": 44
   },
   {
    "id": "selection.line1",
@@ -639,7 +855,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 33
+   "order": 45
   },
   {
    "id": "selection.line2",
@@ -659,7 +875,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 34
+   "order": 46
   },
   {
    "id": "selection.health.track",
@@ -673,7 +889,7 @@
    "source": "Hud.cpp:3418-3422",
    "layer": 0,
    "drawList": "panels",
-   "order": 35
+   "order": 47
   },
   {
    "id": "selection.health.fill",
@@ -688,7 +904,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 36
+   "order": 48
   },
   {
    "id": "buttons.frame",
@@ -702,10 +918,10 @@
    "source": "Hud.cpp:905 (Frame); buttons panel (ADR-088 d2)",
    "layer": 0,
    "drawList": "panels",
-   "order": 37
+   "order": 49
   },
   {
-   "id": "corner.tl#5",
+   "id": "corner.tl#6",
    "kind": "sprite",
    "x": 910.0,
    "y": 826.0,
@@ -720,10 +936,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); buttons panel (ADR-088 d2)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 38
+   "order": 50
   },
   {
-   "id": "corner.bl#5",
+   "id": "corner.bl#6",
    "kind": "sprite",
    "x": 910.0,
    "y": 1052.0,
@@ -738,10 +954,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); buttons panel (ADR-088 d2)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 39
+   "order": 51
   },
   {
-   "id": "corner.tr#5",
+   "id": "corner.tr#6",
    "kind": "sprite",
    "x": 1278.0,
    "y": 826.0,
@@ -756,10 +972,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); buttons panel (ADR-088 d2)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 40
+   "order": 52
   },
   {
-   "id": "corner.br#5",
+   "id": "corner.br#6",
    "kind": "sprite",
    "x": 1278.0,
    "y": 1052.0,
@@ -774,7 +990,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); buttons panel (ADR-088 d2)",
    "layer": 0,
    "drawList": "sprites",
-   "order": 41
+   "order": 53
   },
   {
    "id": "buttons.order.AttackMove",
@@ -790,7 +1006,7 @@
    "enabled": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 42
+   "order": 54
   },
   {
    "id": "buttons.order.AttackMove.edge",
@@ -804,7 +1020,7 @@
    "source": "Hud.cpp:1276",
    "layer": 0,
    "drawList": "panels",
-   "order": 43
+   "order": 55
   },
   {
    "id": "buttons.order.AttackMove.keyCap",
@@ -818,7 +1034,7 @@
    "source": "Hud.cpp:1296-1298 (key cap)",
    "layer": 0,
    "drawList": "panels",
-   "order": 44
+   "order": 56
   },
   {
    "id": "buttons.order.AttackMove.keyCap.edge",
@@ -832,7 +1048,7 @@
    "source": "Hud.cpp:1299",
    "layer": 0,
    "drawList": "panels",
-   "order": 45
+   "order": 57
   },
   {
    "id": "buttons.order.AttackMove.keyCap.letter",
@@ -851,7 +1067,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 46
+   "order": 58
   },
   {
    "id": "buttons.order.AttackMove.label",
@@ -870,7 +1086,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 47
+   "order": 59
   },
   {
    "id": "buttons.order.HoldSector",
@@ -887,7 +1103,7 @@
    "selected": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 48
+   "order": 60
   },
   {
    "id": "buttons.order.HoldSector.edge",
@@ -901,7 +1117,7 @@
    "source": "Hud.cpp:1276",
    "layer": 0,
    "drawList": "panels",
-   "order": 49
+   "order": 61
   },
   {
    "id": "buttons.order.HoldSector.keyCap",
@@ -915,7 +1131,7 @@
    "source": "Hud.cpp:1296-1298 (key cap)",
    "layer": 0,
    "drawList": "panels",
-   "order": 50
+   "order": 62
   },
   {
    "id": "buttons.order.HoldSector.keyCap.edge",
@@ -929,7 +1145,7 @@
    "source": "Hud.cpp:1299",
    "layer": 0,
    "drawList": "panels",
-   "order": 51
+   "order": 63
   },
   {
    "id": "buttons.order.HoldSector.keyCap.letter",
@@ -948,7 +1164,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 52
+   "order": 64
   },
   {
    "id": "buttons.order.HoldSector.label",
@@ -967,7 +1183,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 53
+   "order": 65
   },
   {
    "id": "buttons.order.Patrol",
@@ -983,7 +1199,7 @@
    "enabled": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 54
+   "order": 66
   },
   {
    "id": "buttons.order.Patrol.edge",
@@ -997,7 +1213,7 @@
    "source": "Hud.cpp:1276",
    "layer": 0,
    "drawList": "panels",
-   "order": 55
+   "order": 67
   },
   {
    "id": "buttons.order.Patrol.keyCap",
@@ -1011,7 +1227,7 @@
    "source": "Hud.cpp:1296-1298 (key cap)",
    "layer": 0,
    "drawList": "panels",
-   "order": 56
+   "order": 68
   },
   {
    "id": "buttons.order.Patrol.keyCap.edge",
@@ -1025,7 +1241,7 @@
    "source": "Hud.cpp:1299",
    "layer": 0,
    "drawList": "panels",
-   "order": 57
+   "order": 69
   },
   {
    "id": "buttons.order.Patrol.keyCap.letter",
@@ -1044,7 +1260,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 58
+   "order": 70
   },
   {
    "id": "buttons.order.Patrol.label",
@@ -1063,7 +1279,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 59
+   "order": 71
   },
   {
    "id": "buttons.order.Stop",
@@ -1079,7 +1295,7 @@
    "enabled": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 60
+   "order": 72
   },
   {
    "id": "buttons.order.Stop.edge",
@@ -1093,7 +1309,7 @@
    "source": "Hud.cpp:1276",
    "layer": 0,
    "drawList": "panels",
-   "order": 61
+   "order": 73
   },
   {
    "id": "buttons.order.Stop.keyCap",
@@ -1107,7 +1323,7 @@
    "source": "Hud.cpp:1296-1298 (key cap)",
    "layer": 0,
    "drawList": "panels",
-   "order": 62
+   "order": 74
   },
   {
    "id": "buttons.order.Stop.keyCap.edge",
@@ -1121,7 +1337,7 @@
    "source": "Hud.cpp:1299",
    "layer": 0,
    "drawList": "panels",
-   "order": 63
+   "order": 75
   },
   {
    "id": "buttons.order.Stop.keyCap.letter",
@@ -1140,7 +1356,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 64
+   "order": 76
   },
   {
    "id": "buttons.order.Stop.label",
@@ -1159,7 +1375,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 65
+   "order": 77
   },
   {
    "id": "buttons.retreat.label",
@@ -1179,7 +1395,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 66
+   "order": 78
   },
   {
    "id": "buttons.retreat.quarter",
@@ -1194,7 +1410,7 @@
    "source": "Hud.cpp:1339 (RetreatRow); Hud.cpp:3450-3451; EntityView::retreat (Snapshot.h:137)",
    "layer": 0,
    "drawList": "panels",
-   "order": 67
+   "order": 79
   },
   {
    "id": "buttons.retreat.quarter.edge",
@@ -1208,7 +1424,7 @@
    "source": "Hud.cpp:1340",
    "layer": 0,
    "drawList": "panels",
-   "order": 68
+   "order": 80
   },
   {
    "id": "buttons.retreat.quarter.words",
@@ -1227,7 +1443,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 69
+   "order": 81
   },
   {
    "id": "buttons.retreat.half",
@@ -1243,7 +1459,7 @@
    "selected": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 70
+   "order": 82
   },
   {
    "id": "buttons.retreat.half.edge",
@@ -1257,7 +1473,7 @@
    "source": "Hud.cpp:1340",
    "layer": 0,
    "drawList": "panels",
-   "order": 71
+   "order": 83
   },
   {
    "id": "buttons.retreat.half.words",
@@ -1276,7 +1492,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 72
+   "order": 84
   },
   {
    "id": "buttons.retreat.never",
@@ -1291,7 +1507,7 @@
    "source": "Hud.cpp:1339 (RetreatRow); Hud.cpp:3450-3451; EntityView::retreat (Snapshot.h:137)",
    "layer": 0,
    "drawList": "panels",
-   "order": 73
+   "order": 85
   },
   {
    "id": "buttons.retreat.never.edge",
@@ -1305,7 +1521,7 @@
    "source": "Hud.cpp:1340",
    "layer": 0,
    "drawList": "panels",
-   "order": 74
+   "order": 86
   },
   {
    "id": "buttons.retreat.never.words",
@@ -1324,7 +1540,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 0,
    "drawList": "texts",
-   "order": 75
+   "order": 87
   },
   {
    "id": "minimap.frame",
@@ -1338,10 +1554,10 @@
    "source": "Hud.cpp:3461 (Frame)",
    "layer": 0,
    "drawList": "panels",
-   "order": 76
+   "order": 88
   },
   {
-   "id": "corner.tl#6",
+   "id": "corner.tl#7",
    "kind": "sprite",
    "x": 16.0,
    "y": 764.0,
@@ -1356,10 +1572,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); minimap",
    "layer": 0,
    "drawList": "sprites",
-   "order": 77
+   "order": 89
   },
   {
-   "id": "corner.bl#6",
+   "id": "corner.bl#7",
    "kind": "sprite",
    "x": 16.0,
    "y": 1052.0,
@@ -1374,10 +1590,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); minimap",
    "layer": 0,
    "drawList": "sprites",
-   "order": 78
+   "order": 90
   },
   {
-   "id": "corner.tr#6",
+   "id": "corner.tr#7",
    "kind": "sprite",
    "x": 304.0,
    "y": 764.0,
@@ -1392,10 +1608,10 @@
    "source": "Hud.cpp:852-866 (AddCorners); minimap",
    "layer": 0,
    "drawList": "sprites",
-   "order": 79
+   "order": 91
   },
   {
-   "id": "corner.br#6",
+   "id": "corner.br#7",
    "kind": "sprite",
    "x": 304.0,
    "y": 1052.0,
@@ -1410,7 +1626,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); minimap",
    "layer": 0,
    "drawList": "sprites",
-   "order": 80
+   "order": 92
   },
   {
    "id": "minimap.map",
@@ -1425,7 +1641,7 @@
    "source": "Hud.cpp:3462-3465; clicks GameClient.cpp:1011-1022; Snapshot::mapSizeMeters (Snapshot.h:545)",
    "layer": 0,
    "drawList": "panels",
-   "order": 81
+   "order": 93
   },
   {
    "id": "minimap.sector.wash.A1",
@@ -1440,12 +1656,74 @@
    "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
    "layer": 0,
    "drawList": "panels",
-   "order": 82
+   "order": 94
   },
   {
-   "id": "minimap.sector.wash.D2",
+   "id": "minimap.sector.wash.B1",
+   "kind": "panel",
+   "x": 80.8,
+   "y": 999.2,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "OWN_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 95
+  },
+  {
+   "id": "minimap.sector.wash.D1",
    "kind": "panel",
    "x": 194.4,
+   "y": 999.2,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "PIRATE_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "note": "sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 96
+  },
+  {
+   "id": "minimap.sector.wash.E1",
+   "kind": "panel",
+   "x": 251.2,
+   "y": 999.2,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "PIRATE_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "note": "sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 97
+  },
+  {
+   "id": "minimap.sector.wash.A2",
+   "kind": "panel",
+   "x": 24.0,
+   "y": 942.4,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "OWN_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 98
+  },
+  {
+   "id": "minimap.sector.wash.E2",
+   "kind": "panel",
+   "x": 251.2,
    "y": 942.4,
    "w": 56.8,
    "h": 56.8,
@@ -1453,14 +1731,31 @@
    "fill": "solid",
    "sample": true,
    "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "note": "sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match",
    "layer": 0,
    "drawList": "panels",
-   "order": 83
+   "order": 99
   },
   {
-   "id": "minimap.sector.wash.B4",
+   "id": "minimap.sector.wash.C3",
    "kind": "panel",
-   "x": 80.8,
+   "x": 137.6,
+   "y": 885.6,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "PIRATE_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "note": "sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 100
+  },
+  {
+   "id": "minimap.sector.wash.A4",
+   "kind": "panel",
+   "x": 24.0,
    "y": 828.8,
    "w": 56.8,
    "h": 56.8,
@@ -1468,9 +1763,72 @@
    "fill": "solid",
    "sample": true,
    "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "note": "sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match",
    "layer": 0,
    "drawList": "panels",
-   "order": 84
+   "order": 101
+  },
+  {
+   "id": "minimap.sector.wash.E4",
+   "kind": "panel",
+   "x": 251.2,
+   "y": 828.8,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "ENEMY_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 102
+  },
+  {
+   "id": "minimap.sector.wash.A5",
+   "kind": "panel",
+   "x": 24.0,
+   "y": 772.0,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "PIRATE_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "note": "sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 103
+  },
+  {
+   "id": "minimap.sector.wash.B5",
+   "kind": "panel",
+   "x": 80.8,
+   "y": 772.0,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "PIRATE_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "note": "sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 104
+  },
+  {
+   "id": "minimap.sector.wash.D5",
+   "kind": "panel",
+   "x": 194.4,
+   "y": 772.0,
+   "w": 56.8,
+   "h": 56.8,
+   "color": "ENEMY_COLOR@SECTOR_WASH_ALPHA(0.12)",
+   "fill": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 105
   },
   {
    "id": "minimap.sector.wash.E5",
@@ -1485,7 +1843,7 @@
    "source": "Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
    "layer": 0,
    "drawList": "panels",
-   "order": 85
+   "order": 106
   },
   {
    "id": "minimap.mark.asteroidfield",
@@ -1499,7 +1857,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 86
+   "order": 107
   },
   {
    "id": "minimap.mark.asteroidfield#2",
@@ -1513,7 +1871,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 87
+   "order": 108
   },
   {
    "id": "minimap.mark.asteroidfield#3",
@@ -1527,7 +1885,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 88
+   "order": 109
   },
   {
    "id": "minimap.mark.asteroidfield#4",
@@ -1541,7 +1899,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 89
+   "order": 110
   },
   {
    "id": "minimap.mark.asteroidfield#5",
@@ -1555,7 +1913,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 90
+   "order": 111
   },
   {
    "id": "minimap.mark.asteroidfield#6",
@@ -1569,7 +1927,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 91
+   "order": 112
   },
   {
    "id": "minimap.mark.asteroidfield#7",
@@ -1583,7 +1941,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 92
+   "order": 113
   },
   {
    "id": "minimap.mark.asteroidfield#8",
@@ -1597,7 +1955,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 93
+   "order": 114
   },
   {
    "id": "minimap.mark.asteroidfield#9",
@@ -1611,7 +1969,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 94
+   "order": 115
   },
   {
    "id": "minimap.mark.asteroidfield#10",
@@ -1625,7 +1983,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 95
+   "order": 116
   },
   {
    "id": "minimap.mark.asteroidfield#11",
@@ -1639,7 +1997,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 96
+   "order": 117
   },
   {
    "id": "minimap.mark.asteroidfield#12",
@@ -1653,7 +2011,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 97
+   "order": 118
   },
   {
    "id": "minimap.mark.asteroidfield#13",
@@ -1667,7 +2025,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 98
+   "order": 119
   },
   {
    "id": "minimap.mark.asteroidfield#14",
@@ -1681,7 +2039,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 99
+   "order": 120
   },
   {
    "id": "minimap.mark.asteroidfield#15",
@@ -1695,7 +2053,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 100
+   "order": 121
   },
   {
    "id": "minimap.mark.asteroidfield#16",
@@ -1709,7 +2067,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 101
+   "order": 122
   },
   {
    "id": "minimap.mark.asteroidfield#17",
@@ -1723,7 +2081,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 102
+   "order": 123
   },
   {
    "id": "minimap.mark.asteroidfield#18",
@@ -1737,7 +2095,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 103
+   "order": 124
   },
   {
    "id": "minimap.mark.asteroidfield#19",
@@ -1751,7 +2109,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 104
+   "order": 125
   },
   {
    "id": "minimap.mark.asteroidfield#20",
@@ -1765,7 +2123,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 105
+   "order": 126
   },
   {
    "id": "minimap.mark.asteroidfield#21",
@@ -1779,7 +2137,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 106
+   "order": 127
   },
   {
    "id": "minimap.mark.asteroidfield#22",
@@ -1793,7 +2151,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 107
+   "order": 128
   },
   {
    "id": "minimap.mark.asteroidfield#23",
@@ -1807,7 +2165,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 108
+   "order": 129
   },
   {
    "id": "minimap.mark.asteroidfield#24",
@@ -1821,7 +2179,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 109
+   "order": 130
   },
   {
    "id": "minimap.mark.asteroidfield#25",
@@ -1835,7 +2193,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 110
+   "order": 131
   },
   {
    "id": "minimap.mark.asteroidfield#26",
@@ -1849,7 +2207,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 111
+   "order": 132
   },
   {
    "id": "minimap.mark.asteroidfield#27",
@@ -1863,7 +2221,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 112
+   "order": 133
   },
   {
    "id": "minimap.mark.asteroidfield#28",
@@ -1877,7 +2235,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 113
+   "order": 134
   },
   {
    "id": "minimap.mark.asteroidfield#29",
@@ -1891,7 +2249,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 114
+   "order": 135
   },
   {
    "id": "minimap.mark.asteroidfield#30",
@@ -1905,7 +2263,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 115
+   "order": 136
   },
   {
    "id": "minimap.mark.asteroidfield#31",
@@ -1919,7 +2277,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 116
+   "order": 137
   },
   {
    "id": "minimap.mark.asteroidfield#32",
@@ -1933,7 +2291,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 117
+   "order": 138
   },
   {
    "id": "minimap.mark.asteroidfield#33",
@@ -1947,7 +2305,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 118
+   "order": 139
   },
   {
    "id": "minimap.mark.asteroidfield#34",
@@ -1961,7 +2319,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 119
+   "order": 140
   },
   {
    "id": "minimap.mark.asteroidfield#35",
@@ -1975,7 +2333,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 120
+   "order": 141
   },
   {
    "id": "minimap.mark.asteroidfield#36",
@@ -1989,7 +2347,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 121
+   "order": 142
   },
   {
    "id": "minimap.mark.asteroidfield#37",
@@ -2003,7 +2361,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 122
+   "order": 143
   },
   {
    "id": "minimap.mark.asteroidfield#38",
@@ -2017,7 +2375,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 123
+   "order": 144
   },
   {
    "id": "minimap.mark.asteroidfield#39",
@@ -2031,7 +2389,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 124
+   "order": 145
   },
   {
    "id": "minimap.mark.asteroidfield#40",
@@ -2045,7 +2403,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 125
+   "order": 146
   },
   {
    "id": "minimap.mark.asteroidfield#41",
@@ -2059,7 +2417,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 126
+   "order": 147
   },
   {
    "id": "minimap.mark.asteroidfield#42",
@@ -2073,7 +2431,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 127
+   "order": 148
   },
   {
    "id": "minimap.mark.asteroidfield#43",
@@ -2087,7 +2445,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 128
+   "order": 149
   },
   {
    "id": "minimap.mark.asteroidfield#44",
@@ -2101,7 +2459,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 129
+   "order": 150
   },
   {
    "id": "minimap.mark.asteroidfield#45",
@@ -2115,7 +2473,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 130
+   "order": 151
   },
   {
    "id": "minimap.mark.asteroidfield#46",
@@ -2129,7 +2487,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 131
+   "order": 152
   },
   {
    "id": "minimap.mark.asteroidfield#47",
@@ -2143,7 +2501,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 132
+   "order": 153
   },
   {
    "id": "minimap.mark.asteroidfield#48",
@@ -2157,7 +2515,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 133
+   "order": 154
   },
   {
    "id": "minimap.mark.asteroidfield#49",
@@ -2171,7 +2529,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 134
+   "order": 155
   },
   {
    "id": "minimap.mark.asteroidfield#50",
@@ -2185,7 +2543,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 135
+   "order": 156
   },
   {
    "id": "minimap.mark.asteroidfield#51",
@@ -2199,7 +2557,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 136
+   "order": 157
   },
   {
    "id": "minimap.mark.asteroidfield#52",
@@ -2213,7 +2571,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 137
+   "order": 158
   },
   {
    "id": "minimap.mark.asteroidfield#53",
@@ -2227,7 +2585,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 138
+   "order": 159
   },
   {
    "id": "minimap.mark.asteroidfield#54",
@@ -2241,7 +2599,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 139
+   "order": 160
   },
   {
    "id": "minimap.mark.asteroidfield#55",
@@ -2255,7 +2613,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 140
+   "order": 161
   },
   {
    "id": "minimap.mark.asteroidfield#56",
@@ -2269,7 +2627,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 141
+   "order": 162
   },
   {
    "id": "minimap.mark.asteroidfield#57",
@@ -2283,7 +2641,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 142
+   "order": 163
   },
   {
    "id": "minimap.mark.asteroidfield#58",
@@ -2297,7 +2655,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 143
+   "order": 164
   },
   {
    "id": "minimap.mark.asteroidfield#59",
@@ -2311,7 +2669,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 144
+   "order": 165
   },
   {
    "id": "minimap.mark.asteroidfield#60",
@@ -2325,7 +2683,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 145
+   "order": 166
   },
   {
    "id": "minimap.mark.asteroidfield#61",
@@ -2339,7 +2697,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 146
+   "order": 167
   },
   {
    "id": "minimap.mark.asteroidfield#62",
@@ -2353,7 +2711,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 147
+   "order": 168
   },
   {
    "id": "minimap.mark.asteroidfield#63",
@@ -2367,7 +2725,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 148
+   "order": 169
   },
   {
    "id": "minimap.mark.asteroidfield#64",
@@ -2381,7 +2739,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 149
+   "order": 170
   },
   {
    "id": "minimap.mark.asteroidfield#65",
@@ -2395,7 +2753,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 150
+   "order": 171
   },
   {
    "id": "minimap.mark.asteroidfield#66",
@@ -2409,7 +2767,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 151
+   "order": 172
   },
   {
    "id": "minimap.mark.asteroidfield#67",
@@ -2423,7 +2781,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 152
+   "order": 173
   },
   {
    "id": "minimap.mark.asteroidfield#68",
@@ -2437,7 +2795,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 153
+   "order": 174
   },
   {
    "id": "minimap.mark.asteroidfield#69",
@@ -2451,7 +2809,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 154
+   "order": 175
   },
   {
    "id": "minimap.mark.asteroidfield#70",
@@ -2465,7 +2823,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 155
+   "order": 176
   },
   {
    "id": "minimap.mark.asteroidfield#71",
@@ -2479,7 +2837,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 156
+   "order": 177
   },
   {
    "id": "minimap.mark.asteroidfield#72",
@@ -2493,7 +2851,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 157
+   "order": 178
   },
   {
    "id": "minimap.mark.asteroidfield#73",
@@ -2507,7 +2865,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 158
+   "order": 179
   },
   {
    "id": "minimap.mark.asteroidfield#74",
@@ -2521,7 +2879,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 159
+   "order": 180
   },
   {
    "id": "minimap.mark.asteroidfield#75",
@@ -2535,7 +2893,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 160
+   "order": 181
   },
   {
    "id": "minimap.mark.asteroidfield#76",
@@ -2549,7 +2907,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 161
+   "order": 182
   },
   {
    "id": "minimap.mark.asteroidfield#77",
@@ -2563,7 +2921,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 162
+   "order": 183
   },
   {
    "id": "minimap.mark.asteroidfield#78",
@@ -2577,7 +2935,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 163
+   "order": 184
   },
   {
    "id": "minimap.mark.asteroidfield#79",
@@ -2591,7 +2949,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 164
+   "order": 185
   },
   {
    "id": "minimap.mark.asteroidfield#80",
@@ -2605,7 +2963,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 165
+   "order": 186
   },
   {
    "id": "minimap.mark.ore",
@@ -2616,10 +2974,10 @@
    "h": 8.0,
    "edge": "ORE_ASTEROID_COLOR",
    "edgeWidth": 2.0,
-   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 166
+   "order": 187
   },
   {
    "id": "minimap.mark.ore#2",
@@ -2630,10 +2988,10 @@
    "h": 8.0,
    "edge": "ORE_ASTEROID_COLOR",
    "edgeWidth": 2.0,
-   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 167
+   "order": 188
   },
   {
    "id": "minimap.mark.ore#3",
@@ -2644,10 +3002,10 @@
    "h": 8.0,
    "edge": "ORE_ASTEROID_COLOR",
    "edgeWidth": 2.0,
-   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 168
+   "order": 189
   },
   {
    "id": "minimap.mark.ore#4",
@@ -2658,10 +3016,10 @@
    "h": 8.0,
    "edge": "ORE_ASTEROID_COLOR",
    "edgeWidth": 2.0,
-   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 169
+   "order": 190
   },
   {
    "id": "minimap.mark.ore#5",
@@ -2672,10 +3030,10 @@
    "h": 8.0,
    "edge": "ORE_ASTEROID_COLOR",
    "edgeWidth": 2.0,
-   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 170
+   "order": 191
   },
   {
    "id": "minimap.mark.ore#6",
@@ -2686,10 +3044,570 @@
    "h": 8.0,
    "edge": "ORE_ASTEROID_COLOR",
    "edgeWidth": 2.0,
-   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 171
+   "order": 192
+  },
+  {
+   "id": "minimap.mark.ore#7",
+   "kind": "outline",
+   "x": 117.01,
+   "y": 1017.67,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 193
+  },
+  {
+   "id": "minimap.mark.ore#8",
+   "kind": "outline",
+   "x": 206.99,
+   "y": 802.33,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 194
+  },
+  {
+   "id": "minimap.mark.ore#9",
+   "kind": "outline",
+   "x": 91.68,
+   "y": 1040.35,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 195
+  },
+  {
+   "id": "minimap.mark.ore#10",
+   "kind": "outline",
+   "x": 232.32,
+   "y": 779.65,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 196
+  },
+  {
+   "id": "minimap.mark.ore#11",
+   "kind": "outline",
+   "x": 174.05,
+   "y": 1029.25,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 197
+  },
+  {
+   "id": "minimap.mark.ore#12",
+   "kind": "outline",
+   "x": 149.95,
+   "y": 790.75,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 198
+  },
+  {
+   "id": "minimap.mark.ore#13",
+   "kind": "outline",
+   "x": 233.45,
+   "y": 1005.87,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 199
+  },
+  {
+   "id": "minimap.mark.ore#14",
+   "kind": "outline",
+   "x": 90.55,
+   "y": 814.13,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 200
+  },
+  {
+   "id": "minimap.mark.ore#15",
+   "kind": "outline",
+   "x": 257.11,
+   "y": 1014.74,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 201
+  },
+  {
+   "id": "minimap.mark.ore#16",
+   "kind": "outline",
+   "x": 66.89,
+   "y": 805.26,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 202
+  },
+  {
+   "id": "minimap.mark.ore#17",
+   "kind": "outline",
+   "x": 276.97,
+   "y": 1042.85,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 203
+  },
+  {
+   "id": "minimap.mark.ore#18",
+   "kind": "outline",
+   "x": 47.03,
+   "y": 777.15,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 204
+  },
+  {
+   "id": "minimap.mark.ore#19",
+   "kind": "outline",
+   "x": 35.9,
+   "y": 959.57,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 205
+  },
+  {
+   "id": "minimap.mark.ore#20",
+   "kind": "outline",
+   "x": 288.1,
+   "y": 860.43,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 206
+  },
+  {
+   "id": "minimap.mark.ore#21",
+   "kind": "outline",
+   "x": 49.08,
+   "y": 986.03,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 207
+  },
+  {
+   "id": "minimap.mark.ore#22",
+   "kind": "outline",
+   "x": 274.92,
+   "y": 833.97,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 208
+  },
+  {
+   "id": "minimap.mark.ore#23",
+   "kind": "outline",
+   "x": 110.45,
+   "y": 978.5,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 209
+  },
+  {
+   "id": "minimap.mark.ore#24",
+   "kind": "outline",
+   "x": 213.55,
+   "y": 841.5,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 210
+  },
+  {
+   "id": "minimap.mark.ore#25",
+   "kind": "outline",
+   "x": 176.28,
+   "y": 972.27,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 211
+  },
+  {
+   "id": "minimap.mark.ore#26",
+   "kind": "outline",
+   "x": 147.72,
+   "y": 847.73,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 212
+  },
+  {
+   "id": "minimap.mark.ore#27",
+   "kind": "outline",
+   "x": 238.53,
+   "y": 961.36,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 213
+  },
+  {
+   "id": "minimap.mark.ore#28",
+   "kind": "outline",
+   "x": 85.47,
+   "y": 858.64,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 214
+  },
+  {
+   "id": "minimap.mark.ore#29",
+   "kind": "outline",
+   "x": 222.27,
+   "y": 982.1,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 215
+  },
+  {
+   "id": "minimap.mark.ore#30",
+   "kind": "outline",
+   "x": 101.73,
+   "y": 837.9,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 216
+  },
+  {
+   "id": "minimap.mark.ore#31",
+   "kind": "outline",
+   "x": 260.06,
+   "y": 973.29,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 217
+  },
+  {
+   "id": "minimap.mark.ore#32",
+   "kind": "outline",
+   "x": 63.94,
+   "y": 846.71,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 218
+  },
+  {
+   "id": "minimap.mark.ore#33",
+   "kind": "outline",
+   "x": 56.63,
+   "y": 891.07,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 219
+  },
+  {
+   "id": "minimap.mark.ore#34",
+   "kind": "outline",
+   "x": 267.37,
+   "y": 928.93,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 220
+  },
+  {
+   "id": "minimap.mark.ore#35",
+   "kind": "outline",
+   "x": 115.68,
+   "y": 911.58,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 221
+  },
+  {
+   "id": "minimap.mark.ore#36",
+   "kind": "outline",
+   "x": 208.32,
+   "y": 908.42,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 222
+  },
+  {
+   "id": "minimap.mark.ore#37",
+   "kind": "outline",
+   "x": 143.45,
+   "y": 904.16,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 223
+  },
+  {
+   "id": "minimap.mark.ore#38",
+   "kind": "outline",
+   "x": 180.55,
+   "y": 915.84,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 224
+  },
+  {
+   "id": "minimap.mark.ore#39",
+   "kind": "outline",
+   "x": 169.2,
+   "y": 901.37,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 225
+  },
+  {
+   "id": "minimap.mark.ore#40",
+   "kind": "outline",
+   "x": 154.8,
+   "y": 918.63,
+   "w": 8.0,
+   "h": 8.0,
+   "edge": "ORE_ASTEROID_COLOR",
+   "edgeWidth": 2.0,
+   "source": "Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, replayed by derive_layouts.py's port of PlaceContent and Neuron::Random",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 226
+  },
+  {
+   "id": "minimap.mark.derelict",
+   "kind": "panel",
+   "x": 87.17,
+   "y": 1030.54,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "DERELICT_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: seed 342's derelict (Map.json derelicts; Map.cpp:442-507; ADR-074); seen while it is in sight or in a sector the player holds unsuppressed (Simulation.cpp:289-304, 2981-2987)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 227
   },
   {
    "id": "minimap.mark.structure",
@@ -2703,7 +3621,7 @@
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "layer": 0,
    "drawList": "panels",
-   "order": 172
+   "order": 228
   },
   {
    "id": "minimap.mark.ship",
@@ -2718,7 +3636,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 173
+   "order": 229
   },
   {
    "id": "minimap.mark.ship#2",
@@ -2733,7 +3651,112 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 174
+   "order": 230
+  },
+  {
+   "id": "minimap.mark.structure#2",
+   "kind": "panel",
+   "x": 106.2,
+   "y": 1024.6,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "layer": 0,
+   "drawList": "panels",
+   "order": 231
+  },
+  {
+   "id": "minimap.mark.structure#3",
+   "kind": "panel",
+   "x": 49.4,
+   "y": 967.8,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "layer": 0,
+   "drawList": "panels",
+   "order": 232
+  },
+  {
+   "id": "minimap.mark.structure#4",
+   "kind": "panel",
+   "x": 49.4,
+   "y": 1017.22,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "layer": 0,
+   "drawList": "panels",
+   "order": 233
+  },
+  {
+   "id": "minimap.mark.structure#5",
+   "kind": "panel",
+   "x": 56.78,
+   "y": 1024.6,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "layer": 0,
+   "drawList": "panels",
+   "order": 234
+  },
+  {
+   "id": "minimap.mark.structure#6",
+   "kind": "panel",
+   "x": 54.8,
+   "y": 1019.2,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "layer": 0,
+   "drawList": "panels",
+   "order": 235
+  },
+  {
+   "id": "minimap.mark.structure#7",
+   "kind": "panel",
+   "x": 118.01,
+   "y": 1018.67,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "layer": 0,
+   "drawList": "panels",
+   "order": 236
+  },
+  {
+   "id": "minimap.mark.structure#8",
+   "kind": "panel",
+   "x": 92.68,
+   "y": 1041.35,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "layer": 0,
+   "drawList": "panels",
+   "order": 237
   },
   {
    "id": "minimap.fog",
@@ -2747,7 +3770,7 @@
    "source": "Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)",
    "layer": 0,
    "drawList": "panels",
-   "order": 175
+   "order": 238
   },
   {
    "id": "minimap.sector.lattice.A1",
@@ -2761,7 +3784,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 176
+   "order": 239
   },
   {
    "id": "minimap.sector.lattice.B1",
@@ -2775,7 +3798,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 177
+   "order": 240
   },
   {
    "id": "minimap.sector.lattice.C1",
@@ -2789,7 +3812,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 178
+   "order": 241
   },
   {
    "id": "minimap.sector.lattice.D1",
@@ -2803,7 +3826,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 179
+   "order": 242
   },
   {
    "id": "minimap.sector.lattice.E1",
@@ -2817,7 +3840,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 180
+   "order": 243
   },
   {
    "id": "minimap.sector.lattice.A2",
@@ -2831,7 +3854,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 181
+   "order": 244
   },
   {
    "id": "minimap.sector.lattice.B2",
@@ -2845,7 +3868,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 182
+   "order": 245
   },
   {
    "id": "minimap.sector.lattice.C2",
@@ -2859,7 +3882,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 183
+   "order": 246
   },
   {
    "id": "minimap.sector.lattice.D2",
@@ -2873,7 +3896,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 184
+   "order": 247
   },
   {
    "id": "minimap.sector.lattice.E2",
@@ -2887,7 +3910,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 185
+   "order": 248
   },
   {
    "id": "minimap.sector.lattice.A3",
@@ -2901,7 +3924,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 186
+   "order": 249
   },
   {
    "id": "minimap.sector.lattice.B3",
@@ -2915,7 +3938,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 187
+   "order": 250
   },
   {
    "id": "minimap.sector.lattice.C3",
@@ -2929,7 +3952,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 188
+   "order": 251
   },
   {
    "id": "minimap.sector.lattice.D3",
@@ -2943,7 +3966,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 189
+   "order": 252
   },
   {
    "id": "minimap.sector.lattice.E3",
@@ -2957,7 +3980,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 190
+   "order": 253
   },
   {
    "id": "minimap.sector.lattice.A4",
@@ -2971,7 +3994,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 191
+   "order": 254
   },
   {
    "id": "minimap.sector.lattice.B4",
@@ -2985,7 +4008,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 192
+   "order": 255
   },
   {
    "id": "minimap.sector.lattice.C4",
@@ -2999,7 +4022,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 193
+   "order": 256
   },
   {
    "id": "minimap.sector.lattice.D4",
@@ -3013,7 +4036,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 194
+   "order": 257
   },
   {
    "id": "minimap.sector.lattice.E4",
@@ -3027,7 +4050,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 195
+   "order": 258
   },
   {
    "id": "minimap.sector.lattice.A5",
@@ -3041,7 +4064,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 196
+   "order": 259
   },
   {
    "id": "minimap.sector.lattice.B5",
@@ -3055,7 +4078,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 197
+   "order": 260
   },
   {
    "id": "minimap.sector.lattice.C5",
@@ -3069,7 +4092,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 198
+   "order": 261
   },
   {
    "id": "minimap.sector.lattice.D5",
@@ -3083,7 +4106,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 199
+   "order": 262
   },
   {
    "id": "minimap.sector.lattice.E5",
@@ -3097,7 +4120,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 200
+   "order": 263
   },
   {
    "id": "minimap.sector.held.A1",
@@ -3113,12 +4136,76 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 201
+   "order": 264
   },
   {
-   "id": "minimap.sector.held.D2",
+   "id": "minimap.sector.held.B1",
+   "kind": "outline",
+   "x": 80.8,
+   "y": 999.2,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "OWN_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 265
+  },
+  {
+   "id": "minimap.sector.held.D1",
    "kind": "outline",
    "x": 194.4,
+   "y": 999.2,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "PIRATE_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 266
+  },
+  {
+   "id": "minimap.sector.held.E1",
+   "kind": "outline",
+   "x": 251.2,
+   "y": 999.2,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "PIRATE_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 267
+  },
+  {
+   "id": "minimap.sector.held.A2",
+   "kind": "outline",
+   "x": 24.0,
+   "y": 942.4,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "OWN_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 268
+  },
+  {
+   "id": "minimap.sector.held.E2",
+   "kind": "outline",
+   "x": 251.2,
    "y": 942.4,
    "w": 56.8,
    "h": 56.8,
@@ -3129,12 +4216,28 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 202
+   "order": 269
   },
   {
-   "id": "minimap.sector.held.B4",
+   "id": "minimap.sector.held.C3",
    "kind": "outline",
-   "x": 80.8,
+   "x": 137.6,
+   "y": 885.6,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "PIRATE_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 270
+  },
+  {
+   "id": "minimap.sector.held.A4",
+   "kind": "outline",
+   "x": 24.0,
    "y": 828.8,
    "w": 56.8,
    "h": 56.8,
@@ -3145,7 +4248,71 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 203
+   "order": 271
+  },
+  {
+   "id": "minimap.sector.held.E4",
+   "kind": "outline",
+   "x": 251.2,
+   "y": 828.8,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "ENEMY_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 272
+  },
+  {
+   "id": "minimap.sector.held.A5",
+   "kind": "outline",
+   "x": 24.0,
+   "y": 772.0,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "PIRATE_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 273
+  },
+  {
+   "id": "minimap.sector.held.B5",
+   "kind": "outline",
+   "x": 80.8,
+   "y": 772.0,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "PIRATE_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 274
+  },
+  {
+   "id": "minimap.sector.held.D5",
+   "kind": "outline",
+   "x": 194.4,
+   "y": 772.0,
+   "w": 56.8,
+   "h": 56.8,
+   "edge": "ENEMY_COLOR@SECTOR_OUTLINE_ALPHA(0.55)",
+   "edgeWidth": 1.0,
+   "pattern": "solid",
+   "sample": true,
+   "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 275
   },
   {
    "id": "minimap.sector.held.E5",
@@ -3161,7 +4328,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 204
+   "order": 276
   },
   {
    "id": "minimap.view",
@@ -3187,7 +4354,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 205
+   "order": 277
   },
   {
    "id": "minimap.view#2",
@@ -3213,7 +4380,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 206
+   "order": 278
   },
   {
    "id": "minimap.view#3",
@@ -3239,7 +4406,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 207
+   "order": 279
   },
   {
    "id": "minimap.view#4",
@@ -3265,7 +4432,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 208
+   "order": 280
   }
  ]
 }

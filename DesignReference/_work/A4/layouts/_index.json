@@ -52,7 +52,7 @@
   "screen": "hud",
   "state": "match-start",
   "title": "First snapshot of a Normal skirmish: nothing selected",
-  "elements": 161,
+  "elements": 205,
   "interfaceFactor": 1.0
  },
  {
@@ -60,7 +60,7 @@
   "screen": "hud",
   "state": "busy-warships",
   "title": "Mid-match: twelve warships of three designs selected, attack-move armed, the pointer over Stop",
-  "elements": 305,
+  "elements": 363,
   "interfaceFactor": 1.0
  },
  {
@@ -68,7 +68,7 @@
   "screen": "hud",
   "state": "scale-110",
   "title": "The busy state at interface factor 110%, the most a match reaches on 16:9 (ADR-070 Consequences)",
-  "elements": 305,
+  "elements": 363,
   "interfaceFactor": 1.1
  },
  {
@@ -76,7 +76,7 @@
   "screen": "hud",
   "state": "constructors",
   "title": "Two Constructors selected: build buttons with their costs, and the retreat row",
-  "elements": 217,
+  "elements": 261,
   "interfaceFactor": 1.0
  },
  {
@@ -84,7 +84,7 @@
   "screen": "hud",
   "state": "placing-relay",
   "title": "A Relay's placement armed: the hint, and the sectors it could claim outlined on the minimap",
-  "elements": 224,
+  "elements": 269,
   "interfaceFactor": 1.0
  },
  {
@@ -92,7 +92,7 @@
   "screen": "hud",
   "state": "relay-node-cap",
   "title": "Placing a Relay at the node cap: the hint says why, and the Relay button says NODE CAP",
-  "elements": 218,
+  "elements": 276,
   "interfaceFactor": 1.0
  },
  {
@@ -100,7 +100,7 @@
   "screen": "hud",
   "state": "one-ship",
   "title": "One Lancer selected, holding a sector, hurt; Hold sector armed",
-  "elements": 209,
+  "elements": 281,
   "interfaceFactor": 1.0
  },
  {
@@ -108,7 +108,7 @@
   "screen": "hud",
   "state": "shipyard-selected",
   "title": "A finished Shipyard selected: its work line, its next level and its window buttons with key caps",
-  "elements": 205,
+  "elements": 252,
   "interfaceFactor": 1.0
  },
  {
@@ -116,7 +116,7 @@
   "screen": "hud",
   "state": "station-upgrading",
   "title": "The Command Station selected while its upgrade is built: the button says UPGRADING with its bar",
-  "elements": 189,
+  "elements": 236,
   "interfaceFactor": 1.0
  },
  {
@@ -124,7 +124,7 @@
   "screen": "hud",
   "state": "lab-needs-research",
   "title": "The Research Lab selected: its next level needs research, so Upgrade says NEEDS RESEARCH",
-  "elements": 196,
+  "elements": 243,
   "interfaceFactor": 1.0
  },
  {
@@ -132,7 +132,7 @@
   "screen": "hud",
   "state": "derelict-hint",
   "title": "The pointer over a derelict: the hint says what it holds",
-  "elements": 166,
+  "elements": 214,
   "interfaceFactor": 1.0
  },
  {
@@ -140,7 +140,7 @@
   "screen": "hud",
   "state": "server-silent",
   "title": "A world on a dedicated server whose snapshots stopped 5 s ago",
-  "elements": 158,
+  "elements": 226,
   "interfaceFactor": 1.0
  },
  {
@@ -148,7 +148,7 @@
   "screen": "hud",
   "state": "end-victory",
   "title": "The match's end: Victory by domination, the world running on behind it",
-  "elements": 231,
+  "elements": 285,
   "interfaceFactor": 1.0
  },
  {
@@ -156,7 +156,7 @@
   "screen": "hud",
   "state": "end-empire-fallen",
   "title": "A world: the player's empire fell, and its seat restarts",
-  "elements": 163,
+  "elements": 224,
   "interfaceFactor": 1.0
  },
  {
@@ -164,7 +164,7 @@
   "screen": "window",
   "state": "designer-default",
   "title": "The designer on Shipyard 01, the Swarm loaded (saved), nothing hovered",
-  "elements": 414,
+  "elements": 479,
   "interfaceFactor": 1.0
  },
  {
@@ -172,15 +172,15 @@
   "screen": "window",
   "state": "designer-preview",
   "title": "The designer with the Lance card under the pointer: bars and damage cards preview the change",
-  "elements": 419,
+  "elements": 484,
   "interfaceFactor": 1.0
  },
  {
   "file": "window-designer-unsaved-editing.json",
   "screen": "window",
   "state": "designer-unsaved-editing",
-  "title": "New picks (Medium + Ion + Lance + Sensor Array), the name being typed, too long for the server",
-  "elements": 413,
+  "title": "New picks (Medium + Ion + Lance + Sensor Array), the name typed away to nothing, so invalid; Queue says Needs Shipyard L2",
+  "elements": 478,
   "interfaceFactor": 1.0
  },
  {
@@ -188,7 +188,7 @@
   "screen": "window",
   "state": "designer-no-shipyard",
   "title": "The designer with no finished Shipyard: arrows dim, Queue dim, no slots filled",
-  "elements": 413,
+  "elements": 457,
   "interfaceFactor": 1.0
  },
  {
@@ -196,7 +196,7 @@
   "screen": "window",
   "state": "production-shipyard",
   "title": "Production on Shipyard 02 (L1): four starting designs, two dim as NEEDS L2, a queue of three",
-  "elements": 274,
+  "elements": 339,
   "interfaceFactor": 1.0
  },
  {
@@ -204,15 +204,15 @@
   "screen": "window",
   "state": "production-station",
   "title": "Production on the Command Station: the Constructor card, the front job waiting for Ore",
-  "elements": 198,
+  "elements": 242,
   "interfaceFactor": 1.0
  },
  {
   "file": "window-production-none.json",
   "screen": "window",
   "state": "production-none",
-  "title": "Production with no finished producer: the hint",
-  "elements": 184,
+  "title": "Production with no finished producer, after the empire fell in a world: the hint",
+  "elements": 247,
   "interfaceFactor": 1.0
  },
  {
@@ -220,7 +220,7 @@
   "screen": "window",
   "state": "research-page1",
   "title": "Research: the first page of topics, tier-2 topics needing the Lab's level, a queue of two",
-  "elements": 276,
+  "elements": 341,
   "interfaceFactor": 1.0
  },
  {
@@ -228,7 +228,7 @@
   "screen": "window",
   "state": "research-no-lab",
   "title": "Research with no Research Lab: no topic can be queued",
-  "elements": 267,
+  "elements": 311,
   "interfaceFactor": 1.0
  },
  {
@@ -236,7 +236,7 @@
   "screen": "window",
   "state": "controls",
   "title": "The Controls window (F1), at its default place in the middle of the screen",
-  "elements": 229,
+  "elements": 273,
   "interfaceFactor": 1.0
  },
  {
@@ -244,7 +244,7 @@
   "screen": "window",
   "state": "orders-time-of-day",
   "title": "Orders (O): two orders waiting; a time-of-day attack-move ready to give to 12 ships",
-  "elements": 358,
+  "elements": 416,
   "interfaceFactor": 1.0
  },
  {
@@ -252,7 +252,7 @@
   "screen": "window",
   "state": "orders-event-disabled",
   "title": "Orders: an event trigger with a target, nothing selected that can take it (Give the order dim, SELECT WARSHIPS)",
-  "elements": 214,
+  "elements": 283,
   "interfaceFactor": 1.0
  },
  {
@@ -260,7 +260,7 @@
   "screen": "window",
   "state": "away",
   "title": "While you were away: opened by itself with the first snapshot after the seat is taken again (GameClient.cpp:539-544)",
-  "elements": 177,
+  "elements": 261,
   "interfaceFactor": 1.0
  },
  {
@@ -268,7 +268,7 @@
   "screen": "window",
   "state": "three-windows-default",
   "title": "Production, research and the designer open together, each at its default place (ADR-062 d6: side by side at 100%)",
-  "elements": 786,
+  "elements": 848,
   "interfaceFactor": 1.0
  }
 ]

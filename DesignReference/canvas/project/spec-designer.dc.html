@@ -24,8 +24,8 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 .md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
 .md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
 .md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
-.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
-.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B;overflow-wrap:anywhere;word-break:break-word}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere;word-break:break-word}
 .md td code{font-size:11.5px}
 .md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
 .md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
@@ -521,7 +521,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 - <strong>New picks.</strong> SAVE is enabled; RENAME is dim; QUEUE saves and then queues (ADR-023).
 - <strong>A saved design renamed.</strong> SAVE is dim; <code>RENAME</code> is enabled. With the same name but a changed retreat, the button reads <code>UPDATE</code> (Hud.cpp:606-609).
 - <strong>Typing.</strong> The field's edge is lit, and an <code>_</code> follows the name. Printable ASCII only, up to 32 characters; Backspace deletes, Enter saves and stops, Esc drops what was typed (Designer.cpp:228-260). A press anywhere but the field stops typing, and so does closing the window (GameClient.cpp:1003-1005, 707-710). While the designer types, every key is its own (GameClient.cpp:819-835).
-- <strong>Invalid name.</strong> The name is in <code>WARNING_COLOR</code>, and SAVE and QUEUE are dim.
+- <strong>Invalid name.</strong> The name is in <code>WARNING_COLOR</code>, and SAVE and QUEUE are dim. A name is invalid only when it is empty or all spaces (<code>IsValidDesignName</code>, Command.h:70-84): typing takes printable ASCII only and stops at 32 characters (Designer.cpp:236), so the counter never passes <code>32/32</code>. Typing starts from the shown name, e.g. <code>Lancer+SA</code> for Medium + Ion + Lance + Sensor Array (Designer.cpp:122-151, 220-225); <code>window-designer-unsaved-editing.json</code> shows it emptied: <code>_</code> in <code>WARNING_COLOR</code>, <code>0/32</code>.
 - <strong>Hovering a part.</strong> Hovering an unpicked, unlocked card previews it (Hud.cpp:622-635): the bars show the change in green or red, the values read <code>v (±n)</code>, the damage cards show the previewed design with its change, and the hint names the part.
 - <strong>Locked card.</strong> It takes no press and previews nothing (interface plan 1, "Not in this plan").
 - <strong>No Shipyard.</strong> <code>NO SHIPYARD</code>; the arrows are dim; QUEUE is dim; <code>BUILT · 0</code>.
@@ -531,7 +531,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 - <strong>More than 3 saved designs.</strong> The chip arrows show, each dim at its end.</p>
 <p>Layout files: <code>window-designer-default.json</code>, <code>-preview.json</code>, <code>-unsaved-editing.json</code>, <code>-no-shipyard.json</code>.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4394}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4543}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};

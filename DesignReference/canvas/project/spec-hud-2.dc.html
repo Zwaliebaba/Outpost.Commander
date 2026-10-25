@@ -24,8 +24,8 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 .md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
 .md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
 .md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
-.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
-.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B;overflow-wrap:anywhere;word-break:break-word}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere;word-break:break-word}
 .md td code{font-size:11.5px}
 .md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
 .md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
@@ -223,7 +223,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 - <strong>Orientation.</strong> +x runs right and +z up (Hud.cpp:2432-2451).</p>
 <p><strong>Draw order and looks</strong> (all in layer 0's panels; the view's segments are lines).
 1. <strong>Sector wash.</strong> Every held or pirate-guarded sector, filled in <code>OWN_COLOR</code>, <code>ENEMY_COLOR</code> or <code>PIRATE_COLOR</code> at alpha 0.12 (Hud.cpp:3481-3485, 42). A sector is 56.8 units square on Map.json's 5×5 grid of 2,000 m sectors.
-2. <strong>Marks.</strong> The neutral ones are drawn first, then the sided ones (Hud.cpp:3486-3528). A mark is a square of side max(least, 2·radius·0.0284). The least sides are: a ship 3, an ore asteroid 8, anything else 6 (Hud.cpp:118-120).</p>
+2. <strong>Marks.</strong> The neutral ones are drawn first, then the sided ones (Hud.cpp:3486-3528). A mark is a square of side max(least, 2·radius·0.0284). The least sides are: a ship 3, an ore asteroid 8, anything else 6 (Hud.cpp:118-120). The map's asteroids and fields are always seen (Simulation.cpp:245-247), so every frame in a match has all 80 fields and all 40 ore asteroids: Map.json's 6 home ones and the 34 the seed places (Map.cpp:381-419), under the fog. An asteroid is dry only once the player knows its reserve is 0, which it learns in sight or in a sector it holds (Simulation.cpp:331-342). A derelict is seen as an enemy structure is, in sight or in a held, unsuppressed sector (Simulation.cpp:289-304, 2981-2987), and remembered after.</p>
 <table>
 <thead>
 <tr>
@@ -284,7 +284,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 - <strong>Size.</strong> Each bar is 32×5 at the back buffer's scale, <strong>not</strong> the player's factor. Position and size are whole pixels.
 - <strong>Stacking.</strong> The health bar stands over the build bar, 2 apart, and the pair stands 4 above the "foot". The foot is the top of the model on the screen, in the entity's column (<code>Camera::PixelAbove</code>, GameClient.cpp:731-737).
 - <strong>Back:</strong> the side's color × 0.3 (<code>HEALTH_BACK_SHADE</code>, GameClient.cpp:93-98, 727), or <code>HEALTH_BACK_COLOR</code> for a side the data does not name.
-- <strong>Health fill:</strong> <code>HEALTH_GOOD_COLOR</code>, <code>HEALTH_FAIR_COLOR</code> or <code>HEALTH_POOR_COLOR</code>.
+- <strong>Health fill:</strong> <code>HEALTH_GOOD_COLOR</code>, <code>HEALTH_FAIR_COLOR</code> or <code>HEALTH_POOR_COLOR</code>. A site starts at a tenth of its hit points and gains the rest with the work (Simulation.cpp:71, 2449-2456), so unless it is repaired a structure 40% built is at 0.1 + 0.9 × 0.4 = 46%, in <code>HEALTH_FAIR_COLOR</code>.
 - <strong>Build fill:</strong> <code>BUILD_BAR_COLOR</code>.</p>
 <p><strong>When a bar shows</strong> (<code>Hud::BarOver</code>, Hud.cpp:2170-2183).
 - The health bar shows while the entity is hurt, or for every entity while Alt is held (KeyBindings.h:38; GameClient.cpp:598).
@@ -344,7 +344,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 </tbody>
 </table></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4737}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5093}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};

@@ -21,6 +21,7 @@ Run:  python3 -I DesignReference/_work/A4/derive_layouts.py   (from the reposito
 import json
 import math
 import os
+import struct
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
@@ -526,10 +527,22 @@ def abbreviation(name):  # GameProtocol/DesignStats.h:25-38
     return out
 
 
-def stats(h, d, w, m=None):  # DesignStatsOf, GameProtocol/DesignStats.h:76-94, at the tuning's base numbers
+def llround(v):  # std::llround: half away from zero
+    return int(math.floor(v + 0.5)) if v >= 0 else -int(math.floor(-v + 0.5))
+
+
+# Hull Plating's +15% (Tuning.json research[id 2]); Composite Plating and Ablative Armour add to the same percent.
+HULL_PLATING_FACTOR = 1.0 + next(r for r in TUNING["research"] if r["id"] == 2)["effect"]["percent"] / 100.0
+
+
+def hull_hundredths(hull, hull_factor=1.0):  # ViewOf(HullTuning), GameLogic/ShipDesign.cpp:38-50: hit points as the player has them
+    return llround(hull["hitPoints"] * 100 * hull_factor)
+
+
+def stats(h, d, w, m=None, hull_factor=1.0):  # DesignStatsOf, GameProtocol/DesignStats.h:76-94; hull_factor from research (Research.cpp:110)
     hull, drive, weapon = find(HULLS, h), find(DRIVES, d), find(WEAPONS, w)
     module = find(MODULES, m) if m else None
-    return {"hp": round(hull["hitPoints"] * 100 * drive["hitPointsFactor"]), "armor": hull["armor"] * 100,
+    return {"hp": llround(hull_hundredths(hull, hull_factor) * drive["hitPointsFactor"]), "armor": hull["armor"] * 100,
             "speed": hull["speedMetersPerSecond"] * drive["speedFactor"] * (module["speedFactor"] if module else 1.0),
             "cost": hull["cost"] + drive["cost"] + weapon["cost"] + (module["cost"] if module else 0), "build": hull["buildSeconds"],
             "damage": weapon["damage"] * 100, "interval": weapon["fireIntervalSeconds"], "range": weapon["rangeMeters"],
@@ -553,12 +566,12 @@ def formation_dps(st, hull):
     return hit / 100.0 / st["interval"] * ships_reached(st["splash"], hull["footprintRadiusMeters"])
 
 
-def best_of_all():  # Hud.cpp:494-527
+def best_of_all(hull_factor=1.0):  # Hud.cpp:494-527, over the snapshot's hull views, which carry the research's hit points
     best = {"hp": 0, "armor": 0, "speed": 0, "range": 0, "cost": 0, "build": 0, "damage": [0.0] * len(HULLS)}
     for h in HULLS:
         for d in DRIVES:
             for w in WEAPONS:
-                st = stats(h["id"], d["id"], w["id"])
+                st = stats(h["id"], d["id"], w["id"], hull_factor=hull_factor)
                 for k in ("hp", "armor", "speed", "range", "cost", "build"):
                     best[k] = max(best[k], st[k])
                 for i, hh in enumerate(HULLS):
@@ -667,7 +680,8 @@ def lay_minimap(out, content):
         if side != "Neutral":
             x, y, w, h = sector_rect(sec)
             out.add("panel", "minimap.sector.wash." + sec["name"], x, y, w, h, color="{}@SECTOR_WASH_ALPHA(0.12)".format(side_color[side]),
-                    fill="solid", sample=True, source="Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)")
+                    fill="solid", sample=True, source="Hud.cpp:3481-3485; SectorView::holder (Snapshot.h:299), guarded (Snapshot.h:308)",
+                    note=GUARDED_NOTE if side == "Pirate" else None)
     # marks: the neutral first, then the sided (Hud.cpp:3486-3497)
     for sided in (False, True):
         for m in content["marks"]:
@@ -685,10 +699,11 @@ def lay_minimap(out, content):
             src = "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)"
             if m["kind"] == "Asteroid" and m["side"] == "Neutral":
                 out.add("outline", "minimap.mark.ore", at[0] - side / 2, at[1] - side / 2, side, side, edge=color, edgeWidth=ORE_OUTLINE * s,
-                        source="Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2); " + src, sample=m.get("sample", True))
+                        source="Hud.cpp:3517-3525 (ore asteroid outlined, ORE_OUTLINE_UNITS 2; dry when its known reserve is 0, Hud.cpp:2538, known only where seen, Simulation.cpp:331-342); " + src,
+                        sample=m.get("sample", True), note=m.get("note"))
             else:
                 out.add("panel", "minimap.mark." + m["kind"].lower(), at[0] - side / 2, at[1] - side / 2, side, side, color=color, fill="solid",
-                        source=src, sample=m.get("sample", True))
+                        source=src, sample=m.get("sample", True), note=m.get("note"))
     if content.get("fog", True):
         out.add("panel", "minimap.fog", mx, my, inner, inner, color="black, opacity from the fog texture's shade", fill="fog",
                 source="Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)")
@@ -722,8 +737,9 @@ def lay_minimap(out, content):
         a, arm = MEMORY_MARK * s, MEMORY_ARM * s
         col = "DERELICT_COLOR" if m["side"] == "Neutral" else side_color[m["side"]]
         out.add("panel", "minimap.memory.across", at[0] - a / 2, at[1] - arm / 2, a, arm, color=col, fill="solid", sample=True,
-                source="Hud.cpp:3595-3605 (remembered: a cross)")
-        out.add("panel", "minimap.memory.down", at[0] - arm / 2, at[1] - a / 2, arm, a, color=col, fill="solid", sample=True, source="Hud.cpp:3604")
+                source="Hud.cpp:3595-3605 (remembered: a cross)", note=m.get("note"))
+        out.add("panel", "minimap.memory.down", at[0] - arm / 2, at[1] - a / 2, arm, a, color=col, fill="solid", sample=True, source="Hud.cpp:3604",
+                note=m.get("note"))
     for i, (txt, pos) in enumerate(content.get("alerts", [])):
         at = minimap_pixel(out, pos)
         half = ALERT_MARK * s / 2
@@ -1497,27 +1513,328 @@ def lay_menu(out, join_world=False, notice=""):
 
 
 # --------------------------------------------------------------------------------------------------------------------
-# Sample content
+# The match's seed (ADR-072, ADR-073, ADR-074). Outpost::PlaceContent (GameLogic/Map.cpp:354-508) and Neuron::Random
+# (NeuronServer/Random.cpp) are replayed here, so that the 34 seeded ore asteroids, the pirate outposts and the derelicts
+# every in-match frame shows are what one seed places by the map's rules: placed asteroids (Map.cpp:381-419), then the
+# outposts (421-440), then the derelicts and their topics (442-507). A match's seed is the clock (WinMain.cpp:134-139),
+# so any seed is a sample. Seed 342 was picked because it puts the camps on the contested pairs D1/B5 and E2/A4 and the
+# Large Hull topic on the flank derelict next to the player's home, which suits the frames. The generator is checked
+# against RandomTests' pinned draws below. Float arithmetic is rounded to float at each step, as the code computes it
+# under /fp:precise without contraction (AGENTS.md R16); the placement was not checked against a build.
+# --------------------------------------------------------------------------------------------------------------------
+SEED = 342
+M64 = (1 << 64) - 1
+PLACEMENT_SEED_SALT = 0x9E3779B97F4A7C15  # Map.cpp:17
+PLACEMENT_ATTEMPTS = 10000                # Map.cpp:19
+
+
+def f32(v):
+    return struct.unpack("<f", struct.pack("<f", v))[0]
+
+
+def rotl(x, k):
+    return ((x << k) | (x >> (64 - k))) & M64
+
+
+class Random:
+    """Neuron::Random (NeuronServer/Random.cpp): xoshiro256** seeded through SplitMix64."""
+
+    def __init__(self, seed):
+        self.s = []
+        state = seed & M64
+        for _ in range(4):
+            state = (state + 0x9E3779B97F4A7C15) & M64
+            z = state
+            z = ((z ^ (z >> 30)) * 0xBF58476D1CE4E5B9) & M64
+            z = ((z ^ (z >> 27)) * 0x94D049BB133111EB) & M64
+            self.s.append(z ^ (z >> 31))
+
+    def next_uint64(self):
+        s = self.s
+        result = (rotl((s[1] * 5) & M64, 7) * 9) & M64
+        shifted = (s[1] << 17) & M64
+        s[2] ^= s[0]
+        s[3] ^= s[1]
+        s[1] ^= s[2]
+        s[0] ^= s[3]
+        s[2] ^= shifted
+        s[3] = rotl(s[3], 45)
+        return result
+
+    def next_below(self, bound):  # Lemire's method
+        product = (self.next_uint64() >> 32) * bound
+        low = product & 0xFFFFFFFF
+        if low < bound:
+            threshold = ((1 << 32) - bound) % bound
+            while low < threshold:
+                product = (self.next_uint64() >> 32) * bound
+                low = product & 0xFFFFFFFF
+        return product >> 32
+
+    def next_unit(self):
+        return (self.next_uint64() >> 11) * 2.0 ** -53
+
+
+def check_random():  # the pinned draws of NeuronServerTests/RandomTests.cpp:13-39
+    zero = Random(0)
+    assert [zero.next_uint64() for _ in range(4)] == [0x99EC5F36CB75F2B4, 0xBF6E1F784956452A, 0x1A5F849D4933E6E0, 0x6AA594F1262D2D2C]
+    other = Random(0xDEADBEEF)
+    assert [other.next_uint64() for _ in range(2)] == [0xC5555444A74D7E83, 0x65C30D37B4B16E38]
+    bounded = Random(42)
+    assert [bounded.next_below(6) for _ in range(10)] == [0, 2, 4, 5, 5, 4, 4, 5, 4, 3]
+    unit = Random(42)
+    assert unit.next_unit() == 0.08386297105988216 and unit.next_unit() == 0.3789802506626686
+
+
+SECTORS = MAP["sectors"]
+SECTOR = {s["name"]: s for s in SECTORS}
+SECTOR_ID = {s["id"]: s for s in SECTORS}
+
+
+def node_of(name):
+    return (SECTOR[name]["node"]["xMeters"], SECTOR[name]["node"]["zMeters"])
+
+
+def contains(sec, p):  # SectorPlacement::Contains, borders included
+    return sec["minXMeters"] <= p[0] <= sec["maxXMeters"] and sec["minZMeters"] <= p[1] <= sec["maxZMeters"]
+
+
+def sector_at(p):  # Simulation::SectorAt (Simulation.cpp:2795-2799): the first sector that holds the point
+    return next((s for s in SECTORS if contains(s, p)), None)
+
+
+def mirror_of(sec):  # Map.cpp:216-222
+    across = (-sec["node"]["xMeters"], -sec["node"]["zMeters"])
+    return next(o for o in SECTORS if contains(o, across))
+
+
+def drawing_sectors(kind):  # Map.cpp:252-263: the one of each pair with the lower identifier, in the map's order
+    return [s for s in SECTORS if s.get("kind") == kind and mirror_of(s)["id"] >= s["id"]]
+
+
+def distance32(a, b):  # Distance, GameLogic/PlaneVector.h:56-59, in float
+    dx, dz = f32(a[0] - b[0]), f32(a[1] - b[1])
+    return f32(math.sqrt(f32(f32(dx * dx) + f32(dz * dz))))
+
+
+def place_content(seed, topics):
+    """Outpost::PlaceContent (GameLogic/Map.cpp:354-508) on Map.json: the ore asteroids, the outposts and the derelicts."""
+    rnd = Random(seed ^ PLACEMENT_SEED_SALT)
+    gap = f32(MAP["minimumGapMeters"])
+    rules = MAP["placement"]
+    border, clearance, spacing = f32(rules["borderMeters"]), f32(rules["nodeClearanceMeters"]), f32(rules["oreSpacingMeters"])
+    half = MAP["sizeMeters"] / 2.0
+    edge = lambda p: min(half - abs(p[0]), half - abs(p[1]))  # EdgeClearance, Map.cpp:128-132, in double
+    ore = [{"pos": (a["xMeters"], a["zMeters"]), "r": f32(a["radiusMeters"]), "yield": a["yield"], "reserve": a["reserve"], "seeded": False}
+           for a in MAP["oreAsteroids"]]
+    fields = [((f_["xMeters"], f_["zMeters"]), f32(f_["radiusMeters"])) for f_ in MAP["asteroidFields"]]
+    starts = [(s["xMeters"], s["zMeters"]) for s in MAP["starts"]]
+
+    def is_clear(p, r):  # Map.cpp:363-379
+        if edge(p) - r < gap:
+            return False
+        for a in ore:
+            meters = distance32(p, a["pos"])
+            if f32(f32(meters - r) - a["r"]) < gap or meters < spacing:
+                return False
+        if any(f32(f32(distance32(p, fp) - r) - fr) < gap for fp, fr in fields):
+            return False
+        return not any(f32(distance32(p, s) - r) < gap for s in starts)
+
+    def draw_in(sec, r):
+        inset = f32(border + r)
+        width = f32(f32(sec["maxXMeters"] - sec["minXMeters"]) - f32(2.0 * inset))
+        depth = f32(f32(sec["maxZMeters"] - sec["minZMeters"]) - f32(2.0 * inset))
+        if width <= 0 or depth <= 0:
+            return None
+        x = f32(f32(sec["minXMeters"] + inset) + f32(f32(rnd.next_unit()) * width))
+        z = f32(f32(sec["minZMeters"] + inset) + f32(f32(rnd.next_unit()) * depth))
+        return (x, z)
+
+    kinds = {k["name"]: k for k in MAP["sectorKinds"]}
+    for sec in SECTORS:
+        if not sec.get("kind"):
+            continue
+        mirror = mirror_of(sec)
+        if mirror["id"] < sec["id"]:
+            continue
+        own_mirror = mirror["id"] == sec["id"]
+        node = node_of(sec["name"])
+        for rule in kinds[sec["kind"]]["ore"]:
+            r = f32(rule["radiusMeters"])
+            for _ in range(rule["count"] // 2 if own_mirror else rule["count"]):
+                placed = False
+                for _ in range(PLACEMENT_ATTEMPTS):
+                    p = draw_in(sec, r)
+                    if p is None:
+                        break
+                    q = (-p[0], -p[1])
+                    if distance32(p, node) < clearance or not is_clear(p, r):
+                        continue
+                    apart = distance32(p, q)
+                    if f32(apart - f32(2.0 * r)) < gap or apart < spacing or not is_clear(q, r):
+                        continue
+                    for at in (p, q):
+                        ore.append({"pos": at, "r": r, "yield": rule["yield"], "reserve": rule["reserve"], "seeded": True})
+                    placed = True
+                    break
+                if not placed:
+                    raise RuntimeError("seed {}: sector {} has no room for its asteroids (PlaceContent throws)".format(seed, sec["name"]))
+    outposts, taken = [], []
+    for rule in MAP["outposts"]:
+        free = [s for s in drawing_sectors(rule["kind"]) if s["id"] not in taken]
+        for _ in range(rule["count"]):
+            sec = free.pop(rnd.next_below(len(free)))
+            taken.append(sec["id"])
+            outposts.append((sec["name"], rule["outpost"]))
+            if mirror_of(sec)["id"] != sec["id"]:
+                outposts.append((mirror_of(sec)["name"], rule["outpost"]))
+    derelicts, salvaged, pairs = [], [], []
+
+    def clear_of_all(p, r):  # Map.cpp:447-459
+        if edge(p) - r < gap:
+            return False
+        apart = lambda other, other_r: f32(f32(distance32(p, other) - r) - other_r) >= gap
+        return (all(apart(a["pos"], a["r"]) for a in ore) and all(apart(fp, fr) for fp, fr in fields) and
+                all(apart(d["pos"], d["r"]) for d in derelicts) and all(apart(s, 0.0) for s in starts))
+
+    for rule in MAP["derelicts"]:
+        free = [s for s in drawing_sectors(rule["kind"]) if s["id"] not in salvaged]
+        for _ in range(rule["count"]):
+            sec = free.pop(rnd.next_below(len(free)))
+            salvaged.append(sec["id"])
+            r = f32(rule["radiusMeters"])
+            node = node_of(sec["name"])
+            placed = False
+            for _ in range(PLACEMENT_ATTEMPTS):
+                p = draw_in(sec, r)
+                if p is None:
+                    break
+                q = (-p[0], -p[1])
+                if (distance32(p, node) < clearance or not clear_of_all(p, r) or f32(distance32(p, q) - f32(2.0 * r)) < gap or
+                        not clear_of_all(q, r)):
+                    continue
+                pairs.append(len(derelicts))
+                for at, where in ((p, sec), (q, mirror_of(sec))):
+                    derelicts.append({"pos": at, "r": r, "ore": rule["ore"], "hull": rule["hull"], "sector": where["name"], "topic": None})
+                placed = True
+                break
+            if not placed:
+                raise RuntimeError("seed {}: sector {} has no room for its derelict (PlaceContent throws)".format(seed, sec["name"]))
+    for _ in range(llround(len(pairs) * MAP["derelictResearchPercent"] / 100.0)):  # 33% of 6 pairs: 2
+        first = pairs.pop(rnd.next_below(len(pairs)))
+        topic = topics[rnd.next_below(len(topics))]
+        derelicts[first]["topic"] = derelicts[first + 1]["topic"] = topic
+    return {"ore": ore, "outposts": outposts, "derelicts": derelicts}
+
+
+def check_placement(placed):
+    """The map's rules, checked again in double precision on what was placed (Map.json sectorKinds, placement, outposts, derelicts)."""
+    rules = MAP["placement"]
+    kinds = {k["name"]: k for k in MAP["sectorKinds"]}
+    ore = placed["ore"]
+    for sec in SECTORS:
+        count = sum(1 for a in ore if sector_at(a["pos"]) is sec)
+        expected = sum(r["count"] for r in kinds[sec["kind"]]["ore"]) or sum(1 for a in MAP["oreAsteroids"] if contains(sec, (a["xMeters"], a["zMeters"])))
+        assert count == expected, (sec["name"], count, expected)
+    for a in ore:
+        if not a["seeded"]:
+            continue
+        sec = sector_at(a["pos"])
+        inset = rules["borderMeters"] + a["r"] - 1e-3
+        assert sec["minXMeters"] + inset <= a["pos"][0] <= sec["maxXMeters"] - inset and sec["minZMeters"] + inset <= a["pos"][1] <= sec["maxZMeters"] - inset
+        assert math.dist(a["pos"], node_of(sec["name"])) >= rules["nodeClearanceMeters"] - 1e-3
+        assert any(b["pos"] == (-a["pos"][0], -a["pos"][1]) for b in ore)
+        for b in ore:
+            if b is not a:
+                d = math.dist(a["pos"], b["pos"])
+                assert d >= rules["oreSpacingMeters"] - 1e-3 and d - a["r"] - b["r"] >= MAP["minimumGapMeters"] - 1e-3
+        for f_ in MAP["asteroidFields"]:
+            assert math.dist(a["pos"], (f_["xMeters"], f_["zMeters"])) - a["r"] - f_["radiusMeters"] >= MAP["minimumGapMeters"] - 1e-3
+    assert len(ore) == 40 and sum(1 for a in ore if a["seeded"]) == 34
+    guarded = [name for name, _ in placed["outposts"]]
+    assert len(set(guarded)) == 7 and all(mirror_of(SECTOR[n])["name"] in guarded for n in guarded)
+    assert {SECTOR[n]["kind"] for n in guarded} == {"contested", "rich", "center"} and sum(1 for n in guarded if SECTOR[n]["kind"] == "contested") == 4
+    assert len(placed["derelicts"]) == 2 * sum(r["count"] for r in MAP["derelicts"])
+
+
+check_random()
+TOPIC_IDS = [r["id"] for r in TUNING["research"]]  # TopicsOf (InProcessServer.cpp:47-54): every topic, in the tuning data's order
+PLACED = place_content(SEED, TOPIC_IDS)
+check_placement(PLACED)
+GUARDED = [name for name, _ in PLACED["outposts"]]  # E2, A4, D1, B5 (camps); E1, A5, C3 (strongholds)
+OUTPOST_OF = dict(PLACED["outposts"])
+SEED_NOTE = ("sample: placed by the match's seed (GameLogic/Map.cpp:354-508; Map.json sectorKinds and placement; ADR-072); here seed 342, "
+             "replayed by derive_layouts.py's port of PlaceContent and Neuron::Random")
+GUARDED_NOTE = ("sample: seed 342's pirate outposts: camps on 2 of the 4 contested pairs, D1/B5 and E2/A4; strongholds on the rich pair E1/A5 "
+                "and the center C3 (Map.json outposts; Map.cpp:421-440; ADR-072 d7, ADR-073): 7 guarded sectors at the start of every match")
+DERELICT_NOTE = ("sample: seed 342's derelict (Map.json derelicts; Map.cpp:442-507; ADR-074); seen while it is in sight or in a sector the "
+                 "player holds unsuppressed (Simulation.cpp:289-304, 2981-2987)")
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Sample content: sectors, territory, income and the minimap's marks, each derived from the sample's holdings so that
+# the panels agree with each other and with the rules
 # --------------------------------------------------------------------------------------------------------------------
 P1_START = tuple(MAP["starts"][0].values())
 FOCUS = (P1_START[0] + 75.0, P1_START[1] + 75.0)  # the player's Constructors, ahead of its Command Station (Simulation.cpp:731-748)
+HOMES = {"Own": "A1", "Enemy": "E5"}  # the sector each player's Command Station holds, on its start (Map.json starts)
+STATION = next(s for s in TUNING["structures"] if s["kind"] == "CommandStation")
 
 
-def map_marks(extra=()):
-    marks = []
-    for f_ in MAP["asteroidFields"]:
-        marks.append({"kind": "AsteroidField", "pos": (f_["xMeters"], f_["zMeters"]), "radius": f_["radiusMeters"], "side": "Neutral", "sample": False})
-    for a in MAP["oreAsteroids"]:
-        marks.append({"kind": "Asteroid", "pos": (a["xMeters"], a["zMeters"]), "radius": a["radiusMeters"], "side": "Neutral", "sample": False})
-    marks.append({"kind": "Structure", "pos": P1_START, "radius": 45, "side": "Own", "sample": False})
-    marks.append({"kind": "Ship", "pos": (FOCUS[0] - 15, FOCUS[1] + 15), "radius": 10, "side": "Own"})
-    marks.append({"kind": "Ship", "pos": (FOCUS[0] + 15, FOCUS[1] - 15), "radius": 10, "side": "Own"})
-    marks.extend(extra)
-    return marks
+def node_cap(level):  # NodeCap, GameLogic/Tuning.cpp:732-741; a player without a station has level 1's (Simulation.cpp:2912-2920)
+    nodes = STATION["nodes"]
+    for lv in STATION["levels"][:level - 1]:
+        nodes = max(nodes, lv.get("nodes", 0))
+    return nodes
 
 
-def start_sectors():
-    return {"A1": {"side": "Own"}, "E5": {"side": "Enemy"}, "D2": {"side": "Pirate"}, "B4": {"side": "Pirate"}}
+def fleet_cap(level):  # FleetCap, GameLogic/Tuning.cpp:743-752
+    points = STATION["commandPoints"]
+    for lv in STATION["levels"][:level - 1]:
+        points = max(points, lv.get("commandPoints", 0))
+    return points
+
+
+def sectors_of(own=(), enemy=(), cleared=(), suppressed=(), claimable=(), stations=("Own", "Enemy")):
+    """Each sector as Simulation::UpdateTerritory leaves it (Simulation.cpp:2812-2895): held, guarded by pirates while a pirate structure
+    stands in it, suppressed, and cut off when its holder holds no path of adjacent sectors to its home sector."""
+    side = {}
+    for name in own:
+        side[name] = "Own"
+    for name in enemy:
+        assert name not in side
+        side[name] = "Enemy"
+    assert all(n in GUARDED for n in cleared)
+    guarded = [n for n in GUARDED if n not in cleared]
+    assert not set(guarded) & set(side), "a guarded sector cannot be claimed (ADR-073)"
+    linked = set()
+    for holder in stations:
+        home = HOMES[holder]
+        if side.get(home) != holder:
+            continue
+        linked.add(home)
+        frontier = [home]
+        while frontier:
+            for a in SECTOR[frontier.pop()]["adjacent"]:
+                name = SECTOR_ID[a]["name"]
+                if name not in linked and side.get(name) == holder:
+                    linked.add(name)
+                    frontier.append(name)
+    out = {}
+    for name, holder in side.items():
+        out[name] = {"side": holder}
+        if name in suppressed:
+            assert name != HOMES[holder], "a Command Station is never suppressed"
+            out[name]["suppressed"] = True
+        if name not in linked:
+            out[name]["cutOff"] = True
+    for name in guarded:
+        out[name] = {"side": "Pirate"}
+    for name in claimable:
+        assert name not in out
+        out[name] = {"claimable": True}
+    return out
 
 
 def drain_text(own_nodes, enemy_nodes, own_t, enemy_t):  # Hud.cpp:2506-2526
@@ -1534,11 +1851,101 @@ def drain_text(own_nodes, enemy_nodes, own_t, enemy_t):  # Hud.cpp:2506-2526
     return "{} -{} a minute{}out in {}:{:02}".format("You" if own else "Enemy", thousands(per_minute), DOT, seconds // 60, seconds % 60), own
 
 
+def territory_of(sectors, cap, tickets=None):
+    """Hud::Describe's Territory (Hud.cpp:2476-2531), counted from the same sectors the minimap washes; tickets only in a skirmish (ADR-084)."""
+    t = {"own_nodes": sum(1 for v in sectors.values() if v.get("side") == "Own"),
+         "enemy_nodes": sum(1 for v in sectors.values() if v.get("side") == "Enemy"), "nodes": len(SECTORS), "cap": cap}
+    if tickets:
+        t["own_tickets"], t["enemy_tickets"] = tickets
+        t["drain"], t["drain_warns"] = drain_text(t["own_nodes"], t["enemy_nodes"], *tickets)
+    return t
+
+
+ORE = PLACED["ore"]
+OWN_HOME_ORE = [a["pos"] for a in ORE if not a["seeded"] and sector_at(a["pos"])["name"] == "A1"]  # Map.json: three in each home
+
+
+def ore_in(sector, i=0):
+    return [a["pos"] for a in ORE if sector_at(a["pos"])["name"] == sector][i]
+
+
+def rig_income(rigs, sectors, extraction=False, dry=()):
+    """IncomeHundredthsPerSecond and RigIncomeHundredthsPerSecond (Simulation.cpp:2768-2793), TerritoryShare (2971-2979)."""
+    rules = TUNING["rules"]
+    rate = {"home": rules["miningRigOrePerSecondHome"], "near": rules["miningRigOrePerSecondNear"],
+            "contested": rules["miningRigOrePerSecondContested"], "rich": rules["miningRigOrePerSecondRich"]}
+    factor = 1.0 + (TUNING["research"][0]["effect"]["percent"] / 100.0 if extraction else 0.0)  # Improved Extraction
+    total = 0
+    for pos in rigs:
+        asteroid = next(a for a in ORE if a["pos"] == pos)
+        info = sectors.get(sector_at(pos)["name"], {})
+        held = 0.0 if info.get("side") != "Own" or info.get("suppressed") else (TUNING["territory"]["cutOffIncomePercent"] / 100.0 if info.get("cutOff") else 1.0)
+        share = rules["exhaustedYieldPercent"] / 100.0 if pos in dry else 1.0
+        total += llround(rate[asteroid["yield"]] * 100 * factor * share * held)
+    return total
+
+
+def derelict_in(sector):
+    return next(d for d in PLACED["derelicts"] if d["sector"] == sector)
+
+
+def map_marks(sectors, extra=(), station=True, constructors=True, rigs=(), dry=(), derelicts=(), remembered=()):
+    """The snapshot's entities as minimap marks (Hud.cpp:2530-2541): every asteroid field and ore asteroid, which are always seen
+    (Simulation.cpp:245-247), the player's Command Station, Relays and rigs, and the derelicts the sample's player sees or remembers."""
+    marks = []
+    for f_ in MAP["asteroidFields"]:
+        marks.append({"kind": "AsteroidField", "pos": (f_["xMeters"], f_["zMeters"]), "radius": f_["radiusMeters"], "side": "Neutral", "sample": False})
+    for a in ORE:
+        marks.append({"kind": "Asteroid", "pos": a["pos"], "radius": a["r"], "side": "Neutral", "sample": a["seeded"] or a["pos"] in dry,
+                      "note": SEED_NOTE if a["seeded"] else None, "dry": a["pos"] in dry})
+    if station:
+        marks.append({"kind": "Structure", "pos": P1_START, "radius": STATION["footprintRadiusMeters"], "side": "Own", "sample": False})
+    if constructors:
+        marks.append({"kind": "Ship", "pos": (FOCUS[0] - 15, FOCUS[1] + 15), "radius": 10, "side": "Own"})
+        marks.append({"kind": "Ship", "pos": (FOCUS[0] + 15, FOCUS[1] - 15), "radius": 10, "side": "Own"})
+    relay = next(s for s in TUNING["structures"] if s["kind"] == "Relay")
+    for name, info in sectors.items():
+        if info.get("side") == "Own" and name != HOMES["Own"]:  # a held sector has a finished Relay on its node (Simulation.cpp:2807-2811)
+            marks.append({"kind": "Structure", "pos": node_of(name), "radius": relay["footprintRadiusMeters"], "side": "Own"})
+    rig = next(s for s in TUNING["structures"] if s["kind"] == "MiningRig")
+    for pos in rigs:  # a rig stands on its asteroid's center (Simulation.cpp:2081-2109)
+        marks.append({"kind": "Structure", "pos": pos, "radius": rig["footprintRadiusMeters"], "side": "Own"})
+    for name in derelicts:
+        d = derelict_in(name)
+        marks.append({"kind": "Derelict", "pos": d["pos"], "radius": d["r"], "side": "Neutral", "note": DERELICT_NOTE})
+    for name in remembered:
+        d = derelict_in(name)
+        marks.append({"kind": "Derelict", "pos": d["pos"], "radius": d["r"], "side": "Neutral", "remembered": True, "note": DERELICT_NOTE})
+    marks.extend(extra)
+    return marks
+
+
+def wreck_mark(sector):
+    """What a cleared outpost leaves: a derelict where its last structure fell (Simulation.cpp:1740-1761); a camp's one platform stands on
+    its node (Simulation.cpp:833-845)."""
+    wreck = next(o for o in TUNING["pirates"]["outposts"] if o["name"] == OUTPOST_OF[sector])["wreck"]
+    return {"kind": "Derelict", "pos": node_of(sector), "radius": wreck["radiusMeters"], "side": "Neutral",
+            "note": "sample: the wreck of the {} the player cleared in {} ({} Ore, Tuning.json pirates.outposts)".format(OUTPOST_OF[sector], sector, wreck["ore"])}
+
+
+def content_of(ore, sectors, cap, tickets=None, rigs=(), dry=(), extraction=False, server="", silent=0, view=FOCUS, **marks):
+    """A HUD's content: Ore and income, the territory panel and the minimap, all from one sample state."""
+    return {"ore": ore, "income": rig_income(rigs, sectors, extraction, dry), "connection": {"server": server, "silent": silent},
+            "territory": territory_of(sectors, cap, tickets), "sectors": sectors, "marks": map_marks(sectors, rigs=rigs, dry=dry, **marks),
+            "view": camera_view_corners(view)}
+
+
+START_TICKETS = (TUNING["territory"]["tickets"], TUNING["territory"]["tickets"])
+SERVER = "203.0.113.5:4433"  # in Hud::ServerName's form (Hud.cpp:2221-2224)
+
+
 def match_start_content():
-    return {"ore": TUNING["rules"]["startingOre"], "income": 0, "connection": {"server": "", "silent": 0},
-            "territory": {"own_nodes": 1, "enemy_nodes": 1, "nodes": len(MAP["sectors"]), "cap": TUNING["structures"][0]["nodes"],
-                          "own_tickets": TUNING["territory"]["tickets"], "enemy_tickets": TUNING["territory"]["tickets"], "drain": "No drain"},
-            "sectors": start_sectors(), "marks": map_marks(), "view": camera_view_corners(FOCUS)}
+    return content_of(TUNING["rules"]["startingOre"], sectors_of(own=["A1"], enemy=["E5"]), node_cap(1), START_TICKETS)
+
+
+def early_content(ore, **kw):
+    """A few minutes in: the home sector only, a rig on each of its three asteroids (3 x 3.5 Ore a second)."""
+    return content_of(ore, sectors_of(own=["A1"], enemy=["E5"]), node_cap(1), START_TICKETS, rigs=OWN_HOME_ORE, **kw)
 
 
 def build_buttons(ore, has_lab=False, capped=False):  # Hud.cpp:2805-2828
@@ -1564,17 +1971,38 @@ def order_buttons(armed=None, sectors=True):  # Hud.cpp:2794-2803
     return out
 
 
+def is_valid_design_name(name):  # IsValidDesignName, GameProtocol/Command.h:70-84
+    return 0 < len(name) <= DESIGN_NAME_LIMIT and all(" " <= ch <= "~" for ch in name) and any(ch != " " for ch in name)
+
+
+def designer_name(picks, designs):  # Designer::Name, GameApp/Designer.cpp:122-151, when nothing is typed
+    h, d, w, m = picks
+    match = next((x for x in designs if (x["h"], x["d"], x["w"], x["m"]) == (h, d, w, m)), None)
+    if match:
+        return match["name"]
+    name = "{}+{}+{}".format(find(HULLS, h)["name"], find(DRIVES, d)["name"], find(WEAPONS, w)["name"])
+    if m:
+        module = find(MODULES, m)["name"]
+        base = next((x for x in designs if (x["h"], x["d"], x["w"]) == (h, d, w) and x["m"] is None), None)
+        if base and base["name"] != name and is_valid_design_name("{}+{}".format(base["name"], abbreviation(module))):
+            return "{}+{}".format(base["name"], abbreviation(module))  # "Lancer+SA" (interface plan 2, task UI4.5)
+        whole = "{}+{}".format(name, module)
+        name = whole if is_valid_design_name(whole) else "{}+{}".format(name, abbreviation(module))
+    return name
+
+
 def designer_panel(picks=(1, 1, 1, None), preview=None, shipyard="SHIPYARD 01", has_shipyard=True, shipyard_level=1, queued=0, built=4, ore=1240,
-                   editing=False, typed=None, available=None, retreat="Quarter", designs=None):
-    """DescribeDesigner (Hud.cpp:585-835) over sample content."""
+                   editing=False, typed=None, available=None, retreat="Quarter", designs=None, hull_factor=1.0):
+    """DescribeDesigner (Hud.cpp:585-835) over sample content; hull_factor is the research's hull hit points (Hull Plating 1.15)."""
     available = available or {"hull": {1, 2}, "drive": {1}, "weapon": {1, 2}}
     designs = designs if designs is not None else [{"name": d["name"], "h": d["hull"], "d": d["drive"], "w": d["weapon"], "m": None} for d in STARTING]
     h, d, w, m = picks
     match = next((x for x in designs if (x["h"], x["d"], x["w"], x["m"]) == (h, d, w, m)), None)
     hull, drive, weapon = find(HULLS, h), find(DRIVES, d), find(WEAPONS, w)
-    name = typed if typed is not None else (match["name"] if match else "{}+{}+{}".format(hull["name"], drive["name"], weapon["name"]) +
-                                            ("+" + find(MODULES, m)["name"] if m else ""))
-    valid = 0 < len(name) <= DESIGN_NAME_LIMIT
+    # Typing starts from the shown name (Designer::BeginEditing, Designer.cpp:220-225) and stops at 32 characters (Designer.cpp:236).
+    name = typed if typed is not None else designer_name(picks, designs)
+    assert len(name) <= DESIGN_NAME_LIMIT, "a typed name stops at DESIGN_NAME_LIMIT (Designer.cpp:236)"
+    valid = is_valid_design_name(name)
     saves_new = match is None and valid
     save_selected = match is not None and typed is None
     panel = {"shipyard": shipyard if has_shipyard else "NO SHIPYARD", "hasShipyard": has_shipyard, "queued": queued, "built": built if has_shipyard else 0,
@@ -1592,7 +2020,8 @@ def designer_panel(picks=(1, 1, 1, None), preview=None, shipyard="SHIPYARD 01", 
             pv[idx] = pid
             previewing = {"hull": find(HULLS, pid), "drive": find(DRIVES, pid), "weapon": find(WEAPONS, pid)}.get(slot, {"name": "no module"})["name"] if pid else "no module"
     slots = []
-    rows = [("HULL", HULLS, "hull", lambda x: "{} HP{}ARM {}{}{}m/s".format(thousands(x["hitPoints"]), DOT, tenths(x["armor"]), DOT, tenths(x["speedMetersPerSecond"])),
+    rows = [("HULL", HULLS, "hull", lambda x: "{} HP{}ARM {}{}{}m/s".format(thousands((hull_hundredths(x, hull_factor) + 99) // 100), DOT, tenths(x["armor"]),
+                                                                            DOT, tenths(x["speedMetersPerSecond"])),
              "Hud.cpp:651-652", "unlockHull"),
             ("DRIVE", DRIVES, "drive", lambda x: "SPD {}{}{}HP {}{}".format(TIMES, tenths(x["speedFactor"]), DOT, TIMES, tenths(x["hitPointsFactor"])), "Hud.cpp:669",
              "unlockDrive"),
@@ -1616,8 +2045,9 @@ def designer_panel(picks=(1, 1, 1, None), preview=None, shipyard="SHIPYARD 01", 
                      "picked": m == x["id"], "lockedBy": ""})
     slots.append({"label": "MODULE", "picked": find(MODULES, m)["name"] if m else "None", "cards": mods})
     panel["slots"] = slots
-    st = stats(h, d, w, m)
-    ps = stats(*pv) if previewing else None
+    st = stats(h, d, w, m, hull_factor)
+    ps = stats(*pv, hull_factor=hull_factor) if previewing else None
+    best_all = best_of_all(hull_factor) if hull_factor != 1.0 else BEST
     panel["hint"] = "Preview: with {} instead".format(previewing) if previewing else "Hover any part to preview its effect."
 
     def bar(label, unit, best, val, text, shown, whole, lower=False):
@@ -1636,19 +2066,19 @@ def designer_panel(picks=(1, 1, 1, None), preview=None, shipyard="SHIPYARD 01", 
         return b
 
     hp_whole = lambda x: (x["hp"] + 99) // 100
-    panel["bars"] = [bar("Hit points", "", BEST["hp"], lambda x: x["hp"], lambda x: thousands(hp_whole(x)), hp_whole, True),
-                     bar("Armor", "", BEST["armor"], lambda x: x["armor"], lambda x: tenths(x["armor"] / 100), lambda x: x["armor"] / 100, False),
-                     bar("Speed", "m/s", BEST["speed"], lambda x: x["speed"], lambda x: tenths(x["speed"]), lambda x: x["speed"], False),
-                     bar("Range", "m", BEST["range"], lambda x: x["range"], lambda x: tenths(x["range"]), lambda x: x["range"], False),
-                     bar("Sensors", "m", BEST["sensor"], lambda x: x["sight"], lambda x: tenths(x["sight"]) if x["sight"] > 0 else "-", lambda x: x["sight"], False),
-                     bar("Cost", "ore", BEST["cost"], lambda x: x["cost"], lambda x: str(x["cost"]), lambda x: x["cost"], True, True),
-                     bar("Build", "s", BEST["build"], lambda x: x["build"], lambda x: tenths(x["build"]), lambda x: x["build"], False, True)]
+    panel["bars"] = [bar("Hit points", "", best_all["hp"], lambda x: x["hp"], lambda x: thousands(hp_whole(x)), hp_whole, True),
+                     bar("Armor", "", best_all["armor"], lambda x: x["armor"], lambda x: tenths(x["armor"] / 100), lambda x: x["armor"] / 100, False),
+                     bar("Speed", "m/s", best_all["speed"], lambda x: x["speed"], lambda x: tenths(x["speed"]), lambda x: x["speed"], False),
+                     bar("Range", "m", best_all["range"], lambda x: x["range"], lambda x: tenths(x["range"]), lambda x: x["range"], False),
+                     bar("Sensors", "m", best_all["sensor"], lambda x: x["sight"], lambda x: tenths(x["sight"]) if x["sight"] > 0 else "-", lambda x: x["sight"], False),
+                     bar("Cost", "ore", best_all["cost"], lambda x: x["cost"], lambda x: str(x["cost"]), lambda x: x["cost"], True, True),
+                     bar("Build", "s", best_all["build"], lambda x: x["build"], lambda x: tenths(x["build"]), lambda x: x["build"], False, True)]
     shown = ps or st
     dmg = []
     for i, hh in enumerate(HULLS):
         dps = formation_dps(shown, hh)
         cur = formation_dps(st, hh)
-        share = min(max(dps / BEST["damage"][i], 0), 1)
+        share = min(max(dps / best_all["damage"][i], 0), 1)
         change = "Same" if not ps else ("Same" if dps == cur else ("Better" if dps > cur else "Worse"))
         t10 = (round(dps * 10) - round(cur * 10)) / 10.0
         reached = ships_reached(shown["splash"], hh["footprintRadiusMeters"])
@@ -1671,6 +2101,7 @@ def designer_panel(picks=(1, 1, 1, None), preview=None, shipyard="SHIPYARD 01", 
 
 
 def production_panel_shipyard(level=1, ore=1240):
+    """DescribeProduction (Hud.cpp:2836-2898) on Shipyard 02, at L1, with the four starting designs saved."""
     opts = []
     for dsg in STARTING:
         st = stats(dsg["hull"], dsg["drive"], dsg["weapon"])
@@ -1686,8 +2117,13 @@ def production_panel_shipyard(level=1, ore=1240):
             "queue": [{"name": "Swarm", "front": True, "permille": 620}, {"name": "Swarm"}, {"name": "Picket"}]}
 
 
-def research_panel(ore=1240, has_lab=True, built=True, queued=(2, 1), researched=(), first=0):
-    """DescribeResearch (Hud.cpp:2900-2989) over Tuning.json's topics, nothing researched yet but what is passed."""
+def research_panel(ore=1240, has_lab=True, built=True, queued=(2, 1), researched=(), first=0, front_permille=450):
+    """DescribeResearch (Hud.cpp:2900-2989) over Tuning.json's topics, nothing researched yet but what is passed. A topic may follow its
+    prerequisite in the queue (Simulation.cpp:3170-3189), so a queued prerequisite counts as known."""
+    assert len(queued) <= QUEUE_LIMIT
+    name_of = {r["id"]: r for r in TUNING["research"]}
+    for i, q in enumerate(queued):  # the queue is researched in order, so the front topic's prerequisites are researched
+        assert all(p in researched or (i > 0 and p in queued[:i]) for p in name_of[q]["requires"]), (q, researched, queued)
     topics = []
     lab_levels = next(s for s in TUNING["structures"] if s["kind"] == "ResearchLab")["levels"]
     level_for = {lv["opensTier"]: i + 2 for i, lv in enumerate(lab_levels) if "opensTier" in lv}
@@ -1705,7 +2141,7 @@ def research_panel(ore=1240, has_lab=True, built=True, queued=(2, 1), researched
     topics.sort(key=lambda t: t["tier"])
     queue = []
     for i, q in enumerate(queued):
-        queue.append({"name": name[q], "front": i == 0, "permille": 450 if i == 0 else 0})
+        queue.append({"name": name[q], "front": i == 0, "permille": front_permille if i == 0 else 0})
     return {"lab": ("RESEARCH LAB" if built else "RESEARCH LAB{}40% BUILT".format(DOT)) if has_lab else "NO RESEARCH LAB", "ore": ore,
             "topics": topics, "first": first, "queue": queue if has_lab else []}
 
@@ -1774,64 +2210,99 @@ def s_awaiting(out):
     pass
 
 
+SEED_STATE_NOTE = ("Map content is seed 342's, a sample (a match's seed is the clock, WinMain.cpp:134-139): the 7 sectors pirates guard at the start of every "
+                   "match, camps on the contested pairs D1/B5 and E2/A4 and strongholds on the rich pair E1/A5 and the center C3 (Map.json outposts; "
+                   "Map.cpp:421-440; ADR-072 d7, ADR-073); and all 40 ore asteroids, Map.json's 6 home ones and the 34 the seed places by Map.json "
+                   "sectorKinds and placement (Map.cpp:381-419), drawn under the fog since the map's asteroids are always seen (Simulation.cpp:245-247; "
+                   "Hud.cpp:3486-3528). A held sector shows its Relay on its node, and each rig the income implies stands on its asteroid.")
+WORLD_NOTE = ("A world: no tickets and no drain (ADR-084), the tag names the server (ADR-086). Its map is placed by its own seed (InProcessServer.cpp:134); "
+              "seed 342's placement stands in for it.")
+
+
 @state("hud", "match-start", "First snapshot of a Normal skirmish: nothing selected",
        notes=["Starting Ore and tickets from Tuning.json rules.startingOre / territory.tickets; no Mining Rig yet, so the income is a '+0/s' chip.",
-              "No Lab and no finished Shipyard, so the status panel is not drawn, but its 94 units are kept (Hud.cpp:149, 3160-3161).",
-              "Pirate-guarded sectors D2 and B4 are sample (seeded, ADR-072/073)."])
+              "No Lab and no finished Shipyard, so the status panel is not drawn, but its 94 units are kept (Hud.cpp:149, 3160-3161).", SEED_STATE_NOTE])
 def s_hud_start(out):
     lay_hud(out, match_start_content())
 
 
-def busy_content(hovered_stop=True):
-    c = match_start_content()
-    c["ore"] = 2350
-    c["income"] = 1450
-    drain, warns = drain_text(6, 8, 642, 731)
-    c["territory"] = {"own_nodes": 6, "enemy_nodes": 8, "nodes": 25, "cap": 10, "own_tickets": 642, "enemy_tickets": 731, "drain": drain, "drain_warns": warns}
-    c["sectors"] = {"A1": {"side": "Own"}, "B1": {"side": "Own"}, "A2": {"side": "Own"}, "B2": {"side": "Own"}, "C2": {"side": "Own", "suppressed": True},
-                    "A3": {"side": "Own", "cutOff": True}, "E5": {"side": "Enemy"}, "D5": {"side": "Enemy"}, "E4": {"side": "Enemy"}, "D4": {"side": "Enemy"},
-                    "C4": {"side": "Enemy"}, "E3": {"side": "Enemy"}, "D3": {"side": "Enemy"}, "C3": {"side": "Enemy"}, "D2": {"side": "Pirate"}}
-    c["alerts"] = [("Enemy ships in B2", (-2000, -2000)), ("Relay under attack: C2", (0, -2000)), ("Mining Rig lost: A3", (-4000, 0))]
-    c["status"] = [
-        {"runs": [{"text": "Large Hull"}], "bar": {"share": 0.62, "figure": "+2", "under": True}, "action": "OpenResearch",
-         "src": "StatusLinesOf Hud.cpp:303-311 (topic name over a bar, '+N' queued)"},
-        {"runs": [{"text": "Shipyards{}BUILDING 2{}WAITING 0{}".format(DOT, DOT, DOT), "sample": True}, {"text": "IDLE 1", "chip": True}], "action": "OpenProduction",
-         "src": "StatusLinesOf Hud.cpp:403-410 (IDLE a chip when an idle Shipyard could start a ship)"},
-        {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 29 / 30.0, "figure": "29 / 30", "under": False}, "action": "OpenProduction",
-         "src": "StatusLinesOf Hud.cpp:373-380, 411-412"}]
-    c["marks"] = map_marks([{"kind": "Ship", "pos": (-2100, -1900), "radius": 14, "side": "Own"}, {"kind": "Ship", "pos": (-1900, -2050), "radius": 8, "side": "Own"},
-                            {"kind": "Ship", "pos": (-1950, -1950), "radius": 8, "side": "Enemy"},
-                            {"kind": "Structure", "pos": (3000, 3000), "radius": 40, "side": "Enemy", "remembered": True},
-                            {"kind": "Derelict", "pos": (-1500, -3500), "radius": 20, "side": "Neutral"}])
-    c["view"] = camera_view_corners((-2000, -2000))
-    designs = [("Swarm", 6, 1, 1, 1), ("Lancer", 4, 2, 1, 2), ("Brawler", 2, 2, 1, 1)]
-    c["selection"] = ["12 ships"] + ["{} {} {}".format(n, TIMES, name) for name, n, *_ in designs] + ["Hit points 3,860 / 4,320", "On patrol",
-                                                                                                     "1 retreating to be repaired",
-                                                                                                     "Scheduled: at 02:00, attack-move to C3"]
-    c["selection_src"] = "Describe Hud.cpp:2750-2790; PendingOrderLine OrderForm.cpp:317-334 (GameClient.cpp:769-771)"
+# The busy state, mid-match (CS L3: node cap 10, fleet cap 30). Hull Plating is researched, since Large Hull, at the front of the Lab's queue,
+# needs it (Tuning.json research[id 6].requires; a queue is researched in order, Simulation.cpp:3170-3189).
+BUSY_RESEARCHED = (2,)
+BUSY_QUEUE = (6, 1, 3)  # Large Hull 62%, then Improved Extraction and Mass Driver Calibration: "+2"
+BUSY_STATUS = [
+    {"runs": [{"text": "Large Hull"}], "bar": {"share": 0.62, "figure": "+2", "under": True}, "action": "OpenResearch",
+     "src": "StatusLinesOf Hud.cpp:303-311 (topic name over a bar, '+N' queued)"},
+    {"runs": [{"text": "Shipyards{}BUILDING 2{}WAITING 0{}".format(DOT, DOT, DOT), "sample": True}, {"text": "IDLE 1", "chip": True}], "action": "OpenProduction",
+     "src": "StatusLinesOf Hud.cpp:403-410 (IDLE a chip when an idle Shipyard could start a ship: a Swarm, 1 command point, fits 29 of 30)"},
+    {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 29 / 30.0, "figure": "29 / 30", "under": False}, "action": "OpenProduction",
+     "src": "StatusLinesOf Hud.cpp:373-380, 411-412; CommandPointsOf counts the ships building (Simulation.cpp:2932-2949)"}]
+BUSY_FLEET = [("Swarm", (1, 1, 1), [1.0, 1.0, 0.82, 1.0, 0.55, 1.0]), ("Lancer", (2, 1, 2), [0.9, 0.4, 1.0, 1.0]), ("Brawler", (2, 1, 1), [0.2, 1.0])]
+
+
+def busy_selection():
+    """Describe's lines for the twelve ships (Hud.cpp:2704-2790): each ship's maximum is its design's, with Hull Plating's +15%
+    (DesignStats.h:86, ShipDesign.cpp:42; a finished topic rescales the ships, Simulation.cpp:3110-3130)."""
+    hp = mx = 0
     bars = []
-    for k in range(12):
-        bars.append({"share": [1.0, 1.0, 0.82, 1.0, 0.55, 1.0, 0.9, 0.4, 1.0, 1.0, 0.2, 1.0][k], "retreating": k == 10, "hovered": False})
-    c["shipBars"] = bars
+    for _, (h, d, w), shares in BUSY_FLEET:
+        most = stats(h, d, w, hull_factor=HULL_PLATING_FACTOR)["hp"]
+        for share in shares:
+            now = llround(most * share)
+            hp, mx = hp + now, mx + most
+            bars.append(now / most)
+    lines = ["12 ships"] + ["{} {} {}".format(len(shares), TIMES, name) for name, _, shares in BUSY_FLEET]
+    lines += ["Hit points {} / {}".format(thousands((hp + 99) // 100), thousands((mx + 99) // 100)), "On patrol", "1 retreating to be repaired",
+              "Scheduled: at 02:00, attack-move to C3"]
+    return lines, [{"share": share, "retreating": k == 10, "hovered": False} for k, share in enumerate(bars)]
+
+
+def busy_content():
+    # A2's Relay was lost in a raid, so A3, held beyond it, is no longer linked to A1: cut off (Simulation.cpp:2862-2885).
+    sectors = sectors_of(own=["A1", "B1", "C1", "B2", "C2", "A3"], enemy=["E5", "D5", "E4", "D4", "E3", "C5", "C4", "D3"], suppressed=["C2"])
+    assert sectors["A3"].get("cutOff") and not any(v.get("cutOff") for n, v in sectors.items() if n != "A3")
+    ships = [{"kind": "Ship", "pos": (-2100, -1900), "radius": 14, "side": "Own"}, {"kind": "Ship", "pos": (-1900, -2050), "radius": 8, "side": "Own"},
+             {"kind": "Ship", "pos": (-1950, -1950), "radius": 8, "side": "Enemy"},
+             {"kind": "Structure", "pos": node_of("C4"), "radius": 30, "side": "Enemy", "remembered": True}]
+    # Seen derelicts: A3's and C1's, in held sectors; C2's is remembered, its sector suppressed; B1's was salvaged (the derelict hint's).
+    c = content_of(2350, sectors, node_cap(3), (642, 731), rigs=OWN_HOME_ORE + [ore_in("B1", 1)], view=(-2000, -2000), derelicts=["A3", "C1"],
+                   remembered=["C2"], extra=ships)
+    assert c["income"] == 1450  # three home rigs and one in B1; A3's rig was lost
+    c["alerts"] = [("Enemy ships in B2", node_of("B2")), ("Relay under attack: C2", node_of("C2")), ("Mining Rig lost: A3", ore_in("A3"))]
+    c["status"] = BUSY_STATUS
+    c["selection"], c["shipBars"] = busy_selection()
+    c["selection_src"] = ("Describe Hud.cpp:2704-2790 (maximum: the designs' hit points with Hull Plating, DesignStats.h:86); "
+                          "PendingOrderLine OrderForm.cpp:317-334 (GameClient.cpp:769-771)")
     c["buttons"] = order_buttons(armed="AttackMove")
     c["retreat"] = {"setting": "Quarter", "mixed": True}
-    c["entityBars"] = [{"foot": (960, 520), "health": 0.55, "built": None}, {"foot": (1100, 600), "health": 0.9, "built": 0.4}]
+    # A hurt structure, and a site 40% built: a site starts at a tenth of its hit points and gains the rest with the work (Simulation.cpp:71,
+    # 2449-2456), 0.1 + 0.9 x 0.4 = 46%.
+    built = 0.4
+    c["entityBars"] = [{"foot": (960, 520), "health": 0.55, "built": None},
+                       {"foot": (1100, 600), "health": 1.0 / SITE_DIVISOR + (1.0 - 1.0 / SITE_DIVISOR) * built, "built": built}]
     return c
 
 
-@state("hud", "busy-warships", "Mid-match: twelve warships of three designs selected, attack-move armed, the pointer over Stop",
-       notes=["Every content value is sample; geometry is the code's. Drain row: own 6 nodes vs enemy 8, 642 tickets, Tuning.json territory "
-              "(drainIntervalSeconds 3, drainTicketsPerNodeDifference 1).", "Two sample entity bars over the world (layer -1, drawn under every panel)."])
+SITE_DIVISOR = 10  # SITE_STARTING_HIT_POINTS_DIVISOR, Simulation.cpp:71
+BUSY_NOTES = ["Every content value is sample; geometry is the code's. Drain row: own 6 nodes vs enemy 8, 642 tickets, Tuning.json territory "
+              "(drainIntervalSeconds 3, drainTicketsPerNodeDifference 1).",
+              "Hit points: 6 Swarm at 227.7 and 6 Medium-hull ships at 517.5 with Hull Plating, a maximum of 4,472; the per-ship bars are the ships' "
+              "shares of theirs and add up to the line's figure.",
+              "Two sample entity bars over the world (layer -1, drawn under every panel): a hurt structure, and a site 40% built at 46% of its hit points.",
+              "Sectors: A3 is cut off because A2 is not held; C2's Relay is suppressed. " + SEED_STATE_NOTE]
+
+
+@state("hud", "busy-warships", "Mid-match: twelve warships of three designs selected, attack-move armed, the pointer over Stop", notes=BUSY_NOTES)
 def s_hud_busy(out):
     lay_hud(out, busy_content(), hovered="Stop")
 
 
-@state("hud", "scale-110", "The busy state at interface factor 110%, the most a match reaches on 16:9 (ADR-070 Consequences)", scale=1.1)
+@state("hud", "scale-110", "The busy state at interface factor 110%, the most a match reaches on 16:9 (ADR-070 Consequences)", scale=1.1, notes=BUSY_NOTES)
 def s_hud_110(out):
     lay_hud(out, busy_content(), hovered="Stop")
 
 
-@state("hud", "constructors", "Two Constructors selected: build buttons with their costs, and the retreat row")
+@state("hud", "constructors", "Two Constructors selected: build buttons with their costs, and the retreat row", notes=[SEED_STATE_NOTE])
 def s_hud_constructors(out):
     c = match_start_content()
     c["selection"] = ["2 {} Constructor".format(TIMES), "Hit points 600 / 600"]
@@ -1842,16 +2313,14 @@ def s_hud_constructors(out):
     lay_hud(out, c, hovered="Build(Shipyard)")
 
 
-@state("hud", "placing-relay", "A Relay's placement armed: the hint, and the sectors it could claim outlined on the minimap")
+@state("hud", "placing-relay", "A Relay's placement armed: the hint, and the sectors it could claim outlined on the minimap",
+       notes=["Claimable: free, unguarded, next to a held sector, under the node cap (CanClaim, Placement.cpp:81-93): B1 and A2. One home rig, 3.5 Ore a second.",
+              SEED_STATE_NOTE])
 def s_hud_placing(out):
-    c = match_start_content()
-    c["ore"] = 640
-    c["income"] = 350
+    c = content_of(640, sectors_of(own=["A1"], enemy=["E5"], claimable=["B1", "A2"]), node_cap(1), START_TICKETS, rigs=OWN_HOME_ORE[:1])
     c["hint"] = "Placing Relay: left-click to build, right-click to cancel"
     c["hint_src"] = "Describe Hud.cpp:2551 ('Placing {}: left-click to build, right-click to cancel')"
     c["hint_sample"] = False
-    c["sectors"]["B1"] = {"claimable": True}
-    c["sectors"]["A2"] = {"claimable": True}
     c["selection"] = ["2 {} Constructor".format(TIMES), "Hit points 600 / 600"]
     c["shipBars"] = [{"share": 1.0}, {"share": 1.0}]
     c["buttons"] = build_buttons(c["ore"])
@@ -1859,13 +2328,15 @@ def s_hud_placing(out):
     lay_hud(out, c)
 
 
-@state("hud", "relay-node-cap", "Placing a Relay at the node cap: the hint says why, and the Relay button says NODE CAP")
+@state("hud", "relay-node-cap", "Placing a Relay at the node cap: the hint says why, and the Relay button says NODE CAP",
+       notes=["Four sectors held at the Command Station L1's cap of 4 (Tuning.json structures[CommandStation].nodes); the enemy, on one, has been "
+              "drained 60 tickets as the player claimed its three.",
+              "The Research Lab is still being built: ONE PER PLAYER counts any Lab of the player's (Hud.cpp:2806-2811), and the status panel only a "
+              "finished one (Hud.cpp:281-300), so with no finished Shipyard either, no status panel is drawn.", SEED_STATE_NOTE])
 def s_hud_cap(out):
-    c = match_start_content()
-    c["ore"] = 900
-    c["income"] = 450
-    c["territory"]["own_nodes"] = 4
-    c["territory"]["drain"], c["territory"]["drain_warns"] = drain_text(4, 1, 1000, 1000)
+    sectors = sectors_of(own=["A1", "B1", "A2", "B2"], enemy=["E5"])
+    c = content_of(900, sectors, node_cap(1), (1000, 940), rigs=OWN_HOME_ORE + [ore_in("B1", 1)], derelicts=["B1"])
+    assert c["territory"]["own_nodes"] == c["territory"]["cap"] and c["income"] == 1450
     c["hint"] = "Relay: at the node cap; upgrade the Command Station to claim more"
     c["hint_src"] = "Describe Hud.cpp:2553-2554"
     c["hint_sample"] = False
@@ -1876,11 +2347,16 @@ def s_hud_cap(out):
     lay_hud(out, c)
 
 
-@state("hud", "one-ship", "One Lancer selected, holding a sector, hurt; Hold sector armed")
+@state("hud", "one-ship", "One Lancer selected, holding a sector, hurt; Hold sector armed",
+       notes=["A Lancer's Medium hull needs a Shipyard at L2, so a finished Shipyard stands and the status panel shows the Shipyards' and the fleet's lines.",
+              "No Lab, so no Hull Plating: the Lancer's maximum is 500 x 0.9 = 450 (DesignStats.h:86).", SEED_STATE_NOTE])
 def s_hud_one(out):
-    c = match_start_content()
-    c["ore"] = 1810
-    c["income"] = 950
+    sectors = sectors_of(own=["A1", "B1", "A2"], enemy=["E5", "D5", "E4"])
+    c = content_of(1810, sectors, node_cap(1), (994, 988), rigs=OWN_HOME_ORE + [ore_in("B1", 0), ore_in("B1", 1)], derelicts=["B1"])
+    c["status"] = [{"runs": [{"text": "Shipyards{}BUILDING 1{}WAITING 0{}IDLE 0".format(DOT, DOT, DOT)}], "action": "OpenProduction",
+                    "src": "StatusLinesOf Hud.cpp:403-410"},
+                   {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 9 / 12.0, "figure": "9 / 12", "under": False}, "action": "OpenProduction",
+                    "src": "StatusLinesOf Hud.cpp:373-380, 411-412"}]
     c["selection"] = ["Lancer", "Hit points 270 / 450", "Holding a sector"]
     c["selection_src"] = "Describe Hud.cpp:2755-2756, 2768-2769, 2784-2785"
     c["selectionHealth"] = 0.6
@@ -1889,11 +2365,13 @@ def s_hud_one(out):
     lay_hud(out, c)
 
 
-@state("hud", "shipyard-selected", "A finished Shipyard selected: its work line, its next level and its window buttons with key caps")
+EARLY_NOTE = ("A few minutes in: the home sector only, a rig on each of its three asteroids, 3 x 3.5 = 10.5 Ore a second (Tuning.json "
+              "rules.miningRigOrePerSecondHome). " + SEED_STATE_NOTE)
+
+
+@state("hud", "shipyard-selected", "A finished Shipyard selected: its work line, its next level and its window buttons with key caps", notes=[EARLY_NOTE])
 def s_hud_shipyard(out):
-    c = match_start_content()
-    c["ore"] = 1240
-    c["income"] = 950
+    c = early_content(1240)
     c["selection"] = ["Shipyard 01{}L1".format(DOT), "Hit points 2,500 / 2,500", "Building Swarm{}62%{}+2 queued".format(DOT, DOT),
                       "L2: Medium hulls, 3,000 hit points"]
     c["selection_src"] = "Describe Hud.cpp:2566-2572, 2587-2588, 2618-2620 (WorkLine Hud.cpp:244-254), 2676-2677"
@@ -1908,11 +2386,9 @@ def s_hud_shipyard(out):
     lay_hud(out, c, hovered="OpenDesigner")
 
 
-@state("hud", "station-upgrading", "The Command Station selected while its upgrade is built: the button says UPGRADING with its bar")
+@state("hud", "station-upgrading", "The Command Station selected while its upgrade is built: the button says UPGRADING with its bar", notes=[EARLY_NOTE])
 def s_hud_station(out):
-    c = match_start_content()
-    c["ore"] = 420
-    c["income"] = 950
+    c = early_content(420)
     c["selection"] = ["Command Station{}L1".format(DOT), "Upgrading to L2, 40%", "Hit points 5,000 / 5,000", "Idle", "L2: 7 nodes, fleet 20, 6,000 hit points"]
     c["selection_src"] = "Describe Hud.cpp:2566-2572, 2585-2588, 2618-2620, 2655-2677"
     c["selectionHealth"] = 1.0
@@ -1922,13 +2398,23 @@ def s_hud_station(out):
     lay_hud(out, c)
 
 
-@state("hud", "lab-needs-research", "The Research Lab selected: its next level needs research, so Upgrade says NEEDS RESEARCH")
+LAB = next(s for s in TUNING["structures"] if s["kind"] == "ResearchLab")
+
+
+def missing_for_lab_level(level, researched):  # Hud.cpp:2678-2687: the topics the next level needs that are not researched
+    names = {r["id"]: r["name"] for r in TUNING["research"]}
+    return " and ".join(names[t] for t in LAB["levels"][level - 1].get("requires", []) if t not in researched)
+
+
+@state("hud", "lab-needs-research", "The Research Lab selected: its next level needs research, so Upgrade says NEEDS RESEARCH",
+       notes=["Fusion Drive needs Hull Plating (Tuning.json research[id 5].requires), so with Fusion Drive at the front of the queue Hull Plating is "
+              "researched, and the Lab's L2 (requires 1 and 2) still needs Improved Extraction alone (Hud.cpp:2678-2687).", EARLY_NOTE])
 def s_hud_lab(out):
-    c = match_start_content()
-    c["ore"] = 1100
-    c["income"] = 950
+    c = early_content(1100)
+    missing = missing_for_lab_level(1, researched=(2,))
+    assert missing == "Improved Extraction"
     c["selection"] = ["Research Lab{}L1".format(DOT), "Hit points 1,500 / 1,500", "Researching Fusion Drive{}35%".format(DOT), "L2: tier 2, 1,800 hit points",
-                      "L2 needs Improved Extraction and Hull Plating"]
+                      "L2 needs {}".format(missing)]
     c["selection_src"] = "Describe Hud.cpp:2566-2572, 2622-2627, 2662-2687"
     c["selectionHealth"] = 1.0
     c["status"] = [{"runs": [{"text": "Fusion Drive"}], "bar": {"share": 0.35, "figure": "", "under": True}, "action": "OpenResearch",
@@ -1939,129 +2425,185 @@ def s_hud_lab(out):
     lay_hud(out, c)
 
 
-@state("hud", "derelict-hint", "The pointer over a derelict: the hint says what it holds", notes=["Hint text from Hud::DescribeDerelict (Hud.cpp:2135-2145), set in GameClient.cpp:742-749."])
+@state("hud", "derelict-hint", "The pointer over a derelict: the hint says what it holds",
+       notes=["Hint text from Hud::DescribeDerelict (Hud.cpp:2135-2145), set in GameClient.cpp:742-749.",
+              "The derelict is seed 342's flank derelict in B1 (Map.json derelicts: 300 Ore, Small hull, radius 20), one of the two pairs that name a "
+              "topic, Large Hull (Map.cpp:495-507). The player's two Constructors salvage it, so it is in sight (Simulation.cpp:289-304), and the "
+              "camera looks at it.", EARLY_NOTE])
 def s_hud_derelict(out):
-    c = match_start_content()
-    c["ore"] = 1500
-    c["income"] = 950
-    c["hint"] = "Derelict: 300 Ore, and part of Large Hull's research time{}salvaged 40%".format(DOT)
+    d = derelict_in("B1")
+    assert d["ore"] == 300 and d["topic"] == 6
+    constructors = [{"kind": "Ship", "pos": (d["pos"][0] + 32, d["pos"][1] + 12), "radius": 10, "side": "Own"},
+                    {"kind": "Ship", "pos": (d["pos"][0] + 26, d["pos"][1] - 24), "radius": 10, "side": "Own"}]
+    c = early_content(1500, view=d["pos"], constructors=False, derelicts=["B1"], extra=constructors)
+    c["hint"] = "Derelict: {} Ore, and part of {}'s research time{}salvaged 40%".format(thousands(d["ore"]), find(TUNING["research"], d["topic"])["name"], DOT)
     c["hint_src"] = "DescribeDerelict Hud.cpp:2137-2143"
     lay_hud(out, c)
 
 
 @state("hud", "server-silent", "A world on a dedicated server whose snapshots stopped 5 s ago",
-       notes=["A world has no tickets (ADR-084), so the territory panel has the Nodes row only; nodeCap still applies.",
-              "Address sample in Hud::ServerName's form (Hud.cpp:2221-2224)."])
+       notes=["A world has no tickets (ADR-084), so the territory panel has the Nodes row only; nodeCap still applies (Command Station L2: 7).",
+              "Address sample in Hud::ServerName's form (Hud.cpp:2221-2224).", WORLD_NOTE, SEED_STATE_NOTE])
 def s_hud_silent(out):
-    c = match_start_content()
-    c["connection"] = {"server": "203.0.113.5:4433", "silent": 5}
-    c["ore"] = 3120
-    c["income"] = 1450
-    c["territory"] = {"own_nodes": 5, "enemy_nodes": 4, "nodes": 25, "cap": 7}
+    sectors = sectors_of(own=["A1", "B1", "A2", "B2", "C1"], enemy=["E5", "D5", "E4", "D4"])
+    c = content_of(3120, sectors, node_cap(2), rigs=OWN_HOME_ORE + [ore_in("B1", 1)], server=SERVER, silent=5, derelicts=["B1", "C1"])
     lay_hud(out, c)
 
 
-@state("hud", "end-victory", "The match's end: Victory by domination, the world running on behind it", notes=["DescribeOutcome Hud.cpp:2199-2218."])
-def s_hud_victory(out):
-    c = busy_content()
-    c["selection"] = []
-    c["buttons"] = []
-    c["retreat"] = None
-    c["shipBars"] = []
-    c["entityBars"] = []
+def victory_content():
+    """47:12 in: the player cleared A4's camp and holds A4, and the enemy's tickets ran out (a domination ends at 0, Simulation.cpp:3778-3804)."""
+    sectors = sectors_of(own=["A1", "A2", "B1", "C1", "B2", "C2", "A3", "B3", "A4"], enemy=["E5", "D5", "E4", "D4", "E3"], cleared=["A4"])
+    rigs = OWN_HOME_ORE + [ore_in("B1", 0), ore_in("B1", 1), ore_in("C1"), ore_in("B2"), ore_in("C2"), ore_in("A3"), ore_in("B3")]
+    ships = [{"kind": "Ship", "pos": (-2100, -1900), "radius": 14, "side": "Own"}, {"kind": "Ship", "pos": (-1900, -2050), "radius": 8, "side": "Own"}]
+    # The home rigs have mined their asteroids dry (7,500 Ore at 3.5 a second runs out in 35:43) and earn a fifth (exhaustedYieldPercent);
+    # Improved Extraction is researched, since the Lab's L2, which tier 2 needs, requires it.
+    c = content_of(2350, sectors, node_cap(4), (386, 0), rigs=rigs, dry=OWN_HOME_ORE, extraction=True, view=(-2000, -2000), derelicts=["C2"],
+                   extra=[wreck_mark("A4")] + ships)
+    assert c["territory"]["enemy_tickets"] == 0 and c["territory"]["own_nodes"] > c["territory"]["enemy_nodes"]
+    c["alerts"] = [("Enemy ships in C2", node_of("C2"))]
+    c["status"] = [{"runs": [{"text": "Lance Capacitors"}], "bar": {"share": 0.30, "figure": "+1", "under": True}, "action": "OpenResearch",
+                    "src": "StatusLinesOf Hud.cpp:303-311"},
+                   {"runs": [{"text": "Shipyards{}BUILDING 2{}WAITING 0{}".format(DOT, DOT, DOT), "sample": True}, {"text": "IDLE 1", "chip": True}],
+                    "action": "OpenProduction", "src": "StatusLinesOf Hud.cpp:403-410"},
+                   {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 38 / 40.0, "figure": "38 / {}".format(fleet_cap(4)), "under": False},
+                    "action": "OpenProduction", "src": "StatusLinesOf Hud.cpp:373-380, 411-412"}]
     c["outcome"] = ("Victory", "By domination. Match length 47:12")
-    lay_hud(out, c, hovered="BackToMenu")
+    return c
 
 
-@state("hud", "end-empire-fallen", "A world: the player's empire fell, and its seat restarts", notes=["DescribeOutcome Hud.cpp:2188-2196 (ADR-084 d7)."])
-def s_hud_fallen(out):
-    c = match_start_content()
-    c["connection"] = {"server": "203.0.113.5:4433", "silent": 0}
-    c["ore"] = 1000
-    c["income"] = 0
-    c["territory"] = {"own_nodes": 0, "enemy_nodes": 9, "nodes": 25, "cap": 0}
-    c["sectors"] = {"E5": {"side": "Enemy"}, "A1": {"side": "Enemy"}}
+@state("hud", "end-victory", "The match's end: Victory by domination, the world running on behind it",
+       notes=["DescribeOutcome Hud.cpp:2199-2218. A domination ends when a player's tickets reach 0 (Simulation.cpp:3796-3804): the enemy's are 0, and the "
+              "drain row, still computed, reads 'Enemy -80 a minute · out in 0:00' as plain text (Hud.cpp:2506-2526).",
+              "Later in the match than the busy state: the player cleared A4's camp (its wreck, 600 Ore, lies on A4's node) and holds 9 sectors to the enemy's 5; "
+              "the 6 other outposts still stand. The player's three home asteroids are dry (DRY_COLOR).", SEED_STATE_NOTE])
+def s_hud_victory(out):
+    lay_hud(out, victory_content(), hovered="BackToMenu")
+
+
+def fallen_content():
+    """A world in which the player's Command Station fell with no finished Shipyard (Simulation.cpp:3684-3708): it holds nothing and owns nothing."""
+    sectors = sectors_of(enemy=["E5", "D5", "E4", "D4", "E3", "C5", "C4", "D3", "D2"])
+    c = content_of(1000, sectors, node_cap(1), server=SERVER, station=False, constructors=False, remembered=["C1"])
+    assert c["territory"]["cap"] == 4 and c["income"] == 0
     c["outcome"] = ("Empire fallen", "It restarts at your start in 58:41")
-    lay_hud(out, c)
+    return c
 
 
-def window_state(c=None):
-    return c or match_start_content()
+@state("hud", "end-empire-fallen", "A world: the player's empire fell, and its seat restarts",
+       notes=["DescribeOutcome Hud.cpp:2188-2196 (ADR-084 d7).",
+              "With no station the player keeps level 1's node cap (NodeCapOf, Simulation.cpp:2912-2920; Snapshot::nodeCap, 1116), so the note reads "
+              "'cap 4 of 25' (Hud.cpp:3194-3196).", WORLD_NOTE, SEED_STATE_NOTE])
+def s_hud_fallen(out):
+    lay_hud(out, fallen_content())
+
+
+# The windows' early state W: two Shipyards at L1 (01 idle, having built four Swarms; 02 building a Swarm, 62%, two more queued) and a Lab
+# researching Hull Plating, 45%, with Improved Extraction after it. Every window over it shows the same 1,240 Ore as the HUD.
+W_ORE = 1240
+W_STATUS = [
+    {"runs": [{"text": "Hull Plating"}], "bar": {"share": 0.45, "figure": "+1", "under": True}, "action": "OpenResearch",
+     "src": "StatusLinesOf Hud.cpp:303-311 (topic name over a bar, '+N' queued)"},
+    {"runs": [{"text": "Shipyards{}BUILDING 1{}WAITING 0{}".format(DOT, DOT, DOT), "sample": True}, {"text": "IDLE 1", "chip": True}], "action": "OpenProduction",
+     "src": "StatusLinesOf Hud.cpp:403-410 (IDLE a chip: Shipyard 01 is idle and could start a Swarm, 261 Ore, under the cap)"},
+    {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 5 / 12.0, "figure": "5 / 12", "under": False}, "action": "OpenProduction",
+     "src": "StatusLinesOf Hud.cpp:373-380, 411-412 (four Swarms and the one Shipyard 02 builds, Simulation.cpp:2932-2949)"}]
+W_NOTE = ("The HUD behind: two finished Shipyards and a Lab, so the status panel shows the Lab's topic, the Shipyards' counts and the fleet "
+          "(StatusLinesOf, Hud.cpp:281-414; drawn 3241-3308). " + EARLY_NOTE)
+
+
+def window_state():
+    c = early_content(W_ORE)
+    c["status"] = W_STATUS
+    return c
+
+
+DESIGNER_CORNER = lambda out: window_corner(out, (out.width / out.scale - MARGIN - DESIGNER_W, MARGIN), DESIGNER_W)
 
 
 @state("window", "designer-default", "The designer on Shipyard 01, the Swarm loaded (saved), nothing hovered",
        notes=["Default place: top-right corner (Hud.cpp:3655-3659). The designer covers the 'where the match runs' tag (ADR-086 d3).",
-              "Height from ExtentOf with Tuning.json's 3 hulls, 3 drives, 5 weapons (two with splash notes) and None + 1 module: 913 units (ADR-070)."])
+              "Height from ExtentOf with Tuning.json's 3 hulls, 3 drives, 5 weapons (two with splash notes) and None + 1 module: 913 units (ADR-070).", W_NOTE])
 def s_designer(out):
-    c = window_state()
-    lay_hud(out, c)
-    lay_designer(out, designer_panel(), window_corner(out, (out.width / out.scale - MARGIN - DESIGNER_W, MARGIN), DESIGNER_W))
+    lay_hud(out, window_state())
+    lay_designer(out, designer_panel(ore=W_ORE), DESIGNER_CORNER(out))
 
 
-@state("window", "designer-preview", "The designer with the Lance card under the pointer: bars and damage cards preview the change")
+@state("window", "designer-preview", "The designer with the Lance card under the pointer: bars and damage cards preview the change", notes=[W_NOTE])
 def s_designer_preview(out):
     lay_hud(out, window_state())
-    lay_designer(out, designer_panel(preview=("weapon", 2)), window_corner(out, (out.width / out.scale - MARGIN - DESIGNER_W, MARGIN), DESIGNER_W), hovered="Lance")
+    lay_designer(out, designer_panel(preview=("weapon", 2), ore=W_ORE), DESIGNER_CORNER(out), hovered="Lance")
 
 
-@state("window", "designer-unsaved-editing", "New picks (Medium + Ion + Lance + Sensor Array), the name being typed, too long for the server",
-       notes=["Medium needs Shipyard L2 (Tuning.json structures[Shipyard].levels[0].hulls), so Queue is dim and its detail reads 'Needs Shipyard L2' (Hud.cpp:819-824)."])
+@state("window", "designer-unsaved-editing", "New picks (Medium + Ion + Lance + Sensor Array), the name typed away to nothing, so invalid; Queue says Needs Shipyard L2",
+       notes=["Typing starts from the picks' name, 'Lancer+SA' (Designer::Name, Designer.cpp:122-151; BeginEditing 220-225), and Backspace has emptied it. "
+              "Typing stops at 32 characters (Designer.cpp:236), and a name is invalid only when empty or all spaces (IsValidDesignName, Command.h:70-84), "
+              "so the field shows '_' in WARNING_COLOR and '0/32', and SAVE and QUEUE are dim.",
+              "Medium needs Shipyard L2 (Tuning.json structures[Shipyard].levels[0].hulls), so Queue's detail reads 'Needs Shipyard L2' (Hud.cpp:819-824).", W_NOTE])
 def s_designer_editing(out):
     lay_hud(out, window_state())
-    lay_designer(out, designer_panel(picks=(2, 1, 2, 1), editing=True, typed="Lancer with the long range sensor fit"),
-                 window_corner(out, (out.width / out.scale - MARGIN - DESIGNER_W, MARGIN), DESIGNER_W))
+    lay_designer(out, designer_panel(picks=(2, 1, 2, 1), editing=True, typed="", ore=W_ORE), DESIGNER_CORNER(out))
 
 
-@state("window", "designer-no-shipyard", "The designer with no finished Shipyard: arrows dim, Queue dim, no slots filled")
+@state("window", "designer-no-shipyard", "The designer with no finished Shipyard: arrows dim, Queue dim, no slots filled",
+       notes=["Over the match's start, with its 1,000 Ore.", SEED_STATE_NOTE])
 def s_designer_none(out):
-    lay_hud(out, window_state())
-    lay_designer(out, designer_panel(has_shipyard=False, queued=0), window_corner(out, (out.width / out.scale - MARGIN - DESIGNER_W, MARGIN), DESIGNER_W))
+    c = match_start_content()
+    lay_hud(out, c)
+    lay_designer(out, designer_panel(has_shipyard=False, queued=0, ore=c["ore"]), DESIGNER_CORNER(out))
 
 
-@state("window", "production-shipyard", "Production on Shipyard 02 (L1): four starting designs, two dim as NEEDS L2, a queue of three")
+@state("window", "production-shipyard", "Production on Shipyard 02 (L1): four starting designs, two dim as NEEDS L2, a queue of three", notes=[W_NOTE])
 def s_prod_yard(out):
     lay_hud(out, window_state())
-    lay_production(out, production_panel_shipyard(), window_corner(out, (MARGIN, WINDOWS_TOP), PRODUCTION_W))
+    lay_production(out, production_panel_shipyard(ore=W_ORE), window_corner(out, (MARGIN, WINDOWS_TOP), PRODUCTION_W))
 
 
-@state("window", "production-station", "Production on the Command Station: the Constructor card, the front job waiting for Ore")
+@state("window", "production-station", "Production on the Command Station: the Constructor card, the front job waiting for Ore",
+       notes=["40 Ore against a Constructor's 60 (Tuning.json constructor.cost), paid when the job starts; one home rig, 3.5 Ore a second.", SEED_STATE_NOTE])
 def s_prod_station(out):
-    lay_hud(out, window_state())
-    c = TUNING["constructor"]
-    lay_production(out, {"producer": "COMMAND STATION", "canStep": False, "ore": 40,
-                         "options": [{"name": "Constructor", "detail": "", "cost": c["cost"], "enabled": False, "time": "{} s".format(tenths(c["buildSeconds"])), "strengths": []}],
+    c = content_of(40, sectors_of(own=["A1"], enemy=["E5"]), node_cap(1), START_TICKETS, rigs=OWN_HOME_ORE[:1])
+    lay_hud(out, c)
+    k = TUNING["constructor"]
+    lay_production(out, {"producer": "COMMAND STATION", "canStep": False, "ore": c["ore"],
+                         "options": [{"name": "Constructor", "detail": "", "cost": k["cost"], "enabled": False, "time": "{} s".format(tenths(k["buildSeconds"])), "strengths": []}],
                          "queue": [{"name": "Constructor", "front": True, "permille": 0, "waiting": True}, {"name": "Constructor"}]},
                    window_corner(out, (MARGIN, WINDOWS_TOP), PRODUCTION_W))
 
 
-@state("window", "production-none", "Production with no finished producer: the hint")
+@state("window", "production-none", "Production with no finished producer, after the empire fell in a world: the hint",
+       notes=["NO PRODUCER needs no finished Command Station and no finished Shipyard (ProductionTarget::Producers, ProductionTarget.cpp:12-33). That loses "
+              "a skirmish in the same tick (Simulation.cpp:3684-3709: Defeat), and in a world it is the 'Empire fallen' state, drawn here behind the window.",
+              WORLD_NOTE, SEED_STATE_NOTE])
 def s_prod_none(out):
-    lay_hud(out, window_state())
-    lay_production(out, {"producer": "NO PRODUCER", "canStep": False, "ore": 1000, "options": [], "queue": [], "hint": "Build a Shipyard to make warships."},
+    c = fallen_content()
+    lay_hud(out, c)
+    lay_production(out, {"producer": "NO PRODUCER", "canStep": False, "ore": c["ore"], "options": [], "queue": [], "hint": "Build a Shipyard to make warships."},
                    window_corner(out, (MARGIN, WINDOWS_TOP), PRODUCTION_W))
 
 
-@state("window", "research-page1", "Research: the first page of topics, tier-2 topics needing the Lab's level, a queue of two")
+@state("window", "research-page1", "Research: the first page of topics, tier-2 topics needing the Lab's level, a queue of two", notes=[W_NOTE])
 def s_research(out):
     lay_hud(out, window_state())
-    lay_research(out, research_panel(), window_corner(out, (2 * MARGIN + PRODUCTION_W, WINDOWS_TOP), RESEARCH_W))
+    lay_research(out, research_panel(ore=W_ORE), window_corner(out, (2 * MARGIN + PRODUCTION_W, WINDOWS_TOP), RESEARCH_W))
 
 
-@state("window", "research-no-lab", "Research with no Research Lab: no topic can be queued")
+@state("window", "research-no-lab", "Research with no Research Lab: no topic can be queued", notes=["Over the match's start, with its 1,000 Ore.", SEED_STATE_NOTE])
 def s_research_none(out):
-    lay_hud(out, window_state())
-    lay_research(out, research_panel(has_lab=False, queued=()), window_corner(out, (MARGIN, WINDOWS_TOP), RESEARCH_W))
+    c = match_start_content()
+    lay_hud(out, c)
+    lay_research(out, research_panel(ore=c["ore"], has_lab=False, queued=()), window_corner(out, (MARGIN, WINDOWS_TOP), RESEARCH_W))
 
 
-@state("window", "controls", "The Controls window (F1), at its default place in the middle of the screen")
+@state("window", "controls", "The Controls window (F1), at its default place in the middle of the screen", notes=[SEED_STATE_NOTE])
 def s_controls(out):
-    lay_hud(out, window_state())
+    lay_hud(out, match_start_content())
     sw, sh = out.width / out.scale, out.height / out.scale
     lay_controls(out, window_corner(out, ((sw - CONTROLS_W) / 2.0, max(MARGIN, (sh - controls_height()) / 2.0)), CONTROLS_W))
 
 
 @state("window", "orders-time-of-day", "Orders (O): two orders waiting; a time-of-day attack-move ready to give to 12 ships",
-       notes=["Rows for a time-of-day trigger and a sector action: WHEN, HOUR, MINUTE, DO, WHERE, UNLESS (Hud.cpp:2248-2274). Form defaults 02:00 attack-move (OrderForm.h:103-108)."])
+       notes=["Rows for a time-of-day trigger and a sector action: WHEN, HOUR, MINUTE, DO, WHERE, UNLESS (Hud.cpp:2248-2274). Form defaults 02:00 attack-move "
+              "(OrderForm.h:103-108).", "Over the busy state (hud-busy-warships)."] + BUSY_NOTES[1:])
 def s_orders(out):
     lay_hud(out, busy_content())
     panel = {"scheduled": ["At 02:00, attack-move to C3{}12 ships".format(DOT), "When enemies enter B2, hold B2, unless over 8 enemy CP{}6 ships".format(DOT)],
@@ -2072,22 +2614,50 @@ def s_orders(out):
     lay_orders(out, panel, window_corner(out, (out.width / out.scale - MARGIN - ORDERS_W, WINDOWS_TOP), ORDERS_W), hovered="GiveOrder")
 
 
+def stronghold_platforms(sector):
+    """A pirate outpost's Defence Platforms, in a row through its node across the line to the map's center, 140 m apart (Simulation.cpp:833-845)."""
+    outpost = next(o for o in TUNING["pirates"]["outposts"] if o["name"] == OUTPOST_OF[sector])
+    nx, nz = node_of(sector)
+    length = math.hypot(nx, nz)
+    toward = (-nx / length, -nz / length) if length > 0 else (1.0, 0.0)
+    across = (-toward[1], toward[0])
+    n = outpost["defensePlatforms"]
+    return [(nx + across[0] * (i - (n - 1) / 2.0) * 140.0, nz + across[1] * (i - (n - 1) / 2.0) * 140.0) for i in range(n)]
+
+
 @state("window", "orders-event-disabled", "Orders: an event trigger with a target, nothing selected that can take it (Give the order dim, SELECT WARSHIPS)",
-       notes=["Rows for an event trigger and a target action: WHEN, WATCHING, DO, WHERE, TARGET, UNLESS: 6 of the 7 kept (ORDER_ROWS, Hud.h:528)."])
+       notes=["Rows for an event trigger and a target action: WHEN, WATCHING, DO, WHERE, TARGET, UNLESS: 6 of the 7 kept (ORDER_ROWS, Hud.h:528).",
+              "TARGET lists the other players' entities the player sees or remembers in the action's sector (OrderForm::Targets, OrderForm.cpp:144-171). "
+              "C3 is seed 342's stronghold: a scout saw its two Defence Platforms, which the player remembers (crosses on the minimap), so the first "
+              "of them is 'Pirate Defence Platform (1 of 2)' (OrderForm.cpp:268-289); its ships are not remembered.", W_NOTE])
 def s_orders_event(out):
-    lay_hud(out, match_start_content())
+    c = window_state()
+    platform = next(s for s in TUNING["structures"] if s["kind"] == "DefensePlatform")
+    c["marks"].extend({"kind": "Structure", "pos": p, "radius": platform["footprintRadiusMeters"], "side": "Pirate", "remembered": True}
+                      for p in stronghold_platforms("C3"))
+    lay_hud(out, c)
     panel = {"scheduled": [], "more": 0,
-             "rows": [("WHEN", "Enemies enter a sector"), ("WATCHING", "A1"), ("DO", "Attack"), ("WHERE", "C3"), ("TARGET", "Shipyard (1 of 3)"),
+             "rows": [("WHEN", "Enemies enter a sector"), ("WATCHING", "A1"), ("DO", "Attack"), ("WHERE", "C3"), ("TARGET", "Pirate Defence Platform (1 of 2)"),
                       ("UNLESS", "Over 8 enemy CP there")],
              "fires": "Fires once, the first time it happens",
              "give": {"label": "Give the order|", "action": "GiveOrder", "enabled": False, "note": "SELECT WARSHIPS"}}
     lay_orders(out, panel, window_corner(out, (out.width / out.scale - MARGIN - ORDERS_W, WINDOWS_TOP), ORDERS_W))
 
 
-@state("window", "away", "While you were away: opened by itself with the first snapshot after the seat is taken again (GameClient.cpp:539-544)")
+@state("window", "away", "While you were away: opened by itself with the first snapshot after the seat is taken again (GameClient.cpp:539-544)",
+       notes=["Only a world's seat has a deputy (OutpostServer/Main.cpp:193-199; InProcessServer.cpp:512-533), so the report comes in a world: the HUD "
+              "behind is a world's, holding C2 and B3 and no longer A3, as the lines say.",
+              "A sector is lost when its Relay is (Simulation.cpp:2807-2837, 2896-2900), which is a structure lost (Snapshot.h:492-494): 'Lost 9 ships and 1 structure'.",
+              WORLD_NOTE, SEED_STATE_NOTE])
 def s_away(out):
-    lay_hud(out, match_start_content())
-    lines = ["Built 14 ships and 3 structures", "Lost 9 ships and no structures", "Sectors gained: C2, B3", "Sectors lost: A3",
+    sectors = sectors_of(own=["A1", "B1", "A2", "B2", "C2", "B3"], enemy=["E5", "D5", "E4", "D4", "E3", "C4"])
+    c = content_of(2860, sectors, node_cap(2), rigs=OWN_HOME_ORE + [ore_in("B1", 1), ore_in("B2"), ore_in("C2")], server=SERVER, derelicts=["B1", "C2"])
+    c["status"] = [{"runs": [{"text": "Shipyards{}BUILDING 1{}WAITING 0{}IDLE 0".format(DOT, DOT, DOT)}], "action": "OpenProduction",
+                    "src": "StatusLinesOf Hud.cpp:403-410"},
+                   {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 18 / 20.0, "figure": "18 / {}".format(fleet_cap(2)), "under": False},
+                    "action": "OpenProduction", "src": "StatusLinesOf Hud.cpp:373-380, 411-412"}]
+    lay_hud(out, c)
+    lines = ["Built 14 ships and 3 structures", "Lost 9 ships and 1 structure", "Sectors gained: C2, B3", "Sectors lost: A3",
              "Order fired: attack-move to C3", "Order held back: hold B2"]
     h = away_height(len(lines))
     sw, sh = out.width / out.scale, out.height / out.scale
@@ -2096,12 +2666,17 @@ def s_away(out):
 
 @state("window", "three-windows-default", "Production, research and the designer open together, each at its default place (ADR-062 d6: side by side at 100%)",
        notes=["Back to front in the order opened: production (slot 0), research (slot 1), designer (Hud.cpp:3634-3687; WindowManager.cpp:99-114).",
-              "16 + 478 + 16 + 560 + 16 + 818 + 16 = 1920 (ADR-062 d6)."])
+              "16 + 478 + 16 + 560 + 16 + 818 + 16 = 1920 (ADR-062 d6).",
+              "Over the busy state: the windows show its 2,350 Ore, its research (Hull Plating done; Large Hull 62% at the front, then Improved Extraction and "
+              "Mass Driver Calibration) and Hull Plating's hull hit points in the designer (253, 575 and 1,380 HP).", "Shipyard 01 is the idle one, "
+              "having built 14 ships; Shipyard 02 builds the Swarm."] + BUSY_NOTES[1:])
 def s_three(out):
-    lay_hud(out, busy_content())
-    lay_production(out, production_panel_shipyard(), window_corner(out, (MARGIN, WINDOWS_TOP), PRODUCTION_W))
-    lay_research(out, research_panel(), window_corner(out, (2 * MARGIN + PRODUCTION_W, WINDOWS_TOP), RESEARCH_W))
-    lay_designer(out, designer_panel(), window_corner(out, (out.width / out.scale - MARGIN - DESIGNER_W, MARGIN), DESIGNER_W))
+    c = busy_content()
+    lay_hud(out, c)
+    lay_production(out, production_panel_shipyard(ore=c["ore"]), window_corner(out, (MARGIN, WINDOWS_TOP), PRODUCTION_W))
+    lay_research(out, research_panel(ore=c["ore"], researched=BUSY_RESEARCHED, queued=BUSY_QUEUE, front_permille=620),
+                 window_corner(out, (2 * MARGIN + PRODUCTION_W, WINDOWS_TOP), RESEARCH_W))
+    lay_designer(out, designer_panel(ore=c["ore"], built=14, hull_factor=HULL_PLATING_FACTOR), DESIGNER_CORNER(out))
 
 
 def main():
