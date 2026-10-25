@@ -3,11 +3,11 @@
 namespace OpponentTests
 {
 // The text of a data file the game ships, from OutpostCommander/Assets in the repository (ADR-008). UseFullPaths makes
-// __FILE__ absolute, so the repository is two levels up from this header.
+// __FILE__ absolute, so the repository is three levels up from this header.
 inline std::string ReadRepositoryData(std::string_view _fileName)
 {
   const std::filesystem::path path =
-    std::filesystem::path(__FILE__).parent_path().parent_path() / "OutpostCommander" / "Assets" / _fileName;
+    std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander" / "Assets" / _fileName;
   std::ifstream file(path, std::ios::binary);
   Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(file.is_open(), path.wstring().c_str());
   std::ostringstream text;
@@ -18,7 +18,7 @@ inline std::string ReadRepositoryData(std::string_view _fileName)
 // The repository's OutpostCommander folder, whose Assets folder the package carries (ADR-008).
 inline std::filesystem::path RepositoryHome()
 {
-  return std::filesystem::path(__FILE__).parent_path().parent_path() / "OutpostCommander";
+  return std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander";
 }
 
 // FileSys pointed at _home for one test, as WinMain points it at the package's folder, and put back exactly as it was
