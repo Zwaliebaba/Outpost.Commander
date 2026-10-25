@@ -1,0 +1,1 @@
+{"command": "python3 Tools/BakeMeshes.py --check", "exitCode": 0, "output": "Meshes: 45 sources, all baked and current.", "wallSeconds": 24.2, "cores": 4, "ranOn": "2026-10-25, Linux container, CPython 3.13.17", "head": "a053fe294d91dc885bbb061c2f34d76ca6897738"}

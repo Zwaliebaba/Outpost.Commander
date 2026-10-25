@@ -262,5 +262,17 @@
   ],
   "kind": "app logo (copied as is)",
   "source": "OutpostCommander/Assets/Wide310x150Logo.scale-200.png"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/_logos_on_dark_and_white.png",
+  "set": null,
+  "model": "logos",
+  "view": null,
+  "size": [
+   2200,
+   1960
+  ],
+  "kind": "logo sheet (each logo on near-black, then on white)",
+  "source": null
  }
 ]

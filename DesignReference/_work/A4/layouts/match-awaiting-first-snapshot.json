@@ -1,0 +1,19 @@
+{
+ "screen": "match",
+ "state": "awaiting-first-snapshot",
+ "title": "A match started, before its first snapshot",
+ "head": "a053fe294d91dc885bbb061c2f34d76ca6897738",
+ "frame": {
+  "widthPixels": 1920,
+  "heightPixels": 1080
+ },
+ "interfaceFactor": 1.0,
+ "pixelsPerReferenceUnit": 1.0,
+ "geometry": "derived from GameApp/Hud.cpp arithmetic by derive_layouts.py; not dumped from the game (no build in this container). Elements with measured:false depend on DirectWrite text measurement (ADR-061) and are estimated.",
+ "drawOrder": "layer -1 (entity bars) first; then layer 0 (HUD) and each window layer back to front; within a layer every 'panels' element (panel/outline/bar/button) in order, then 'lines', then 'sprites', then 'texts' (Hud.h:714-760, GameClient.cpp:1289-1338).",
+ "notes": [
+  "GameClient::StartMatch clears the layout (GameClient.cpp:472-478, 517); Update lays the HUD out only once the view holds a snapshot (GameClient.cpp:689-775); DrawHud draws nothing while fontPixels is 0 (GameClient.cpp:1291-1293). The screen shows the sky and the grid only (GameClient.cpp:1138-1158)."
+ ],
+ "layers": [],
+ "elements": []
+}

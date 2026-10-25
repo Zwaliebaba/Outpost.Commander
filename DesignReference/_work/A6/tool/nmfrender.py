@@ -12,9 +12,10 @@ What it replicates, and from where (HEAD a053fe2):
   * Line light: MeshLinePS.hlsl (luminance of LightAt, no occlusion); the pull toward the eye, MeshLineVS.hlsl and
     LINE_LIFT_SHARE (GameClient.cpp:53), stood in for here by a depth bias of LINE_DEPTH_PIXELS output pixels (ADR-040 says
     the share is "about 2.5 pixels of depth").
-  * Face / line colors per kind: GameClient.cpp QueueModel / QueueStructure (1522-1578), SceneShading.h:45-59 and
-    SceneShading.cpp (Shaded, EdgeColor, TowardGray).
-  * Glow: ADR-091 / NeuronClient/Shader/Bloom*PS.hlsl / ResolvePS.hlsl with SCENE_BLOOM (GameClient.cpp:23), replayed on
+  * Face / line colors per kind: GameClient.cpp:1509 (ship), 1515-1516 (asteroid), 1546 (derelict), QueueModel
+    1556-1569, QueueStructure 1571-1579, ModelColor 344-349; SceneShading.h:45-57 and SceneShading.cpp (Shaded,
+    EdgeColor, TowardGray).
+  * Glow: ADR-091 / NeuronClient/Shader/Bloom*PS.hlsl / ResolvePS.hlsl with SCENE_BLOOM (GameClient.cpp:25), replayed on
     the output image.
   * sRGB encode of linear color (R8G8B8A8_UNORM_SRGB scene target, ADR-040 decision 3).
 """
@@ -45,7 +46,7 @@ STRUCTURE_FILL_SHADE = 0.22
 
 CREASE_DEGREES = 10.0
 
-# SCENE_BLOOM, GameClient.cpp:23; five levels, Bloom.cpp LEVEL_COUNT (ADR-091 decision 1).
+# SCENE_BLOOM, GameClient.cpp:25; five levels, Bloom.cpp LEVEL_COUNT (ADR-091 decision 1).
 BLOOM_THRESHOLD = 0.35
 BLOOM_KNEE = 0.15
 BLOOM_INTENSITY = 2.0

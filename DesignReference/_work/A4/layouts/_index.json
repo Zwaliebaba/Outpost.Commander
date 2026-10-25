@@ -1,0 +1,274 @@
+[
+ {
+  "file": "menu-default.json",
+  "screen": "menu",
+  "state": "default",
+  "title": "Main menu, no join file",
+  "elements": 19,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "menu-join-world.json",
+  "screen": "menu",
+  "state": "join-world",
+  "title": "Main menu with a join file in Documents\\Outpost Commander\\Join.json (ADR-078 d9)",
+  "elements": 22,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "menu-connection-lost.json",
+  "screen": "menu",
+  "state": "connection-lost",
+  "title": "Main menu after a lost connection, saying why (ADR-078 d10)",
+  "elements": 24,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "menu-join-failed.json",
+  "screen": "menu",
+  "state": "join-failed",
+  "title": "Main menu after a join that failed (WinMain.cpp:359-364)",
+  "elements": 24,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "menu-scale-125.json",
+  "screen": "menu",
+  "state": "scale-125",
+  "title": "Main menu at interface factor 125%, the largest the menu reaches on 16:9 (ADR-070)",
+  "elements": 19,
+  "interfaceFactor": 1.25
+ },
+ {
+  "file": "match-awaiting-first-snapshot.json",
+  "screen": "match",
+  "state": "awaiting-first-snapshot",
+  "title": "A match started, before its first snapshot",
+  "elements": 0,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-match-start.json",
+  "screen": "hud",
+  "state": "match-start",
+  "title": "First snapshot of a Normal skirmish: nothing selected",
+  "elements": 161,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-busy-warships.json",
+  "screen": "hud",
+  "state": "busy-warships",
+  "title": "Mid-match: twelve warships of three designs selected, attack-move armed, the pointer over Stop",
+  "elements": 305,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-scale-110.json",
+  "screen": "hud",
+  "state": "scale-110",
+  "title": "The busy state at interface factor 110%, the most a match reaches on 16:9 (ADR-070 Consequences)",
+  "elements": 305,
+  "interfaceFactor": 1.1
+ },
+ {
+  "file": "hud-constructors.json",
+  "screen": "hud",
+  "state": "constructors",
+  "title": "Two Constructors selected: build buttons with their costs, and the retreat row",
+  "elements": 217,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-placing-relay.json",
+  "screen": "hud",
+  "state": "placing-relay",
+  "title": "A Relay's placement armed: the hint, and the sectors it could claim outlined on the minimap",
+  "elements": 224,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-relay-node-cap.json",
+  "screen": "hud",
+  "state": "relay-node-cap",
+  "title": "Placing a Relay at the node cap: the hint says why, and the Relay button says NODE CAP",
+  "elements": 218,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-one-ship.json",
+  "screen": "hud",
+  "state": "one-ship",
+  "title": "One Lancer selected, holding a sector, hurt; Hold sector armed",
+  "elements": 209,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-shipyard-selected.json",
+  "screen": "hud",
+  "state": "shipyard-selected",
+  "title": "A finished Shipyard selected: its work line, its next level and its window buttons with key caps",
+  "elements": 205,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-station-upgrading.json",
+  "screen": "hud",
+  "state": "station-upgrading",
+  "title": "The Command Station selected while its upgrade is built: the button says UPGRADING with its bar",
+  "elements": 189,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-lab-needs-research.json",
+  "screen": "hud",
+  "state": "lab-needs-research",
+  "title": "The Research Lab selected: its next level needs research, so Upgrade says NEEDS RESEARCH",
+  "elements": 196,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-derelict-hint.json",
+  "screen": "hud",
+  "state": "derelict-hint",
+  "title": "The pointer over a derelict: the hint says what it holds",
+  "elements": 166,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-server-silent.json",
+  "screen": "hud",
+  "state": "server-silent",
+  "title": "A world on a dedicated server whose snapshots stopped 5 s ago",
+  "elements": 158,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-end-victory.json",
+  "screen": "hud",
+  "state": "end-victory",
+  "title": "The match's end: Victory by domination, the world running on behind it",
+  "elements": 231,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "hud-end-empire-fallen.json",
+  "screen": "hud",
+  "state": "end-empire-fallen",
+  "title": "A world: the player's empire fell, and its seat restarts",
+  "elements": 163,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-designer-default.json",
+  "screen": "window",
+  "state": "designer-default",
+  "title": "The designer on Shipyard 01, the Swarm loaded (saved), nothing hovered",
+  "elements": 414,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-designer-preview.json",
+  "screen": "window",
+  "state": "designer-preview",
+  "title": "The designer with the Lance card under the pointer: bars and damage cards preview the change",
+  "elements": 419,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-designer-unsaved-editing.json",
+  "screen": "window",
+  "state": "designer-unsaved-editing",
+  "title": "New picks (Medium + Ion + Lance + Sensor Array), the name being typed, too long for the server",
+  "elements": 413,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-designer-no-shipyard.json",
+  "screen": "window",
+  "state": "designer-no-shipyard",
+  "title": "The designer with no finished Shipyard: arrows dim, Queue dim, no slots filled",
+  "elements": 413,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-production-shipyard.json",
+  "screen": "window",
+  "state": "production-shipyard",
+  "title": "Production on Shipyard 02 (L1): four starting designs, two dim as NEEDS L2, a queue of three",
+  "elements": 274,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-production-station.json",
+  "screen": "window",
+  "state": "production-station",
+  "title": "Production on the Command Station: the Constructor card, the front job waiting for Ore",
+  "elements": 198,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-production-none.json",
+  "screen": "window",
+  "state": "production-none",
+  "title": "Production with no finished producer: the hint",
+  "elements": 184,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-research-page1.json",
+  "screen": "window",
+  "state": "research-page1",
+  "title": "Research: the first page of topics, tier-2 topics needing the Lab's level, a queue of two",
+  "elements": 276,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-research-no-lab.json",
+  "screen": "window",
+  "state": "research-no-lab",
+  "title": "Research with no Research Lab: no topic can be queued",
+  "elements": 267,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-controls.json",
+  "screen": "window",
+  "state": "controls",
+  "title": "The Controls window (F1), at its default place in the middle of the screen",
+  "elements": 229,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-orders-time-of-day.json",
+  "screen": "window",
+  "state": "orders-time-of-day",
+  "title": "Orders (O): two orders waiting; a time-of-day attack-move ready to give to 12 ships",
+  "elements": 358,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-orders-event-disabled.json",
+  "screen": "window",
+  "state": "orders-event-disabled",
+  "title": "Orders: an event trigger with a target, nothing selected that can take it (Give the order dim, SELECT WARSHIPS)",
+  "elements": 214,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-away.json",
+  "screen": "window",
+  "state": "away",
+  "title": "While you were away: opened by itself with the first snapshot after the seat is taken again (GameClient.cpp:539-544)",
+  "elements": 177,
+  "interfaceFactor": 1.0
+ },
+ {
+  "file": "window-three-windows-default.json",
+  "screen": "window",
+  "state": "three-windows-default",
+  "title": "Production, research and the designer open together, each at its default place (ADR-062 d6: side by side at 100%)",
+  "elements": 786,
+  "interfaceFactor": 1.0
+ }
+]

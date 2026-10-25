@@ -134,6 +134,33 @@ def main():
                     "sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "bytes": path.stat().st_size})
       records.append({"file": str(target.relative_to(ROOT)), "set": None, "model": path.stem, "view": None, "size": list(image.size),
                       "kind": "app logo (copied as is)", "source": f"OutpostCommander/Assets/{path.name}"})
+  # A sheet of the logos on the sky's near-black and on white, since each is one light gray in its alpha alone. Each
+  # image's extent is outlined and its file named under it.
+  from PIL import ImageDraw, ImageFont
+  label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)
+  logos_by_name = {path.name: path for path in sorted(ASSETS.glob("*.png"))}
+  layout = [("SplashScreen.scale-200.png", 10, 10)]
+  x = 10
+  for name in ("Wide310x150Logo.scale-200.png", "Square150x150Logo.scale-200.png", "Square44x44Logo.scale-200.png",
+               "StoreLogo.png", "LockScreenLogo.scale-200.png", "Square44x44Logo.targetsize-24_altform-unplated.png"):
+    layout.append((name, x, 640))
+    with Image.open(logos_by_name[name]) as image:
+      x += max(image.size[0], 230) + 20
+  half_height = 640 + 300 + 40
+  sheet = Image.new("RGBA", (2200, 2 * half_height), (5, 6, 10, 255))
+  sheet.paste(Image.new("RGBA", (2200, half_height), (255, 255, 255, 255)), (0, half_height))
+  draw = ImageDraw.Draw(sheet)
+  for half, (outline, text) in enumerate((((70, 74, 90, 255), (170, 175, 190, 255)), ((200, 200, 205, 255), (90, 90, 100, 255)))):
+    for name, px, py in layout:
+      with Image.open(logos_by_name[name]) as image:
+        image = image.convert("RGBA")
+        top = py + half * half_height
+        draw.rectangle((px - 1, top - 1, px + image.size[0], top + image.size[1]), outline=outline)
+        sheet.alpha_composite(image, (px, top))
+        draw.text((px, top + image.size[1] + 4), name, font=label_font, fill=text)
+  sheet.convert("RGB").save(OUT_LOGOS / "_logos_on_dark_and_white.png", optimize=True)
+  records.append({"file": str((OUT_LOGOS / "_logos_on_dark_and_white.png").relative_to(ROOT)), "set": None, "model": "logos",
+                  "view": None, "size": [2200, 2 * half_height], "kind": "logo sheet (each logo on near-black, then on white)", "source": None})
   (WORK / "A6" / "textures.json").write_text(json.dumps({"textures": table, "logos": logos}, indent=1))
   (WORK / "A6" / "renders_textures.json").write_text(json.dumps(records, indent=1))
   print(json.dumps(table, indent=1))

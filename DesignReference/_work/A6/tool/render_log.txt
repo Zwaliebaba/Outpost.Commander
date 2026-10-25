@@ -1,3 +1,7 @@
 1/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Small_34.png 9.0s (9s)
 21/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/Shipyard_L2_top.png 7.8s (46s)
 41/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Human/DefensePlatform_34.png 7.1s (87s)
+61/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/CommandStation_L4_34.png 7.4s (126s)
+81/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Tarkan/ResearchLab_L4_34.png 9.1s (166s)
+101/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/CommandStation_L1_top.png 6.4s (204s)
+121/236 /home/user/Outpost.Commander/DesignReference/_work/assets/models/Pirate/ResearchLab_L1_34.png 8.0s (241s)
