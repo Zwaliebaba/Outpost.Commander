@@ -1,0 +1,23 @@
+game	fill	0	0	1920	1080	#000			
+game	fill	740.00	422.00	440.00	236.00	#181E2B			
+game	fill	752.00	492.00	416.00	34.00	#1F2739			
+game	border	752.00	492.00	416.00	34.00	1.0px solid #2D364B			
+game	fill	752.00	532.00	416.00	34.00	#1F2739			
+game	border	752.00	532.00	416.00	34.00	1.0px solid #2D364B			
+game	fill	752.00	572.00	416.00	34.00	#1F2739			
+game	border	752.00	572.00	416.00	34.00	1.0px solid #2D364B			
+game	fill	752.00	612.00	416.00	34.00	#1F2739			
+game	border	752.00	612.00	416.00	34.00	1.0px solid #2D364B			
+game	svg:path	740.00	422.00	12.0	12.0	#89AFE2/none			
+game	svg:path	740.00	646.00	12.0	12.0	#89AFE2/none			
+game	svg:path	1168.00	422.00	12.0	12.0	#89AFE2/none			
+game	svg:path	1168.00	646.00	12.0	12.0	#89AFE2/none			
+game	text	752.00	434.00		27.00	#F7BC3C	22.0	700	Outpost Commander
+game	text	752.00	464.00		19.00	#ADB3BC	16.0	600	A skirmish against the AI
+game	text	764.00	498.00		19.00	#EAF1FA	16.0	600	Easy skirmish
+game	text	764.00	538.00		19.00	#EAF1FA	16.0	600	Normal skirmish
+game	text	764.00	578.00		19.00	#EAF1FA	16.0	600	Hard skirmish
+game	text	764.00	618.00		19.00	#EAF1FA	16.0	600	Quit
+annot	div	0	0	1920	1080				
+annot	border	738.0	420.0	444.0	240.0	1px dashed #FF2D95			
+annot	text	728.0	410.0	22	22	#000			1
