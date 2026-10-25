@@ -38,6 +38,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
 | 39.3 | The battle matchups | — | — | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
 | 39.4 | W1–W6 | all above | — | the container's part done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's week |
+| 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | todo |
 
 ### Milestone order
 
@@ -61,7 +62,7 @@ Each is an owner decision, proposed where the table says.
 | H8 | **The pin:** a save is pinned to a state version, not to a build. | [the horizon plan](ImplementationPlan-Horizon.md) | 35.1 | decided 2026-10-08 |
 | H9 | **The economy:** Phase 4's is unchanged, and the bank is recorded. | [the horizon plan](ImplementationPlan-Horizon.md) | — | decided 2026-10-08 |
 
-Gates H10 and H11 are open, and their one home is the gate table of [the Phase 5 design](OutpostCommander-Phase5.md).
+Gate H10 is open and H11 decided, and their one home is the gate table of [the Phase 5 design](OutpostCommander-Phase5.md).
 
 ---
 
@@ -254,6 +255,13 @@ The server writes a world log beside its saves, as ADR-038's match log is writte
 
 The container measures W2 with the deputies in, W3 again and the length of a world run; the owner's week is W1, W4 and W6, and W2's tick in Release.
 
+### 39.5 — A start that enemy warships hold is not free
+
+*Gate H11* (owner, 2026-10-25). A start is free while no other player holds its home sector, has a structure in it, or has a warship in it. On a map without sectors, the ground that counts is the ground 39.1 already uses, twice as far round the start as its base reaches. Pirates do not count, nor does a Constructor. While the start is not free the seat waits as it does now, and restarts on the first tick it is free once the hour has passed.
+
+- **ADR:** [ADR-084](../ADR/ADR-084-world-without-an-end.md) decision 4, edited in place; Game §world.restart.
+- **Done when:** `WorldRulesTests` hold a lost seat while another player's warship is in its home sector, restart it on the tick that warship leaves or is destroyed, and do not hold it for a pirate or a Constructor; the container's `--world-run` of a day records how long each restart waited, in the world log and BalanceLog.md. *Owner run:* a restart in play, seen once the enemy's fleet has gone.
+
 ### As built
 
 Recorded in [ADR-084](../ADR/ADR-084-world-without-an-end.md), [ADR-082](../ADR/ADR-082-world-log-and-world-run.md) and [ADR-083](../ADR/ADR-083-battle-matchups.md); ADR-037, ADR-057, ADR-077, ADR-079 and ADR-080 edited in place. The protocol is at version 15 and a world's state at version 6.
@@ -264,7 +272,7 @@ Recorded in [ADR-084](../ADR/ADR-084-world-without-an-end.md), [ADR-082](../ADR/
 - **W2 in the container.** The day's 1,451 saves were 46–81 KB and took a median 0.30 ms of the server's thread, the longest 6.03 ms, against the 50 ms W2 allows. With Blue's seat played by its deputy and Red's by the Normal AI for an hour (`InProcessServerTests.MeasuresTheHostedPlayersTicks`, run with a `Deputy` in Blue's seat), a tick's 99th percentile was 0.22–0.25 ms and the hosted players' 0.05–0.06 ms over seeds 1 to 3, against the 5 ms tick that [the budgets](../Budgets.md) set. The longest tick was 6.30–17.07 ms, of which the hosted players took at most 2.53 ms.
 - **W3 again,** with milestone 39's AI: over minutes 10 to 20 the deputy's Shipyards stood idle with Ore to spend 0.8% of their time and its Lab 0.2%, against the AI's 0.0% and 0.2%, as at milestone 37.
 - **The bank, as gate H9 asked it recorded.** In the day of world both seats had researched every topic by hour 1 and kept their fleets at the cap all day. Blue's bank reached 513,829 Ore at hour 23, on an income that fell from 40 Ore a second to 10. That is [the horizon plan](ImplementationPlan-Horizon.md)'s gate G3, for Phase 6.
-- **A restarted seat is taken again at once.** In the same day Red lost its base 11 times and restarted 11 times, each on the hour, never waiting, because enemy warships on a start do not keep it from being free. Seven of those bases fell 12–14.5 s after their restart (ADR-084). Whether a start with enemy warships on it is free, or a restarted base is spared for a while, is gate H11.
+- **A restarted seat is taken again at once.** In the same day Red lost its base 11 times and restarted 11 times, each on the hour, never waiting, because enemy warships on a start do not keep it from being free. Seven of those bases fell 12–14.5 s after their restart (ADR-084). Gate H11 has the seat wait while enemy warships hold its start (39.5).
 - **The matchups' baseline,** 40 seeds each, side 1 first (ADR-083): the mirror 25 to 15, the swarm against the line 0 to 40, Flak against the swarm 40 to 0, the heavy line 19 to 21 and the Missiles against the Lances 0 to 40, with medians of 9 to 41 s. Over 200 seeds the mirror went 114 to 86 for side 1, a p of about 0.06; and three of the five stayed one-sided.
 - **The client, in part.** The container builds the banner's and the endings' words in `Hud`, `MatchLog` and their tests over stand-in glyphs; it does not build `GameClient` or `WinMain`, where `--matchup` starts a battle. CI checks those.
-- **Awaiting the owner:** the week (W1, W4 and W6); W2's tick in Release; the matchups played live with `--matchup <n>` (W4); the banner and an AI empire that plans afresh round its new station, in play (39.1); and gate H11, on a start that enemy warships hold.
+- **Awaiting the owner:** the week (W1, W4 and W6); W2's tick in Release; the matchups played live with `--matchup <n>` (W4); the banner and an AI empire that plans afresh round its new station, in play (39.1).
