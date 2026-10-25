@@ -3684,8 +3684,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     else if (kind == WindowKind::Orders && _content.orders.has_value())
     {
       LayOrders(layout, _metrics, *_content.orders,
-                place(kind, {.xUnits = screenWidthUnits - MARGIN - ORDERS_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, ORDERS_WINDOW_WIDTH),
-                scale, hovered(_content.orders->give.action));
+                place(kind, {.xUnits = screenWidthUnits - MARGIN - ORDERS_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, ORDERS_WINDOW_WIDTH), scale,
+                hovered(_content.orders->give.action));
     }
     else if (kind == WindowKind::Away && _content.away.has_value())
     {
