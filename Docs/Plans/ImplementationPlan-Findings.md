@@ -24,10 +24,10 @@ Task numbers carry the prefix RF, and gates are lettered F.
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | RF1.1 | The decisions that need no code, in their ADRs | — | F4, F6, F7, F8 | done in the PR that adds this plan |
-| RF2.1 | The designer reserves a row for each bar it draws | — | F3 | todo |
-| RF2.2 | The Controls window says what a click selects | — | F9 | todo |
-| RF2.3 | The Orders window's Give lights under the pointer | — | F13 | todo |
-| RF2.4 | A click selects another player's structure, for its panel | — | F16 | todo |
+| RF2.1 | The designer reserves a row for each bar it draws | — | F3 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting the owner's run |
+| RF2.2 | The Controls window says what a click selects | — | F9 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting a run |
+| RF2.3 | The Orders window's Give lights under the pointer | — | F13 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting a run |
+| RF2.4 | A click selects another player's structure, for its panel | — | F16 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting the owner's run |
 | RF3.1 | The HUD draws each side in its own color | — | F1 | todo |
 | RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | todo |
 | RF5.1 | A refused command is told to the player | — | F10 | todo |
