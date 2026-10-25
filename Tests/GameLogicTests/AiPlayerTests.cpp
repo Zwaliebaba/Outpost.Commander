@@ -1334,7 +1334,8 @@ public:
     // Sixteen minutes: its fifth sector waits for its Command Station's level 2, 300 Ore and 45 s of a Constructor's work
     // before the Relay (ADR-064 decision 11), where Phase 2 had it in eight; each rig away from home waits for a
     // platform of 450 Ore, paid from Phase 4's lower income, where Phase 3 had it in nine; and on Phase 4's 10 km map
-    // those rigs are further out.
+    // those rigs are further out. A platform waits for its sector to be held (ADR-056 decision 5), so the Ore goes to the
+    // rigs first, and there are eight of them where there were six while a platform could be ordered before its sector.
     match.Run(16.0 * 60.0);
     const Outpost::Snapshot view = match.View(AI);
     std::ptrdiff_t dry = 0;
@@ -1349,8 +1350,8 @@ public:
       ++(structure->oreReserveHundredths.value_or(1) == 0 ? dry : mining);
     }
     Assert::AreEqual(std::ptrdiff_t{3}, dry, L"the home rigs, run dry, are kept");
-    Assert::AreEqual(std::ptrdiff_t{6}, mining, L"six rigs on asteroids with ore");
-    Assert::IsTrue(platforms >= 6, L"a platform beside each rig away from home, and one by the base");
+    Assert::AreEqual(std::ptrdiff_t{8}, mining, L"eight rigs on asteroids with ore");
+    Assert::IsTrue(platforms >= 9, L"a platform beside each rig away from home, and one by the base");
   }
 
   // ADR-020 decision 14: against a player who does nothing, the AI researches through tier 2 and opens tier 3.

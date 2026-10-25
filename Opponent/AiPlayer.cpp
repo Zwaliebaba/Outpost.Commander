@@ -142,16 +142,16 @@ const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureK
 
 // The nearest place to _preferred, in rings around it, where a structure of _type keeps _gapMeters clear of every blocker
 // and of the map's edge, and where the rules of _snapshot's map let its player build one: what NeedsHeldSector names only
-// in a sector the player holds (ADR-020 decision 19). With _waitsToHold, the sector _preferred is in counts as held, for a
-// structure planned there that waits until it is (IsReady).
+// in a sector the player holds (ADR-020 decision 19). With _plannedIn, the sector that point is in counts as held, for a
+// structure planned there before it is, which waits until it is (IsReady).
 std::optional<PlanePosition> FindPlace(const Outpost::StructureTypeView& _type, PlanePosition _preferred,
                                        std::span<const EntityView> _blockers, const Snapshot& _snapshot, float _gapMeters,
-                                       bool _waitsToHold = false)
+                                       std::optional<PlanePosition> _plannedIn = std::nullopt)
 {
   Outpost::StructureTypeView padded = _type;
   padded.radiusMeters += _gapMeters;
   std::vector<Outpost::SectorView> sectors = _snapshot.sectors;
-  if (const Outpost::SectorView* planned = Outpost::FindSector(_snapshot.sectors, _preferred); _waitsToHold && planned != nullptr)
+  if (const Outpost::SectorView* planned = _plannedIn.has_value() ? Outpost::FindSector(_snapshot.sectors, *_plannedIn) : nullptr)
     sectors[static_cast<size_t>(planned - _snapshot.sectors.data())].holder = _snapshot.player;
   for (int ring = 0; ring <= SEARCH_RINGS; ++ring)
   {
@@ -677,10 +677,11 @@ void Outpost::AiPlayer::AddPlatformBeside(const Snapshot& _snapshot, PlanePositi
                                         rigRadius + type->radiusMeters + static_cast<float>(m_settings.structureGapMeters));
   slot.radiusMeters = type->radiusMeters;
   const std::optional<PlanePosition> adopted = Adoptable(_snapshot, StructureKind::DefensePlatform, preferred);
-  // A rig's sector may not be held yet when its platform is planned; the platform waits for it (IsReady).
+  // A rig's sector may not be held yet when its platform is planned: the platform stands in it, or in a sector the AI
+  // holds, and waits for it (IsReady).
   const std::optional<PlanePosition> place = adopted.has_value() ? adopted
                                                                  : FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot,
-                                                                             static_cast<float>(m_settings.structureGapMeters), true);
+                                                                             static_cast<float>(m_settings.structureGapMeters), at);
   slot.position = place.value_or(preferred);
   slot.abandoned = !place.has_value();
   m_slots.push_back(slot);
