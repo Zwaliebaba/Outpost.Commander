@@ -7,7 +7,7 @@ namespace GameLogicTests
 std::string ReadRepositoryData(std::string_view _fileName)
 {
   const std::filesystem::path path =
-    std::filesystem::path(__FILE__).parent_path().parent_path() / "OutpostCommander" / "Assets" / _fileName;
+    std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander" / "Assets" / _fileName;
   std::ifstream file(path, std::ios::binary);
   Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(file.is_open(), path.wstring().c_str());
   std::ostringstream text;
@@ -27,7 +27,7 @@ std::string ReadRepositoryMap()
 
 std::filesystem::path RepositoryHome()
 {
-  return std::filesystem::path(__FILE__).parent_path().parent_path() / "OutpostCommander";
+  return std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander";
 }
 
 ScopedHomeDirectory::ScopedHomeDirectory(const std::filesystem::path& _home)

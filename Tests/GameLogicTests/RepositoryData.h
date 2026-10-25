@@ -3,7 +3,7 @@
 namespace GameLogicTests
 {
 // The text of a data file the game ships, from OutpostCommander/Assets in the repository (ADR-008). UseFullPaths makes
-// __FILE__ absolute, so the repository is two levels up from this header.
+// __FILE__ absolute, so the repository is three levels up from this header.
 std::string ReadRepositoryData(std::string_view _fileName);
 
 // OutpostCommander/Assets/Tuning.json, which Tools/BattleModel.py reads too.
