@@ -4729,36 +4729,6 @@
    "order": 289
   },
   {
-   "id": "minimap.mark.ship",
-   "kind": "panel",
-   "x": 52.6,
-   "y": 1023.54,
-   "w": 3.0,
-   "h": 3.0,
-   "color": "OWN_COLOR",
-   "fill": "solid",
-   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
-   "sample": true,
-   "layer": 0,
-   "drawList": "panels",
-   "order": 290
-  },
-  {
-   "id": "minimap.mark.ship#2",
-   "kind": "panel",
-   "x": 53.46,
-   "y": 1024.4,
-   "w": 3.0,
-   "h": 3.0,
-   "color": "OWN_COLOR",
-   "fill": "solid",
-   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
-   "sample": true,
-   "layer": 0,
-   "drawList": "panels",
-   "order": 291
-  },
-  {
    "id": "minimap.mark.structure#2",
    "kind": "panel",
    "x": 106.2,
@@ -4771,7 +4741,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 292
+   "order": 290
   },
   {
    "id": "minimap.mark.structure#3",
@@ -4786,7 +4756,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 293
+   "order": 291
   },
   {
    "id": "minimap.mark.structure#4",
@@ -4801,7 +4771,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 294
+   "order": 292
   },
   {
    "id": "minimap.mark.structure#5",
@@ -4816,7 +4786,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 295
+   "order": 293
   },
   {
    "id": "minimap.mark.structure#6",
@@ -4831,7 +4801,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 296
+   "order": 294
   },
   {
    "id": "minimap.mark.structure#7",
@@ -4846,7 +4816,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 297
+   "order": 295
   },
   {
    "id": "minimap.mark.structure#8",
@@ -4861,7 +4831,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 298
+   "order": 296
   },
   {
    "id": "minimap.mark.structure#9",
@@ -4876,7 +4846,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 299
+   "order": 297
   },
   {
    "id": "minimap.mark.structure#10",
@@ -4891,52 +4861,551 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 300
+   "order": 298
   },
   {
-   "id": "minimap.mark.ship#3",
+   "id": "minimap.mark.structure#11",
    "kind": "panel",
-   "x": 104.86,
-   "y": 966.46,
-   "w": 3.0,
-   "h": 3.0,
+   "x": 42.87,
+   "y": 1017.78,
+   "w": 6.0,
+   "h": 6.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1, Hud.cpp:403-410): Shipyard 01, idle at L1, having built 14 ships (designer 'BUILT · 14')",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 299
+  },
+  {
+   "id": "minimap.mark.structure#12",
+   "kind": "panel",
+   "x": 40.03,
+   "y": 1026.02,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1, Hud.cpp:403-410): Shipyard 02, L1, building a Swarm, 62% (the production window)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 300
+  },
+  {
+   "id": "minimap.mark.structure#13",
+   "kind": "panel",
+   "x": 47.98,
+   "y": 1033.97,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1, Hud.cpp:403-410): Shipyard 03, at L2 since Medium hulls were built, building a Lancer",
    "layer": 0,
    "drawList": "panels",
    "order": 301
   },
   {
-   "id": "minimap.mark.ship#4",
+   "id": "minimap.mark.structure#14",
    "kind": "panel",
-   "x": 110.54,
-   "y": 970.72,
+   "x": 57.92,
+   "y": 1013.81,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the Lab the status panel's 'Large Hull' line implies (Hud.cpp:281-311)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 302
+  },
+  {
+   "id": "minimap.mark.structure#15",
+   "kind": "panel",
+   "x": 107.19,
+   "y": 969.22,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the site 40% built whose bars stand beside B2's Relay (its foot at 1100, 600), taken for a Defence Platform: 61 m from the Relay, clear of its footprint (Placement.cpp:70-78)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 303
+  },
+  {
+   "id": "minimap.mark.ship",
+   "kind": "panel",
+   "x": 109.83,
+   "y": 971.71,
    "w": 3.0,
    "h": 3.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two Constructors, building the Defence Platform site in B2",
    "layer": 0,
    "drawList": "panels",
-   "order": 302
+   "order": 304
+  },
+  {
+   "id": "minimap.mark.ship#2",
+   "kind": "panel",
+   "x": 107.7,
+   "y": 971.52,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the two Constructors, building the Defence Platform site in B2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 305
+  },
+  {
+   "id": "minimap.mark.ship#3",
+   "kind": "panel",
+   "x": 102.94,
+   "y": 964.61,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 306
+  },
+  {
+   "id": "minimap.mark.ship#4",
+   "kind": "panel",
+   "x": 104.22,
+   "y": 964.61,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 307
   },
   {
    "id": "minimap.mark.ship#5",
    "kind": "panel",
-   "x": 109.12,
-   "y": 967.88,
+   "x": 105.5,
+   "y": 964.61,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 308
+  },
+  {
+   "id": "minimap.mark.ship#6",
+   "kind": "panel",
+   "x": 106.78,
+   "y": 964.61,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 309
+  },
+  {
+   "id": "minimap.mark.ship#7",
+   "kind": "panel",
+   "x": 102.94,
+   "y": 965.89,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 310
+  },
+  {
+   "id": "minimap.mark.ship#8",
+   "kind": "panel",
+   "x": 104.22,
+   "y": 965.89,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 311
+  },
+  {
+   "id": "minimap.mark.ship#9",
+   "kind": "panel",
+   "x": 105.5,
+   "y": 965.89,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 312
+  },
+  {
+   "id": "minimap.mark.ship#10",
+   "kind": "panel",
+   "x": 106.78,
+   "y": 965.89,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 313
+  },
+  {
+   "id": "minimap.mark.ship#11",
+   "kind": "panel",
+   "x": 103.58,
+   "y": 967.17,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 314
+  },
+  {
+   "id": "minimap.mark.ship#12",
+   "kind": "panel",
+   "x": 104.86,
+   "y": 967.17,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 315
+  },
+  {
+   "id": "minimap.mark.ship#13",
+   "kind": "panel",
+   "x": 106.14,
+   "y": 967.17,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 316
+  },
+  {
+   "id": "minimap.mark.ship#14",
+   "kind": "panel",
+   "x": 96.34,
+   "y": 980.66,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the selected Brawler '1 retreating to be repaired', on its way to the Command Station",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 317
+  },
+  {
+   "id": "minimap.mark.ship#15",
+   "kind": "panel",
+   "x": 62.4,
+   "y": 1012.68,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 318
+  },
+  {
+   "id": "minimap.mark.ship#16",
+   "kind": "panel",
+   "x": 63.68,
+   "y": 1012.68,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 319
+  },
+  {
+   "id": "minimap.mark.ship#17",
+   "kind": "panel",
+   "x": 64.96,
+   "y": 1012.68,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 320
+  },
+  {
+   "id": "minimap.mark.ship#18",
+   "kind": "panel",
+   "x": 62.4,
+   "y": 1013.96,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 321
+  },
+  {
+   "id": "minimap.mark.ship#19",
+   "kind": "panel",
+   "x": 63.68,
+   "y": 1013.96,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 322
+  },
+  {
+   "id": "minimap.mark.ship#20",
+   "kind": "panel",
+   "x": 64.96,
+   "y": 1013.96,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 323
+  },
+  {
+   "id": "minimap.mark.ship#21",
+   "kind": "panel",
+   "x": 109.26,
+   "y": 965.32,
    "w": 3.0,
    "h": 3.0,
    "color": "ENEMY_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 303
+   "order": 324
+  },
+  {
+   "id": "minimap.mark.ship#22",
+   "kind": "panel",
+   "x": 110.97,
+   "y": 965.32,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 325
+  },
+  {
+   "id": "minimap.mark.ship#23",
+   "kind": "panel",
+   "x": 109.26,
+   "y": 967.03,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 326
+  },
+  {
+   "id": "minimap.mark.ship#24",
+   "kind": "panel",
+   "x": 110.97,
+   "y": 967.03,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 327
+  },
+  {
+   "id": "minimap.mark.ship#25",
+   "kind": "panel",
+   "x": 165.21,
+   "y": 966.74,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship attacking C2's Relay ('Relay under attack: C2') from within its Mass Driver's 120 m, which suppresses it; seen within the Relay's sight",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 328
+  },
+  {
+   "id": "minimap.mark.ship#26",
+   "kind": "panel",
+   "x": 166.2,
+   "y": 966.74,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship attacking C2's Relay ('Relay under attack: C2') from within its Mass Driver's 120 m, which suppresses it; seen within the Relay's sight",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 329
+  },
+  {
+   "id": "minimap.mark.ship#27",
+   "kind": "panel",
+   "x": 167.2,
+   "y": 966.74,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship attacking C2's Relay ('Relay under attack: C2') from within its Mass Driver's 120 m, which suppresses it; seen within the Relay's sight",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 330
+  },
+  {
+   "id": "minimap.mark.ship#28",
+   "kind": "panel",
+   "x": 60.27,
+   "y": 890.92,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship by the asteroid whose rig it destroyed ('Mining Rig lost: A3'); seen, since A3 is held unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 331
+  },
+  {
+   "id": "minimap.mark.ship#29",
+   "kind": "panel",
+   "x": 61.41,
+   "y": 890.92,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship by the asteroid whose rig it destroyed ('Mining Rig lost: A3'); seen, since A3 is held unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 332
   },
   {
    "id": "minimap.fog",
@@ -4950,7 +5419,7 @@
    "source": "Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)",
    "layer": 0,
    "drawList": "panels",
-   "order": 304
+   "order": 333
   },
   {
    "id": "minimap.sector.lattice.A1",
@@ -4964,7 +5433,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 305
+   "order": 334
   },
   {
    "id": "minimap.sector.lattice.B1",
@@ -4978,7 +5447,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 306
+   "order": 335
   },
   {
    "id": "minimap.sector.lattice.C1",
@@ -4992,7 +5461,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 307
+   "order": 336
   },
   {
    "id": "minimap.sector.lattice.D1",
@@ -5006,7 +5475,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 308
+   "order": 337
   },
   {
    "id": "minimap.sector.lattice.E1",
@@ -5020,7 +5489,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 309
+   "order": 338
   },
   {
    "id": "minimap.sector.lattice.A2",
@@ -5034,7 +5503,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 310
+   "order": 339
   },
   {
    "id": "minimap.sector.lattice.B2",
@@ -5048,7 +5517,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 311
+   "order": 340
   },
   {
    "id": "minimap.sector.lattice.C2",
@@ -5062,7 +5531,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 312
+   "order": 341
   },
   {
    "id": "minimap.sector.lattice.D2",
@@ -5076,7 +5545,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 313
+   "order": 342
   },
   {
    "id": "minimap.sector.lattice.E2",
@@ -5090,7 +5559,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 314
+   "order": 343
   },
   {
    "id": "minimap.sector.lattice.A3",
@@ -5104,7 +5573,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 315
+   "order": 344
   },
   {
    "id": "minimap.sector.lattice.B3",
@@ -5118,7 +5587,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 316
+   "order": 345
   },
   {
    "id": "minimap.sector.lattice.C3",
@@ -5132,7 +5601,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 317
+   "order": 346
   },
   {
    "id": "minimap.sector.lattice.D3",
@@ -5146,7 +5615,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 318
+   "order": 347
   },
   {
    "id": "minimap.sector.lattice.E3",
@@ -5160,7 +5629,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 319
+   "order": 348
   },
   {
    "id": "minimap.sector.lattice.A4",
@@ -5174,7 +5643,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 320
+   "order": 349
   },
   {
    "id": "minimap.sector.lattice.B4",
@@ -5188,7 +5657,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 321
+   "order": 350
   },
   {
    "id": "minimap.sector.lattice.C4",
@@ -5202,7 +5671,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 322
+   "order": 351
   },
   {
    "id": "minimap.sector.lattice.D4",
@@ -5216,7 +5685,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 323
+   "order": 352
   },
   {
    "id": "minimap.sector.lattice.E4",
@@ -5230,7 +5699,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 324
+   "order": 353
   },
   {
    "id": "minimap.sector.lattice.A5",
@@ -5244,7 +5713,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 325
+   "order": 354
   },
   {
    "id": "minimap.sector.lattice.B5",
@@ -5258,7 +5727,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 326
+   "order": 355
   },
   {
    "id": "minimap.sector.lattice.C5",
@@ -5272,7 +5741,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 327
+   "order": 356
   },
   {
    "id": "minimap.sector.lattice.D5",
@@ -5286,7 +5755,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 328
+   "order": 357
   },
   {
    "id": "minimap.sector.lattice.E5",
@@ -5300,7 +5769,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 329
+   "order": 358
   },
   {
    "id": "minimap.sector.held.A1",
@@ -5316,7 +5785,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 330
+   "order": 359
   },
   {
    "id": "minimap.sector.held.B1",
@@ -5332,7 +5801,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 331
+   "order": 360
   },
   {
    "id": "minimap.sector.held.C1",
@@ -5348,7 +5817,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 332
+   "order": 361
   },
   {
    "id": "minimap.sector.held.D1",
@@ -5364,7 +5833,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 333
+   "order": 362
   },
   {
    "id": "minimap.sector.held.E1",
@@ -5380,7 +5849,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 334
+   "order": 363
   },
   {
    "id": "minimap.sector.held.B2",
@@ -5396,7 +5865,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 335
+   "order": 364
   },
   {
    "id": "minimap.sector.held.C2",
@@ -5412,7 +5881,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 336
+   "order": 365
   },
   {
    "id": "minimap.sector.suppressed.C2",
@@ -5427,7 +5896,7 @@
    "source": "Hud.cpp:3578-3579",
    "layer": 0,
    "drawList": "panels",
-   "order": 337
+   "order": 366
   },
   {
    "id": "minimap.sector.held.E2",
@@ -5443,7 +5912,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 338
+   "order": 367
   },
   {
    "id": "minimap.sector.held.A3",
@@ -5459,7 +5928,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 339
+   "order": 368
   },
   {
    "id": "minimap.sector.held.C3",
@@ -5475,7 +5944,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 340
+   "order": 369
   },
   {
    "id": "minimap.sector.held.D3",
@@ -5491,7 +5960,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 341
+   "order": 370
   },
   {
    "id": "minimap.sector.held.E3",
@@ -5507,7 +5976,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 342
+   "order": 371
   },
   {
    "id": "minimap.sector.held.A4",
@@ -5523,7 +5992,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 343
+   "order": 372
   },
   {
    "id": "minimap.sector.held.C4",
@@ -5539,7 +6008,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 344
+   "order": 373
   },
   {
    "id": "minimap.sector.held.D4",
@@ -5555,7 +6024,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 345
+   "order": 374
   },
   {
    "id": "minimap.sector.held.E4",
@@ -5571,7 +6040,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 346
+   "order": 375
   },
   {
    "id": "minimap.sector.held.A5",
@@ -5587,7 +6056,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 347
+   "order": 376
   },
   {
    "id": "minimap.sector.held.B5",
@@ -5603,7 +6072,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 348
+   "order": 377
   },
   {
    "id": "minimap.sector.held.C5",
@@ -5619,7 +6088,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 349
+   "order": 378
   },
   {
    "id": "minimap.sector.held.D5",
@@ -5635,7 +6104,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 350
+   "order": 379
   },
   {
    "id": "minimap.sector.held.E5",
@@ -5651,7 +6120,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 351
+   "order": 380
   },
   {
    "id": "minimap.memory.across",
@@ -5667,7 +6136,7 @@
    "note": "sample: seed 342's derelict (Map.json derelicts; Map.cpp:442-507; ADR-074); seen while it is in sight or in a sector the player holds unsuppressed (Simulation.cpp:289-304, 2981-2987)",
    "layer": 0,
    "drawList": "panels",
-   "order": 352
+   "order": 381
   },
   {
    "id": "minimap.memory.down",
@@ -5683,7 +6152,7 @@
    "note": "sample: seed 342's derelict (Map.json derelicts; Map.cpp:442-507; ADR-074); seen while it is in sight or in a sector the player holds unsuppressed (Simulation.cpp:289-304, 2981-2987)",
    "layer": 0,
    "drawList": "panels",
-   "order": 353
+   "order": 382
   },
   {
    "id": "minimap.memory.across#2",
@@ -5698,7 +6167,7 @@
    "source": "Hud.cpp:3595-3605 (remembered: a cross)",
    "layer": 0,
    "drawList": "panels",
-   "order": 354
+   "order": 383
   },
   {
    "id": "minimap.memory.down#2",
@@ -5713,7 +6182,7 @@
    "source": "Hud.cpp:3604",
    "layer": 0,
    "drawList": "panels",
-   "order": 355
+   "order": 384
   },
   {
    "id": "minimap.alert",
@@ -5728,7 +6197,7 @@
    "source": "Hud.cpp:3608-3617 (ALERT_MARK_UNITS 14)",
    "layer": 0,
    "drawList": "panels",
-   "order": 356
+   "order": 385
   },
   {
    "id": "minimap.alert#2",
@@ -5743,7 +6212,7 @@
    "source": "Hud.cpp:3608-3617 (ALERT_MARK_UNITS 14)",
    "layer": 0,
    "drawList": "panels",
-   "order": 357
+   "order": 386
   },
   {
    "id": "minimap.alert#3",
@@ -5758,7 +6227,7 @@
    "source": "Hud.cpp:3608-3617 (ALERT_MARK_UNITS 14)",
    "layer": 0,
    "drawList": "panels",
-   "order": 358
+   "order": 387
   },
   {
    "id": "minimap.view",
@@ -5784,7 +6253,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 359
+   "order": 388
   },
   {
    "id": "minimap.view#2",
@@ -5810,7 +6279,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 360
+   "order": 389
   },
   {
    "id": "minimap.view#3",
@@ -5836,7 +6305,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 361
+   "order": 390
   },
   {
    "id": "minimap.view#4",
@@ -5862,7 +6331,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 362
+   "order": 391
   },
   {
    "id": "window.frame",
@@ -5877,7 +6346,7 @@
    "source": "Hud.cpp:879,888 (OpenWindow frame); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "panels",
-   "order": 363
+   "order": 392
   },
   {
    "id": "window.titleBar",
@@ -5892,7 +6361,7 @@
    "source": "Hud.cpp:880,889 (title bar, dragged by it: GameClient.cpp:993-996)",
    "layer": 1,
    "drawList": "panels",
-   "order": 364
+   "order": 393
   },
   {
    "id": "window.closeBox",
@@ -5907,7 +6376,7 @@
    "source": "Hud.cpp:881,890 (close box; GameClient.cpp:987-991)",
    "layer": 1,
    "drawList": "panels",
-   "order": 365
+   "order": 394
   },
   {
    "id": "window.close",
@@ -5926,7 +6395,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 366
+   "order": 395
   },
   {
    "id": "corner.tl#9",
@@ -5944,7 +6413,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 367
+   "order": 396
   },
   {
    "id": "corner.bl#9",
@@ -5962,7 +6431,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 368
+   "order": 397
   },
   {
    "id": "corner.tr#9",
@@ -5980,7 +6449,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 369
+   "order": 398
   },
   {
    "id": "corner.br#9",
@@ -5998,7 +6467,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 370
+   "order": 399
   },
   {
    "id": "orders.titleLabel",
@@ -6018,7 +6487,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 371
+   "order": 400
   },
   {
    "id": "orders.waiting.label",
@@ -6038,7 +6507,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 372
+   "order": 401
   },
   {
    "id": "orders.scheduled",
@@ -6059,7 +6528,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 373
+   "order": 402
   },
   {
    "id": "orders.scheduled#2",
@@ -6080,7 +6549,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 374
+   "order": 403
   },
   {
    "id": "orders.form.label",
@@ -6100,7 +6569,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 375
+   "order": 404
   },
   {
    "id": "orders.row0.label",
@@ -6120,7 +6589,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 376
+   "order": 405
   },
   {
    "id": "orders.row0.previous",
@@ -6136,7 +6605,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 377
+   "order": 406
   },
   {
    "id": "orders.row0.previous.mark",
@@ -6155,7 +6624,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 378
+   "order": 407
   },
   {
    "id": "orders.row0.subject",
@@ -6175,7 +6644,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 379
+   "order": 408
   },
   {
    "id": "orders.row0.next",
@@ -6193,7 +6662,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 380
+   "order": 409
   },
   {
    "id": "orders.row0.next.mark",
@@ -6212,7 +6681,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 381
+   "order": 410
   },
   {
    "id": "orders.row1.label",
@@ -6232,7 +6701,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 382
+   "order": 411
   },
   {
    "id": "orders.row1.previous",
@@ -6248,7 +6717,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 383
+   "order": 412
   },
   {
    "id": "orders.row1.previous.mark",
@@ -6267,7 +6736,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 384
+   "order": 413
   },
   {
    "id": "orders.row1.subject",
@@ -6287,7 +6756,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 385
+   "order": 414
   },
   {
    "id": "orders.row1.next",
@@ -6305,7 +6774,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 386
+   "order": 415
   },
   {
    "id": "orders.row1.next.mark",
@@ -6324,7 +6793,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 387
+   "order": 416
   },
   {
    "id": "orders.row2.label",
@@ -6344,7 +6813,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 388
+   "order": 417
   },
   {
    "id": "orders.row2.previous",
@@ -6360,7 +6829,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 389
+   "order": 418
   },
   {
    "id": "orders.row2.previous.mark",
@@ -6379,7 +6848,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 390
+   "order": 419
   },
   {
    "id": "orders.row2.subject",
@@ -6399,7 +6868,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 391
+   "order": 420
   },
   {
    "id": "orders.row2.next",
@@ -6417,7 +6886,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 392
+   "order": 421
   },
   {
    "id": "orders.row2.next.mark",
@@ -6436,7 +6905,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 393
+   "order": 422
   },
   {
    "id": "orders.row3.label",
@@ -6456,7 +6925,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 394
+   "order": 423
   },
   {
    "id": "orders.row3.previous",
@@ -6472,7 +6941,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 395
+   "order": 424
   },
   {
    "id": "orders.row3.previous.mark",
@@ -6491,7 +6960,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 396
+   "order": 425
   },
   {
    "id": "orders.row3.subject",
@@ -6511,7 +6980,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 397
+   "order": 426
   },
   {
    "id": "orders.row3.next",
@@ -6529,7 +6998,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 398
+   "order": 427
   },
   {
    "id": "orders.row3.next.mark",
@@ -6548,7 +7017,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 399
+   "order": 428
   },
   {
    "id": "orders.row4.label",
@@ -6568,7 +7037,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 400
+   "order": 429
   },
   {
    "id": "orders.row4.previous",
@@ -6584,7 +7053,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 401
+   "order": 430
   },
   {
    "id": "orders.row4.previous.mark",
@@ -6603,7 +7072,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 402
+   "order": 431
   },
   {
    "id": "orders.row4.subject",
@@ -6623,7 +7092,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 403
+   "order": 432
   },
   {
    "id": "orders.row4.next",
@@ -6641,7 +7110,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 404
+   "order": 433
   },
   {
    "id": "orders.row4.next.mark",
@@ -6660,7 +7129,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 405
+   "order": 434
   },
   {
    "id": "orders.row5.label",
@@ -6680,7 +7149,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 406
+   "order": 435
   },
   {
    "id": "orders.row5.previous",
@@ -6696,7 +7165,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 407
+   "order": 436
   },
   {
    "id": "orders.row5.previous.mark",
@@ -6715,7 +7184,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 408
+   "order": 437
   },
   {
    "id": "orders.row5.subject",
@@ -6735,7 +7204,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 409
+   "order": 438
   },
   {
    "id": "orders.row5.next",
@@ -6753,7 +7222,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 410
+   "order": 439
   },
   {
    "id": "orders.row5.next.mark",
@@ -6772,7 +7241,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 411
+   "order": 440
   },
   {
    "id": "orders.fires",
@@ -6793,7 +7262,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 412
+   "order": 441
   },
   {
    "id": "orders.give",
@@ -6809,7 +7278,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 413
+   "order": 442
   },
   {
    "id": "orders.give.edge",
@@ -6823,7 +7292,7 @@
    "source": "Hud.cpp:1276",
    "layer": 1,
    "drawList": "panels",
-   "order": 414
+   "order": 443
   },
   {
    "id": "orders.give.label",
@@ -6843,7 +7312,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 415
+   "order": 444
   }
  ]
 }

@@ -4728,36 +4728,6 @@
    "order": 289
   },
   {
-   "id": "minimap.mark.ship",
-   "kind": "panel",
-   "x": 57.86,
-   "y": 1017.9,
-   "w": 3.3,
-   "h": 3.3,
-   "color": "OWN_COLOR",
-   "fill": "solid",
-   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
-   "sample": true,
-   "layer": 0,
-   "drawList": "panels",
-   "order": 290
-  },
-  {
-   "id": "minimap.mark.ship#2",
-   "kind": "panel",
-   "x": 58.8,
-   "y": 1018.84,
-   "w": 3.3,
-   "h": 3.3,
-   "color": "OWN_COLOR",
-   "fill": "solid",
-   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
-   "sample": true,
-   "layer": 0,
-   "drawList": "panels",
-   "order": 291
-  },
-  {
    "id": "minimap.mark.structure#2",
    "kind": "panel",
    "x": 116.82,
@@ -4770,7 +4740,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 292
+   "order": 290
   },
   {
    "id": "minimap.mark.structure#3",
@@ -4785,7 +4755,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 293
+   "order": 291
   },
   {
    "id": "minimap.mark.structure#4",
@@ -4800,7 +4770,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 294
+   "order": 292
   },
   {
    "id": "minimap.mark.structure#5",
@@ -4815,7 +4785,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 295
+   "order": 293
   },
   {
    "id": "minimap.mark.structure#6",
@@ -4830,7 +4800,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 296
+   "order": 294
   },
   {
    "id": "minimap.mark.structure#7",
@@ -4845,7 +4815,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 297
+   "order": 295
   },
   {
    "id": "minimap.mark.structure#8",
@@ -4860,7 +4830,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 298
+   "order": 296
   },
   {
    "id": "minimap.mark.structure#9",
@@ -4875,7 +4845,7 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 299
+   "order": 297
   },
   {
    "id": "minimap.mark.structure#10",
@@ -4890,52 +4860,551 @@
    "sample": true,
    "layer": 0,
    "drawList": "panels",
-   "order": 300
+   "order": 298
   },
   {
-   "id": "minimap.mark.ship#3",
+   "id": "minimap.mark.structure#11",
    "kind": "panel",
-   "x": 115.35,
-   "y": 955.11,
-   "w": 3.3,
-   "h": 3.3,
+   "x": 47.15,
+   "y": 1011.56,
+   "w": 6.6,
+   "h": 6.6,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1, Hud.cpp:403-410): Shipyard 01, idle at L1, having built 14 ships (designer 'BUILT · 14')",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 299
+  },
+  {
+   "id": "minimap.mark.structure#12",
+   "kind": "panel",
+   "x": 44.03,
+   "y": 1020.62,
+   "w": 6.6,
+   "h": 6.6,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1, Hud.cpp:403-410): Shipyard 02, L1, building a Swarm, 62% (the production window)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 300
+  },
+  {
+   "id": "minimap.mark.structure#13",
+   "kind": "panel",
+   "x": 52.78,
+   "y": 1029.37,
+   "w": 6.6,
+   "h": 6.6,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1, Hud.cpp:403-410): Shipyard 03, at L2 since Medium hulls were built, building a Lancer",
    "layer": 0,
    "drawList": "panels",
    "order": 301
   },
   {
-   "id": "minimap.mark.ship#4",
+   "id": "minimap.mark.structure#14",
    "kind": "panel",
-   "x": 121.59,
-   "y": 959.79,
+   "x": 63.71,
+   "y": 1007.19,
+   "w": 6.6,
+   "h": 6.6,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the Lab the status panel's 'Large Hull' line implies (Hud.cpp:281-311)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 302
+  },
+  {
+   "id": "minimap.mark.structure#15",
+   "kind": "panel",
+   "x": 117.91,
+   "y": 958.14,
+   "w": 6.6,
+   "h": 6.6,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the site 40% built whose bars stand beside B2's Relay (its foot at 1100, 600), taken for a Defence Platform: 61 m from the Relay, clear of its footprint (Placement.cpp:70-78)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 303
+  },
+  {
+   "id": "minimap.mark.ship",
+   "kind": "panel",
+   "x": 120.81,
+   "y": 960.89,
    "w": 3.3,
    "h": 3.3,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two Constructors, building the Defence Platform site in B2",
    "layer": 0,
    "drawList": "panels",
-   "order": 302
+   "order": 304
+  },
+  {
+   "id": "minimap.mark.ship#2",
+   "kind": "panel",
+   "x": 118.47,
+   "y": 960.67,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the two Constructors, building the Defence Platform site in B2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 305
+  },
+  {
+   "id": "minimap.mark.ship#3",
+   "kind": "panel",
+   "x": 113.24,
+   "y": 953.08,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 306
+  },
+  {
+   "id": "minimap.mark.ship#4",
+   "kind": "panel",
+   "x": 114.64,
+   "y": 953.08,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 307
   },
   {
    "id": "minimap.mark.ship#5",
    "kind": "panel",
-   "x": 120.03,
-   "y": 956.67,
+   "x": 116.05,
+   "y": 953.08,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 308
+  },
+  {
+   "id": "minimap.mark.ship#6",
+   "kind": "panel",
+   "x": 117.45,
+   "y": 953.08,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 309
+  },
+  {
+   "id": "minimap.mark.ship#7",
+   "kind": "panel",
+   "x": 113.24,
+   "y": 954.48,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 310
+  },
+  {
+   "id": "minimap.mark.ship#8",
+   "kind": "panel",
+   "x": 114.64,
+   "y": 954.48,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 311
+  },
+  {
+   "id": "minimap.mark.ship#9",
+   "kind": "panel",
+   "x": 116.05,
+   "y": 954.48,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 312
+  },
+  {
+   "id": "minimap.mark.ship#10",
+   "kind": "panel",
+   "x": 117.45,
+   "y": 954.48,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 313
+  },
+  {
+   "id": "minimap.mark.ship#11",
+   "kind": "panel",
+   "x": 113.94,
+   "y": 955.89,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 314
+  },
+  {
+   "id": "minimap.mark.ship#12",
+   "kind": "panel",
+   "x": 115.35,
+   "y": 955.89,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 315
+  },
+  {
+   "id": "minimap.mark.ship#13",
+   "kind": "panel",
+   "x": 116.75,
+   "y": 955.89,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 316
+  },
+  {
+   "id": "minimap.mark.ship#14",
+   "kind": "panel",
+   "x": 105.97,
+   "y": 970.73,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the selected Brawler '1 retreating to be repaired', on its way to the Command Station",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 317
+  },
+  {
+   "id": "minimap.mark.ship#15",
+   "kind": "panel",
+   "x": 68.64,
+   "y": 1005.95,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 318
+  },
+  {
+   "id": "minimap.mark.ship#16",
+   "kind": "panel",
+   "x": 70.05,
+   "y": 1005.95,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 319
+  },
+  {
+   "id": "minimap.mark.ship#17",
+   "kind": "panel",
+   "x": 71.45,
+   "y": 1005.95,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 320
+  },
+  {
+   "id": "minimap.mark.ship#18",
+   "kind": "panel",
+   "x": 68.64,
+   "y": 1007.35,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 321
+  },
+  {
+   "id": "minimap.mark.ship#19",
+   "kind": "panel",
+   "x": 70.05,
+   "y": 1007.35,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 322
+  },
+  {
+   "id": "minimap.mark.ship#20",
+   "kind": "panel",
+   "x": 71.45,
+   "y": 1007.35,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 6 ships the scheduled 'hold B2' order waits with (Orders window), in A1",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 323
+  },
+  {
+   "id": "minimap.mark.ship#21",
+   "kind": "panel",
+   "x": 120.19,
+   "y": 953.86,
    "w": 3.3,
    "h": 3.3,
    "color": "ENEMY_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
    "layer": 0,
    "drawList": "panels",
-   "order": 303
+   "order": 324
+  },
+  {
+   "id": "minimap.mark.ship#22",
+   "kind": "panel",
+   "x": 122.06,
+   "y": 953.86,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 325
+  },
+  {
+   "id": "minimap.mark.ship#23",
+   "kind": "panel",
+   "x": 120.19,
+   "y": 955.73,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 326
+  },
+  {
+   "id": "minimap.mark.ship#24",
+   "kind": "panel",
+   "x": 122.06,
+   "y": 955.73,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' names; seen in a sector the player holds unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 327
+  },
+  {
+   "id": "minimap.mark.ship#25",
+   "kind": "panel",
+   "x": 181.73,
+   "y": 955.42,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship attacking C2's Relay ('Relay under attack: C2') from within its Mass Driver's 120 m, which suppresses it; seen within the Relay's sight",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 328
+  },
+  {
+   "id": "minimap.mark.ship#26",
+   "kind": "panel",
+   "x": 182.82,
+   "y": 955.42,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship attacking C2's Relay ('Relay under attack: C2') from within its Mass Driver's 120 m, which suppresses it; seen within the Relay's sight",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 329
+  },
+  {
+   "id": "minimap.mark.ship#27",
+   "kind": "panel",
+   "x": 183.92,
+   "y": 955.42,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship attacking C2's Relay ('Relay under attack: C2') from within its Mass Driver's 120 m, which suppresses it; seen within the Relay's sight",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 330
+  },
+  {
+   "id": "minimap.mark.ship#28",
+   "kind": "panel",
+   "x": 66.3,
+   "y": 872.01,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship by the asteroid whose rig it destroyed ('Mining Rig lost: A3'); seen, since A3 is held unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 331
+  },
+  {
+   "id": "minimap.mark.ship#29",
+   "kind": "panel",
+   "x": 67.55,
+   "y": 872.01,
+   "w": 3.3,
+   "h": 3.3,
+   "color": "ENEMY_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: an enemy warship by the asteroid whose rig it destroyed ('Mining Rig lost: A3'); seen, since A3 is held unsuppressed",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 332
   },
   {
    "id": "minimap.fog",
@@ -4949,7 +5418,7 @@
    "source": "Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)",
    "layer": 0,
    "drawList": "panels",
-   "order": 304
+   "order": 333
   },
   {
    "id": "minimap.sector.lattice.A1",
@@ -4963,7 +5432,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 305
+   "order": 334
   },
   {
    "id": "minimap.sector.lattice.B1",
@@ -4977,7 +5446,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 306
+   "order": 335
   },
   {
    "id": "minimap.sector.lattice.C1",
@@ -4991,7 +5460,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 307
+   "order": 336
   },
   {
    "id": "minimap.sector.lattice.D1",
@@ -5005,7 +5474,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 308
+   "order": 337
   },
   {
    "id": "minimap.sector.lattice.E1",
@@ -5019,7 +5488,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 309
+   "order": 338
   },
   {
    "id": "minimap.sector.lattice.A2",
@@ -5033,7 +5502,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 310
+   "order": 339
   },
   {
    "id": "minimap.sector.lattice.B2",
@@ -5047,7 +5516,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 311
+   "order": 340
   },
   {
    "id": "minimap.sector.lattice.C2",
@@ -5061,7 +5530,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 312
+   "order": 341
   },
   {
    "id": "minimap.sector.lattice.D2",
@@ -5075,7 +5544,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 313
+   "order": 342
   },
   {
    "id": "minimap.sector.lattice.E2",
@@ -5089,7 +5558,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 314
+   "order": 343
   },
   {
    "id": "minimap.sector.lattice.A3",
@@ -5103,7 +5572,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 315
+   "order": 344
   },
   {
    "id": "minimap.sector.lattice.B3",
@@ -5117,7 +5586,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 316
+   "order": 345
   },
   {
    "id": "minimap.sector.lattice.C3",
@@ -5131,7 +5600,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 317
+   "order": 346
   },
   {
    "id": "minimap.sector.lattice.D3",
@@ -5145,7 +5614,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 318
+   "order": 347
   },
   {
    "id": "minimap.sector.lattice.E3",
@@ -5159,7 +5628,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 319
+   "order": 348
   },
   {
    "id": "minimap.sector.lattice.A4",
@@ -5173,7 +5642,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 320
+   "order": 349
   },
   {
    "id": "minimap.sector.lattice.B4",
@@ -5187,7 +5656,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 321
+   "order": 350
   },
   {
    "id": "minimap.sector.lattice.C4",
@@ -5201,7 +5670,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 322
+   "order": 351
   },
   {
    "id": "minimap.sector.lattice.D4",
@@ -5215,7 +5684,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 323
+   "order": 352
   },
   {
    "id": "minimap.sector.lattice.E4",
@@ -5229,7 +5698,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 324
+   "order": 353
   },
   {
    "id": "minimap.sector.lattice.A5",
@@ -5243,7 +5712,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 325
+   "order": 354
   },
   {
    "id": "minimap.sector.lattice.B5",
@@ -5257,7 +5726,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 326
+   "order": 355
   },
   {
    "id": "minimap.sector.lattice.C5",
@@ -5271,7 +5740,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 327
+   "order": 356
   },
   {
    "id": "minimap.sector.lattice.D5",
@@ -5285,7 +5754,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 328
+   "order": 357
   },
   {
    "id": "minimap.sector.lattice.E5",
@@ -5299,7 +5768,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 329
+   "order": 358
   },
   {
    "id": "minimap.sector.held.A1",
@@ -5315,7 +5784,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 330
+   "order": 359
   },
   {
    "id": "minimap.sector.held.B1",
@@ -5331,7 +5800,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 331
+   "order": 360
   },
   {
    "id": "minimap.sector.held.C1",
@@ -5347,7 +5816,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 332
+   "order": 361
   },
   {
    "id": "minimap.sector.held.D1",
@@ -5363,7 +5832,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 333
+   "order": 362
   },
   {
    "id": "minimap.sector.held.E1",
@@ -5379,7 +5848,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 334
+   "order": 363
   },
   {
    "id": "minimap.sector.held.B2",
@@ -5395,7 +5864,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 335
+   "order": 364
   },
   {
    "id": "minimap.sector.held.C2",
@@ -5411,7 +5880,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 336
+   "order": 365
   },
   {
    "id": "minimap.sector.suppressed.C2",
@@ -5426,7 +5895,7 @@
    "source": "Hud.cpp:3578-3579",
    "layer": 0,
    "drawList": "panels",
-   "order": 337
+   "order": 366
   },
   {
    "id": "minimap.sector.held.E2",
@@ -5442,7 +5911,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 338
+   "order": 367
   },
   {
    "id": "minimap.sector.held.A3",
@@ -5458,7 +5927,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 339
+   "order": 368
   },
   {
    "id": "minimap.sector.held.C3",
@@ -5474,7 +5943,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 340
+   "order": 369
   },
   {
    "id": "minimap.sector.held.D3",
@@ -5490,7 +5959,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 341
+   "order": 370
   },
   {
    "id": "minimap.sector.held.E3",
@@ -5506,7 +5975,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 342
+   "order": 371
   },
   {
    "id": "minimap.sector.held.A4",
@@ -5522,7 +5991,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 343
+   "order": 372
   },
   {
    "id": "minimap.sector.held.C4",
@@ -5538,7 +6007,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 344
+   "order": 373
   },
   {
    "id": "minimap.sector.held.D4",
@@ -5554,7 +6023,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 345
+   "order": 374
   },
   {
    "id": "minimap.sector.held.E4",
@@ -5570,7 +6039,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 346
+   "order": 375
   },
   {
    "id": "minimap.sector.held.A5",
@@ -5586,7 +6055,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 347
+   "order": 376
   },
   {
    "id": "minimap.sector.held.B5",
@@ -5602,7 +6071,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 348
+   "order": 377
   },
   {
    "id": "minimap.sector.held.C5",
@@ -5618,7 +6087,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 349
+   "order": 378
   },
   {
    "id": "minimap.sector.held.D5",
@@ -5634,7 +6103,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 350
+   "order": 379
   },
   {
    "id": "minimap.sector.held.E5",
@@ -5650,7 +6119,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 351
+   "order": 380
   },
   {
    "id": "minimap.memory.across",
@@ -5666,7 +6135,7 @@
    "note": "sample: seed 342's derelict (Map.json derelicts; Map.cpp:442-507; ADR-074); seen while it is in sight or in a sector the player holds unsuppressed (Simulation.cpp:289-304, 2981-2987)",
    "layer": 0,
    "drawList": "panels",
-   "order": 352
+   "order": 381
   },
   {
    "id": "minimap.memory.down",
@@ -5682,7 +6151,7 @@
    "note": "sample: seed 342's derelict (Map.json derelicts; Map.cpp:442-507; ADR-074); seen while it is in sight or in a sector the player holds unsuppressed (Simulation.cpp:289-304, 2981-2987)",
    "layer": 0,
    "drawList": "panels",
-   "order": 353
+   "order": 382
   },
   {
    "id": "minimap.memory.across#2",
@@ -5697,7 +6166,7 @@
    "source": "Hud.cpp:3595-3605 (remembered: a cross)",
    "layer": 0,
    "drawList": "panels",
-   "order": 354
+   "order": 383
   },
   {
    "id": "minimap.memory.down#2",
@@ -5712,7 +6181,7 @@
    "source": "Hud.cpp:3604",
    "layer": 0,
    "drawList": "panels",
-   "order": 355
+   "order": 384
   },
   {
    "id": "minimap.alert",
@@ -5727,7 +6196,7 @@
    "source": "Hud.cpp:3608-3617 (ALERT_MARK_UNITS 14)",
    "layer": 0,
    "drawList": "panels",
-   "order": 356
+   "order": 385
   },
   {
    "id": "minimap.alert#2",
@@ -5742,7 +6211,7 @@
    "source": "Hud.cpp:3608-3617 (ALERT_MARK_UNITS 14)",
    "layer": 0,
    "drawList": "panels",
-   "order": 357
+   "order": 386
   },
   {
    "id": "minimap.alert#3",
@@ -5757,7 +6226,7 @@
    "source": "Hud.cpp:3608-3617 (ALERT_MARK_UNITS 14)",
    "layer": 0,
    "drawList": "panels",
-   "order": 358
+   "order": 387
   },
   {
    "id": "minimap.view",
@@ -5783,7 +6252,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 359
+   "order": 388
   },
   {
    "id": "minimap.view#2",
@@ -5809,7 +6278,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 360
+   "order": 389
   },
   {
    "id": "minimap.view#3",
@@ -5835,7 +6304,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 361
+   "order": 390
   },
   {
    "id": "minimap.view#4",
@@ -5861,7 +6330,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 362
+   "order": 391
   }
  ]
 }

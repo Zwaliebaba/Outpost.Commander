@@ -21,6 +21,7 @@ Run:  python3 -I DesignReference/_work/A4/derive_layouts.py   (from the reposito
 import json
 import math
 import os
+import re
 import struct
 import sys
 
@@ -1017,6 +1018,8 @@ def lay_hud(out, c, hovered=None):
                         "Hud.cpp:3450-3451; EntityView::retreat (Snapshot.h:137)")
 
     if c.get("minimap", True):
+        if "marks" in c:
+            check_marks(c)
         lay_minimap(out, c)
 
 
@@ -1901,8 +1904,10 @@ def map_marks(sectors, extra=(), station=True, constructors=True, rigs=(), dry=(
     if station:
         marks.append({"kind": "Structure", "pos": P1_START, "radius": STATION["footprintRadiusMeters"], "side": "Own", "sample": False})
     if constructors:
-        marks.append({"kind": "Ship", "pos": (FOCUS[0] - 15, FOCUS[1] + 15), "radius": 10, "side": "Own"})
-        marks.append({"kind": "Ship", "pos": (FOCUS[0] + 15, FOCUS[1] - 15), "radius": 10, "side": "Own"})
+        for pos in starting_constructors():
+            marks.append({"kind": "Ship", "pos": pos, "radius": CONSTRUCTOR["footprintRadiusMeters"], "side": "Own", "sector": "A1", "added": True,
+                          "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json "
+                                  "rules.startingConstructors)"})
     relay = next(s for s in TUNING["structures"] if s["kind"] == "Relay")
     for name, info in sectors.items():
         if info.get("side") == "Own" and name != HOMES["Own"]:  # a held sector has a finished Relay on its node (Simulation.cpp:2807-2811)
@@ -1926,6 +1931,137 @@ def wreck_mark(sector):
     wreck = next(o for o in TUNING["pirates"]["outposts"] if o["name"] == OUTPOST_OF[sector])["wreck"]
     return {"kind": "Derelict", "pos": node_of(sector), "radius": wreck["radiusMeters"], "side": "Neutral",
             "note": "sample: the wreck of the {} the player cleared in {} ({} Ore, Tuning.json pirates.outposts)".format(OUTPOST_OF[sector], sector, wreck["ore"])}
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# The player's base and fleets, and the enemy ships its alerts imply (V2 defect C). Hud::Describe marks every entity in the
+# snapshot (Hud.cpp:2533-2541), so every structure and ship a frame's panels imply has a mark; check_marks holds each frame to it.
+# --------------------------------------------------------------------------------------------------------------------
+STRUCTURE = {s["kind"]: s for s in TUNING["structures"]}
+CONSTRUCTOR = TUNING["constructor"]
+HULL = {h["id"]: h for h in HULLS}
+DESIGN = {d["name"]: d for d in STARTING}  # every seat starts with these (Simulation.cpp:569-580; InProcessServer.cpp:160), the enemy too
+BASE_ROW_GAP_METERS, BASE_ROW_SPACING_METERS = 25.0, 10.0  # Simulation.cpp:78-79
+# Where the sample's player built its base: in A1, the held sector a Shipyard must stand in (Placement.cpp:62-69), each footprint clear of the
+# station, the home asteroids, the Constructors and each other (Placement.cpp:70-78), about 330 m out so that the 6-unit marks part.
+# Shipyard 01 and the Lab stand inside the camera's view at FOCUS, which the frames that select them look at.
+SHIPYARD_AT = [(-4230.0, -3760.0), (-4330.0, -4050.0), (-4050.0, -4330.0)]  # Shipyard 01, 02, 03
+LAB_AT = (-3700.0, -3620.0)
+
+
+def starting_constructors():
+    """PlaceStartingBase (Simulation.cpp:731-748): a row of Constructors ahead of the station, facing the map's center (StartForward, 94-98)."""
+    heading = math.atan2(-P1_START[1], -P1_START[0])
+    forward = (math.cos(heading), math.sin(heading))
+    across = (forward[1], -forward[0])
+    radius, count = CONSTRUCTOR["footprintRadiusMeters"], TUNING["rules"]["startingConstructors"]
+    ahead = STATION["footprintRadiusMeters"] + BASE_ROW_GAP_METERS + radius
+    out = []
+    for i in range(count):
+        offset = (i - (count - 1) / 2.0) * (2.0 * radius + BASE_ROW_SPACING_METERS)
+        out.append((P1_START[0] + forward[0] * ahead + across[0] * offset, P1_START[1] + forward[1] * ahead + across[1] * offset))
+    return out
+
+
+def structure_mark(kind, pos, note, site=False, side="Own"):
+    """A structure's mark, its radius the footprint (Tuning.json structures[].footprintRadiusMeters); a site is marked as the structure is."""
+    return {"kind": "Structure", "structure": kind, "pos": pos, "radius": STRUCTURE[kind]["footprintRadiusMeters"], "side": side, "site": site,
+            "sector": sector_at(pos)["name"], "added": True, "note": note}
+
+
+def ship_marks(counts, center, note, side="Own", spacing=45.0, per_row=4, **flags):
+    """Warships of the named designs in rows of per_row, spacing apart, centred on center, each its hull's radius (Tuning.json
+    hulls[].footprintRadiusMeters). counts: (design name, how many) pairs."""
+    names = [name for name, n in counts for _ in range(n)]
+    rows = (len(names) + per_row - 1) // per_row
+    marks = []
+    for i, name in enumerate(names):
+        row, col = divmod(i, per_row)
+        in_row = min(per_row, len(names) - row * per_row)
+        pos = (center[0] + (col - (in_row - 1) / 2.0) * spacing, center[1] - (row - (rows - 1) / 2.0) * spacing)
+        marks.append(dict({"kind": "Ship", "design": name, "pos": pos, "radius": HULL[DESIGN[name]["hull"]]["footprintRadiusMeters"], "side": side,
+                           "sector": sector_at(pos)["name"], "added": True, "note": note}, **flags))
+    return marks
+
+
+def beside(at, kind, ahead):
+    """A point ahead of a producer on its side toward the map's center, where it delivers a ship (Simulation.cpp:2752-2759)."""
+    length = math.hypot(at[0], at[1])
+    out = (-at[0] / length, -at[1] / length)
+    reach = STRUCTURE[kind]["footprintRadiusMeters"] + ahead
+    return (at[0] + out[0] * reach, at[1] + out[1] * reach)
+
+
+def command_points(marks, building=()):
+    """CommandPointsOf (Simulation.cpp:2932-2949): the player's warships, and the warship at the front of each Shipyard building one, each by
+    its hull's Tuning.json hulls[].commandPoints; a Constructor counts nothing."""
+    points = sum(HULL[DESIGN[m["design"]]["hull"]]["commandPoints"] for m in marks if m["side"] == "Own" and m.get("design"))
+    return points + sum(HULL[DESIGN[name]["hull"]]["commandPoints"] for name in building)
+
+
+def sight_of(m):
+    """SightMetersOf (Simulation.cpp:252-262): an armed entity sees its weapon's range and the margin; anything else the unarmed sight."""
+    sight = TUNING["sight"]
+    if m.get("design"):
+        return find(WEAPONS, DESIGN[m["design"]]["weapon"])["rangeMeters"] + sight["weaponMarginMeters"]
+    if m["kind"] == "Structure" and not m.get("site") and "structureWeapon" in STRUCTURE.get(m.get("structure", ""), {}):
+        return find(TUNING["structureWeapons"], STRUCTURE[m["structure"]]["structureWeapon"])["rangeMeters"] + sight["weaponMarginMeters"]
+    return sight["unarmedMeters"]
+
+
+def in_polygon(p, corners):
+    inside = False
+    for i in range(len(corners)):
+        (ax, az), (bx, bz) = corners[i], corners[(i + 1) % len(corners)]
+        if (az > p[1]) != (bz > p[1]) and p[0] < ax + (p[1] - az) * (bx - ax) / (bz - az):
+            inside = not inside
+    return inside
+
+
+def check_marks(c):
+    """Holds a frame's minimap marks to its own panels and to the rules:
+    - one Shipyard mark per Shipyard the status line counts, a Lab mark when it shows the Lab's line, and the Fleet line's command points from
+      the marked warships and the Shipyards building (StatusLinesOf, Hud.cpp:281-414; Simulation.cpp:2932-2949); no warship without that line;
+    - every added mark inside its sector, its footprint clear of every other (Placement.cpp:70-78), a selected one inside the camera's view;
+    - an enemy ship only where the player sees it: in a sector it holds unsuppressed, or in sight of its own (Simulation.cpp:243-249, 278-304,
+      2981-2987); and a held sector suppressed exactly when an enemy warship is within the suppression radius of its Relay and none of the
+      player's is (Simulation.cpp:2838-2850); each 'Enemy ships in X' alert with an enemy ship in X (Simulation.cpp:378-405)."""
+    marks, status, sectors = c["marks"], c.get("status", []), c["sectors"]
+    text = " ".join(run["text"] for line in status for run in line["runs"])
+    counted = re.search(r"BUILDING (\d+)\D+WAITING (\d+)\D+IDLE (\d+)", text)
+    own = [m for m in marks if m["side"] == "Own" and not m.get("remembered")]
+    yards = [m for m in own if m.get("structure") == "Shipyard" and not m.get("site")]
+    assert len(yards) == (sum(int(g) for g in counted.groups()) if counted else 0), (len(yards), text)
+    assert len(c.get("building", ())) == (int(counted.group(1)) if counted else 0)
+    labs = [m for m in own if m.get("structure") == "ResearchLab" and not m.get("site")]
+    assert len(labs) == (1 if any(line["action"] == "OpenResearch" for line in status) else 0)
+    fleet = next((line["bar"]["figure"] for line in status if line["runs"][0]["text"] == "Fleet"), None)
+    assert command_points(own, c.get("building", ())) == (int(fleet.split(" / ")[0]) if fleet else 0), (command_points(own, c.get("building", ())), fleet)
+    for a in marks:
+        if not a.get("added"):
+            continue
+        assert sector_at(a["pos"])["name"] == a["sector"], (a["sector"], a["pos"])
+        for b in marks:
+            if b is not a and not b.get("remembered"):
+                assert math.dist(a["pos"], b["pos"]) >= a["radius"] + b["radius"], (a["pos"], b["pos"])
+        if a.get("selected"):
+            assert in_polygon(a["pos"], c["view"]), a["pos"]
+    observers = [m for m in own if m["kind"] in ("Ship", "Structure")]
+    for e in marks:
+        if e["side"] != "Enemy" or e.get("remembered") or e["kind"] != "Ship":
+            continue
+        held = sectors.get(sector_at(e["pos"])["name"], {})
+        seen = held.get("side") == "Own" and not held.get("suppressed")
+        assert seen or any(math.dist(o["pos"], e["pos"]) <= sight_of(o) + e["radius"] for o in observers), e["pos"]
+    for name, info in sectors.items():
+        if info.get("side") == "Own" and name != HOMES["Own"]:
+            near = lambda side: any(m.get("design") and m["side"] == side and math.dist(m["pos"], node_of(name)) <= TUNING["territory"]["suppressionRadiusMeters"]
+                                    for m in marks)
+            assert bool(info.get("suppressed")) == (near("Enemy") and not near("Own")), name
+    for txt, _ in c.get("alerts", []):
+        entered = re.match(r"Enemy ships in (\w+)$", txt)
+        if entered:
+            assert any(m["side"] == "Enemy" and m["kind"] == "Ship" and sector_at(m["pos"])["name"] == entered.group(1) for m in marks), txt
 
 
 def content_of(ore, sectors, cap, tickets=None, rigs=(), dry=(), extraction=False, server="", silent=0, view=FOCUS, **marks):
@@ -2257,16 +2393,53 @@ def busy_selection():
     return lines, [{"share": share, "retreating": k == 10, "hovered": False} for k, share in enumerate(bars)]
 
 
+BUSY_SITE_AT = (-1965.0, -2050.0)  # under the 40% site's entity bar: the ground below the screen's (1100, 600) with the camera at B2's node
+
+
+def busy_marks():
+    """What the busy state's panels imply on the minimap. The status panel counts 3 Shipyards (BUILDING 2, IDLE 1) and the Lab's line; the 12
+    selected warships fight in B2, where the camera looks and 'Enemy ships in B2' points; 'Relay under attack: C2' and C2's suppression put
+    enemy warships within 400 m of C2's Relay and none of the player's; and A3's rig was lost within the alert's 8 s (Alerts.h:15)."""
+    yard = "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1, Hud.cpp:403-410): "
+    marks = [structure_mark("Shipyard", SHIPYARD_AT[0], yard + "Shipyard 01, idle at L1, having built 14 ships (designer 'BUILT · 14')"),
+             structure_mark("Shipyard", SHIPYARD_AT[1], yard + "Shipyard 02, L1, building a Swarm, 62% (the production window)"),
+             structure_mark("Shipyard", SHIPYARD_AT[2], yard + "Shipyard 03, at L2 since Medium hulls were built, building a Lancer"),
+             structure_mark("ResearchLab", LAB_AT, "sample: the Lab the status panel's 'Large Hull' line implies (Hud.cpp:281-311)"),
+             structure_mark("DefensePlatform", BUSY_SITE_AT, "sample: the site 40% built whose bars stand beside B2's Relay (its foot at 1100, 600), "
+                            "taken for a Defence Platform: 61 m from the Relay, clear of its footprint (Placement.cpp:70-78)", site=True)]
+    # The two Constructors build it, one each side, clear of its footprint and the Relay's.
+    marks += [{"kind": "Ship", "pos": p, "radius": CONSTRUCTOR["footprintRadiusMeters"], "side": "Own", "sector": "B2", "added": True,
+               "note": "sample: one of the two Constructors, building the Defence Platform site in B2"} for p in ((-1925.0, -2085.0), (-2000.0, -2078.0))]
+    # The twelve selected, as the selection panel lists them (6 Swarm, 4 Lancer, 2 Brawler: 18 command points), in the camera's view over B2;
+    # the first Brawler, at 20%, retreats to the Command Station, the nearest repairer without a Repair Bay (Simulation.cpp:2553-2589).
+    picked = "sample: one of the 12 selected warships ('12 ships'), on patrol in B2 in the camera's view"
+    marks += ship_marks([("Swarm", 6), ("Lancer", 4), ("Brawler", 1)], (-2100.0, -1880.0), picked, selected=True)
+    marks += ship_marks([("Brawler", 1)], (-2400.0, -2400.0), "sample: the selected Brawler '1 retreating to be repaired', on its way to the Command Station")
+    # The six the Orders window gives 'hold B2' to, waiting in A1: 2 Swarm, 2 Picket and 2 Lancer, 8 command points.
+    marks += ship_marks([("Swarm", 2), ("Picket", 2), ("Lancer", 2)], (-3550.0, -3550.0), "sample: one of the 6 ships the scheduled 'hold B2' order "
+                        "waits with (Orders window), in A1", per_row=3)
+    # The enemy: in B2, by the alert's place and among the player's ships, which keep B2 from being suppressed; at C2's Relay, which they
+    # attack and suppress, seen within its 200 m sight; and in A3, by the lost rig's asteroid, more than 400 m from A3's Relay, seen since A3
+    # is held unsuppressed (Simulation.cpp:2981-2987).
+    marks += ship_marks([("Swarm", 2), ("Brawler", 2)], (-1915.0, -1890.0), "sample: an enemy warship in B2, which the alert 'Enemy ships in B2' "
+                        "names; seen in a sector the player holds unsuppressed", side="Enemy", spacing=60.0, per_row=2)
+    marks += ship_marks([("Swarm", 3)], (60.0, -1910.0), "sample: an enemy warship attacking C2's Relay ('Relay under attack: C2') from within "
+                        "its Mass Driver's 120 m, which suppresses it; seen within the Relay's sight", side="Enemy", spacing=35.0)
+    marks += ship_marks([("Swarm", 2)], (-3650.0, 760.0), "sample: an enemy warship by the asteroid whose rig it destroyed ('Mining Rig lost: A3'); "
+                        "seen, since A3 is held unsuppressed", side="Enemy", spacing=40.0)
+    marks.append({"kind": "Structure", "pos": node_of("C4"), "radius": 30, "side": "Enemy", "remembered": True})
+    return marks
+
+
 def busy_content():
     # A2's Relay was lost in a raid, so A3, held beyond it, is no longer linked to A1: cut off (Simulation.cpp:2862-2885).
     sectors = sectors_of(own=["A1", "B1", "C1", "B2", "C2", "A3"], enemy=["E5", "D5", "E4", "D4", "E3", "C5", "C4", "D3"], suppressed=["C2"])
     assert sectors["A3"].get("cutOff") and not any(v.get("cutOff") for n, v in sectors.items() if n != "A3")
-    ships = [{"kind": "Ship", "pos": (-2100, -1900), "radius": 14, "side": "Own"}, {"kind": "Ship", "pos": (-1900, -2050), "radius": 8, "side": "Own"},
-             {"kind": "Ship", "pos": (-1950, -1950), "radius": 8, "side": "Enemy"},
-             {"kind": "Structure", "pos": node_of("C4"), "radius": 30, "side": "Enemy", "remembered": True}]
+    marks = busy_marks()
     # Seen derelicts: A3's and C1's, in held sectors; C2's is remembered, its sector suppressed; B1's was salvaged (the derelict hint's).
     c = content_of(2350, sectors, node_cap(3), (642, 731), rigs=OWN_HOME_ORE + [ore_in("B1", 1)], view=(-2000, -2000), derelicts=["A3", "C1"],
-                   remembered=["C2"], extra=ships)
+                   remembered=["C2"], constructors=False, extra=marks)
+    c["building"] = ["Swarm", "Lancer"]  # Shipyard 02's Swarm (the production window) and Shipyard 03's Lancer: 3 of the 29 command points
     assert c["income"] == 1450  # three home rigs and one in B1; A3's rig was lost
     c["alerts"] = [("Enemy ships in B2", node_of("B2")), ("Relay under attack: C2", node_of("C2")), ("Mining Rig lost: A3", ore_in("A3"))]
     c["status"] = BUSY_STATUS
@@ -2335,7 +2508,9 @@ def s_hud_placing(out):
               "finished one (Hud.cpp:281-300), so with no finished Shipyard either, no status panel is drawn.", SEED_STATE_NOTE])
 def s_hud_cap(out):
     sectors = sectors_of(own=["A1", "B1", "A2", "B2"], enemy=["E5"])
-    c = content_of(900, sectors, node_cap(1), (1000, 940), rigs=OWN_HOME_ORE + [ore_in("B1", 1)], derelicts=["B1"])
+    lab = structure_mark("ResearchLab", LAB_AT, "sample: the Research Lab still being built, which the Lab button's ONE PER PLAYER implies "
+                         "(Hud.cpp:2806-2811); a site is marked as a finished structure is", site=True)
+    c = content_of(900, sectors, node_cap(1), (1000, 940), rigs=OWN_HOME_ORE + [ore_in("B1", 1)], derelicts=["B1"], extra=[lab])
     assert c["territory"]["own_nodes"] == c["territory"]["cap"] and c["income"] == 1450
     c["hint"] = "Relay: at the node cap; upgrade the Command Station to claim more"
     c["hint_src"] = "Describe Hud.cpp:2553-2554"
@@ -2352,7 +2527,16 @@ def s_hud_cap(out):
               "No Lab, so no Hull Plating: the Lancer's maximum is 500 x 0.9 = 450 (DesignStats.h:86).", SEED_STATE_NOTE])
 def s_hud_one(out):
     sectors = sectors_of(own=["A1", "B1", "A2"], enemy=["E5", "D5", "E4"])
-    c = content_of(1810, sectors, node_cap(1), (994, 988), rigs=OWN_HOME_ORE + [ore_in("B1", 0), ore_in("B1", 1)], derelicts=["B1"])
+    # The status panel's one Shipyard, at L2 (the Lancer's Medium hull), building a Lancer; the selected Lancer holds A1, by its node, in the
+    # camera's view; 3 Swarm and a Brawler hold B1: 2 + 2 + 5 = the fleet line's 9 command points.
+    marks = [structure_mark("Shipyard", SHIPYARD_AT[0], "sample: the status line's one Shipyard (BUILDING 1 · WAITING 0 · IDLE 0), at L2, "
+                            "building a Lancer")]
+    marks += ship_marks([("Lancer", 1)], (-3925.0, -3860.0), "sample: the selected Lancer, holding A1 by its node, in the camera's view",
+                        selected=True)
+    marks += ship_marks([("Swarm", 3), ("Brawler", 1)], (-2000.0, -3880.0), "sample: one of the other warships the fleet line counts, "
+                        "holding B1")
+    c = content_of(1810, sectors, node_cap(1), (994, 988), rigs=OWN_HOME_ORE + [ore_in("B1", 0), ore_in("B1", 1)], derelicts=["B1"], extra=marks)
+    c["building"] = ["Lancer"]
     c["status"] = [{"runs": [{"text": "Shipyards{}BUILDING 1{}WAITING 0{}IDLE 0".format(DOT, DOT, DOT)}], "action": "OpenProduction",
                     "src": "StatusLinesOf Hud.cpp:403-410"},
                    {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 9 / 12.0, "figure": "9 / 12", "under": False}, "action": "OpenProduction",
@@ -2371,7 +2555,15 @@ EARLY_NOTE = ("A few minutes in: the home sector only, a rig on each of its thre
 
 @state("hud", "shipyard-selected", "A finished Shipyard selected: its work line, its next level and its window buttons with key caps", notes=[EARLY_NOTE])
 def s_hud_shipyard(out):
-    c = early_content(1240)
+    # The one Shipyard the status line counts is the selected one, in the camera's view; at L1 it builds Small hulls only, so the fleet line's
+    # 8 command points are its Swarm under way and 7 Small-hull warships it delivered (Simulation.cpp:2752-2759).
+    marks = [structure_mark("Shipyard", SHIPYARD_AT[0], "sample: the selected Shipyard 01, L1, the status line's one Shipyard (BUILDING 1 · "
+                            "WAITING 0 · IDLE 0)")]
+    marks[0]["selected"] = True
+    marks += ship_marks([("Swarm", 5), ("Picket", 2)], beside(SHIPYARD_AT[0], "Shipyard", 60.0), "sample: one of the 7 Small-hull warships "
+                        "the fleet line counts (8 / 12, the Swarm building included), by Shipyard 01", spacing=30.0)
+    c = early_content(1240, extra=marks)
+    c["building"] = ["Swarm"]
     c["selection"] = ["Shipyard 01{}L1".format(DOT), "Hit points 2,500 / 2,500", "Building Swarm{}62%{}+2 queued".format(DOT, DOT),
                       "L2: Medium hulls, 3,000 hit points"]
     c["selection_src"] = "Describe Hud.cpp:2566-2572, 2587-2588, 2618-2620 (WorkLine Hud.cpp:244-254), 2676-2677"
@@ -2410,7 +2602,9 @@ def missing_for_lab_level(level, researched):  # Hud.cpp:2678-2687: the topics t
        notes=["Fusion Drive needs Hull Plating (Tuning.json research[id 5].requires), so with Fusion Drive at the front of the queue Hull Plating is "
               "researched, and the Lab's L2 (requires 1 and 2) still needs Improved Extraction alone (Hud.cpp:2678-2687).", EARLY_NOTE])
 def s_hud_lab(out):
-    c = early_content(1100)
+    lab = structure_mark("ResearchLab", LAB_AT, "sample: the selected Research Lab, L1, researching Fusion Drive, in the camera's view")
+    lab["selected"] = True
+    c = early_content(1100, extra=[lab])
     missing = missing_for_lab_level(1, researched=(2,))
     assert missing == "Improved Extraction"
     c["selection"] = ["Research Lab{}L1".format(DOT), "Hit points 1,500 / 1,500", "Researching Fusion Drive{}35%".format(DOT), "L2: tier 2, 1,800 hit points",
@@ -2454,12 +2648,26 @@ def victory_content():
     """47:12 in: the player cleared A4's camp and holds A4, and the enemy's tickets ran out (a domination ends at 0, Simulation.cpp:3778-3804)."""
     sectors = sectors_of(own=["A1", "A2", "B1", "C1", "B2", "C2", "A3", "B3", "A4"], enemy=["E5", "D5", "E4", "D4", "E3"], cleared=["A4"])
     rigs = OWN_HOME_ORE + [ore_in("B1", 0), ore_in("B1", 1), ore_in("C1"), ore_in("B2"), ore_in("C2"), ore_in("A3"), ore_in("B3")]
-    ships = [{"kind": "Ship", "pos": (-2100, -1900), "radius": 14, "side": "Own"}, {"kind": "Ship", "pos": (-1900, -2050), "radius": 8, "side": "Own"}]
+    # The status panel's 3 Shipyards (BUILDING 2, IDLE 1) and Lab; the fleet line's 38 command points are a Swarm and a Lancer under way and
+    # 35 in warships: 12 in B2, where the camera looks; 11 at C2's Relay, which keep C2 unsuppressed against the enemy ships its alert names;
+    # and 12 holding A4, the camp they cleared.
+    yard = "sample: the status line's Shipyards (BUILDING 2 · WAITING 0 · IDLE 1): "
+    ships = [structure_mark("Shipyard", SHIPYARD_AT[0], yard + "Shipyard 01, idle"),
+             structure_mark("Shipyard", SHIPYARD_AT[1], yard + "Shipyard 02, building a Swarm"),
+             structure_mark("Shipyard", SHIPYARD_AT[2], yard + "Shipyard 03, building a Lancer"),
+             structure_mark("ResearchLab", LAB_AT, "sample: the Lab the status panel's 'Lance Capacitors' line implies (Hud.cpp:281-311)")]
+    fleet = "sample: one of the warships the fleet line counts (38 / 40, two under way), "
+    ships += ship_marks([("Swarm", 4), ("Lancer", 4)], (-2050.0, -1880.0), fleet + "in B2, where the camera looks")
+    ships += ship_marks([("Swarm", 3), ("Lancer", 2), ("Brawler", 2)], (-100.0, -1880.0), fleet + "at C2's Relay, which it keeps unsuppressed")
+    ships += ship_marks([("Picket", 4), ("Brawler", 4)], (-3800.0, 2160.0), fleet + "holding A4, the camp it cleared")
+    ships += ship_marks([("Swarm", 2), ("Brawler", 2)], (120.0, -1860.0), "sample: an enemy warship in C2, which the alert 'Enemy ships in C2' "
+                        "names; seen in a sector the player holds unsuppressed", side="Enemy", spacing=40.0, per_row=2)
     # The home rigs have mined their asteroids dry (7,500 Ore at 3.5 a second runs out in 35:43) and earn a fifth (exhaustedYieldPercent);
     # Improved Extraction is researched, since the Lab's L2, which tier 2 needs, requires it.
     c = content_of(2350, sectors, node_cap(4), (386, 0), rigs=rigs, dry=OWN_HOME_ORE, extraction=True, view=(-2000, -2000), derelicts=["C2"],
                    extra=[wreck_mark("A4")] + ships)
     assert c["territory"]["enemy_tickets"] == 0 and c["territory"]["own_nodes"] > c["territory"]["enemy_nodes"]
+    c["building"] = ["Swarm", "Lancer"]
     c["alerts"] = [("Enemy ships in C2", node_of("C2"))]
     c["status"] = [{"runs": [{"text": "Lance Capacitors"}], "bar": {"share": 0.30, "figure": "+1", "under": True}, "action": "OpenResearch",
                     "src": "StatusLinesOf Hud.cpp:303-311"},
@@ -2511,8 +2719,20 @@ W_NOTE = ("The HUD behind: two finished Shipyards and a Lab, so the status panel
           "(StatusLinesOf, Hud.cpp:281-414; drawn 3241-3308). " + EARLY_NOTE)
 
 
+def window_marks():
+    """State W on the minimap: Shipyards 01 and 02, the Lab, and the four Swarms Shipyard 01 built, by it (Simulation.cpp:2752-2759)."""
+    yard = "sample: the status line's Shipyards (BUILDING 1 · WAITING 0 · IDLE 1): "
+    marks = [structure_mark("Shipyard", SHIPYARD_AT[0], yard + "Shipyard 01, idle at L1, having built four Swarms (designer 'BUILT · 4')"),
+             structure_mark("Shipyard", SHIPYARD_AT[1], yard + "Shipyard 02, L1, building a Swarm, 62% (the production window)"),
+             structure_mark("ResearchLab", LAB_AT, "sample: the Lab researching Hull Plating, 45%, as the status panel's first line says")]
+    marks += ship_marks([("Swarm", 4)], beside(SHIPYARD_AT[0], "Shipyard", 60.0), "sample: one of the four Swarms the fleet line counts "
+                        "(5 / 12, Shipyard 02's Swarm included), by Shipyard 01, which built them", spacing=30.0, per_row=2)
+    return marks
+
+
 def window_state():
-    c = early_content(W_ORE)
+    c = early_content(W_ORE, extra=window_marks())
+    c["building"] = ["Swarm"]
     c["status"] = W_STATUS
     return c
 
@@ -2651,7 +2871,16 @@ def s_orders_event(out):
               WORLD_NOTE, SEED_STATE_NOTE])
 def s_away(out):
     sectors = sectors_of(own=["A1", "B1", "A2", "B2", "C2", "B3"], enemy=["E5", "D5", "E4", "D4", "E3", "C4"])
-    c = content_of(2860, sectors, node_cap(2), rigs=OWN_HOME_ORE + [ore_in("B1", 1), ore_in("B2"), ore_in("C2")], server=SERVER, derelicts=["B1", "C2"])
+    # The status line's one Shipyard, at L1, building a Swarm; the fleet line's 18 command points are that Swarm and 17 Small-hull warships,
+    # holding the two sectors the report says were gained.
+    marks = [structure_mark("Shipyard", SHIPYARD_AT[0], "sample: the status line's one Shipyard (BUILDING 1 · WAITING 0 · IDLE 0), L1, "
+                            "building a Swarm")]
+    fleet = "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), "
+    marks += ship_marks([("Swarm", 9)], (-2150.0, 100.0), fleet + "holding B3", per_row=3)
+    marks += ship_marks([("Swarm", 4), ("Picket", 4)], (0.0, -1880.0), fleet + "holding C2")
+    c = content_of(2860, sectors, node_cap(2), rigs=OWN_HOME_ORE + [ore_in("B1", 1), ore_in("B2"), ore_in("C2")], server=SERVER, derelicts=["B1", "C2"],
+                   extra=marks)
+    c["building"] = ["Swarm"]
     c["status"] = [{"runs": [{"text": "Shipyards{}BUILDING 1{}WAITING 0{}IDLE 0".format(DOT, DOT, DOT)}], "action": "OpenProduction",
                     "src": "StatusLinesOf Hud.cpp:403-410"},
                    {"runs": [{"text": "Fleet", "sample": False}], "bar": {"share": 18 / 20.0, "figure": "18 / {}".format(fleet_cap(2)), "under": False},

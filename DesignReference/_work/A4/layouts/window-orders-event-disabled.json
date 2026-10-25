@@ -2865,14 +2865,15 @@
   {
    "id": "minimap.mark.ship",
    "kind": "panel",
-   "x": 52.6,
-   "y": 1023.54,
+   "x": 52.21,
+   "y": 1024.19,
    "w": 3.0,
    "h": 3.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
    "order": 182
@@ -2880,14 +2881,15 @@
   {
    "id": "minimap.mark.ship#2",
    "kind": "panel",
-   "x": 53.46,
-   "y": 1024.4,
+   "x": 52.81,
+   "y": 1024.79,
    "w": 3.0,
    "h": 3.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
    "order": 183
@@ -2938,6 +2940,118 @@
    "order": 186
   },
   {
+   "id": "minimap.mark.structure#5",
+   "kind": "panel",
+   "x": 42.87,
+   "y": 1017.78,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 1 · WAITING 0 · IDLE 1): Shipyard 01, idle at L1, having built four Swarms (designer 'BUILT · 4')",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 187
+  },
+  {
+   "id": "minimap.mark.structure#6",
+   "kind": "panel",
+   "x": 40.03,
+   "y": 1026.02,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the status line's Shipyards (BUILDING 1 · WAITING 0 · IDLE 1): Shipyard 02, L1, building a Swarm, 62% (the production window)",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 188
+  },
+  {
+   "id": "minimap.mark.structure#7",
+   "kind": "panel",
+   "x": 57.92,
+   "y": 1013.81,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the Lab researching Hull Plating, 45%, as the status panel's first line says",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 189
+  },
+  {
+   "id": "minimap.mark.ship#3",
+   "kind": "panel",
+   "x": 46.06,
+   "y": 1016.97,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the four Swarms the fleet line counts (5 / 12, Shipyard 02's Swarm included), by Shipyard 01, which built them",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 190
+  },
+  {
+   "id": "minimap.mark.ship#4",
+   "kind": "panel",
+   "x": 46.92,
+   "y": 1016.97,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the four Swarms the fleet line counts (5 / 12, Shipyard 02's Swarm included), by Shipyard 01, which built them",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 191
+  },
+  {
+   "id": "minimap.mark.ship#5",
+   "kind": "panel",
+   "x": 46.06,
+   "y": 1017.82,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the four Swarms the fleet line counts (5 / 12, Shipyard 02's Swarm included), by Shipyard 01, which built them",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 192
+  },
+  {
+   "id": "minimap.mark.ship#6",
+   "kind": "panel",
+   "x": 46.92,
+   "y": 1017.82,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the four Swarms the fleet line counts (5 / 12, Shipyard 02's Swarm included), by Shipyard 01, which built them",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 193
+  },
+  {
    "id": "minimap.fog",
    "kind": "panel",
    "x": 24.0,
@@ -2949,7 +3063,7 @@
    "source": "Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)",
    "layer": 0,
    "drawList": "panels",
-   "order": 187
+   "order": 194
   },
   {
    "id": "minimap.sector.lattice.A1",
@@ -2963,7 +3077,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 188
+   "order": 195
   },
   {
    "id": "minimap.sector.lattice.B1",
@@ -2977,7 +3091,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 189
+   "order": 196
   },
   {
    "id": "minimap.sector.lattice.C1",
@@ -2991,7 +3105,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 190
+   "order": 197
   },
   {
    "id": "minimap.sector.lattice.D1",
@@ -3005,7 +3119,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 191
+   "order": 198
   },
   {
    "id": "minimap.sector.lattice.E1",
@@ -3019,7 +3133,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 192
+   "order": 199
   },
   {
    "id": "minimap.sector.lattice.A2",
@@ -3033,7 +3147,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 193
+   "order": 200
   },
   {
    "id": "minimap.sector.lattice.B2",
@@ -3047,7 +3161,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 194
+   "order": 201
   },
   {
    "id": "minimap.sector.lattice.C2",
@@ -3061,7 +3175,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 195
+   "order": 202
   },
   {
    "id": "minimap.sector.lattice.D2",
@@ -3075,7 +3189,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 196
+   "order": 203
   },
   {
    "id": "minimap.sector.lattice.E2",
@@ -3089,7 +3203,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 197
+   "order": 204
   },
   {
    "id": "minimap.sector.lattice.A3",
@@ -3103,7 +3217,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 198
+   "order": 205
   },
   {
    "id": "minimap.sector.lattice.B3",
@@ -3117,7 +3231,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 199
+   "order": 206
   },
   {
    "id": "minimap.sector.lattice.C3",
@@ -3131,7 +3245,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 200
+   "order": 207
   },
   {
    "id": "minimap.sector.lattice.D3",
@@ -3145,7 +3259,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 201
+   "order": 208
   },
   {
    "id": "minimap.sector.lattice.E3",
@@ -3159,7 +3273,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 202
+   "order": 209
   },
   {
    "id": "minimap.sector.lattice.A4",
@@ -3173,7 +3287,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 203
+   "order": 210
   },
   {
    "id": "minimap.sector.lattice.B4",
@@ -3187,7 +3301,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 204
+   "order": 211
   },
   {
    "id": "minimap.sector.lattice.C4",
@@ -3201,7 +3315,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 205
+   "order": 212
   },
   {
    "id": "minimap.sector.lattice.D4",
@@ -3215,7 +3329,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 206
+   "order": 213
   },
   {
    "id": "minimap.sector.lattice.E4",
@@ -3229,7 +3343,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 207
+   "order": 214
   },
   {
    "id": "minimap.sector.lattice.A5",
@@ -3243,7 +3357,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 208
+   "order": 215
   },
   {
    "id": "minimap.sector.lattice.B5",
@@ -3257,7 +3371,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 209
+   "order": 216
   },
   {
    "id": "minimap.sector.lattice.C5",
@@ -3271,7 +3385,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 210
+   "order": 217
   },
   {
    "id": "minimap.sector.lattice.D5",
@@ -3285,7 +3399,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 211
+   "order": 218
   },
   {
    "id": "minimap.sector.lattice.E5",
@@ -3299,7 +3413,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 212
+   "order": 219
   },
   {
    "id": "minimap.sector.held.A1",
@@ -3315,7 +3429,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 213
+   "order": 220
   },
   {
    "id": "minimap.sector.held.D1",
@@ -3331,7 +3445,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 214
+   "order": 221
   },
   {
    "id": "minimap.sector.held.E1",
@@ -3347,7 +3461,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 215
+   "order": 222
   },
   {
    "id": "minimap.sector.held.E2",
@@ -3363,7 +3477,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 216
+   "order": 223
   },
   {
    "id": "minimap.sector.held.C3",
@@ -3379,7 +3493,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 217
+   "order": 224
   },
   {
    "id": "minimap.sector.held.A4",
@@ -3395,7 +3509,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 218
+   "order": 225
   },
   {
    "id": "minimap.sector.held.A5",
@@ -3411,7 +3525,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 219
+   "order": 226
   },
   {
    "id": "minimap.sector.held.B5",
@@ -3427,7 +3541,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 220
+   "order": 227
   },
   {
    "id": "minimap.sector.held.E5",
@@ -3443,7 +3557,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 221
+   "order": 228
   },
   {
    "id": "minimap.memory.across",
@@ -3458,7 +3572,7 @@
    "source": "Hud.cpp:3595-3605 (remembered: a cross)",
    "layer": 0,
    "drawList": "panels",
-   "order": 222
+   "order": 229
   },
   {
    "id": "minimap.memory.down",
@@ -3473,7 +3587,7 @@
    "source": "Hud.cpp:3604",
    "layer": 0,
    "drawList": "panels",
-   "order": 223
+   "order": 230
   },
   {
    "id": "minimap.memory.across#2",
@@ -3488,7 +3602,7 @@
    "source": "Hud.cpp:3595-3605 (remembered: a cross)",
    "layer": 0,
    "drawList": "panels",
-   "order": 224
+   "order": 231
   },
   {
    "id": "minimap.memory.down#2",
@@ -3503,7 +3617,7 @@
    "source": "Hud.cpp:3604",
    "layer": 0,
    "drawList": "panels",
-   "order": 225
+   "order": 232
   },
   {
    "id": "minimap.view",
@@ -3529,7 +3643,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 226
+   "order": 233
   },
   {
    "id": "minimap.view#2",
@@ -3555,7 +3669,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 227
+   "order": 234
   },
   {
    "id": "minimap.view#3",
@@ -3581,7 +3695,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 228
+   "order": 235
   },
   {
    "id": "minimap.view#4",
@@ -3607,7 +3721,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 229
+   "order": 236
   },
   {
    "id": "window.frame",
@@ -3622,7 +3736,7 @@
    "source": "Hud.cpp:879,888 (OpenWindow frame); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "panels",
-   "order": 230
+   "order": 237
   },
   {
    "id": "window.titleBar",
@@ -3637,7 +3751,7 @@
    "source": "Hud.cpp:880,889 (title bar, dragged by it: GameClient.cpp:993-996)",
    "layer": 1,
    "drawList": "panels",
-   "order": 231
+   "order": 238
   },
   {
    "id": "window.closeBox",
@@ -3652,7 +3766,7 @@
    "source": "Hud.cpp:881,890 (close box; GameClient.cpp:987-991)",
    "layer": 1,
    "drawList": "panels",
-   "order": 232
+   "order": 239
   },
   {
    "id": "window.close",
@@ -3671,7 +3785,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 233
+   "order": 240
   },
   {
    "id": "corner.tl#6",
@@ -3689,7 +3803,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 234
+   "order": 241
   },
   {
    "id": "corner.bl#6",
@@ -3707,7 +3821,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 235
+   "order": 242
   },
   {
    "id": "corner.tr#6",
@@ -3725,7 +3839,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 236
+   "order": 243
   },
   {
    "id": "corner.br#6",
@@ -3743,7 +3857,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); orders window (Hud.cpp:1949-1950)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 237
+   "order": 244
   },
   {
    "id": "orders.titleLabel",
@@ -3763,7 +3877,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 238
+   "order": 245
   },
   {
    "id": "orders.waiting.label",
@@ -3783,7 +3897,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 239
+   "order": 246
   },
   {
    "id": "orders.none",
@@ -3802,7 +3916,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 240
+   "order": 247
   },
   {
    "id": "orders.form.label",
@@ -3822,7 +3936,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 241
+   "order": 248
   },
   {
    "id": "orders.row0.label",
@@ -3842,7 +3956,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 242
+   "order": 249
   },
   {
    "id": "orders.row0.previous",
@@ -3858,7 +3972,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 243
+   "order": 250
   },
   {
    "id": "orders.row0.previous.mark",
@@ -3877,7 +3991,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 244
+   "order": 251
   },
   {
    "id": "orders.row0.subject",
@@ -3897,7 +4011,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 245
+   "order": 252
   },
   {
    "id": "orders.row0.next",
@@ -3915,7 +4029,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 246
+   "order": 253
   },
   {
    "id": "orders.row0.next.mark",
@@ -3934,7 +4048,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 247
+   "order": 254
   },
   {
    "id": "orders.row1.label",
@@ -3954,7 +4068,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 248
+   "order": 255
   },
   {
    "id": "orders.row1.previous",
@@ -3970,7 +4084,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 249
+   "order": 256
   },
   {
    "id": "orders.row1.previous.mark",
@@ -3989,7 +4103,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 250
+   "order": 257
   },
   {
    "id": "orders.row1.subject",
@@ -4009,7 +4123,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 251
+   "order": 258
   },
   {
    "id": "orders.row1.next",
@@ -4027,7 +4141,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 252
+   "order": 259
   },
   {
    "id": "orders.row1.next.mark",
@@ -4046,7 +4160,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 253
+   "order": 260
   },
   {
    "id": "orders.row2.label",
@@ -4066,7 +4180,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 254
+   "order": 261
   },
   {
    "id": "orders.row2.previous",
@@ -4082,7 +4196,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 255
+   "order": 262
   },
   {
    "id": "orders.row2.previous.mark",
@@ -4101,7 +4215,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 256
+   "order": 263
   },
   {
    "id": "orders.row2.subject",
@@ -4121,7 +4235,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 257
+   "order": 264
   },
   {
    "id": "orders.row2.next",
@@ -4139,7 +4253,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 258
+   "order": 265
   },
   {
    "id": "orders.row2.next.mark",
@@ -4158,7 +4272,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 259
+   "order": 266
   },
   {
    "id": "orders.row3.label",
@@ -4178,7 +4292,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 260
+   "order": 267
   },
   {
    "id": "orders.row3.previous",
@@ -4194,7 +4308,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 261
+   "order": 268
   },
   {
    "id": "orders.row3.previous.mark",
@@ -4213,7 +4327,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 262
+   "order": 269
   },
   {
    "id": "orders.row3.subject",
@@ -4233,7 +4347,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 263
+   "order": 270
   },
   {
    "id": "orders.row3.next",
@@ -4251,7 +4365,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 264
+   "order": 271
   },
   {
    "id": "orders.row3.next.mark",
@@ -4270,7 +4384,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 265
+   "order": 272
   },
   {
    "id": "orders.row4.label",
@@ -4290,7 +4404,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 266
+   "order": 273
   },
   {
    "id": "orders.row4.previous",
@@ -4306,7 +4420,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 267
+   "order": 274
   },
   {
    "id": "orders.row4.previous.mark",
@@ -4325,7 +4439,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 268
+   "order": 275
   },
   {
    "id": "orders.row4.subject",
@@ -4345,7 +4459,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 269
+   "order": 276
   },
   {
    "id": "orders.row4.next",
@@ -4363,7 +4477,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 270
+   "order": 277
   },
   {
    "id": "orders.row4.next.mark",
@@ -4382,7 +4496,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 271
+   "order": 278
   },
   {
    "id": "orders.row5.label",
@@ -4402,7 +4516,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 272
+   "order": 279
   },
   {
    "id": "orders.row5.previous",
@@ -4418,7 +4532,7 @@
    "enabled": true,
    "layer": 1,
    "drawList": "panels",
-   "order": 273
+   "order": 280
   },
   {
    "id": "orders.row5.previous.mark",
@@ -4437,7 +4551,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 274
+   "order": 281
   },
   {
    "id": "orders.row5.subject",
@@ -4457,7 +4571,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 275
+   "order": 282
   },
   {
    "id": "orders.row5.next",
@@ -4475,7 +4589,7 @@
    "estimate": "x follows the subject's estimated width",
    "layer": 1,
    "drawList": "panels",
-   "order": 276
+   "order": 283
   },
   {
    "id": "orders.row5.next.mark",
@@ -4494,7 +4608,7 @@
    "estimate": "x follows the subject's estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 277
+   "order": 284
   },
   {
    "id": "orders.fires",
@@ -4515,7 +4629,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 278
+   "order": 285
   },
   {
    "id": "orders.give",
@@ -4530,7 +4644,7 @@
    "enabled": false,
    "layer": 1,
    "drawList": "panels",
-   "order": 279
+   "order": 286
   },
   {
    "id": "orders.give.edge",
@@ -4544,7 +4658,7 @@
    "source": "Hud.cpp:1276",
    "layer": 1,
    "drawList": "panels",
-   "order": 280
+   "order": 287
   },
   {
    "id": "orders.give.note",
@@ -4563,7 +4677,7 @@
    "estimate": "right edge exact at 580.0 units; left follows the estimated width; width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 281
+   "order": 288
   },
   {
    "id": "orders.give.label",
@@ -4582,7 +4696,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 282
+   "order": 289
   }
  ]
 }

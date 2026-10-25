@@ -2846,14 +2846,15 @@
   {
    "id": "minimap.mark.ship",
    "kind": "panel",
-   "x": 52.6,
-   "y": 1023.54,
+   "x": 52.21,
+   "y": 1024.19,
    "w": 3.0,
    "h": 3.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
    "order": 183
@@ -2861,14 +2862,15 @@
   {
    "id": "minimap.mark.ship#2",
    "kind": "panel",
-   "x": 53.46,
-   "y": 1024.4,
+   "x": 52.81,
+   "y": 1024.79,
    "w": 3.0,
    "h": 3.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
    "order": 184
@@ -3039,6 +3041,294 @@
    "order": 195
   },
   {
+   "id": "minimap.mark.structure#13",
+   "kind": "panel",
+   "x": 42.87,
+   "y": 1017.78,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the status line's one Shipyard (BUILDING 1 · WAITING 0 · IDLE 0), L1, building a Swarm",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 196
+  },
+  {
+   "id": "minimap.mark.ship#3",
+   "kind": "panel",
+   "x": 102.16,
+   "y": 908.38,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 197
+  },
+  {
+   "id": "minimap.mark.ship#4",
+   "kind": "panel",
+   "x": 103.44,
+   "y": 908.38,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 198
+  },
+  {
+   "id": "minimap.mark.ship#5",
+   "kind": "panel",
+   "x": 104.72,
+   "y": 908.38,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 199
+  },
+  {
+   "id": "minimap.mark.ship#6",
+   "kind": "panel",
+   "x": 102.16,
+   "y": 909.66,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 200
+  },
+  {
+   "id": "minimap.mark.ship#7",
+   "kind": "panel",
+   "x": 103.44,
+   "y": 909.66,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 201
+  },
+  {
+   "id": "minimap.mark.ship#8",
+   "kind": "panel",
+   "x": 104.72,
+   "y": 909.66,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 202
+  },
+  {
+   "id": "minimap.mark.ship#9",
+   "kind": "panel",
+   "x": 102.16,
+   "y": 910.94,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 203
+  },
+  {
+   "id": "minimap.mark.ship#10",
+   "kind": "panel",
+   "x": 103.44,
+   "y": 910.94,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 204
+  },
+  {
+   "id": "minimap.mark.ship#11",
+   "kind": "panel",
+   "x": 104.72,
+   "y": 910.94,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding B3",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 205
+  },
+  {
+   "id": "minimap.mark.ship#12",
+   "kind": "panel",
+   "x": 162.58,
+   "y": 965.25,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 206
+  },
+  {
+   "id": "minimap.mark.ship#13",
+   "kind": "panel",
+   "x": 163.86,
+   "y": 965.25,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 207
+  },
+  {
+   "id": "minimap.mark.ship#14",
+   "kind": "panel",
+   "x": 165.14,
+   "y": 965.25,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 208
+  },
+  {
+   "id": "minimap.mark.ship#15",
+   "kind": "panel",
+   "x": 166.42,
+   "y": 965.25,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 209
+  },
+  {
+   "id": "minimap.mark.ship#16",
+   "kind": "panel",
+   "x": 162.58,
+   "y": 966.53,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 210
+  },
+  {
+   "id": "minimap.mark.ship#17",
+   "kind": "panel",
+   "x": 163.86,
+   "y": 966.53,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 211
+  },
+  {
+   "id": "minimap.mark.ship#18",
+   "kind": "panel",
+   "x": 165.14,
+   "y": 966.53,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 212
+  },
+  {
+   "id": "minimap.mark.ship#19",
+   "kind": "panel",
+   "x": 166.42,
+   "y": 966.53,
+   "w": 3.0,
+   "h": 3.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: one of the 17 Small-hull warships the fleet line counts (18 / 20, a Swarm under way), holding C2",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 213
+  },
+  {
    "id": "minimap.fog",
    "kind": "panel",
    "x": 24.0,
@@ -3050,7 +3340,7 @@
    "source": "Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)",
    "layer": 0,
    "drawList": "panels",
-   "order": 196
+   "order": 214
   },
   {
    "id": "minimap.sector.lattice.A1",
@@ -3064,7 +3354,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 197
+   "order": 215
   },
   {
    "id": "minimap.sector.lattice.B1",
@@ -3078,7 +3368,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 198
+   "order": 216
   },
   {
    "id": "minimap.sector.lattice.C1",
@@ -3092,7 +3382,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 199
+   "order": 217
   },
   {
    "id": "minimap.sector.lattice.D1",
@@ -3106,7 +3396,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 200
+   "order": 218
   },
   {
    "id": "minimap.sector.lattice.E1",
@@ -3120,7 +3410,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 201
+   "order": 219
   },
   {
    "id": "minimap.sector.lattice.A2",
@@ -3134,7 +3424,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 202
+   "order": 220
   },
   {
    "id": "minimap.sector.lattice.B2",
@@ -3148,7 +3438,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 203
+   "order": 221
   },
   {
    "id": "minimap.sector.lattice.C2",
@@ -3162,7 +3452,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 204
+   "order": 222
   },
   {
    "id": "minimap.sector.lattice.D2",
@@ -3176,7 +3466,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 205
+   "order": 223
   },
   {
    "id": "minimap.sector.lattice.E2",
@@ -3190,7 +3480,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 206
+   "order": 224
   },
   {
    "id": "minimap.sector.lattice.A3",
@@ -3204,7 +3494,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 207
+   "order": 225
   },
   {
    "id": "minimap.sector.lattice.B3",
@@ -3218,7 +3508,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 208
+   "order": 226
   },
   {
    "id": "minimap.sector.lattice.C3",
@@ -3232,7 +3522,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 209
+   "order": 227
   },
   {
    "id": "minimap.sector.lattice.D3",
@@ -3246,7 +3536,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 210
+   "order": 228
   },
   {
    "id": "minimap.sector.lattice.E3",
@@ -3260,7 +3550,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 211
+   "order": 229
   },
   {
    "id": "minimap.sector.lattice.A4",
@@ -3274,7 +3564,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 212
+   "order": 230
   },
   {
    "id": "minimap.sector.lattice.B4",
@@ -3288,7 +3578,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 213
+   "order": 231
   },
   {
    "id": "minimap.sector.lattice.C4",
@@ -3302,7 +3592,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 214
+   "order": 232
   },
   {
    "id": "minimap.sector.lattice.D4",
@@ -3316,7 +3606,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 215
+   "order": 233
   },
   {
    "id": "minimap.sector.lattice.E4",
@@ -3330,7 +3620,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 216
+   "order": 234
   },
   {
    "id": "minimap.sector.lattice.A5",
@@ -3344,7 +3634,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 217
+   "order": 235
   },
   {
    "id": "minimap.sector.lattice.B5",
@@ -3358,7 +3648,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 218
+   "order": 236
   },
   {
    "id": "minimap.sector.lattice.C5",
@@ -3372,7 +3662,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 219
+   "order": 237
   },
   {
    "id": "minimap.sector.lattice.D5",
@@ -3386,7 +3676,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 220
+   "order": 238
   },
   {
    "id": "minimap.sector.lattice.E5",
@@ -3400,7 +3690,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 221
+   "order": 239
   },
   {
    "id": "minimap.sector.held.A1",
@@ -3416,7 +3706,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 222
+   "order": 240
   },
   {
    "id": "minimap.sector.held.B1",
@@ -3432,7 +3722,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 223
+   "order": 241
   },
   {
    "id": "minimap.sector.held.D1",
@@ -3448,7 +3738,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 224
+   "order": 242
   },
   {
    "id": "minimap.sector.held.E1",
@@ -3464,7 +3754,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 225
+   "order": 243
   },
   {
    "id": "minimap.sector.held.A2",
@@ -3480,7 +3770,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 226
+   "order": 244
   },
   {
    "id": "minimap.sector.held.B2",
@@ -3496,7 +3786,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 227
+   "order": 245
   },
   {
    "id": "minimap.sector.held.C2",
@@ -3512,7 +3802,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 228
+   "order": 246
   },
   {
    "id": "minimap.sector.held.E2",
@@ -3528,7 +3818,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 229
+   "order": 247
   },
   {
    "id": "minimap.sector.held.B3",
@@ -3544,7 +3834,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 230
+   "order": 248
   },
   {
    "id": "minimap.sector.held.C3",
@@ -3560,7 +3850,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 231
+   "order": 249
   },
   {
    "id": "minimap.sector.held.E3",
@@ -3576,7 +3866,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 232
+   "order": 250
   },
   {
    "id": "minimap.sector.held.A4",
@@ -3592,7 +3882,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 233
+   "order": 251
   },
   {
    "id": "minimap.sector.held.C4",
@@ -3608,7 +3898,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 234
+   "order": 252
   },
   {
    "id": "minimap.sector.held.D4",
@@ -3624,7 +3914,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 235
+   "order": 253
   },
   {
    "id": "minimap.sector.held.E4",
@@ -3640,7 +3930,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 236
+   "order": 254
   },
   {
    "id": "minimap.sector.held.A5",
@@ -3656,7 +3946,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 237
+   "order": 255
   },
   {
    "id": "minimap.sector.held.B5",
@@ -3672,7 +3962,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 238
+   "order": 256
   },
   {
    "id": "minimap.sector.held.D5",
@@ -3688,7 +3978,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 239
+   "order": 257
   },
   {
    "id": "minimap.sector.held.E5",
@@ -3704,7 +3994,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 240
+   "order": 258
   },
   {
    "id": "minimap.view",
@@ -3730,7 +4020,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 241
+   "order": 259
   },
   {
    "id": "minimap.view#2",
@@ -3756,7 +4046,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 242
+   "order": 260
   },
   {
    "id": "minimap.view#3",
@@ -3782,7 +4072,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 243
+   "order": 261
   },
   {
    "id": "minimap.view#4",
@@ -3808,7 +4098,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 244
+   "order": 262
   },
   {
    "id": "window.frame",
@@ -3823,7 +4113,7 @@
    "source": "Hud.cpp:879,888 (OpenWindow frame); away window (Hud.cpp:1994-1995)",
    "layer": 1,
    "drawList": "panels",
-   "order": 245
+   "order": 263
   },
   {
    "id": "window.titleBar",
@@ -3838,7 +4128,7 @@
    "source": "Hud.cpp:880,889 (title bar, dragged by it: GameClient.cpp:993-996)",
    "layer": 1,
    "drawList": "panels",
-   "order": 246
+   "order": 264
   },
   {
    "id": "window.closeBox",
@@ -3853,7 +4143,7 @@
    "source": "Hud.cpp:881,890 (close box; GameClient.cpp:987-991)",
    "layer": 1,
    "drawList": "panels",
-   "order": 247
+   "order": 265
   },
   {
    "id": "window.close",
@@ -3872,7 +4162,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 248
+   "order": 266
   },
   {
    "id": "corner.tl#6",
@@ -3890,7 +4180,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); away window (Hud.cpp:1994-1995)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 249
+   "order": 267
   },
   {
    "id": "corner.bl#6",
@@ -3908,7 +4198,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); away window (Hud.cpp:1994-1995)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 250
+   "order": 268
   },
   {
    "id": "corner.tr#6",
@@ -3926,7 +4216,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); away window (Hud.cpp:1994-1995)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 251
+   "order": 269
   },
   {
    "id": "corner.br#6",
@@ -3944,7 +4234,7 @@
    "source": "Hud.cpp:852-866 (AddCorners); away window (Hud.cpp:1994-1995)",
    "layer": 1,
    "drawList": "sprites",
-   "order": 252
+   "order": 270
   },
   {
    "id": "away.titleLabel",
@@ -3964,7 +4254,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 253
+   "order": 271
   },
   {
    "id": "away.since",
@@ -3985,7 +4275,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 254
+   "order": 272
   },
   {
    "id": "away.line",
@@ -4005,7 +4295,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 255
+   "order": 273
   },
   {
    "id": "away.line#2",
@@ -4025,7 +4315,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 256
+   "order": 274
   },
   {
    "id": "away.line#3",
@@ -4045,7 +4335,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 257
+   "order": 275
   },
   {
    "id": "away.line#4",
@@ -4065,7 +4355,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 258
+   "order": 276
   },
   {
    "id": "away.line#5",
@@ -4085,7 +4375,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 259
+   "order": 277
   },
   {
    "id": "away.line#6",
@@ -4105,7 +4395,7 @@
    "estimate": "width estimated from per-character em shares (Bahnschrift: caps 0.60, lower 0.50, digits 0.54, space 0.22; title face x0.92 for SemiCondensed Bold; Cascadia Mono 0.586 em fixed), whole-pixel advances; height is the face's estimated line box",
    "layer": 1,
    "drawList": "texts",
-   "order": 260
+   "order": 278
   }
  ]
 }

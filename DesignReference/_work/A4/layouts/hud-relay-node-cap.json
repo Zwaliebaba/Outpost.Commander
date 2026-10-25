@@ -3578,14 +3578,15 @@
   {
    "id": "minimap.mark.ship",
    "kind": "panel",
-   "x": 52.6,
-   "y": 1023.54,
+   "x": 52.21,
+   "y": 1024.19,
    "w": 3.0,
    "h": 3.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
    "order": 225
@@ -3593,14 +3594,15 @@
   {
    "id": "minimap.mark.ship#2",
    "kind": "panel",
-   "x": 53.46,
-   "y": 1024.4,
+   "x": 52.81,
+   "y": 1024.79,
    "w": 3.0,
    "h": 3.0,
    "color": "OWN_COLOR",
    "fill": "solid",
    "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
    "sample": true,
+   "note": "sample: one of the two starting Constructors, where PlaceStartingBase puts it (Simulation.cpp:731-748; Tuning.json rules.startingConstructors)",
    "layer": 0,
    "drawList": "panels",
    "order": 226
@@ -3711,6 +3713,22 @@
    "order": 233
   },
   {
+   "id": "minimap.mark.structure#9",
+   "kind": "panel",
+   "x": 57.92,
+   "y": 1013.81,
+   "w": 6.0,
+   "h": 6.0,
+   "color": "OWN_COLOR",
+   "fill": "solid",
+   "source": "Hud.cpp:3498-3528 (marks); EntityView position/radius/owner (Snapshot.h:77-95)",
+   "sample": true,
+   "note": "sample: the Research Lab still being built, which the Lab button's ONE PER PLAYER implies (Hud.cpp:2806-2811); a site is marked as a finished structure is",
+   "layer": 0,
+   "drawList": "panels",
+   "order": 234
+  },
+  {
    "id": "minimap.fog",
    "kind": "panel",
    "x": 24.0,
@@ -3722,7 +3740,7 @@
    "source": "Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316 from the ground mask (ADR-052)",
    "layer": 0,
    "drawList": "panels",
-   "order": 234
+   "order": 235
   },
   {
    "id": "minimap.sector.lattice.A1",
@@ -3736,7 +3754,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 235
+   "order": 236
   },
   {
    "id": "minimap.sector.lattice.B1",
@@ -3750,7 +3768,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 236
+   "order": 237
   },
   {
    "id": "minimap.sector.lattice.C1",
@@ -3764,7 +3782,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 237
+   "order": 238
   },
   {
    "id": "minimap.sector.lattice.D1",
@@ -3778,7 +3796,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 238
+   "order": 239
   },
   {
    "id": "minimap.sector.lattice.E1",
@@ -3792,7 +3810,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 239
+   "order": 240
   },
   {
    "id": "minimap.sector.lattice.A2",
@@ -3806,7 +3824,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 240
+   "order": 241
   },
   {
    "id": "minimap.sector.lattice.B2",
@@ -3820,7 +3838,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 241
+   "order": 242
   },
   {
    "id": "minimap.sector.lattice.C2",
@@ -3834,7 +3852,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 242
+   "order": 243
   },
   {
    "id": "minimap.sector.lattice.D2",
@@ -3848,7 +3866,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 243
+   "order": 244
   },
   {
    "id": "minimap.sector.lattice.E2",
@@ -3862,7 +3880,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 244
+   "order": 245
   },
   {
    "id": "minimap.sector.lattice.A3",
@@ -3876,7 +3894,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 245
+   "order": 246
   },
   {
    "id": "minimap.sector.lattice.B3",
@@ -3890,7 +3908,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 246
+   "order": 247
   },
   {
    "id": "minimap.sector.lattice.C3",
@@ -3904,7 +3922,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 247
+   "order": 248
   },
   {
    "id": "minimap.sector.lattice.D3",
@@ -3918,7 +3936,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 248
+   "order": 249
   },
   {
    "id": "minimap.sector.lattice.E3",
@@ -3932,7 +3950,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 249
+   "order": 250
   },
   {
    "id": "minimap.sector.lattice.A4",
@@ -3946,7 +3964,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 250
+   "order": 251
   },
   {
    "id": "minimap.sector.lattice.B4",
@@ -3960,7 +3978,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 251
+   "order": 252
   },
   {
    "id": "minimap.sector.lattice.C4",
@@ -3974,7 +3992,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 252
+   "order": 253
   },
   {
    "id": "minimap.sector.lattice.D4",
@@ -3988,7 +4006,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 253
+   "order": 254
   },
   {
    "id": "minimap.sector.lattice.E4",
@@ -4002,7 +4020,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 254
+   "order": 255
   },
   {
    "id": "minimap.sector.lattice.A5",
@@ -4016,7 +4034,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 255
+   "order": 256
   },
   {
    "id": "minimap.sector.lattice.B5",
@@ -4030,7 +4048,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 256
+   "order": 257
   },
   {
    "id": "minimap.sector.lattice.C5",
@@ -4044,7 +4062,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 257
+   "order": 258
   },
   {
    "id": "minimap.sector.lattice.D5",
@@ -4058,7 +4076,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 258
+   "order": 259
   },
   {
    "id": "minimap.sector.lattice.E5",
@@ -4072,7 +4090,7 @@
    "source": "Hud.cpp:3567-3568; Map.json sectors",
    "layer": 0,
    "drawList": "panels",
-   "order": 259
+   "order": 260
   },
   {
    "id": "minimap.sector.held.A1",
@@ -4088,7 +4106,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 260
+   "order": 261
   },
   {
    "id": "minimap.sector.held.B1",
@@ -4104,7 +4122,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 261
+   "order": 262
   },
   {
    "id": "minimap.sector.held.D1",
@@ -4120,7 +4138,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 262
+   "order": 263
   },
   {
    "id": "minimap.sector.held.E1",
@@ -4136,7 +4154,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 263
+   "order": 264
   },
   {
    "id": "minimap.sector.held.A2",
@@ -4152,7 +4170,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 264
+   "order": 265
   },
   {
    "id": "minimap.sector.held.B2",
@@ -4168,7 +4186,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 265
+   "order": 266
   },
   {
    "id": "minimap.sector.held.E2",
@@ -4184,7 +4202,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 266
+   "order": 267
   },
   {
    "id": "minimap.sector.held.C3",
@@ -4200,7 +4218,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 267
+   "order": 268
   },
   {
    "id": "minimap.sector.held.A4",
@@ -4216,7 +4234,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 268
+   "order": 269
   },
   {
    "id": "minimap.sector.held.A5",
@@ -4232,7 +4250,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 269
+   "order": 270
   },
   {
    "id": "minimap.sector.held.B5",
@@ -4248,7 +4266,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 270
+   "order": 271
   },
   {
    "id": "minimap.sector.held.E5",
@@ -4264,7 +4282,7 @@
    "source": "Hud.cpp:3569-3577 (dashed while cut off, CUT_OFF_DASH_UNITS/GAP_UNITS Hud.cpp:53-54)",
    "layer": 0,
    "drawList": "panels",
-   "order": 271
+   "order": 272
   },
   {
    "id": "minimap.view",
@@ -4290,7 +4308,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 272
+   "order": 273
   },
   {
    "id": "minimap.view#2",
@@ -4316,7 +4334,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 273
+   "order": 274
   },
   {
    "id": "minimap.view#3",
@@ -4342,7 +4360,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 274
+   "order": 275
   },
   {
    "id": "minimap.view#4",
@@ -4368,7 +4386,7 @@
    "estimate": "corners computed from Camera.cpp:160-236 and Camera.json at the default 500 m view, unturned, focus at the sample's",
    "layer": 0,
    "drawList": "lines",
-   "order": 275
+   "order": 276
   }
  ]
 }
