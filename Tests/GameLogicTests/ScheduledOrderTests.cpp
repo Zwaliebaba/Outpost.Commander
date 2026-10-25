@@ -306,6 +306,38 @@ public:
     Assert::AreEqual(std::uint32_t{0}, std::ranges::find(blue.entities, ships[2], &Outpost::EntityView::id)->scheduledOrder);
   }
 
+  // ADR-080 decision 5: a cancel takes one of the player's orders away, and its ships wait on it no longer, keeping what
+  // they do; it never fires. Another player's order, or one already gone, is refused.
+  TEST_METHOD(ACanceledOrderIsGoneAndItsShipsFree)
+  {
+    TerritoryMatch match;
+    const std::vector<Outpost::EntityId> ships = Warships(match, BLUE, MUSTER, 2);
+    const Outpost::ScheduledAction move = Doing(Outpost::ScheduledActionKind::Move, match.Placement(B1).node);
+    const std::uint64_t soon = match.World().CurrentTick() + TICKS_PER_SECOND;
+    Assert::IsTrue(Give(match, BLUE, Outpost::ScheduleOrderCommand{.ships = {ships[0]}, .trigger = At(soon), .action = move}) ==
+                   Outpost::CommandResult::Applied);
+    Assert::IsTrue(Give(match, BLUE, Outpost::ScheduleOrderCommand{.ships = {ships[1]}, .trigger = At(soon), .action = move}) ==
+                   Outpost::CommandResult::Applied);
+    const std::uint32_t first = match.World().BuildSnapshot(BLUE).scheduled[0].id;
+    const std::uint32_t second = match.World().BuildSnapshot(BLUE).scheduled[1].id;
+
+    Assert::IsTrue(Give(match, RED, Outpost::CancelScheduledOrderCommand{.order = first}) == Outpost::CommandResult::UnknownOrder,
+                   L"not Red's to cancel");
+    Assert::IsTrue(Give(match, BLUE, Outpost::CancelScheduledOrderCommand{.order = first}) == Outpost::CommandResult::Applied);
+    const Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(std::size_t{1}, blue.scheduled.size());
+    Assert::AreEqual(second, blue.scheduled[0].id, L"the other stays");
+    Assert::AreEqual(std::uint32_t{0}, std::ranges::find(blue.entities, ships[0], &Outpost::EntityView::id)->scheduledOrder,
+                     L"its ship waits on nothing");
+    Assert::IsTrue(Give(match, BLUE, Outpost::CancelScheduledOrderCommand{.order = first}) == Outpost::CommandResult::UnknownOrder,
+                   L"gone already");
+
+    const std::vector<Outpost::EventView> fired = RunUntilFired(match, 3);
+    Assert::AreEqual(std::size_t{1}, fired.size());
+    Assert::AreEqual(second, fired[0].order, L"only the order left fires");
+    Assert::IsFalse(Get(match, ships[0]).destination.has_value(), L"the cancelled one's ship was never sent");
+  }
+
   TEST_METHOD(RefusesWhatItCannotSchedule)
   {
     TerritoryMatch match;

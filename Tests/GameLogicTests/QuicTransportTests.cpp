@@ -230,7 +230,8 @@ public:
   }
 
   // ADR-079 decision 4: a seat's deputy plays it until its player takes it, watches while the player plays,
-  // takes it again a minute of ticks after the player's connection has gone, and gives it back when the player returns.
+  // takes it again a minute of ticks after the player's connection has gone, and gives it back when the player returns. The
+  // player's first join carries no report of the time before, and its return does (ADR-080 decision 7).
   TEST_METHOD(ADeputyPlaysItsSeatWhileItsPlayerIsAway)
   {
     const TemporaryFolder folder;
@@ -241,17 +242,14 @@ public:
     server->Host(BLUE, std::move(counter));
     server->Step();
     Assert::AreEqual(std::uint64_t{1}, deputy.plays, L"a seat nobody has taken is the deputy's");
-    const std::uint64_t firstPlayed = deputy.lastPlayed;
 
     {
       Outpost::QuicTransport blue(blueSeat, BLUE);
       server->Step();
       Assert::AreEqual(std::uint64_t{1}, deputy.watches, L"the player plays the seat it took");
-      // What happened in the tick the deputy played, which the player's first snapshot tells it (ADR-080 decision 7).
+      // The seat was never the player's before, so its first snapshot reports nothing of the tick the deputy played.
       const std::vector<Outpost::Snapshot> first = SnapshotsOf(blue, 1);
-      Assert::IsTrue(!first.empty() &&
-                       first.front().away.value_or(Outpost::AwayReport{.sinceTick = firstPlayed + 1}).sinceTick == firstPlayed,
-                     L"its first snapshot tells it what happened while the deputy played");
+      Assert::IsTrue(!first.empty() && !first.front().away.has_value(), L"its first join carries no report");
     }
     // The connection has gone; the server hears so on MsQuic's thread.
     std::this_thread::sleep_for(1s);

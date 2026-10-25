@@ -15,7 +15,7 @@ A deputy is a keeper, not a player (owner, 2026-10-08): it keeps as many Constru
 2. **Hosted players play after each tick, on the server's thread.** Once every player has been sent its snapshot, each hosted player is handed its own. Its orders wait in its connection's queue, and the next tick applies and logs them as it does a client's. So a world replays from its seed and its log without them ([ADR-009](ADR-009-deterministic-core.md)), and nothing of them is saved. Their time is the tick's `Hosted` part, `hosted` in the measurement log.
 3. **A hosted player without a seat is the player: an AI empire.** `AiEmpire`, in `Opponent`, plays its seat with `AiPlayer`, which starts from any state of its player ([ADR-020](ADR-020-ai-and-match-flow.md) decision 16). It has a loopback connection of its own, and its snapshots are handed to it rather than queued.
 4. **A hosted player with a seat is the seat's deputy, and `SeatController` says who plays the seat:**
-   - the deputy, until the player first takes the seat;
+   - the deputy, until the player first takes the seat, with no report of a time away for it ([ADR-080](ADR-080-events-and-scheduled-orders.md) decision 7);
    - the player, while its newest connection is open, and for `DEPUTY_DELAY_SECONDS` (60 s) of ticks after the server sees that connection gone (`QuicChannel::HasGone`);
    - the deputy after that, until the player takes the seat again, which hands it back at once.
 

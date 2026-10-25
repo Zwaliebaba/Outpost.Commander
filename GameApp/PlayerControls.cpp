@@ -151,6 +151,11 @@ void Outpost::PlayerControls::Schedule(const OrderForm& _form, std::chrono::sys_
     GiveToShips(std::move(*order));
 }
 
+void Outpost::PlayerControls::CancelScheduled(std::uint32_t _order)
+{
+  Give(CancelScheduledOrderCommand{.order = _order});
+}
+
 std::vector<Outpost::EntityId> Outpost::PlayerControls::SelectedShips(std::span<const EntityView> _entities) const
 {
   std::vector<EntityId> ships;

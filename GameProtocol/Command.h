@@ -201,9 +201,16 @@ struct ScheduleOrderCommand
   std::optional<std::int32_t> unlessCommandPoints;
 };
 
+// Takes one of the player's scheduled orders away by its identifier, so that its ships wait on it no longer (ADR-080
+// decision 5).
+struct CancelScheduledOrderCommand
+{
+  std::uint32_t order = 0;
+};
+
 using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand,
                            QueueShipCommand, StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand,
-                           UpgradeStructureCommand, SalvageCommand, SetRetreatCommand, ScheduleOrderCommand>;
+                           UpgradeStructureCommand, SalvageCommand, SetRetreatCommand, ScheduleOrderCommand, CancelScheduledOrderCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
 // arrived on; what a client puts there is never trusted (ADR-002).

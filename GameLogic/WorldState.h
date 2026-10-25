@@ -31,9 +31,6 @@ struct SaveHeader
 // 64-bit FNV-1a over each of _texts in turn, each after its length, so that the boundary between two moves the hash.
 [[nodiscard]] std::uint64_t DataHash(std::span<const std::string_view> _texts) noexcept;
 
-// What each seat's player missed while away, by player, which a save keeps beside the state (ADR-080).
-using SeatReports = std::vector<std::pair<PlayerId, AwayReport>>;
-
 // A save of _simulation's state, made between two ticks: a header naming the save's kind, WORLD_STATE_VERSION, the
 // layout's hash, the world and the tick, then the state, then the seats' reports, then a checksum of all of it (ADR-077).
 [[nodiscard]] std::vector<std::byte> EncodeWorld(const Simulation& _simulation, const WorldIdentity& _identity,

@@ -142,9 +142,11 @@ public:
     // row of three (ADR-088 decision 3).
     DesignRetreat,
     SetRetreat,
-    // The orders window's form steps a field, and gives its order to the selection (ADR-080 decision 9).
+    // The orders window's form steps a field, and gives its order to the selection, and the window cancels one of the
+    // seat's scheduled orders (ADR-080 decision 9).
     StepOrder,
     GiveOrder,
+    CancelOrder,
     // Selects one of the player's own entities on its own and moves the camera to it (ADR-066 decision 1; ADR-088 decision 4).
     Select,
     // A warship's orders, as their keys give them (ADR-088 decision 2): arm attack-move, holding a sector or a
@@ -179,6 +181,8 @@ public:
     // The field StepOrder steps, and which way: forward for a positive step.
     OrderField field = OrderField::Trigger;
     std::int32_t step = 0;
+    // The scheduled order CancelOrder cancels.
+    std::uint32_t order = 0;
 
     friend bool operator==(const Action&, const Action&) = default;
   };
@@ -525,12 +529,20 @@ public:
     OrderField field = OrderField::Trigger;
   };
 
+  // One of the seat's scheduled orders as the orders window lists it, with the order its cancel button cancels.
+  struct ScheduledLine
+  {
+    std::string text;
+    std::uint32_t order = 0;
+  };
+
   // The orders window (ADR-080 decision 9): the seat's scheduled orders, the first ORDERS_SHOWN of them, each
-  // with how many ships still wait on it, and how many more there are; and the form that gives the selection a new one, its
-  // rows, the line that says when it fires, and the button that gives it, with why it cannot when it cannot.
+  // with how many ships still wait on it and a button that cancels it, and how many more there are; and the form that gives
+  // the selection a new one, its rows, the line that says when it fires, and the button that gives it, with why it cannot
+  // when it cannot.
   struct OrdersPanel
   {
-    std::vector<std::string> scheduled;
+    std::vector<ScheduledLine> scheduled;
     std::size_t more = 0;
     std::vector<OrderRow> rows;
     std::string fires;
@@ -632,8 +644,9 @@ public:
     // The map's sectors, and the nodes each side holds; none on a map without sectors.
     std::vector<SectorMark> sectors;
     std::optional<Territory> territory;
-    // The alerts to show, newest first, each with where it happened, for the minimap (ADR-059); GameClient fills them.
-    std::vector<std::pair<std::string, PlanePosition>> alerts;
+    // The alerts to show, newest first, each with where it happened, if anywhere, for the minimap (ADR-059, ADR-094);
+    // GameClient fills them.
+    std::vector<std::pair<std::string, std::optional<PlanePosition>>> alerts;
     // Under fog of war, the fog is drawn over the marks (ADR-024): one panel over the minimap, which the client fills
     // from the fog's own texture (ADR-052).
     bool fog = false;
@@ -846,11 +859,14 @@ public:
   {
     bool joinWorld = false;
     std::string notice;
+    // While a join connects, the server it connects to, as ServerName writes it (ADR-078 decision 9).
+    std::string connecting;
   };
 
   // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, a notice in the
   // warning's color when _state has one, and buttons to start a skirmish against the AI, to join a world when _state
-  // offers one, and to quit (ADR-020 decision 10). _factor is the interface's own scale (ADR-070). The plain menu is an
+  // offers one, and to quit (ADR-020 decision 10). While a join connects, it says so under the subtitle, and only Quit
+  // can be pressed (ADR-078 decision 9). _factor is the interface's own scale (ADR-070). The plain menu is an
   // overload rather than a default argument, which could not use MenuState's member initializers before Hud is complete.
   [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                                       float _factor = 1.0f)

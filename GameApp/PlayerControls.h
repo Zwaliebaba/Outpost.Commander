@@ -76,6 +76,8 @@ public:
   // moment after _now that _clock reads it (ADR-080 decision 6).
   void Schedule(const OrderForm& _form, std::chrono::sys_seconds _now, const PlayerClock& _clock, const Snapshot& _newest,
                 std::span<const EntityView> _entities);
+  // From the orders window: cancels the seat's scheduled order _order (ADR-080 decision 9).
+  void CancelScheduled(std::uint32_t _order);
 
   // In identifier order.
   [[nodiscard]] const std::vector<EntityId>& Selected() const noexcept
