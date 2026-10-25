@@ -719,6 +719,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
                                          hovered, m_ticksPerSecond, armed, m_controls.IsBuildFolded());
     content.fog = m_fog.CellsPerSide() > 0;
+    content.sideColors = Hud::SideColorsOf(m_catalog);
     // The bars over the entities that show one, each placed by the camera above its model on the screen, for the HUD to lay
     // out (ADR-088 decision 5).
     for (const EntityView& entity : m_entities)

@@ -28,7 +28,7 @@ Task numbers carry the prefix RF, and gates are lettered F.
 | RF2.2 | The Controls window says what a click selects | — | F9 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting a run |
 | RF2.3 | The Orders window's Give lights under the pointer | — | F13 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting a run |
 | RF2.4 | A click selects another player's structure, for its panel | — | F16 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting the owner's run |
-| RF3.1 | The HUD draws each side in its own color | — | F1 | todo |
+| RF3.1 | The HUD draws each side in its own color | — | F1 | merged, [#117](https://github.com/Zwaliebaba/Outpost.Commander/pull/117); awaiting the runs as seat 1 and seat 2 and the owner's run |
 | RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | todo |
 | RF5.1 | A refused command is told to the player | — | F10 | todo |
 | RF5.2 | A waiting scheduled order can be cancelled from the Orders window | RF5.1 | F11 | todo |

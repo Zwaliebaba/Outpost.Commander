@@ -402,7 +402,7 @@ public:
   static constexpr std::size_t TOPIC_COLUMNS = 2;
   static constexpr std::size_t TOPICS_SHOWN = 10;
 
-  // Whose a minimap mark is, which sets its color.
+  // Whose a minimap mark is to the player. A player's marks are in its color, and the pirates' in theirs.
   enum class Side : std::uint8_t
   {
     Own,
@@ -412,12 +412,21 @@ public:
     Neutral
   };
 
+  // A player's color on the HUD: its set's in Models.json, the color the world draws its ships and structures in, whichever
+  // seat views them (Game §look.models.sets).
+  struct SideColor
+  {
+    PlayerId player;
+    DirectX::XMFLOAT4 color{};
+  };
+
   // One entity on the minimap: a ship as a dot, a structure as a larger square, an asteroid or field at its size.
   struct Mark
   {
     PlanePosition position;
     float radiusMeters = 0.0f;
     Side side = Side::Neutral;
+    PlayerId owner;
     EntityKind kind = EntityKind::Ship;
     // An ore asteroid that has run out, as far as the player knows: drawn darker (ADR-035 decision 5).
     bool dry = false;
@@ -435,6 +444,7 @@ public:
     float minZMeters = 0.0f;
     float maxZMeters = 0.0f;
     Side side = Side::Neutral;
+    PlayerId holder;
     bool suppressed = false;
     // Cut off from its holder's home, which its outline's dashes say (ADR-081 decision 7).
     bool cutOff = false;
@@ -456,6 +466,8 @@ public:
     // or "No drain" while both hold as many nodes; a warning chip when it is the player's (ADR-057 decision 8).
     std::string drain;
     bool drainWarns = false;
+    // The player the enemy's figures are; their color is its.
+    PlayerId enemy;
   };
 
   // Where the match runs, as the tag in the top-right corner says it (ADR-086): on the game's own server, or on a dedicated
@@ -613,6 +625,10 @@ public:
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
+    // The player the HUD is for, and each player's color, which GameClient fills (SideColorsOf). A player with no color is
+    // drawn in the neutral marks' gray.
+    PlayerId player;
+    std::vector<SideColor> sideColors;
     // The map's sectors, and the nodes each side holds; none on a map without sectors.
     std::vector<SectorMark> sectors;
     std::optional<Territory> territory;
@@ -769,6 +785,9 @@ public:
   // age is not told. _armed is the order the controls have armed for the next left-click, AttackMove, HoldSector or
   // Patrol, whose button is lit (ADR-088 decision 2). With _buildFolded, the Constructors' structures are one
   // Build button (ADR-088).
+  // Each player's color, from the set _catalog draws it with.
+  [[nodiscard]] static std::vector<SideColor> SideColorsOf(const ModelCatalog& _catalog);
+
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
                                         std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0,

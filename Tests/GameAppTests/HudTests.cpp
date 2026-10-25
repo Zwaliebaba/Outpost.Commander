@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "RepositoryAssets.h"
 
 #include <algorithm>
 #include <array>
@@ -48,6 +49,12 @@ Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPi
                              const Outpost::Hud::MenuState& _state = {})
 {
   return Outpost::Hud::LayMenu(MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _factor, _state);
+}
+
+// Each player's color, as GameClient gives the HUD it: its set's in the repository's Models.json.
+std::vector<Outpost::Hud::SideColor> SideColors()
+{
+  return Outpost::Hud::SideColorsOf(Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json")));
 }
 
 Outpost::Snapshot Newest()
@@ -199,7 +206,9 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
                                               .ownTickets = 10000,
                                               .enemyTickets = 10000,
                                               .drain = "You -9,999 a minute \xC2\xB7 out in 99:59",
-                                              .drainWarns = true};
+                                              .drainWarns = true,
+                                              .enemy = Outpost::PlayerId{2}};
+  content.sideColors = SideColors();
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
   // The tag at its widest: the longest address the tag holds, and the warning at its most seconds (ADR-086).
   content.connection =
@@ -737,8 +746,10 @@ public:
     Outpost::Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 0};
     content.status = {{.runs = {{.text = "Research Lab "}, {.text = "IDLE", .chip = true}}}};
     content.alerts = {{"Enemy ships in South", {}}, {"Mining Rig lost: North", {}}};
-    content.territory =
-      Outpost::Hud::Territory{.ownNodes = 3, .enemyNodes = 2, .nodes = 25, .cap = 10, .ownTickets = 900, .enemyTickets = 950};
+    content.territory = Outpost::Hud::Territory{
+      .ownNodes = 3, .enemyNodes = 2, .nodes = 25, .cap = 10, .ownTickets = 900, .enemyTickets = 950, .enemy = Outpost::PlayerId{2}};
+    content.player = PLAYER;
+    content.sideColors = SideColors();
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     for (const std::string_view words : {"IDLE", "+0/s", "Enemy ships in South"})
     {
@@ -752,7 +763,8 @@ public:
     Assert::AreEqual(std::ptrdiff_t{3},
                      std::ranges::count_if(layout.texts, [&](const Outpost::Hud::Text& _text) { return IsChip(layout, _text); }));
     const Outpost::Hud::Text& enemyNodes = TextOf(layout, "2");
-    Assert::IsTrue(enemyNodes.color.x == 1.0f && enemyNodes.color.y == 0.38f, L"the enemy's figure in the enemy's color");
+    Assert::IsTrue(enemyNodes.color.x == content.sideColors[1].color.x && enemyNodes.color.y == content.sideColors[1].color.y,
+                   L"the enemy's figure in the enemy's color");
     Assert::IsFalse(IsChip(layout, enemyNodes), L"and plain");
   }
 
@@ -1046,6 +1058,94 @@ public:
     Assert::IsTrue(square.front() < fogAt, L"what is seen stays under the fog");
   }
 
+  // ADR-043 decision 7: the HUD draws each player in its set's color, as the world draws it, whichever seat views it: its
+  // marks, its sectors' washes, outlines and hatching, what is remembered of it, and its figures on the territory panel,
+  // each figure at ADR-062's 4.5:1 or more on the panel.
+  TEST_METHOD(DrawsEachPlayerInItsSetsColor)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    const Outpost::PlayerId first{1};
+    const Outpost::PlayerId second{2};
+    const auto colorOf = [&catalog](Outpost::PlayerId _player)
+    {
+      const Outpost::ModelSet* set = catalog.SetForPlayer(_player);
+      Assert::IsNotNull(set);
+      return set->color;
+    };
+    const auto same = [](const DirectX::XMFLOAT4& _color, const DirectX::XMFLOAT4& _set)
+    { return _color.x == _set.x && _color.y == _set.y && _color.z == _set.z; };
+    Assert::IsFalse(same(colorOf(first), colorOf(second)), L"the two sets differ");
+    const Outpost::PlanePosition firstShip{.xMeters = -500.0f, .zMeters = 500.0f};
+    const Outpost::PlanePosition secondShip{.xMeters = 500.0f, .zMeters = 500.0f};
+    const Outpost::PlanePosition secondMemory{.xMeters = 500.0f, .zMeters = -500.0f};
+    for (const Outpost::PlayerId seat : {first, second})
+    {
+      Outpost::Snapshot newest = Newest();
+      newest.player = seat;
+      newest.mapSizeMeters = 2000.0f;
+      newest.sectors = {
+        {.id = 1, .minXMeters = -1000.0f, .maxXMeters = 0.0f, .minZMeters = -1000.0f, .maxZMeters = 1000.0f, .holder = first},
+        {.id = 2,
+         .minXMeters = 0.0f,
+         .maxXMeters = 1000.0f,
+         .minZMeters = -1000.0f,
+         .maxZMeters = 1000.0f,
+         .holder = second,
+         .suppressed = true}};
+      newest.tickets = {{.player = first, .tickets = 111}, {.player = second, .tickets = 222}};
+      const std::vector<Outpost::EntityView> entities{
+        {.id = Outpost::EntityId{1}, .owner = first, .position = firstShip, .radiusMeters = 10.0f},
+        {.id = Outpost::EntityId{2}, .owner = second, .position = secondShip, .radiusMeters = 10.0f},
+        {.id = Outpost::EntityId{3},
+         .kind = Outpost::EntityKind::Structure,
+         .owner = second,
+         .position = secondMemory,
+         .radiusMeters = 40.0f,
+         .remembered = true}};
+      Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, {});
+      content.sideColors = Outpost::Hud::SideColorsOf(catalog);
+      const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+      const std::wstring seen = seat == first ? L" seen by seat 1" : L" seen by seat 2";
+
+      // The last panel drawn at a point that is a mark's or a cross's, not the map's, a sector's or the fog.
+      const auto markAt = [&layout](Outpost::PlanePosition _position)
+      {
+        const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(_position);
+        const auto found = std::ranges::find_last_if(layout.panels, [&at](const Outpost::Hud::Rect& _panel)
+                                                     { return _panel.Contains(at.x, at.y) && _panel.width < 100.0f; });
+        Assert::IsTrue(found.begin() != layout.panels.end());
+        return found.front().color;
+      };
+      Assert::IsTrue(same(markAt(firstShip), colorOf(first)), (L"player 1's ship" + seen).c_str());
+      Assert::IsTrue(same(markAt(secondShip), colorOf(second)), (L"player 2's ship" + seen).c_str());
+      Assert::IsTrue(same(markAt(secondMemory), colorOf(second)), (L"player 2's remembered structure" + seen).c_str());
+
+      // Each sector's wash and outline, and the suppressed one's hatching, in its holder's color.
+      const auto sectorPanels = [&layout, &same](const DirectX::XMFLOAT4& _color, Outpost::Hud::Fill _fill)
+      {
+        return std::ranges::count_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                     { return _panel.fill == _fill && _panel.height > 100.0f && same(_panel.color, _color); });
+      };
+      Assert::IsTrue(sectorPanels(colorOf(first), Outpost::Hud::Fill::Solid) >= 3, (L"player 1's wash and outline" + seen).c_str());
+      Assert::IsTrue(sectorPanels(colorOf(second), Outpost::Hud::Fill::Solid) >= 3, (L"player 2's wash and outline" + seen).c_str());
+      Assert::AreEqual(std::ptrdiff_t{1}, sectorPanels(colorOf(second), Outpost::Hud::Fill::Hatched),
+                       (L"player 2's hatching" + seen).c_str());
+
+      // The territory panel: the seat's own figure, then the other's, each in its player's color and legible.
+      const Outpost::PlayerId other = seat == first ? second : first;
+      const Outpost::Hud::Text& own = TextOf(layout, seat == first ? "111 : " : "222 : ");
+      const Outpost::Hud::Text& enemy = TextOf(layout, seat == first ? "222" : "111");
+      Assert::IsTrue(same(own.color, colorOf(seat)), (L"the seat's own tickets" + seen).c_str());
+      Assert::IsTrue(same(enemy.color, colorOf(other)), (L"the other's tickets" + seen).c_str());
+      for (const Outpost::Hud::Text* figure : {&own, &enemy})
+      {
+        const std::vector<DirectX::XMFLOAT3> grounds = GroundsOf(layout, 0, *figure);
+        Assert::IsTrue(ContrastOf({figure->color.x, figure->color.y, figure->color.z}, grounds.back()) >= 4.5f,
+                       (L"at 4.5:1" + seen).c_str());
+      }
+    }
+  }
+
   // ADR-081 decision 7: over the fog the minimap draws every sector's border, at 2:1 against the map, and a
   // cut-off sector's outline in dashes. A node has no mark of its own; while the player places a Relay, each sector whose
   // node it could claim now is outlined in its color inside the border.
@@ -1077,6 +1177,9 @@ public:
     Assert::IsTrue(!placing.sectors[0].claimable && placing.sectors[1].claimable, L"while placing, the free one next to the player's");
     content.fog = true;
     placing.fog = true;
+    content.sideColors = SideColors();
+    placing.sideColors = content.sideColors;
+    const DirectX::XMFLOAT4 own = content.sideColors.front().color;
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const Outpost::Hud::Layout placingLayout = Lay(placing, 1920, 1080);
     // A line, a dot or an outline's side at a point: not the map, a sector's wash or the fog.
@@ -1117,7 +1220,7 @@ public:
       return std::ranges::count_if(_layout.panels,
                                    [&](const Outpost::Hud::Rect& _panel)
                                    {
-                                     return _panel.color.x == 0.35f && _panel.color.z == 1.0f && _panel.color.w == 1.0f &&
+                                     return _panel.color.x == own.x && _panel.color.z == own.z && _panel.color.w == 1.0f &&
                                             _panel.left > freeLow.x + 1.0f && _panel.top > freeLow.y + 1.0f &&
                                             _panel.left + _panel.width < freeHigh.x - 1.0f &&
                                             _panel.top + _panel.height < freeHigh.y - 1.0f;
@@ -1136,7 +1239,7 @@ public:
       const float y = high.y + static_cast<float>(pixel);
       const bool outlined = std::ranges::any_of(
         layout.panels, [&](const Outpost::Hud::Rect& _panel)
-        { return _panel.color.x == 0.35f && _panel.color.z == 1.0f && _panel.width <= 2.5f && _panel.Contains(low.x + 0.5f, y); });
+        { return _panel.color.x == own.x && _panel.color.z == own.z && _panel.width <= 2.5f && _panel.Contains(low.x + 0.5f, y); });
       (outlined ? covered : open) += 1;
     }
     Assert::IsTrue(covered > 0 && open > 0, L"dashed, not whole");
@@ -2426,10 +2529,11 @@ public:
   // over it.
   TEST_METHOD(DrawsARigsMarkOverItsAsteroid)
   {
-    Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 5000.0f};
+    Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 5000.0f, .player = PLAYER, .sideColors = SideColors()};
     const Outpost::PlanePosition at{.xMeters = 400.0f, .zMeters = 400.0f};
-    content.marks = {{.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Own, .kind = Outpost::EntityKind::Structure},
-                     {.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Neutral, .kind = Outpost::EntityKind::Asteroid}};
+    content.marks = {
+      {.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Own, .owner = PLAYER, .kind = Outpost::EntityKind::Structure},
+      {.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Neutral, .kind = Outpost::EntityKind::Asteroid}};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     // The ore asteroid's outline, its top first, then the rig's square (ADR-068).
     const Outpost::Hud::Rect& ore = layout.panels[layout.panels.size() - 5];

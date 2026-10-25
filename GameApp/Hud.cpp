@@ -18,13 +18,11 @@ constexpr DirectX::XMFLOAT4 DIM_TEXT_COLOR{0.42f, 0.45f, 0.5f, 1.0f};
 constexpr DirectX::XMFLOAT4 DISABLED_BUTTON_COLOR{0.05f, 0.06f, 0.08f, 0.85f};
 // A designer's name the server would refuse, and an income of nothing.
 constexpr DirectX::XMFLOAT4 WARNING_COLOR{1.0f, 0.5f, 0.35f, 1.0f};
-// The minimap: the map's square, and its marks in the side's color, an ore asteroid in Ore's gold, darkened, so that the
-// map reads without a legend: blue is the player's, red the enemy's, violet the pirates' (ADR-073), and gold is ore
-// (ADR-043). An ore asteroid's mark is an outlined square, so that it differs from an enemy's filled one in shape as well
-// as in brightness (ADR-043 decision 8). The camera's view is a light outline.
+// The minimap: the map's square, and its marks in the color of whose they are, an ore asteroid in Ore's gold, darkened, so
+// that the map reads without a legend: each player's is its set's, as the world draws it (Hud::SideColor), violet is the
+// pirates' (ADR-073), and gold is ore (ADR-043). An ore asteroid's mark is an outlined square, so that it differs from a
+// player's filled one in shape as well as in brightness (ADR-043 decision 8). The camera's view is a light outline.
 constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
-constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
-constexpr DirectX::XMFLOAT4 ENEMY_COLOR{1.0f, 0.38f, 0.25f, 1.0f};
 constexpr DirectX::XMFLOAT4 PIRATE_COLOR{0.78f, 0.45f, 1.0f, 1.0f};
 // A derelict, light gray, a filled square like a structure's, whoever's it was (ADR-074).
 constexpr DirectX::XMFLOAT4 DERELICT_COLOR{0.62f, 0.62f, 0.66f, 1.0f};
@@ -1041,6 +1039,19 @@ DirectX::XMFLOAT4 ChangeColor(Hud::Change _change, const DirectX::XMFLOAT4& _sam
 const DirectX::XMFLOAT4& RatingColor(Hud::Rating _rating) noexcept
 {
   return _rating == Hud::Rating::Good ? GOOD_COLOR : _rating == Hud::Rating::Fair ? FAIR_COLOR : POOR_COLOR;
+}
+
+// The color of _player's, at _alpha: the pirates' violet on _side Pirate, else the player's color in _content, or the neutral
+// marks' gray for a player with none.
+DirectX::XMFLOAT4 SideColorOf(const Hud::Content& _content, Hud::Side _side, Outpost::PlayerId _player, float _alpha = 1.0f)
+{
+  DirectX::XMFLOAT4 color = NEUTRAL_COLOR;
+  if (_side == Hud::Side::Pirate)
+    color = PIRATE_COLOR;
+  else if (const auto found = std::ranges::find(_content.sideColors, _player, &Hud::SideColor::player); found != _content.sideColors.end())
+    color = found->color;
+  color.w = _alpha;
+  return color;
 }
 
 // A queue's label, as every window writes it: its jobs against the queue's limit, "QUEUE · 2 / 5" (ADR-043 decision 6).
@@ -2459,6 +2470,17 @@ DirectX::XMFLOAT2 Hud::Layout::MinimapPixelAt(PlanePosition _point) const noexce
           minimap.top + ((half - _point.zMeters) / mapSizeMeters * minimap.height)};
 }
 
+std::vector<Outpost::Hud::SideColor> Outpost::Hud::SideColorsOf(const ModelCatalog& _catalog)
+{
+  std::vector<SideColor> colors;
+  for (const PlayerModels& player : _catalog.players)
+  {
+    if (const ModelSet* set = _catalog.SetForPlayer(player.player); set != nullptr)
+      colors.push_back({.player = player.player, .color = set->color});
+  }
+  return colors;
+}
+
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
                                              const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond,
@@ -2472,7 +2494,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                   .status = StatusLinesOf(_newest, _entities),
                   .designer = std::nullopt,
                   .mapSizeMeters = _newest.mapSizeMeters,
-                  .marks = {}};
+                  .marks = {},
+                  .player = _newest.player};
   if (_designer != nullptr)
     content.designer = DescribeDesigner(_newest, *_designer, _hovered);
   content.researchNames.reserve(_newest.research.size());
@@ -2495,11 +2518,14 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       const Side side = sector.guarded && !sector.holder.IsValid() ? Side::Pirate : sideOf(sector.holder);
       territory.ownNodes += side == Side::Own ? 1 : 0;
       territory.enemyNodes += side == Side::Enemy ? 1 : 0;
+      if (side == Side::Enemy)
+        territory.enemy = sector.holder;
       content.sectors.push_back({.minXMeters = sector.minXMeters,
                                  .maxXMeters = sector.maxXMeters,
                                  .minZMeters = sector.minZMeters,
                                  .maxZMeters = sector.maxZMeters,
                                  .side = side,
+                                 .holder = sector.holder,
                                  .suppressed = sector.suppressed,
                                  .cutOff = sector.cutOff,
                                  .claimable = std::ranges::find(marked.claimable, sector.node) != marked.claimable.end()});
@@ -2510,7 +2536,10 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       if (tickets.player == _newest.player)
         territory.ownTickets = tickets.tickets;
       else
+      {
         territory.enemyTickets = tickets.tickets;
+        territory.enemy = tickets.player;
+      }
     }
     // Who the drain takes tickets from, at what a minute, and when they run out: the drains their tickets last, rounded up,
     // times the interval (ADR-057 decision 8). The next drain may be up to an interval away, which the row does not try to show.
@@ -2543,6 +2572,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.marks.push_back({.position = entity.position,
                              .radiusMeters = entity.radiusMeters,
                              .side = side,
+                             .owner = entity.owner,
                              .kind = entity.kind,
                              .dry = entity.kind == EntityKind::Asteroid && entity.oreReserveHundredths == 0,
                              .remembered = entity.remembered});
@@ -3199,8 +3229,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       paint.Text(std::move(label), PADDING, _top, TEXT_COLOR, Typeface::Name);
       if (!_note.empty())
         paint.Text(paint.Fit(_note, Typeface::Name, PADDING + labelRoom - noteLeft), noteLeft, _top, LABEL_COLOR, Typeface::Name);
-      paint.RightText(_enemy, right, figureTop, ENEMY_COLOR, Typeface::Figure);
-      paint.RightText(std::move(own), ownRight, figureTop, OWN_COLOR, Typeface::Figure);
+      paint.RightText(_enemy, right, figureTop, SideColorOf(_content, Side::Enemy, territory.enemy), Typeface::Figure);
+      paint.RightText(std::move(own), ownRight, figureTop, SideColorOf(_content, Side::Own, _content.player), Typeface::Figure);
     };
     const std::string note =
       territory.cap > 0 ? std::format("cap {} of {}", territory.cap, territory.nodes) : std::format("of {}", territory.nodes);
@@ -3482,16 +3512,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       const DirectX::XMFLOAT2 high = layout.MinimapPixelOf({.xMeters = _sector.maxXMeters, .zMeters = _sector.minZMeters});
       return Rect{low.x, low.y, high.x - low.x, high.y - low.y, _color, _fill};
     };
-    const auto sideColor = [](Side _side, float _alpha)
-    {
-      DirectX::XMFLOAT4 color = _side == Side::Own ? OWN_COLOR : _side == Side::Pirate ? PIRATE_COLOR : ENEMY_COLOR;
-      color.w = _alpha;
-      return color;
-    };
     for (const SectorMark& sector : _content.sectors)
     {
       if (sector.side != Side::Neutral)
-        layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_WASH_ALPHA), Fill::Solid));
+        layout.panels.push_back(sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_WASH_ALPHA), Fill::Solid));
     }
     // The neutral marks first, so that a rig's shows over its asteroid's.
     std::vector<const Mark*> marks;
@@ -3514,14 +3538,12 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
                              scale;
       const float side = std::max(smallest, 2.0f * mark.radiusMeters * pixelsPerMeter);
       const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
-      const DirectX::XMFLOAT4& color = mark.dry                                 ? DRY_COLOR
-                                       : mark.side == Side::Own                 ? OWN_COLOR
-                                       : mark.side == Side::Enemy               ? ENEMY_COLOR
-                                       : mark.side == Side::Pirate              ? PIRATE_COLOR
-                                       : mark.kind == EntityKind::Derelict      ? DERELICT_COLOR
-                                       : mark.kind == EntityKind::AsteroidField ? ASTEROID_FIELD_COLOR
-                                       : mark.kind == EntityKind::Asteroid      ? ORE_ASTEROID_COLOR
-                                                                                : NEUTRAL_COLOR;
+      const DirectX::XMFLOAT4 color = mark.dry                                 ? DRY_COLOR
+                                      : mark.side != Side::Neutral             ? SideColorOf(_content, mark.side, mark.owner)
+                                      : mark.kind == EntityKind::Derelict      ? DERELICT_COLOR
+                                      : mark.kind == EntityKind::AsteroidField ? ASTEROID_FIELD_COLOR
+                                      : mark.kind == EntityKind::Asteroid      ? ORE_ASTEROID_COLOR
+                                                                               : NEUTRAL_COLOR;
       const float markLeft = at.x - (side / 2.0f);
       const float markTop = at.y - (side / 2.0f);
       if (mark.kind == EntityKind::Asteroid && mark.side == Side::Neutral)
@@ -3580,25 +3602,26 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     {
       if (sector.side == Side::Neutral)
         continue;
-      const Rect area = sectorRect(sector, sideColor(sector.side, SECTOR_OUTLINE_ALPHA), Fill::Solid);
+      const Rect area = sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_OUTLINE_ALPHA), Fill::Solid);
       if (sector.cutOff)
         dashedOutline(area);
       else
         outline(area);
       if (sector.suppressed)
-        layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_HATCH_ALPHA), Fill::Hatched));
+        layout.panels.push_back(sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_HATCH_ALPHA), Fill::Hatched));
     }
 
     // While the player places a Relay, each sector it could claim now, outlined in its own color inside the border, clear
     // of the outline of its held sector beside it.
     const float claimableInset = CLAIMABLE_INSET_UNITS * scale;
+    const DirectX::XMFLOAT4 ownColor = SideColorOf(_content, Side::Own, _content.player);
     for (const SectorMark& sector : _content.sectors)
     {
       if (!sector.claimable)
         continue;
-      const Rect area = sectorRect(sector, OWN_COLOR, Fill::Solid);
+      const Rect area = sectorRect(sector, ownColor, Fill::Solid);
       outline({area.left + claimableInset, area.top + claimableInset, area.width - (2.0f * claimableInset),
-               area.height - (2.0f * claimableInset), OWN_COLOR});
+               area.height - (2.0f * claimableInset), ownColor});
     }
 
     // What the player only remembers, as a cross in its side's color, over the fog that would dim it twice.
@@ -3609,7 +3632,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
       const float across = MEMORY_MARK_UNITS * scale;
       const float arm = MEMORY_ARM_UNITS * scale;
-      const DirectX::XMFLOAT4 color = mark.side == Side::Neutral ? DERELICT_COLOR : sideColor(mark.side, 1.0f);
+      const DirectX::XMFLOAT4 color = mark.side == Side::Neutral ? DERELICT_COLOR : SideColorOf(_content, mark.side, mark.owner);
       layout.panels.push_back({at.x - (across / 2.0f), at.y - (arm / 2.0f), across, arm, color});
       layout.panels.push_back({at.x - (arm / 2.0f), at.y - (across / 2.0f), arm, across, color});
     }

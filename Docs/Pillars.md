@@ -44,7 +44,7 @@ It asks that what a player needs in order to decide be on the screen, in the wor
 
 Bears on: Game §interface, Game §sight, Game §territory.shown, Game §look, Game §map.plane.
 
-**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A world has no tickets, so there the territory alone says who is winning. Each side keeps its set's color everywhere, the HUD following the world (owner, 2026-10-25), so a player in a world's second seat sees its own side in the Tarkan set's orange-red; until the HUD is brought to that, its minimap draws a player's own side in blue.
+**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A world has no tickets, so there the territory alone says who is winning. Each side keeps its set's color everywhere, the HUD following the world (owner, 2026-10-25), so a player in a world's second seat sees its own side in the Tarkan set's orange-red.
 
 ## 5. Being there buys decisions, not actions
 
