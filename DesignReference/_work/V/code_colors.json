@@ -1,0 +1,747 @@
+{
+ "TEXT_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 16,
+  "linear": [
+   0.82,
+   0.88,
+   0.96,
+   1.0
+  ],
+  "hex": "#EAF1FA"
+ },
+ "DIM_TEXT_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 17,
+  "linear": [
+   0.42,
+   0.45,
+   0.5,
+   1.0
+  ],
+  "hex": "#ADB3BC"
+ },
+ "DISABLED_BUTTON_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 18,
+  "linear": [
+   0.05,
+   0.06,
+   0.08,
+   0.85
+  ],
+  "hex": "#3F4550"
+ },
+ "WARNING_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 20,
+  "linear": [
+   1.0,
+   0.5,
+   0.35,
+   1.0
+  ],
+  "hex": "#FFBCA0"
+ },
+ "MAP_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 25,
+  "linear": [
+   0.02,
+   0.04,
+   0.07,
+   0.95
+  ],
+  "hex": "#27384B"
+ },
+ "OWN_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 26,
+  "linear": [
+   0.35,
+   0.65,
+   1.0,
+   1.0
+  ],
+  "hex": "#A0D3FF"
+ },
+ "ENEMY_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 27,
+  "linear": [
+   1.0,
+   0.38,
+   0.25,
+   1.0
+  ],
+  "hex": "#FFA689"
+ },
+ "PIRATE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 28,
+  "linear": [
+   0.78,
+   0.45,
+   1.0,
+   1.0
+  ],
+  "hex": "#E5B3FF"
+ },
+ "DERELICT_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 30,
+  "linear": [
+   0.62,
+   0.62,
+   0.66,
+   1.0
+  ],
+  "hex": "#CECED4"
+ },
+ "NEUTRAL_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 31,
+  "linear": [
+   0.45,
+   0.42,
+   0.4,
+   1.0
+  ],
+  "hex": "#B3ADAA"
+ },
+ "ORE_ASTEROID_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 32,
+  "linear": [
+   0.42,
+   0.23,
+   0.02,
+   1.0
+  ],
+  "hex": "#AD8427"
+ },
+ "DRY_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 34,
+  "linear": [
+   0.32,
+   0.2,
+   0.147,
+   1.0
+  ],
+  "hex": "#997C6B"
+ },
+ "ASTEROID_FIELD_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 38,
+  "linear": [
+   0.13,
+   0.13,
+   0.14,
+   1.0
+  ],
+  "hex": "#656569"
+ },
+ "VIEW_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 39,
+  "linear": [
+   0.85,
+   0.9,
+   1.0,
+   0.8
+  ],
+  "hex": "#EDF3FF"
+ },
+ "LATTICE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 52,
+  "linear": [
+   0.11,
+   0.13,
+   0.17,
+   1.0
+  ],
+  "hex": "#5D6573"
+ },
+ "WINDOW_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 840,
+  "linear": [
+   0.009,
+   0.013,
+   0.024,
+   1.0
+  ],
+  "hex": "#181E2B"
+ },
+ "TITLE_HATCH_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 841,
+  "linear": [
+   0.03,
+   0.042,
+   0.08,
+   1.0
+  ],
+  "hex": "#303A50"
+ },
+ "CLOSE_BOX_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 842,
+  "linear": [
+   0.014,
+   0.02,
+   0.041,
+   1.0
+  ],
+  "hex": "#1F2739"
+ },
+ "WINDOW_EDGE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 843,
+  "linear": [
+   0.25,
+   0.43,
+   0.76,
+   1.0
+  ],
+  "hex": "#89AFE2"
+ },
+ "LABEL_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 978,
+  "linear": [
+   0.22,
+   0.29,
+   0.42,
+   1.0
+  ],
+  "hex": "#8193AD"
+ },
+ "ROW_LABEL_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 979,
+  "linear": [
+   0.41,
+   0.49,
+   0.61,
+   1.0
+  ],
+  "hex": "#ACBACD"
+ },
+ "HEADER_LABEL_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 981,
+  "linear": [
+   0.41,
+   0.49,
+   0.61,
+   1.0
+  ],
+  "hex": "#ACBACD"
+ },
+ "NUMBERS_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 982,
+  "linear": [
+   0.65,
+   0.77,
+   0.93,
+   1.0
+  ],
+  "hex": "#D3E3F7"
+ },
+ "SOFT_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 983,
+  "linear": [
+   0.29,
+   0.37,
+   0.5,
+   1.0
+  ],
+  "hex": "#93A4BC"
+ },
+ "CODE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 984,
+  "linear": [
+   0.18,
+   0.3,
+   0.53,
+   1.0
+  ],
+  "hex": "#7695C0"
+ },
+ "ACCENT_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 985,
+  "linear": [
+   0.4,
+   0.63,
+   1.0,
+   1.0
+  ],
+  "hex": "#AAD0FF"
+ },
+ "GOLD_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 986,
+  "linear": [
+   0.93,
+   0.5,
+   0.045,
+   1.0
+  ],
+  "hex": "#F7BC3C"
+ },
+ "FIELD_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 987,
+  "linear": [
+   0.005,
+   0.007,
+   0.011,
+   1.0
+  ],
+  "hex": "#10141B"
+ },
+ "CARD_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 988,
+  "linear": [
+   0.014,
+   0.02,
+   0.041,
+   1.0
+  ],
+  "hex": "#1F2739"
+ },
+ "EDGE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 989,
+  "linear": [
+   0.026,
+   0.037,
+   0.07,
+   1.0
+  ],
+  "hex": "#2D364B"
+ },
+ "PICKED_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 990,
+  "linear": [
+   0.033,
+   0.063,
+   0.136,
+   1.0
+  ],
+  "hex": "#334767"
+ },
+ "PICKED_EDGE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 991,
+  "linear": [
+   0.35,
+   0.56,
+   0.9,
+   1.0
+  ],
+  "hex": "#A0C5F3"
+ },
+ "HOVER_EDGE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 994,
+  "linear": [
+   0.25,
+   0.43,
+   0.76,
+   1.0
+  ],
+  "hex": "#89AFE2"
+ },
+ "LOCKED_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 995,
+  "linear": [
+   0.007,
+   0.01,
+   0.016,
+   1.0
+  ],
+  "hex": "#141922"
+ },
+ "LOCKED_HATCH_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 996,
+  "linear": [
+   0.012,
+   0.016,
+   0.024,
+   1.0
+  ],
+  "hex": "#1D222B"
+ },
+ "LOCKED_TEXT_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 999,
+  "linear": [
+   0.2,
+   0.26,
+   0.35,
+   1.0
+  ],
+  "hex": "#7C8BA0"
+ },
+ "AMBER_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1000,
+  "linear": [
+   0.62,
+   0.34,
+   0.09,
+   1.0
+  ],
+  "hex": "#CE9E55"
+ },
+ "GOOD_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1001,
+  "linear": [
+   0.15,
+   0.9,
+   0.075,
+   1.0
+  ],
+  "hex": "#6CF34D"
+ },
+ "FAIR_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1002,
+  "linear": [
+   0.9,
+   0.46,
+   0.026,
+   1.0
+  ],
+  "hex": "#F3B52D"
+ },
+ "POOR_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1004,
+  "linear": [
+   0.8,
+   0.09,
+   0.05,
+   1.0
+  ],
+  "hex": "#E7553F"
+ },
+ "BAR_TRACK_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1005,
+  "linear": [
+   0.004,
+   0.005,
+   0.009,
+   1.0
+  ],
+  "hex": "#0D1018"
+ },
+ "BAR_FILL_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1006,
+  "linear": [
+   0.17,
+   0.3,
+   0.58,
+   1.0
+  ],
+  "hex": "#7395C8"
+ },
+ "QUEUE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1009,
+  "linear": [
+   0.024,
+   0.081,
+   0.031,
+   1.0
+  ],
+  "hex": "#2B5031"
+ },
+ "QUEUE_HATCH_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1010,
+  "linear": [
+   0.034,
+   0.099,
+   0.044,
+   1.0
+  ],
+  "hex": "#34593B"
+ },
+ "QUEUE_EDGE_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1011,
+  "linear": [
+   0.09,
+   0.29,
+   0.12,
+   1.0
+  ],
+  "hex": "#559361"
+ },
+ "QUEUE_TEXT_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1012,
+  "linear": [
+   0.85,
+   1.0,
+   0.86,
+   1.0
+  ],
+  "hex": "#EDFFEF"
+ },
+ "SLOT_FILLED_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1013,
+  "linear": [
+   0.15,
+   0.25,
+   0.45,
+   1.0
+  ],
+  "hex": "#6C89B3"
+ },
+ "BUILD_BAR_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1016,
+  "linear": [
+   0.5,
+   0.52,
+   0.55,
+   1.0
+  ],
+  "hex": "#BCBFC4"
+ },
+ "HEALTH_GOOD_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1022,
+  "linear": [
+   0.2,
+   0.85,
+   0.3,
+   1.0
+  ],
+  "hex": "#7CED95"
+ },
+ "HEALTH_FAIR_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1023,
+  "linear": [
+   1.0,
+   0.7,
+   0.1,
+   1.0
+  ],
+  "hex": "#FFDA59"
+ },
+ "HEALTH_POOR_COLOR": {
+  "file": "GameApp/Hud.cpp",
+  "line": 1024,
+  "linear": [
+   0.95,
+   0.2,
+   0.15,
+   1.0
+  ],
+  "hex": "#F97C6C"
+ },
+ "GRID_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 32,
+  "linear": [
+   0.012,
+   0.013,
+   0.019,
+   1.0
+  ],
+  "hex": "#1D1E26"
+ },
+ "SELECTION_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 89,
+  "linear": [
+   0.25,
+   0.95,
+   0.35,
+   1.0
+  ],
+  "hex": "#89F9A0"
+ },
+ "ATTACK_MOVE_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 90,
+  "linear": [
+   1.0,
+   0.65,
+   0.1,
+   1.0
+  ],
+  "hex": "#FFD359"
+ },
+ "DRAG_BOX_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 91,
+  "linear": [
+   0.25,
+   0.95,
+   0.35,
+   1.0
+  ],
+  "hex": "#89F9A0"
+ },
+ "HEALTH_BACK_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 97,
+  "linear": [
+   0.08,
+   0.08,
+   0.08,
+   1.0
+  ],
+  "hex": "#505050"
+ },
+ "TERRITORY_LATTICE_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 109,
+  "linear": [
+   0.04,
+   0.043,
+   0.063,
+   1.0
+  ],
+  "hex": "#383A47"
+ },
+ "GHOST_VALID_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 122,
+  "linear": [
+   0.2,
+   0.75,
+   0.3,
+   1.0
+  ],
+  "hex": "#7CE195"
+ },
+ "GHOST_INVALID_COLOR": {
+  "file": "GameApp/GameClient.cpp",
+  "line": 123,
+  "linear": [
+   0.85,
+   0.2,
+   0.15,
+   1.0
+  ],
+  "hex": "#ED7C6C"
+ },
+ "FLASH_COLOR": {
+  "file": "GameApp/CombatEffects.cpp",
+  "line": 20,
+  "linear": [
+   1.0,
+   0.95,
+   0.7,
+   1.0
+  ],
+  "hex": "#FFF9DA"
+ },
+ "TRACER_COLOR": {
+  "file": "GameApp/CombatEffects.cpp",
+  "line": 26,
+  "linear": [
+   1.0,
+   0.85,
+   0.35,
+   1.0
+  ],
+  "hex": "#FFEDA0"
+ },
+ "BEAM_COLOR": {
+  "file": "GameApp/CombatEffects.cpp",
+  "line": 32,
+  "linear": [
+   0.55,
+   0.9,
+   1.0,
+   1.0
+  ],
+  "hex": "#C4F3FF"
+ },
+ "SLUG_COLOR": {
+  "file": "GameApp/CombatEffects.cpp",
+  "line": 39,
+  "linear": [
+   0.9,
+   0.95,
+   1.0,
+   1.0
+  ],
+  "hex": "#F3F9FF"
+ },
+ "BLAST_COLOR": {
+  "file": "GameApp/CombatEffects.cpp",
+  "line": 44,
+  "linear": [
+   1.0,
+   0.6,
+   0.25,
+   1.0
+  ],
+  "hex": "#FFCB89"
+ },
+ "SPARK_COLOR": {
+  "file": "GameApp/CombatEffects.cpp",
+  "line": 46,
+  "linear": [
+   1.0,
+   0.7,
+   0.3,
+   1.0
+  ],
+  "hex": "#FFDA95"
+ },
+ "KEY_COLOR": {
+  "file": "GameApp/SceneShading.h",
+  "line": 16,
+  "linear": [
+   0.627,
+   0.539,
+   0.427
+  ],
+  "hex": "#CFC2AF"
+ },
+ "SKY_FILL": {
+  "file": "GameApp/SceneShading.h",
+  "line": 18,
+  "linear": [
+   0.365,
+   0.421,
+   0.571
+  ],
+  "hex": "#A3AEC7"
+ },
+ "GROUND_FILL": {
+  "file": "GameApp/SceneShading.h",
+  "line": 19,
+  "linear": [
+   0.314,
+   0.287,
+   0.389
+  ],
+  "hex": "#9892A8"
+ }
+}
