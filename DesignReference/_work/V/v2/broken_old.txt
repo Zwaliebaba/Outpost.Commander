@@ -1,0 +1,40 @@
+game-pitch.dc.html tdPlain=0 th=0 code=5 | 
+game-loops.dc.html tdPlain=0 th=0 code=1 | 
+glossary-1.dc.html tdPlain=2 th=0 code=3 | 98-149) 16-97);
+glossary-2.dc.html tdPlain=2 th=0 code=2 | scheduled-order attack-move,
+sides.dc.html tdPlain=4 th=0 code=5 | Asteroids Human Tarkan Asteroids
+economy-ore.dc.html tdPlain=0 th=0 code=1 | 
+economy-map.dc.html tdPlain=1 th=0 code=1 | player-half:
+economy-territory.dc.html tdPlain=0 th=0 code=1 | 
+structures.dc.html tdPlain=0 th=0 code=2 | 
+ships-parts.dc.html tdPlain=10 th=0 code=11 | Medium Fusion l.74-75 l.82-83 l.78-79 l.84-85 Defence speedMetersPerSecond turnRateDegreesPerSecond footprintRadiusMeters
+ships-designs.dc.html tdPlain=1 th=0 code=1 | (ADR-069)
+combat.dc.html tdPlain=3 th=0 code=10 | 125-127); Medium+Ion+Lance Medium+Ion+Missile
+orders.dc.html tdPlain=0 th=0 code=9 | 
+orders-scheduled.dc.html tdPlain=0 th=0 code=8 | 
+ai.dc.html tdPlain=0 th=0 code=9 | 
+world.dc.html tdPlain=1 th=0 code=2 | "{option}
+world-state.dc.html tdPlain=5 th=0 code=9 | W2 W3 W4 W5 W6
+visual-type.dc.html tdPlain=3 th=1 code=1 | SemiCondensed ADR-030 ADR-062
+visual-anatomy-1.dc.html tdPlain=2 th=0 code=5 | Normal Locked
+visual-anatomy-2.dc.html tdPlain=1 th=0 code=0 | 2170-2183;
+visual-rules.dc.html tdPlain=1 th=0 code=0 | 1874-1876
+visual-scale.dc.html tdPlain=7 th=0 code=0 | 10 12 13 14 15 0.045–0.05) 16
+screens-flow.dc.html tdPlain=16 th=0 code=0 | WinMain.cpp:487-490, WinMain.cpp:491-504 20 22 23 24 25 26 27 28 29 30
+spec-menu.dc.html tdPlain=12 th=0 code=0 | menu.frame menu.title menu.subtitle menu.notice Hud.cpp:2336-2338, 2349-2353 menu.easyskirmish menu.normalskirmish menu.hardskirmish menu.joinworld Hud.cpp:2332-2333 menu.quit
+spec-hud-1.dc.html tdPlain=31 th=0 code=1 | ore.stockpile.gem ore.stockpile.figure ore.income ore.income.chip Hud.cpp:301-312 Hud.cpp:296-297 Hud.cpp:298-299 Hud.cpp:370-400 Hud.cpp:403-410, Hud.cpp:373-380, 411-412 territory.frame
+spec-hud-2.dc.html tdPlain=12 th=0 code=1 | (Hud.cpp:2589) (KeyBindings.h:28) (KeyBindings.h:27) (KeyBindings.h:29) (KeyBindings.h:10-13) outcome.frame Hud.cpp:3342-3343 outcome.title outcome.detail 2203-2218 outcome.backToMenu Hud.cpp:3347-3349
+spec-windows.dc.html tdPlain=1 th=0 code=0 | Production
+spec-designer.dc.html tdPlain=66 th=0 code=4 | designer.shipyard.previous Hud.cpp:1365-1367, designer.shipyard.subject designer.titleLabel designer.title designer.queueLabel designer.built Hud.cpp:1372-1373 designer.queueSlot0..4 Hud.cpp:1361-1364, header.oreBox designer.name.field
+spec-production-research.dc.html tdPlain=39 th=0 code=0 | production.titleLabel header.subject Hud.cpp:1658-1671, 2838-2845 header.oreBox production.build.label production.option{i} Hud.cpp:1733-1743, 2855-2894 Hud.cpp:1745-1746 Hud.cpp:1747-1749, Hud.cpp:1750-1751
+spec-orders-away.dc.html tdPlain=21 th=0 code=11 | orders.titleLabel orders.waiting.label orders.none Hud.cpp:1957-1958 orders.scheduled Hud.cpp:1959-1963, 2231-2241; OrderForm.cpp:291-315 orders.more Hud.cpp:1964-1965 orders.form.label orders.row{r}.label
+battlefield-1.dc.html tdPlain=2 th=0 code=3 | 14 up-chain
+battlefield-2.dc.html tdPlain=0 th=0 code=1 | 
+battlefield-4.dc.html tdPlain=0 th=0 code=1 | 
+assets-sheets.dc.html tdPlain=5 th=0 code=1 | numbers less-or-equal, Antialiasing encoding (ADR-091)
+assets-table-1.dc.html tdPlain=106 th=1 code=72 | Human approximation in-game Human approximation in-game Human approximation in-game Human approximation in-game
+assets-table-2.dc.html tdPlain=106 th=1 code=72 | Tarkan approximation in-game Tarkan approximation in-game Tarkan CommandStation_L1 approximation in-game structure Tarkan
+assets-table-3.dc.html tdPlain=106 th=1 code=64 | Pirate CommandStation_L1 approximation in-game structure Pirate CommandStation_L2 approximation in-game structure Pirate CommandStation_L3
+assets-files.dc.html tdPlain=0 th=1 code=163 | 
+assets-textures.dc.html tdPlain=8 th=0 code=8 | 128×128 128×128 128×32 128×128 C1 C2 C3 C4
+open-owner.dc.html tdPlain=5 th=0 code=3 | ADR-063, 10 12 13 14

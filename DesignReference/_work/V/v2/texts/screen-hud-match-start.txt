@@ -1,0 +1,11 @@
+   23    46   22px #F7BC3C  1,000
+   26  1792   16px #EAF1FA  Local skirmish
+   32   348   14px #181E2B  +0/s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  224    28   16px #EAF1FA  No drain

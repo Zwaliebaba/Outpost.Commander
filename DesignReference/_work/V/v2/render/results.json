@@ -1,0 +1,1722 @@
+[
+ {
+  "w": 1440,
+  "h": 2206.25,
+  "scrollW": 1440,
+  "maxRight": 1378,
+  "maxBottom": 2142.25,
+  "imgs": [
+   {
+    "src": "/_blob/504eb4e8321a27fae7841f79a01bf099",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 700"
+  ],
+  "file": "Main.dc.html",
+  "boardW": 1440,
+  "boardH": 2298
+ },
+ {
+  "w": 1440,
+  "h": 2149.28125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2085.28125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "game-pitch.dc.html",
+  "boardW": 1440,
+  "boardH": 2239
+ },
+ {
+  "w": 1440,
+  "h": 3897.0625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3833.0625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 700"
+  ],
+  "file": "game-loops.dc.html",
+  "boardW": 1440,
+  "boardH": 4039
+ },
+ {
+  "w": 1440,
+  "h": 4668.015625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4604.015625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "glossary-1.dc.html",
+  "boardW": 1440,
+  "boardH": 4834
+ },
+ {
+  "w": 1440,
+  "h": 4197.828125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4133.828125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "glossary-2.dc.html",
+  "boardW": 1440,
+  "boardH": 4348
+ },
+ {
+  "w": 1440,
+  "h": 4980.296875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4916.296875,
+  "imgs": [
+   {
+    "src": "/_blob/1ac85e225be5d2b41f9f0fe5d756249a",
+    "ok": true
+   },
+   {
+    "src": "/_blob/02d4a772826522f21c8e5b0b10e5ad00",
+    "ok": true
+   },
+   {
+    "src": "/_blob/087bf52940f052312a112d3e34e92d82",
+    "ok": true
+   },
+   {
+    "src": "/_blob/2a64a0dc1eef4481ff0725d1aa8953b7",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "sides.dc.html",
+  "boardW": 1440,
+  "boardH": 5155
+ },
+ {
+  "w": 1440,
+  "h": 3189.859375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3125.859375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "economy-ore.dc.html",
+  "boardW": 1440,
+  "boardH": 3310
+ },
+ {
+  "w": 1440,
+  "h": 3900.5625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3836.5625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "economy-map.dc.html",
+  "boardW": 1440,
+  "boardH": 4043
+ },
+ {
+  "w": 1440,
+  "h": 4722.3125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4658.3125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "economy-territory.dc.html",
+  "boardW": 1440,
+  "boardH": 4889
+ },
+ {
+  "w": 1440,
+  "h": 4269.96875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4205.96875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "structures.dc.html",
+  "boardW": 1440,
+  "boardH": 4423
+ },
+ {
+  "w": 1440,
+  "h": 1391.96875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1327.96875,
+  "imgs": [
+   {
+    "src": "/_blob/112492f86018a7328c4d165d8fb724c4",
+    "ok": true
+   },
+   {
+    "src": "/_blob/faf3e409a7479c5fc532624b89dd0aed",
+    "ok": true
+   },
+   {
+    "src": "/_blob/68b9f5eaeaa81de54f77406ff955708b",
+    "ok": true
+   },
+   {
+    "src": "/_blob/d8c345870217615be782ab1d29bdfc1d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/f5eb2f30f57bf79fd83929ed711939c6",
+    "ok": true
+   },
+   {
+    "src": "/_blob/5999970e36d3177ce516f6a0b3a5bd8a",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "structures-levels.dc.html",
+  "boardW": 1440,
+  "boardH": 1458
+ },
+ {
+  "w": 1440,
+  "h": 4873.390625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4809.390625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "ships-parts.dc.html",
+  "boardW": 1440,
+  "boardH": 5045
+ },
+ {
+  "w": 1440,
+  "h": 2701.453125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2637.453125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "ships-designs.dc.html",
+  "boardW": 1440,
+  "boardH": 2808
+ },
+ {
+  "w": 1440,
+  "h": 3553.234375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3489.234375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "ships-damage.dc.html",
+  "boardW": 1440,
+  "boardH": 3685
+ },
+ {
+  "w": 1440,
+  "h": 3188.53125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3124.53125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "research.dc.html",
+  "boardW": 1440,
+  "boardH": 3309
+ },
+ {
+  "w": 1440,
+  "h": 6361.1875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6297.1875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "combat.dc.html",
+  "boardW": 1440,
+  "boardH": 6577
+ },
+ {
+  "w": 1440,
+  "h": 2804.953125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2740.953125,
+  "imgs": [
+   {
+    "src": "/_blob/02a97cb47a56c6a8167b3e0859732507",
+    "ok": true
+   },
+   {
+    "src": "/_blob/28ca391224221968b8730848f4ccb64f",
+    "ok": true
+   },
+   {
+    "src": "/_blob/ede0df66176e640d8eb2992c90d58f7d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/b081b4f51e0040258b97001964f0c104",
+    "ok": true
+   },
+   {
+    "src": "/_blob/4656a394530fc7b4ee7779d03dddeffa",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "combat-effects.dc.html",
+  "boardW": 1440,
+  "boardH": 2914
+ },
+ {
+  "w": 1440,
+  "h": 5583.453125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5519.453125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "orders.dc.html",
+  "boardW": 1440,
+  "boardH": 5776
+ },
+ {
+  "w": 1440,
+  "h": 6172.15625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6108.15625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 700"
+  ],
+  "file": "orders-scheduled.dc.html",
+  "boardW": 1440,
+  "boardH": 6383
+ },
+ {
+  "w": 1440,
+  "h": 3431.203125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3367.203125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "ai.dc.html",
+  "boardW": 1440,
+  "boardH": 3559
+ },
+ {
+  "w": 1440,
+  "h": 3398.484375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3334.484375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "ai-difficulty.dc.html",
+  "boardW": 1440,
+  "boardH": 3525
+ },
+ {
+  "w": 1440,
+  "h": 2945.703125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2881.703125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 700"
+  ],
+  "file": "world.dc.html",
+  "boardW": 1440,
+  "boardH": 3059
+ },
+ {
+  "w": 1440,
+  "h": 3930.515625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3866.515625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "world-state.dc.html",
+  "boardW": 1440,
+  "boardH": 4073
+ },
+ {
+  "w": 1440,
+  "h": 3994.234375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3930.234375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "visual-colors.dc.html",
+  "boardW": 1440,
+  "boardH": 4139
+ },
+ {
+  "w": 1440,
+  "h": 3260.25,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3196.25,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "visual-type.dc.html",
+  "boardW": 1440,
+  "boardH": 3383
+ },
+ {
+  "w": 1440,
+  "h": 1472.625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1408.625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "visual-components.dc.html",
+  "boardW": 1440,
+  "boardH": 1542
+ },
+ {
+  "w": 1440,
+  "h": 4449.640625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4385.640625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "visual-anatomy-1.dc.html",
+  "boardW": 1440,
+  "boardH": 4608
+ },
+ {
+  "w": 1440,
+  "h": 3380.21875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3316.21875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "visual-anatomy-2.dc.html",
+  "boardW": 1440,
+  "boardH": 3507
+ },
+ {
+  "w": 1440,
+  "h": 4801.375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4737.375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "visual-rules.dc.html",
+  "boardW": 1440,
+  "boardH": 4971
+ },
+ {
+  "w": 1440,
+  "h": 3260.375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3196.375,
+  "imgs": [
+   {
+    "src": "/_blob/cc2aa2f51f17ff6ec9bce92620de249a",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "visual-scale.dc.html",
+  "boardW": 1440,
+  "boardH": 3383
+ },
+ {
+  "w": 1440,
+  "h": 3865.921875,
+  "scrollW": 1440,
+  "maxRight": 1408,
+  "maxBottom": 3801.921875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "screens-flow.dc.html",
+  "boardW": 1440,
+  "boardH": 4006
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600"
+  ],
+  "file": "screen-startup-loading.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "screen-menu-default.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "screen-menu-join-world.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "screen-menu-connection-lost.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "screen-menu-join-failed.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "screen-menu-scale-125.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "screen-match-awaiting-first-snapshot.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-match-start.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1709.375,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1709.375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-busy-warships.dc.html",
+  "boardW": 2440,
+  "boardH": 1786
+ },
+ {
+  "w": 2440,
+  "h": 1709.375,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1709.375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-scale-110.dc.html",
+  "boardW": 2440,
+  "boardH": 1786
+ },
+ {
+  "w": 2440,
+  "h": 1169.0625,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1169.0625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-constructors.dc.html",
+  "boardW": 2440,
+  "boardH": 1230
+ },
+ {
+  "w": 2440,
+  "h": 1320.4375,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1320.4375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-placing-relay.dc.html",
+  "boardW": 2440,
+  "boardH": 1385
+ },
+ {
+  "w": 2440,
+  "h": 1401.4375,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1401.4375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-relay-node-cap.dc.html",
+  "boardW": 2440,
+  "boardH": 1469
+ },
+ {
+  "w": 2440,
+  "h": 1364.75,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1364.75,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-one-ship.dc.html",
+  "boardW": 2440,
+  "boardH": 1430
+ },
+ {
+  "w": 2440,
+  "h": 1315.25,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1315.25,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-shipyard-selected.dc.html",
+  "boardW": 2440,
+  "boardH": 1380
+ },
+ {
+  "w": 2440,
+  "h": 1234.0625,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1234.0625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-station-upgrading.dc.html",
+  "boardW": 2440,
+  "boardH": 1297
+ },
+ {
+  "w": 2440,
+  "h": 1396.25,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1396.25,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-lab-needs-research.dc.html",
+  "boardW": 2440,
+  "boardH": 1463
+ },
+ {
+  "w": 2440,
+  "h": 1202.8125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1202.8125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-derelict-hint.dc.html",
+  "boardW": 2440,
+  "boardH": 1264
+ },
+ {
+  "w": 2440,
+  "h": 1082.1875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1082.1875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-server-silent.dc.html",
+  "boardW": 2440,
+  "boardH": 1140
+ },
+ {
+  "w": 2440,
+  "h": 1420.1875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1420.1875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-end-victory.dc.html",
+  "boardW": 2440,
+  "boardH": 1488
+ },
+ {
+  "w": 2440,
+  "h": 1190.0625,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1190.0625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-hud-end-empire-fallen.dc.html",
+  "boardW": 2440,
+  "boardH": 1251
+ },
+ {
+  "w": 2440,
+  "h": 2025.3125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 2025.3125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "screen-window-designer-default.dc.html",
+  "boardW": 2440,
+  "boardH": 2111
+ },
+ {
+  "w": 2440,
+  "h": 1965.8125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1965.8125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "screen-window-designer-preview.dc.html",
+  "boardW": 2440,
+  "boardH": 2049
+ },
+ {
+  "w": 2440,
+  "h": 2163.8125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 2163.8125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "screen-window-designer-unsaved-editing.dc.html",
+  "boardW": 2440,
+  "boardH": 2253
+ },
+ {
+  "w": 2440,
+  "h": 1779.375,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1779.375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "screen-window-designer-no-shipyard.dc.html",
+  "boardW": 2440,
+  "boardH": 1858
+ },
+ {
+  "w": 2440,
+  "h": 1492.6875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1492.6875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-production-shipyard.dc.html",
+  "boardW": 2440,
+  "boardH": 1562
+ },
+ {
+  "w": 2440,
+  "h": 1352.5,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1352.5,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-production-station.dc.html",
+  "boardW": 2440,
+  "boardH": 1418
+ },
+ {
+  "w": 2440,
+  "h": 1541.375,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1541.375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-production-none.dc.html",
+  "boardW": 2440,
+  "boardH": 1613
+ },
+ {
+  "w": 2440,
+  "h": 1512.25,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1512.25,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-research-page1.dc.html",
+  "boardW": 2440,
+  "boardH": 1583
+ },
+ {
+  "w": 2440,
+  "h": 1353.3125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1353.3125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-research-no-lab.dc.html",
+  "boardW": 2440,
+  "boardH": 1419
+ },
+ {
+  "w": 2440,
+  "h": 1130.75,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1130.75,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-controls.dc.html",
+  "boardW": 2440,
+  "boardH": 1189
+ },
+ {
+  "w": 2440,
+  "h": 1974.8125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1974.8125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-orders-time-of-day.dc.html",
+  "boardW": 2440,
+  "boardH": 2059
+ },
+ {
+  "w": 2440,
+  "h": 1593.0625,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1593.0625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-orders-event-disabled.dc.html",
+  "boardW": 2440,
+  "boardH": 1666
+ },
+ {
+  "w": 2440,
+  "h": 1488.25,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1488.25,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "screen-window-away.dc.html",
+  "boardW": 2440,
+  "boardH": 1558
+ },
+ {
+  "w": 2440,
+  "h": 2929.75,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 2929.75,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600",
+   "JetBrains Mono 700"
+  ],
+  "file": "screen-window-three-windows-default.dc.html",
+  "boardW": 2440,
+  "boardH": 3042
+ },
+ {
+  "w": 1440,
+  "h": 1890.453125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1826.453125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "spec-menu.dc.html",
+  "boardW": 1440,
+  "boardH": 1972
+ },
+ {
+  "w": 1440,
+  "h": 5048.640625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4984.640625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "spec-hud-1.dc.html",
+  "boardW": 1440,
+  "boardH": 5225
+ },
+ {
+  "w": 1440,
+  "h": 4920.21875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4856.21875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "spec-hud-2.dc.html",
+  "boardW": 1440,
+  "boardH": 5093
+ },
+ {
+  "w": 1440,
+  "h": 1787.203125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1723.203125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "spec-windows.dc.html",
+  "boardW": 1440,
+  "boardH": 1866
+ },
+ {
+  "w": 1440,
+  "h": 4387,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4323,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "spec-designer.dc.html",
+  "boardW": 1440,
+  "boardH": 4543
+ },
+ {
+  "w": 1440,
+  "h": 3115.140625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3051.140625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "spec-production-research.dc.html",
+  "boardW": 1440,
+  "boardH": 3234
+ },
+ {
+  "w": 1440,
+  "h": 2056.125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1992.125,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "spec-orders-away.dc.html",
+  "boardW": 1440,
+  "boardH": 2143
+ },
+ {
+  "w": 1440,
+  "h": 5133.71875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5069.71875,
+  "imgs": [
+   {
+    "src": "/_blob/a370fcd668b12e05b4e64229f9be406e",
+    "ok": true
+   },
+   {
+    "src": "/_blob/81da41260631b2e54978a606cc2d9c65",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "battlefield-1.dc.html",
+  "boardW": 1440,
+  "boardH": 5313
+ },
+ {
+  "w": 1440,
+  "h": 5382.359375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5318.359375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "battlefield-2.dc.html",
+  "boardW": 1440,
+  "boardH": 5569
+ },
+ {
+  "w": 1440,
+  "h": 5392.859375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5328.859375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "battlefield-3.dc.html",
+  "boardW": 1440,
+  "boardH": 5579
+ },
+ {
+  "w": 1440,
+  "h": 2041.546875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1977.546875,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "battlefield-4.dc.html",
+  "boardW": 1440,
+  "boardH": 2128
+ },
+ {
+  "w": 1440,
+  "h": 6416.640625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6352.640625,
+  "imgs": [
+   {
+    "src": "/_blob/1ac85e225be5d2b41f9f0fe5d756249a",
+    "ok": true
+   },
+   {
+    "src": "/_blob/02d4a772826522f21c8e5b0b10e5ad00",
+    "ok": true
+   },
+   {
+    "src": "/_blob/087bf52940f052312a112d3e34e92d82",
+    "ok": true
+   },
+   {
+    "src": "/_blob/2a64a0dc1eef4481ff0725d1aa8953b7",
+    "ok": true
+   },
+   {
+    "src": "/_blob/783526f6a5a01159afde8469eeb070ff",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "assets-sheets.dc.html",
+  "boardW": 1440,
+  "boardH": 6634
+ },
+ {
+  "w": 1440,
+  "h": 2122.28125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2058.28125,
+  "imgs": [
+   {
+    "src": "/_blob/112492f86018a7328c4d165d8fb724c4",
+    "ok": true
+   },
+   {
+    "src": "/_blob/68b9f5eaeaa81de54f77406ff955708b",
+    "ok": true
+   },
+   {
+    "src": "/_blob/f5eb2f30f57bf79fd83929ed711939c6",
+    "ok": true
+   },
+   {
+    "src": "/_blob/faf3e409a7479c5fc532624b89dd0aed",
+    "ok": true
+   },
+   {
+    "src": "/_blob/d8c345870217615be782ab1d29bdfc1d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/5999970e36d3177ce516f6a0b3a5bd8a",
+    "ok": true
+   },
+   {
+    "src": "/_blob/3a675ba412d72f19527a7e5fafe421b5",
+    "ok": true
+   },
+   {
+    "src": "/_blob/4ec47c9364c1832f4bf79b7554f719c2",
+    "ok": true
+   },
+   {
+    "src": "/_blob/a67442e7a0c3635affb6d607dc3f2cf7",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "assets-levels.dc.html",
+  "boardW": 1440,
+  "boardH": 2211
+ },
+ {
+  "w": 1440,
+  "h": 3184.625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3120.625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "assets-table-1.dc.html",
+  "boardW": 1440,
+  "boardH": 3305
+ },
+ {
+  "w": 1440,
+  "h": 2787.34375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2723.34375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "assets-table-2.dc.html",
+  "boardW": 1440,
+  "boardH": 2896
+ },
+ {
+  "w": 1440,
+  "h": 2813.265625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2749.265625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "assets-table-3.dc.html",
+  "boardW": 1440,
+  "boardH": 2923
+ },
+ {
+  "w": 1440,
+  "h": 3701.390625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3637.390625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "assets-files.dc.html",
+  "boardW": 1440,
+  "boardH": 3838
+ },
+ {
+  "w": 1440,
+  "h": 3923.640625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3859.640625,
+  "imgs": [
+   {
+    "src": "/_blob/02a97cb47a56c6a8167b3e0859732507",
+    "ok": true
+   },
+   {
+    "src": "/_blob/28ca391224221968b8730848f4ccb64f",
+    "ok": true
+   },
+   {
+    "src": "/_blob/ede0df66176e640d8eb2992c90d58f7d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/b081b4f51e0040258b97001964f0c104",
+    "ok": true
+   },
+   {
+    "src": "/_blob/4656a394530fc7b4ee7779d03dddeffa",
+    "ok": true
+   },
+   {
+    "src": "/_blob/bfc9893e1bf9f43ade2228f459ade4a2",
+    "ok": true
+   }
+  ],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 700"
+  ],
+  "file": "assets-textures.dc.html",
+  "boardW": 1440,
+  "boardH": 4066
+ },
+ {
+  "w": 1440,
+  "h": 2514.0625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2450.0625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "controls.dc.html",
+  "boardW": 1440,
+  "boardH": 2615
+ },
+ {
+  "w": 1440,
+  "h": 3808.65625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3744.65625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow 700",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "open-owner.dc.html",
+  "boardW": 1440,
+  "boardH": 3948
+ },
+ {
+  "w": 1440,
+  "h": 4698.890625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4634.890625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400"
+  ],
+  "file": "open-conflicts-1.dc.html",
+  "boardW": 1440,
+  "boardH": 4864
+ },
+ {
+  "w": 1440,
+  "h": 4913.890625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4849.890625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400",
+   "JetBrains Mono 600"
+  ],
+  "file": "open-conflicts-2.dc.html",
+  "boardW": 1440,
+  "boardH": 5086
+ },
+ {
+  "w": 1440,
+  "h": 4660.734375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4596.734375,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "JetBrains Mono 400"
+  ],
+  "file": "open-conflicts-3.dc.html",
+  "boardW": 1440,
+  "boardH": 4825
+ },
+ {
+  "w": 1440,
+  "h": 6994.140625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6930.140625,
+  "imgs": [],
+  "wide": [],
+  "fonts": [
+   "Barlow 600",
+   "Barlow Semi Condensed 700",
+   "JetBrains Mono 400",
+   "JetBrains Mono 700"
+  ],
+  "file": "open-gaps.dc.html",
+  "boardW": 1440,
+  "boardH": 7229
+ }
+]

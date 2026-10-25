@@ -1,0 +1,19 @@
+   23    46   22px #F7BC3C  2,860
+   26  1720   16px #EAF1FA  Server 203.0.113.5:4433
+   32   344   14px #D3E3F7  +24/s
+   78    28   16px #EAF1FA  Shipyards · BUILDING 1 · WAITING 0 · IDLE 0
+  100    28   16px #EAF1FA  Fleet
+  104   328   14px #D3E3F7  18 / 20
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 7 of 25
+  184   344   14px #A0D3FF  6 :
+  184   376   14px #FFA689  6
+  434  1235   22px #EAF1FA  ×
+  440   684   13px #ACBACD  WHILE YOU WERE AWAY
+  477   684   22px #EAF1FA  Away for 7:42:10
+  507   684   16px #D3E3F7  Built 14 ships and 3 structures
+  529   684   16px #D3E3F7  Lost 9 ships and 1 structure
+  551   684   16px #D3E3F7  Sectors gained: C2, B3
+  573   684   16px #D3E3F7  Sectors lost: A3
+  595   684   16px #D3E3F7  Order fired: attack-move to C3
+  617   684   16px #D3E3F7  Order held back: hold B2

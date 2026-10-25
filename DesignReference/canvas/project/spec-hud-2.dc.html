@@ -24,8 +24,8 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 .md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
 .md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
 .md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
-.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B;overflow-wrap:anywhere;word-break:break-word}
-.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere;word-break:break-word}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
 .md td code{font-size:11.5px}
 .md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
 .md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
@@ -138,7 +138,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 <thead>
 <tr>
 <th>Selection</th>
-<th>Buttons (label verbatim; <code>\|cost</code> shown as gem + figure)</th>
+<th>Buttons (label verbatim; <code>|cost</code> shown as gem + figure)</th>
 <th>Key cap</th>
 <th>Disabled, and its note</th>
 </tr>
@@ -146,19 +146,19 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 <tbody>
 <tr>
 <td>The player's finished Command Station</td>
-<td><code>Production</code>; <code>Upgrade to L{n} · {m:ss}\|{cost}</code></td>
+<td><code>Production</code>; <code>Upgrade to L{n} · {m:ss}|{cost}</code></td>
 <td><code>P</code> (KeyBindings.h:28)</td>
 <td>Upgrade: <code>UPGRADING · {p}%</code> with a progress bar while it builds; <code>NEEDS RESEARCH</code> when a prerequisite is missing; dim with its cost when Ore is short</td>
 </tr>
 <tr>
 <td>The player's finished Shipyard</td>
-<td><code>Production</code>; <code>Ship designer</code>; <code>Upgrade to L{n} · {m:ss}\|{cost}</code></td>
+<td><code>Production</code>; <code>Ship designer</code>; <code>Upgrade to L{n} · {m:ss}|{cost}</code></td>
 <td><code>P</code>; <code>D</code> (KeyBindings.h:27)</td>
 <td>as above</td>
 </tr>
 <tr>
 <td>The player's finished Research Lab</td>
-<td><code>Research</code>; <code>Upgrade to L{n} · {m:ss}\|{cost}</code></td>
+<td><code>Research</code>; <code>Upgrade to L{n} · {m:ss}|{cost}</code></td>
 <td><code>R</code> (KeyBindings.h:29)</td>
 <td>as above</td>
 </tr>
@@ -170,7 +170,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 </tr>
 <tr>
 <td>Ships, with any Constructor</td>
-<td><code>{structure name}\|{cost}</code> for each buildable type, in the snapshot's order. With Tuning.json that is <code>Shipyard\|300</code>, <code>Research Lab\|200</code>, <code>Mining Rig\|50</code>, <code>Defence Platform\|450</code>, <code>Relay\|200</code> and <code>Repair Bay\|300</code>; the Relay is left out on a map without sectors</td>
+<td><code>{structure name}|{cost}</code> for each buildable type, in the snapshot's order. With Tuning.json that is <code>Shipyard|300</code>, <code>Research Lab|200</code>, <code>Mining Rig|50</code>, <code>Defence Platform|450</code>, <code>Relay|200</code> and <code>Repair Bay|300</code>; the Relay is left out on a map without sectors</td>
 <td>—</td>
 <td><code>ONE PER PLAYER</code> (a second Lab), <code>NODE CAP</code> (Relay at the cap), or dim with its cost when Ore is short (Hud.cpp:2818-2826)</td>
 </tr>
@@ -344,7 +344,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 </tbody>
 </table></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5093}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4881}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};

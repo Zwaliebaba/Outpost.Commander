@@ -1,0 +1,39 @@
+game-pitch.dc.html tdPlain=0 th=1 code=5 | 
+game-loops.dc.html tdPlain=0 th=0 code=1 | 
+glossary-1.dc.html tdPlain=3 th=0 code=4 | 98-149) 16-97); (C-065)
+glossary-2.dc.html tdPlain=2 th=0 code=2 | scheduled-order attack-move,
+sides.dc.html tdPlain=5 th=1 code=5 | Asteroids Human Tarkan Wreck Asteroids
+economy-ore.dc.html tdPlain=0 th=0 code=1 | 
+economy-map.dc.html tdPlain=1 th=0 code=2 | player-half:
+structures.dc.html tdPlain=0 th=0 code=2 | 
+ships-parts.dc.html tdPlain=10 th=31 code=0 | Small Medium Large Fusion l.74-75 l.82-83 Defence speedMetersPerSecond turnRateDegreesPerSecond footprintRadiusMeters
+ships-designs.dc.html tdPlain=0 th=0 code=1 | 
+combat.dc.html tdPlain=3 th=1 code=9 | 125-127); Medium+Ion+Lance Medium+Ion+Missile
+orders.dc.html tdPlain=3 th=2 code=11 | Attack-move Refused Behavior
+orders-scheduled.dc.html tdPlain=1 th=0 code=8 | Constructors
+ai.dc.html tdPlain=3 th=4 code=9 | Constructors Retreating Detachment
+world.dc.html tdPlain=3 th=0 code=2 | Executable "{option} Certificate
+world-state.dc.html tdPlain=5 th=0 code=8 | W2 W3 W4 W5 W6
+visual-type.dc.html tdPlain=3 th=1 code=1 | SemiCondensed ADR-030 ADR-062
+visual-anatomy-1.dc.html tdPlain=3 th=2 code=5 | Normal Picked Locked
+visual-anatomy-2.dc.html tdPlain=4 th=0 code=0 | Hud.cpp:3093-3126; ADR-085 Hud.cpp:3419-3425 Hud.cpp:3290-3305
+visual-rules.dc.html tdPlain=1 th=0 code=0 | 1874-1876
+visual-scale.dc.html tdPlain=7 th=0 code=0 | 10 12 13 14 15 0.045–0.05) 16
+screens-flow.dc.html tdPlain=40 th=2 code=11 | Startup 10 12 13 14 15 16 18 19 20 21 22
+spec-menu.dc.html tdPlain=19 th=0 code=0 | menu.frame Hud.cpp:2344 menu.title Hud.cpp:2346 menu.subtitle Hud.cpp:2347 menu.notice Hud.cpp:2336-2338, menu.easyskirmish Hud.cpp:2329, 2355-2359 menu.normalskirmish
+spec-hud-1.dc.html tdPlain=34 th=1 code=3 | ore.stockpile.gem ore.stockpile.figure Hud.cpp:3146-3151 ore.income.chip Hud.cpp:3152-3156, Hud.cpp:301-312 Hud.cpp:296-297 Hud.cpp:298-299 Hud.cpp:370-400 Hud.cpp:403-410, 336-346 Hud.cpp:373-380,
+spec-hud-2.dc.html tdPlain=19 th=1 code=1 | structure (Hud.cpp:2589) several designs Standing Scheduled (KeyBindings.h:28) (KeyBindings.h:27) (KeyBindings.h:29) (KeyBindings.h:10-13) outcome.frame panel
+spec-windows.dc.html tdPlain=2 th=0 code=0 | Production Research
+spec-designer.dc.html tdPlain=88 th=0 code=3 | designer.shipyard.previous Hud.cpp:1365-1367, 1190-1213 designer.shipyard.subject designer.titleLabel designer.title designer.queueLabel Hud.cpp:1371, designer.built right-aligned Hud.cpp:1372-1373 designer.queueSlot0..4
+spec-production-research.dc.html tdPlain=45 th=0 code=0 | production.titleLabel Hud.cpp:1725 header.subject Hud.cpp:1658-1671, header.oreBox Hud.cpp:1670 production.build.label Hud.cpp:1730 production.option{i} Hud.cpp:1733-1743, Hud.cpp:1745-1746 Hud.cpp:1747-1749,
+spec-orders-away.dc.html tdPlain=30 th=1 code=12 | orders.titleLabel Hud.cpp:1952 orders.waiting.label Hud.cpp:1955 orders.none Hud.cpp:1957-1958 orders.scheduled Hud.cpp:1959-1963, OrderForm.cpp:291-315 orders.more Hud.cpp:1964-1965 orders.form.label
+battlefield-1.dc.html tdPlain=2 th=0 code=3 | 14 up-chain
+battlefield-2.dc.html tdPlain=0 th=0 code=1 | 
+battlefield-4.dc.html tdPlain=0 th=0 code=1 | 
+assets-sheets.dc.html tdPlain=13 th=1 code=1 | Mesh numbers Crease Lines faces less-or-equal, colors Culling Antialiasing Color encoding (ADR-091)
+assets-table-1.dc.html tdPlain=130 th=8 code=78 | Human approximation ship 70 210 Human approximation ship 160 480 Human approximation
+assets-table-2.dc.html tdPlain=130 th=8 code=78 | Tarkan approximation ship 142 426 Tarkan approximation ship 202 606 Tarkan CommandStation_L1
+assets-table-3.dc.html tdPlain=130 th=7 code=67 | Pirate CommandStation_L1 approximation structure 218 654 Pirate CommandStation_L2 approximation structure 218 654
+assets-files.dc.html tdPlain=11 th=2 code=161 | 1032 456 1236 344 480 440 204 468 468 240 240
+assets-textures.dc.html tdPlain=14 th=4 code=10 | 16×16 1152 128×128 65664 128×128 65664 128×32 16512 128×128 65664 C1 C2
+open-owner.dc.html tdPlain=6 th=1 code=17 | LV4.1–4.3)." 10 12 13 LV4.1–LV4.3 14

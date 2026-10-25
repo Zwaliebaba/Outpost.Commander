@@ -1,0 +1,261 @@
+   21  1879   22px #EAF1FA  ×
+   23    46   22px #F7BC3C  2,350
+   26  1120   13px #EAF1FA  <
+   26  1256   13px #EAF1FA  >
+   26  1792   16px #EAF1FA  Local skirmish
+   27  1142   13px #ACBACD  SHIPYARD 01
+   27  1278   13px #ACBACD  · DESIGNER
+   28  1588   13px #ACBACD  QUEUE · 0 / 5
+   32   328   14px #D3E3F7  +14.5/s
+   55  1821   22px #F7BC3C  2,350
+   56  1110   22px #EAF1FA  SHIP DESIGN
+   60  1500   13px #ACBACD  BUILT · 14
+   78    28   16px #EAF1FA  Large Hull
+   82   368   14px #D3E3F7  +2
+  108    28   16px #EAF1FA  Shipyards · BUILDING 2 · WAITING 0 ·
+  108   290   16px #181E2B  IDLE 1
+  109  1176   16px #EAF1FA  Swarm
+  112  1760   14px #8193AD  5/32
+  113  1122   13px #8193AD  NAME
+  113  1824   13px #559361  SAVED
+  130    28   16px #EAF1FA  Fleet
+  134   328   14px #D3E3F7  29 / 30
+  153  1838   13px #ADB3BC  <
+  153  1866   13px #EAF1FA  >
+  154  1164   13px #EAF1FA  Swarm
+  154  1386   13px #EAF1FA  Picket
+  154  1608   13px #EAF1FA  Brawler
+  155  1110   13px #8193AD  SAVED
+  155  1316   13px #AAD0FF  S·I·MD
+  155  1546   13px #7695C0  S·I·L
+  155  1760   13px #7695C0  M·I·MD
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 10 of 25
+  183   469   22px #EAF1FA  ×
+  183  1045   22px #EAF1FA  ×
+  184   344   14px #A0D3FF  6 :
+  184   376   14px #FFA689  8
+  189    40   13px #ACBACD  PRODUCTION
+  189   534   13px #ACBACD  RESEARCH
+  192  1216   16px #EAF1FA  Small
+  192  1443   16px #EAF1FA  Medium
+  192  1670   16px #7C8BA0  Large
+  195  1396   14px #F7BC3C  96
+  195  1615   14px #F7BC3C  330
+  195  1842   14px #7C8BA0  900
+  202    28   16px #EAF1FA  Tickets
+  205  1110   13px #8193AD  HULL
+  206   312   14px #A0D3FF  642 :
+  206   360   14px #FFA689  731
+  217   411   22px #F7BC3C  2,350
+  217   987   22px #F7BC3C  2,350
+  218    72   22px #EAF1FA  SHIPYARD 02
+  218   534   22px #EAF1FA  RESEARCH LAB
+  218  1216   13px #D3E3F7  253 HP · ARM 2 · 60m/s
+  218  1443   13px #D3E3F7  575 HP · ARM 8 · 40m/s
+  218  1670   13px #7C8BA0  1,380 HP · ARM 14 · 2...
+  223  1110   16px #AAD0FF  Small
+  224    28   16px #181E2B  You -40 a minute · out in 16:03
+  225    50   13px #EAF1FA  <
+  225   204   13px #EAF1FA  >
+  244  1686   13px #CE9E55  RESEARCH · LARGE HULL
+  260  1004   13px #ADB3BC  <
+  260  1032   13px #EAF1FA  >
+  262    40   13px #8193AD  BUILD
+  262   534   13px #8193AD  TOPICS · 1-10 OF 19
+  274    28   16px #181E2B  Enemy ships in B2
+  282  1216   16px #EAF1FA  Ion
+  282  1443   16px #7C8BA0  Fusion
+  282  1670   16px #7C8BA0  Pulse
+  285  1396   14px #F7BC3C  60
+  285  1615   14px #7C8BA0  240
+  285  1842   14px #7C8BA0  120
+  288    52   16px #EAF1FA  Swarm
+  288   271   16px #EAF1FA  Picket
+  288   546   16px #EAF1FA  Lance Focusing
+  288   806   16px #EAF1FA  Fusion Drive
+  291   750   14px #F7BC3C  150
+  291  1010   14px #F7BC3C  200
+  295  1110   13px #8193AD  DRIVE
+  296    28   16px #EAF1FA  Relay under attack: C2
+  308  1216   13px #D3E3F7  SPD ×1.3 · HP ×0.9
+  308  1443   13px #7C8BA0  SPD ×0.8 · HP ×1.4
+  308  1670   13px #7C8BA0  SPD ×1.6 · HP ×0.8
+  310    52   13px #7695C0  S·I·MD
+  310   215   14px #F7BC3C  261
+  310   271   13px #7695C0  S·I·L
+  310   434   14px #F7BC3C  411
+  310   546   13px #D3E3F7  Lance fire rate +15%
+  310   806   13px #D3E3F7  Unlocks the Fusion drive
+  313  1110   16px #AAD0FF  Ion
+  318    28   16px #EAF1FA  Mining Rig lost: A3
+  328   546   13px #8193AD  TIER 1 · 75 s
+  328   806   13px #8193AD  TIER 1 · 90 s
+  332    52   13px #8193AD  30 s
+  332   118   13px #ACBACD  S
+  332   161   13px #ACBACD  M
+  332   206   13px #ACBACD  L
+  332   271   13px #8193AD  30 s
+  332   337   13px #ACBACD  S
+  332   380   13px #ACBACD  M
+  332   425   13px #ACBACD  L
+  334  1459   13px #CE9E55  RESEARCH · FUSION DRIVE
+  334  1686   13px #CE9E55  RESEARCH · PULSE DRIVE
+  370    52   16px #7C8BA0  Brawler
+  370   271   16px #7C8BA0  Lancer
+  372  1216   16px #EAF1FA  Mass Driver
+  372  1443   16px #EAF1FA  Lance
+  372  1670   16px #7C8BA0  Missile Rack
+  375  1388   14px #F7BC3C  105
+  375  1615   14px #F7BC3C  255
+  375  1842   14px #7C8BA0  390
+  382   546   16px #EAF1FA  Missile Rack
+  382   806   16px #EAF1FA  Automated Shipyards
+  385   750   14px #F7BC3C  250
+  385  1010   14px #F7BC3C  200
+  385  1110   13px #8193AD  WEAPON
+  392    52   13px #7C8BA0  M·I·MD · NEEDS L2
+  392   215   14px #7C8BA0  495
+  392   271   13px #7C8BA0  M·I·L · NEEDS L2
+  392   434   14px #7C8BA0  645
+  398  1216   13px #D3E3F7  14 dmg / 0.4s · 120m
+  398  1443   13px #D3E3F7  95 dmg / 2.7s · 220m
+  398  1670   13px #7C8BA0  30 dmg / 2s · 280m
+  403  1110   16px #AAD0FF  Mass Dri...
+  404   546   13px #D3E3F7  Unlocks the Missile Rack
+  404   806   13px #D3E3F7  Shipyard build speed +25%
+  414    52   13px #7C8BA0  60 s
+  414   118   13px #7C8BA0  S
+  414   161   13px #7C8BA0  M
+  414   206   13px #7C8BA0  L
+  414   271   13px #7C8BA0  60 s
+  414   337   13px #7C8BA0  S
+  414   380   13px #7C8BA0  M
+  414   425   13px #7C8BA0  L
+  416  1670   13px #7C8BA0  splash 30m
+  422   546   13px #8193AD  TIER 1 · 120 s
+  422   806   13px #8193AD  TIER 1 · 90 s
+  440  1686   13px #CE9E55  RESEARCH · MISSILE RACK
+  458    40   13px #8193AD  QUEUE · 3 / 5
+  475  1216   16px #7C8BA0  Flak Battery
+  475  1443   16px #7C8BA0  Rail Cannon
+  476   546   16px #7C8BA0  Pulse Drive
+  476   806   16px #7C8BA0  Flak Battery
+  478  1388   14px #7C8BA0  180
+  478  1615   14px #7C8BA0  450
+  479   750   14px #7C8BA0  300
+  479  1010   14px #7C8BA0  300
+  483    72   16px #EAF1FA  Swarm
+  485    50   14px #8193AD  1
+  485   436   14px #EAF1FA  62%
+  498   546   13px #7C8BA0  Unlocks the Pulse drive
+  498   806   13px #7C8BA0  Unlocks the Flak Battery
+  501  1216   13px #7C8BA0  20 dmg / 0.5s · 200m
+  501  1443   13px #7C8BA0  320 dmg / 6s · 240m
+  516   562   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  516   822   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  517    72   16px #EAF1FA  Swarm
+  519    50   14px #8193AD  2
+  519  1216   13px #7C8BA0  splash 26m
+  543  1232   13px #CE9E55  RESEARCH · FLAK BATTERY
+  543  1459   13px #CE9E55  RESEARCH · RAIL CANNON
+  551    72   16px #EAF1FA  Picket
+  553    50   14px #8193AD  3
+  570   546   16px #7C8BA0  Deep Core Survey
+  570   806   16px #7C8BA0  Composite Plating
+  573   750   14px #7C8BA0  300
+  573  1010   14px #7C8BA0  300
+  581  1216   16px #EAF1FA  None
+  581  1443   16px #EAF1FA  Sensor Array
+  584  1404   14px #F7BC3C  0
+  584  1615   14px #F7BC3C  120
+  592   546   13px #7C8BA0  Asteroid ore reserves +30%
+  592   806   13px #7C8BA0  Hull hit points +15%
+  594  1110   13px #8193AD  MODULE
+  607  1216   13px #D3E3F7  No module
+  607  1443   13px #D3E3F7  SIGHT 700m · SPD ×0.9
+  610   562   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  610   822   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  612  1110   16px #AAD0FF  None
+  664   546   16px #7C8BA0  Reinforced Structures
+  664   806   16px #7C8BA0  Defence Autoloader
+  667   750   14px #7C8BA0  250
+  667  1010   14px #7C8BA0  250
+  673  1110   13px #8193AD  PERFORMANCE
+  673  1450   13px #8193AD  DAMAGE / S AFTER ARMOR · VS A FORMATION
+  686   546   13px #7C8BA0  Structure hit points +25%
+  686   806   13px #7C8BA0  Defence gun fire rate +20%
+  699  1378   14px #EAF1FA  228
+  701  1110   13px #ACBACD  Hit points
+  704   562   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  704   822   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  707  1460   16px #EAF1FA  Small
+  707  1606   16px #EAF1FA  Medium
+  707  1752   16px #EAF1FA  Large
+  710  1544   13px #8193AD  ARM 2
+  710  1690   13px #8193AD  ARM 8
+  710  1829   13px #8193AD  ARM 14
+  724  1394   14px #EAF1FA  2
+  726  1110   13px #ACBACD  Armor
+  729  1460   28px #EAF1FA  30.0
+  729  1606   28px #EAF1FA  15.0
+  729  1752   28px #EAF1FA  8.8
+  749  1386   14px #EAF1FA  78
+  751  1110   13px #ACBACD  Speed
+  751  1408   13px #8193AD  m/s
+  764   534   13px #8193AD  QUEUE · 3 / 5
+  774  1378   14px #EAF1FA  120
+  775  1460   13px #93A4BC  11.5 / 100 ore
+  775  1606   13px #93A4BC  5.7 / 100 ore
+  775  1752   13px #93A4BC  3.4 / 100 ore
+  776  1110   13px #ACBACD  Range
+  776  1408   13px #8193AD  m
+  789   566   16px #EAF1FA  Large Hull
+  791   544   14px #8193AD  1
+  791  1012   14px #EAF1FA  62%
+  799  1394   14px #EAF1FA  -
+  801  1110   13px #ACBACD  Sensors
+  801  1408   13px #8193AD  m
+  805  1450   13px #8193AD  Hover any part to preview its effect.
+  823   566   16px #EAF1FA  Improved Extraction
+  824  1378   14px #EAF1FA  261
+  825   544   14px #8193AD  2
+  826  1110   13px #ACBACD  Cost
+  826  1408   13px #8193AD  ore
+  844   940   16px #EAF1FA  Attack-move
+  847  1258   13px #ACBACD  A
+  849  1386   14px #EAF1FA  30
+  850   636   22px #EAF1FA  12 ships
+  851  1110   13px #ACBACD  Build
+  851  1408   13px #8193AD  s
+  857   566   16px #EAF1FA  Mass Driver Calibration
+  859   544   14px #8193AD  3
+  861  1212   13px #ACBACD  RETREAT
+  863  1572   22px #EDFFEF  QUEUE
+  871  1831   22px #F7BC3C  261
+  874  1445   16px #ADB3BC  -
+  874  1478   16px #EAF1FA  ×1
+  874  1523   16px #EAF1FA  +
+  877  1124   13px #ADB3BC  RENAME
+  880   636   16px #D3E3F7  6 × Swarm
+  884   940   16px #EAF1FA  Hold sector
+  886  1231   13px #EAF1FA  25%
+  886  1301   13px #EAF1FA  50%
+  886  1361   13px #EAF1FA  NEVER
+  887  1258   13px #ACBACD  H
+  892  1572   13px #EDFFEF  30 s each
+  902   636   16px #D3E3F7  4 × Lancer
+  924   636   16px #D3E3F7  2 × Brawler
+  924   940   16px #EAF1FA  Patrol
+  927  1258   13px #ACBACD  T
+  946   636   16px #D3E3F7  Hit points 3,552 / 4,472
+  964   940   16px #EAF1FA  Stop
+  967  1258   13px #ACBACD  S
+  968   636   16px #D3E3F7  On patrol
+  990   636   16px #D3E3F7  1 retreating to be repaired
+  998   928   13px #ACBACD  RETREAT
+  998  1240   13px #D3E3F7  MIXED
+ 1012   636   16px #D3E3F7  Scheduled: at 02:00, attack-move to C3
+ 1025   971   16px #EAF1FA  25%
+ 1025  1091   16px #EAF1FA  50%
+ 1025  1207   16px #EAF1FA  Never

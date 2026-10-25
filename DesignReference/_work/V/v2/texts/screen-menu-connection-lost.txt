@@ -1,0 +1,9 @@
+  392   752   22px #F7BC3C  Outpost Commander
+  422   752   16px #ADB3BC  A skirmish against the AI
+  444   752   16px #FFBCA0  The connection to the server was lost: The server ended the
+  466   752   16px #FFBCA0  game.
+  500   764   16px #EAF1FA  Easy skirmish
+  540   764   16px #EAF1FA  Normal skirmish
+  580   764   16px #EAF1FA  Hard skirmish
+  620   764   16px #EAF1FA  Join world
+  660   764   16px #EAF1FA  Quit

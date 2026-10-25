@@ -1,0 +1,71 @@
+   23    46   22px #F7BC3C  1,240
+   26  1792   16px #EAF1FA  Local skirmish
+   32   328   14px #D3E3F7  +10.5/s
+   78    28   16px #EAF1FA  Hull Plating
+   82   368   14px #D3E3F7  +1
+  108    28   16px #EAF1FA  Shipyards · BUILDING 1 · WAITING 0 ·
+  108   290   16px #181E2B  IDLE 1
+  130    28   16px #EAF1FA  Fleet
+  134   336   14px #D3E3F7  5 / 12
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  183  1045   22px #EAF1FA  ×
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  189   534   13px #ACBACD  RESEARCH
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  217   987   22px #F7BC3C  1,240
+  218   534   22px #EAF1FA  RESEARCH LAB
+  224    28   16px #EAF1FA  No drain
+  260  1004   13px #ADB3BC  <
+  260  1032   13px #EAF1FA  >
+  262   534   13px #8193AD  TOPICS · 1-10 OF 21
+  288   546   16px #EAF1FA  Mass Driver Calibration
+  288   806   16px #EAF1FA  Lance Focusing
+  291   750   14px #F7BC3C  150
+  291  1010   14px #F7BC3C  150
+  310   546   13px #D3E3F7  Mass Driver fire rate +10%
+  310   806   13px #D3E3F7  Lance fire rate +15%
+  328   546   13px #8193AD  TIER 1 · 75 s
+  328   806   13px #8193AD  TIER 1 · 75 s
+  382   546   16px #EAF1FA  Fusion Drive
+  382   806   16px #EAF1FA  Large Hull
+  385   750   14px #F7BC3C  200
+  385  1010   14px #F7BC3C  250
+  404   546   13px #D3E3F7  Unlocks the Fusion drive
+  404   806   13px #D3E3F7  Unlocks the Large hull
+  422   546   13px #8193AD  TIER 1 · 90 s
+  422   806   13px #8193AD  TIER 1 · 120 s
+  476   546   16px #7C8BA0  Missile Rack
+  476   806   16px #EAF1FA  Automated Shipyards
+  479   750   14px #7C8BA0  250
+  479  1010   14px #F7BC3C  200
+  498   546   13px #7C8BA0  Unlocks the Missile Rack
+  498   806   13px #D3E3F7  Shipyard build speed +25%
+  516   562   13px #CE9E55  NEEDS · MASS DRIVER CALIBRATION
+  516   806   13px #8193AD  TIER 1 · 90 s
+  570   546   16px #7C8BA0  Pulse Drive
+  570   806   16px #7C8BA0  Flak Battery
+  573   750   14px #7C8BA0  300
+  573  1010   14px #7C8BA0  300
+  592   546   13px #7C8BA0  Unlocks the Pulse drive
+  592   806   13px #7C8BA0  Unlocks the Flak Battery
+  610   562   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  610   822   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  628   822   13px #CE9E55  + MASS DRIVER CALIBRATION
+  664   546   16px #7C8BA0  Deep Core Survey
+  664   806   16px #7C8BA0  Composite Plating
+  667   750   14px #7C8BA0  300
+  667  1010   14px #7C8BA0  300
+  686   546   13px #7C8BA0  Asteroid ore reserves +30%
+  686   806   13px #7C8BA0  Hull hit points +15%
+  704   562   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  704   822   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  764   534   13px #8193AD  QUEUE · 2 / 5
+  789   566   16px #EAF1FA  Hull Plating
+  791   544   14px #8193AD  1
+  791  1012   14px #EAF1FA  45%
+  823   566   16px #EAF1FA  Improved Extraction
+  825   544   14px #8193AD  2

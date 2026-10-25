@@ -1,0 +1,72 @@
+   23    46   22px #F7BC3C  1,000
+   26  1792   16px #EAF1FA  Local skirmish
+   32   348   14px #181E2B  +0/s
+  164  1285   22px #EAF1FA  ×
+  170   634   13px #ACBACD  CONTROLS
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  210   634   13px #8193AD  SELECTING AND ORDERS
+  224    28   16px #EAF1FA  No drain
+  229   634   16px #AAD0FF  Click
+  229   874   16px #EAF1FA  Select a ship, or a structure of yours
+  251   634   16px #AAD0FF  Drag
+  251   874   16px #EAF1FA  Select your ships in the box
+  273   634   16px #AAD0FF  Shift+click
+  273   874   16px #EAF1FA  Add to the selection
+  295   634   16px #AAD0FF  Double-click
+  295   874   16px #EAF1FA  Select every ship of that design in view
+  317   634   16px #AAD0FF  Right-click
+  317   874   16px #EAF1FA  Move, attack, or build and repair with Constructors
+  339   634   16px #AAD0FF  A, then click
+  339   874   16px #EAF1FA  Attack-move
+  361   634   16px #AAD0FF  H, then click
+  361   874   16px #EAF1FA  Hold the sector clicked in
+  383   634   16px #AAD0FF  T, then click
+  383   874   16px #EAF1FA  Patrol to the point clicked
+  405   634   16px #AAD0FF  S
+  405   874   16px #EAF1FA  Stop
+  427   634   16px #AAD0FF  Ctrl+0-9
+  427   874   16px #EAF1FA  Make a control group
+  449   634   16px #AAD0FF  0-9
+  449   874   16px #EAF1FA  Select a group; twice, look at it
+  471   634   16px #AAD0FF  Shift+click
+  471   874   16px #EAF1FA  Place a structure and keep placing
+  506   634   13px #8193AD  CAMERA
+  525   634   16px #AAD0FF  Up Down Left Right
+  525   874   16px #EAF1FA  Pan
+  547   634   16px #AAD0FF  Screen edge
+  547   874   16px #EAF1FA  Pan, while the pointer is held in the window
+  569   634   16px #AAD0FF  Middle-drag
+  569   874   16px #EAF1FA  Pan
+  591   634   16px #AAD0FF  Wheel
+  591   874   16px #EAF1FA  Zoom
+  613   634   16px #AAD0FF  Q and E
+  613   874   16px #EAF1FA  Turn
+  635   634   16px #AAD0FF  Minimap click
+  635   874   16px #EAF1FA  Look there
+  657   634   16px #AAD0FF  Minimap right-click
+  657   874   16px #EAF1FA  Send the selection there
+  679   634   16px #AAD0FF  Space
+  679   874   16px #EAF1FA  Look at the newest alert
+  714   634   13px #8193AD  WINDOWS
+  733   634   16px #AAD0FF  D
+  733   874   16px #EAF1FA  Ship designer
+  755   634   16px #AAD0FF  P
+  755   874   16px #EAF1FA  Production
+  777   634   16px #AAD0FF  R
+  777   874   16px #EAF1FA  Research
+  799   634   16px #AAD0FF  O
+  799   874   16px #EAF1FA  Scheduled orders
+  821   634   16px #AAD0FF  F1
+  821   874   16px #EAF1FA  These controls
+  843   634   16px #AAD0FF  Esc
+  843   874   16px #EAF1FA  Close the front window, or cancel an order
+  865   634   16px #AAD0FF  Alt, held
+  865   874   16px #EAF1FA  Every health bar
+  887   634   16px #AAD0FF  Ctrl+= and Ctrl+-
+  887   874   16px #EAF1FA  The interface larger and smaller

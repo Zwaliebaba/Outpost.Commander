@@ -1,0 +1,29 @@
+   23    46   22px #F7BC3C  1,810
+   26  1792   16px #EAF1FA  Local skirmish
+   32   328   14px #D3E3F7  +18.5/s
+   78    28   16px #EAF1FA  Shipyards · BUILDING 1 · WAITING 0 · IDLE 0
+  100    28   16px #EAF1FA  Fleet
+  104   336   14px #D3E3F7  9 / 12
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  3 :
+  184   376   14px #FFA689  3
+  202    28   16px #EAF1FA  Tickets
+  206   312   14px #A0D3FF  994 :
+  206   360   14px #FFA689  988
+  224    28   16px #EAF1FA  No drain
+  844   934   16px #EAF1FA  Attack-move
+  847  1252   13px #ACBACD  A
+  884   934   16px #EAF1FA  Hold sector
+  887  1252   13px #ACBACD  H
+  924   934   16px #EAF1FA  Patrol
+  927  1252   13px #ACBACD  T
+  964   642   22px #EAF1FA  Lancer
+  964   934   16px #EAF1FA  Stop
+  967  1252   13px #ACBACD  S
+  994   642   16px #D3E3F7  Hit points 270 / 450
+  998   922   13px #ACBACD  RETREAT
+ 1016   642   16px #D3E3F7  Holding a sector
+ 1025   964   16px #EAF1FA  25%
+ 1025  1084   16px #EAF1FA  50%
+ 1025  1200   16px #EAF1FA  Never

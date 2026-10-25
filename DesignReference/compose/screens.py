@@ -102,7 +102,7 @@ def draw_element(e):
   if kind == "outline":
     css = resolve(e.get("edge"), ground)
     width = e.get("edgeWidth", 1)
-    style = "dashed" if e.get("pattern") else "solid"
+    style = "dashed" if str(e.get("pattern", "")).startswith("dashed") else "solid"
     return f'<div style="position:absolute;{_box(e)};box-sizing:border-box;border:{width}px {style} {css}"></div>'
   if kind == "sprite":
     css = resolve(e.get("color"), ground)

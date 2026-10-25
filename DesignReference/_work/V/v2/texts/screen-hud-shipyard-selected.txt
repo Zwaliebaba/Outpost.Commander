@@ -1,0 +1,24 @@
+   23    46   22px #F7BC3C  1,240
+   26  1792   16px #EAF1FA  Local skirmish
+   32   328   14px #D3E3F7  +10.5/s
+   78    28   16px #EAF1FA  Shipyards · BUILDING 1 · WAITING 0 · IDLE 0
+  100    28   16px #EAF1FA  Fleet
+  104   336   14px #D3E3F7  8 / 12
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  224    28   16px #EAF1FA  No drain
+  942   642   22px #EAF1FA  Shipyard 01 · L1
+  944   934   16px #EAF1FA  Production
+  947  1252   13px #ACBACD  P
+  972   642   16px #D3E3F7  Hit points 2,500 / 2,500
+  984   934   16px #EAF1FA  Ship designer
+  987  1252   13px #ACBACD  D
+  994   642   16px #D3E3F7  Building Swarm · 62% · +2 queued
+ 1016   642   16px #D3E3F7  L2: Medium hulls, 3,000 hit points
+ 1024   934   16px #EAF1FA  Upgrade to L2 · 0:30
+ 1026  1242   14px #F7BC3C  150

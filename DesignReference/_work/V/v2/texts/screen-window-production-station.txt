@@ -1,0 +1,27 @@
+   23    46   22px #F7BC3C  40
+   26  1792   16px #EAF1FA  Local skirmish
+   32   336   14px #D3E3F7  +3.5/s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  183   469   22px #EAF1FA  ×
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  189    40   13px #ACBACD  PRODUCTION
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  217   438   22px #F7BC3C  40
+  218    72   22px #EAF1FA  COMMAND STATION
+  224    28   16px #EAF1FA  No drain
+  225    50   13px #ADB3BC  <
+  225   262   13px #ADB3BC  >
+  262    40   13px #8193AD  BUILD
+  288    52   16px #7C8BA0  Constructor
+  310   223   14px #7C8BA0  60
+  332    52   13px #7C8BA0  15 s
+  376    40   13px #8193AD  QUEUE · 2 / 5
+  401    72   16px #EAF1FA  Constructor
+  403    50   14px #8193AD  1
+  405   358   13px #CE9E55  WAITING FOR ORE
+  435    72   16px #EAF1FA  Constructor
+  437    50   14px #8193AD  2

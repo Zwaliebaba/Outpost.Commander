@@ -1,0 +1,49 @@
+   23    46   22px #F7BC3C  1,240
+   26  1792   16px #EAF1FA  Local skirmish
+   32   328   14px #D3E3F7  +10.5/s
+   78    28   16px #EAF1FA  Hull Plating
+   82   368   14px #D3E3F7  +1
+  108    28   16px #EAF1FA  Shipyards · BUILDING 1 · WAITING 0 ·
+  108   290   16px #181E2B  IDLE 1
+  130    28   16px #EAF1FA  Fleet
+  134   336   14px #D3E3F7  5 / 12
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  183  1879   22px #EAF1FA  ×
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  189  1288   13px #ACBACD  SCHEDULED ORDERS
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  224    28   16px #EAF1FA  No drain
+  229  1288   13px #8193AD  WAITING
+  248  1288   16px #ADB3BC  None
+  425  1288   13px #8193AD  NEW ORDER FOR THE SELECTION
+  450  1446   16px #EAF1FA  Enemies enter a sector
+  451  1424   13px #EAF1FA  <
+  451  1618   13px #EAF1FA  >
+  453  1288   13px #ACBACD  WHEN
+  480  1446   16px #EAF1FA  A1
+  481  1424   13px #EAF1FA  <
+  481  1482   13px #EAF1FA  >
+  483  1288   13px #ACBACD  WATCHING
+  510  1446   16px #EAF1FA  Attack
+  511  1424   13px #EAF1FA  <
+  511  1508   13px #EAF1FA  >
+  513  1288   13px #ACBACD  DO
+  540  1446   16px #EAF1FA  C3
+  541  1424   13px #EAF1FA  <
+  541  1482   13px #EAF1FA  >
+  543  1288   13px #ACBACD  WHERE
+  570  1446   16px #EAF1FA  Pirate Defence Platform (1 of 2)
+  571  1424   13px #EAF1FA  <
+  571  1678   13px #EAF1FA  >
+  573  1288   13px #ACBACD  TARGET
+  600  1446   16px #EAF1FA  Over 8 enemy CP there
+  601  1424   13px #EAF1FA  <
+  601  1618   13px #EAF1FA  >
+  603  1288   13px #ACBACD  UNLESS
+  662  1288   16px #D3E3F7  Fires once, the first time it happens
+  698  1300   16px #7C8BA0  Give the order
+  700  1756   13px #8193AD  SELECT WARSHIPS

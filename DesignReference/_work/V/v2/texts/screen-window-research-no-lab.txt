@@ -1,0 +1,60 @@
+   23    46   22px #F7BC3C  1,000
+   26  1792   16px #EAF1FA  Local skirmish
+   32   348   14px #181E2B  +0/s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  183   551   22px #EAF1FA  ×
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  189    40   13px #ACBACD  RESEARCH
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  217   493   22px #F7BC3C  1,000
+  218    40   22px #EAF1FA  NO RESEARCH LAB
+  224    28   16px #EAF1FA  No drain
+  260   510   13px #ADB3BC  <
+  260   538   13px #EAF1FA  >
+  262    40   13px #8193AD  TOPICS · 1-10 OF 23
+  288    52   16px #7C8BA0  Improved Extraction
+  288   312   16px #7C8BA0  Hull Plating
+  291   256   14px #7C8BA0  150
+  291   516   14px #7C8BA0  150
+  310    52   13px #7C8BA0  Mining Rig income +25%
+  310   312   13px #7C8BA0  Hull hit points +15%
+  328    52   13px #7C8BA0  TIER 1 · 60 s
+  328   312   13px #7C8BA0  TIER 1 · 60 s
+  382    52   16px #7C8BA0  Mass Driver Calibration
+  382   312   16px #7C8BA0  Lance Focusing
+  385   256   14px #7C8BA0  150
+  385   516   14px #7C8BA0  150
+  404    52   13px #7C8BA0  Mass Driver fire rate +10%
+  404   312   13px #7C8BA0  Lance fire rate +15%
+  422    52   13px #7C8BA0  TIER 1 · 75 s
+  422   312   13px #7C8BA0  TIER 1 · 75 s
+  476    52   16px #7C8BA0  Fusion Drive
+  476   312   16px #7C8BA0  Large Hull
+  479   256   14px #7C8BA0  200
+  479   516   14px #7C8BA0  250
+  498    52   13px #7C8BA0  Unlocks the Fusion drive
+  498   312   13px #7C8BA0  Unlocks the Large hull
+  516    68   13px #CE9E55  NEEDS · HULL PLATING
+  516   328   13px #CE9E55  NEEDS · HULL PLATING
+  570    52   16px #7C8BA0  Missile Rack
+  570   312   16px #7C8BA0  Automated Shipyards
+  573   256   14px #7C8BA0  250
+  573   516   14px #7C8BA0  200
+  592    52   13px #7C8BA0  Unlocks the Missile Rack
+  592   312   13px #7C8BA0  Shipyard build speed +25%
+  610    68   13px #CE9E55  NEEDS · MASS DRIVER CALIBRATION
+  610   328   13px #CE9E55  NEEDS · IMPROVED EXTRACTION
+  664    52   16px #7C8BA0  Pulse Drive
+  664   312   16px #7C8BA0  Flak Battery
+  667   256   14px #7C8BA0  300
+  667   516   14px #7C8BA0  300
+  686    52   13px #7C8BA0  Unlocks the Pulse drive
+  686   312   13px #7C8BA0  Unlocks the Flak Battery
+  704    68   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  704   328   13px #CE9E55  NEEDS · RESEARCH LAB L2
+  722   328   13px #CE9E55  + MASS DRIVER CALIBRATION
+  764    40   13px #8193AD  QUEUE · 0 / 5

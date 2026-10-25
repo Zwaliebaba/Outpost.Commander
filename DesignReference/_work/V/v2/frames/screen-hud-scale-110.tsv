@@ -1,0 +1,380 @@
+game	fill	0	0	1920	1080	#000			
+game	fill	944.00	511.00	32.00	5.00	#426391			
+game	fill	944.00	511.00	17.60	5.00	#7CED95			
+game	fill	1084.00	591.00	32.00	5.00	#426391			
+game	fill	1084.00	591.00	12.80	5.00	#BCBFC4			
+game	fill	1084.00	584.00	32.00	5.00	#426391			
+game	fill	1084.00	584.00	14.72	5.00	#FFDA59			
+game	fill	17.60	17.60	422.20	48.40	#181E2B			
+game	fill	17.60	187.00	422.20	94.60	#181E2B			
+game	fill	26.40	246.40	238.80	24.20	#FFBCA0			
+game	fill	17.60	290.40	422.20	94.60	#181E2B			
+game	fill	26.40	301.40	146.80	24.20	#FFBCA0			
+game	fill	17.60	74.80	422.20	103.40	#181E2B			
+game	fill	30.80	112.20	395.80	4.40	#0D1018			
+game	fill	30.80	112.20	245.40	4.40	#7395C8			
+game	fill	312.80	118.80	59.80	24.20	#FFBCA0			
+game	fill	78.60	151.80	276.20	6.60	#0D1018			
+game	fill	78.60	151.80	266.99	6.60	#7395C8			
+game	fill	1766.00	17.60	136.40	46.20	#181E2B			
+game	fill	589.30	813.80	323.40	248.60	#181E2B			
+game	fill	602.50	1038.20	18.70	11.00	#0D1018			
+game	fill	602.50	1038.20	18.70	11.00	#7CED95			
+game	fill	625.60	1038.20	18.70	11.00	#0D1018			
+game	fill	625.60	1038.20	18.70	11.00	#7CED95			
+game	fill	648.70	1038.20	18.70	11.00	#0D1018			
+game	fill	648.70	1038.20	15.33	11.00	#7CED95			
+game	fill	671.80	1038.20	18.70	11.00	#0D1018			
+game	fill	671.80	1038.20	18.70	11.00	#7CED95			
+game	fill	694.90	1038.20	18.70	11.00	#0D1018			
+game	fill	694.90	1038.20	10.29	11.00	#7CED95			
+game	fill	718.00	1038.20	18.70	11.00	#0D1018			
+game	fill	718.00	1038.20	18.70	11.00	#7CED95			
+game	fill	741.10	1038.20	18.70	11.00	#0D1018			
+game	fill	741.10	1038.20	16.83	11.00	#7CED95			
+game	fill	764.20	1038.20	18.70	11.00	#0D1018			
+game	fill	764.20	1038.20	7.48	11.00	#FFDA59			
+game	fill	787.30	1038.20	18.70	11.00	#0D1018			
+game	fill	787.30	1038.20	18.70	11.00	#7CED95			
+game	fill	810.40	1038.20	18.70	11.00	#0D1018			
+game	fill	810.40	1038.20	18.70	11.00	#7CED95			
+game	fill	833.50	1038.20	18.70	11.00	#0D1018			
+game	fill	833.50	1038.20	3.74	11.00	#F97C6C			
+game	border	832.40	1037.10	20.90	13.20	1.1px solid #EAF1FA			
+game	fill	856.60	1038.20	18.70	11.00	#0D1018			
+game	fill	856.60	1038.20	18.70	11.00	#7CED95			
+game	fill	912.70	800.60	418.00	261.80	#181E2B			
+game	fill	925.90	813.80	391.60	37.40	#334767			
+game	border	925.90	813.80	391.60	37.40	1.1px solid #A0C5F3			
+game	fill	1282.30	821.50	22.00	22.00	#10141B			
+game	border	1282.30	821.50	22.00	22.00	1.1px solid #ACBACD			
+game	fill	925.90	857.80	391.60	37.40	#1F2739			
+game	border	925.90	857.80	391.60	37.40	1.1px solid #2D364B			
+game	fill	1282.30	865.50	22.00	22.00	#10141B			
+game	border	1282.30	865.50	22.00	22.00	1.1px solid #ACBACD			
+game	fill	925.90	901.80	391.60	37.40	#1F2739			
+game	border	925.90	901.80	391.60	37.40	1.1px solid #2D364B			
+game	fill	1282.30	909.50	22.00	22.00	#10141B			
+game	border	1282.30	909.50	22.00	22.00	1.1px solid #ACBACD			
+game	fill	925.90	945.80	391.60	37.40	#1F2739			
+game	border	925.90	945.80	391.60	37.40	1.1px solid #89AFE2			
+game	fill	1282.30	953.50	22.00	22.00	#10141B			
+game	border	1282.30	953.50	22.00	22.00	1.1px solid #ACBACD			
+game	fill	925.90	1011.80	127.60	37.40	#1F2739			
+game	border	925.90	1011.80	127.60	37.40	1.1px solid #2D364B			
+game	fill	1057.90	1011.80	127.60	37.40	#1F2739			
+game	border	1057.90	1011.80	127.60	37.40	1.1px solid #2D364B			
+game	fill	1189.90	1011.80	127.60	37.40	#1F2739			
+game	border	1189.90	1011.80	127.60	37.40	1.1px solid #2D364B			
+game	fill	17.60	732.40	330.00	330.00	#181E2B			
+game	fill	26.40	741.20	312.40	312.40	#263749			
+game	fill	26.40	991.12	62.48	62.48	#455E75			
+game	fill	88.88	991.12	62.48	62.48	#455E75			
+game	fill	151.36	991.12	62.48	62.48	#455E75			
+game	fill	213.84	991.12	62.48	62.48	#5D5375			
+game	fill	276.32	991.12	62.48	62.48	#5D5375			
+game	fill	88.88	928.64	62.48	62.48	#455E75			
+game	fill	151.36	928.64	62.48	62.48	#455E75			
+game	fill	276.32	928.64	62.48	62.48	#5D5375			
+game	fill	26.40	866.16	62.48	62.48	#455E75			
+game	fill	151.36	866.16	62.48	62.48	#5D5375			
+game	fill	213.84	866.16	62.48	62.48	#674F54			
+game	fill	276.32	866.16	62.48	62.48	#674F54			
+game	fill	26.40	803.68	62.48	62.48	#5D5375			
+game	fill	151.36	803.68	62.48	62.48	#674F54			
+game	fill	213.84	803.68	62.48	62.48	#674F54			
+game	fill	276.32	803.68	62.48	62.48	#674F54			
+game	fill	26.40	741.20	62.48	62.48	#5D5375			
+game	fill	88.88	741.20	62.48	62.48	#5D5375			
+game	fill	151.36	741.20	62.48	62.48	#674F54			
+game	fill	213.84	741.20	62.48	62.48	#674F54			
+game	fill	276.32	741.20	62.48	62.48	#674F54			
+game	fill	83.26	1033.29	11.25	11.25	#656569			
+game	fill	84.19	1001.12	9.37	9.37	#656569			
+game	fill	36.40	986.43	9.37	9.37	#656569			
+game	fill	68.57	985.50	11.25	11.25	#656569			
+game	fill	83.26	970.81	11.25	11.25	#656569			
+game	fill	84.19	938.64	9.37	9.37	#656569			
+game	fill	98.88	986.43	9.37	9.37	#656569			
+game	fill	131.05	985.50	11.25	11.25	#656569			
+game	fill	83.26	908.33	11.25	11.25	#656569			
+game	fill	83.26	875.22	11.25	11.25	#656569			
+game	fill	161.36	986.43	9.37	9.37	#656569			
+game	fill	194.47	986.43	9.37	9.37	#656569			
+game	fill	84.19	846.79	9.37	9.37	#656569			
+game	fill	83.26	812.74	11.25	11.25	#656569			
+game	fill	222.90	985.50	11.25	11.25	#656569			
+game	fill	256.95	986.43	9.37	9.37	#656569			
+game	fill	84.19	784.31	9.37	9.37	#656569			
+game	fill	83.26	750.26	11.25	11.25	#656569			
+game	fill	285.38	985.50	11.25	11.25	#656569			
+game	fill	319.43	986.43	9.37	9.37	#656569			
+game	fill	145.74	1033.29	11.25	11.25	#656569			
+game	fill	146.67	1001.12	9.37	9.37	#656569			
+game	fill	36.40	923.95	9.37	9.37	#656569			
+game	fill	68.57	923.02	11.25	11.25	#656569			
+game	fill	145.74	970.81	11.25	11.25	#656569			
+game	fill	146.67	938.64	9.37	9.37	#656569			
+game	fill	98.88	923.95	9.37	9.37	#656569			
+game	fill	131.05	923.02	11.25	11.25	#656569			
+game	fill	145.74	908.33	11.25	11.25	#656569			
+game	fill	145.74	875.22	11.25	11.25	#656569			
+game	fill	161.36	923.95	9.37	9.37	#656569			
+game	fill	194.47	923.95	9.37	9.37	#656569			
+game	fill	146.67	846.79	9.37	9.37	#656569			
+game	fill	145.74	812.74	11.25	11.25	#656569			
+game	fill	222.90	923.02	11.25	11.25	#656569			
+game	fill	256.95	923.95	9.37	9.37	#656569			
+game	fill	146.67	784.31	9.37	9.37	#656569			
+game	fill	145.74	750.26	11.25	11.25	#656569			
+game	fill	285.38	923.02	11.25	11.25	#656569			
+game	fill	319.43	923.95	9.37	9.37	#656569			
+game	fill	208.22	1033.29	11.25	11.25	#656569			
+game	fill	209.15	1001.12	9.37	9.37	#656569			
+game	fill	36.40	861.47	9.37	9.37	#656569			
+game	fill	68.57	860.54	11.25	11.25	#656569			
+game	fill	208.22	970.81	11.25	11.25	#656569			
+game	fill	209.15	938.64	9.37	9.37	#656569			
+game	fill	98.88	861.47	9.37	9.37	#656569			
+game	fill	131.05	860.54	11.25	11.25	#656569			
+game	fill	208.22	908.33	11.25	11.25	#656569			
+game	fill	208.22	875.22	11.25	11.25	#656569			
+game	fill	161.36	861.47	9.37	9.37	#656569			
+game	fill	194.47	861.47	9.37	9.37	#656569			
+game	fill	209.15	846.79	9.37	9.37	#656569			
+game	fill	208.22	812.74	11.25	11.25	#656569			
+game	fill	222.90	860.54	11.25	11.25	#656569			
+game	fill	256.95	861.47	9.37	9.37	#656569			
+game	fill	209.15	784.31	9.37	9.37	#656569			
+game	fill	208.22	750.26	11.25	11.25	#656569			
+game	fill	285.38	860.54	11.25	11.25	#656569			
+game	fill	319.43	861.47	9.37	9.37	#656569			
+game	fill	270.70	1033.29	11.25	11.25	#656569			
+game	fill	271.63	1001.12	9.37	9.37	#656569			
+game	fill	36.40	798.99	9.37	9.37	#656569			
+game	fill	68.57	798.06	11.25	11.25	#656569			
+game	fill	270.70	970.81	11.25	11.25	#656569			
+game	fill	271.63	938.64	9.37	9.37	#656569			
+game	fill	98.88	798.99	9.37	9.37	#656569			
+game	fill	131.05	798.06	11.25	11.25	#656569			
+game	fill	270.70	908.33	11.25	11.25	#656569			
+game	fill	270.70	875.22	11.25	11.25	#656569			
+game	fill	161.36	798.99	9.37	9.37	#656569			
+game	fill	194.47	798.99	9.37	9.37	#656569			
+game	fill	271.63	846.79	9.37	9.37	#656569			
+game	fill	270.70	812.74	11.25	11.25	#656569			
+game	fill	222.90	798.06	11.25	11.25	#656569			
+game	fill	256.95	798.99	9.37	9.37	#656569			
+game	fill	271.63	784.31	9.37	9.37	#656569			
+game	fill	270.70	750.26	11.25	11.25	#656569			
+game	fill	285.38	798.06	11.25	11.25	#656569			
+game	fill	319.43	798.99	9.37	9.37	#656569			
+game	border	53.24	1009.84	8.80	8.80	2.2px solid #AD8427			
+game	border	303.16	776.16	8.80	8.80	2.2px solid #AD8427			
+game	border	61.36	1017.96	8.80	8.80	2.2px solid #AD8427			
+game	border	295.04	768.04	8.80	8.80	2.2px solid #AD8427			
+game	border	59.18	1012.02	8.80	8.80	2.2px solid #AD8427			
+game	border	297.22	773.98	8.80	8.80	2.2px solid #AD8427			
+game	border	128.71	1011.44	8.80	8.80	2.2px solid #AD8427			
+game	border	227.69	774.56	8.80	8.80	2.2px solid #AD8427			
+game	border	100.85	1036.39	8.80	8.80	2.2px solid #AD8427			
+game	border	255.55	749.61	8.80	8.80	2.2px solid #AD8427			
+game	border	191.45	1024.18	8.80	8.80	2.2px solid #AD8427			
+game	border	164.95	761.82	8.80	8.80	2.2px solid #AD8427			
+game	border	256.79	998.45	8.80	8.80	2.2px solid #AD8427			
+game	border	99.61	787.55	8.80	8.80	2.2px solid #AD8427			
+game	border	282.82	1008.22	8.80	8.80	2.2px solid #AD8427			
+game	border	73.58	777.78	8.80	8.80	2.2px solid #AD8427			
+game	border	304.67	1039.14	8.80	8.80	2.2px solid #AD8427			
+game	border	51.73	746.86	8.80	8.80	2.2px solid #AD8427			
+game	border	39.49	947.53	8.80	8.80	2.2px solid #AD8427			
+game	border	316.91	838.47	8.80	8.80	2.2px solid #AD8427			
+game	border	53.99	976.64	8.80	8.80	2.2px solid #AD8427			
+game	border	302.41	809.36	8.80	8.80	2.2px solid #AD8427			
+game	border	121.50	968.35	8.80	8.80	2.2px solid #AD8427			
+game	border	234.90	817.65	8.80	8.80	2.2px solid #AD8427			
+game	border	193.90	961.50	8.80	8.80	2.2px solid #AD8427			
+game	border	162.50	824.50	8.80	8.80	2.2px solid #AD8427			
+game	border	262.38	949.50	8.80	8.80	2.2px solid #AD8427			
+game	border	94.02	836.50	8.80	8.80	2.2px solid #AD8427			
+game	border	244.50	972.31	8.80	8.80	2.2px solid #AD8427			
+game	border	111.90	813.69	8.80	8.80	2.2px solid #AD8427			
+game	border	286.07	962.62	8.80	8.80	2.2px solid #AD8427			
+game	border	70.33	823.38	8.80	8.80	2.2px solid #AD8427			
+game	border	62.29	872.18	8.80	8.80	2.2px solid #AD8427			
+game	border	294.11	913.82	8.80	8.80	2.2px solid #AD8427			
+game	border	127.25	894.74	8.80	8.80	2.2px solid #AD8427			
+game	border	229.15	891.26	8.80	8.80	2.2px solid #AD8427			
+game	border	157.79	886.57	8.80	8.80	2.2px solid #AD8427			
+game	border	198.61	899.43	8.80	8.80	2.2px solid #AD8427			
+game	border	186.12	883.51	8.80	8.80	2.2px solid #AD8427			
+game	border	170.28	902.49	8.80	8.80	2.2px solid #AD8427			
+game	fill	35.94	876.45	6.60	6.60	#CECED4			
+game	fill	194.77	1036.77	6.60	6.60	#CECED4			
+game	fill	54.34	1019.06	6.60	6.60	#A0D3FF			
+game	fill	57.86	1017.90	3.30	3.30	#A0D3FF			
+game	fill	58.80	1018.84	3.30	3.30	#A0D3FF			
+game	fill	116.82	1019.06	6.60	6.60	#A0D3FF			
+game	fill	179.30	1019.06	6.60	6.60	#A0D3FF			
+game	fill	116.82	956.58	6.60	6.60	#A0D3FF			
+game	fill	179.30	956.58	6.60	6.60	#A0D3FF			
+game	fill	54.34	894.10	6.60	6.60	#A0D3FF			
+game	fill	54.34	1010.94	6.60	6.60	#A0D3FF			
+game	fill	62.46	1019.06	6.60	6.60	#A0D3FF			
+game	fill	60.28	1013.12	6.60	6.60	#A0D3FF			
+game	fill	101.95	1037.49	6.60	6.60	#A0D3FF			
+game	fill	115.35	955.11	3.30	3.30	#A0D3FF			
+game	fill	121.59	959.79	3.30	3.30	#A0D3FF			
+game	fill	120.03	956.67	3.30	3.30	#FFA689			
+game	fill	26.40	741.20	312.40	312.40	rgba(0,0,0,0.304)			
+game	border	26.40	991.12	62.48	62.48	1.1px solid #5D6573			
+game	border	88.88	991.12	62.48	62.48	1.1px solid #5D6573			
+game	border	151.36	991.12	62.48	62.48	1.1px solid #5D6573			
+game	border	213.84	991.12	62.48	62.48	1.1px solid #5D6573			
+game	border	276.32	991.12	62.48	62.48	1.1px solid #5D6573			
+game	border	26.40	928.64	62.48	62.48	1.1px solid #5D6573			
+game	border	88.88	928.64	62.48	62.48	1.1px solid #5D6573			
+game	border	151.36	928.64	62.48	62.48	1.1px solid #5D6573			
+game	border	213.84	928.64	62.48	62.48	1.1px solid #5D6573			
+game	border	276.32	928.64	62.48	62.48	1.1px solid #5D6573			
+game	border	26.40	866.16	62.48	62.48	1.1px solid #5D6573			
+game	border	88.88	866.16	62.48	62.48	1.1px solid #5D6573			
+game	border	151.36	866.16	62.48	62.48	1.1px solid #5D6573			
+game	border	213.84	866.16	62.48	62.48	1.1px solid #5D6573			
+game	border	276.32	866.16	62.48	62.48	1.1px solid #5D6573			
+game	border	26.40	803.68	62.48	62.48	1.1px solid #5D6573			
+game	border	88.88	803.68	62.48	62.48	1.1px solid #5D6573			
+game	border	151.36	803.68	62.48	62.48	1.1px solid #5D6573			
+game	border	213.84	803.68	62.48	62.48	1.1px solid #5D6573			
+game	border	276.32	803.68	62.48	62.48	1.1px solid #5D6573			
+game	border	26.40	741.20	62.48	62.48	1.1px solid #5D6573			
+game	border	88.88	741.20	62.48	62.48	1.1px solid #5D6573			
+game	border	151.36	741.20	62.48	62.48	1.1px solid #5D6573			
+game	border	213.84	741.20	62.48	62.48	1.1px solid #5D6573			
+game	border	276.32	741.20	62.48	62.48	1.1px solid #5D6573			
+game	border	26.40	991.12	62.48	62.48	1.1px dashed #7CA5C8			
+game	border	88.88	991.12	62.48	62.48	1.1px dashed #7CA5C8			
+game	border	151.36	991.12	62.48	62.48	1.1px dashed #7CA5C8			
+game	border	213.84	991.12	62.48	62.48	1.1px dashed #B18DC8			
+game	border	276.32	991.12	62.48	62.48	1.1px dashed #B18DC8			
+game	border	88.88	928.64	62.48	62.48	1.1px dashed #7CA5C8			
+game	border	151.36	928.64	62.48	62.48	1.1px dashed #7CA5C8			
+game	fill	151.36	928.64	62.48	62.48	repeating-linear-gradient(135deg,#678AA8 0 1.414px,transparent 1.414px 4.950px)			
+game	border	276.32	928.64	62.48	62.48	1.1px dashed #B18DC8			
+game	border	26.40	866.16	62.48	62.48	1.1px dashed #7CA5C8			
+game	border	151.36	866.16	62.48	62.48	1.1px dashed #B18DC8			
+game	border	213.84	866.16	62.48	62.48	1.1px dashed #C58372			
+game	border	276.32	866.16	62.48	62.48	1.1px dashed #C58372			
+game	border	26.40	803.68	62.48	62.48	1.1px dashed #B18DC8			
+game	border	151.36	803.68	62.48	62.48	1.1px dashed #C58372			
+game	border	213.84	803.68	62.48	62.48	1.1px dashed #C58372			
+game	border	276.32	803.68	62.48	62.48	1.1px dashed #C58372			
+game	border	26.40	741.20	62.48	62.48	1.1px dashed #B18DC8			
+game	border	88.88	741.20	62.48	62.48	1.1px dashed #B18DC8			
+game	border	151.36	741.20	62.48	62.48	1.1px dashed #C58372			
+game	border	213.84	741.20	62.48	62.48	1.1px dashed #C58372			
+game	border	276.32	741.20	62.48	62.48	1.1px dashed #C58372			
+game	fill	173.61	945.00	8.80	2.20	#CECED4			
+game	fill	176.91	941.70	2.20	8.80	#CECED4			
+game	fill	178.20	833.82	8.80	2.20	#FFA689			
+game	fill	181.50	830.52	2.20	8.80	#FFA689			
+game	border	112.42	952.18	15.40	15.40	1.1px solid #FFBCA0			
+game	border	174.90	952.18	15.40	15.40	1.1px solid #FFBCA0			
+game	border	58.99	868.88	15.40	15.40	1.1px solid #FFBCA0			
+game	svg:path	17.60	17.60	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	52.80	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	17.60	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	52.80	13.2	13.2	#89AFE2/none			
+game	svg:polygon	30.80	33.28	14.3	14.3	/#F7BC3C			
+game	svg:path	17.60	187.00	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	268.40	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	187.00	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	268.40	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	290.40	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	371.80	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	290.40	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	371.80	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	74.80	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	165.00	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	74.80	13.2	13.2	#89AFE2/none			
+game	svg:path	426.60	165.00	13.2	13.2	#89AFE2/none			
+game	svg:path	1766.00	17.60	13.2	13.2	#89AFE2/none			
+game	svg:path	1766.00	50.60	13.2	13.2	#89AFE2/none			
+game	svg:path	1889.20	17.60	13.2	13.2	#89AFE2/none			
+game	svg:path	1889.20	50.60	13.2	13.2	#89AFE2/none			
+game	svg:path	589.30	813.80	13.2	13.2	#89AFE2/none			
+game	svg:path	589.30	1049.20	13.2	13.2	#89AFE2/none			
+game	svg:path	899.50	813.80	13.2	13.2	#89AFE2/none			
+game	svg:path	899.50	1049.20	13.2	13.2	#89AFE2/none			
+game	svg:path	912.70	800.60	13.2	13.2	#89AFE2/none			
+game	svg:path	912.70	1049.20	13.2	13.2	#89AFE2/none			
+game	svg:path	1317.50	800.60	13.2	13.2	#89AFE2/none			
+game	svg:path	1317.50	1049.20	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	732.40	13.2	13.2	#89AFE2/none			
+game	svg:path	17.60	1049.20	13.2	13.2	#89AFE2/none			
+game	svg:path	334.40	732.40	13.2	13.2	#89AFE2/none			
+game	svg:path	334.40	1049.20	13.2	13.2	#89AFE2/none			
+game	text	50.60	25.30		29.70	#F7BC3C	24	700	2,350
+game	text	363.60	34.65		18.70	#D3E3F7	15	600	+14.5/s
+game	text	30.80	198.00		20.90	#EAF1FA	18	600	Nodes
+game	text	84.40	198.00		20.90	#8193AD	18	600	cap 10 of 25
+game	text	417.60	202.95		18.70	#FFA689	15	600	8
+game	text	381.60	202.95		18.70	#A0D3FF	15	600	6 :
+game	text	30.80	222.20		20.90	#EAF1FA	18	600	Tickets
+game	text	399.60	227.15		18.70	#FFA689	15	600	731
+game	text	345.60	227.15		18.70	#A0D3FF	15	600	642 :
+game	text	30.80	246.40		20.90	#181E2B	18	600	You -40 a minute · out in 16:03
+game	text	30.80	301.40		20.90	#181E2B	18	600	Enemy ships in B2
+game	text	30.80	325.60		20.90	#EAF1FA	18	600	Relay under attack: C2
+game	text	30.80	349.80		20.90	#EAF1FA	18	600	Mining Rig lost: A3
+game	text	408.60	90.75		18.70	#D3E3F7	15	600	+2
+game	text	30.80	85.80		20.90	#EAF1FA	18	600	Large Hull
+game	text	30.80	118.80		20.90	#EAF1FA	18	600	Shipyards · BUILDING 2 · WAITING 0 ·
+game	text	317.20	118.80		20.90	#181E2B	18	600	IDLE 1
+game	text	363.60	147.95		18.70	#D3E3F7	15	600	29 / 30
+game	text	30.80	143.00		20.90	#EAF1FA	18	600	Fleet
+game	text	1779.20	28.60		20.90	#EAF1FA	18	600	Local skirmish
+game	text	602.50	827.00		29.70	#EAF1FA	24	700	12 ships
+game	text	602.50	860.00		20.90	#D3E3F7	18	600	6 × Swarm
+game	text	602.50	884.20		20.90	#D3E3F7	18	600	4 × Lancer
+game	text	602.50	908.40		20.90	#D3E3F7	18	600	2 × Brawler
+game	text	602.50	932.60		20.90	#D3E3F7	18	600	Hit points 3,552 / 4,472
+game	text	602.50	956.80		20.90	#D3E3F7	18	600	On patrol
+game	text	602.50	981.00		20.90	#D3E3F7	18	600	1 retreating to be repaired
+game	text	602.50	1005.20		20.90	#D3E3F7	18	600	Scheduled: at 02:00, attack-move to C3
+game	text	1288.80	823.70		17.60	#ACBACD	14	600	A
+game	text	939.10	820.40		20.90	#EAF1FA	18	600	Attack-move
+game	text	1288.80	867.70		17.60	#ACBACD	14	600	H
+game	text	939.10	864.40		20.90	#EAF1FA	18	600	Hold sector
+game	text	1288.80	911.70		17.60	#ACBACD	14	600	T
+game	text	939.10	908.40		20.90	#EAF1FA	18	600	Patrol
+game	text	1288.80	955.70		17.60	#ACBACD	14	600	S
+game	text	939.10	952.40		20.90	#EAF1FA	18	600	Stop
+game	text	925.90	989.80		17.60	#ACBACD	14	600	RETREAT
+game	text	1267.50	989.80		17.60	#D3E3F7	14	600	MIXED
+game	text	972.70	1019.50		20.90	#EAF1FA	18	600	25%
+game	text	1104.70	1019.50		20.90	#EAF1FA	18	600	50%
+game	text	1231.70	1019.50		20.90	#EAF1FA	18	600	Never
+game	svg:polyline	0	0	1920	1080	#D8DEE9/none			
+game	svg:polyline	0	0	1920	1080	#D8DEE9/none			
+game	svg:polyline	0	0	1920	1080	#D8DEE9/none			
+game	svg:polyline	0	0	1920	1080	#D8DEE9/none			
+annot	div	0	0	1920	1080				
+annot	border	15.6	15.6	426.2	52.4	1px dashed #FF2D95			
+annot	text	5.6	5.6	22	22	#000			1
+annot	border	15.6	72.8	426.2	107.4	1px dashed #FF2D95			
+annot	text	5.6	62.8	22	22	#000			2
+annot	border	15.6	185.0	426.2	98.6	1px dashed #FF2D95			
+annot	text	5.6	175.0	22	22	#000			3
+annot	border	15.6	288.4	426.2	98.6	1px dashed #FF2D95			
+annot	text	5.6	278.4	22	22	#000			4
+annot	border	1764.0	15.6	140.4	50.2	1px dashed #FF2D95			
+annot	text	1754.0	5.6	22	22	#000			5
+annot	border	587.3	811.8	327.4	252.6	1px dashed #FF2D95			
+annot	text	577.3	801.8	22	22	#000			6
+annot	border	910.7	798.6	422.0	265.8	1px dashed #FF2D95			
+annot	text	900.7	788.6	22	22	#000			7
+annot	border	15.6	730.4	334.0	334.0	1px dashed #FF2D95			
+annot	text	5.6	720.4	22	22	#000			8
+annot	border	942.0	509.0	176.0	89.0	1px dashed #FF2D95			
+annot	text	932.0	499.0	22	22	#000			9

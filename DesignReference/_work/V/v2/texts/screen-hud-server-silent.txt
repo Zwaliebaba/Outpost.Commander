@@ -1,0 +1,8 @@
+   23    46   22px #F7BC3C  3,120
+   26  1671   16px #EAF1FA  Server 203.0.113.5:4433
+   32   328   14px #D3E3F7  +14.5/s
+   48  1671   16px #181E2B  No word from the server · 5 s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 7 of 25
+  184   344   14px #A0D3FF  5 :
+  184   376   14px #FFA689  4

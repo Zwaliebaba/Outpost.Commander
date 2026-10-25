@@ -24,8 +24,8 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 .md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
 .md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
 .md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
-.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B;overflow-wrap:anywhere;word-break:break-word}
-.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere;word-break:break-word}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
 .md td code{font-size:11.5px}
 .md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
 .md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
@@ -128,6 +128,20 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 <ul>
 <li><strong>C-001, C-002 and C-004:</strong> left open. Each stays an open owner decision, and the reference draws what the code does.</li>
 <li><strong>C-003 and C-005:</strong> drawn and flagged. The designer frames show the Build row's overlap and the cut-short Large hull numbers as the code derives them, marked "derived, not seen".</li>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">After verification</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>After verification</h2>
+<p>Two independent agents checked the published canvas against the repository.</p>
+<p><strong>V</strong> checked 60 numbers, 26 screen elements, coverage of states and models, scope, colors and sources. Three checks passed, four were partial and one failed, with 17 failing items (<code>DesignReference/_work/V/V.md</code>).</p>
+<p><strong>V2</strong> re-checked the 17 after they were fixed (<code>DesignReference/_work/V/V2.md</code>). 16 now pass, and all 14 new figure spot checks are consistent.</p>
+<h3>Left open</h3>
+<p>Two things stay open. The brief's rule is that a second failure on the same check goes here, not into a third attempt.</p>
+<ul>
+<li><strong>The Hulls table overflows its artboard</strong> (<code>ships-parts</code>, V item 10, failed twice). The table runs about 150 px past the 1,440 px board, so its last three columns, Unlocked by, Mesh lengthMeters and Source, spill past the edge. The first fix let every table cell break mid-word. That split words and numbers across the whole canvas, so it was reverted. A fix limited to the header cells of that one table is still to do.</li>
+<li><strong>The minimap's sample marks are incomplete</strong> (found by V2). The frames' minimaps leave out the player's own Shipyards and Research Lab, even a selected one, and most of its warships. The geometry and colors of the marks that are drawn are right. This is a gap in the sample content of <code>DesignReference/_work/A4/derive_layouts.py</code>, not in the game.</li>
+</ul>
+<h3>Fixed after V2</h3>
+<ul>
+<li><strong>Sector outlines.</strong> Held and guarded outlines were all drawn dashed. Only a sector that is cut off is dashed (<code>Hud.cpp:3569-3580</code>).</li>
+<li><strong>Escaped pipes.</strong> A table's escaped pipe (<code>|</code>) leaked into the code text on six boards.</li>
 </ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Horizon and self-play leak check</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>Leak check: Horizon and self-play material in A1–A7</h2>
 <p>Agent <strong>R</strong>. HEAD <code>a053fe294d91dc885bbb061c2f34d76ca6897738</code>.</p>
 <h3>Verdict: <strong>PASS</strong></h3>
@@ -242,7 +256,7 @@ a{color:#AAD0FF}a:hover{color:#EAF1FA}
 <h3>Related item outside A1–A7</h3>
 <p><code>Tools/BattleModel.py</code>, which A2 cites as a secondary source for the damage formula, is the MVP's Q2 balance model (<code>Tools/BattleModel.py:1-10</code>, "for the balance check of the MVP design"). It is not Horizon or self-play material.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3948}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4506}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};

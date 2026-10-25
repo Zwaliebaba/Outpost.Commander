@@ -1,0 +1,7 @@
+  414   752   22px #F7BC3C  Outpost Commander
+  444   752   16px #ADB3BC  A skirmish against the AI
+  478   764   16px #EAF1FA  Easy skirmish
+  518   764   16px #EAF1FA  Normal skirmish
+  558   764   16px #EAF1FA  Hard skirmish
+  598   764   16px #EAF1FA  Join world
+  638   764   16px #EAF1FA  Quit

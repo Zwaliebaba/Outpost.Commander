@@ -1,0 +1,20 @@
+   23    46   22px #F7BC3C  420
+   26  1792   16px #EAF1FA  Local skirmish
+   32   328   14px #D3E3F7  +10.5/s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  224    28   16px #EAF1FA  No drain
+  920   642   22px #EAF1FA  Command Station · L1
+  950   642   16px #D3E3F7  Upgrading to L2, 40%
+  972   642   16px #D3E3F7  Hit points 5,000 / 5,000
+  984   934   16px #EAF1FA  Production
+  987  1252   13px #ACBACD  P
+  994   642   16px #D3E3F7  Idle
+ 1016   642   16px #D3E3F7  L2: 7 nodes, fleet 20, 6,000 hit points
+ 1024   934   16px #7C8BA0  Upgrade to L2 · 0:45
+ 1026  1166   13px #8193AD  UPGRADING · 40%

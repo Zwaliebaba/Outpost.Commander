@@ -1,0 +1,30 @@
+   23    46   22px #F7BC3C  640
+   26  1792   16px #EAF1FA  Local skirmish
+   27   652   16px #EAF1FA  Placing Relay: left-click to build, right-click to cancel
+   32   336   14px #D3E3F7  +3.5/s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  224    28   16px #EAF1FA  No drain
+  764   934   16px #EAF1FA  Shipyard
+  766  1242   14px #F7BC3C  300
+  804   934   16px #EAF1FA  Research Lab
+  806  1242   14px #F7BC3C  200
+  844   934   16px #EAF1FA  Mining Rig
+  846  1250   14px #F7BC3C  50
+  884   934   16px #EAF1FA  Defence Platform
+  886  1242   14px #F7BC3C  450
+  924   934   16px #EAF1FA  Relay
+  926  1242   14px #F7BC3C  200
+  964   934   16px #EAF1FA  Repair Bay
+  966  1242   14px #F7BC3C  300
+  982   642   22px #EAF1FA  2 × Constructor
+  998   922   13px #ACBACD  RETREAT
+ 1012   642   16px #D3E3F7  Hit points 600 / 600
+ 1025   964   16px #EAF1FA  25%
+ 1025  1084   16px #EAF1FA  50%
+ 1025  1200   16px #EAF1FA  Never

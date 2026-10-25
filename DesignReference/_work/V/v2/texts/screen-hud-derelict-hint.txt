@@ -1,0 +1,12 @@
+   23    46   22px #F7BC3C  1,500
+   26  1792   16px #EAF1FA  Local skirmish
+   27   652   16px #EAF1FA  Derelict: 300 Ore, and part of Large Hull's research time · salvaged 40%
+   32   328   14px #D3E3F7  +10.5/s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  224    28   16px #EAF1FA  No drain

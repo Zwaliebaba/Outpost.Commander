@@ -1,0 +1,30 @@
+   23    46   22px #F7BC3C  900
+   26  1792   16px #EAF1FA  Local skirmish
+   27   652   16px #EAF1FA  Relay: at the node cap; upgrade the Command Station to claim more
+   32   328   14px #D3E3F7  +14.5/s
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  4 :
+  184   376   14px #FFA689  1
+  202    28   16px #EAF1FA  Tickets
+  206   296   14px #A0D3FF  1,000 :
+  206   360   14px #FFA689  940
+  224    28   16px #EAF1FA  Enemy -60 a minute · out in 15:42
+  764   934   16px #EAF1FA  Shipyard
+  766  1242   14px #F7BC3C  300
+  804   934   16px #7C8BA0  Research Lab
+  806  1164   13px #8193AD  ONE PER PLAYER
+  844   934   16px #EAF1FA  Mining Rig
+  846  1250   14px #F7BC3C  50
+  884   934   16px #EAF1FA  Defence Platform
+  886  1242   14px #F7BC3C  450
+  924   934   16px #7C8BA0  Relay
+  926  1207   13px #8193AD  NODE CAP
+  964   934   16px #EAF1FA  Repair Bay
+  966  1242   14px #F7BC3C  300
+  986   642   22px #EAF1FA  Constructor
+  998   922   13px #ACBACD  RETREAT
+ 1016   642   16px #D3E3F7  Hit points 300 / 300
+ 1025   964   16px #EAF1FA  25%
+ 1025  1084   16px #EAF1FA  50%
+ 1025  1200   16px #EAF1FA  Never

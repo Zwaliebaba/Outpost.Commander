@@ -1,0 +1,6926 @@
+{
+ "Main.dc.html": [],
+ "game-pitch.dc.html": [
+  {
+   "word": "Phase",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Phase1.md:13",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase2.md:11",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase3.md:11",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase4.md:11",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase5.md:11",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "game-loops.dc.html": [
+  {
+   "word": "3778-3813",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "glossary-1.dc.html": [
+  {
+   "word": "GameProtocol/RetreatThreshold.h:7-30",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "98-149)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3215-3238",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "16-97);",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-071",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Simulation.cpp:2864-2891",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "(C-065)",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "glossary-2.dc.html": [
+  {
+   "word": "scheduled-order",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "attack-move,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Map.json:161-162",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-056",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "sides.dc.html": [
+  {
+   "word": "Color",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "OutpostCommander/Assets/Models.json:5",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "OutpostCommander/Assets/Models.json:20",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "OutpostCommander/Assets/Models.json:35",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "OutpostCommander/Assets/Models.json:40",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "OutpostCommander/Assets/Models.json:45",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Wreck",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "economy-ore.dc.html": [
+  {
+   "word": "ADR-016",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "economy-map.dc.html": [
+  {
+   "word": "player-half:",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-072",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-074",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "economy-territory.dc.html": [],
+ "structures.dc.html": [
+  {
+   "word": "Tuning.cpp:723-730",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Simulation.cpp:2072-2080,2131-2139,2168-2171",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "structures-levels.dc.html": [],
+ "ships-parts.dc.html": [
+  {
+   "word": "id",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Hull",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "hitPoints",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "armor",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "speedMetersPerSecond",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "turnRateDegreesPerSecond",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "footprintRadiusMeters",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "buildSeconds",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "commandPoints",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "lengthMeters",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Small",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Medium",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Large",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "id",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "speedFactor",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "hitPointsFactor",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "turnRateFactor",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Tier",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Fusion",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "l.74-75",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "l.82-83",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "id",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Weapon",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "damage",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "fireIntervalSeconds",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "rangeMeters",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "splashRadiusMeters",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Unlocked",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "damage/s",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "id",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "sightMeters",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "speedFactor",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "id",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Name",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "damage",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "fireIntervalSeconds",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "rangeMeters",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Defence",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "speedMetersPerSecond",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "turnRateDegreesPerSecond",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "footprintRadiusMeters",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "ships-designs.dc.html": [
+  {
+   "word": "DesignStats.h:81-82",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "ships-damage.dc.html": [],
+ "research.dc.html": [],
+ "combat.dc.html": [
+  {
+   "word": "ADR-039",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "RepairCommand",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "125-127);",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-073",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Simulation.cpp:2149-2151",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Distance",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Matchups.json:4-9",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Medium+Ion+Lance",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Matchups.json:12-17",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Matchups.json:20-25",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Matchups.json:28-33",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Medium+Ion+Missile",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Matchups.json:36-41",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "combat-effects.dc.html": [],
+ "orders.dc.html": [
+  {
+   "word": "PlayerControls.cpp:242-249",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "PlayerControls.cpp:271-279",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "KeyBindings.h:103-104",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Command",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Attack-move",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "PlayerControls.cpp:191-206",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "PlayerControls.cpp:326-336",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Aspect",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "PlayerControls.cpp:191-206",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Refused",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Behavior",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "RelaySuppressed",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "RelayAttacked",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "EnemyEntered",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ShipRetreating",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "PiratesCleared",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "orders-scheduled.dc.html": [
+  {
+   "word": "Simulation.cpp:3323-3436",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "527-528",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "RelayThreatened",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Simulation.cpp:3398-3400",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "AttackMove",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "HoldSector",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "557-558",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Constructors",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Deputy.h:18-19",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "ai.dc.html": [
+  {
+   "word": "Constructors",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "AiPlayer.cpp:402-411",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "AiPlayer.cpp:743-787",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "secondSlotTier",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Behavior",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "(Normal)",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "1653-1655",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-041",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-041",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "1591-1631",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Retreating",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1415-1428",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Behavior",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "1331-1410",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Behavior",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Detachment",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "ai-difficulty.dc.html": [],
+ "world.dc.html": [
+  {
+   "word": "Executable",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "<player>[:Easy\\|Normal\\|Hard]]",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "\"{option}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "World.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Certificate",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "world-state.dc.html": [
+  {
+   "word": "WorldFolder.cpp:76-96,",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "WorldState.cpp:132-140",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase5.md:30",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "W2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase5.md:31",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "W3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase5.md:32",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "W4",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase5.md:33",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "W5",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase5.md:34",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "W6",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Phase5.md:35",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "visual-colors.dc.html": [],
+ "visual-type.dc.html": [
+  {
+   "word": "Hud::Typeface",
+   "inCode": true,
+   "tag": "TH"
+  },
+  {
+   "word": "SemiCondensed",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-030",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-062",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "visual-components.dc.html": [],
+ "visual-anatomy-1.dc.html": [
+  {
+   "word": "State",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Normal",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Picked",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "PICKED_EDGE_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Locked",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "LOCKED_TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "LOCKED_TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "LOCKED_TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Click",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "LOCKED_TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "visual-anatomy-2.dc.html": [
+  {
+   "word": "Hud.cpp:3093-3126;",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-085",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3419-3425",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3290-3305",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "visual-rules.dc.html": [
+  {
+   "word": "1874-1876",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "visual-scale.dc.html": [
+  {
+   "word": "10",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "12",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "13",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "14",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "15",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "0.045–0.05)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "16",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "screens-flow.dc.html": [
+  {
+   "word": "WinMain.cpp:319-358,",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "WinMain.cpp:491-504",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Screen",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "DesignReference/_work/A4/layouts/",
+   "inCode": true,
+   "tag": "TH"
+  },
+  {
+   "word": "Startup",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "match-awaiting-first-snapshot.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "10",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "12",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "13",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "14",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "15",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "16",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "18",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "19",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "20",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "21",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "22",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "23",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "24",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "window-designer-unsaved-editing.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "25",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "window-designer-no-shipyard.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "26",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "window-production-shipyard.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "27",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "window-production-station.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "28",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "(Simulation.cpp:3684-3709)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "29",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "30",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "31",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "32",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "window-orders-time-of-day.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "33",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "window-orders-event-disabled.json",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "34",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Window",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "35",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Windows",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "window-three-windows-default.json",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "spec-menu.dc.html": [
+  {
+   "word": "menu.frame",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2344",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.title",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2346",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.subtitle",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2347",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.notice",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2336-2338,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.easyskirmish",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2329,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2355-2359",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.normalskirmish",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2330",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.hardskirmish",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2331",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.joinworld",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2332-2333",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "menu.quit",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2334",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "spec-hud-1.dc.html": [
+  {
+   "word": "ore.stockpile.gem",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ore.stockpile.figure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Snapshot::oreIncomeHundredthsPerSecond",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3146-3151",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ore.income.chip",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3152-3156,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:301-312",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:296-297",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:298-299",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:370-400",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:403-410,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "336-346",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:373-380,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "territory.frame",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3176-3177",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "territory.nodes.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3188,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "territory.nodes.note",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3189-3190,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "territory.nodes.own",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3183-3192",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "territory.nodes.enemy",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3191",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "territory.tickets.*",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3198-3202",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "territory.drain",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "{m}:{ss}",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3203-3212,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Kind",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "connection.frame",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "panel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3325-3330,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "connection.where",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Name",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3323,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "connection.silent",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "WARNING_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3332-3336",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "spec-hud-2.dc.html": [
+  {
+   "word": "Selection",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "selectionHealth",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "(Hud.cpp:2589)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "several",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designs",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Standing",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Scheduled",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "(KeyBindings.h:28)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "(KeyBindings.h:27)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "(KeyBindings.h:29)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "(KeyBindings.h:10-13)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "outcome.frame",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "panel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3342-3343",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "outcome.title",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "outcome.detail",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Name",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "outcome.backToMenu",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "button",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:3347-3349",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "spec-windows.dc.html": [
+  {
+   "word": "Production",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Research",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "spec-designer.dc.html": [
+  {
+   "word": "designer.shipyard.previous",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1365-1367,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1190-1213",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.shipyard.subject",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.titleLabel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.title",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.queueLabel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1371,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.built",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "right-aligned",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1372-1373",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.queueSlot0..4",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1361-1364,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1374-1378",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "header.oreBox",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1379,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.name.field",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1385-1387",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.name.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.name.value",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "{Hull}+{Drive}+{Weapon}[+{Module}]",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ADR-085",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1389-1392",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.name.count",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "right-aligned",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1389,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.save",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:600-605,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1394-1405",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.saved.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1408",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.chip0..2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "LoadDesign",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "{H}·{D}·{W}[·{M}]",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:422-435)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1409-1420",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.chips.previous",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1421-1427",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.slot.{hull,drive,weapon,module}.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.slot.*.picked",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1439-1440",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.slot.*.divider",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.card.{slot}.{i}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1442-1458",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1462-1463",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1464-1465",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:651-652,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1474-1480",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.sectionDivider",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1483",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.performance.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.bar.{row}.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:763-779,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1493-1501",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "right-aligned",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1503-1504,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "740-754",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1505,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.damage.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1510-1511",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.damage.{hull}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1512-1520",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1521-1524,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1526,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "right-aligned",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1528-1529,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "right-aligned",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1531-1535,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "798-800",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1536-1537",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1538-1539,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.hint",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:731-732,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1541-1542",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.rename",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:606-609,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1546-1554",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.retreat.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.retreat.{quarter,half,never}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1557-1564,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1328-1346",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.fewer",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1565-1580",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.count",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1577-1579",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.queue",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:826-833,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1581-1594",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.queue.detail",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:818-824,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "designer.queue.cost",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "spec-production-research.dc.html": [
+  {
+   "word": "production.titleLabel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1725",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "header.subject",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1658-1671,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "header.oreBox",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1670",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "production.build.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1730",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "production.option{i}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1733-1743,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1745-1746",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1747-1749,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1750-1751",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1755,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": ".strength.{S,M,L}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1756-1777",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "production.hint",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1778-1782,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "queue.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1677",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "queue.row{i}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1679-1683",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1684-1693",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1696-1704",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1689,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1694-1695,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "research.titleLabel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1825",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "header.subject",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1826,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2902-2916",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "header.oreBox",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1670",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "research.topics.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1828-1832",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "research.topics.previous",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1833-1840",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "research.topic{k}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1842-1858,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1859-1864",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1865-1870,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1871-1879,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1880-1881,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1883,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1675-1706",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "spec-orders-away.dc.html": [
+  {
+   "word": "Color",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "orders.titleLabel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "HEADER_LABEL_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1952",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.waiting.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "LABEL_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1955",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.none",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "DIM_TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1957-1958",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.scheduled",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1959-1963,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "OrderForm.cpp:291-315",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.more",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "DIM_TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1964-1965",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.form.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "LABEL_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1967",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.row{r}.label",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ROW_LABEL_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1972,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2248-2274",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.row{r}",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1973-1976",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.fires",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "NUMBERS_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1978,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2276-2283",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "orders.give",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "button",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:1979,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2284-2289",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "away.titleLabel",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "HEADER_LABEL_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "away.since",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "TEXT_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "away.line",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "NUMBERS_COLOR",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Hud.cpp:2002-2006,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2298-2320",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "battlefield-1.dc.html": [
+  {
+   "word": "Renderer::BeginFrame(CLEAR_COLOR)",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Renderer.cpp:24-26,394-395",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "MeshPipeline::DrawTriangles",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "14",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "up-chain",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "battlefield-2.dc.html": [
+  {
+   "word": "ModelCatalog.cpp:382-385",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "battlefield-3.dc.html": [],
+ "battlefield-4.dc.html": [
+  {
+   "word": "ImplementationPlan-Look.md:78",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "assets-sheets.dc.html": [
+  {
+   "word": "What",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Mesh",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "numbers",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Crease",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Lines",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "faces",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "less-or-equal,",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "colors",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "GameClient.cpp:1544-1546",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Culling",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Antialiasing",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Color",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "encoding",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "(ADR-091)",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Camera",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "assets-levels.dc.html": [],
+ "assets-table-1.dc.html": [
+  {
+   "word": "Set",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "OutpostCommander/Assets/Models/…",
+   "inCode": true,
+   "tag": "TH"
+  },
+  {
+   "word": "Kind",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Tris",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Verts",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Hardpoints",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Crease",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "lines",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Small.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[0].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "70",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "210",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Medium.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[1].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "160",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "480",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Large.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[2].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "256",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "768",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Constructor.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[3].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "266",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "798",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L1",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "520",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1560",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "520",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1560",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "520",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1560",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L4",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "828",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2484",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L5",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "1032",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "3096",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "392",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1176",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "456",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1368",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "772",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2316",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "920",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2760",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "1236",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "3708",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "288",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "864",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "344",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1032",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "480",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1440",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "576",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1728",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "704",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2112",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/MiningRig.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[7].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "262",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "786",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[3].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/DefensePlatform.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[8].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "440",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1320",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[4].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[5].tint",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "288",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "864",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[5].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[6].tint",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "392",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1176",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[6].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Small.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[0].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "100",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "300",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Medium.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[1].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "94",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "282",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "assets-table-2.dc.html": [
+  {
+   "word": "Set",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "OutpostCommander/Assets/Models/…",
+   "inCode": true,
+   "tag": "TH"
+  },
+  {
+   "word": "Kind",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Tris",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Verts",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Hardpoints",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Crease",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "lines",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Large.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[2].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "142",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "426",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Constructor.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[3].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "202",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "606",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L1",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "218",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "654",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "218",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "654",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "218",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "654",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L4",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "236",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "708",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L5",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "236",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "708",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "188",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "564",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "204",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "612",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "336",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1008",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "468",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1404",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "468",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1404",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "240",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "720",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "240",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "720",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "336",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1008",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "336",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1008",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "380",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1140",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/MiningRig.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[7].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "166",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "498",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[3].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/DefensePlatform.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[8].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "84",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "252",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[4].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[5].tint",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "240",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "720",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[5].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[6].tint",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "188",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "564",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[6].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Small.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[0].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "100",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "300",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Medium.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[1].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "94",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "282",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Large.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[2].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "142",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "426",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Constructor.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ship",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[3].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "202",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "606",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "assets-table-3.dc.html": [
+  {
+   "word": "OutpostCommander/Assets/Models/…",
+   "inCode": true,
+   "tag": "TH"
+  },
+  {
+   "word": "Kind",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Tris",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Verts",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Hardpoints",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Crease",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "lines",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L1",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "218",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "654",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "218",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "654",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "218",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "654",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L4",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "236",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "708",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "CommandStation_L5",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[4].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "236",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "708",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[0].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Shipyard_L1",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "188",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "564",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Shipyard_L2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "204",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "612",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Shipyard_L3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "336",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1008",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Shipyard_L4",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "468",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1404",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Shipyard_L5",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[5].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "468",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1404",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[1].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ResearchLab_L1",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "240",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "720",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ResearchLab_L2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "240",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "720",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ResearchLab_L3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "336",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1008",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ResearchLab_L4",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "336",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1008",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ResearchLab_L5",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[6].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "380",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1140",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[2].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "MiningRig",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/MiningRig.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[7].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "166",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "498",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[3].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Pirate",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "DefensePlatform",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/DefensePlatform.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "structure",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[1].models[8].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "84",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "252",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "structures[4].footprintRadiusMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Wreck",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Small.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "derelict",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[0].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "70",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "210",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Wreck",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Medium",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Medium.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "derelict",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[1].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "160",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "480",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Wreck",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Large.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "derelict",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[0].models[2].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "256",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "768",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "exhaust",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids/Small.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[4].models[0].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "32",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Medium",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids/Medium.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[4].models[1].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "54",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "162",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "approximation",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids/Large.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "sets[4].models[2].lengthMeters",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "78",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "234",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "assets-files.dc.html": [
+  {
+   "word": "Tris",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "--check",
+   "inCode": true,
+   "tag": "TH"
+  },
+  {
+   "word": "85794298786440732a14948944294d096afb76485817e6bf216e096177c491b8",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "f24b5edbe6c63f1eac79b55edfeac76c65aee1de37024e15b381de6ad5f04b8b",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "e48701e03b2adf762b60823f37ccf198e0f1d8f49d72cd68c0ec8175ba76efb8",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "cb0d77b27e45a9a3c824a7daf7e45ae6a4a779ff6773e6aef8ad48e3bb4b7761",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "7a1ad022ff25c8db24110c530f1cbf961333a677851ba70e7f0b37c01e7003e1",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "906659feba011d75f7912d61b77d086594309d71cda911797630ecb96481f4c3",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Constructor.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "f4f29815cb67d974bcfb1c701c18b971360e61e80edf565d907009927aba52da",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Constructor.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "6e232b9c2ac8257e58397d084f328b671f9169afee4f30814d1f727512d77a46",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "7eee9eacd6f3a3b9d2b4e43c7b2267862bb29d2be2bd0f25cbcd8b1e42f88db0",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L1.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "e72ed35984354814e9fb71c66975ef3059964f8cdc48cb3cad0320ece866aae8",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "eeb08a628e361aec5e1bd64a28688c67ea2ebe6dd976d52585abc40d04761081",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L2.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "837f67c69d60043b9a96b2cc969e1ba890557b568d6ab6580f1c61983b1ca3ee",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "430ed6a71cb862d35aa9bbd8ca4d819a78f4a96b9008500c056d049a404dac22",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L3.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "120c88f6654a24e2cd34579ea51068629b38656ad1f1d6dfbf5f82a22d1c1e9e",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "b0b8fdd20ee8c33bd41a39bc130842c664ffb83f93be6de22bd962b82a6ed863",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L4.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "908de7018444f8c880f8c905ed70e13c048109b7f26a4233a570fe30420f4618",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "1032",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "d23056eb89861734765bbdb0a6f7bc8f8e7c0ecb6f0e156754279bda0887bd14",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/CommandStation_L5.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "13d271861670956dd8a9521c5e3af0db43848875dc99cb790c8b8209e4f610b3",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "fbdb987184c7a389eb926085735fc516fee8de9df5532ab31bb0080e5e62ed55",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L1.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "3a7d8a4c37f8d26299bd510a6d2dd462aa824ed9c0335f0c7fa28ddeb7000ce0",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "456",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "0aa1bb52ba428307fc97513dc3b61de10133a2884be3b146452873d339d1f47f",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L2.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "0c57e5bec70f39e372e5ad3f99dc4f0092e5a444a7e82dfc68d2b84267c700a1",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "4e991df3cdf86831a6b6c6187989adf01b6d9ae5d9da98f643373b050579282f",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L3.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "bef2f95d7088fe50c067b0100b68faa703f4874a29bd532a0c58aa379d5b5c62",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "c1d81bdc89ac5b3d8be02efd83de3b93822600c2be3c48feed8d54a4d275a9ec",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L4.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "eba973f3a3138a9fbe3bc59febbffa42eecbaf2e2f82589e6ae733f0c76137f7",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "1236",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "2f4be19d4a86bd2a5e26f4d6d7534c84fdb4ea8c46d9419595c3543bedc236e7",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/Shipyard_L5.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "b09980cbf7ef5ed92d553943d104b9bd6447ec0fb780089853829af19fade9a6",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "7820cb0e8ef27460dbdde498043b369464db6f5566c863fefd84537ffc038a9d",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L1.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "cd6efa2d7b3dc91127094c5243cc3e6a775fe5646957a88c48edbe558e18c12f",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "344",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "d7e930aa72d0cc8bf952f0ca7d788166af87c800bb11647e6da92bc21556a310",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L2.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "324b6181186280169f09910fae8f2619be9a6da0750c88b9378458c68f46bae3",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "480",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "f8b0a7cbcd1252931521e79508b88db10ad482498654aa5bc0d993bc616801c6",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L3.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "c4bb3e36fac80ed17171571319e424263e4202bf60c2174b950bb6c90d85e4ea",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "f5e015d17dbcefe41d8cf93f9d27e06b0b1a863051b9cd2b49f01afd768bdaf3",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L4.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "f8fcf98ca5ff92f6fdb0e5ca8683be36f0e191b4dd91459bcf1eebdbea92f782",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "50f58bcb4ea902b80bca0973036366248a1bf3faa56107580d0499ff7232862c",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/ResearchLab_L5.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "0ac84bf062de70a9eadbba3400db0fe66d7ec610afc292e14566c38fc1d18784",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "13abd16e8fee250349a6fea4d76c057b408339d4dc5adbc3317a59acdee3c2d3",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "6dae1994b9785b2cee4d8fe79b245e7387b8539c611383547820366ed42bd6b2",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/DefensePlatform.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "440",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "ba0d32b481ac76b2b51d76dc4ba2a2bf242d6a768b2721ee5494a16749af7c76",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Human/DefensePlatform.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "0e02357fe0f347ee9d74f306326c61d791e2f8378464167c7bcd4d35e3b10a14",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "470ccbb0a142605019028bc59a747d8f077c2f1b787d729edf89957736054cf9",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "8a6621b402364f5e12d1a68c36776ba7e61fe7bc67c8ba2172ec38f3dd39ffc1",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "8280a792dfe13b8b08a676c1694c383da7696b7efa9c8446131246dbe0c093b2",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "0c2d4d471afdd88fe4999cb9285cb8ffd1fc6924b30db7bf5460196d7bcd06f5",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "97f2a5d905d1de3ac87b58bd4569c97e7d94b214cf9215f03cc24c5e0dd905c6",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "d02afa23c8a2c1aa14b51fe547e62916d32e57c427aac0e6d0b2b10951e5e711",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Constructor.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "1c480a6131c675d9f737e5f915aacb08edfefa810a46911dfd05e36319ef51fb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Constructor.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "6c84399103ef14f84a6068b762a513125798539b63005ad63ee714fa4f234fc0",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "93fc521439537d0606a301bc5e4090daa36f4d4ecff6b2fa2a1e11e1e8c333f2",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L1.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "57099d6449114ffe915834b34fe69565d134f6b14b98bd1fbfe5f3da37d035a1",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "c4cd70faec948f7e70124d646bc75a301d168710d74da75c42003b322c37bbd5",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L2.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "0115230aaf5ad48ddeb92387dfdb4824e7fd0f9c7cf4d395d99b89116856d0ba",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "b8a007a4463d319dac6d7f31247a540f6c6b43ccc41476024db3de2629c95e3b",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L3.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "5c08207d06c3227f349bd2dcd38485a6510ebfaac76a0ea6b0c2a80280ae85a7",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "fcccf5239fdc12a9cd38cce7fd2e41d643f99752db9c8b4f529d173c87e6ea2b",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L4.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "b551e292af90e5b8de148c544e41f8c126edeebb22cb23ddf8dbbed407c0ddab",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ad6d975d934f94c231ffeae659a81e68b7724ebb12e3c7e166e30ff824f4d829",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/CommandStation_L5.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "cc62210b6ecc715b59ebd6dc24c5ef3de5b072d44e02f905b6fc9e5874601dd1",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "d6fb926624af4bfd3caca6df032033a7c3ed6a2efe77ee59bf6e203dad591abf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L1.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "f3a7286e62ae43f75905a22d4784fed890489ffefebea17dcc4ac6fcb3d3fa9a",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "204",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "601ee46585459a7ef827216d5a44e11d84bea84a8516f0b0661fe7ed252dc569",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L2.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "c3a4c4e10448331a3d84c61ac5c9b2ca574f375205105dc752734e8cd6c8516a",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "78156eeae5d5e670aea5ded5884d2c2c02a4aaf20a91429ae3607d0c404596b2",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L3.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "38f254d6ed7f38cfe613390692ac9c92cee2bb0666cb78189c5a82c0106d4901",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "468",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "bd569daf5802ba7170cff0a46dbaf1308110715dde28d9e976029d290197c9d0",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L4.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "c79bde3fb86606bb216212191ae5c56f9e34edb38f6fc2ac5880f28ff2a1e9a4",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "468",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "20c8e27e6544efbdb79b334a4931fccec65cc42fd792b1ea2fabc4edeaa1886e",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/Shipyard_L5.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "403f8fdb1b561b903c9e30697337c7ed56972156e1d77cdf677445d7a67bede5",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L1.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "240",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "7047f0d5ccbc3138553169bbc282a920ef4d6b60f2223e96128b438953090aa3",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L1.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "496f51d97a6b36a53240556b7cc14f9b3f9b9fcda3badebb1a3dedfcbec3868e",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L2.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "240",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "60abadbcc32b31188462aa991ada553dc6144d4775244a47207827edf57dc8fb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L2.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "8d3399d5de7cb27874833ef3079e0621199270a396d67c7b5bf2e4c4bac84bcb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L3.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "190664067da7ce46ed762dddacb5a282eaedcd1b0908b8a7eafc690b724b8f30",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L3.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "a5f3757432051fd10970736e276ff44bc41167048c58436fdf5ba355193e5994",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L4.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "c128fdee55d8c7a8843d898964bdb677b147ede3af83fb5ebffe9bc78bef53b2",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L4.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "8caa6b8d85c3384a08a1b749153c590228eadaf45349b816d68549421bcba7e3",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L5.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "43d10d1d047abc3a4898f6a2ee2effc9ef6498ecce80ca6cb2cf923f977215f9",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/ResearchLab_L5.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "d6d81aee130dfa9e57c3e8fadab8041a6f28247946849136edc4b1a076e7dd24",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/MiningRig.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "47f18c4446d9e8b0d2f1272dc499bfeb8de07be08a22c83dad274799a543824e",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "ddad49ec6dea89f1d0e7514b8b34be59d687846e5bcf9d0579a10d0119ee76cf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/DefensePlatform.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "6b12435ac85621f8ddd5437e3535cdf02f40c1a2b61121095b98bfefedd854eb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Tarkan/DefensePlatform.glb",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "a0ad8870c4495050db389210c51a1c07bff0e83eeae47b0201a61e1889c76b09",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "31ed16ad0999372eb106e32f3156a879ab644034717c68d440bbad2f6524911e",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "bc232119a4087ebb205a788b1b4bbb9993f65e5fc63155f94cf95d9f18c838db",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "Asteroids/Medium.nmf",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "43f1d7556e6e9723836ac30aca875ca31cd1dd6c1e312122e1f5e04d20cd2b9c",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "f211fa12a19a975594a7a03e81caa0389b7ec2c242dea3e24e8b5b7142188b01",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "2a1adfe2b450ff20fd61ee44686b628dacc870d5202378a146a3aa6ba97271f7",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "60dfe2b03f661b43a7c6be639f282a72f74b5e6fb2a0e261cd5ae96525db2de6",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "assets-textures.dc.html": [
+  {
+   "word": "Texture",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Size",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Mips",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Bytes",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "Particle.dds",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "16×16",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1152",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "1e9d2ffaaafd1a587a33f4141a305443b02485a792f95935514d9056253b15ae",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "cloudyglow.dds",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "128×128",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "65664",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "82cff9213a54b30fdc5dfe35affc7be3b0ae4a1951c3cade14c58273340478e0",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "glow.dds",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "128×128",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "65664",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "261e40fe1fa6e3754c610851017fed6119e01f831427ebcab5f0f1e807d079df",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "laser.dds",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "128×32",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "16512",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "f627f1318062e6d8e19b1fb13e70b24a227795b6a8937fb56d5bd2914af454ec",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "starburst.dds",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "128×128",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "65664",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "44ba136ae3883239e9ae2fd5efabdf7115466bd2f57f325abc6296ae0babcf7e",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "C1",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "C2",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "C3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "C4",
+   "inCode": false,
+   "tag": "TD"
+  }
+ ],
+ "controls.dc.html": [],
+ "open-owner.dc.html": [
+  {
+   "word": "File:line",
+   "inCode": false,
+   "tag": "TH"
+  },
+  {
+   "word": "A1/A1.md:90",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A1/A1.md:582",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A2/A2.md:630",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A3/A3.md:593",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "--ai-matches",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "--ai-matches",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A3/A3.md:718",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A4/A4.md:439",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A5/A5.md:15",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A6/A6.md:34",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "LV4.1–4.3).\"",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "A7/A7.md:16",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "10",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "A7/A7.md:76",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A7/A7.md:645",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "A7/A7.md:124",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "12",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "A7/A7.md:673",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "13",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "A7/A7.md:684-694",
+   "inCode": true,
+   "tag": "TD"
+  },
+  {
+   "word": "LV4.1–LV4.3",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "14",
+   "inCode": false,
+   "tag": "TD"
+  },
+  {
+   "word": "A3/A3.md:617",
+   "inCode": true,
+   "tag": "TD"
+  }
+ ],
+ "open-conflicts-1.dc.html": [],
+ "open-conflicts-2.dc.html": [],
+ "open-conflicts-3.dc.html": [],
+ "open-gaps.dc.html": []
+}

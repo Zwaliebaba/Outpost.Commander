@@ -1,0 +1,60 @@
+   23    46   22px #F7BC3C  1,240
+   26  1792   16px #EAF1FA  Local skirmish
+   32   328   14px #D3E3F7  +10.5/s
+   78    28   16px #EAF1FA  Hull Plating
+   82   368   14px #D3E3F7  +1
+  108    28   16px #EAF1FA  Shipyards · BUILDING 1 · WAITING 0 ·
+  108   290   16px #181E2B  IDLE 1
+  130    28   16px #EAF1FA  Fleet
+  134   336   14px #D3E3F7  5 / 12
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  183   469   22px #EAF1FA  ×
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  189    40   13px #ACBACD  PRODUCTION
+  202    28   16px #EAF1FA  Tickets
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  217   411   22px #F7BC3C  1,240
+  218    72   22px #EAF1FA  SHIPYARD 02
+  224    28   16px #EAF1FA  No drain
+  225    50   13px #EAF1FA  <
+  225   204   13px #EAF1FA  >
+  262    40   13px #8193AD  BUILD
+  288    52   16px #EAF1FA  Swarm
+  288   271   16px #EAF1FA  Picket
+  310    52   13px #7695C0  S·I·MD
+  310   215   14px #F7BC3C  261
+  310   271   13px #7695C0  S·I·L
+  310   434   14px #F7BC3C  411
+  332    52   13px #8193AD  30 s
+  332   118   13px #ACBACD  S
+  332   161   13px #ACBACD  M
+  332   206   13px #ACBACD  L
+  332   271   13px #8193AD  30 s
+  332   337   13px #ACBACD  S
+  332   380   13px #ACBACD  M
+  332   425   13px #ACBACD  L
+  370    52   16px #7C8BA0  Brawler
+  370   271   16px #7C8BA0  Lancer
+  392    52   13px #7C8BA0  M·I·MD · NEEDS L2
+  392   215   14px #7C8BA0  495
+  392   271   13px #7C8BA0  M·I·L · NEEDS L2
+  392   434   14px #7C8BA0  645
+  414    52   13px #7C8BA0  60 s
+  414   118   13px #7C8BA0  S
+  414   161   13px #7C8BA0  M
+  414   206   13px #7C8BA0  L
+  414   271   13px #7C8BA0  60 s
+  414   337   13px #7C8BA0  S
+  414   380   13px #7C8BA0  M
+  414   425   13px #7C8BA0  L
+  458    40   13px #8193AD  QUEUE · 3 / 5
+  483    72   16px #EAF1FA  Swarm
+  485    50   14px #8193AD  1
+  485   436   14px #EAF1FA  62%
+  517    72   16px #EAF1FA  Swarm
+  519    50   14px #8193AD  2
+  551    72   16px #EAF1FA  Picket
+  553    50   14px #8193AD  3

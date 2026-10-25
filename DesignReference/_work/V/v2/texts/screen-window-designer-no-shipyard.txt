@@ -1,0 +1,133 @@
+   21  1879   22px #EAF1FA  ×
+   23    46   22px #F7BC3C  1,000
+   26  1120   13px #ADB3BC  <
+   26  1258   13px #ADB3BC  >
+   26  1792   16px #EAF1FA  Local skirmish
+   27  1142   13px #ACBACD  NO SHIPYARD
+   27  1280   13px #ACBACD  · DESIGNER
+   28  1588   13px #ACBACD  QUEUE · 0 / 5
+   32   348   14px #181E2B  +0/s
+   55  1821   22px #F7BC3C  1,000
+   56  1110   22px #EAF1FA  SHIP DESIGN
+   60  1509   13px #ACBACD  BUILT · 0
+  109  1176   16px #EAF1FA  Swarm
+  112  1760   14px #8193AD  5/32
+  113  1122   13px #8193AD  NAME
+  113  1824   13px #559361  SAVED
+  153  1838   13px #ADB3BC  <
+  153  1866   13px #EAF1FA  >
+  154  1164   13px #EAF1FA  Swarm
+  154  1386   13px #EAF1FA  Picket
+  154  1608   13px #EAF1FA  Brawler
+  155  1110   13px #8193AD  SAVED
+  155  1316   13px #AAD0FF  S·I·MD
+  155  1546   13px #7695C0  S·I·L
+  155  1760   13px #7695C0  M·I·MD
+  180    28   16px #EAF1FA  Nodes
+  180    76   16px #8193AD  cap 4 of 25
+  184   344   14px #A0D3FF  1 :
+  184   376   14px #FFA689  1
+  192  1216   16px #EAF1FA  Small
+  192  1443   16px #EAF1FA  Medium
+  192  1670   16px #7C8BA0  Large
+  195  1396   14px #F7BC3C  96
+  195  1615   14px #F7BC3C  330
+  195  1842   14px #7C8BA0  900
+  202    28   16px #EAF1FA  Tickets
+  205  1110   13px #8193AD  HULL
+  206   280   14px #A0D3FF  1,000 :
+  206   344   14px #FFA689  1,000
+  218  1216   13px #D3E3F7  220 HP · ARM 2 · 60m/s
+  218  1443   13px #D3E3F7  500 HP · ARM 8 · 40m/s
+  218  1670   13px #7C8BA0  1,200 HP · ARM 14 · 2...
+  223  1110   16px #AAD0FF  Small
+  224    28   16px #EAF1FA  No drain
+  244  1686   13px #CE9E55  RESEARCH · LARGE HULL
+  282  1216   16px #EAF1FA  Ion
+  282  1443   16px #7C8BA0  Fusion
+  282  1670   16px #7C8BA0  Pulse
+  285  1396   14px #F7BC3C  60
+  285  1615   14px #7C8BA0  240
+  285  1842   14px #7C8BA0  120
+  295  1110   13px #8193AD  DRIVE
+  308  1216   13px #D3E3F7  SPD ×1.3 · HP ×0.9
+  308  1443   13px #7C8BA0  SPD ×0.8 · HP ×1.4
+  308  1670   13px #7C8BA0  SPD ×1.6 · HP ×0.8
+  313  1110   16px #AAD0FF  Ion
+  334  1459   13px #CE9E55  RESEARCH · FUSION DRIVE
+  334  1686   13px #CE9E55  RESEARCH · PULSE DRIVE
+  372  1216   16px #EAF1FA  Mass Driver
+  372  1443   16px #EAF1FA  Lance
+  372  1670   16px #7C8BA0  Missile Rack
+  375  1388   14px #F7BC3C  105
+  375  1615   14px #F7BC3C  255
+  375  1842   14px #7C8BA0  390
+  385  1110   13px #8193AD  WEAPON
+  398  1216   13px #D3E3F7  14 dmg / 0.4s · 120m
+  398  1443   13px #D3E3F7  95 dmg / 2.7s · 220m
+  398  1670   13px #7C8BA0  30 dmg / 2s · 280m
+  403  1110   16px #AAD0FF  Mass Dri...
+  416  1670   13px #7C8BA0  splash 30m
+  440  1686   13px #CE9E55  RESEARCH · MISSILE RACK
+  475  1216   16px #7C8BA0  Flak Battery
+  475  1443   16px #7C8BA0  Rail Cannon
+  478  1388   14px #7C8BA0  180
+  478  1615   14px #7C8BA0  450
+  501  1216   13px #7C8BA0  20 dmg / 0.5s · 200m
+  501  1443   13px #7C8BA0  320 dmg / 6s · 240m
+  519  1216   13px #7C8BA0  splash 26m
+  543  1232   13px #CE9E55  RESEARCH · FLAK BATTERY
+  543  1459   13px #CE9E55  RESEARCH · RAIL CANNON
+  581  1216   16px #EAF1FA  None
+  581  1443   16px #EAF1FA  Sensor Array
+  584  1404   14px #F7BC3C  0
+  584  1615   14px #F7BC3C  120
+  594  1110   13px #8193AD  MODULE
+  607  1216   13px #D3E3F7  No module
+  607  1443   13px #D3E3F7  SIGHT 700m · SPD ×0.9
+  612  1110   16px #AAD0FF  None
+  673  1110   13px #8193AD  PERFORMANCE
+  673  1450   13px #8193AD  DAMAGE / S AFTER ARMOR · VS A FORMATION
+  699  1378   14px #EAF1FA  198
+  701  1110   13px #ACBACD  Hit points
+  707  1460   16px #EAF1FA  Small
+  707  1606   16px #EAF1FA  Medium
+  707  1752   16px #EAF1FA  Large
+  710  1544   13px #8193AD  ARM 2
+  710  1690   13px #8193AD  ARM 8
+  710  1829   13px #8193AD  ARM 14
+  724  1394   14px #EAF1FA  2
+  726  1110   13px #ACBACD  Armor
+  729  1460   28px #EAF1FA  30.0
+  729  1606   28px #EAF1FA  15.0
+  729  1752   28px #EAF1FA  8.8
+  749  1386   14px #EAF1FA  78
+  751  1110   13px #ACBACD  Speed
+  751  1408   13px #8193AD  m/s
+  774  1378   14px #EAF1FA  120
+  775  1460   13px #93A4BC  11.5 / 100 ore
+  775  1606   13px #93A4BC  5.7 / 100 ore
+  775  1752   13px #93A4BC  3.4 / 100 ore
+  776  1110   13px #ACBACD  Range
+  776  1408   13px #8193AD  m
+  799  1394   14px #EAF1FA  -
+  801  1110   13px #ACBACD  Sensors
+  801  1408   13px #8193AD  m
+  805  1450   13px #8193AD  Hover any part to preview its effect.
+  824  1378   14px #EAF1FA  261
+  826  1110   13px #ACBACD  Cost
+  826  1408   13px #8193AD  ore
+  849  1386   14px #EAF1FA  30
+  851  1110   13px #ACBACD  Build
+  851  1408   13px #8193AD  s
+  861  1212   13px #ACBACD  RETREAT
+  863  1572   22px #ADB3BC  QUEUE
+  871  1831   22px #ADB3BC  261
+  874  1445   16px #ADB3BC  -
+  874  1478   16px #EAF1FA  ×1
+  874  1523   16px #ADB3BC  +
+  877  1124   13px #ADB3BC  RENAME
+  886  1231   13px #EAF1FA  25%
+  886  1301   13px #EAF1FA  50%
+  886  1361   13px #EAF1FA  NEVER
+  892  1572   13px #ADB3BC  30 s each

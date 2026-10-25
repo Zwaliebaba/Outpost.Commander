@@ -1,0 +1,41 @@
+   25    51   24px #F7BC3C  2,350
+   29  1779   18px #EAF1FA  Local skirmish
+   35   364   15px #D3E3F7  +14.5/s
+   86    31   18px #EAF1FA  Large Hull
+   91   409   15px #D3E3F7  +2
+  119    31   18px #EAF1FA  Shipyards · BUILDING 2 · WAITING 0 ·
+  119   317   18px #181E2B  IDLE 1
+  143    31   18px #EAF1FA  Fleet
+  148   364   15px #D3E3F7  29 / 30
+  198    31   18px #EAF1FA  Nodes
+  198    84   18px #8193AD  cap 10 of 25
+  203   382   15px #A0D3FF  6 :
+  203   418   15px #FFA689  8
+  222    31   18px #EAF1FA  Tickets
+  227   346   15px #A0D3FF  642 :
+  227   400   15px #FFA689  731
+  246    31   18px #181E2B  You -40 a minute · out in 16:03
+  301    31   18px #181E2B  Enemy ships in B2
+  326    31   18px #EAF1FA  Relay under attack: C2
+  350    31   18px #EAF1FA  Mining Rig lost: A3
+  820   939   18px #EAF1FA  Attack-move
+  824  1289   14px #ACBACD  A
+  827   602   24px #EAF1FA  12 ships
+  860   602   18px #D3E3F7  6 × Swarm
+  864   939   18px #EAF1FA  Hold sector
+  868  1289   14px #ACBACD  H
+  884   602   18px #D3E3F7  4 × Lancer
+  908   602   18px #D3E3F7  2 × Brawler
+  908   939   18px #EAF1FA  Patrol
+  912  1289   14px #ACBACD  T
+  933   602   18px #D3E3F7  Hit points 3,552 / 4,472
+  952   939   18px #EAF1FA  Stop
+  956  1289   14px #ACBACD  S
+  957   602   18px #D3E3F7  On patrol
+  981   602   18px #D3E3F7  1 retreating to be repaired
+  990   926   14px #ACBACD  RETREAT
+  990  1268   14px #D3E3F7  MIXED
+ 1005   602   18px #D3E3F7  Scheduled: at 02:00, attack-move to C3
+ 1020   973   18px #EAF1FA  25%
+ 1020  1105   18px #EAF1FA  50%
+ 1020  1232   18px #EAF1FA  Never
