@@ -54,7 +54,7 @@ std::uint32_t ResearchTicks(const MatchArena& _arena, Outpost::ResearchTopicId _
 
 bool HasResearched(MatchArena& _arena, Outpost::PlayerId _player, Outpost::ResearchTopicId _topic)
 {
-  const std::span<const Outpost::ResearchTopicId> researched = _arena.World().Researched(_player);
+  const std::span<const Outpost::ResearchTopicId> researched = _arena.SimulationState().Researched(_player);
   return std::ranges::find(researched, _topic) != researched.end();
 }
 
@@ -95,12 +95,12 @@ template <typename T> T UnlockedBy(const Outpost::ResearchTopicTuning& _topic)
 // What follows from the tuning data and the topics _player has researched alone: its upgrades, and the components, the
 // topics and the Shipyards' speed its snapshot shows. Each is, field for field, what working it out afresh gives; and the
 // designs the snapshot shows are the player's saved designs.
-void ExpectAsWorkedOutAfresh(const Outpost::Tuning& _tuning, const Outpost::Simulation& _world, Outpost::PlayerId _player)
+void ExpectAsWorkedOutAfresh(const Outpost::Tuning& _tuning, const Outpost::Simulation& _simulation, Outpost::PlayerId _player)
 {
-  const Outpost::Snapshot snapshot = _world.BuildSnapshot(_player);
-  const std::span<const Outpost::ResearchTopicId> researched = _world.Researched(_player);
+  const Outpost::Snapshot snapshot = _simulation.BuildSnapshot(_player);
+  const std::span<const Outpost::ResearchTopicId> researched = _simulation.Researched(_player);
   const Outpost::Upgrades upgrades = Outpost::UpgradesFrom(_tuning, researched);
-  Assert::IsTrue(_world.UpgradesOf(_player) == upgrades, L"the upgrades");
+  Assert::IsTrue(_simulation.UpgradesOf(_player) == upgrades, L"the upgrades");
   Assert::IsTrue(snapshot.shipyardBuildSpeedFactor == upgrades.shipyardBuildSpeedFactor, L"the Shipyards' speed");
 
   Assert::AreEqual(_tuning.hulls.size(), snapshot.hulls.size());
@@ -154,7 +154,7 @@ void ExpectAsWorkedOutAfresh(const Outpost::Tuning& _tuning, const Outpost::Simu
   }
 
   std::vector<const Outpost::ShipDesign*> designs;
-  for (std::uint32_t id = 1; const Outpost::ShipDesign* design = _world.FindDesign(Outpost::DesignId{id}); ++id)
+  for (std::uint32_t id = 1; const Outpost::ShipDesign* design = _simulation.FindDesign(Outpost::DesignId{id}); ++id)
   {
     if (design->owner == _player)
       designs.push_back(design);
@@ -180,7 +180,7 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
-    const std::int64_t start = arena.World().OreHundredths(BLUE);
+    const std::int64_t start = arena.SimulationState().OreHundredths(BLUE);
     const auto results =
       arena.Tick({Research(BLUE, lab, HULL_PLATING), Research(BLUE, lab, FUSION_DRIVE), Research(BLUE, lab, IMPROVED_EXTRACTION),
                   Research(BLUE, lab, LANCE_FOCUSING), Research(BLUE, lab, LARGE_HULL), Research(BLUE, lab, MASS_DRIVER_CALIBRATION)});
@@ -190,8 +190,8 @@ public:
 
     const std::int64_t plating = std::int64_t{Topic(arena, HULL_PLATING).cost} * Outpost::HUNDREDTHS;
     const std::int64_t fusion = std::int64_t{Topic(arena, FUSION_DRIVE).cost} * Outpost::HUNDREDTHS;
-    Assert::AreEqual(start - plating, arena.World().OreHundredths(BLUE), L"only the front topic has started");
-    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(start - plating, arena.SimulationState().OreHundredths(BLUE), L"only the front topic has started");
+    const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
     const Outpost::EntityView& view = *std::ranges::find(snapshot.entities, lab, &Outpost::EntityView::id);
     Assert::AreEqual(size_t{5}, view.research.size());
     Assert::IsTrue(view.research.front() == HULL_PLATING);
@@ -200,11 +200,11 @@ public:
     Assert::IsFalse(HasResearched(arena, BLUE, HULL_PLATING));
     arena.Run(1);
     Assert::IsTrue(HasResearched(arena, BLUE, HULL_PLATING), L"done in its research time");
-    Assert::AreEqual(start - plating, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start - plating, arena.SimulationState().OreHundredths(BLUE));
     arena.Run(1);
-    Assert::AreEqual(start - plating - fusion, arena.World().OreHundredths(BLUE), L"the next topic starts the next tick");
-    Assert::IsTrue(arena.World().BuildSnapshot(BLUE).research[1].researched);
-    Assert::IsFalse(arena.World().BuildSnapshot(RED).research[1].researched, L"research is the player's own");
+    Assert::AreEqual(start - plating - fusion, arena.SimulationState().OreHundredths(BLUE), L"the next topic starts the next tick");
+    Assert::IsTrue(arena.SimulationState().BuildSnapshot(BLUE).research[1].researched);
+    Assert::IsFalse(arena.SimulationState().BuildSnapshot(RED).research[1].researched, L"research is the player's own");
   }
 
   // ADR-017 decision 1: a topic needs its prerequisites researched or ahead of it in the queue, and is researched once.
@@ -234,13 +234,13 @@ public:
     Assert::IsTrue(arena.Tick({Research(BLUE, Outpost::EntityId{999}, HULL_PLATING)})[0] == Outpost::CommandResult::UnknownEntity);
     Assert::IsTrue(arena.Tick({Research(BLUE, lab, Outpost::ResearchTopicId{99})})[0] == Outpost::CommandResult::UnknownTopic);
 
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-300.0f, -300.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {-300.0f, -300.0f});
     const Outpost::BuildStructureCommand second{
       .constructors = {constructor}, .structure = Outpost::StructureKind::ResearchLab, .position = {-300.0f, 0.0f}};
     Assert::IsTrue(arena.Tick({Order(BLUE, second)})[0] == Outpost::CommandResult::LimitReached, L"one lab a player");
 
     // A lab under construction does not research.
-    const Outpost::EntityId redConstructor = arena.World().SpawnConstructor(RED, {300.0f, 300.0f});
+    const Outpost::EntityId redConstructor = arena.SimulationState().SpawnConstructor(RED, {300.0f, 300.0f});
     const Outpost::BuildStructureCommand site{
       .constructors = {redConstructor}, .structure = Outpost::StructureKind::ResearchLab, .position = {300.0f, 0.0f}};
     Assert::IsTrue(arena.Tick({Order(RED, site)})[0] == Outpost::CommandResult::Applied);
@@ -252,7 +252,7 @@ public:
   TEST_METHOD(ATopicWaitsForTheOre)
   {
     MatchArena arena;
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, 0.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {0.0f, 0.0f});
     // Three Shipyards leave 100 Ore, short of a topic's 150.
     for (int i = 0; i < 3; ++i)
     {
@@ -264,20 +264,20 @@ public:
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {600.0f, 400.0f});
     Assert::IsTrue(arena.Tick({Research(BLUE, lab, HULL_PLATING)})[0] == Outpost::CommandResult::Applied);
     arena.Run(20);
-    Assert::AreEqual(std::int64_t{100} * Outpost::HUNDREDTHS, arena.World().OreHundredths(BLUE));
-    const Outpost::Snapshot waiting = arena.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(std::int64_t{100} * Outpost::HUNDREDTHS, arena.SimulationState().OreHundredths(BLUE));
+    const Outpost::Snapshot waiting = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(0, std::ranges::find(waiting.entities, lab, &Outpost::EntityView::id)->jobPermille);
 
     // A home rig earns 3.5 Ore a second: after 14 seconds the 50 Ore are not all there, and the topic still waits; in the
     // fifteenth it starts, and is paid for.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     arena.Run(14 * MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(std::int64_t{149} * Outpost::HUNDREDTHS, arena.World().OreHundredths(BLUE));
-    const Outpost::Snapshot stillWaiting = arena.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(std::int64_t{149} * Outpost::HUNDREDTHS, arena.SimulationState().OreHundredths(BLUE));
+    const Outpost::Snapshot stillWaiting = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(0, std::ranges::find(stillWaiting.entities, lab, &Outpost::EntityView::id)->jobPermille);
     arena.Run(MatchArena::TICKS_PER_SECOND);
-    Assert::IsTrue(arena.World().OreHundredths(BLUE) < std::int64_t{100} * Outpost::HUNDREDTHS);
-    const Outpost::Snapshot started = arena.World().BuildSnapshot(BLUE);
+    Assert::IsTrue(arena.SimulationState().OreHundredths(BLUE) < std::int64_t{100} * Outpost::HUNDREDTHS);
+    const Outpost::Snapshot started = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::IsTrue(std::ranges::find(started.entities, lab, &Outpost::EntityView::id)->jobPermille > 0);
   }
 
@@ -294,9 +294,9 @@ public:
       (void)arena.Ship(BLUE, SMALL, MASS_DRIVER, {-110.0f, -40.0f + (static_cast<float>(i) * 20.0f)});
     const Outpost::EntityId raider = arena.Ship(RED, SMALL, MASS_DRIVER, {0.0f, 0.0f});
     const Outpost::EntityId bystander = arena.Ship(RED, SMALL, MASS_DRIVER, {800.0f, 800.0f});
-    for (int tick = 0; tick < 200 && arena.World().FindEntity(raider) != nullptr; ++tick)
+    for (int tick = 0; tick < 200 && arena.SimulationState().FindEntity(raider) != nullptr; ++tick)
       arena.Run(1);
-    Assert::IsNull(arena.World().FindEntity(raider), L"the raider survived");
+    Assert::IsNull(arena.SimulationState().FindEntity(raider), L"the raider survived");
     const std::int32_t before = arena.Get(damaged).hitPointsHundredths;
     const std::int32_t smallIon = arena.Get(damaged).maxHitPointsHundredths;
     Assert::IsTrue(before < smallIon, L"the raider did no damage");
@@ -311,7 +311,7 @@ public:
     Assert::AreEqual(smallIon, arena.Get(bystander).maxHitPointsHundredths);
     const Outpost::EntityId later = arena.Ship(BLUE, SMALL, MASS_DRIVER, {400.0f, -400.0f});
     Assert::AreEqual(PLATED, arena.Get(later).hitPointsHundredths);
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-400.0f, -400.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {-400.0f, -400.0f});
     Assert::AreEqual(arena.TuningData().constructor.hitPoints * Outpost::HUNDREDTHS, arena.Get(constructor).maxHitPointsHundredths,
                      L"the Constructor has no hull");
   }
@@ -324,25 +324,25 @@ public:
     // Each ship shoots at an enemy Shipyard, which has no gun and hit points enough for the whole test.
     const Outpost::EntityId blue = arena.Ship(BLUE, SMALL, MASS_DRIVER, {0.0f, 1200.0f});
     const Outpost::EntityId red = arena.Ship(RED, SMALL, MASS_DRIVER, {0.0f, -1200.0f});
-    (void)arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {100.0f, 1200.0f}, 40.0f, 10'000'000);
-    (void)arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {100.0f, -1200.0f}, 40.0f, 10'000'000);
+    (void)arena.SimulationState().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {100.0f, 1200.0f}, 40.0f, 10'000'000);
+    (void)arena.SimulationState().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {100.0f, -1200.0f}, 40.0f, 10'000'000);
     (void)ResearchAll(arena, BLUE, {MASS_DRIVER_CALIBRATION});
 
-    const Outpost::DesignStats& upgraded = arena.World().FindDesign(arena.Design(BLUE, SMALL, MASS_DRIVER))->stats;
-    const Outpost::DesignStats& base = arena.World().FindDesign(arena.Design(RED, SMALL, MASS_DRIVER))->stats;
+    const Outpost::DesignStats& upgraded = arena.SimulationState().FindDesign(arena.Design(BLUE, SMALL, MASS_DRIVER))->stats;
+    const Outpost::DesignStats& base = arena.SimulationState().FindDesign(arena.Design(RED, SMALL, MASS_DRIVER))->stats;
     Assert::AreEqual(base.fireIntervalSeconds / 1.10, upgraded.fireIntervalSeconds, 1e-12);
     Assert::AreEqual(base.damageHundredths, upgraded.damageHundredths, L"never the size of a hit");
     Assert::AreEqual(base.rangeMeters, upgraded.rangeMeters, L"never a range");
-    Assert::AreEqual(arena.World().FindDesign(arena.Design(RED, SMALL, LANCE))->stats.fireIntervalSeconds,
-                     arena.World().FindDesign(arena.Design(BLUE, SMALL, LANCE))->stats.fireIntervalSeconds);
+    Assert::AreEqual(arena.SimulationState().FindDesign(arena.Design(RED, SMALL, LANCE))->stats.fireIntervalSeconds,
+                     arena.SimulationState().FindDesign(arena.Design(BLUE, SMALL, LANCE))->stats.fireIntervalSeconds);
 
     std::uint32_t blueShots = 0;
     std::uint32_t redShots = 0;
     for (std::uint32_t tick = 0; tick < 60 * MatchArena::TICKS_PER_SECOND; ++tick)
     {
       arena.Run(1);
-      blueShots += ShotsBy(arena.World().BuildSnapshot(BLUE), blue);
-      redShots += ShotsBy(arena.World().BuildSnapshot(BLUE), red);
+      blueShots += ShotsBy(arena.SimulationState().BuildSnapshot(BLUE), blue);
+      redShots += ShotsBy(arena.SimulationState().BuildSnapshot(BLUE), red);
     }
     Assert::AreEqual(150u, redShots, L"one every 0.4 s");
     // 0.4 s / 1.10 is 7.273 ticks, so a minute holds 165 or 166 shots, depending on where the first one fell.
@@ -356,7 +356,7 @@ public:
   TEST_METHOD(EachTopicNamesTheComponentItUnlocks)
   {
     MatchArena arena;
-    const std::vector<Outpost::ResearchTopicView> topics = arena.World().BuildSnapshot(BLUE).research;
+    const std::vector<Outpost::ResearchTopicView> topics = arena.SimulationState().BuildSnapshot(BLUE).research;
     const auto topic = [&topics](Outpost::ResearchTopicId _id) { return *std::ranges::find(topics, _id, &Outpost::ResearchTopicView::id); };
     Assert::IsTrue(topic(LARGE_HULL).unlocksHull == LARGE);
     Assert::IsFalse(topic(LARGE_HULL).unlocksDrive.IsValid() || topic(LARGE_HULL).unlocksWeapon.IsValid());
@@ -370,17 +370,17 @@ public:
     MatchArena arena;
     const Outpost::Command large = Order(BLUE, Save(LARGE, ION, LANCE, "Bulwark"));
     Assert::IsTrue(arena.Tick({large})[0] == Outpost::CommandResult::ComponentLocked);
-    Assert::IsFalse(arena.World().BuildSnapshot(BLUE).hulls[2].available);
-    Assert::IsTrue(arena.World().BuildSnapshot(BLUE).hulls[0].available);
+    Assert::IsFalse(arena.SimulationState().BuildSnapshot(BLUE).hulls[2].available);
+    Assert::IsTrue(arena.SimulationState().BuildSnapshot(BLUE).hulls[0].available);
 
     (void)ResearchAll(arena, BLUE, {HULL_PLATING, LARGE_HULL});
-    Assert::IsTrue(arena.World().BuildSnapshot(BLUE).hulls[2].available);
-    Assert::IsFalse(arena.World().BuildSnapshot(RED).hulls[2].available);
+    Assert::IsTrue(arena.SimulationState().BuildSnapshot(BLUE).hulls[2].available);
+    Assert::IsFalse(arena.SimulationState().BuildSnapshot(RED).hulls[2].available);
     Assert::IsTrue(arena.Tick({large})[0] == Outpost::CommandResult::Applied);
     Assert::IsTrue(arena.Tick({Order(RED, Save(LARGE, ION, LANCE, "Bulwark"))})[0] == Outpost::CommandResult::ComponentLocked);
 
     // The new design carries the player's Hull Plating: 1,200 × 1.15 × 0.9 = 1,242 points.
-    const Outpost::ShipDesign* design = arena.World().FindDesign(BLUE, {LARGE, ION, LANCE});
+    const Outpost::ShipDesign* design = arena.SimulationState().FindDesign(BLUE, {LARGE, ION, LANCE});
     Assert::IsNotNull(design);
     Assert::AreEqual(std::string("Bulwark"), design->name);
     Assert::AreEqual(124200, design->stats.hitPointsHundredths);
@@ -394,12 +394,12 @@ public:
     MatchArena arena;
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     (void)ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION});
-    Assert::AreEqual(438, arena.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
-    const std::int64_t start = arena.World().OreHundredths(BLUE);
+    Assert::AreEqual(438, arena.SimulationState().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
+    const std::int64_t start = arena.SimulationState().OreHundredths(BLUE);
     arena.Run(MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(start + 438, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start + 438, arena.SimulationState().OreHundredths(BLUE));
     arena.Run(3 * MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(start + (std::int64_t{4} * 438), arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start + (std::int64_t{4} * 438), arena.SimulationState().OreHundredths(BLUE));
   }
 
   // ADR-017 decision 2: Automated Shipyards build a quarter faster, and the Command Station's Constructors do not.
@@ -407,7 +407,7 @@ public:
   {
     MatchArena arena;
     (void)ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION, AUTOMATED_SHIPYARDS});
-    Assert::AreEqual(1.25, arena.World().BuildSnapshot(BLUE).shipyardBuildSpeedFactor);
+    Assert::AreEqual(1.25, arena.SimulationState().BuildSnapshot(BLUE).shipyardBuildSpeedFactor);
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, {600.0f, -600.0f});
     const Outpost::DesignId design = arena.Design(BLUE, SMALL, MASS_DRIVER);
     (void)arena.Tick({Order(BLUE, Outpost::QueueShipCommand{.producer = yard, .design = design})});
@@ -434,19 +434,20 @@ public:
     MatchArena arena;
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
     (void)arena.Tick({Research(BLUE, lab, HULL_PLATING)});
-    const std::int64_t paid = arena.World().OreHundredths(BLUE);
+    const std::int64_t paid = arena.SimulationState().OreHundredths(BLUE);
     for (int i = 0; i < 6; ++i)
       (void)arena.Ship(RED, SMALL, MASS_DRIVER, {LAB.xMeters + 100.0f, LAB.zMeters - 50.0f + (static_cast<float>(i) * 20.0f)});
-    for (int tick = 0; tick < 60 * 20 && arena.World().FindEntity(lab) != nullptr; ++tick)
+    for (int tick = 0; tick < 60 * 20 && arena.SimulationState().FindEntity(lab) != nullptr; ++tick)
       arena.Run(1);
-    Assert::IsNull(arena.World().FindEntity(lab), L"the lab survived");
+    Assert::IsNull(arena.SimulationState().FindEntity(lab), L"the lab survived");
     arena.Run(ResearchTicks(arena, HULL_PLATING));
     Assert::IsFalse(HasResearched(arena, BLUE, HULL_PLATING));
-    Assert::AreEqual(paid, arena.World().OreHundredths(BLUE), L"nothing is refunded");
+    Assert::AreEqual(paid, arena.SimulationState().OreHundredths(BLUE), L"nothing is refunded");
 
     const Outpost::EntityId rebuilt = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {600.0f, 600.0f});
     Assert::IsTrue(arena.Tick({Research(BLUE, rebuilt, HULL_PLATING)})[0] == Outpost::CommandResult::Applied);
-    Assert::AreEqual(paid - (std::int64_t{Topic(arena, HULL_PLATING).cost} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(paid - (std::int64_t{Topic(arena, HULL_PLATING).cost} * Outpost::HUNDREDTHS),
+                     arena.SimulationState().OreHundredths(BLUE));
   }
 
   // ADR-033: upgrades of one stat add their percentages, so three +15% hull topics make +45%, and two Mass Driver topics
@@ -488,7 +489,7 @@ public:
         arena.Run(1);
       Assert::AreEqual(_level, arena.Get(lab).level);
     };
-    Assert::AreEqual(1, arena.World().BuildSnapshot(BLUE).researchTier);
+    Assert::AreEqual(1, arena.SimulationState().BuildSnapshot(BLUE).researchTier);
     Assert::IsTrue(arena.Tick({Research(BLUE, lab, REINFORCED_STRUCTURES)})[0] == Outpost::CommandResult::LevelTooLow);
     Assert::IsTrue(upgrade() == Outpost::CommandResult::PrerequisiteMissing, L"level 2 needs Improved Extraction and Hull Plating");
 
@@ -500,7 +501,7 @@ public:
     }
     Assert::IsTrue(upgrade() == Outpost::CommandResult::Applied);
     toLevel(2);
-    Assert::AreEqual(2, arena.World().BuildSnapshot(BLUE).researchTier);
+    Assert::AreEqual(2, arena.SimulationState().BuildSnapshot(BLUE).researchTier);
     Assert::IsTrue(arena.Tick({Research(BLUE, lab, DRIVE_HARMONICS)})[0] == Outpost::CommandResult::LevelTooLow, L"tier 3");
     Assert::IsTrue(arena.Tick({Research(BLUE, lab, REINFORCED_STRUCTURES)})[0] == Outpost::CommandResult::Applied);
     Assert::IsTrue(upgrade() == Outpost::CommandResult::PrerequisiteMissing, L"level 3 needs Large Hull");
@@ -512,14 +513,14 @@ public:
     for (int tick = 0; tick < 300 * 20 && !HasResearched(arena, BLUE, LARGE_HULL); ++tick)
       arena.Run(1);
     // Level 3's 600 Ore, which the rig has paid by now.
-    for (int tick = 0; tick < 300 * 20 && arena.World().OreHundredths(BLUE) < std::int64_t{600} * Outpost::HUNDREDTHS; ++tick)
+    for (int tick = 0; tick < 300 * 20 && arena.SimulationState().OreHundredths(BLUE) < std::int64_t{600} * Outpost::HUNDREDTHS; ++tick)
       arena.Run(1);
     Assert::IsTrue(upgrade() == Outpost::CommandResult::Applied);
     toLevel(3);
-    Assert::AreEqual(3, arena.World().BuildSnapshot(BLUE).researchTier);
+    Assert::AreEqual(3, arena.SimulationState().BuildSnapshot(BLUE).researchTier);
     Assert::IsTrue(arena.Tick({Research(BLUE, lab, DRIVE_HARMONICS)})[0] == Outpost::CommandResult::Applied);
 
-    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
     const auto view = [&snapshot](Outpost::ResearchTopicId _id)
     { return *std::ranges::find(snapshot.research, _id, &Outpost::ResearchTopicView::id); };
     Assert::AreEqual(2, view(REINFORCED_STRUCTURES).tier);
@@ -533,15 +534,16 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 4);
-    const std::int32_t ore = static_cast<std::int32_t>(arena.World().OreHundredths(BLUE) / Outpost::HUNDREDTHS);
+    const std::int32_t ore = static_cast<std::int32_t>(arena.SimulationState().OreHundredths(BLUE) / Outpost::HUNDREDTHS);
     // Hull Plating and Mass Driver Calibration together; Fusion Drive requires Hull Plating, so it waits behind it.
     const std::vector<Outpost::CommandResult> results =
       arena.Tick({Research(BLUE, lab, HULL_PLATING), Research(BLUE, lab, MASS_DRIVER_CALIBRATION), Research(BLUE, lab, FUSION_DRIVE)});
     Assert::IsTrue(std::ranges::all_of(results, [](Outpost::CommandResult _result) { return _result == Outpost::CommandResult::Applied; }));
     const std::int32_t paid = Topic(arena, HULL_PLATING).cost + Topic(arena, MASS_DRIVER_CALIBRATION).cost;
-    Assert::AreEqual(ore - paid, static_cast<std::int32_t>(arena.World().OreHundredths(BLUE) / Outpost::HUNDREDTHS), L"both started");
+    Assert::AreEqual(ore - paid, static_cast<std::int32_t>(arena.SimulationState().OreHundredths(BLUE) / Outpost::HUNDREDTHS),
+                     L"both started");
     arena.Run(20);
-    const Outpost::Snapshot started = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot started = arena.SimulationState().BuildSnapshot(BLUE);
     const auto labView = std::ranges::find(started.entities, lab, &Outpost::EntityView::id);
     Assert::IsTrue(labView->jobPermille > 0 && labView->secondJobPermille > 0, L"both show their progress");
 
@@ -560,7 +562,7 @@ public:
     (void)single.Tick({Research(BLUE, one, HULL_PLATING), Research(BLUE, one, MASS_DRIVER_CALIBRATION)});
     Assert::AreEqual(0, single.Get(one).secondJobWorkNeeded);
     Assert::AreEqual(ore - Topic(single, HULL_PLATING).cost,
-                     static_cast<std::int32_t>(single.World().OreHundredths(BLUE) / Outpost::HUNDREDTHS));
+                     static_cast<std::int32_t>(single.SimulationState().OreHundredths(BLUE) / Outpost::HUNDREDTHS));
   }
 
   // ADR-033 decision 4: Reinforced Structures raises every structure's hit points, those standing and those placed after;
@@ -569,7 +571,8 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, {300.0f, -600.0f});
-    const Outpost::EntityId odd = arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {600.0f, -600.0f}, 40.0f, 12345, 0);
+    const Outpost::EntityId odd =
+      arena.SimulationState().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {600.0f, -600.0f}, 40.0f, 12345, 0);
     const Outpost::EntityId theirs = arena.Structure(RED, Outpost::StructureKind::Shipyard, {300.0f, 600.0f});
     const Outpost::StructureTuning& yardTuning = arena.StructureData(Outpost::StructureKind::Shipyard);
     const std::int32_t full = yardTuning.hitPoints * Outpost::HUNDREDTHS;
@@ -578,8 +581,8 @@ public:
     Assert::AreEqual(full * 5 / 4, arena.Get(yard).hitPointsHundredths, L"undamaged, it gains the whole upgrade");
     Assert::AreEqual(12345, arena.Get(odd).maxHitPointsHundredths);
     Assert::AreEqual(full, arena.Get(theirs).maxHitPointsHundredths);
-    Assert::AreEqual(full * 5 / 4, arena.World().StructureHitPoints(BLUE, yardTuning), L"a new one is built to it");
-    Assert::AreEqual(full, arena.World().StructureHitPoints(RED, yardTuning));
+    Assert::AreEqual(full * 5 / 4, arena.SimulationState().StructureHitPoints(BLUE, yardTuning), L"a new one is built to it");
+    Assert::AreEqual(full, arena.SimulationState().StructureHitPoints(RED, yardTuning));
   }
 
   // ADR-033 decision 4: Drive Harmonics speeds every ship of the player's, warships and Constructors, standing and new;
@@ -590,7 +593,7 @@ public:
     {
       MatchArena arena;
       const Outpost::EntityId ship = arena.Ship(BLUE, SMALL, MASS_DRIVER, {0.0f, 0.0f});
-      const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-300.0f, 0.0f});
+      const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {-300.0f, 0.0f});
       const float shipSpeed = arena.Get(ship).speedMetersPerSecond;
       const float constructorSpeed = arena.Get(constructor).speedMetersPerSecond;
       std::vector<Outpost::ResearchTopicId> topics{IMPROVED_EXTRACTION, HULL_PLATING, LARGE_HULL};
@@ -611,18 +614,18 @@ public:
       {
         Assert::AreEqual(shipSpeed * 1.1f, arena.Get(ship).speedMetersPerSecond, 1e-3f);
         Assert::AreEqual(constructorSpeed * 1.1f, arena.Get(constructor).speedMetersPerSecond, 1e-3f);
-        const Outpost::EntityId later = arena.World().SpawnConstructor(BLUE, {-300.0f, 80.0f});
+        const Outpost::EntityId later = arena.SimulationState().SpawnConstructor(BLUE, {-300.0f, 80.0f});
         Assert::AreEqual(constructorSpeed * 1.1f, arena.Get(later).speedMetersPerSecond, 1e-3f, L"one built after");
         const Outpost::EntityId laterShip = arena.Ship(BLUE, SMALL, MASS_DRIVER, {0.0f, 80.0f});
         Assert::AreEqual(shipSpeed * 1.1f, arena.Get(laterShip).speedMetersPerSecond, 1e-3f);
-        Assert::AreEqual(1.2, arena.World().UpgradesOf(BLUE).FireRateFactor(Outpost::StructureWeaponId{1}), 1e-12);
+        Assert::AreEqual(1.2, arena.SimulationState().UpgradesOf(BLUE).FireRateFactor(Outpost::StructureWeaponId{1}), 1e-12);
       }
       const Outpost::PlanePosition site{-300.0f, 120.0f};
       Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor},
                                                                             .structure = Outpost::StructureKind::DefensePlatform,
                                                                             .position = site})})[0] == Outpost::CommandResult::Applied);
       const Outpost::Entity* platform = nullptr;
-      for (const Outpost::Entity& entity : arena.World().Entities())
+      for (const Outpost::Entity& entity : arena.SimulationState().Entities())
       {
         if (entity.kind == Outpost::EntityKind::Structure && entity.structure == Outpost::StructureKind::DefensePlatform)
           platform = &entity;
@@ -651,12 +654,12 @@ public:
   TEST_METHOD(KeepsWhatResearchMakesOfTheTuningData)
   {
     MatchArena arena;
-    const auto expectAll = [&arena](const Outpost::Simulation& _world)
+    const auto expectAll = [&arena](const Outpost::Simulation& _simulation)
     {
       for (const Outpost::PlayerId player : {BLUE, RED, STRANGER})
-        ExpectAsWorkedOutAfresh(arena.TuningData(), _world, player);
+        ExpectAsWorkedOutAfresh(arena.TuningData(), _simulation, player);
     };
-    expectAll(arena.World());
+    expectAll(arena.SimulationState());
 
     // Some topics cost more than the starting Ore: a rig on the home asteroid pays for them as they come.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
@@ -669,15 +672,15 @@ public:
       for (int tick = 0; tick < 3600 * 20 && !HasResearched(arena, BLUE, topic); ++tick)
         arena.Run(1);
       Assert::IsTrue(HasResearched(arena, BLUE, topic));
-      expectAll(arena.World());
+      expectAll(arena.SimulationState());
       if (topic == FUSION_DRIVE)
       {
         const Outpost::DesignId renamed = arena.Design(BLUE, SMALL, MASS_DRIVER);
         const std::vector<Outpost::CommandResult> results = arena.Tick(
           {Order(BLUE, Save(SMALL, FUSION, MASS_DRIVER, "Fast Small")), Order(BLUE, Save(SMALL, ION, MASS_DRIVER, "Renamed", renamed))});
         Assert::IsTrue(results[0] == Outpost::CommandResult::Applied && results[1] == Outpost::CommandResult::Applied);
-        expectAll(arena.World());
-        copy.emplace(arena.World());
+        expectAll(arena.SimulationState());
+        copy.emplace(arena.SimulationState());
       }
     }
 
@@ -691,8 +694,8 @@ public:
       (void)copy->Tick({});
     expectAll(*copy);
     // The tuning data given again.
-    arena.World().UseTuning(arena.TuningData());
-    expectAll(arena.World());
+    arena.SimulationState().UseTuning(arena.TuningData());
+    expectAll(arena.SimulationState());
   }
 
   // The same seed and orders give the same research, upgrades included (ADR-009).
@@ -708,7 +711,7 @@ public:
     MatchArena second;
     play(first);
     play(second);
-    Assert::IsTrue(first.World() == second.World());
+    Assert::IsTrue(first.SimulationState() == second.SimulationState());
   }
 };
 } // namespace GameLogicTests

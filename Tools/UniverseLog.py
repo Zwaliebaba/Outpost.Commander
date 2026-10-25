@@ -1,12 +1,12 @@
-"""Summarizes a world's log, for the owner's week (ADR-082, Game §world.log): its starts, recoveries and saves, and
+"""Summarizes a universe's log, for the owner's week (ADR-082, Game §universe.log): its starts, recoveries and saves, and
 what the log can tell of what a player's presence buys, each seat's income, fleet and research in the hours its player
 played it against the hours its deputy did. It also counts each seat's battles by whether its player was present, and
-the losses, waits and restarts of a world without an end (ADR-084).
+the losses, waits and restarts of a universe without an end (ADR-084).
 
-The dedicated server writes World.log in the world's folder, and --world-run one in each of its two worlds' folders. Each
-line is one record, every time in ticks; WorldLog.h lists them.
+The dedicated server writes Universe.log in the universe's folder, and --universe-run one in each of its two universes' folders. Each
+line is one record, every time in ticks; UniverseLog.h lists them.
 
-  python Tools/WorldLog.py <world folder or World.log>
+  python Tools/UniverseLog.py <universe folder or Universe.log>
 """
 
 import argparse
@@ -30,7 +30,8 @@ def summarize(records):
   recovered = [words for words in starts if words[2] == "recovered"]
   saves = [words for words in records if words[0] == "save"]
   last = max((int(words[1]) for words in records if words[1].isdigit()), default=0)
-  lines.append(f"{last / TICKS_PER_SECOND / HOUR_SECONDS:.1f} hours of world, {len(starts)} starts, {len(recovered)} of them recoveries")
+  elapsed_hours = last / TICKS_PER_SECOND / HOUR_SECONDS
+  lines.append(f"{elapsed_hours:.1f} hours of the universe, {len(starts)} starts, {len(recovered)} of them recoveries")
   for words in recovered:
     lines.append(f"  came back at tick {words[1]} from the save of tick {words[4]} and {words[6]} commands logged after it")
   if saves:
@@ -77,12 +78,12 @@ def summarize(records):
 
 
 def main():
-  parser = argparse.ArgumentParser(description="Summarizes a world's log.")
-  parser.add_argument("world", help="the world's folder, or its World.log")
+  parser = argparse.ArgumentParser(description="Summarizes a universe's log.")
+  parser.add_argument("universe", help="the universe's folder, or its Universe.log")
   arguments = parser.parse_args()
-  path = os.path.join(arguments.world, "World.log") if os.path.isdir(arguments.world) else arguments.world
+  path = os.path.join(arguments.universe, "Universe.log") if os.path.isdir(arguments.universe) else arguments.universe
   if not os.path.isfile(path):
-    print(f"No world log at {path}.", file=sys.stderr)
+    print(f"No universe log at {path}.", file=sys.stderr)
     return 1
   print("\n".join(summarize(read(path))))
   return 0

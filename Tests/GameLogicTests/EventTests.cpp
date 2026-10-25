@@ -17,7 +17,7 @@ constexpr std::int32_t B1 = 2;
 
 std::vector<Outpost::EventView> EventsOf(TerritoryMatch& _match, Outpost::PlayerId _player)
 {
-  return _match.World().BuildSnapshot(_player).events;
+  return _match.SimulationState().BuildSnapshot(_player).events;
 }
 
 std::size_t Count(const std::vector<Outpost::EventView>& _events, Outpost::EventKind _kind)
@@ -48,7 +48,7 @@ std::vector<Outpost::EventView> RunUntil(TerritoryMatch& _match, Outpost::Player
 
 const Outpost::Entity& StationOf(TerritoryMatch& _match, Outpost::PlayerId _player)
 {
-  const auto& entities = _match.World().Entities();
+  const auto& entities = _match.SimulationState().Entities();
   return *std::ranges::find_if(entities, [_player](const Outpost::Entity& _entity)
                                { return _entity.owner == _player && _entity.structure == Outpost::StructureKind::CommandStation; });
 }
@@ -100,10 +100,10 @@ public:
       (void)match.Warship(RED, {.xMeters = node.xMeters + 80.0f, .zMeters = node.zMeters + (20.0f * static_cast<float>(i - 5))});
     std::size_t ticksHit = 0;
     std::size_t mostShots = 0;
-    for (std::uint32_t tick = 0; tick < 5 * TICKS_PER_SECOND && match.World().FindEntity(relay) != nullptr; ++tick)
+    for (std::uint32_t tick = 0; tick < 5 * TICKS_PER_SECOND && match.SimulationState().FindEntity(relay) != nullptr; ++tick)
     {
       match.Run(1);
-      const Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
+      const Outpost::Snapshot blue = match.SimulationState().BuildSnapshot(BLUE);
       const auto shots = static_cast<std::size_t>(std::ranges::count(blue.shots, relay, &Outpost::ShotView::target));
       mostShots = std::max(mostShots, shots);
       Assert::AreEqual(std::min<std::size_t>(shots, 1), Count(blue.events, Outpost::EventKind::RelayAttacked), L"once a tick it is hit");
@@ -123,10 +123,10 @@ public:
   {
     TerritoryMatch match;
     const Outpost::EntityId station = StationOf(match, BLUE).id;
-    (void)match.World().Tick({{.player = BLUE, .order = Outpost::QueueShipCommand{.producer = station}}});
+    (void)match.SimulationState().Tick({{.player = BLUE, .order = Outpost::QueueShipCommand{.producer = station}}});
     const std::vector<Outpost::EventView> shipBuilt = RunUntil(match, BLUE, Outpost::EventKind::ShipBuilt, 120);
     Assert::AreEqual(std::size_t{1}, Count(shipBuilt, Outpost::EventKind::ShipBuilt), L"a Constructor delivered");
-    const Outpost::Entity* constructor = match.World().FindEntity(Find(shipBuilt, Outpost::EventKind::ShipBuilt)->subject);
+    const Outpost::Entity* constructor = match.SimulationState().FindEntity(Find(shipBuilt, Outpost::EventKind::ShipBuilt)->subject);
     Assert::IsTrue(constructor != nullptr && constructor->owner == BLUE && constructor->role == Outpost::ShipRole::Constructor);
 
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(B1).node) == Outpost::CommandResult::Applied);
@@ -161,26 +161,27 @@ public:
     (void)match.Structure(RED, Outpost::StructureKind::DefensePlatform, {.xMeters = field.xMeters + 240.0f, .zMeters = field.zMeters});
     // A Repair Bay of Blue's, which a ship goes back to before the Command Station, with a hit point left.
     const Outpost::PlanePosition bayAt{.xMeters = -2500.0f, .zMeters = -1800.0f};
-    const Outpost::EntityId bay = match.World().SpawnStructure(BLUE, Outpost::StructureKind::RepairBay, bayAt, 40.0f, Outpost::HUNDREDTHS);
+    const Outpost::EntityId bay =
+      match.SimulationState().SpawnStructure(BLUE, Outpost::StructureKind::RepairBay, bayAt, 40.0f, Outpost::HUNDREDTHS);
     const Outpost::EntityId going = match.Warship(BLUE, field);
-    (void)match.World().Tick(
+    (void)match.SimulationState().Tick(
       {{.player = BLUE, .order = Outpost::SetRetreatCommand{.ships = {going}, .retreat = Outpost::RetreatThreshold::Half}}});
     const std::vector<Outpost::EventView> back = RunUntil(match, BLUE, Outpost::EventKind::ShipRetreating, 60);
     Assert::AreEqual(std::size_t{1}, Count(back, Outpost::EventKind::ShipRetreating));
     Assert::IsTrue(Find(back, Outpost::EventKind::ShipRetreating)->subject == going);
-    Assert::IsTrue(match.World().FindEntity(going)->repairer == bay, L"it heads for the bay");
+    Assert::IsTrue(match.SimulationState().FindEntity(going)->repairer == bay, L"it heads for the bay");
 
     const Outpost::EntityId raider = match.Warship(RED, {.xMeters = bayAt.xMeters + 80.0f, .zMeters = bayAt.zMeters});
     match.FightToTheEnd(RED, {raider});
-    (void)match.World().Tick({{.player = RED, .order = Outpost::AttackCommand{.ships = {raider}, .target = bay}}});
+    (void)match.SimulationState().Tick({{.player = RED, .order = Outpost::AttackCommand{.ships = {raider}, .target = bay}}});
     std::size_t again = 0;
     for (std::uint32_t tick = 0; tick < 10 * TICKS_PER_SECOND; ++tick)
     {
       match.Run(1);
       again += Count(EventsOf(match, BLUE), Outpost::EventKind::ShipRetreating);
     }
-    Assert::IsNull(match.World().FindEntity(bay), L"the bay fell");
-    const Outpost::Entity* ship = match.World().FindEntity(going);
+    Assert::IsNull(match.SimulationState().FindEntity(bay), L"the bay fell");
+    const Outpost::Entity* ship = match.SimulationState().FindEntity(going);
     Assert::IsTrue(ship != nullptr && ship->retreating && ship->repairer.IsValid() && ship->repairer != bay, L"it turned for another");
     Assert::AreEqual(std::size_t{0}, again, L"once, as it started");
 
@@ -200,18 +201,19 @@ public:
     Assert::IsTrue(camp != match.Outposts().end());
     const std::int32_t sector = camp->sector;
     const Outpost::PlanePosition node = match.Placement(sector).node;
-    const Outpost::DesignId design = match.World().FindDesign(BLUE, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{2}})->id;
+    const Outpost::DesignId design =
+      match.SimulationState().FindDesign(BLUE, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{2}})->id;
     std::vector<Outpost::EntityId> fleet;
     fleet.reserve(10);
     for (int i = 0; i < 10; ++i)
-      fleet.push_back(match.World().SpawnShip(
+      fleet.push_back(match.SimulationState().SpawnShip(
         BLUE, design, {.xMeters = node.xMeters - 700.0f, .zMeters = node.zMeters + (30.0f * static_cast<float>(i))}));
     match.FightToTheEnd(BLUE, fleet);
     std::size_t blueCleared = 0;
     std::size_t redCleared = 0;
     const auto guarded = [&match, sector]()
     {
-      return std::ranges::any_of(match.World().Entities(),
+      return std::ranges::any_of(match.SimulationState().Entities(),
                                  [&](const Outpost::Entity& _entity)
                                  {
                                    return _entity.owner == Outpost::PIRATES && _entity.kind == Outpost::EntityKind::Structure &&
@@ -223,10 +225,10 @@ public:
       std::vector<Outpost::Command> orders;
       if (tick % (5 * TICKS_PER_SECOND) == 0)
       {
-        std::erase_if(fleet, [&match](Outpost::EntityId _ship) { return match.World().FindEntity(_ship) == nullptr; });
+        std::erase_if(fleet, [&match](Outpost::EntityId _ship) { return match.SimulationState().FindEntity(_ship) == nullptr; });
         orders.push_back({.player = BLUE, .order = Outpost::AttackMoveCommand{.ships = fleet, .destination = node}});
       }
-      (void)match.World().Tick(orders);
+      (void)match.SimulationState().Tick(orders);
       blueCleared += Count(EventsOf(match, BLUE), Outpost::EventKind::PiratesCleared);
       redCleared += Count(EventsOf(match, RED), Outpost::EventKind::PiratesCleared);
     }

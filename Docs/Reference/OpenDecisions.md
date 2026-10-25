@@ -29,4 +29,4 @@ Every owner decision that is still open: each row of a gate table whose Status i
 
 | Gate | Decision | Blocks |
 |---|---|---|
-| H10 | Whether a galaxy or friends come next, decided from W6 and the week's world log (§4) | The next phase design: a galaxy, or a season with friends on one system ([the horizon](../Horizon.md) §11) |
+| H10 | Whether a galaxy or friends come next, decided from W6 and the week's universe log (§4) | The next phase design: a galaxy, or a season with friends on one system ([the horizon](../Horizon.md) §11) |

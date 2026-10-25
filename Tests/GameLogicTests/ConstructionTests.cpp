@@ -40,7 +40,7 @@ public:
   TEST_METHOD(ChecksWhereAStructureMayStand)
   {
     MatchArena arena;
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-300.0f, 0.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {-300.0f, 0.0f});
     const float shipyard = static_cast<float>(arena.StructureData(Outpost::StructureKind::Shipyard).footprintRadiusMeters);
     const auto result = [&](Outpost::StructureKind _kind, Outpost::PlanePosition _at)
     { return arena.Tick({Build({constructor}, _kind, _at)})[0]; };
@@ -67,7 +67,7 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId warship = arena.Ship(BLUE, SMALL, MASS_DRIVER, {-300.0f, 0.0f});
-    const Outpost::EntityId enemy = arena.World().SpawnConstructor(RED, {-300.0f, 100.0f});
+    const Outpost::EntityId enemy = arena.SimulationState().SpawnConstructor(RED, {-300.0f, 100.0f});
     Assert::IsTrue(arena.Tick({Build({warship}, Outpost::StructureKind::Shipyard, SITE)})[0] == Outpost::CommandResult::NotAConstructor);
     Assert::IsTrue(arena.Tick({Build({enemy}, Outpost::StructureKind::Shipyard, SITE)})[0] == Outpost::CommandResult::NotOwned);
   }
@@ -85,7 +85,7 @@ public:
       std::vector<Outpost::EntityId> constructors;
       constructors.reserve(crew);
       for (std::uint32_t i = 0; i < crew; ++i)
-        constructors.push_back(arena.World().SpawnConstructor(BLUE, {-reach, (static_cast<float>(i) * 30.0f) - 15.0f}));
+        constructors.push_back(arena.SimulationState().SpawnConstructor(BLUE, {-reach, (static_cast<float>(i) * 30.0f) - 15.0f}));
       (void)arena.Tick({Build(constructors, Outpost::StructureKind::Shipyard, SITE)});
       const Outpost::Entity& site = *arena.Owned(BLUE, Outpost::EntityKind::Structure).back();
       const Outpost::EntityId id = site.id;
@@ -113,7 +113,7 @@ public:
   TEST_METHOD(AConstructorGoesToItsSite)
   {
     MatchArena arena;
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-600.0f, -300.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {-600.0f, -300.0f});
     (void)arena.Tick({Build({constructor}, Outpost::StructureKind::DefensePlatform, SITE)});
     const Outpost::EntityId site = arena.Owned(BLUE, Outpost::EntityKind::Structure).back()->id;
     const auto buildTicks = static_cast<std::uint32_t>(
@@ -129,7 +129,7 @@ public:
     MatchArena arena;
     const Outpost::EntityId ship = arena.Ship(BLUE, SMALL, MASS_DRIVER, {-400.0f, 0.0f});
     (void)arena.Tick({Order(BLUE, Outpost::MoveCommand{.ships = {ship}, .destination = {400.0f, 0.0f}})});
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, -200.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {0.0f, -200.0f});
     (void)arena.Tick({Build({constructor}, Outpost::StructureKind::Shipyard, SITE)});
     const Outpost::Entity& site = *arena.Owned(BLUE, Outpost::EntityKind::Structure).back();
     const float clearance = site.radiusMeters + arena.Get(ship).radiusMeters;
@@ -160,8 +160,8 @@ public:
     Assert::IsTrue(damaged < maximum);
 
     const float reach = arena.Get(shipyard).radiusMeters + 25.0f;
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-reach, 0.0f});
-    const std::int64_t ore = arena.World().OreHundredths(BLUE);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {-reach, 0.0f});
+    const std::int64_t ore = arena.SimulationState().OreHundredths(BLUE);
     Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = shipyard})})[0] ==
                    Outpost::CommandResult::Applied);
     const auto perTick =
@@ -170,7 +170,7 @@ public:
     arena.Run(60 * MatchArena::TICKS_PER_SECOND);
     Assert::AreEqual(maximum, arena.Get(shipyard).hitPointsHundredths);
     Assert::IsTrue(arena.Get(constructor).order == Outpost::ShipOrder::None);
-    Assert::AreEqual(ore, arena.World().OreHundredths(BLUE), L"repair is free");
+    Assert::AreEqual(ore, arena.SimulationState().OreHundredths(BLUE), L"repair is free");
 
     // Whole, or an enemy's, it is not repaired.
     Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = shipyard})})[0] ==
@@ -183,10 +183,10 @@ public:
   TEST_METHOD(ARepairOrderHelpsBuild)
   {
     MatchArena arena;
-    const Outpost::EntityId first = arena.World().SpawnConstructor(BLUE, {-55.0f, 0.0f});
+    const Outpost::EntityId first = arena.SimulationState().SpawnConstructor(BLUE, {-55.0f, 0.0f});
     (void)arena.Tick({Build({first}, Outpost::StructureKind::ResearchLab, SITE)});
     const Outpost::EntityId site = arena.Owned(BLUE, Outpost::EntityKind::Structure).back()->id;
-    const Outpost::EntityId second = arena.World().SpawnConstructor(BLUE, {55.0f, 0.0f});
+    const Outpost::EntityId second = arena.SimulationState().SpawnConstructor(BLUE, {55.0f, 0.0f});
     Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {second}, .target = site})})[0] ==
                    Outpost::CommandResult::Applied);
     const std::int32_t before = arena.Get(site).buildWorkDone;

@@ -48,7 +48,7 @@ The simulation therefore needs a way to hold an owner that is no player, a layou
    - The server reports no refused order, so without the flag a Relay ordered into an unscouted camp would do nothing and show nothing.
    - The pirates themselves stay under fog of war.
    - A Relay's ghost is red in a guarded sector.
-8. **The outposts are placed once, when the server is made, and only for a match or a world.** `InProcessServer` places them after the players are added, and the derelicts with them ([ADR-074](ADR-074-salvage.md)); nothing places one later, so a cleared outpost stays cleared. The measurement load, the stress scene and a battle matchup place none ([ADR-083](ADR-083-battle-matchups.md) decision 2).
+8. **The outposts are placed once, when the server is made, and only for a match or a universe.** `InProcessServer` places them after the players are added, and the derelicts with them ([ADR-074](ADR-074-salvage.md)); nothing places one later, so a cleared outpost stays cleared. The measurement load, the stress scene and a battle matchup place none ([ADR-083](ADR-083-battle-matchups.md) decision 2).
 9. *(retired)*
 10. **The client draws pirates in violet.** `Models.json`'s `"Pirate"` set borrows the Tarkan meshes in a color of its own, and `"pirates"` names it as the set the pirates are drawn with ([ADR-011](ADR-011-meshes-and-shading.md) decisions 2 and 3). On the minimap their ships and structures are violet, and so are the wash and the outline of a guarded sector ([ADR-081](ADR-081-territory-and-memory-over-the-fog.md)); a guarded sector counts for neither side.
 11. *(retired)*

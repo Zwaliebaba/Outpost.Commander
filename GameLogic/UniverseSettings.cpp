@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "WorldSettings.h"
+#include "UniverseSettings.h"
 
 #include <charconv>
 #include <limits>
@@ -25,20 +25,20 @@ std::uint64_t ReadSeed(Neuron::JsonObjectReader& _reader, std::string_view _name
 }
 } // namespace
 
-Outpost::WorldSettings Outpost::NewWorldSettings(std::uint64_t _seed, std::size_t _seats)
+Outpost::UniverseSettings Outpost::NewUniverseSettings(std::uint64_t _seed, std::size_t _seats)
 {
-  WorldSettings settings{.seed = _seed};
+  UniverseSettings settings{.seed = _seed};
   for (std::size_t seat = 0; seat < _seats; ++seat)
     settings.seats.push_back({.player = PlayerId{static_cast<std::uint32_t>(seat + 1)}, .token = NewSeatToken()});
   return settings;
 }
 
-std::string Outpost::WriteWorldSettings(const WorldSettings& _settings)
+std::string Outpost::WriteUniverseSettings(const UniverseSettings& _settings)
 {
   std::string seats;
   for (std::size_t i = 0; i < _settings.seats.size(); ++i)
   {
-    const WorldSeat& seat = _settings.seats[i];
+    const UniverseSeat& seat = _settings.seats[i];
     const std::string which =
       seat.ai.empty() ? std::format("\"token\": \"{}\"", ToHex(seat.token)) : std::format("\"ai\": {}", Neuron::QuoteJson(seat.ai));
     seats += std::format("    {{ \"player\": {}, {} }}{}\n", seat.player.value, which, i + 1 < _settings.seats.size() ? "," : "");
@@ -47,13 +47,13 @@ std::string Outpost::WriteWorldSettings(const WorldSettings& _settings)
                      Neuron::QuoteJson(_settings.address), _settings.port, Neuron::QuoteJson(_settings.host), _settings.seed, seats);
 }
 
-Outpost::WorldSettings Outpost::ReadWorldSettings(std::string_view _text)
+Outpost::UniverseSettings Outpost::ReadUniverseSettings(std::string_view _text)
 {
   try
   {
     const Neuron::JsonValue document = Neuron::ParseJson(_text);
     Neuron::JsonObjectReader reader(document, "");
-    WorldSettings settings;
+    UniverseSettings settings;
     settings.address = reader.String("address");
     settings.port = ReadPort(reader, "port");
     settings.host = reader.String("host");
@@ -61,25 +61,25 @@ Outpost::WorldSettings Outpost::ReadWorldSettings(std::string_view _text)
       Neuron::JsonFail(reader.PathOf("host"), "expected the name or address players reach the server at");
     settings.seed = ReadSeed(reader, "seed");
     settings.seats =
-      Neuron::ReadJsonList<WorldSeat>(reader, "seats",
-                                      [](Neuron::JsonObjectReader& _seat)
-                                      {
-                                        WorldSeat seat{.player = _seat.Identifier<PlayerId>("player")};
-                                        const bool ai = _seat.Optional("ai") != nullptr;
-                                        if (ai == (_seat.Optional("token") != nullptr))
-                                          Neuron::JsonFail(_seat.Where(), "expected a seat's token, or the AI that plays it");
-                                        if (ai)
-                                        {
-                                          seat.ai = _seat.String("ai");
-                                          if (!std::ranges::contains(AI_DIFFICULTIES, seat.ai))
-                                            Neuron::JsonFail(_seat.PathOf("ai"), "expected Easy, Normal or Hard");
-                                          return seat;
-                                        }
-                                        const std::string token = _seat.String("token");
-                                        if (!FromHex(token, seat.token))
-                                          Neuron::JsonFail(_seat.PathOf("token"), "expected 32 hexadecimal digits");
-                                        return seat;
-                                      });
+      Neuron::ReadJsonList<UniverseSeat>(reader, "seats",
+                                         [](Neuron::JsonObjectReader& _seat)
+                                         {
+                                           UniverseSeat seat{.player = _seat.Identifier<PlayerId>("player")};
+                                           const bool ai = _seat.Optional("ai") != nullptr;
+                                           if (ai == (_seat.Optional("token") != nullptr))
+                                             Neuron::JsonFail(_seat.Where(), "expected a seat's token, or the AI that plays it");
+                                           if (ai)
+                                           {
+                                             seat.ai = _seat.String("ai");
+                                             if (!std::ranges::contains(AI_DIFFICULTIES, seat.ai))
+                                               Neuron::JsonFail(_seat.PathOf("ai"), "expected Easy, Normal or Hard");
+                                             return seat;
+                                           }
+                                           const std::string token = _seat.String("token");
+                                           if (!FromHex(token, seat.token))
+                                             Neuron::JsonFail(_seat.PathOf("token"), "expected 32 hexadecimal digits");
+                                           return seat;
+                                         });
     if (settings.seats.empty())
       Neuron::JsonFail(reader.PathOf("seats"), "expected a seat at least");
     for (std::size_t i = 1; i < settings.seats.size(); ++i)
@@ -95,11 +95,12 @@ Outpost::WorldSettings Outpost::ReadWorldSettings(std::string_view _text)
   }
   catch (const Neuron::Exception& exception)
   {
-    throw Neuron::Exception(std::format("The world's settings are not settings: {}", exception.what()));
+    throw Neuron::Exception(std::format("The universe's settings are not settings: {}", exception.what()));
   }
 }
 
-Outpost::JoinTicket Outpost::TicketFor(const WorldSettings& _settings, const WorldSeat& _seat, const Neuron::CertificateHash& _certificate)
+Outpost::JoinTicket Outpost::TicketFor(const UniverseSettings& _settings, const UniverseSeat& _seat,
+                                       const Neuron::CertificateHash& _certificate)
 {
   return {.address = {.host = _settings.host, .port = _settings.port, .certificate = _certificate, .token = _seat.token},
           .player = _seat.player};

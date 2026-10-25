@@ -2,51 +2,51 @@
 
 namespace Outpost
 {
-// The version of the state a world's save holds (ADR-077). It stays 1 until the game is live (owner, 2026-10-09), and a save
+// The version of the state a universe's save holds (ADR-077). It stays 1 until the game is live (owner, 2026-10-09), and a save
 // carries its layout's hash beside it (SaveLayoutHash), so that until then a change to what Simulation holds, or to the
 // seats' reports a save keeps beside it, records its new layout under version 1 and a save of the old one is refused
 // (AGENTS.md R18). A save of another version is refused too.
-inline constexpr std::uint32_t WORLD_STATE_VERSION = 1;
+inline constexpr std::uint32_t UNIVERSE_STATE_VERSION = 1;
 
-// The world a save is of: what a server needs, besides the state, to make the simulation the state loads into.
-struct WorldIdentity
+// The universe a save is of: what a server needs, besides the state, to make the simulation the state loads into.
+struct UniverseIdentity
 {
-  // The seed the world was made with. The seeded placement of its map follows from it (ADR-072), and so does its PRNG's
+  // The seed the universe was made with. The seeded placement of its map follows from it (ADR-072), and so does its PRNG's
   // first state, which the save then replaces.
   std::uint64_t seed = 0;
   std::uint32_t ticksPerSecond = 0;
   // The tuning data's and the map's files, as DataHash hashes them: a save loads only with the data it was made with.
   std::uint64_t dataHash = 0;
 
-  friend bool operator==(const WorldIdentity&, const WorldIdentity&) = default;
+  friend bool operator==(const UniverseIdentity&, const UniverseIdentity&) = default;
 };
 
-// What a save's header names: its world and the tick it was made at.
+// What a save's header names: its universe and the tick it was made at.
 struct SaveHeader
 {
-  WorldIdentity identity;
+  UniverseIdentity identity;
   std::uint64_t tick = 0;
 };
 
 // 64-bit FNV-1a over each of _texts in turn, each after its length, so that the boundary between two moves the hash.
 [[nodiscard]] std::uint64_t DataHash(std::span<const std::string_view> _texts) noexcept;
 
-// A save of _simulation's state, made between two ticks: a header naming the save's kind, WORLD_STATE_VERSION, the
-// layout's hash, the world and the tick, then the state, then the seats' reports, then a checksum of all of it (ADR-077).
-[[nodiscard]] std::vector<std::byte> EncodeWorld(const Simulation& _simulation, const WorldIdentity& _identity,
-                                                 const SeatReports& _reports = {});
+// A save of _simulation's state, made between two ticks: a header naming the save's kind, UNIVERSE_STATE_VERSION, the
+// layout's hash, the universe and the tick, then the state, then the seats' reports, then a checksum of all of it (ADR-077).
+[[nodiscard]] std::vector<std::byte> EncodeUniverse(const Simulation& _simulation, const UniverseIdentity& _identity,
+                                                    const SeatReports& _reports = {});
 
 // The header of a save. Throws Neuron::Exception when the bytes are not a whole save, with its checksum, of
-// WORLD_STATE_VERSION and laid out as this build lays it out.
+// UNIVERSE_STATE_VERSION and laid out as this build lays it out.
 [[nodiscard]] SaveHeader ReadSaveHeader(std::span<const std::byte> _bytes);
 
 // Loads a save's state into _simulation, which was made with the save's seed and tick rate and given the tuning data
 // (Simulation::LoadState), and returns the seats' reports it kept. Throws Neuron::Exception when ReadSaveHeader would, or
-// when the save is of a world other than _identity.
-SeatReports DecodeWorld(std::span<const std::byte> _bytes, const WorldIdentity& _identity, Simulation& _simulation);
+// when the save is of a universe other than _identity.
+SeatReports DecodeUniverse(std::span<const std::byte> _bytes, const UniverseIdentity& _identity, Simulation& _simulation);
 
 // How a save lays out what follows its header, as ByteLayout describes it: the simulation's state (Simulation::StateLayout)
-// and the seats' reports. WorldStateTests pins it to WORLD_STATE_VERSION (AGENTS.md R18).
+// and the seats' reports. UniverseStateTests pins it to UNIVERSE_STATE_VERSION (AGENTS.md R18).
 [[nodiscard]] std::string SaveLayout();
 
 // DataHash of SaveLayout, which a save's header carries: a save laid out otherwise is refused, whatever its version.

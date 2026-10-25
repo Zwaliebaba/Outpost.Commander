@@ -30,8 +30,8 @@ Outpost::PlanePosition CenterOf(TerritoryMatch& _match, const std::vector<Outpos
   float z = 0.0f;
   for (const Outpost::EntityId id : _ships)
   {
-    x += _match.World().FindEntity(id)->position.xMeters;
-    z += _match.World().FindEntity(id)->position.zMeters;
+    x += _match.SimulationState().FindEntity(id)->position.xMeters;
+    z += _match.SimulationState().FindEntity(id)->position.zMeters;
   }
   const auto count = static_cast<float>(_ships.size());
   return {.xMeters = x / count, .zMeters = z / count};
@@ -39,7 +39,7 @@ Outpost::PlanePosition CenterOf(TerritoryMatch& _match, const std::vector<Outpos
 
 Outpost::CommandResult Give(TerritoryMatch& _match, Outpost::Order _order)
 {
-  return _match.World().Tick({{.player = BLUE, .order = std::move(_order)}}).front();
+  return _match.SimulationState().Tick({{.player = BLUE, .order = std::move(_order)}}).front();
 }
 } // namespace
 
@@ -62,22 +62,22 @@ public:
     // An enemy in the far corner of the sector, seen through the Relay's sector and out of its reach of suppression.
     const Outpost::EntityId enemy = match.Warship(RED, {.xMeters = -1350.0f, .zMeters = -3300.0f});
     match.FightToTheEnd(RED, {enemy});
-    for (std::uint32_t tick = 0; tick < 90 * TICKS_PER_SECOND && match.World().FindEntity(enemy) != nullptr; ++tick)
+    for (std::uint32_t tick = 0; tick < 90 * TICKS_PER_SECOND && match.SimulationState().FindEntity(enemy) != nullptr; ++tick)
       match.Run(1);
-    Assert::IsNull(match.World().FindEntity(enemy), L"the group never answered the enemy in its sector");
+    Assert::IsNull(match.SimulationState().FindEntity(enemy), L"the group never answered the enemy in its sector");
     Assert::IsTrue(Outpost::Distance(CenterOf(match, ships), node) > 300.0f, L"it went out to fight");
 
     match.Run(60 * TICKS_PER_SECOND);
     Assert::IsTrue(Outpost::Distance(CenterOf(match, ships), node) < 200.0f, L"the group went back to the node");
     for (const Outpost::EntityId id : ships)
-      Assert::IsTrue(match.World().FindEntity(id)->standing == Outpost::StandingOrder::HoldSector);
-    const Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
+      Assert::IsTrue(match.SimulationState().FindEntity(id)->standing == Outpost::StandingOrder::HoldSector);
+    const Outpost::Snapshot blue = match.SimulationState().BuildSnapshot(BLUE);
     Assert::IsTrue(std::ranges::find(blue.entities, ships.front(), &Outpost::EntityView::id)->standing ==
                    Outpost::StandingOrder::HoldSector);
 
     // Another order ends it.
     Assert::IsTrue(Give(match, Outpost::StopCommand{.ships = ships}) == Outpost::CommandResult::Applied);
-    Assert::IsTrue(match.World().FindEntity(ships.front())->standing == Outpost::StandingOrder::None);
+    Assert::IsTrue(match.SimulationState().FindEntity(ships.front())->standing == Outpost::StandingOrder::None);
   }
 
   // ADR-059 decision 4: a patrolling group attack-moves to its point, then back to where it was ordered from, and on.
@@ -99,7 +99,7 @@ public:
     }
     Assert::IsTrue(reachedTo, L"the group never reached its point");
     Assert::IsTrue(backAtFrom, L"the group never came back");
-    Assert::IsTrue(match.World().FindEntity(ships.front())->standing == Outpost::StandingOrder::Patrol);
+    Assert::IsTrue(match.SimulationState().FindEntity(ships.front())->standing == Outpost::StandingOrder::Patrol);
     // And it goes out again: a leg takes about ten seconds.
     match.Run(6 * TICKS_PER_SECOND);
     Assert::IsTrue(Outpost::Distance(CenterOf(match, ships), from) > 200.0f, L"the group did not set out again");
@@ -121,7 +121,7 @@ public:
                    L"a map without sectors has none to hold");
     Assert::IsTrue(arena.Tick({Order(MatchArena::BLUE, Outpost::PatrolCommand{.ships = {ship}, .destination = {300.0f, 0.0f}})})[0] ==
                    Outpost::CommandResult::Applied);
-    const Outpost::Snapshot red = arena.World().BuildSnapshot(MatchArena::RED);
+    const Outpost::Snapshot red = arena.SimulationState().BuildSnapshot(MatchArena::RED);
     const auto seen = std::ranges::find(red.entities, ship, &Outpost::EntityView::id);
     Assert::IsTrue(seen != red.entities.end() && seen->standing == Outpost::StandingOrder::None,
                    L"the other player does not see the order");

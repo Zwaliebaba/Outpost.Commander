@@ -27,7 +27,8 @@ constexpr Outpost::PlanePosition SHIPYARD{.xMeters = -700.0f, .zMeters = -500.0f
 Outpost::EntityId UnderFire(MatchArena& _arena, Outpost::RetreatThreshold _retreat)
 {
   (void)_arena.Structure(RED, Outpost::StructureKind::DefensePlatform, PLATFORM);
-  const Outpost::EntityId ship = _arena.World().SpawnShip(BLUE, _arena.Design(BLUE, SMALL, MASS_DRIVER), FRONT, std::numbers::pi_v<float>);
+  const Outpost::EntityId ship =
+    _arena.SimulationState().SpawnShip(BLUE, _arena.Design(BLUE, SMALL, MASS_DRIVER), FRONT, std::numbers::pi_v<float>);
   (void)_arena.Tick({Order(BLUE, Outpost::SetRetreatCommand{.ships = {ship}, .retreat = _retreat})});
   return ship;
 }
@@ -37,7 +38,7 @@ bool RunUntilRetreating(MatchArena& _arena, Outpost::EntityId _ship)
 {
   for (std::uint32_t tick = 0; tick < 60 * TICKS_PER_SECOND; ++tick)
   {
-    const Outpost::Entity* ship = _arena.World().FindEntity(_ship);
+    const Outpost::Entity* ship = _arena.SimulationState().FindEntity(_ship);
     if (ship == nullptr || ship->retreating)
       return ship != nullptr;
     _arena.Run(1);
@@ -74,7 +75,7 @@ public:
     Assert::IsTrue(arena.Get(ship).repairer == bay, L"to the Repair Bay");
 
     // Its owner sees it going back; the other player does not.
-    const Outpost::Snapshot blue = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot blue = arena.SimulationState().BuildSnapshot(BLUE);
     const auto view = std::ranges::find(blue.entities, ship, &Outpost::EntityView::id);
     Assert::IsTrue(view->retreating && view->retreat == Outpost::RetreatThreshold::Half);
 
@@ -124,20 +125,20 @@ public:
       MatchArena arena;
       (void)arena.Structure(BLUE, Outpost::StructureKind::RepairBay, BAY);
       const Outpost::EntityId ship = UnderFire(arena, Outpost::RetreatThreshold::Never);
-      for (std::uint32_t tick = 0; tick < 30 * TICKS_PER_SECOND && arena.World().FindEntity(ship) != nullptr; ++tick)
+      for (std::uint32_t tick = 0; tick < 30 * TICKS_PER_SECOND && arena.SimulationState().FindEntity(ship) != nullptr; ++tick)
       {
         Assert::IsFalse(arena.Get(ship).retreating);
         arena.Run(1);
       }
-      Assert::IsNull(arena.World().FindEntity(ship), L"it fought to the end");
+      Assert::IsNull(arena.SimulationState().FindEntity(ship), L"it fought to the end");
     }
     {
       MatchArena arena;
       (void)arena.Structure(BLUE, Outpost::StructureKind::RepairBay, BAY);
       const Outpost::EntityId ship =
-        arena.World().SpawnShip(BLUE, arena.Design(BLUE, SMALL, MASS_DRIVER), FRONT, std::numbers::pi_v<float>);
+        arena.SimulationState().SpawnShip(BLUE, arena.Design(BLUE, SMALL, MASS_DRIVER), FRONT, std::numbers::pi_v<float>);
       Assert::IsTrue(arena.Get(ship).retreat == Outpost::DEFAULT_RETREAT && Outpost::DEFAULT_RETREAT == Outpost::RetreatThreshold::Quarter);
-      const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {.xMeters = 0.0f, .zMeters = 40.0f});
+      const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {.xMeters = 0.0f, .zMeters = 40.0f});
       Assert::IsTrue(arena.Get(constructor).retreat == Outpost::RetreatThreshold::Quarter, L"a Constructor too");
       (void)arena.Structure(RED, Outpost::StructureKind::DefensePlatform, PLATFORM);
       Assert::IsTrue(RunUntilRetreating(arena, ship));
@@ -193,17 +194,17 @@ public:
     // share of; the Medium has the lowest identifier, so that it waits for its damage, not its place. They do not retreat,
     // so that the missiles alone move nothing.
     const Outpost::EntityId medium =
-      arena.World().SpawnShip(BLUE, arena.Design(BLUE, MEDIUM, MASS_DRIVER), {.xMeters = 25.0f, .zMeters = 0.0f});
+      arena.SimulationState().SpawnShip(BLUE, arena.Design(BLUE, MEDIUM, MASS_DRIVER), {.xMeters = 25.0f, .zMeters = 0.0f});
     std::vector<Outpost::EntityId> ships{medium};
     for (const Outpost::PlanePosition at :
          {Outpost::PlanePosition{.xMeters = 0.0f, .zMeters = 0.0f}, Outpost::PlanePosition{.zMeters = 20.0f},
           Outpost::PlanePosition{.zMeters = -20.0f}, Outpost::PlanePosition{.xMeters = -20.0f}})
-      ships.push_back(arena.World().SpawnShip(BLUE, arena.Design(BLUE, SMALL, MASS_DRIVER), at));
+      ships.push_back(arena.SimulationState().SpawnShip(BLUE, arena.Design(BLUE, SMALL, MASS_DRIVER), at));
     // Research unlocks the Missile Rack, so RED's design is saved here.
     const Outpost::DesignComponents rack{SMALL, Outpost::DriveId{1}, MISSILE_RACK};
     const Outpost::DesignId launcherDesign =
-      arena.World().SaveDesign(RED, "Launcher", rack, Outpost::DesignStatsFor(arena.TuningData(), rack));
-    const Outpost::EntityId launcher = arena.World().SpawnShip(RED, launcherDesign, {.xMeters = 0.0f, .zMeters = 275.0f});
+      arena.SimulationState().SaveDesign(RED, "Launcher", rack, Outpost::DesignStatsFor(arena.TuningData(), rack));
+    const Outpost::EntityId launcher = arena.SimulationState().SpawnShip(RED, launcherDesign, {.xMeters = 0.0f, .zMeters = 275.0f});
     (void)arena.Tick({Order(BLUE, Outpost::SetRetreatCommand{.ships = ships, .retreat = Outpost::RetreatThreshold::Never}),
                       Order(RED, Outpost::AttackCommand{.ships = {launcher}, .target = ships[1]})});
     arena.Run(7 * TICKS_PER_SECOND);
@@ -235,8 +236,8 @@ public:
   {
     MatchArena arena;
     const Outpost::DesignId design = arena.Design(BLUE, SMALL, MASS_DRIVER);
-    Assert::IsTrue(arena.World().FindDesign(design)->retreat == Outpost::RetreatThreshold::Quarter);
-    const Outpost::ShipDesign& saved = *arena.World().FindDesign(design);
+    Assert::IsTrue(arena.SimulationState().FindDesign(design)->retreat == Outpost::RetreatThreshold::Quarter);
+    const Outpost::ShipDesign& saved = *arena.SimulationState().FindDesign(design);
     Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::SaveDesignCommand{.design = design,
                                                                       .nameUtf8 = "Picket",
                                                                       .hull = saved.components.hull,
@@ -244,10 +245,10 @@ public:
                                                                       .weapon = saved.components.weapon,
                                                                       .retreat = Outpost::RetreatThreshold::Never})})[0] ==
                    Outpost::CommandResult::Applied);
-    Assert::IsTrue(arena.World().FindDesign(design)->retreat == Outpost::RetreatThreshold::Never);
-    const Outpost::EntityId ship = arena.World().SpawnShip(BLUE, design, FRONT);
+    Assert::IsTrue(arena.SimulationState().FindDesign(design)->retreat == Outpost::RetreatThreshold::Never);
+    const Outpost::EntityId ship = arena.SimulationState().SpawnShip(BLUE, design, FRONT);
     Assert::IsTrue(arena.Get(ship).retreat == Outpost::RetreatThreshold::Never);
-    const Outpost::Snapshot blue = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot blue = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::IsTrue(std::ranges::find(blue.designs, design, &Outpost::DesignView::id)->retreat == Outpost::RetreatThreshold::Never);
   }
 };

@@ -5,7 +5,7 @@ Owns: quic-transport, msquic-package
 
 ## Context
 
-[ADR-002](ADR-002-authoritative-server.md) makes the boundary between the server and its clients a `Transport`. A world's players cross it from other machines ([ADR-078](ADR-078-dedicated-server.md) decision 9), so the protocol and library that carry commands and snapshots across it decide what the engine depends on.
+[ADR-002](ADR-002-authoritative-server.md) makes the boundary between the server and its clients a `Transport`. A universe's players cross it from other machines ([ADR-078](ADR-078-dedicated-server.md) decision 9), so the protocol and library that carry commands and snapshots across it decide what the engine depends on.
 
 The traffic is of two kinds, commands and snapshots. QUIC carries both over one UDP connection: reliable streams, and unreliable datagrams (RFC 9221). A lost packet on one stream does not stall the others, and TLS 1.3 is built in. Which of the two each kind of traffic uses is [ADR-060](ADR-060-quic-in-process.md)'s.
 
@@ -27,9 +27,9 @@ MsQuic is Microsoft's QUIC implementation. It is MIT-licensed, and the GDK docum
 - **Every match loads `msquic.dll`.** The executable imports it, and so do `GameLogicTests`, because its tests play the server over QUIC, and `NeuronCoreTests`, which tests the channel itself ([ADR-089](ADR-089-test-dll-per-library.md)).
 - **Both platforms are covered.** The package ships `msquic.dll` and `msquic.lib` for x64 and ARM64. It also ships x86 binaries, which nothing here builds ([ADR-003](ADR-003-x64-and-arm64.md)).
 - **QUIC needs Windows 11 or Windows Server 2022.** QUIC requires TLS 1.3, and Schannel supports TLS 1.3 only from those versions (Microsoft Learn: *Protocols in TLS/SSL (Schannel SSP)*, and the platform dependencies of .NET's QUIC support). Every match uses QUIC, so the package's minimum is [ADR-060](ADR-060-quic-in-process.md) decision 8's, and the dedicated server's is [ADR-078](ADR-078-dedicated-server.md)'s.
-- **The server needs a certificate.** TLS 1.3 authenticates the server, so the server needs a certificate and the client needs a way to trust it. The server makes a self-signed one, and the client pins its hash ([ADR-060](ADR-060-quic-in-process.md) decision 6); a world keeps its certificate in its folder ([ADR-078](ADR-078-dedicated-server.md) decision 7).
+- **The server needs a certificate.** TLS 1.3 authenticates the server, so the server needs a certificate and the client needs a way to trust it. The server makes a self-signed one, and the client pins its hash ([ADR-060](ADR-060-quic-in-process.md) decision 6); a universe keeps its certificate in its folder ([ADR-078](ADR-078-dedicated-server.md) decision 7).
 - **The licence travels with the DLL.** MsQuic is MIT-licensed (`LICENSE` in the package). The MSIX package carries that text as `Licenses\MsQuic.txt`, next to `msquic.dll`.
-- **Latency over a real network is not measured.** A world joined from another machine crosses one ([ADR-078](ADR-078-dedicated-server.md) decision 9); the order-to-response budget, and what of it is still to be measured, are [`Docs/Budgets.md`](../Budgets.md)'s.
+- **Latency over a real network is not measured.** A universe joined from another machine crosses one ([ADR-078](ADR-078-dedicated-server.md) decision 9); the order-to-response budget, and what of it is still to be measured, are [`Docs/Budgets.md`](../Budgets.md)'s.
 
 ## What this forecloses
 

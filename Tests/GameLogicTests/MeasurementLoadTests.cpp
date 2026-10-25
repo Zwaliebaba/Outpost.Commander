@@ -17,13 +17,13 @@ public:
     Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
     // The map as the server placed it from its seed (ADR-072).
     const Outpost::Map& map = server.MapData();
-    server.World().PlaceStartingBases(map);
-    Outpost::PlaceMeasurementLoad(server.World(), map, tuning);
+    server.SimulationState().PlaceStartingBases(map);
+    Outpost::PlaceMeasurementLoad(server.SimulationState(), map, tuning);
 
     std::vector<Outpost::Entity> placed;
     size_t ships = 0;
     size_t structures = 0;
-    for (const Outpost::Entity& entity : server.World().Entities())
+    for (const Outpost::Entity& entity : server.SimulationState().Entities())
     {
       if (entity.kind == Outpost::EntityKind::Ship)
         ++ships;
@@ -74,14 +74,14 @@ public:
     Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
     // The map as the server placed it from its seed (ADR-072).
     const Outpost::Map& map = server.MapData();
-    server.World().PlaceStartingBases(map);
-    Outpost::PlaceMeasurementLoad(server.World(), map, tuning);
+    server.SimulationState().PlaceStartingBases(map);
+    Outpost::PlaceMeasurementLoad(server.SimulationState(), map, tuning);
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});
     server.Advance(50ms);
     (void)server.TakeTickTimings();
 
     Outpost::MoveCommand move{.destination = {.xMeters = 600.0f, .zMeters = 600.0f}};
-    for (const Outpost::Entity& entity : server.World().Entities())
+    for (const Outpost::Entity& entity : server.SimulationState().Entities())
     {
       if (entity.kind == Outpost::EntityKind::Ship && entity.owner == Outpost::PlayerId{1})
         move.ships.push_back(entity.id);

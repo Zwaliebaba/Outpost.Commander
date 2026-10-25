@@ -3,21 +3,21 @@
 namespace Outpost
 {
 // A command as the server applied it: the tick it was applied at the start of, and the order with its player as the
-// connection set it. A seed and this log reproduce the match on the same build (ADR-009), and a world's save and the log
-// since it reproduce the world (ADR-077).
+// connection set it. A seed and this log reproduce the match on the same build (ADR-009), and a universe's save and the log
+// since it reproduce the universe (ADR-077).
 struct LoggedCommand
 {
   std::uint64_t tick = 0;
   Command command;
 };
 
-// How often a world is saved, in seconds of its ticks (ADR-077 decision 7).
-inline constexpr std::uint32_t WORLD_SAVE_SECONDS = 60;
+// How often a universe is saved, in seconds of its ticks (ADR-077 decision 7).
+inline constexpr std::uint32_t UNIVERSE_SAVE_SECONDS = 60;
 
-// A world's folder (ADR-077): its saves, the newest WorldFolder::SAVES_KEPT of them, and its command log, a file begun at
+// A universe's folder (ADR-077): its saves, the newest UniverseFolder::SAVES_KEPT of them, and its command log, a file begun at
 // each save. A thread of the folder's own writes each save to a new file and renames it into place, so a killed process
 // never leaves half a save; the command log is written by the server's thread as each tick applies it.
-class WorldFolder : Neuron::NonCopyable
+class UniverseFolder : Neuron::NonCopyable
 {
 public:
   static constexpr std::size_t SAVES_KEPT = 3;
@@ -38,9 +38,9 @@ public:
   [[nodiscard]] static std::optional<Recovery> Recover(const std::filesystem::path& _folder);
 
   // Takes _folder, which it makes if it does not exist. Saves and the log go there from here on.
-  explicit WorldFolder(std::filesystem::path _folder);
+  explicit UniverseFolder(std::filesystem::path _folder);
   // Writes every save handed over that is not written yet, and closes the log.
-  ~WorldFolder();
+  ~UniverseFolder();
 
   // Hands a save made at _tick to the writer's thread and returns at once, and begins a new log file from _tick, which
   // the ticks from then on are logged to. A save of a tick the folder holds already is that save, and is not written

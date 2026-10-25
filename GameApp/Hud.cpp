@@ -2214,7 +2214,7 @@ std::optional<Hud::EntityBar> Hud::BarOver(const EntityView& _entity, DirectX::X
 
 std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
 {
-  // In a world no match ends: a player who lost waits for its seat to restart at its start (ADR-084 decisions 4 and 7).
+  // In a universe no match ends: a player who lost waits for its seat to restart at its start (ADR-084 decisions 4 and 7).
   if (_newest.restartTick.has_value())
   {
     const std::uint64_t restart = *_newest.restartTick;
@@ -2355,12 +2355,12 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
 {
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
-  // A skirmish at each difficulty (ADR-065), a world to join when there is one (ADR-078), then Quit.
+  // A skirmish at each difficulty (ADR-065), a universe to join when there is one (ADR-078), then Quit.
   std::vector<Button> buttons{{.label = "Easy skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Easy}},
                               {.label = "Normal skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Normal}},
                               {.label = "Hard skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Hard}}};
-  if (_state.joinWorld)
-    buttons.push_back({.label = "Join world", .action = {.kind = ActionKind::JoinWorld}});
+  if (_state.joinUniverse)
+    buttons.push_back({.label = "Join universe", .action = {.kind = ActionKind::JoinUniverse}});
   // While a join connects, nothing else starts.
   const bool connecting = !_state.connecting.empty();
   for (Button& button : buttons)

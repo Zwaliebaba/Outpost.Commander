@@ -51,7 +51,7 @@ public:
     Assert::IsTrue(reports.Reports().reports.size() == 1 && reports.Reports().reports[0].first == RED, L"the other seat's stays");
   }
 
-  // ADR-079 decision 4: a seat nobody has held is its deputy's from the world's start, and its player's first join carries
+  // ADR-079 decision 4: a seat nobody has held is its deputy's from the universe's start, and its player's first join carries
   // no report of it; once the player has held the seat, a time away is reported. A save keeps which seats were held.
   TEST_METHOD(ReportsNothingOnASeatsFirstJoin)
   {

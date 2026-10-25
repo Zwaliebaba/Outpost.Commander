@@ -6,7 +6,7 @@
     <ClInclude Include="BalanceCheck.h" />
     <ClInclude Include="MatchArena.h" />
     <ClInclude Include="TerritoryMatch.h" />
-    <ClInclude Include="WorldMatch.h" />
+    <ClInclude Include="UniverseMatch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -38,9 +38,9 @@
     <ClCompile Include="DominationTests.cpp" />
     <ClCompile Include="StandingOrderTests.cpp" />
     <ClCompile Include="EventTests.cpp" />
-    <ClCompile Include="WorldRulesTests.cpp" />
-    <ClCompile Include="WorldLogTests.cpp" />
-    <ClCompile Include="WorldRunTests.cpp" />
+    <ClCompile Include="UniverseRulesTests.cpp" />
+    <ClCompile Include="UniverseLogTests.cpp" />
+    <ClCompile Include="UniverseRunTests.cpp" />
     <ClCompile Include="MatchupTests.cpp" />
     <ClCompile Include="ScheduledOrderTests.cpp" />
     <ClCompile Include="UpgradeTests.cpp" />
@@ -48,15 +48,15 @@
     <ClCompile Include="PirateTests.cpp" />
     <ClCompile Include="SalvageTests.cpp" />
     <ClCompile Include="RetreatTests.cpp" />
-    <ClCompile Include="WorldStateTests.cpp" />
-    <ClCompile Include="WorldFolderTests.cpp" />
-    <ClCompile Include="WorldSettingsTests.cpp" />
+    <ClCompile Include="UniverseStateTests.cpp" />
+    <ClCompile Include="UniverseFolderTests.cpp" />
+    <ClCompile Include="UniverseSettingsTests.cpp" />
     <ClCompile Include="SeatControllerTests.cpp" />
     <ClCompile Include="AwayReportsTests.cpp" />
     <ClCompile Include="DeputyPlayTests.cpp" />
     <ClCompile Include="RepositoryData.cpp" />
     <ClCompile Include="MatchArena.cpp" />
     <ClCompile Include="TerritoryMatch.cpp" />
-    <ClCompile Include="WorldMatch.cpp" />
+    <ClCompile Include="UniverseMatch.cpp" />
   </ItemGroup>
 </Project>

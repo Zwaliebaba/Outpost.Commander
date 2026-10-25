@@ -210,11 +210,11 @@ public:
     Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
     // The map as the server placed it from its seed (ADR-072).
     const Outpost::Map& map = server.MapData();
-    server.World().PlaceStartingBases(map);
+    server.SimulationState().PlaceStartingBases(map);
 
     for (const Outpost::PlayerId player : {BLUE, RED})
     {
-      const Outpost::Snapshot snapshot = server.World().BuildSnapshot(player);
+      const Outpost::Snapshot snapshot = server.SimulationState().BuildSnapshot(player);
       Assert::AreEqual(size_t{4}, snapshot.designs.size());
       Assert::AreEqual(std::string("Swarm"), snapshot.designs[0].nameUtf8, L"saved under its short name (ADR-069)");
       Assert::AreEqual(tuning.rules.startingOre, snapshot.ore);

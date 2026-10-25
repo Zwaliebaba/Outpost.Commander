@@ -22,7 +22,7 @@ Every connection already gets its player's events in the snapshot of their tick 
 
 ## Consequences
 
-- **The layout of what a world saves changes,** since a report of a time away keeps whole events (`AwayReport::ordersFired`), so `WORLD_STATE_VERSION` 1's hash is replaced (AGENTS.md R18).
+- **The layout of what a universe saves changes,** since a report of a time away keeps whole events (`AwayReport::ordersFired`), so `UNIVERSE_STATE_VERSION` 1's hash is replaced (AGENTS.md R18).
 - **Tests:**
   - `WireFormatTests.CarriesEveryFieldOfASnapshot` carries a refusal with the last reason.
   - `InProcessServerTests.TellsARefusalToItsPlayerAlone`: two refusals reach the connection that sent them, in order, in the snapshot of their tick, and the other player's connection hears of none; a scheduled order with a trigger in no sector is one of them.

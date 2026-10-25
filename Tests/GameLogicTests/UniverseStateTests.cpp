@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "WorldMatch.h"
+#include "UniverseMatch.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -11,9 +11,9 @@ namespace
 using Bytes = std::vector<std::byte>;
 
 // The layout of each state version's save, as the hash of SaveLayout (AGENTS.md R18): the simulation's state and the
-// seats' reports beside it. Until the game is live, WORLD_STATE_VERSION stays 1, and a change to either records its new
+// seats' reports beside it. Until the game is live, UNIVERSE_STATE_VERSION stays 1, and a change to either records its new
 // hash here in place of version 1's (owner, 2026-10-09); a save carries its layout's hash, so a save of the old layout is
-// refused. Once live, a change raises WORLD_STATE_VERSION and records the new version's hash here, below the old.
+// refused. Once live, a change raises UNIVERSE_STATE_VERSION and records the new version's hash here, below the old.
 constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 1> LAYOUTS{{{1, 0x71BEA80ED9D5E354ull}}};
 
 // _bytes with their checksum made again, as a save altered on purpose would have it.
@@ -32,47 +32,47 @@ Bytes Rechecked(Bytes _bytes)
 std::array<Bytes, 2> NextSnapshots(Outpost::Simulation& _simulation)
 {
   (void)_simulation.Tick({});
-  return {Outpost::EncodeMessage(_simulation.BuildSnapshot(WorldMatch::BLUE)),
-          Outpost::EncodeMessage(_simulation.BuildSnapshot(WorldMatch::RED))};
+  return {Outpost::EncodeMessage(_simulation.BuildSnapshot(UniverseMatch::BLUE)),
+          Outpost::EncodeMessage(_simulation.BuildSnapshot(UniverseMatch::RED))};
 }
 
-void ExpectRefused(std::span<const std::byte> _bytes, const Outpost::WorldIdentity& _identity, const WorldMatch& _match,
+void ExpectRefused(std::span<const std::byte> _bytes, const Outpost::UniverseIdentity& _identity, const UniverseMatch& _match,
                    const wchar_t* _why)
 {
   Outpost::Simulation blank = _match.Blank();
-  Assert::ExpectException<Neuron::Exception>([&]() { Outpost::DecodeWorld(_bytes, _identity, blank); }, _why);
+  Assert::ExpectException<Neuron::Exception>([&]() { Outpost::DecodeUniverse(_bytes, _identity, blank); }, _why);
 }
 } // namespace
 
-// ADR-077: a world's state is saved between two ticks and loaded into a simulation made for the same world.
-TEST_CLASS(WorldStateTests)
+// ADR-077: a universe's state is saved between two ticks and loaded into a simulation made for the same universe.
+TEST_CLASS(UniverseStateTests)
 {
 public:
-  // A world well into play, with fights, salvage and orders under way, saved and loaded, is the world it was: it compares
-  // equal, saves to the same bytes, and shows both players the same as the world that was saved after a tick more.
-  TEST_METHOD(LoadsTheWorldItSaved)
+  // A universe well into play, with fights, salvage and orders under way, saved and loaded, is the universe it was: it compares
+  // equal, saves to the same bytes, and shows both players the same as the universe that was saved after a tick more.
+  TEST_METHOD(LoadsTheUniverseItSaved)
   {
-    WorldMatch match(5);
+    UniverseMatch match(5);
     match.Run(15.0 * 60.0);
-    Outpost::Simulation& world = match.Server().World();
-    const Bytes saved = Outpost::EncodeWorld(world, match.Identity());
+    Outpost::Simulation& simulation = match.Server().SimulationState();
+    const Bytes saved = Outpost::EncodeUniverse(simulation, match.Identity());
 
     const Outpost::SaveHeader header = Outpost::ReadSaveHeader(saved);
     Assert::IsTrue(header.identity == match.Identity());
-    Assert::AreEqual(world.CurrentTick(), header.tick);
+    Assert::AreEqual(simulation.CurrentTick(), header.tick);
 
     Outpost::Simulation loaded = match.Blank();
-    Outpost::DecodeWorld(saved, match.Identity(), loaded);
-    Assert::IsTrue(loaded == world, L"the loaded world compares equal");
-    Assert::IsTrue(Outpost::EncodeWorld(loaded, match.Identity()) == saved, L"and saves to the same bytes");
-    Assert::IsTrue(NextSnapshots(loaded) == NextSnapshots(world), L"and shows the players the same");
+    Outpost::DecodeUniverse(saved, match.Identity(), loaded);
+    Assert::IsTrue(loaded == simulation, L"the loaded universe compares equal");
+    Assert::IsTrue(Outpost::EncodeUniverse(loaded, match.Identity()) == saved, L"and saves to the same bytes");
+    Assert::IsTrue(NextSnapshots(loaded) == NextSnapshots(simulation), L"and shows the players the same");
   }
 
   // ADR-080 decision 7: a save keeps each seat's report of a time away beside the state, and the seats their players have
   // held, and gives them back.
   TEST_METHOD(KeepsTheSeatsReports)
   {
-    WorldMatch match(5);
+    UniverseMatch match(5);
     match.Run(1.0);
     const Outpost::SeatReports reports{
       .reports = {{Outpost::PlayerId{2},
@@ -82,48 +82,49 @@ public:
                     .ordersFired = {{.kind = Outpost::EventKind::OrderFired, .order = 9, .outcome = Outpost::OrderOutcome::HeldInstead}}}},
                   {Outpost::PlayerId{1}, {.sinceTick = 8, .structuresBuilt = 1}}},
       .held = {Outpost::PlayerId{2}, Outpost::PlayerId{1}}};
-    const Bytes saved = Outpost::EncodeWorld(match.Server().World(), match.Identity(), reports);
+    const Bytes saved = Outpost::EncodeUniverse(match.Server().SimulationState(), match.Identity(), reports);
     Outpost::Simulation loaded = match.Blank();
-    Assert::IsTrue(Outpost::DecodeWorld(saved, match.Identity(), loaded) == reports);
-    Assert::IsTrue(loaded == match.Server().World());
+    Assert::IsTrue(Outpost::DecodeUniverse(saved, match.Identity(), loaded) == reports);
+    Assert::IsTrue(loaded == match.Server().SimulationState());
     Outpost::Simulation again = match.Blank();
-    Assert::IsTrue(Outpost::DecodeWorld(Outpost::EncodeWorld(match.Server().World(), match.Identity()), match.Identity(), again) ==
-                     Outpost::SeatReports{},
-                   L"a world with none keeps none");
+    Assert::IsTrue(Outpost::DecodeUniverse(Outpost::EncodeUniverse(match.Server().SimulationState(), match.Identity()), match.Identity(),
+                                           again) == Outpost::SeatReports{},
+                   L"a universe with none keeps none");
   }
 
-  // ADR-077 decision 4: a world loaded from a save and given the commands the running world applied after it is, ticks
-  // later, the world that never stopped, to the bit, on the same build (ADR-009). The path graphs it builds again are
-  // the very graphs the running world kept up to date (ADR-054).
+  // ADR-077 decision 4: a universe loaded from a save and given the commands the running universe applied after it is, ticks
+  // later, the universe that never stopped, to the bit, on the same build (ADR-009). The path graphs it builds again are
+  // the very graphs the running universe kept up to date (ADR-054).
   TEST_METHOD(RunsOnAsIfItNeverStopped)
   {
-    WorldMatch match(9);
+    UniverseMatch match(9);
     std::vector<Bytes> saves;
     for (int save = 0; save < 3; ++save)
     {
       match.Run(6.0 * 60.0);
-      saves.push_back(Outpost::EncodeWorld(match.Server().World(), match.Identity()));
+      saves.push_back(Outpost::EncodeUniverse(match.Server().SimulationState(), match.Identity()));
     }
     match.Run(6.0 * 60.0);
-    const Outpost::Simulation& world = match.Server().World();
+    const Outpost::Simulation& simulation = match.Server().SimulationState();
 
     for (const Bytes& save : saves)
     {
       Outpost::Simulation loaded = match.Blank();
-      Outpost::DecodeWorld(save, match.Identity(), loaded);
-      match.Replay(loaded, world.CurrentTick());
-      Assert::IsTrue(loaded == world,
-                     std::format(L"the world loaded at tick {} runs on as the world did", Outpost::ReadSaveHeader(save).tick).c_str());
+      Outpost::DecodeUniverse(save, match.Identity(), loaded);
+      match.Replay(loaded, simulation.CurrentTick());
+      Assert::IsTrue(
+        loaded == simulation,
+        std::format(L"the universe loaded at tick {} runs on as the universe did", Outpost::ReadSaveHeader(save).tick).c_str());
     }
   }
 
-  // A save is refused when it is cut short, altered, of another world or data, of another state version, or laid out
+  // A save is refused when it is cut short, altered, of another universe or data, of another state version, or laid out
   // otherwise.
   TEST_METHOD(RefusesWhatItCannotLoad)
   {
-    WorldMatch match(2);
+    UniverseMatch match(2);
     match.Run(60.0);
-    const Bytes saved = Outpost::EncodeWorld(match.Server().World(), match.Identity());
+    const Bytes saved = Outpost::EncodeUniverse(match.Server().SimulationState(), match.Identity());
 
     ExpectRefused(std::span(saved).first(saved.size() - 1), match.Identity(), match, L"cut short");
     ExpectRefused(std::span(saved).first(20), match.Identity(), match, L"only its header");
@@ -131,16 +132,16 @@ public:
     altered[saved.size() / 2] ^= std::byte{0x01};
     ExpectRefused(altered, match.Identity(), match, L"altered");
 
-    Outpost::WorldIdentity otherData = match.Identity();
+    Outpost::UniverseIdentity otherData = match.Identity();
     ++otherData.dataHash;
     ExpectRefused(saved, otherData, match, L"other data");
-    Outpost::WorldIdentity otherSeed = match.Identity();
+    Outpost::UniverseIdentity otherSeed = match.Identity();
     ++otherSeed.seed;
-    ExpectRefused(saved, otherSeed, match, L"another world");
+    ExpectRefused(saved, otherSeed, match, L"another universe");
 
     // The version follows the save's kind, eight bytes in.
     Bytes otherVersion = saved;
-    otherVersion[8] = static_cast<std::byte>(Outpost::WORLD_STATE_VERSION + 1);
+    otherVersion[8] = static_cast<std::byte>(Outpost::UNIVERSE_STATE_VERSION + 1);
     otherVersion = Rechecked(std::move(otherVersion));
     ExpectRefused(otherVersion, match.Identity(), match, L"another state version");
     Assert::ExpectException<Neuron::Exception>([&]() { (void)Outpost::ReadSaveHeader(otherVersion); });
@@ -158,12 +159,12 @@ public:
     ExpectRefused(Rechecked(std::move(notASave)), match.Identity(), match, L"not a save");
   }
 
-  // AGENTS.md R18: the layout a save of WORLD_STATE_VERSION holds is the one recorded for it, and the one its header
+  // AGENTS.md R18: the layout a save of UNIVERSE_STATE_VERSION holds is the one recorded for it, and the one its header
   // carries. A change to what Simulation holds fails this until its layout is recorded.
   TEST_METHOD(TheLayoutIsTheVersions)
   {
-    const auto recorded = std::ranges::find(LAYOUTS, Outpost::WORLD_STATE_VERSION, &std::pair<std::uint32_t, std::uint64_t>::first);
-    Assert::IsTrue(recorded != LAYOUTS.end(), L"WORLD_STATE_VERSION has a recorded layout");
+    const auto recorded = std::ranges::find(LAYOUTS, Outpost::UNIVERSE_STATE_VERSION, &std::pair<std::uint32_t, std::uint64_t>::first);
+    Assert::IsTrue(recorded != LAYOUTS.end(), L"UNIVERSE_STATE_VERSION has a recorded layout");
     Assert::AreEqual(
       recorded->second, Outpost::SaveLayoutHash(),
       L"what Simulation holds has changed: record its layout's hash in LAYOUTS, under version 1 until the game is live (AGENTS.md R18)");

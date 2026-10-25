@@ -48,7 +48,7 @@ The owner chose on 2026-10-08 to show the territory and the edge of sight in the
 
 - **Tests:**
   - `PlacementTests.ClaimsANodeByTheGhostsRule`: `CanClaim` and the Relay's ghost agree at every node, for two players and three caps, with the node clear, covered by a derelict, or guarded.
-  - `FogTests.RemembersWhenAStructureWasLastSeen`: the tick is the last snapshot that showed the structure, and it stands while the structure stays out of sight. `WireFormatTests` carries the field. `WorldStateTests.TheLayoutIsTheVersions` holds the layout's hash.
+  - `FogTests.RemembersWhenAStructureWasLastSeen`: the tick is the last snapshot that showed the structure, and it stands while the structure stays out of sight. `WireFormatTests` carries the field. `UniverseStateTests.TheLayoutIsTheVersions` holds the layout's hash.
   - `TerritoryMarksTests`: each border drawn once; the outlines inset; the patterns; the claimable nodes against the ghost, and none while a Relay cannot be built; nothing without sectors.
   - `HudTests`:
     - `DescribesAMemoryWithItsAge`, with another player's finished Shipyard, seen or remembered, offering no button;

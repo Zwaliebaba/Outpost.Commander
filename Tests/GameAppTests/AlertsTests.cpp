@@ -181,7 +181,7 @@ public:
   }
 
   // What the player built and lost, other than a rig, and the sectors it gained and lost, are for its report of a time
-  // away (Game §world.away), not alerts.
+  // away (Game §universe.away), not alerts.
   TEST_METHOD(RaisesNoAlertForWhatTheReportTells)
   {
     Outpost::Alerts alerts;

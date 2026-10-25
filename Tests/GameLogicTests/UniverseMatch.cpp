@@ -1,12 +1,12 @@
 #include "pch.h"
 
-#include "WorldMatch.h"
+#include "UniverseMatch.h"
 
 namespace GameLogicTests
 {
 TemporaryFolder::TemporaryFolder()
   : m_path(std::filesystem::temp_directory_path() /
-           std::format("OutpostWorldTests-{}-{}", std::chrono::steady_clock::now().time_since_epoch().count(), sm_made++))
+           std::format("OutpostUniverseTests-{}-{}", std::chrono::steady_clock::now().time_since_epoch().count(), sm_made++))
 {
   std::filesystem::create_directories(m_path);
 }
@@ -29,8 +29,8 @@ const std::filesystem::path& TemporaryFolder::Path() const noexcept
   return m_path;
 }
 
-WorldMatch::WorldMatch(std::uint64_t _seed, const std::filesystem::path& _world)
-  : m_recovery(_world.empty() ? std::nullopt : Outpost::WorldFolder::Recover(_world)),
+UniverseMatch::UniverseMatch(std::uint64_t _seed, const std::filesystem::path& _folder)
+  : m_recovery(_folder.empty() ? std::nullopt : Outpost::UniverseFolder::Recover(_folder)),
     m_seed(m_recovery.has_value() ? m_recovery->header.identity.seed : _seed),
     m_tuning(Outpost::LoadTuning(ReadRepositoryTuning())),
     m_server(m_tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = m_seed}),
@@ -40,28 +40,28 @@ WorldMatch::WorldMatch(std::uint64_t _seed, const std::filesystem::path& _world)
     m_redAi(Settings(), m_server.TicksPerSecond())
 {
   if (!m_recovery)
-    m_server.World().PlaceStartingBases(m_server.MapData());
-  if (!_world.empty())
-    m_server.UseWorld(_world, RepositoryDataHash(), std::exchange(m_recovery, std::nullopt));
+    m_server.SimulationState().PlaceStartingBases(m_server.MapData());
+  if (!_folder.empty())
+    m_server.UseUniverse(_folder, RepositoryDataHash(), std::exchange(m_recovery, std::nullopt));
   m_server.PreparePathfinding();
 }
 
-Outpost::InProcessServer& WorldMatch::Server() noexcept
+Outpost::InProcessServer& UniverseMatch::Server() noexcept
 {
   return m_server;
 }
 
-const Outpost::Tuning& WorldMatch::TuningData() const noexcept
+const Outpost::Tuning& UniverseMatch::TuningData() const noexcept
 {
   return m_tuning;
 }
 
-Outpost::WorldIdentity WorldMatch::Identity() const
+Outpost::UniverseIdentity UniverseMatch::Identity() const
 {
   return {.seed = m_seed, .ticksPerSecond = m_server.TicksPerSecond(), .dataHash = RepositoryDataHash()};
 }
 
-std::uint64_t WorldMatch::RepositoryDataHash()
+std::uint64_t UniverseMatch::RepositoryDataHash()
 {
   const std::string tuning = ReadRepositoryTuning();
   const std::string map = ReadRepositoryMap();
@@ -69,7 +69,7 @@ std::uint64_t WorldMatch::RepositoryDataHash()
   return Outpost::DataHash(texts);
 }
 
-void WorldMatch::Run(double _seconds)
+void UniverseMatch::Run(double _seconds)
 {
   const std::uint32_t tps = m_server.TicksPerSecond();
   const auto ticks = static_cast<std::uint64_t>(_seconds * tps);
@@ -81,19 +81,19 @@ void WorldMatch::Run(double _seconds)
   }
 }
 
-void WorldMatch::Send(Outpost::PlayerId _player, Outpost::Order _order)
+void UniverseMatch::Send(Outpost::PlayerId _player, Outpost::Order _order)
 {
   (_player == BLUE ? m_blue : m_red)->Send({.order = std::move(_order)});
 }
 
-Outpost::Simulation WorldMatch::Blank() const
+Outpost::Simulation UniverseMatch::Blank() const
 {
   Outpost::Simulation simulation(m_seed, m_server.TicksPerSecond());
   simulation.UseTuning(m_tuning);
   return simulation;
 }
 
-void WorldMatch::Replay(Outpost::Simulation& _simulation, std::uint64_t _tick) const
+void UniverseMatch::Replay(Outpost::Simulation& _simulation, std::uint64_t _tick) const
 {
   const std::vector<Outpost::LoggedCommand>& log = m_server.CommandLog();
   auto next = std::ranges::lower_bound(log, _simulation.CurrentTick(), {}, &Outpost::LoggedCommand::tick);
@@ -106,12 +106,12 @@ void WorldMatch::Replay(Outpost::Simulation& _simulation, std::uint64_t _tick) c
   }
 }
 
-Outpost::AiSettings WorldMatch::Settings()
+Outpost::AiSettings UniverseMatch::Settings()
 {
   return Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
 }
 
-void WorldMatch::Answer(Outpost::Transport& _connection, Outpost::AiPlayer& _ai)
+void UniverseMatch::Answer(Outpost::Transport& _connection, Outpost::AiPlayer& _ai)
 {
   for (const Outpost::Snapshot& snapshot : _connection.Receive())
   {
