@@ -88,7 +88,7 @@ private:
   Outpost::Snapshot m_snapshot;
 };
 
-// The repository's tuning data without the fleet cap (Phase 4 design §5), for a test of what the AI does with more ships
+// The repository's tuning data without the fleet cap (ADR-071 decision 1), for a test of what the AI does with more ships
 // than the cap lets it have.
 Outpost::Tuning UncappedTuning()
 {
@@ -119,7 +119,7 @@ public:
     m_server.World().PlaceStartingBases(m_server.MapData());
   }
 
-  // The AI made afresh, as a server that restarted makes it: it kept nothing (Phase 5 design §6).
+  // The AI made afresh, as a server that restarted makes it: it kept nothing (ADR-020 decision 16).
   void RestartAi()
   {
     m_ai = Outpost::AiPlayer(m_settings, m_server.TicksPerSecond());
@@ -275,8 +275,9 @@ template <typename Order> std::vector<Order> OrdersOf(const std::vector<Outpost:
   return orders;
 }
 // The repository's settings with the attack's numbers fixed, so that a test of how the AI attacks does not move with
-// their tuning (task 12.2): a group of 12 that falls back after losing half and regroups for 30 seconds. Territory's play
-// is set aside, so that the group needs no lead in nodes and no raid takes ships from it (task 18.1).
+// their tuning (ADR-041 decisions 1 and 2): a group of 12 that falls back after losing half and regroups for 30 seconds.
+// Territory's play is set aside, so that the group needs no lead in nodes and no raid takes ships from it
+// (ADR-041 decision 5; ADR-020 decision 13).
 Outpost::AiSettings AttackSettings()
 {
   Outpost::AiSettings settings = RepositorySettings();
@@ -304,8 +305,8 @@ template <typename Element, typename IdType> bool Exists(const std::vector<Eleme
 TEST_CLASS(AiPlayerTests)
 {
 public:
-  // Owner, 2026-10-01: design §7's triangle. The swarm is answered with the brawler, the brawler with the line, the line
-  // and the picket with the swarm.
+  // Owner, 2026-10-01: the triangle's answers (ADR-020 decision 8). The swarm is answered with the brawler, the brawler
+  // with the line, the line and the picket with the swarm.
   TEST_METHOD(AnswersTheTriangle)
   {
     const Outpost::AiSettings settings = RepositorySettings();
@@ -316,8 +317,9 @@ public:
     Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, HEAVY_LANCE, 5).Get()) == PICKET);
   }
 
-  // Owner, 2026-10-01, and design §7: once the AI has the Large hull and the Fusion drive, it answers the swarm with
-  // Large+Fusion+Mass Driver and the brawler with Large+Fusion+Lance. The rest of the triangle stays as it was.
+  // Owner, 2026-10-01, and ADR-020 decision 8: once the AI has the Large hull and the Fusion drive, it answers the
+  // swarm with Large+Fusion+Mass Driver and the brawler with Large+Fusion+Lance. The rest of the triangle stays as it
+  // was.
   TEST_METHOD(AnswersWithHeaviesOnceUnlocked)
   {
     const Outpost::AiSettings settings = RepositorySettings();
@@ -330,7 +332,7 @@ public:
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(HEAVY_LANCE, 5).Get()) == PICKET);
   }
 
-  // Task 10.4, from the balance check of task 10.3: the Flak Battery answers the swarm, the brawler, the picket and the
+  // ADR-020 decision 8, from the balance check: the Flak Battery answers the swarm, the brawler, the picket and the
   // Pulse raiders once unlocked; the Rail Cannon answers the heavies; missiles answer the Small Flak Battery, and the
   // picket the Rail Cannon. Before an answer is unlocked, the MVP's answer or the default stands.
   TEST_METHOD(AnswersThePhaseOneDesigns)
@@ -381,7 +383,7 @@ public:
                      settings, FleetSnapshot().Add(HUMAN, SWARM, 4).Unlock(Outpost::HullId{3}, Outpost::DriveId{2}).Get()) == HEAVY_LANCE);
   }
 
-  // Plan task 6.1's acceptance, from the match's first snapshot: a Constructor queued, and both Constructors sent to put
+  // ADR-020 decisions 5 and 7, from the match's first snapshot: a Constructor queued, and both Constructors sent to put
   // a rig on the home asteroid nearest the Command Station.
   TEST_METHOD(OrdersARigAndAConstructorFirst)
   {
@@ -416,9 +418,9 @@ public:
     Assert::AreEqual(size_t{2}, commands.size(), L"nothing else: no lab to research in, no warship to order");
   }
 
-  // Plan task 6.1's acceptance, and the owner's of 2026-10-01: a shot on any of its structures, built or a site, sends the
+  // ADR-020 decision 8, and the owner's of 2026-10-01: a shot on any of its structures, built or a site, sends the
   // reserve there, and once the shooting has stopped for the settings' ten seconds, back to where it gathers. On a map
-  // with territory it gathers by holding a sector (task 18.1).
+  // with territory it gathers by holding a sector (ADR-020 decision 13).
   TEST_METHOD(SendsTheReserveWhereItsBaseIsShot)
   {
     AiMatch match;
@@ -468,8 +470,8 @@ public:
     Assert::AreEqual(0.0f, Outpost::Distance(back.front().position, rally), 0.01f);
   }
 
-  // Task 18.1: the reserve holds its front with a standing order: the sector it holds next to one the enemy holds, nearest
-  // its rally, or its home while it has no front.
+  // ADR-020 decision 13: the reserve holds its front with a standing order: the sector it holds next to one the enemy
+  // holds, nearest its rally, or its home while it has no front.
   TEST_METHOD(HoldsItsFrontWithAStandingOrder)
   {
     AiMatch match;
@@ -492,8 +494,8 @@ public:
     Assert::AreEqual(0.0f, Outpost::Distance(holds.front().position, SectorOf(snapshot, E4).node), 0.01f, L"not E4");
   }
 
-  // Task 18.1: on a map with territory the main attack waits for a lead in nodes, or for a reserve the settings' share
-  // larger than the group.
+  // ADR-041 decision 5: on a map with territory the main attack waits for a lead in nodes, or for a reserve the
+  // settings' share larger than the group.
   TEST_METHOD(AttacksWithALeadInNodesOrALargerReserve)
   {
     Outpost::AiSettings settings = AttackSettings();
@@ -502,7 +504,7 @@ public:
     AiMatch match;
     (void)match.Spawn(AI, BRAWLER, 12, {700.0f, 600.0f});
     Outpost::Snapshot snapshot = match.View(AI);
-    // No fleet cap here, which would let it have fewer ships than these (Phase 4 design §5).
+    // No fleet cap here, which would let it have fewer ships than these (ADR-041 decision 1).
     snapshot.fleetCap = 0;
     Outpost::AiPlayer ai(settings, 20);
     (void)ai.Update(snapshot);
@@ -529,14 +531,13 @@ public:
     Assert::AreEqual(size_t{18}, patient.AttackGroupShips());
   }
 
-  // Task 18.1: its first warship is a scout of the settings' design, with a Sensor Array, and it tours the sectors next to
-  // the enemy's home one after the other, attack-moving.
+  // ADR-020 decision 13: its first warship is a scout of the settings' design, with a Sensor Array, and it tours the
+  // sectors next to the enemy's home one after the other, attack-moving.
   TEST_METHOD(SendsAScoutRoundTheEnemysFlanks)
   {
     const Outpost::AiSettings settings = RepositorySettings();
     AiMatch match;
-    // Three minutes, where Phase 3 had two: Phase 4's lower income and dearer ships put its first warship at about 2:30
-    // (Phase 4 design §4).
+    // Three minutes, where Phase 3 had two: Phase 4's lower income and dearer ships put its first warship at about 2:30.
     match.Run(180.0);
     Outpost::Snapshot view = match.View(AI);
     const auto scout = std::ranges::find_if(view.entities,
@@ -549,7 +550,7 @@ public:
     Assert::IsTrue(scout != view.entities.end(), L"no scout in the first three minutes");
     const Outpost::EntityId id = scout->id;
 
-    // Phase 4 design §2 U1 (ADR-076): for the opening it moves through its own half, nearer its base than the enemy's,
+    // ADR-076 decision 4: for the opening it moves through its own half, nearer its base than the enemy's,
     // without seeking a fight: out of the pirates' reach, 600 m from an outpost's node.
     {
       Outpost::AiPlayer explorer(settings, 20);
@@ -590,8 +591,8 @@ public:
     Assert::AreEqual(0.0f, Outpost::Distance(next.value_or(Outpost::PlanePosition{}), match.Node(B1)), 0.01f, L"not B1 next");
   }
 
-  // Task 18.1: once its first Shipyard stands it claims the free sector next to its territory nearest its base with a
-  // Relay on its node, up to the settings' count of claims.
+  // ADR-020 decision 13: once its first Shipyard stands it claims the free sector next to its territory nearest its
+  // base with a Relay on its node, up to the settings' count of claims.
   TEST_METHOD(ClaimsAFreeSectorNextToItsTerritory)
   {
     const auto relays = [](std::int32_t _claims)
@@ -644,7 +645,7 @@ public:
     Assert::IsTrue(held >= 8, L"it claimed no other sectors in their place");
   }
 
-  // Task 33.1 (Phase 4 design §12, ADR-076): within its first half hour it salvages derelicts by its territory with one
+  // ADR-076: within its first half hour it salvages derelicts by its territory with one
   // Constructor, sends a detachment at a pirate outpost next to its territory, and builds a Repair Bay behind its front.
   TEST_METHOD(PlaysPhaseFoursOpening)
   {
@@ -678,8 +679,8 @@ public:
                    L"a Repair Bay");
   }
 
-  // Task 18.1: a sector it holds next to one the enemy holds is its front, and gets the settings' Defence Platform by its
-  // Relay.
+  // ADR-020 decision 13: a sector it holds next to one the enemy holds is its front, and gets the settings' Defence
+  // Platform by its Relay.
   TEST_METHOD(FortifiesItsFront)
   {
     Outpost::AiSettings settings = RepositorySettings();
@@ -701,8 +702,8 @@ public:
     Assert::AreEqual(std::ptrdiff_t{1}, platforms, L"not one platform by D5's Relay at five minutes");
   }
 
-  // Task 18.1: a few of the fastest of its reserve raid the nearest enemy sector it sees no enemy warship guarding, once
-  // the reserve holds twice as many, and come back once the sector is no longer the enemy's.
+  // ADR-020 decision 13: a few of the fastest of its reserve raid the nearest enemy sector it sees no enemy warship
+  // guarding, once the reserve holds twice as many, and come back once the sector is no longer the enemy's.
   TEST_METHOD(RaidsASectorItSeesUnguarded)
   {
     Outpost::AiSettings settings = RepositorySettings();
@@ -711,7 +712,7 @@ public:
     const std::vector<Outpost::EntityId> swarm = match.Spawn(AI, SWARM, 4, {3600.0f, 3600.0f});
     (void)match.Spawn(AI, BRAWLER, 4, {3600.0f, 3500.0f});
     Outpost::Snapshot snapshot = match.View(AI);
-    // No fleet cap, which would send the rest of the reserve on the main attack (Phase 4 design §5).
+    // No fleet cap, which would send the rest of the reserve on the main attack (ADR-041 decision 1).
     snapshot.fleetCap = 0;
     SectorOf(snapshot, E4).holder = HUMAN;
     Outpost::AiPlayer ai(settings, 20);
@@ -783,14 +784,14 @@ public:
 
   // Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times 10 Ore/s, so that its Shipyards
   // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 28.14 Ore/s, and has 2. Without the
-  // platforms task 12.2 adds for each Shipyard, which spend Ore first and so put the timings below later. Phase 4's lower
-  // income and its Defence Platform at 450 Ore put its contested rigs, each with a platform, later than Phase 3's 3:20
-  // (Phase 4 design §4).
+  // platforms ADR-041 decision 3 adds for each Shipyard, which spend Ore first and so put the timings below later.
+  // Phase 4's lower income and its Defence Platform at 450 Ore put its contested rigs, each with a platform, later than
+  // Phase 3's 3:20.
   TEST_METHOD(BuildsShipyardsByIncome)
   {
     Outpost::AiSettings settings = RepositorySettings();
     settings.homePlatformsPerShipyard = 0;
-    // Nor the rigs of a claimed sector (task 18.1), which add to the income.
+    // Nor the rigs of a claimed sector (ADR-020 decision 13), which add to the income.
     settings.claimSectors = 0;
     AiMatch match(3, std::nullopt, settings);
     const auto shipyards = [&match]
@@ -805,15 +806,15 @@ public:
     Assert::AreEqual(std::ptrdiff_t{1}, shipyards(), L"the first Shipyard is in the build order whatever the income");
 
     match.Run(320.0);
-    // Phase 1 design §8's map: three home rigs at 3.5 Ore a second and three on the near ring at 4, each raised by a quarter
-    // to the nearest hundredth (Phase 4 design §4).
+    // The repository's map (Game §map.asteroids): three home rigs at 3.5 Ore a second and three on the near ring at 4, each
+    // raised by a quarter to the nearest hundredth.
     Assert::AreEqual(2814, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 6:20");
     Assert::AreEqual(std::ptrdiff_t{2}, shipyards());
     match.Run(60.0);
     Assert::AreEqual(std::ptrdiff_t{2}, shipyards(), L"no third Shipyard below 30 Ore/s");
   }
 
-  // Design §10: at its review the AI answers the enemy's fleet, and its Shipyards build the answer.
+  // ADR-020 decision 8: at its review the AI answers the enemy's fleet, and its Shipyards build the answer.
   TEST_METHOD(BuildsTheAnswerToTheEnemysFleet)
   {
     AiMatch match;
@@ -863,7 +864,7 @@ public:
     Assert::IsTrue(match.Ai().ProductionDesign() == RepositorySettings().defaultDesign);
   }
 
-  // Gate G9, which task 12.2 raised to the settings' twenty (owner, 2026-10-03): the reserve waits until the attack group
+  // ADR-041 decision 1's attack group, the settings' twenty (owner, 2026-10-03): the reserve waits until the attack group
   // has gathered, and then attacks the enemy's base. Territory's gate on the attack has a test of its own.
   TEST_METHOD(AttacksOnceItsGroupHasGathered)
   {
@@ -889,7 +890,7 @@ public:
     Assert::IsTrue(MeanDistance(match.View(AI), ships, enemy) < waiting - 300.0f, L"the attack group is not on its way");
   }
 
-  // Phase 1 design §4, §13: the attack group goes for the enemy's Shipyards first, then its Command Station, then
+  // ADR-041 decision 6: the attack group goes for the enemy's Shipyards first, then its Command Station, then
   // anything else, nearest first in each; it keeps its target until it is gone, or until a Shipyard comes to light.
   TEST_METHOD(AttacksProductionFirst)
   {
@@ -943,8 +944,8 @@ public:
     Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), another), 0.01f);
   }
 
-  // Phase 3 design §8: its home, the two flanks its rigs take it to and its first claim are level 1's cap of four nodes
-  // (Phase 4 design §6), so it upgrades its Command Station to level 2 before its second claim, its fifth node; and at
+  // ADR-020 decision 14: its home, the two flanks its rigs take it to and its first claim are level 1's cap of four nodes
+  // (ADR-064 decision 11), so it upgrades its Command Station to level 2 before its second claim, its fifth node; and at
   // that cap, with two claims in its settings and so wanting no more, it upgrades no further. Without the fleet cap, which
   // upgrades the station for its own reasons (UpgradesItsStationWhenTheCapHoldsItBack).
   TEST_METHOD(UpgradesItsStationBeforeItsSecondClaim)
@@ -973,7 +974,7 @@ public:
     Assert::AreEqual(7, view.nodeCap, L"an upgrade past level 2 with no claim left");
   }
 
-  // Phase 3 design §8: choosing what to attack it counts a structure's level, so that a Shipyard at level 3 a little
+  // ADR-020 decision 14: choosing what to attack it counts a structure's level, so that a Shipyard at level 3 a little
   // farther off goes before one at level 1.
   TEST_METHOD(CountsAShipyardsLevel)
   {
@@ -1012,7 +1013,7 @@ public:
     Assert::AreEqual(0.0f, Outpost::Distance(target(0.0), {300.0f, 300.0f}), 0.01f, L"the nearest, without the levels counted");
   }
 
-  // Phase 3 design §8: once tier 3 is open it upgrades its Research Lab to level 4 for a second research slot.
+  // ADR-020 decision 14: once tier 3 is open it upgrades its Research Lab to level 4 for a second research slot.
   TEST_METHOD(UpgradesItsLabForASecondSlot)
   {
     const auto upgradesLab = [](std::int32_t _secondSlotTier)
@@ -1040,7 +1041,7 @@ public:
     Assert::IsFalse(upgradesLab(4), L"before the settings' tier");
   }
 
-  // Phase 1 design §4: once its Command Station has fallen, the AI plays on with its Shipyards, and queues no more
+  // ADR-020 decision 18: once its Command Station has fallen, the AI plays on with its Shipyards, and queues no more
   // Constructors.
   TEST_METHOD(PlaysOnWithoutItsStation)
   {
@@ -1059,7 +1060,7 @@ public:
                                  .position = {home.xMeters + 150.0f, home.zMeters + 150.0f},
                                  .radiusMeters = 40.0f,
                                  .builtPermille = Outpost::PERMILLE,
-                                 // At its top level, so that it builds whatever hull the AI chose (Phase 3 design §5).
+                                 // At its top level, so that it builds whatever hull the AI chose (ADR-064 decision 9).
                                  .level = 3});
     snapshot.tick += 20;
     const std::vector<Outpost::QueueShipCommand> queued = OrdersOf<Outpost::QueueShipCommand>(ai.Update(snapshot));
@@ -1069,7 +1070,7 @@ public:
                    L"something other than a warship was queued");
   }
 
-  // Phase 5 design §6 (ADR-020 decision 16): made afresh for a player that has lost its Command Station, it lays its plan
+  // ADR-020 decision 16: made afresh for a player that has lost its Command Station, it lays its plan
   // round the Shipyard it has left and keeps it building.
   TEST_METHOD(PlaysAnEmpireWithoutAStationFromItsFirstSnapshot)
   {
@@ -1093,7 +1094,7 @@ public:
       L"its Shipyard was given no work");
   }
 
-  // Phase 5 design §6 (ADR-020 decision 16): made afresh in the middle of a match, as a server that restarted makes an AI
+  // ADR-020 decision 16: made afresh in the middle of a match, as a server that restarted makes an AI
   // empire, it takes the base it built into its plan and builds none of it again: it orders no more structures than the
   // AI that never stopped.
   TEST_METHOD(PicksUpItsOwnEmpireWhereItLeftOff)
@@ -1117,7 +1118,7 @@ public:
                    L"and it plays on");
   }
 
-  // Phase 5 design §6 (ADR-020 decision 16): a base it did not build is taken into its plan: a Shipyard standing near where
+  // ADR-020 decision 16: a base it did not build is taken into its plan: a Shipyard standing near where
   // the plan would put its first is that Shipyard.
   TEST_METHOD(TakesOverABaseItDidNotBuild)
   {
@@ -1143,7 +1144,7 @@ public:
                    L"and builds its warships there");
   }
 
-  // Task 12.2: an attack group that has lost half the ships it set out with falls back, and the reserve waits the
+  // ADR-041 decision 2: an attack group that has lost half the ships it set out with falls back, and the reserve waits the
   // settings' 30 seconds before it attacks again, even with enough ships.
   TEST_METHOD(FallsBackAfterLosingHalfAndRegroups)
   {
@@ -1183,13 +1184,13 @@ public:
     Assert::AreEqual(size_t{12}, ai.AttackGroupShips(), L"it did not attack again once it had regrouped");
   }
 
-  // Task 12.2: the attack group grows with each tier the AI has opened.
+  // ADR-041 decision 1: the attack group grows with each tier the AI has opened.
   TEST_METHOD(GrowsItsAttackGroupWithEachTier)
   {
     AiMatch match;
     (void)match.Spawn(AI, BRAWLER, 20, {700.0f, 600.0f});
     Outpost::Snapshot snapshot = match.View(AI);
-    // Its Research Lab has opened tier 2 (Phase 3 design §6), and there is no fleet cap (Phase 4 design §5).
+    // Its Research Lab has opened tier 2 (ADR-064 decision 10), and there is no fleet cap (ADR-071 decision 1).
     snapshot.researchTier = 2;
     snapshot.fleetCap = 0;
     Outpost::AiSettings settings = AttackSettings();
@@ -1206,9 +1207,9 @@ public:
     Assert::AreEqual(size_t{24}, ai.AttackGroupShips());
   }
 
-  // Task 27.4: under a fleet cap that has room for fewer ships than its attack group asks, the AI attacks once its reserve
-  // holds the settings' share of that room. At level 1's 12 points, six of its Medium brawlers fill the cap, and four are
-  // 80% of them.
+  // ADR-041 decision 1: under a fleet cap that has room for fewer ships than its attack group asks, the AI attacks once
+  // its reserve holds the settings' share of that room. At level 1's 12 points, six of its Medium brawlers fill the
+  // cap, and four are 80% of them.
   TEST_METHOD(AttacksOnceItsReserveFillsTheCap)
   {
     Outpost::AiSettings settings = AttackSettings();
@@ -1227,8 +1228,8 @@ public:
     Assert::AreEqual(size_t{4}, ai.AttackGroupShips());
   }
 
-  // Task 27.4: when the fleet cap holds back its next warship, the AI upgrades its Command Station, whose level sets the
-  // cap (Phase 4 design §12); while there is room, it does not.
+  // ADR-020 decision 15: when the fleet cap holds back its next warship, the AI upgrades its Command Station, whose level
+  // sets the cap; while there is room, it does not.
   TEST_METHOD(UpgradesItsStationWhenTheCapHoldsItBack)
   {
     const auto upgradesStation = [](std::int32_t _brawlers)
@@ -1255,10 +1256,10 @@ public:
     Assert::IsTrue(upgradesStation(6), L"twelve of twelve hold the next one back");
   }
 
-  // Task 12.2: the AI fortifies its base with the settings' Defence Platforms for each Shipyard, toward the map's center.
-  // Each Shipyard's platforms are counted once placed, since its Constructors build them in the half minute after it. Nine
-  // minutes, where Phase 3 had five: Phase 4's platforms cost three times as much (Phase 4 design §4), and on its 10 km map
-  // the rigs away from home are further out (§6).
+  // ADR-041 decision 3: the AI fortifies its base with the settings' Defence Platforms for each Shipyard, toward the
+  // map's center. Each Shipyard's platforms are counted once placed, since its Constructors build them in the half
+  // minute after it. Nine minutes, where Phase 3 had five: Phase 4's platforms cost three times as much, and on its
+  // 10 km map the rigs away from home are further out.
   TEST_METHOD(FortifiesItsBaseForEachShipyard)
   {
     Outpost::AiSettings settings = RepositorySettings();
@@ -1281,7 +1282,7 @@ public:
     Assert::IsTrue(homePlatforms >= 1 + (2 * shipyards) - 2, L"the base is not fortified as its Shipyards grow");
   }
 
-  // Phase 4 design §6, gate L5: the AI looks for its Shipyards' places only in sectors it holds.
+  // ADR-056 decision 5: the AI looks for its Shipyards' places only in sectors it holds.
   TEST_METHOD(BuildsItsShipyardsInItsTerritory)
   {
     AiMatch match;
@@ -1319,7 +1320,7 @@ public:
   }
 
   // The whole AI against a player who does nothing: it builds, gathers, attacks and wins.
-  // Task 11.3, Phase 1 design §13: once its home asteroids run dry the AI builds on the nearest asteroids with ore left,
+  // ADR-020 decision 5: once its home asteroids run dry the AI builds on the nearest asteroids with ore left,
   // each with a Defence Platform beside it, and keeps the dry rigs for their trickle.
   TEST_METHOD(FollowsTheOre)
   {
@@ -1331,9 +1332,9 @@ public:
     }
     AiMatch match(3, map);
     // Sixteen minutes: its fifth sector waits for its Command Station's level 2, 300 Ore and 45 s of a Constructor's work
-    // before the Relay (Phase 3 design §7), where Phase 2 had it in eight; each rig away from home waits for a platform of
-    // 450 Ore, paid from Phase 4's lower income (design §4), where Phase 3 had it in nine; and on Phase 4's 10 km map those
-    // rigs are further out (§6).
+    // before the Relay (ADR-064 decision 11), where Phase 2 had it in eight; each rig away from home waits for a
+    // platform of 450 Ore, paid from Phase 4's lower income, where Phase 3 had it in nine; and on Phase 4's 10 km map
+    // those rigs are further out.
     match.Run(16.0 * 60.0);
     const Outpost::Snapshot view = match.View(AI);
     std::ptrdiff_t dry = 0;
@@ -1352,7 +1353,7 @@ public:
     Assert::IsTrue(platforms >= 6, L"a platform beside each rig away from home, and one by the base");
   }
 
-  // Task 10.4: against a player who does nothing, the AI researches through tier 2 and opens tier 3 (Phase 1 design §13).
+  // ADR-020 decision 14: against a player who does nothing, the AI researches through tier 2 and opens tier 3.
   // It is CI's slowest test by far, so CI runs it in a vstest process of its own beside the other suites, and sets
   // OUTPOST_TIER_THREE_APART for those so that it runs once (build.yml).
   TEST_METHOD(ReachesTierThree)
@@ -1363,7 +1364,7 @@ public:
       return;
     }
     AiMatch match;
-    // Its Research Lab's level opens tier 3 (Phase 3 design §6).
+    // Its Research Lab's level opens tier 3 (ADR-064 decision 10).
     const auto opened = [&match] { return match.View(AI).researchTier >= 3; };
     for (int minute = 0; minute < 45 && !opened(); ++minute)
       match.Run(60.0);

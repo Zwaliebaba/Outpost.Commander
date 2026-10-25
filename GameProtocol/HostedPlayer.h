@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// A player the server plays itself, on its own thread, rather than one that connects to it (Phase 5 design §6, ADR-079): a
+// A player the server plays itself, on its own thread, rather than one that connects to it (ADR-079 decision 1): a
 // world's AI empire, which plays its seat throughout, or a seat's deputy, which plays it while its player is away. After
 // each tick the server hands it its player's snapshot, and applies the orders it returns at the next tick as that
 // player's, logged as a connection's are, so that a world replays from its seed and its log without it (ADR-009). It is

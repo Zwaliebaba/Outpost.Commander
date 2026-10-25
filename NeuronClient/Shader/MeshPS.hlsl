@@ -1,5 +1,5 @@
 // Flat lighting in the object's color: a key light from one direction and a fill from above and below, no textures and no
-// specular (design §11, ADR-011, ADR-090). The color is linear, its instance's (ADR-053); the render target encodes it to
+// specular (ADR-011, ADR-090). The color is linear, its instance's (ADR-053); the render target encodes it to
 // sRGB. A face is darkened by how shut in it is, as the baker worked it out, by occlusionStrength's share (ADR-092).
 // cbuffer Frame is declared again, identically, in MeshVS.hlsl, MeshLineVS.hlsl and MeshLinePS.hlsl, and VertexOut in
 // MeshVS.hlsl; they must match MeshPipeline.cpp.

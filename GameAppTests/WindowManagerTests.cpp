@@ -65,8 +65,8 @@ public:
     Assert::IsFalse(windows.PositionOf(WindowKind::Research).has_value());
   }
 
-  // Task 15.4: a production or research window not yet moved takes the first slot no open window holds as it opens, and
-  // keeps it while it is open; closing or moving it frees its slot. The designer takes none.
+  // ADR-031 decision 1: a production or research window not yet moved takes the first slot no open window holds as it opens,
+  // and keeps it while it is open; closing or moving it frees its slot. The designer takes none.
   TEST_METHOD(TakesTheFirstFreeSlot)
   {
     Outpost::WindowManager windows;
@@ -99,7 +99,8 @@ public:
     Assert::IsFalse(windows.SlotOf(WindowKind::Production).has_value());
   }
 
-  // Task 16.4: the Controls window is a fourth kind, opened, ordered and closed as the others are, and it takes no slot.
+  // ADR-068 decision 4: the Controls window is a fourth kind, opened, ordered and closed as the others are, and it takes no
+  // slot.
   TEST_METHOD(OpensTheControlsAsAFourthKind)
   {
     Outpost::WindowManager windows;

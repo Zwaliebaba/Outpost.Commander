@@ -97,8 +97,8 @@ void Outpost::Alerts::Observe(const Snapshot& _snapshot, std::uint32_t _ticksPer
     case EventKind::OrderFired:
       raise(Kind::OrderFired, DescribeFiredOrder(event, where));
       break;
-    // What the player built and lost, and the sectors it gained and lost, go to its report of a time away (design §11),
-    // not to an alert; and a world's lost and restarted empire is the banner's to tell (Phase 5 design §8).
+    // What the player built and lost, and the sectors it gained and lost, go to its report of a time away (ADR-080
+    // decision 7), not to an alert; and a world's lost and restarted empire is the banner's to tell (ADR-084 decision 8).
     case EventKind::ShipBuilt:
     case EventKind::StructureBuilt:
     case EventKind::ShipLost:

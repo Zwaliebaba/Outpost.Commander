@@ -19,7 +19,7 @@ constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::WeaponId LANCE{2};
 constexpr Outpost::PlanePosition LAB{.xMeters = -600.0f, .zMeters = -600.0f};
 
-// The repository's topics (design §8).
+// The repository's topics (Game §research.topics).
 constexpr Outpost::ResearchTopicId IMPROVED_EXTRACTION{1};
 constexpr Outpost::ResearchTopicId HULL_PLATING{2};
 constexpr Outpost::ResearchTopicId MASS_DRIVER_CALIBRATION{3};
@@ -27,7 +27,7 @@ constexpr Outpost::ResearchTopicId LANCE_FOCUSING{4};
 constexpr Outpost::ResearchTopicId FUSION_DRIVE{5};
 constexpr Outpost::ResearchTopicId LARGE_HULL{6};
 constexpr Outpost::ResearchTopicId AUTOMATED_SHIPYARDS{8};
-// Phase 1's tiers (Phase 1 design §6), which the Research Lab's levels open (Phase 3 design §6).
+// Phase 1's tiers (ADR-033 decision 1), which the Research Lab's levels open (ADR-064 decision 10).
 constexpr Outpost::ResearchTopicId DEEP_CORE_SURVEY{12};
 constexpr Outpost::ResearchTopicId COMPOSITE_PLATING{13};
 constexpr Outpost::ResearchTopicId REINFORCED_STRUCTURES{14};
@@ -59,7 +59,7 @@ bool HasResearched(MatchArena& _arena, Outpost::PlayerId _player, Outpost::Resea
 }
 
 // Researches the topics one after another at a new lab of _player's, from the order to the tick the last one is done. The
-// lab stands at level 3, which has opened every tier and researches one topic at a time (Phase 3 design §6).
+// lab stands at level 3, which has opened every tier and researches one topic at a time (ADR-064 decision 10).
 Outpost::EntityId ResearchAll(MatchArena& _arena, Outpost::PlayerId _player, std::initializer_list<Outpost::ResearchTopicId> _topics)
 {
   const Outpost::EntityId lab =
@@ -174,8 +174,8 @@ void ExpectAsWorkedOutAfresh(const Outpost::Tuning& _tuning, const Outpost::Simu
 TEST_CLASS(ResearchTests)
 {
 public:
-  // Design §8, owner 2026-10-01: a lab queues up to five topics and researches one at a time, each paid for when it
-  // starts, and a topic may follow its prerequisite in the queue.
+  // ADR-017 decision 1, owner 2026-10-01: a lab queues up to five topics and researches one at a time, each paid for
+  // when it starts, and a topic may follow its prerequisite in the queue.
   TEST_METHOD(QueuesFiveTopicsAndResearchesOneAtATime)
   {
     MatchArena arena;
@@ -207,7 +207,7 @@ public:
     Assert::IsFalse(arena.World().BuildSnapshot(RED).research[1].researched, L"research is the player's own");
   }
 
-  // Design §8: a topic needs its prerequisites researched or ahead of it in the queue, and is researched once.
+  // ADR-017 decision 1: a topic needs its prerequisites researched or ahead of it in the queue, and is researched once.
   TEST_METHOD(APrerequisiteComesFirst)
   {
     MatchArena arena;
@@ -223,7 +223,7 @@ public:
     Assert::IsTrue(arena.Tick({Research(BLUE, lab, HULL_PLATING)})[0] == Outpost::CommandResult::AlreadyResearched);
   }
 
-  // Design §6, §8: research runs in the player's own built Research Lab, of which it may have one.
+  // Game §research.lab: research runs in the player's own built Research Lab, of which it may have one.
   TEST_METHOD(OnlyThePlayersOneBuiltLabResearches)
   {
     MatchArena arena;
@@ -248,7 +248,7 @@ public:
     Assert::IsTrue(arena.Tick({Research(RED, redLab, HULL_PLATING)})[0] == Outpost::CommandResult::NotALab);
   }
 
-  // Design §5: a topic that cannot be paid for waits at the front of the queue until it can.
+  // ADR-017 decision 1: a topic that cannot be paid for waits at the front of the queue until it can.
   TEST_METHOD(ATopicWaitsForTheOre)
   {
     MatchArena arena;
@@ -281,8 +281,9 @@ public:
     Assert::IsTrue(std::ranges::find(started.entities, lab, &Outpost::EntityView::id)->jobPermille > 0);
   }
 
-  // Design §8, owner 2026-10-01: Hull Plating raises the hit points of every ship the player has, and each keeps the share
-  // of its hit points it had; a new ship has the raised number, and the other player's ships do not change.
+  // ADR-017 decision 2, owner 2026-10-01: Hull Plating raises the hit points of every ship the player has, and each
+  // keeps the share of its hit points it had; a new ship has the raised number, and the other player's ships do not
+  // change.
   TEST_METHOD(HullPlatingRaisesExistingShipsKeepingTheirShare)
   {
     MatchArena arena;
@@ -315,8 +316,8 @@ public:
                      L"the Constructor has no hull");
   }
 
-  // Design §8: Mass Driver Calibration raises the fire rate of the Mass Drivers the player already has, and nothing else:
-  // not the hit, not the range, not the Lance and not the other player's.
+  // ADR-017 decision 2: Mass Driver Calibration raises the fire rate of the Mass Drivers the player already has, and
+  // nothing else: not the hit, not the range, not the Lance and not the other player's.
   TEST_METHOD(AFireRateUpgradeAppliesToExistingShips)
   {
     MatchArena arena;
@@ -348,10 +349,10 @@ public:
     Assert::IsTrue(blueShots == 165 || blueShots == 166, std::to_wstring(blueShots).c_str());
   }
 
-  // Design §7, §8: the Large hull is no one's until a player researches it, and then only that player's; a design of it can
-  // be saved once it is unlocked.
-  // Phase 1 design §11: each topic names the component it unlocks, for the designer to show on it while it is locked;
-  // an upgrade unlocks none.
+  // ADR-017 decision 4: the Large hull is no one's until a player researches it, and then only that player's; a design
+  // of it can be saved once it is unlocked.
+  // Game §ships.designer.parts: each topic names the component it unlocks, for the designer to show on it while it is
+  // locked; an upgrade unlocks none.
   TEST_METHOD(EachTopicNamesTheComponentItUnlocks)
   {
     MatchArena arena;
@@ -385,8 +386,9 @@ public:
     Assert::AreEqual(124200, design->stats.hitPointsHundredths);
   }
 
-  // Design §8: Improved Extraction raises every rig's income at once, and the 4.38 Ore a second a home rig then earns, its
-  // 3.5 raised by a quarter to the nearest hundredth, is paid in full though it is not a whole number of hundredths a tick.
+  // ADR-017 decision 2: Improved Extraction raises every rig's income at once, and the 4.38 Ore a second a home rig
+  // then earns, its 3.5 raised by a quarter to the nearest hundredth, is paid in full though it is not a whole number
+  // of hundredths a tick.
   TEST_METHOD(ImprovedExtractionRaisesTheIncome)
   {
     MatchArena arena;
@@ -400,7 +402,7 @@ public:
     Assert::AreEqual(start + (std::int64_t{4} * 438), arena.World().OreHundredths(BLUE));
   }
 
-  // Design §8: Automated Shipyards build a quarter faster, and the Command Station's Constructors do not.
+  // ADR-017 decision 2: Automated Shipyards build a quarter faster, and the Command Station's Constructors do not.
   TEST_METHOD(AutomatedShipyardsBuildFaster)
   {
     MatchArena arena;
@@ -454,7 +456,7 @@ public:
     MatchArena arena;
     const Outpost::Tuning& tuning = arena.TuningData();
     const std::array<Outpost::ResearchTopicId, 3> hulls{HULL_PLATING, COMPOSITE_PLATING, ABLATIVE_ARMOR};
-    // 15% + 15% + 5% (Ablative Armour, tuned in task 10.3).
+    // 15% + 15% + 5% (Ablative Armour, tuned against the balance check).
     Assert::AreEqual(1.35, Outpost::UpgradesFrom(tuning, hulls).hullHitPointsFactor, 1e-12);
     const std::array<Outpost::ResearchTopicId, 2> massDrivers{MASS_DRIVER_CALIBRATION, COILGUN_MASS_DRIVERS};
     Assert::AreEqual(1.2, Outpost::UpgradesFrom(tuning, massDrivers).FireRateFactor(MASS_DRIVER), 1e-12);
@@ -470,7 +472,7 @@ public:
     Assert::AreEqual(1.0, upgrades.hullHitPointsFactor, 1e-12);
   }
 
-  // Phase 3 design §6, gate K2: a tier's topics wait for the Research Lab's level that opens it. Level 2 opens tier 2 once
+  // ADR-033 decision 2: a tier's topics wait for the Research Lab's level that opens it. Level 2 opens tier 2 once
   // Improved Extraction and Hull Plating are researched, and level 3 tier 3 once Large Hull is; a topic queued at the
   // right level stays queued, and the snapshot says which tier is open.
   TEST_METHOD(ALabsLevelOpensItsTier)
@@ -525,7 +527,7 @@ public:
     Assert::AreEqual(size_t{23}, snapshot.research.size(), L"the two gateways are gone");
   }
 
-  // Phase 3 design §6, gate K3: at level 4 the Lab researches its front two topics at once, each paid for when it starts;
+  // ADR-064 decision 10: at level 4 the Lab researches its front two topics at once, each paid for when it starts;
   // one that requires the other waits for it to finish; and the second's progress moves to the front when the first ends.
   TEST_METHOD(ALevelFourLabResearchesTwoAtOnce)
   {
@@ -561,7 +563,7 @@ public:
                      static_cast<std::int32_t>(single.World().OreHundredths(BLUE) / Outpost::HUNDREDTHS));
   }
 
-  // Phase 1 design §6: Reinforced Structures raises every structure's hit points, those standing and those placed after;
+  // ADR-033 decision 4: Reinforced Structures raises every structure's hit points, those standing and those placed after;
   // a structure placed with numbers of its own keeps them, and the other side's are not raised.
   TEST_METHOD(ReinforcedStructuresRaiseStructures)
   {
@@ -580,7 +582,7 @@ public:
     Assert::AreEqual(full, arena.World().StructureHitPoints(RED, yardTuning));
   }
 
-  // Phase 1 design §6: Drive Harmonics speeds every ship of the player's, warships and Constructors, standing and new;
+  // ADR-033 decision 4: Drive Harmonics speeds every ship of the player's, warships and Constructors, standing and new;
   // Rapid Construction builds in four fifths of the time; the Defence Autoloader raises the Defence gun's fire rate.
   TEST_METHOD(TierThreeRatesApply)
   {
@@ -595,7 +597,7 @@ public:
       if (_rapid)
         topics.insert(topics.end(), {DRIVE_HARMONICS, RAPID_CONSTRUCTION, DEFENSE_AUTOLOADER});
       // Six topics cost more than the starting Ore: a rig on the home asteroid pays for them as they come. The Lab has
-      // opened tier 3 (Phase 3 design §6).
+      // opened tier 3 (ADR-064 decision 10).
       (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
       const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 3);
       for (const Outpost::ResearchTopicId topic : topics)

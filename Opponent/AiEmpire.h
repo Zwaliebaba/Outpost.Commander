@@ -2,9 +2,9 @@
 
 namespace Outpost
 {
-// A world's AI empire (Phase 5 design §6): the AI, playing a seat of its own on the server's thread, to win (ADR-079). Made
+// A world's AI empire: the AI, playing a seat of its own on the server's thread, to win (ADR-079 decision 3). Made
 // afresh when the server restarts, it plays on from the world the server restored (ADR-020 decision 16); and made afresh
-// when its seat restarts after a loss, it lays its plan round its new Command Station (design §8).
+// when its seat restarts after a loss, it lays its plan round its new Command Station (ADR-084 decision 6).
 class AiEmpire final : public HostedPlayer
 {
 public:

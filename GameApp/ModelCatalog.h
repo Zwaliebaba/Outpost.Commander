@@ -18,21 +18,21 @@ inline constexpr int FIRST_MODEL_LEVEL = 1;
 inline constexpr int MAXIMUM_MODEL_LEVELS = 9;
 
 // A mesh set and the color it is drawn in: the player's Human set, the AI's Tarkan set, the pirates' set and the asteroid
-// (design §1, §11). The color is linear and provisional until team colors are decided (design §15).
+// (ADR-011 decision 2). The color is linear; a player's set's is its team color (ADR-011 decision 3).
 struct ModelSet
 {
   std::string name;
   DirectX::XMFLOAT4 color{};
   std::vector<ModelEntry> models;
   // The set whose mesh files it draws, in its own color: its own name, unless it borrows another set's meshes and models, as
-  // the pirates borrow the Tarkan set's until there is art for them (Phase 4 design §8, ADR-073).
+  // the pirates borrow the Tarkan set's until there is art for them (ADR-073 decision 10).
   std::string meshes;
 
   // The model with this name. Throws Neuron::Exception when the set has none.
   [[nodiscard]] const ModelEntry& Model(std::string_view _name) const;
 };
 
-// Which set draws a player's ships (design §1): the player's Human set, the AI's Tarkan set.
+// Which set draws a player's ships (ADR-011 decision 3): the player's Human set, the AI's Tarkan set.
 struct PlayerModels
 {
   PlayerId player;
@@ -50,7 +50,7 @@ struct BankLimits
   float settleSeconds = 0.0f;
 };
 
-// Which model draws a hull, as the tuning data numbers hulls (task 2.5), and how ships of the hull bank. The same model
+// Which model draws a hull, as the tuning data numbers hulls (ADR-013 decision 1), and how ships of the hull bank. The same model
 // name is in every player's set.
 struct HullModel
 {
@@ -59,7 +59,7 @@ struct HullModel
   BankLimits bank;
 };
 
-// Which model draws a kind of structure (design §6), drawn to the structure's footprint across, and the share of its
+// Which model draws a kind of structure (ADR-011 decision 2), drawn to the structure's footprint across, and the share of its
 // set's color it is drawn in, so that two kinds sharing a mesh read apart: the Shipyard is a darker Station.
 struct StructureModel
 {
@@ -68,8 +68,8 @@ struct StructureModel
   float tint = 1.0f;
 };
 
-// The color a drive's exhaust glows in (ADR-019), so that a ship's drive reads on sight. Linear, and provisional, like
-// the team colors (design §15).
+// The color a drive's exhaust glows in (ADR-019), so that a ship's drive reads on sight. Linear, and never a side's
+// color (ADR-019 decision 3).
 struct DriveExhaust
 {
   DriveId drive;
@@ -77,7 +77,7 @@ struct DriveExhaust
 };
 
 // How a weapon's shot is drawn (ADR-034), so that a weapon reads on sight: a tracer that crosses to its target, a beam
-// in its shooter's side's color (ADR-028), or a slug, a white line that joins the gun and the target at once and lingers.
+// in its shooter's side's color (ADR-034 decision 4), or a slug, a white line that joins the gun and the target at once and lingers.
 // Presentation: the server reports only which weapon fired.
 enum class ShotLook : std::uint8_t
 {
@@ -105,12 +105,12 @@ struct ModelCatalog
   // One per kind of structure, and the model a Constructor is drawn with; the same names are in every player's set.
   std::vector<StructureModel> structures;
   std::string constructor;
-  // One per drive the data names, and the Constructor's, which has no drive (design §7).
+  // One per drive the data names, and the Constructor's, which has no drive (ADR-019 decision 3).
   std::vector<DriveExhaust> exhausts;
   DirectX::XMFLOAT4 constructorExhaust{};
   // One per weapon whose shot is not a tracer; a weapon not listed fires tracers.
   std::vector<WeaponShot> shots;
-  // How the Constructor banks, which has no hull (design §7).
+  // How the Constructor banks, which has no hull (ADR-029 decision 4).
   BankLimits constructorBank;
 
   // The set with this name. Throws Neuron::Exception when there is none.
@@ -153,7 +153,7 @@ struct ModelCatalog
   return std::max(FIRST_MODEL_LEVEL, _model.levels);
 }
 
-// The level of _model that draws a structure at _level (Phase 3 design §4): the structure's own, as far as the model has
+// The level of _model that draws a structure at _level (ADR-064 decision 8): the structure's own, as far as the model has
 // levels, and the first for a model that does not grow.
 [[nodiscard]] constexpr int DrawnLevel(const ModelEntry& _model, std::int32_t _level) noexcept
 {
@@ -162,9 +162,9 @@ struct ModelCatalog
 
 // A model's mesh at its size in the game: read from the bytes of its .nmf file, centered and scaled to its length, its
 // hardpoints with it (ADR-018). A level after the first is scaled instead to stand within _firstLevelWidestMeters, the
-// wider of its first level's length and depth, so that every level stands on level 1's ground (Phase 3 design §4,
-// ADR-064). Throws Neuron::Exception naming _fileName when the file cannot be read or has a hardpoint whose tag the game
-// does not know.
+// wider of its first level's length and depth, so that every level stands on level 1's ground (ADR-064 decision 8).
+// Throws Neuron::Exception naming _fileName when the file cannot be read or has a hardpoint whose tag the game does not
+// know.
 [[nodiscard]] Neuron::MeshData BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model, std::string_view _fileName,
                                               std::optional<float> _firstLevelWidestMeters = std::nullopt);
 } // namespace Outpost

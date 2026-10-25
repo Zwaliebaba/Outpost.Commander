@@ -21,7 +21,7 @@ constexpr DirectX::XMFLOAT4 WARNING_COLOR{1.0f, 0.5f, 0.35f, 1.0f};
 // The minimap: the map's square, and its marks in the side's color, an ore asteroid in Ore's gold, darkened, so that the
 // map reads without a legend: blue is the player's, red the enemy's, violet the pirates' (ADR-073), and gold is ore
 // (ADR-043). An ore asteroid's mark is an outlined square, so that it differs from an enemy's filled one in shape as well
-// as in brightness (ADR-068). The camera's view is a light outline.
+// as in brightness (ADR-043 decision 8). The camera's view is a light outline.
 constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
 constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 ENEMY_COLOR{1.0f, 0.38f, 0.25f, 1.0f};
@@ -30,11 +30,12 @@ constexpr DirectX::XMFLOAT4 PIRATE_COLOR{0.78f, 0.45f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 DERELICT_COLOR{0.62f, 0.62f, 0.66f, 1.0f};
 constexpr DirectX::XMFLOAT4 NEUTRAL_COLOR{0.45f, 0.42f, 0.4f, 1.0f};
 constexpr DirectX::XMFLOAT4 ORE_ASTEROID_COLOR{0.42f, 0.23f, 0.02f, 1.0f};
-// An ore asteroid that has run out: darker than one with ore, and warmed toward rust, at 3:1 against the map (ADR-068).
+// An ore asteroid that has run out: darker than one with ore, and warmed toward rust, at 3:1 against the map
+// (ADR-043 decision 8).
 constexpr DirectX::XMFLOAT4 DRY_COLOR{0.32f, 0.2f, 0.147f, 1.0f};
 // An asteroid field is only in the way, so it is drawn darker than an ore asteroid, which is worth going to, though a
-// field's square is the larger (ADR-040); dark enough that the fields stand back from the ore (ADR-046), and at 2:1
-// against the map, so that it is seen (ADR-068).
+// field's square is the larger; dark enough that the fields stand back from the ore (ADR-043 decision 7), and at 2:1
+// against the map, so that it is seen (ADR-043 decision 8).
 constexpr DirectX::XMFLOAT4 ASTEROID_FIELD_COLOR{0.13f, 0.13f, 0.14f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
 // A sector on the minimap (ADR-056): a faint wash of its holder's color under the marks, an outline of it over the fog,
@@ -43,7 +44,7 @@ constexpr float SECTOR_WASH_ALPHA = 0.12f;
 constexpr float SECTOR_OUTLINE_ALPHA = 0.55f;
 constexpr float SECTOR_HATCH_ALPHA = 0.35f;
 constexpr float SECTOR_LINE_UNITS = 1.0f;
-// The territory over the fog (interface plan 2, task UI1.4): every sector's border in LATTICE_COLOR, at 2:1 against the map,
+// The territory over the fog: every sector's border in LATTICE_COLOR, at 2:1 against the map,
 // under the held sectors' outlines; a cut-off sector's outline in dashes of CUT_OFF_DASH_UNITS with CUT_OFF_GAP_UNITS between
 // them, where a suppressed one keeps its hatching; and, while the player places a Relay, each sector whose node it could
 // claim now outlined CLAIMABLE_INSET_UNITS inside its border in the player's color. A node has no mark of its own: the
@@ -54,7 +55,7 @@ constexpr float CUT_OFF_DASH_UNITS = 6.0f;
 constexpr float CUT_OFF_GAP_UNITS = 4.0f;
 constexpr float CLAIMABLE_INSET_UNITS = 3.0f;
 // A structure or derelict the player only remembers is a cross MEMORY_MARK_UNITS across, its arms MEMORY_ARM_UNITS thick,
-// drawn over the fog in its side's color (interface plan 2, task UI1.2).
+// drawn over the fog in its side's color (ADR-081 decision 4).
 constexpr float MEMORY_MARK_UNITS = 8.0f;
 constexpr float MEMORY_ARM_UNITS = 2.0f;
 
@@ -68,7 +69,7 @@ constexpr float FIGURE_LINE_UNITS = 17.0f;
 
 // The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's gem and the figure in the
 // title face from the panel's left, so that the gem stays put as the figure changes, and the income at its right
-// (ADR-046). It is as wide as the column under it.
+// (ADR-043 decision 3). It is as wide as the column under it.
 constexpr float ORE_PANEL_HEIGHT = 44.0f;
 
 // The selection panel, anchored to the bottom edge's middle, as wide as its longest line within these (ADR-043).
@@ -77,13 +78,13 @@ constexpr float SELECTION_PANEL_WIDTH = 560.0f;
 // Lines of designs before the rest are counted together.
 constexpr size_t SELECTION_DESIGN_LINES = 5;
 // The selection's hit points as a bar under its lines: green above half, then amber, then red, as a bar over a damaged
-// ship is (ADR-046).
+// ship is (ADR-088 decisions 4 and 5).
 constexpr float HEALTH_BAR_UNITS = 6.0f;
 constexpr float HEALTH_BAR_GAP_UNITS = 8.0f;
 constexpr float HEALTH_HURT_SHARE = 0.5f;
 constexpr float HEALTH_LOW_SHARE = 0.25f;
 // A ship's own bar, under a selection of up to Hud::SHIP_BARS_MOST ships, in rows of twelve that fit the narrowest
-// selection panel (interface plan 2, task UI4.5).
+// selection panel (ADR-088 decision 4).
 constexpr float SHIP_BAR_WIDTH_UNITS = 17.0f;
 constexpr float SHIP_BAR_HEIGHT_UNITS = 10.0f;
 constexpr float SHIP_BAR_GAP_UNITS = 4.0f;
@@ -91,7 +92,7 @@ constexpr size_t SHIP_BARS_A_ROW = 12;
 static_assert((SHIP_BARS_A_ROW * SHIP_BAR_WIDTH_UNITS) + ((SHIP_BARS_A_ROW - 1) * SHIP_BAR_GAP_UNITS) <=
               SELECTION_PANEL_MIN_WIDTH - (2.0f * PADDING));
 
-// The bars over an entity, on the screen, at any zoom and however the camera has turned (interface plan 2, task UI4.1):
+// The bars over an entity, on the screen, at any zoom and however the camera has turned (ADR-088 decision 5):
 // each this size in reference units at the back buffer's scale, not the player's factor, which sizes the HUD and not the
 // world's marks (ADR-070); the health bar over the build bar, this far apart, and the pair this far above the top of the
 // entity's model on the screen.
@@ -100,7 +101,8 @@ constexpr float ENTITY_BAR_HEIGHT_UNITS = 5.0f;
 constexpr float ENTITY_BAR_GAP_UNITS = 2.0f;
 constexpr float ENTITY_BAR_LIFT_UNITS = 4.0f;
 
-// The buttons, stacked in a panel anchored to the bottom-right corner; a button's label and cost stand this far in.
+// The buttons, stacked in a panel against the selection panel's right edge (ADR-088 decision 2); a button's label and
+// cost stand this far in.
 constexpr float BUTTON_PANEL_WIDTH = 380.0f;
 constexpr float BUTTON_HEIGHT = 34.0f;
 constexpr float BUTTON_GAP = 6.0f;
@@ -110,22 +112,22 @@ constexpr float BUTTON_BAR_UNITS = 3.0f;
 constexpr float BUTTON_BAR_INSET = 2.0f;
 
 // The minimap, a square anchored to the bottom-left corner, with the map drawn inside its padding: about 36 m a unit on the
-// 10 km map (ADR-068).
+// 10 km map (ADR-043 decision 8).
 constexpr float MINIMAP_SIZE = 300.0f;
 constexpr float MINIMAP_PADDING = 8.0f;
 // The smallest a mark is drawn, and how wide the view's outline is, so that both stay visible. An ore asteroid's is the
-// largest, since it is what the player looks for on the map; a rig's mark is drawn over its asteroid's (ADR-046).
+// largest, since it is what the player looks for on the map; a rig's mark is drawn over its asteroid's (ADR-043 decision 7).
 constexpr float SHIP_MARK_UNITS = 3.0f;
 constexpr float STRUCTURE_MARK_UNITS = 6.0f;
 constexpr float ORE_MARK_UNITS = 8.0f;
 constexpr float VIEW_LINE_UNITS = 1.5f;
-// The line an ore asteroid's mark is outlined with (ADR-068).
+// The line an ore asteroid's mark is outlined with (ADR-043 decision 8).
 constexpr float ORE_OUTLINE_UNITS = 2.0f;
 
 // The hint, anchored to the top edge's middle.
 constexpr float HINT_PANEL_WIDTH = 640.0f;
 
-// The column under the Ore (interface plan 2, task UI3.2): the Ore, status, territory and alerts panels are one width, so
+// The column under the Ore (ADR-066 decision 3): the Ore, status, territory and alerts panels are one width, so
 // that the column's edge stands still. It is the widest of the alerts' COLUMN_LEAST_UNITS, the longest research topic's
 // name set on its line with room for "+99" queued at its end, and the widest of COLUMN_WIDEST_LINES, the status panel's
 // lines at their longest, set in the name face.
@@ -140,8 +142,8 @@ constexpr std::string_view COLUMN_WIDEST_QUEUED = "+99";
 constexpr float STATUS_LINES_KEPT = 3.0f;
 constexpr float PANEL_GAP = 8.0f;
 constexpr float TERRITORY_INSET_UNITS = 10.0f;
-// A status line's bar (task UI3.2): under its words, STATUS_UNDER_BAR_UNITS thick in a row of STATUS_BAR_ROW_UNITS; beside
-// them, STATUS_BESIDE_BAR_UNITS thick and STATUS_BAR_GAP_UNITS clear of the words and the figure.
+// A status line's bar (ADR-066 decision 3): under its words, STATUS_UNDER_BAR_UNITS thick in a row of STATUS_BAR_ROW_UNITS;
+// beside them, STATUS_BESIDE_BAR_UNITS thick and STATUS_BAR_GAP_UNITS clear of the words and the figure.
 constexpr float STATUS_BAR_ROW_UNITS = 8.0f;
 constexpr float STATUS_UNDER_BAR_UNITS = 4.0f;
 constexpr float STATUS_BESIDE_BAR_UNITS = 6.0f;
@@ -224,7 +226,7 @@ std::string FrontJobNameOf(const Outpost::Snapshot& _newest, const Outpost::Enti
   return DesignNameOf(_newest, job.role == Outpost::ShipRole::Constructor ? Outpost::DesignId{} : job.design);
 }
 
-// Whether _producer's front job waits for its player's fleet cap rather than for Ore (Phase 4 design §5): a warship not yet
+// Whether _producer's front job waits for its player's fleet cap rather than for Ore (ADR-071 decision 3): a warship not yet
 // started whose hull takes more command points than are left under the cap.
 bool WaitsOnFleetCap(const Outpost::Snapshot& _newest, const Outpost::EntityView& _producer)
 {
@@ -240,7 +242,7 @@ bool WaitsOnFleetCap(const Outpost::Snapshot& _newest, const Outpost::EntityView
 
 // What a producer or the Research Lab is doing, for its selection panel (ADR-066): "Building Swarm · 62% · +2 queued",
 // "Building Swarm · waiting for Ore", or "Idle" with nothing queued. _verb names the work and _front the front job, and
-// _waitingFor what a job not yet started waits for: Ore, or the fleet cap (Phase 4 design §5).
+// _waitingFor what a job not yet started waits for: Ore, or the fleet cap (ADR-071 decision 3).
 std::string WorkLine(std::string_view _verb, const std::string& _front, std::int32_t _permille, std::size_t _queued,
                      std::string_view _waitingFor = "Ore")
 {
@@ -254,7 +256,7 @@ std::string WorkLine(std::string_view _verb, const std::string& _front, std::int
 }
 
 // Whether a topic is open to the player's Research Lab now: not researched, of a tier its Lab has opened, and with every
-// prerequisite researched (Phase 3 design §6).
+// prerequisite researched (ADR-066 decision 1).
 bool IsOpen(const Outpost::Snapshot& _newest, const Outpost::ResearchTopicView& _topic)
 {
   const auto researched = [&_newest](Outpost::ResearchTopicId _id)
@@ -266,9 +268,9 @@ bool IsOpen(const Outpost::Snapshot& _newest, const Outpost::ResearchTopicView& 
 }
 
 // The status panel's lines (ADR-066): what the player's finished Research Lab is doing, what its finished Shipyards are
-// doing or what holds them back (interface plan 2, task UI3.1), and the fleet against its cap.
+// doing or what holds them back, and the fleet against its cap.
 // - The Lab's line names the topic it researches over a bar of how far it has come, with how many more are queued at the
-//   bar's end, "+3", or says it waits for Ore (task UI3.2). Idle, it says IDLE in a chip (ADR-085 decision 1) while a topic
+//   bar's end, "+3", or says it waits for Ore. Idle, it says IDLE in a chip (ADR-085 decision 1) while a topic
 //   is open to it, and that every open topic is done otherwise. A click opens research.
 // - The Shipyards' line says first whether the fleet cap holds them back: a Shipyard waits for it, or the fleet has room for
 //   none of the player's saved designs. Then it reads "Shipyards at the fleet cap · Station L4: +10", with what the
@@ -418,7 +420,7 @@ constexpr float GOOD_SHARE = 2.0f / 3.0f;
 constexpr float FAIR_SHARE = 1.0f / 3.0f;
 
 // A design's code, its components' initials joined by middle dots, "S·I·MD", with its module's after them when it has
-// one, "S·I·MD·SA" (Phase 1 design §5, Phase 2 design §10). The designer's chips and the production window both show it.
+// one, "S·I·MD·SA" (ADR-058 decision 6). The designer's chips and the production window both show it.
 std::string DesignCodeOf(const Outpost::Snapshot& _newest, const Outpost::DesignView& _design)
 {
   const auto initials = []<typename View>(const std::vector<View>& _views, auto _id)
@@ -451,7 +453,7 @@ std::string Capitalized(std::string _text)
 }
 
 // How long ago the player last saw _entity, which it only remembers, "last seen 4:12 ago", counted at _ticksPerSecond from
-// the tick the server says it was last seen in (interface plan 2, task UI1.2); "last seen earlier" when that is not known.
+// the tick the server says it was last seen in (ADR-081 decision 4); "last seen earlier" when that is not known.
 std::string LastSeen(const Outpost::Snapshot& _newest, const Outpost::EntityView& _entity, std::uint32_t _ticksPerSecond)
 {
   if (_ticksPerSecond == 0 || _entity.lastSeenTick == 0 || _entity.lastSeenTick > _newest.tick)
@@ -459,7 +461,7 @@ std::string LastSeen(const Outpost::Snapshot& _newest, const Outpost::EntityView
   return std::format("last seen {} ago", Outpost::MinutesAndSeconds((_newest.tick - _entity.lastSeenTick) / _ticksPerSecond));
 }
 
-// The retreats a row offers, left to right, and what each cell says (Phase 4 design §10; interface plan 2, task UI4.3).
+// The retreats a row offers, left to right, and what each cell says (ADR-088 decision 3).
 constexpr std::array<Outpost::RetreatThreshold, 3> RETREAT_CHOICES{Outpost::RetreatThreshold::Quarter, Outpost::RetreatThreshold::Half,
                                                                    Outpost::RetreatThreshold::Never};
 std::string_view RetreatCell(Outpost::RetreatThreshold _retreat) noexcept
@@ -477,7 +479,7 @@ std::string_view RetreatCell(Outpost::RetreatThreshold _retreat) noexcept
 }
 
 // The best each of a design's numbers reaches over every design the components make, locked ones included, so that the
-// designer's bars keep their scale as research unlocks parts (Phase 1 design §11).
+// designer's bars keep their scale as research unlocks parts (ADR-017 decision 7).
 struct Best
 {
   double hitPoints = 0.0;
@@ -515,7 +517,7 @@ Best BestOfAll(const Outpost::Snapshot& _newest)
       }
     }
   }
-  // A module adds its cost and its sight to any design (Phase 2 design §10).
+  // A module adds its cost and its sight to any design (ADR-058 decision 4).
   double moduleCost = 0.0;
   for (const Outpost::ModuleView& module : _newest.modules)
   {
@@ -531,7 +533,7 @@ float ShareOf(double _value, double _best) noexcept
   return _best > 0.0 ? static_cast<float>(std::clamp(_value / _best, 0.0, 1.0)) : 0.0f;
 }
 
-// A design's damage against a hull rated by its share of the best any design does to it (Phase 1 design §11).
+// A design's damage against a hull rated by its share of the best any design does to it (ADR-017 decision 7).
 Hud::Rating RatingOf(float _share) noexcept
 {
   return _share >= GOOD_SHARE ? Hud::Rating::Good : _share >= FAIR_SHARE ? Hud::Rating::Fair : Hud::Rating::Poor;
@@ -552,7 +554,7 @@ std::optional<Outpost::DesignStats> StatsOf(const Outpost::Snapshot& _newest, co
 
 // The change from _current to _preview as a signed number in ASCII (ADR-030), "+252", "-26" or "+4.5": whole and grouped in
 // thousands when _whole, and otherwise to a tenth as Tenths writes it. Both are rounded as their figures are first, so that
-// the change is the difference of the two figures shown (task 15.3).
+// the change is the difference of the two figures shown.
 std::string SignedChange(double _current, double _preview, bool _whole)
 {
   const double step = _whole ? 1.0 : 10.0;
@@ -579,7 +581,7 @@ std::string LockedBy(const Outpost::Snapshot& _newest, IdType _component, IdType
   return topic != _newest.research.end() ? std::format("RESEARCH{}{}", DOT, Capitals(topic->nameUtf8)) : std::string("RESEARCH");
 }
 
-// The designer's window (task 5.2, design §9; Phase 1 design §11): its target Shipyard, the name, the saved designs, a
+// The designer's window (ADR-017 decision 7): its target Shipyard, the name, the saved designs, a
 // card for each component of each slot, the design's numbers against the best in the game, its damage against each hull,
 // and saving, renaming and queuing. A hovered part previews the design it would make.
 Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, const Outpost::Designer& _designer,
@@ -690,7 +692,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
        .lockedBy = weapon.available ? std::string() : LockedBy(_newest, weapon.id, &Outpost::ResearchTopicView::unlocksWeapon),
        .action = {.kind = Hud::ActionKind::PickWeapon, .weapon = weapon.id}});
   }
-  // The module row: no module first, which every design starts with, then each module (Phase 2 design §10).
+  // The module row: no module first, which every design starts with, then each module (ADR-058 decision 7).
   Hud::SlotRow& modules = panel.slots[3];
   modules.label = "MODULE";
   modules.cards.reserve(_newest.modules.size() + 1);
@@ -768,7 +770,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
       [&armor](const Outpost::DesignStats& _s) { return Tenths(armor(_s)); }, armor, false);
     bar("Speed", "m/s", best.speed, speed, [&speed](const Outpost::DesignStats& _s) { return Tenths(speed(_s)); }, speed, false);
     bar("Range", "m", best.range, range, [&range](const Outpost::DesignStats& _s) { return Tenths(range(_s)); }, range, false);
-    // How far a module lets the ship see; none without one, when its weapon sets its sight (Phase 2 design §10).
+    // How far a module lets the ship see; none without one, when its weapon sets its sight (ADR-058 decision 5).
     if (best.sensor > 0.0)
     {
       bar(
@@ -790,7 +792,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
       const std::int32_t reached = Outpost::ShipsReached(shown.splashRadiusMeters, radius);
       const Hud::Change change = previewStats.has_value() ? ChangeOf(current, damage, false) : Hud::Change::Same;
       const float share = ShareOf(damage, best.damage[i]);
-      // The change per ship to a tenth, as the figure is written: "+4.5" (task 15.3).
+      // The change per ship to a tenth, as the figure is written: "+4.5".
       const double tenths = (std::round(damage * 10.0) - std::round(current * 10.0)) / 10.0;
       panel.damage.push_back({.hull = hull.nameUtf8,
                               .armor = std::format("ARM {}", Tenths(static_cast<double>(hull.armorHundredths) / Outpost::HUNDREDTHS)),
@@ -816,7 +818,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   const std::int32_t cost = match != nullptr ? match->cost : stats.has_value() ? stats->cost : 0;
   panel.queueCost = cost * static_cast<std::int32_t>(panel.count);
   panel.queueDetail = stats.has_value() ? std::format("{} s each", Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)) : "";
-  // A Shipyard builds the hulls of its level (Phase 3 design §5): above it, Queue is dim and says the level the hull needs.
+  // A Shipyard builds the hulls of its level (ADR-064 decision 9): above it, Queue is dim and says the level the hull needs.
   // The design is still saved.
   const auto pickedHull = std::ranges::find(_newest.hulls, picked.hull, &Outpost::HullView::id);
   const bool leveled = target == nullptr || pickedHull == _newest.hulls.end() || target->level >= pickedHull->shipyardLevel;
@@ -834,9 +836,9 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   return panel;
 }
 
-// A floating window's look (ADR-031), after the owner's mockup (Phase 1 design §11): a dark navy body, a hatched title bar
+// A floating window's look (ADR-031 decision 3), after the owner's mockup: a dark navy body, a hatched title bar
 // with the title in the title face, a close box at its right end, and a bracket at each corner.
-// Opaque, so that nothing bright behind a window shows through its near-black (task 16.1).
+// Opaque, so that nothing bright behind a window shows through its near-black (ADR-068 decision 1).
 constexpr DirectX::XMFLOAT4 WINDOW_COLOR{0.009f, 0.013f, 0.024f, 1.0f};
 constexpr DirectX::XMFLOAT4 TITLE_HATCH_COLOR{0.03f, 0.042f, 0.08f, 1.0f};
 constexpr DirectX::XMFLOAT4 CLOSE_BOX_COLOR{0.014f, 0.02f, 0.041f, 1.0f};
@@ -907,7 +909,7 @@ Hud::Rect Frame(Hud::Layout& _layout, float _left, float _top, float _width, flo
   return body;
 }
 
-// The designer's window (Phase 1 design §11), laid out as the owner's mockup, GameDesign/Mockups/ShipDesigner.png, which is
+// The designer's window (ADR-017 decision 7), laid out as the owner's mockup, GameDesign/Mockups/ShipDesigner.png, which is
 // drawn at the reference scale: every place below is in reference units from the window's top-left corner.
 // Three part cards from CARDS_LEFT, and the mockup's room right of them (ADR-062).
 constexpr float DESIGNER_WIDTH = 818.0f;
@@ -919,7 +921,7 @@ constexpr float NAME_ROW_HEIGHT = 38.0f;
 constexpr float CHIP_ROW_TOP = 132.0f;
 constexpr float CHIP_HEIGHT = 26.0f;
 constexpr float CHIPS_LEFT = 70.0f;
-// A little narrower than a part card, so that the arrows that scroll the chips stand clear of the third (task 16.1).
+// A little narrower than a part card, so that the arrows that scroll the chips stand clear of the third (ADR-068 decision 1).
 constexpr float CHIP_WIDTH = 216.0f;
 constexpr float SLOTS_TOP = 168.0f;
 constexpr float SLOT_GAP = 10.0f;
@@ -939,14 +941,14 @@ constexpr float SECTION_GAP = 20.0f;
 constexpr float SECTION_LABEL_HEIGHT = 26.0f;
 constexpr float BAR_ROW_HEIGHT = 25.0f;
 constexpr float BAR_LEFT = 104.0f;
-// A previewed figure and its change, "1,680 (+1,482)", end at BAR_VALUE_RIGHT clear of the bar (task 15.3).
+// A previewed figure and its change, "1,680 (+1,482)", end at BAR_VALUE_RIGHT clear of the bar.
 constexpr float BAR_WIDTH = 90.0f;
 constexpr float BAR_VALUE_RIGHT = 316.0f;
 constexpr float DAMAGE_LEFT = 364.0f;
 constexpr float DAMAGE_CARD_HEIGHT = 96.0f;
 constexpr float DAMAGE_CARD_GAP = 8.0f;
 constexpr float FOOTER_HEIGHT = 48.0f;
-// An arrow's button, and the room between it and what it steps (task 16.1).
+// An arrow's button, and the room between it and what it steps (ADR-068 decision 1).
 constexpr float SMALL_BUTTON_UNITS = 24.0f;
 constexpr float ARROW_GAP_UNITS = 8.0f;
 constexpr float LINE_UNITS = 1.0f;
@@ -960,7 +962,7 @@ constexpr float FIT_GAP_UNITS = 6.0f;
 // A warning chip (ADR-085 decision 1): its words in the windows' navy on a tag of the warning's color, which reaches this far
 // beyond them on either side and covers their whole line, descenders and all.
 constexpr float CHIP_PAD_UNITS = 4.0f;
-// A row of retreats (interface plan 2, task UI4.3): the room between its cells, a line's height as a share of its face's
+// A row of retreats (ADR-088 decision 3): the room between its cells, a line's height as a share of its face's
 // size, which centers the words in a cell, and in the HUD the room its RETREAT label takes over it.
 constexpr float RETREAT_CELL_GAP_UNITS = 4.0f;
 constexpr float RETREAT_LINE_SHARE = 1.25f;
@@ -969,11 +971,11 @@ constexpr float RETREAT_LABEL_UNITS = 20.0f;
 constexpr float ORE_BOX_WIDTH = 116.0f;
 // How far down a small button its mark's line starts.
 constexpr float SMALL_BUTTON_TEXT_TOP = 4.0f;
-// A key's cap on a button (task 15.2), and how far down it the letter's line starts.
+// A key's cap on a button (ADR-068 decision 4), and how far down it the letter's line starts.
 constexpr float KEY_CAP_UNITS = 20.0f;
 constexpr float KEY_CAP_TEXT_TOP = 2.0f;
 
-// The mockup's colors (gate H6, confirmed at the owner's run), sampled from it and made linear, as the render target
+// The mockup's colors (owner, 2026-10-03), sampled from it and made linear, as the render target
 // encodes them to sRGB. Those raised so that every text stands at 4.5:1 or more against its panel say so (ADR-062).
 constexpr DirectX::XMFLOAT4 LABEL_COLOR{0.22f, 0.29f, 0.42f, 1.0f};
 constexpr DirectX::XMFLOAT4 ROW_LABEL_COLOR{0.41f, 0.49f, 0.61f, 1.0f};
@@ -990,7 +992,7 @@ constexpr DirectX::XMFLOAT4 EDGE_COLOR{0.026f, 0.037f, 0.07f, 1.0f};
 constexpr DirectX::XMFLOAT4 PICKED_COLOR{0.033f, 0.063f, 0.136f, 1.0f};
 constexpr DirectX::XMFLOAT4 PICKED_EDGE_COLOR{0.35f, 0.56f, 0.9f, 1.0f};
 // A button under the pointer has its edge lit in the windows' edge color, short of a pick's; a status line under it lies on
-// the cards' color (interface plan 2, task UI4.4).
+// the cards' color (ADR-088 decision 1).
 constexpr DirectX::XMFLOAT4 HOVER_EDGE_COLOR = WINDOW_EDGE_COLOR;
 constexpr DirectX::XMFLOAT4 LOCKED_COLOR{0.007f, 0.01f, 0.016f, 1.0f};
 constexpr DirectX::XMFLOAT4 LOCKED_HATCH_COLOR{0.012f, 0.016f, 0.024f, 1.0f};
@@ -1016,7 +1018,7 @@ constexpr DirectX::XMFLOAT4 SLOT_FILLED_COLOR{0.15f, 0.25f, 0.45f, 1.0f};
 constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.5f, 0.52f, 0.55f, 1.0f};
 
 // A health bar's fill, over an entity and in the selection panel alike: green above half, then amber above a quarter, then
-// red (ADR-046, interface plan 2, task UI4.1). Brighter than the figures' good, fair and poor, which are tuned to a window's
+// red. Brighter than the figures' good, fair and poor, which are tuned to a window's
 // navy (ADR-062): on a side's back at 0.3 this red stands at 2.36:1 and this amber at 4.47:1 or more, where the figures'
 // would stand at 1.67:1 and 3.32:1 (ADR-088 decision 5).
 constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
@@ -1039,7 +1041,7 @@ const DirectX::XMFLOAT4& RatingColor(Hud::Rating _rating) noexcept
   return _rating == Hud::Rating::Good ? GOOD_COLOR : _rating == Hud::Rating::Fair ? FAIR_COLOR : POOR_COLOR;
 }
 
-// A queue's label, as every window writes it: its jobs against the queue's limit, "QUEUE · 2 / 5" (task 16.1).
+// A queue's label, as every window writes it: its jobs against the queue's limit, "QUEUE · 2 / 5" (ADR-043 decision 6).
 std::string QueueLabel(std::size_t _jobs)
 {
   return std::format("QUEUE{}{} / {}", DOT, _jobs, Outpost::QUEUE_LIMIT);
@@ -1196,7 +1198,7 @@ public:
     Text(std::move(_mark), left, _top + SMALL_BUTTON_TEXT_TOP, _enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label);
   }
 
-  // _subject between the arrows that step it, "< SHIPYARD 05 >" (task 16.1): the left arrow at _left, the subject cut
+  // _subject between the arrows that step it, "< SHIPYARD 05 >" (ADR-068 decision 1): the left arrow at _left, the subject cut
   // short to _roomUnits, and the right arrow after it. _arrowTop places the arrows and _textTop the subject. It returns
   // where the right arrow ends.
   float Stepped(const std::string& _subject, float _left, float _arrowTop, float _textTop, float _roomUnits, bool _canStep,
@@ -1257,7 +1259,7 @@ private:
 };
 
 // A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
-// any cost after a '|' as Ore's gem and the figure at its right, or its key as a cap there (task 15.2), and its place
+// any cost after a '|' as Ore's gem and the figure at its right, or its key as a cap there (ADR-068 decision 4), and its place
 // among the actions when it does something. The label is cut short only where it would meet the cost, the note or the
 // cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right. Under the
 // pointer, _hovered, its edge is lit unless it is a pick, whose edge is lit already.
@@ -1323,7 +1325,7 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
 }
 
 // A row of the three retreats from _left, _widthUnits across, each cell _heightUnits tall with its words centered in _face
-// at _tracking, the one at _lit picked, and each a press of _kind that sets it (interface plan 2, task UI4.3). Under the
+// at _tracking, the one at _lit picked, and each a press of _kind that sets it (ADR-088 decision 3). Under the
 // pointer, _hovered, a cell's edge is lit as a button's is.
 void RetreatRow(Painter& _paint, float _left, float _top, float _widthUnits, float _heightUnits,
                 std::optional<Outpost::RetreatThreshold> _lit, Hud::ActionKind _kind, Hud::Typeface _face, float _tracking,
@@ -1527,7 +1529,7 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     // How many ships a splash reaches, at the card's right above the change.
     if (!card.reach.empty())
       paint.RightText(card.reach, left + cardWidth - 8.0f, cardsTop + 28.0f, LABEL_COLOR, Hud::Typeface::Label);
-    // A hovered part's change, at the card's right on the large figure's line (task 15.3).
+    // A hovered part's change, at the card's right on the large figure's line.
     if (!card.perShipChange.empty())
     {
       paint.RightText(card.perShipChange, left + cardWidth - 8.0f, cardsTop + 44.0f, ChangeColor(card.change, TEXT_COLOR),
@@ -1553,7 +1555,7 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
                tracking);
   }
   // The design's retreat, between Rename and the stepper: RETREAT over a row of three, its setting lit, each a press that
-  // sets it (Phase 4 design §10; interface plan 2, task UI4.3).
+  // sets it (ADR-088 decision 3).
   {
     constexpr float RETREAT_LEFT = DESIGNER_INSET + 102.0f;
     constexpr float RETREAT_WIDTH = 206.0f;
@@ -1598,7 +1600,7 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   }
 }
 
-// The production and research windows (Phase 1 design §12), in the designer's look, in reference units from the window's
+// The production and research windows, in the designer's look, in reference units from the window's
 // top-left corner: a hatched header with the window's subject and the Ore, the cards that add to the queue, and under them
 // the queue, a row for each job. The cards stay where they are as the queue grows, so that one can be clicked again and
 // again, and the window grows at its foot (ADR-043). Research is wide enough that a topic's name fits its card, and
@@ -1654,7 +1656,7 @@ float QueueWindowHeight(float _cardsBottom, std::size_t _jobs) noexcept
 }
 
 // A window's header: its subject in the title face, and the Ore. A subject that is stepped through, such as production's
-// producer, stands between the arrows that step it (task 16.1).
+// producer, stands between the arrows that step it (ADR-068 decision 1).
 void Header(Painter& _paint, const std::string& _subject, std::int32_t _ore, float _widthUnits,
             std::optional<std::pair<Hud::Action, Hud::Action>> _steps = std::nullopt, bool _canStep = false)
 {
@@ -1685,7 +1687,7 @@ void QueueRows(Painter& _paint, const std::vector<Hud::QueueLine>& _queue, float
     const Hud::QueueLine& line = _queue[slot];
     const float right = WINDOW_INSET + width - 10.0f;
     const float barLeft = right - QUEUE_BAR_WIDTH - 44.0f;
-    // The name runs up to the front job's progress or its wait, for Ore or for the fleet cap (Phase 4 design §5).
+    // The name runs up to the front job's progress or its wait, for Ore or for the fleet cap (ADR-071 decision 4).
     const std::string_view waiting = line.capped ? "WAITING FOR FLEET CAP" : "WAITING FOR ORE";
     const float nameLeft = WINDOW_INSET + 32.0f;
     const float nameRight = line.waiting ? right - _paint.Width(waiting, Hud::Typeface::Label) : line.front ? barLeft : right;
@@ -1825,7 +1827,7 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   paint.Text("RESEARCH", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
   Header(paint, _panel.lab, _panel.ore, RESEARCH_WINDOW_WIDTH);
 
-  // Where the page is among the topics, "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030; task 16.1).
+  // Where the page is among the topics, "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030; ADR-068 decision 1).
   const std::size_t pageEnd = std::min(_panel.firstTopic + Hud::TOPICS_SHOWN, _panel.topics.size());
   paint.Text(_panel.topics.empty() ? std::string("TOPICS")
                                    : std::format("TOPICS{}{}-{} OF {}", DOT, _panel.firstTopic + 1, pageEnd, _panel.topics.size()),
@@ -1883,8 +1885,8 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   QueueRows(paint, _panel.queue, RESEARCH_WINDOW_WIDTH, QueueTop(cardsBottom));
 }
 
-// The Controls window (task 16.4): every key and mouse action the game reads in a match, as KeyBindings lists them, under
-// their headings, the keys in a column of their own.
+// The Controls window (ADR-068 decision 4): every key and mouse action the game reads in a match, as KeyBindings lists
+// them, under their headings, the keys in a column of their own.
 constexpr float CONTROLS_WINDOW_WIDTH = 700.0f;
 constexpr float CONTROLS_KEYS_WIDTH = 240.0f;
 constexpr float CONTROLS_HEADING_GAP = 10.0f;
@@ -1925,7 +1927,7 @@ void LayControls(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, Outpost
   }
 }
 
-// The orders window (Phase 5 design §7, §11): under a label, the seat's scheduled orders, a line each; and under another,
+// The orders window (ADR-080 decision 9): under a label, the seat's scheduled orders, a line each; and under another,
 // the form's rows, each its label and its value between the arrows that step it, the line that says when the order fires,
 // and the button that gives it. It is as tall as its most orders and rows, so that it does not jump as the form changes.
 constexpr float ORDERS_WINDOW_WIDTH = 640.0f;
@@ -1979,7 +1981,7 @@ void LayOrders(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud
   AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET, ORDERS_GIVE_TOP, room, BUTTON_HEIGHT, CARD_COLOR), _panel.give);
 }
 
-// The away window (Phase 5 design §11): how long the player was away, in the title face, and what happened, a line each.
+// The away window (ADR-080 decision 9): how long the player was away, in the title face, and what happened, a line each.
 constexpr float AWAY_WINDOW_WIDTH = 600.0f;
 
 float AwayHeight(std::size_t _lines) noexcept
@@ -2184,7 +2186,7 @@ std::optional<Hud::EntityBar> Hud::BarOver(const EntityView& _entity, DirectX::X
 
 std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
 {
-  // In a world no match ends: a player who lost waits for its seat to restart at its start (Phase 5 design §8).
+  // In a world no match ends: a player who lost waits for its seat to restart at its start (ADR-084 decisions 4 and 7).
   if (_newest.restartTick.has_value())
   {
     const std::uint64_t restart = *_newest.restartTick;
@@ -2198,7 +2200,7 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
     return std::nullopt;
   const std::string_view title = !_newest.winner.IsValid() ? "Draw" : _newest.winner == _newest.player ? "Victory" : "Defeat";
   const std::uint64_t seconds = _ticksPerSecond > 0 ? _newest.matchEndedTick / _ticksPerSecond : 0;
-  // A domination says so: the side that ran out of tickets held less of the map (Phase 2 design §8); and so does a battle
+  // A domination says so: the side that ran out of tickets held less of the map (ADR-057 decision 8); and so does a battle
   // matchup's end (ADR-083).
   std::string_view how;
   switch (_newest.ending)
@@ -2504,7 +2506,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         territory.enemyTickets = tickets.tickets;
     }
     // Who the drain takes tickets from, at what a minute, and when they run out: the drains their tickets last, rounded up,
-    // times the interval (task UI3.3). The next drain may be up to an interval away, which the row does not try to show.
+    // times the interval (ADR-057 decision 8). The next drain may be up to an interval away, which the row does not try to show.
     if (territory.ownTickets.has_value() && territory.enemyTickets.has_value() && _newest.drainIntervalSeconds > 0.0 &&
         _newest.drainTicketsPerNodeDifference > 0)
     {
@@ -2549,7 +2551,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   {
     const StructureTypeView* type = typeOf(*_placing);
     content.hint = std::format("Placing {}: left-click to build, right-click to cancel", type != nullptr ? type->nameUtf8 : "a structure");
-    // The reason a Relay's ghost is red everywhere (Phase 3 design §7).
+    // The reason a Relay's ghost is red everywhere (ADR-056 decision 11).
     if (*_placing == StructureKind::Relay && capReached)
       content.hint = "Relay: at the node cap; upgrade the Command Station to claim more";
   }
@@ -2563,7 +2565,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     if (structure != _entities.end() && structure->kind == EntityKind::Structure)
     {
       const StructureTypeView* type = typeOf(structure->structure);
-      // A kind that grows names its level, "Shipyard 01 · L2" (Phase 3 design §9).
+      // A kind that grows names its level, "Shipyard 01 · L2" (ADR-064 decision 7).
       const bool grows = type != nullptr && !type->levels.empty();
       std::string name = type != nullptr ? type->nameUtf8 : std::string("Structure");
       if (structure->shipyardNumber > 0)
@@ -2571,8 +2573,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       if (grows)
         name += std::format("{}L{}", DOT, structure->level);
       content.selection.push_back(std::move(name));
-      // One the player only remembers says how long ago it was seen, and that what follows is as it was then (interface
-      // plan 2, task UI1.2).
+      // One the player only remembers says how long ago it was seen, and that what follows is as it was then
+      // (ADR-081 decision 4).
       const bool memory = structure->remembered;
       const std::string_view then = memory ? " when seen" : "";
       if (memory)
@@ -2587,7 +2589,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       content.selection.push_back(std::format("Hit points {} / {}{}", WithThousands(WholePoints(structure->hitPointsHundredths)),
                                               WithThousands(WholePoints(structure->maxHitPointsHundredths)), then));
       content.selectionHealth = HealthShare(structure->hitPointsHundredths, structure->maxHitPointsHundredths);
-      // A Mining Rig's asteroid's Ore left, as far as the player knows it (Phase 1 design §8).
+      // A Mining Rig's asteroid's Ore left, as far as the player knows it (ADR-035 decision 5).
       if (structure->structure == StructureKind::MiningRig && structure->oreReserveHundredths.has_value())
       {
         content.selection.push_back(*structure->oreReserveHundredths > 0
@@ -2609,7 +2611,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         else
           content.selection.push_back(std::format("{}: held", sector->nameUtf8));
       }
-      // Its queue and what it can add to it are its windows' (Phase 1 design §12; owner, 2026-10-03): its panel says what it
+      // Its queue and what it can add to it are its windows' (ADR-031 decision 6; owner, 2026-10-03): its panel says what it
       // is doing (ADR-066) and offers to open them, once it is the player's own and finished.
       if (structure->owner == _newest.player && structure->builtPermille >= PERMILLE)
       {
@@ -2625,7 +2627,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
             WorkLine("Researching", structure->research.empty() ? std::string() : TopicNameOf(_newest, structure->research.front()),
                      structure->jobPermille, structure->research.size()));
         }
-        // Each window's button shows the key that opens it too (task 15.2).
+        // Each window's button shows the key that opens it too (ADR-068 decision 4).
         const Button production{
           .label = "Production", .action = {.kind = ActionKind::OpenProduction, .producer = structure->id}, .key = KeyCap(KEY_PRODUCTION)};
         if (structure->structure == StructureKind::CommandStation)
@@ -2643,15 +2645,15 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
             {.label = "Research", .action = {.kind = ActionKind::OpenResearch, .producer = structure->id}, .key = KeyCap(KEY_RESEARCH)});
         }
         // The next level: what it gives, and a button with its time and cost, dim while one is being built or the Ore is
-        // short (Phase 3 design §9).
+        // short (ADR-064 decision 7).
         const auto next = static_cast<std::size_t>(std::max(0, structure->level - 1));
         if (grows && next < type->levels.size())
         {
           const StructureLevelView& level = type->levels[next];
           const bool upgrading = structure->upgradePermille.has_value();
           // A Shipyard's next level names the hulls it adds, a Research Lab's the tier or the slot it gives, and a Command
-          // Station's the nodes it lets the player hold, the Defence guns it adds (Phase 3 design §5–§7) and its fleet cap
-          // (Phase 4 design §5).
+          // Station's the nodes it lets the player hold, the Defence guns it adds and its fleet cap
+          // (ADR-064 decisions 9 to 11).
           std::string gives;
           if (level.nodes > 0)
             gives = std::format("{} nodes, ", level.nodes);
@@ -2675,7 +2677,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
           }
           content.selection.push_back(
             std::format("L{}: {}{} hit points", structure->level + 1, gives, WithThousands(WholePoints(level.maxHitPointsHundredths))));
-          // The topics a Research Lab's next level needs that the player has not researched (Phase 3 design §6).
+          // The topics a Research Lab's next level needs that the player has not researched (ADR-064 decision 10).
           std::string missing;
           for (const ResearchTopicId required : level.prerequisites)
           {
@@ -2710,11 +2712,11 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   bool warships = false;
   bool holding = false;
   bool patrolling = false;
-  // The first ship's retreat, whether the others share it, and how many are going back to be repaired (Phase 4 design §10).
+  // The first ship's retreat, whether the others share it, and how many are going back to be repaired (ADR-075 decision 10).
   std::optional<RetreatThreshold> retreat;
   bool mixedRetreat = false;
   size_t retreating = 0;
-  // Each ship's own bar, beside its design, to stand in the order of the lines (interface plan 2, task UI4.5).
+  // Each ship's own bar, beside its design, to stand in the order of the lines (ADR-088 decision 4).
   std::vector<std::pair<DesignId, ShipBar>> bars;
   bars.reserve(_selected.size());
   for (const EntityId id : _selected)
@@ -2750,8 +2752,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   size_t ships = 0;
   for (const auto& [design, count] : byDesign)
     ships += count;
-  // One ship is titled with its design's name, and ships of one design with their count and its name, once (interface
-  // plan 2, task UI4.5). Ships of several designs are counted over a line for each.
+  // One ship is titled with its design's name, and ships of one design with their count and its name, once
+  // (ADR-088 decision 4). Ships of several designs are counted over a line for each.
   if (ships == 1)
     content.selection.push_back(nameOf(byDesign.front().first));
   else if (byDesign.size() == 1)
@@ -2768,7 +2770,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   content.selection.push_back(
     std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
   // Two to SHIP_BARS_MOST ships have a bar each, design by design in the lines' order; one ship, or more than that, the
-  // selection's one bar (interface plan 2, task UI4.5).
+  // selection's one bar (ADR-088 decision 4).
   if (ships > 1 && ships <= SHIP_BARS_MOST)
   {
     const auto rank = [&byDesign](const std::pair<DesignId, ShipBar>& _bar)
@@ -2789,7 +2791,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.selection.push_back(ships == 1 ? std::string("Retreating to be repaired")
                                            : std::format("{} retreating to be repaired", retreating));
   // A warship's orders, first, each with its key's cap, the one armed for the next left-click lit until it is given or
-  // canceled (interface plan 2, task UI4.2). Each does what its key does, to every selected ship. A map without sectors has
+  // canceled (ADR-088 decision 2). Each does what its key does, to every selected ship. A map without sectors has
   // none to hold (ADR-059).
   if (warships)
   {
@@ -2801,8 +2803,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.buttons.push_back(order("Patrol", ActionKind::Patrol, KEY_PATROL));
     content.buttons.push_back(order("Stop", ActionKind::Stop, KEY_STOP));
   }
-  // Constructors offer every structure they build (design §6); one Research Lab a player. Once the selection is given an
-  // order they fold into one Build button, which opens them again (ADR-088).
+  // Constructors offer every structure they build (Game §structures.building); one Research Lab a player. Once the
+  // selection is given an order they fold into one Build button, which opens them again (ADR-088).
   if (constructors && _buildFolded)
     content.buttons.push_back({.label = "Build", .action = {.kind = ActionKind::OpenBuild}});
   else if (constructors)
@@ -2819,7 +2821,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       if (!type.buildable || (type.structure == StructureKind::Relay && _newest.sectors.empty()))
         continue;
       const bool secondLab = type.structure == StructureKind::ResearchLab && hasLab;
-      // A Relay past the Command Station's cap waits for the station's next level (Phase 3 design §7).
+      // A Relay past the Command Station's cap waits for the station's next level (ADR-056 decision 11).
       const bool capped = type.structure == StructureKind::Relay && capReached;
       content.buttons.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
                                  .action = {.kind = ActionKind::Build, .structure = type.structure},
@@ -2829,8 +2831,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                                    : std::string()});
     }
   }
-  // The selection's retreat, under the rest, the first ship's and whether the others differ (Phase 4 design §10, §13;
-  // interface plan 2, task UI4.3).
+  // The selection's retreat, under the rest, the first ship's and whether the others differ (ADR-088 decision 3).
   if (retreat.has_value())
     content.retreat = RetreatChoice{.setting = *retreat, .mixed = mixedRetreat};
   return content;
@@ -2855,7 +2856,7 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
   if (!panel.queue.empty() && WaitsOnFleetCap(_newest, *_producer))
     panel.queue.front().capped = true;
 
-  // A Constructor at the Command Station; each saved design at a Shipyard, with its abbreviation (design §5).
+  // A Constructor at the Command Station; each saved design at a Shipyard, with its abbreviation (Game §ships.designs.names).
   const bool room = _producer->queue.size() < QUEUE_LIMIT;
   if (station)
   {
@@ -2872,7 +2873,7 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
   panel.options.reserve(_newest.designs.size());
   for (const DesignView& design : _newest.designs)
   {
-    // A design whose hull is above the Shipyard's level is dim, and says the level it needs (Phase 3 design §5).
+    // A design whose hull is above the Shipyard's level is dim, and says the level it needs (ADR-064 decision 9).
     const auto hull = std::ranges::find(_newest.hulls, design.hull, &HullView::id);
     const std::int32_t level = hull != _newest.hulls.end() ? hull->shipyardLevel : 1;
     const bool leveled = _producer->level >= level;
@@ -2903,7 +2904,7 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
 Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<const EntityView> _entities, std::size_t _firstTopic)
 {
   ResearchPanel panel{.lab = "NO RESEARCH LAB", .ore = _newest.ore};
-  // The player's Research Lab, of which it has one at most (design §6).
+  // The player's Research Lab, of which it has one at most (ADR-016 decision 4).
   const auto lab = std::ranges::find_if(_entities,
                                         [&_newest](const EntityView& _entity)
                                         {
@@ -2933,12 +2934,12 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
       names.push_back(view != nullptr ? view->nameUtf8 : std::string("Unknown topic"));
     }
     panel.queue = QueueLinesOf(std::move(names), found->jobPermille);
-    // A second topic researched beside the first shows how far it has come too (Phase 3 design §6).
+    // A second topic researched beside the first shows how far it has come too (ADR-064 decision 10).
     if (found->secondJobPermille > 0 && panel.queue.size() > 1)
       panel.queue[1] = {.name = std::move(panel.queue[1].name), .front = true, .permille = found->secondJobPermille};
   }
 
-  // The level of the Research Lab that opens each tier (Phase 3 design §6).
+  // The level of the Research Lab that opens each tier (ADR-064 decision 10).
   const auto labType = std::ranges::find(_newest.structureTypes, StructureKind::ResearchLab, &StructureTypeView::structure);
   const auto levelFor = [&](std::int32_t _tier)
   {
@@ -2951,7 +2952,7 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
   };
 
   // Each topic not researched or queued yet, and what it does; one whose prerequisites are neither, or of a tier the Lab
-  // has not opened, is dim, and says what it needs (design §8, Phase 3 design §6).
+  // has not opened, is dim, and says what it needs (ADR-017 decision 9; ADR-033 decision 5).
   const auto known = [&](ResearchTopicId _topic)
   {
     const ResearchTopicView* topic = topicOf(_topic);
@@ -2985,7 +2986,7 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
        .enabled = enabled,
        .tier = topic.tier});
   }
-  // Tier by tier, each in the tuning data's order (Phase 1 design §6).
+  // Tier by tier, each in the tuning data's order (ADR-033 decision 5).
   std::ranges::stable_sort(panel.topics, {}, &TopicCard::tier);
   panel.firstTopic = StepTopics(_firstTopic, 0, panel.topics.size());
   return panel;
@@ -3094,7 +3095,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   };
   // First, under every panel and window, the bars over the entities: each a back of its side's color with its fill from
   // the left, the health bar over the build bar, the pair centered over its foot, a little above it, and set to whole
-  // pixels, so that it keeps its size as it moves (interface plan 2, task UI4.1). A pair wholly off the screen is left out.
+  // pixels, so that it keeps its size as it moves (ADR-088 decision 5). A pair wholly off the screen is left out.
   {
     const float barScale = Scale(_widthPixels, _heightPixels);
     const float barWidth = std::round(ENTITY_BAR_WIDTH_UNITS * barScale);
@@ -3128,12 +3129,12 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     }
   }
 
-  // Whether _action is the one under the pointer, which lights what takes it (interface plan 2, task UI4.4).
+  // Whether _action is the one under the pointer, which lights what takes it (ADR-088 decision 1).
   const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };
   const auto addButton = [&layout, &_metrics, scale, &hovered](const Rect& _area, const Button& _button)
   { AddButton(layout, _metrics, scale, _area, _button, _button.enabled && hovered(_button.action)); };
 
-  // The column under the Ore, its panels one width whatever they hold (interface plan 2, task UI3.2).
+  // The column under the Ore, its panels one width whatever they hold (ADR-066 decision 3).
   float columnUnits = COLUMN_LEAST_UNITS;
   const float queuedUnits = _metrics.Width(Typeface::Figure, COLUMN_WIDEST_QUEUED) + FIT_GAP_UNITS;
   for (const std::string& name : _content.researchNames)
@@ -3165,8 +3166,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
 
   // Under the status panel's place: the nodes each side holds and each side's tickets, the player's against the enemy's,
   // "3 : 2", the player's in its color and the enemy's in theirs (ADR-056, ADR-057). Beside "Nodes", in the labels' color,
-  // the Command Station's cap of the map's nodes, "cap 10 of 25" (Phase 3 design §7). Under the tickets, who the drain takes
-  // from and when they run out, a warning chip when it is the player (interface plan 2, task UI3.3).
+  // the Command Station's cap of the map's nodes, "cap 10 of 25" (ADR-064 decision 11). Under the tickets, who the drain
+  // takes from and when they run out, a warning chip when it is the player (ADR-057 decision 8).
   const auto territoryRows = [](const Territory& _territory)
   {
     const bool tickets = _territory.ownTickets.has_value() && _territory.enemyTickets.has_value();
@@ -3353,7 +3354,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   }
 
   // Bottom-middle anchor: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
-  // centered at the bottom so that the two read as one, and never over the minimap (interface plan 2, task UI4.2). The
+  // centered at the bottom so that the two read as one, and never over the minimap (ADR-088 decision 2). The
   // selection's first line is in the title face and the rest in the name face, in a panel as wide as its longest line,
   // within its bounds; a line longer than the widest panel holds is cut short. A button's label holds the name and the
   // cost, split at '|', and the buttons stack downward from the panel's top.
@@ -3366,7 +3367,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       textUnits = std::max(textUnits, _metrics.Width(faceOf(line), _content.selection[line]));
     selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
   }
-  // The buttons' panel holds the buttons and, at its foot, the selection's retreat (interface plan 2, task UI4.3).
+  // The buttons' panel holds the buttons and, at its foot, the selection's retreat (ADR-088 decision 3).
   const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
   const float buttonsUnits = buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f;
   float pairLeft = (screenWidthUnits - selectionUnits - buttonsUnits) / 2.0f;
@@ -3397,8 +3398,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     }
     const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
     // A ship's bar fills from the left as its health does, outlined in the text's color while the ship goes back to be
-    // repaired, or in the edge's under the pointer otherwise; a click on it selects that ship alone (interface plan 2,
-    // task UI4.5).
+    // repaired, or in the edge's under the pointer otherwise; a click on it selects that ship alone (ADR-088 decision 4).
     for (size_t i = 0; i < _content.shipBars.size(); ++i)
     {
       const ShipBar& bar = _content.shipBars[i];
@@ -3620,7 +3620,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     }
 
     // The view's outline: the ground the screen's four corners show, joined in turn, so that it shows the near side and the
-    // far and turns with the camera (interface plan 2, task UI5.3). What runs past the map is cut at the minimap's edge.
+    // far and turns with the camera (ADR-015 decision 4). What runs past the map is cut at the minimap's edge.
     for (std::size_t corner = 0; corner < _view.size(); ++corner)
     {
       if (const std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> inside =
@@ -3643,9 +3643,9 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     const std::optional<WindowManager::Point> moved = _windows != nullptr ? _windows->PositionOf(_kind) : std::nullopt;
     return KeepOnScreen(moved.value_or(_default), _widthUnits, screenWidthUnits, screenHeightUnits);
   };
-  // Production and research stand at first in the slots under the Ore, each in the one it took as it opened (task 15.4):
-  // the first at the margin, the second beside where the other window stands in the first. Without a manager, production
-  // takes the first and research the second.
+  // Production and research stand at first in the slots under the Ore, each in the one it took as it opened
+  // (ADR-031 decision 2): the first at the margin, the second beside where the other window stands in the first. Without a
+  // manager, production takes the first and research the second.
   const auto slotted = [&](WindowKind _kind, std::size_t _slot)
   {
     const std::size_t slot = _windows != nullptr ? _windows->SlotOf(_kind).value_or(_slot) : _slot;
@@ -3666,14 +3666,14 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       LayProduction(layout, _metrics, *_content.production, place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH), scale);
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
       LayResearch(layout, _metrics, *_content.laboratory, place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH), scale);
-    // The Controls window, at first in the middle of the screen (task 16.4).
+    // The Controls window, at first in the middle of the screen (ADR-031 decision 2).
     else if (kind == WindowKind::Controls && _content.controls)
     {
       const WindowManager::Point middle{.xUnits = (screenWidthUnits - CONTROLS_WINDOW_WIDTH) / 2.0f,
                                         .yUnits = std::max(MARGIN, (screenHeightUnits - ControlsHeight(KeyBindings())) / 2.0f)};
       LayControls(layout, _metrics, place(kind, middle, CONTROLS_WINDOW_WIDTH), scale);
     }
-    // The orders window, at first at the right under the Ore's line, and the away window in the middle (Phase 5 design §11).
+    // The orders window, at first at the right under the Ore's line, and the away window in the middle (ADR-031 decision 2).
     else if (kind == WindowKind::Orders && _content.orders.has_value())
     {
       LayOrders(layout, _metrics, *_content.orders,

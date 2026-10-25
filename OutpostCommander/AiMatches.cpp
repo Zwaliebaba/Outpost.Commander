@@ -50,7 +50,7 @@ bool PlayOne(Outpost::Server& _server, const std::array<Outpost::AiSettings, 2>&
   for (std::uint64_t tick = 0; tick < _limitTicks && !ended; ++tick)
   {
     _server.Step();
-    // A stepped server still times its ticks (task 8.1). Nothing here reads them, so they are taken and dropped every tick
+    // A stepped server still times its ticks. Nothing here reads them, so they are taken and dropped every tick
     // rather than left to grow over the match.
     (void)_server.TakeTickTimings();
     for (size_t seat = 0; seat < connections.size(); ++seat)

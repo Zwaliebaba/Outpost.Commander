@@ -192,7 +192,7 @@ public:
     Assert::IsTrue(FailureOf(MakeFactory).starts_with("Map: "));
   }
 
-  // A measurement run's server holds task 2.7's load, and a match's does not.
+  // A measurement run's server holds the measurement load, and a match's does not.
   TEST_METHOD(PlacesTheMeasurementLoadOnlyWhenAsked)
   {
     const ScopedHomeDirectory home(RepositoryHome());
@@ -209,7 +209,7 @@ public:
     Assert::AreEqual(Outpost::MEASUREMENT_STRUCTURES, load.structures);
   }
 
-  // A stress run's server sets task 3.7's scene up, and fills both fleets as its first tick starts.
+  // A stress run's server sets the stress scene up, and fills both fleets as its first tick starts.
   TEST_METHOD(StartsTheStressLoadOnlyWhenAsked)
   {
     const ScopedHomeDirectory home(RepositoryHome());

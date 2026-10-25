@@ -4,9 +4,9 @@
 
 namespace GameLogicTests
 {
-// Milestone 4's tests: two players on open ground with the repository's tuning data, a home ore asteroid north of the
-// origin and a contested one east of it, the starting Ore and the starting designs, and nothing else until a test
-// places it. The asteroids never run out unless a test gives them a reserve (Phase 1 design §8).
+// The tests of a base (ADR-016): two players on open ground with the repository's tuning data, a home ore asteroid
+// north of the origin and a contested one east of it, the starting Ore and the starting designs, and nothing else until
+// a test places it. The asteroids never run out unless a test gives them a reserve (ADR-035 decision 1).
 class MatchArena
 {
 public:
@@ -25,8 +25,8 @@ public:
 
   [[nodiscard]] const Outpost::StructureTuning& StructureData(Outpost::StructureKind _kind) const;
 
-  // A built structure of the tuning data's footprint, hit points, armor and gun, at _level with its hit points (Phase 3
-  // design §4).
+  // A built structure of the tuning data's footprint, hit points, armor and gun, at _level with its hit points
+  // (ADR-064 decision 4).
   Outpost::EntityId Structure(Outpost::PlayerId _owner, Outpost::StructureKind _kind, Outpost::PlanePosition _position,
                               std::int32_t _level = 1);
 

@@ -13,7 +13,7 @@ constexpr Outpost::PlayerId RED = TerritoryMatch::RED;
 constexpr std::int32_t B1 = 2;
 constexpr std::int32_t A2 = 6;
 constexpr std::int32_t B2 = 7;
-// The repository's tuning data (Phase 2 design §8, as Phase 4 amends it): 1,000 tickets, and every 3 seconds one for each
+// The repository's tuning data: 1,000 tickets, and every 3 seconds one for each
 // node behind, whatever the map's nodes (ADR-057).
 constexpr std::int32_t STARTING_TICKETS = 1000;
 constexpr std::int32_t DRAIN_PER_NODE = 1;
@@ -23,8 +23,8 @@ constexpr std::uint32_t DRAIN_TICKS = 3 * TerritoryMatch::TICKS_PER_SECOND;
 TEST_CLASS(DominationTests)
 {
 public:
-  // Phase 2 design §8: each player starts with 1,000 tickets, and both players see both, with the drain's numbers from the
-  // tuning data, 1 ticket a node every 3 seconds, which the HUD tells the drain by (interface plan 2, task UI3.3).
+  // ADR-057 decisions 4 and 7: each player starts with 1,000 tickets, and both players see both, with the drain's
+  // numbers from the tuning data, 1 ticket a node every 3 seconds, which the HUD tells the drain by.
   TEST_METHOD(EachPlayerStartsWithItsTickets)
   {
     TerritoryMatch match;
@@ -69,7 +69,7 @@ public:
                      L"three behind, the suppressed B2 included");
   }
 
-  // Phase 2 design §8, as Phase 4 amends it: a lead of one node drains the other side in 50 minutes on any map, 1,000
+  // ADR-057 decision 2: a lead of one node drains the other side in 50 minutes on any map, 1,000
   // drains of three seconds on the 10 km map's 25 nodes as on nine, and the match ends by domination.
   TEST_METHOD(ALeadOfOneNodeWinsInFiftyMinutes)
   {

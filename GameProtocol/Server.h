@@ -5,11 +5,11 @@ namespace Outpost
 struct ServerDesc
 {
   // Every random draw in the simulation comes from one PRNG seeded with this, so that a match reproduces from its seed
-  // and its command log (ADR-002 decision 8).
+  // and its command log (ADR-009 decisions 1 and 5).
   std::uint64_t seed = 0;
-  // A measurement run, not a match: the map also holds task 2.7's load of 200 ships and 40 structures.
+  // A measurement run, not a match: the map also holds a load of 200 ships and 40 structures.
   bool measurementLoad = false;
-  // A measurement run, not a match: task 3.7's stress scene, 200 ships and 40 structures in combat, kept at full size.
+  // A measurement run, not a match: the stress scene, 200 ships and 40 structures in combat, kept at full size.
   bool stressLoad = false;
   // The server also takes players over QUIC, through OpenSeat (ADR-060): on the loopback address and a port the system
   // chooses, unless the two below say otherwise (ADR-078).
@@ -18,20 +18,20 @@ struct ServerDesc
   std::string quicAddress;
   // The port it listens on; zero lets the system choose one.
   std::uint16_t quicPort = 0;
-  // A world rather than a match (Phase 5 design §5, ADR-077): the folder its saves and command log are kept in. A folder
+  // A world rather than a match (ADR-077 decision 7): the folder its saves and command log are kept in. A folder
   // that holds a save of the world comes back as the world it saved, whatever the seed above; one that holds none starts a
   // new world from the seed. Empty for a match. A world's server keeps its QUIC certificate in the folder too, so that a
   // player pins it once (ADR-078).
   std::filesystem::path world;
-  // A battle matchup rather than a match (horizon §9, ADR-083): the index of one of Matchups.json's, whose fleets fight
+  // A battle matchup rather than a match (ADR-083 decision 2): the index of one of Matchups.json's, whose fleets fight
   // with no bases, no pirates and no fog of war. None for a match.
   std::optional<std::uint32_t> matchup;
 };
 
-// How long after a player's connection has gone its deputy takes the seat (Phase 5 design §6, gate H2, ADR-079).
+// How long after a player's connection has gone its deputy takes the seat (ADR-079 decision 4).
 inline constexpr std::uint32_t DEPUTY_DELAY_SECONDS = 60;
 
-// The parts of a tick the server times for measurement (task 8.1, Phase 1 design §10). They nest: Commands holds each
+// The parts of a tick the server times for measurement. They nest: Commands holds each
 // order's GroupRoute and ShipPaths, and GraphBuild is counted wherever a path graph was built, inside whichever part needed
 // it. The rest follow the simulation's step in order, Snapshots is the server building every player's snapshot, and Hosted
 // the players it plays itself deciding what to do (ADR-079).
@@ -103,16 +103,16 @@ public:
   virtual void Start() = 0;
 
   // Runs one tick now, on the caller's thread, applying the commands that have arrived and sending each connected player
-  // its snapshot: a headless run that is not paced by wall time, such as the AI-against-AI matches (Phase 1 plan task
-  // 13.1), steps the server instead of starting it. Throws Neuron::Exception once the server has started.
+  // its snapshot: a headless run that is not paced by wall time, such as the AI-against-AI matches (ADR-038 decision 3),
+  // steps the server instead of starting it. Throws Neuron::Exception once the server has started.
   virtual void Step() = 0;
 
   // How many ticks the server runs per second of wall time. A client interpolates between snapshots at this rate
-  // (task 2.5).
+  // (ADR-013 decision 3).
   [[nodiscard]] virtual std::uint32_t TicksPerSecond() const noexcept = 0;
 
   // How long each tick since the last call took on the server's own clock, oldest first: its commands, its simulation
-  // step and its snapshots (task 2.7), and each of its parts (task 8.1). The server has no PIX markers (ADR-005), so this
+  // step and its snapshots, and each of its parts. The server has no PIX markers (ADR-005), so this
   // is how its time is measured. An exception the server's thread met is thrown again here, on the caller's thread, and
   // the server runs no more ticks.
   [[nodiscard]] virtual std::vector<TickTiming> TakeTickTimings() = 0;
@@ -123,7 +123,7 @@ public:
 [[nodiscard]] std::unique_ptr<Server> CreateInProcessServer(const ServerDesc& _desc);
 
 // Makes servers as CreateInProcessServer does, from one reading of the tuning data and the map, for a run that plays many
-// matches, such as the AI-against-AI matches (Phase 1 plan task 13.1).
+// matches, such as the AI-against-AI matches (ADR-038 decision 3).
 using ServerFactory = std::function<std::unique_ptr<Server>(const ServerDesc&)>;
 
 // Loads and checks the tuning data and the map once, and throws Neuron::Exception as CreateInProcessServer does when

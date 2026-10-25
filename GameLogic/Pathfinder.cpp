@@ -35,15 +35,15 @@ constexpr float DETOUR_LIMIT = 1.5f;
 // the limit by this share before a route is passed over untried: a route it passes over is then always one whose way
 // would have been longer than the limit.
 constexpr float ROUNDING_ALLOWANCE = 1e-4f;
-// A ship of a group keeps its own lane along a shared route (ADR-047): each corner moved across the way by the ship's
-// place in the formation, along the corner's mitre, stretched so that the lane stays as far from the route on both legs,
-// but no more than this many times, so that a sharp corner does not throw the lane far out.
+// A ship of a group keeps its own lane along a shared route (ADR-047 decision 1): each corner moved across the way by
+// the ship's place in the formation, along the corner's mitre, stretched so that the lane stays as far from the route on
+// both legs, but no more than this many times, so that a sharp corner does not throw the lane far out.
 constexpr float LANE_MITRE_LIMIT = 2.0f;
 // The grid over the obstacles that line tests and corners look in (ADR-054): square cells this wide, about as wide as an
-// ore asteroid or a structure grown by a ship's clearance, fifty to a side on the 5 km map, or wider when the obstacles
-// spread over more than GRID_MOST_CELLS of them. A line that spans more than GRID_SHORT_LINE_CELLS cells along either
-// axis tests every obstacle instead: it would look in so many cells that testing every obstacle's box costs less, as
-// ADR-032 found.
+// ore asteroid or a structure grown by a ship's clearance, a hundred to a side on the 10 km map, or wider when the
+// obstacles spread over more than GRID_MOST_CELLS of them. A line that spans more than GRID_SHORT_LINE_CELLS cells along
+// either axis tests every obstacle instead: it would look in so many cells that testing every obstacle's box costs less,
+// as ADR-032 found.
 constexpr float GRID_CELL_METERS = 100.0f;
 constexpr std::int32_t GRID_MOST_CELLS = 256;
 constexpr float GRID_SHORT_LINE_CELLS = 3.0f;

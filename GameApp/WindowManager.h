@@ -2,17 +2,17 @@
 
 namespace Outpost
 {
-// The game's floating windows (Phase 1 design §12, ADR-031). The HUD stays where it is; these float over the battlefield
+// The game's floating windows (ADR-031). The HUD stays where it is; these float over the battlefield
 // and over the HUD.
 enum class WindowKind : std::uint8_t
 {
   Designer,
   Research,
   Production,
-  // Every key and mouse action the game reads (task 16.4).
+  // Every key and mouse action the game reads (ADR-068 decision 4).
   Controls,
-  // The seat's scheduled orders and the form that gives one, and what happened while the player was away (Phase 5 design
-  // §11).
+  // The seat's scheduled orders and the form that gives one, and what happened while the player was away (ADR-080
+  // decision 9).
   Orders,
   Away
 };
@@ -35,11 +35,11 @@ public:
     friend bool operator==(const Point&, const Point&) = default;
   };
 
-  // How many places the windows that stand under the Ore have, production's and research's (task 15.4).
+  // How many places the windows that stand under the Ore have, production's and research's (ADR-031 decision 2).
   static constexpr std::size_t SLOTS = 2;
 
   // Opens _window at the front, where it was left, or where the HUD puts it first; an open window comes to the front. A
-  // production or research window not yet moved takes the first slot no other open window holds (task 15.4).
+  // production or research window not yet moved takes the first slot no other open window holds (ADR-031 decision 2).
   void Open(WindowKind _window);
   void Close(WindowKind _window) noexcept;
   [[nodiscard]] bool IsOpen(WindowKind _window) const noexcept;
@@ -58,7 +58,7 @@ public:
   // Where _window's top-left corner was left; nothing until it has been moved, when the HUD places it.
   [[nodiscard]] std::optional<Point> PositionOf(WindowKind _window) const noexcept;
   // Which of the SLOTS an open production or research window not yet moved stands in, the first being production's place
-  // (task 15.4); nothing for any other window.
+  // (ADR-031 decision 2); nothing for any other window.
   [[nodiscard]] std::optional<std::size_t> SlotOf(WindowKind _window) const noexcept;
 
   // A press on _window's title bar at _pointer, while the window's top-left corner stands at _corner: the window comes to

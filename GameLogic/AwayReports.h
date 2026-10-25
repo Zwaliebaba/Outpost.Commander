@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// What happened to each seat's empire while its player was away (Phase 5 design §11, ADR-080). The server's thread keeps a
+// What happened to each seat's empire while its player was away (ADR-080 decision 7). The server's thread keeps a
 // seat's report from the events of the snapshots its deputy plays, saves the reports with the world, and hands a seat's to
 // its player with the first snapshot after the player takes the seat again.
 class AwayReports

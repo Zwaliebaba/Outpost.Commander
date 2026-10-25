@@ -12,11 +12,11 @@ struct FieldRock
   float turnRadians = 0.0f;
 };
 
-// How the client lays out an asteroid field's rocks (interface plan 2, task UI5.2): a rock in the middle and a ring of five
+// How the client lays out an asteroid field's rocks (ADR-087 decision 1): a rock in the middle and a ring of five
 // to eight around it, their distances, sizes and turns drawn from the field's identifier, so that no two fields look
 // alike and one field looks the same in every frame and on every machine. Where two of the ring's rocks stand further
 // apart than the gap a ship could pass, smaller rocks fill between them, so that the ring reads as closed, as the circle
-// the server blocks is (MVP design §4). Every rock lies inside the field's circle. Pure, so that it is tested without a GPU;
+// the server blocks is (ADR-010 decision 1). Every rock lies inside the field's circle. Pure, so that it is tested without a GPU;
 // the server blocks the whole circle whatever the client draws.
 struct FieldLayout
 {

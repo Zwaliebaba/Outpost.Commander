@@ -23,35 +23,35 @@ constexpr auto GAME_TITLE = L"Outpost Commander";
 // Minimized there is no frame to wait for, so the loop wakes this often for its clients to keep taking their snapshots
 // (ADR-009, ADR-025).
 constexpr DWORD MINIMIZED_WAKE_MILLISECONDS = 16;
-// The human player, and the other: the AI in a skirmish (task 6.1), or a load driver in a measurement run.
+// The human player, and the other: the AI in a skirmish (ADR-020 decision 1), or a load driver in a measurement run.
 constexpr Outpost::PlayerId HUMAN_PLAYER{1};
 constexpr Outpost::PlayerId RIVAL_PLAYER{2};
 
-// Task 2.7's switches. --measure logs every tick's duration, and since task 8.1 each of its parts, and every move order's
+// The measurement switches. --measure logs every tick's duration, and each of its parts, and every move order's
 // time to its first visible response to MEASUREMENT_LOG in the temporary folder; --load adds the load of 200 ships and 40 structures, and keeps both fleets
 // moving. Times are on std::chrono::steady_clock, which counts QueryPerformanceCounter, so a script injecting input
 // can line its own timestamps up with the game's.
 constexpr std::wstring_view MEASURE_SWITCH = L"--measure";
 constexpr std::wstring_view LOAD_SWITCH = L"--load";
-// Task 3.7's switch: the stress scene of 200 ships and 40 structures in combat, kept at full size (StressLoad). It takes
+// The stress switch: the stress scene of 200 ships and 40 structures in combat, kept at full size (StressLoad). It takes
 // the place of --load. With --measure, every frame's CPU and GPU time is logged as well, with the back buffer's size and
-// the display's refresh rate whenever the size changes, for Q4 (ADR-006).
+// the display's refresh rate whenever the size changes, for the frame budget (ADR-006).
 constexpr std::wstring_view STRESS_SWITCH = L"--stress";
 constexpr auto MEASUREMENT_LOG = L"OutpostCommander-measure.log";
-// Plan task 6.3: every match against the AI is added to this log in the temporary folder, for Tools/MatchLog.py.
+// Every match against the AI is added to this log in the temporary folder, for Tools/MatchLog.py (ADR-038 decision 5).
 constexpr auto MATCH_LOG = L"OutpostCommander-matches.log";
-// Phase 1 plan task 13.1's switch: seeded AI-against-AI matches on the real server, played headlessly as fast as it
-// ticks, for P1's repeatable figure. No window opens; a message says when they are done, and Tools/MatchLog.py
+// The AI-against-AI switch (ADR-038 decision 3): seeded matches between two AIs on the real server, played headlessly as fast as it
+// ticks, for a repeatable match length. No window opens; a message says when they are done, and Tools/MatchLog.py
 // --ai-matches summarizes them. Its options name the seeds, each AI's settings and the log (AiMatchesOptions, ADR-063).
 constexpr std::wstring_view AI_MATCHES_SWITCH = L"--ai-matches";
 // With --ai-matches, for a script such as Tools/SelfPlay.py: no message. The exit code says how the run went, and a
 // failure's message goes to standard error (ADR-063).
 constexpr std::wstring_view QUIET_SWITCH = L"--quiet";
-// Phase 5's switch: --join <file> joins the world a dedicated server's join file names, rather than showing the menu
+// The join switch: --join <file> joins the world a dedicated server's join file names, rather than showing the menu
 // (ADR-078). Without it, the menu offers to join the world of the join file in the player's documents, when there is one.
 constexpr std::wstring_view JOIN_SWITCH = L"--join";
-// Phase 5's other switch: --matchup <n> makes every skirmish battle matchup n of Matchups.json, from 1, against the AI's
-// battle behavior, for the owner's half of horizon §9's measurement; the match log names the matchup (ADR-083).
+// The matchup switch: --matchup <n> makes every skirmish battle matchup n of Matchups.json, from 1, against the AI's
+// battle behavior; it is the matchups' live half (ADR-083 decision 6), and the match log names the matchup (ADR-038 decision 1).
 constexpr std::wstring_view MATCHUP_SWITCH = L"--matchup";
 constexpr auto JOIN_FOLDER = L"Outpost Commander";
 constexpr auto JOIN_FILE = L"Join.json";
@@ -248,7 +248,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     const bool measure = commandLine.find(MEASURE_SWITCH) != std::wstring_view::npos;
     const bool stress = commandLine.find(STRESS_SWITCH) != std::wstring_view::npos;
     const bool load = !stress && commandLine.find(LOAD_SWITCH) != std::wstring_view::npos;
-    // A measurement run skips the menu and starts its match at once (task 6.2).
+    // A measurement run skips the menu and starts its match at once (ADR-020 decision 10).
     const bool skipMenu = measure || load || stress;
     std::uint64_t seed = NewSeed();
     std::ofstream measurements;
@@ -256,7 +256,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     {
       measurements.open(std::filesystem::temp_directory_path() / MEASUREMENT_LOG, std::ios::trunc);
       measurements << std::format("seed {} load {} stress {}\n", seed, load ? 1 : 0, stress ? 1 : 0);
-      // The names of the parts each tick_parts_ns line gives, in its order (task 8.1).
+      // The names of the parts each tick_parts_ns line gives, in its order.
       measurements << "tick_part_names";
       for (std::size_t part = 0; part < Outpost::TICK_PART_COUNT; ++part)
         measurements << ' ' << Outpost::TickPartName(static_cast<Outpost::TickPart>(part));
@@ -479,7 +479,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         if (match)
           match->player->Send(std::move(command));
       }
-      // The menu's buttons and the match end's (task 6.2). Leaving a match ends its server, and the next one is made.
+      // The menu's buttons and the match end's (ADR-020 decision 10). Leaving a match ends its server, and the next one is made.
       if (const std::optional<Outpost::GameClient::Request> request = client.TakeRequest())
       {
         switch (*request)
@@ -523,7 +523,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         logStage("first_frame", std::chrono::steady_clock::now());
       }
 
-      // Q4: a frame's work on the CPU, up to the return from Present, and on the GPU, resolved a few frames later.
+      // A frame's work on the CPU, up to the return from Present, and on the GPU, resolved a few frames later.
       const auto frameEnded = std::chrono::steady_clock::now();
       for (const std::chrono::nanoseconds gpuTime : renderer.TakeGpuFrameTimes())
       {
@@ -542,7 +542,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         measurements << std::format("frame_cpu_ns {}\n", (frameEnded - frameStarted).count());
       }
 
-      // Q5: from reading the order's input to presenting the first frame that shows a ship of it respond (task 2.7).
+      // An order's response: from reading the order's input to presenting the first frame that shows a ship of it respond.
       if (const std::optional<std::chrono::steady_clock::time_point> inputRead = client.TakeResponseShown(); measure && inputRead)
       {
         const auto presented = std::chrono::steady_clock::now();

@@ -10,7 +10,7 @@ namespace
 using Neuron::JsonBound;
 using Neuron::JsonObjectReader;
 
-// The MVP is one player against one AI (design §10).
+// A match is one player against one AI (Game §session.skirmish).
 constexpr size_t PLAYER_COUNT = 2;
 // Mixed into the match's seed for placement, so that its draws are not the ones the simulation's own generator makes from
 // the same seed (ADR-072).

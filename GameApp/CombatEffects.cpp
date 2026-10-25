@@ -8,7 +8,7 @@ namespace
 {
 using Outpost::CombatEffects;
 
-// Placeholder looks, chosen to read clearly from the RTS camera (design §11). Presentation, not tuning, so they live
+// Placeholder looks, chosen to read clearly from the RTS camera (Game §look.shots). Presentation, not tuning, so they live
 // here rather than in the tuning data.
 
 // Effects sit above the ships they belong to, so the ships do not hide them.

@@ -20,7 +20,7 @@ constexpr std::int32_t A2 = 6;
 constexpr std::int32_t B2 = 7;
 constexpr std::int32_t A3 = 11;
 constexpr std::int32_t E5 = 25;
-// Income in hundredths of an Ore a second: a near rig's 4 (Phase 4 design §4).
+// Income in hundredths of an Ore a second: a near rig's 4.
 constexpr std::int32_t NEAR_INCOME = 400;
 
 std::wstring Widen(std::string_view _text)
@@ -33,7 +33,7 @@ std::wstring Widen(std::string_view _text)
 TEST_CLASS(TerritoryTests)
 {
 public:
-  // Phase 2 design §4: each player's Command Station holds its home sector from the first tick, and every other node is
+  // ADR-056 decision 3: each player's Command Station holds its home sector from the first tick, and every other node is
   // free. Both players see every sector and who holds it.
   TEST_METHOD(EachStationHoldsItsHomeSector)
   {
@@ -54,8 +54,8 @@ public:
     Assert::IsTrue(flank.adjacent == std::vector<std::int32_t>{1, 3, 7});
   }
 
-  // Phase 2 design §5: a Relay snaps to the node of the sector it is ordered in, and holds the sector once it is built; its
-  // site holds nothing.
+  // ADR-056 decisions 3 and 4: a Relay snaps to the node of the sector it is ordered in, and holds the sector once it
+  // is built; its site holds nothing.
   TEST_METHOD(ARelayHoldsItsSectorOnceBuilt)
   {
     TerritoryMatch match;
@@ -76,7 +76,7 @@ public:
     Assert::IsTrue(match.Sector(RED, B1).holder == BLUE);
   }
 
-  // Phase 2 design §6: a Relay is built only on a free node next to the player's territory.
+  // ADR-056 decision 4: a Relay is built only on a free node next to the player's territory.
   TEST_METHOD(ARelayGrowsTheTerritoryOutward)
   {
     TerritoryMatch match;
@@ -95,7 +95,7 @@ public:
                    L"Blue's territory is no step for Red");
   }
 
-  // Phase 2 design §4: a rig may stand only in a sector its player holds.
+  // ADR-056 decision 5: a rig may stand only in a sector its player holds.
   TEST_METHOD(ARigNeedsAHeldSector)
   {
     TerritoryMatch match;
@@ -106,7 +106,7 @@ public:
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1)) == Outpost::CommandResult::Applied);
   }
 
-  // Phase 2 design §4, §6: a rig earns while its player holds its sector, and half while that sector is cut off from the
+  // ADR-056 decision 5: a rig earns while its player holds its sector, and half while that sector is cut off from the
   // home sector.
   TEST_METHOD(ARigEarnsWhileItsSectorIsHeldAndHalfWhenCutOff)
   {
@@ -132,8 +132,8 @@ public:
     Assert::AreEqual(2 * NEAR_INCOME, match.Income(BLUE));
   }
 
-  // Phase 4 design §6, gate L5: a Shipyard, or a Repair Bay (§10), may stand only in a sector its player holds, so that
-  // production follows the territory.
+  // ADR-056 decision 5: a Shipyard, or a Repair Bay (ADR-075 decision 1), may stand only in a sector its player holds,
+  // so that production follows the territory.
   TEST_METHOD(AShipyardNeedsAHeldSector)
   {
     TerritoryMatch match;
@@ -154,7 +154,7 @@ public:
                    L"its home");
   }
 
-  // A rig in a sector held by the other player earns nothing, and draws nothing from its asteroid (Phase 2 design §4).
+  // A rig in a sector held by the other player earns nothing, and draws nothing from its asteroid (ADR-056 decision 5).
   TEST_METHOD(ARigInTheEnemysSectorEarnsNothing)
   {
     TerritoryMatch match;
@@ -168,7 +168,7 @@ public:
     Assert::AreEqual(before, reserve());
   }
 
-  // Phase 2 design §5: an enemy warship within 400 m of a Relay suppresses it while none of its owner's is; the sector
+  // ADR-056 decision 6: an enemy warship within 400 m of a Relay suppresses it while none of its owner's is; the sector
   // earns nothing, but stays held, and the lattice still counts it.
   TEST_METHOD(AnEnemyWarshipSuppressesARelay)
   {
@@ -199,7 +199,7 @@ public:
     Assert::AreEqual(NEAR_INCOME, match.Income(BLUE));
   }
 
-  // Phase 2 design §4: the home sector is never suppressed.
+  // ADR-056 decision 6: the home sector is never suppressed.
   TEST_METHOD(AHomeSectorIsNeverSuppressed)
   {
     TerritoryMatch match;
@@ -233,7 +233,7 @@ public:
     Assert::IsFalse(match.Sees(BLUE, distant), L"a suppressed sector is not seen whole");
   }
 
-  // A map without sectors plays Phase 1's rules: no Relay, and ore anywhere (Phase 2 plan, rule 5).
+  // A map without sectors plays Phase 1's rules: no Relay, and ore anywhere (ADR-056 decision 1).
   TEST_METHOD(AMapWithoutSectorsHasNoTerritory)
   {
     Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
@@ -263,8 +263,8 @@ public:
     Assert::IsTrue(server.World().BuildSnapshot(BLUE).sectors.empty());
   }
 
-  // Phase 4 design §6, gate L4: a Command Station at level 1 lets its player hold 4 nodes, home included, and level 2
-  // seven (Phase 3 design §7); a Relay under construction counts, as it takes its node; and the cap refuses claims but takes no node away,
+  // ADR-064 decision 11: a Command Station at level 1 lets its player hold 4 nodes, home included, and level 2
+  // seven; a Relay under construction counts, as it takes its node; and the cap refuses claims but takes no node away,
   // even once the station is gone and its player is back to level 1's cap.
   TEST_METHOD(TheStationCapsTheNodesHeld)
   {

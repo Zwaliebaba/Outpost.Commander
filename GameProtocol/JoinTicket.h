@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// What a join file holds (Phase 5 design §4, ADR-078): everything a player needs to take its seat in a world on another
+// What a join file holds (ADR-078 decision 8): everything a player needs to take its seat in a world on another
 // machine. The dedicated server writes one for each seat, and its owner hands it to the seat's player.
 struct JoinTicket
 {

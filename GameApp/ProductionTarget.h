@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The producer the production window shows (Phase 1 design §12; owner, 2026-10-03): one of the player's finished
+// The producer the production window shows (ADR-068 decision 1; owner, 2026-10-03): one of the player's finished
 // Command Stations or Shipyards, the one selected when the window opens, another selected while it is open, or the next
 // or the previous stepped to with its arrows. It is client state, as the designer's target is.
 class ProductionTarget

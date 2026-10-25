@@ -55,7 +55,7 @@ std::vector<std::string> Texts(const Outpost::Alerts& _alerts, std::uint64_t _ti
 }
 } // namespace
 
-// Phase 2 design §9, ADR-059: the alerts the client reads from the events the server raises (ADR-080).
+// Game §interface.alerts, ADR-059: the alerts the client reads from the events the server raises (ADR-080).
 TEST_CLASS(AlertsTests)
 {
 public:
@@ -91,7 +91,7 @@ public:
   }
 
   // ADR-073: pirates in a held sector, as the ships an outpost has left once the player has claimed it, are named so.
-  // Phase 4 design §13: one of the player's ships going back to be repaired, and a sector the pirates guarded cleared of
+  // Game §interface.alerts: one of the player's ships going back to be repaired, and a sector the pirates guarded cleared of
   // them.
   TEST_METHOD(AlertsToARetreatAndPiratesCleared)
   {
@@ -145,7 +145,7 @@ public:
   }
 
   // What the player built and lost, other than a rig, and the sectors it gained and lost, are for its report of a time
-  // away (design §11), not alerts.
+  // away (Game §world.away), not alerts.
   TEST_METHOD(RaisesNoAlertForWhatTheReportTells)
   {
     Outpost::Alerts alerts;

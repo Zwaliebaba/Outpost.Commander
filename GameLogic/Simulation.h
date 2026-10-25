@@ -5,8 +5,8 @@ namespace Outpost
 class ByteWriter;
 class ByteReader;
 
-// How a ship picks what to fire at. Nearest is the game's rule (design §7). The other two are the balance check's two
-// extremes, forced by its headless battles (task 3.4) and by nothing in a match.
+// How a ship picks what to fire at. Nearest is the game's rule (ADR-014 decision 8). The other two are the balance
+// check's two extremes, forced by its headless battles and by nothing in a match.
 enum class TargetRule : std::uint8_t
 {
   // The nearest enemy ship in range, or with none in range the nearest enemy structure, kept until it dies or leaves range.
@@ -33,7 +33,7 @@ struct Entity
   float radiusMeters = 0.0f;
   // Meaningful for an ore asteroid, and for the Mining Rig on one.
   OreYield oreYield = OreYield::Home;
-  // An ore asteroid's Ore left, in hundredths, which its rig draws down (Phase 1 design §8); none for one that never runs
+  // An ore asteroid's Ore left, in hundredths, which its rig draws down (ADR-035 decision 2); none for one that never runs
   // out.
   std::optional<std::int64_t> oreReserveHundredths;
   // A Mining Rig's draw on its asteroid's reserve not yet whole hundredths, in hundredths times ticks a second, as a
@@ -48,8 +48,8 @@ struct Entity
   std::optional<PlanePosition> destination;
   // The rest of the ship's way to its slot, and the speed that brings it there with the rest of its group.
   std::vector<PlanePosition> path;
-  // The last waypoint of the ship's lane through its group's band (ADR-047), while the path still holds it: the waypoints
-  // up to it are the ship's place in the band, which it keeps until it is close to each.
+  // The last waypoint of the ship's lane through its group's band (ADR-047 decision 2), while the path still holds it:
+  // the waypoints up to it are the ship's place in the band, which it keeps until it is close to each.
   std::optional<PlanePosition> laneEnd;
   float cruiseSpeedMetersPerSecond = 0.0f;
   // How close the ship has come to its next waypoint, and for how many ticks it has come no closer.
@@ -58,7 +58,7 @@ struct Entity
 
   // Hit points left and at full strength, in hundredths (ADR-014). An entity with none at full strength is out of
   // combat: nothing targets or damages it. Asteroids and fields are, and so are ships and structures placed without
-  // hit points, which movement tests and task 2.7's load do.
+  // hit points, which movement tests and the measurement load do.
   std::int32_t hitPointsHundredths = 0;
   std::int32_t maxHitPointsHundredths = 0;
   std::int32_t armorHundredths = 0;
@@ -77,7 +77,7 @@ struct Entity
   std::uint64_t chaseTick = 0;
   // A Constructor's work order's target, while the order lasts.
   EntityId workTarget;
-  // A warship's standing order, kept until it is given another (Phase 2 design §9, ADR-059): the group it was given to,
+  // A warship's standing order, kept until it is given another (ADR-059 decision 4): the group it was given to,
   // which acts as one; for a hold, the sector's identifier and its node; for a patrol, its two ends and whether the ship
   // heads for the second.
   StandingOrder standing = StandingOrder::None;
@@ -86,7 +86,7 @@ struct Entity
   PlanePosition standingFrom;
   PlanePosition standingTo;
   bool standingOutward = true;
-  // A ship's retreat (Phase 4 design §10, ADR-075), and while it goes back to be repaired, the structure it goes to. Its
+  // A ship's retreat (ADR-075 decision 4), and while it goes back to be repaired, the structure it goes to. Its
   // standing order waits until it is whole.
   RetreatThreshold retreat = RetreatThreshold::Never;
   bool retreating = false;
@@ -97,28 +97,28 @@ struct Entity
   std::int32_t buildWorkDone = 0;
   std::int32_t buildWorkNeeded = 0;
   // A Command Station's further Defence guns, which its level gives, each with its reload as the first's is
-  // (Phase 3 design §7).
+  // (ADR-064 decision 11).
   std::vector<std::int32_t> extraGunReloadMilliticks;
   // A structure's level, from 1, and the next level's construction while it is upgraded, in thousandths of a tick of
-  // the level's time: both are zero while no upgrade is under way (Phase 3 design §4, ADR-064).
+  // the level's time: both are zero while no upgrade is under way (ADR-064 decision 3).
   std::int32_t level = 1;
   std::int32_t upgradeWorkDone = 0;
   std::int32_t upgradeWorkNeeded = 0;
-  // The Defence gun a built structure carries, if any (design §6).
+  // The Defence gun a built structure carries, if any (ADR-016 decision 7).
   StructureWeaponId structureWeapon;
   // A Shipyard's or the Command Station's jobs, front first, and the front job's progress in thousandths of a tick. The
-  // work needed is zero until the job starts, which is when it is paid for (design §5).
+  // work needed is zero until the job starts, which is when it is paid for (ADR-016 decision 6).
   std::vector<JobView> queue;
-  // A Research Lab's topics, front first, likewise; its front topic's progress is the job's (design §8).
+  // A Research Lab's topics, front first, likewise; its front topic's progress is the job's (ADR-017 decision 1).
   std::vector<ResearchTopicId> researchQueue;
   std::int32_t jobWorkDone = 0;
   std::int32_t jobWorkNeeded = 0;
-  // A Research Lab's second topic, researched beside the first from the level that gives it a second slot (Phase 3 design
-  // §6), counted as the first is: zero until it starts.
+  // A Research Lab's second topic, researched beside the first from the level that gives it a second slot
+  // (ADR-064 decision 10), counted as the first is: zero until it starts.
   std::int32_t secondJobWorkDone = 0;
   std::int32_t secondJobWorkNeeded = 0;
-  // A Shipyard's number among its owner's, given when it is first finished, and the ships it has built (Phase 1 design
-  // §11).
+  // A Shipyard's number among its owner's, given when it is first finished, and the ships it has built
+  // (ADR-016 decision 6).
   std::uint32_t shipyardNumber = 0;
   std::uint32_t shipsBuilt = 0;
   // A derelict's: the Ore it pays, the topic whose time it recovers if any, and its salvage, in thousandths of a tick of one
@@ -165,9 +165,9 @@ enum class CommandResult : std::uint8_t
   NotBuildable,
   // The structure would overlap something, cross the map's edge, or, for a Mining Rig, is not on a free ore asteroid.
   InvalidPlacement,
-  // The player has too little Ore to start the job (design §5).
+  // The player has too little Ore to start the job (ADR-016 decision 4).
   NotEnoughOre,
-  // The player already has the one Research Lab it may have (design §6).
+  // The player already has the one Research Lab it may have (ADR-016 decision 4).
   LimitReached,
   // A repair's target is not one of the player's own ships or structures under construction or damaged.
   NotRepairable,
@@ -175,7 +175,7 @@ enum class CommandResult : std::uint8_t
   NotAProducer,
   // A Shipyard's queue names no design of the player's.
   UnknownDesign,
-  // The queue already holds five jobs (design §6).
+  // The queue already holds five jobs (ADR-016 decision 6).
   QueueFull,
   // A research order's lab is not the player's built Research Lab.
   NotALab,
@@ -184,12 +184,12 @@ enum class CommandResult : std::uint8_t
   UnknownComponent,
   // The topic is researched already, or already in the lab's queue.
   AlreadyResearched,
-  // A topic the research needs first is neither researched nor ahead of it in the queue (design §8), or a topic a Research
-  // Lab's next level needs is not researched (Phase 3 design §6).
+  // A topic the research needs first is neither researched nor ahead of it in the queue (ADR-017 decision 1), or a topic
+  // a Research Lab's next level needs is not researched (ADR-064 decision 10).
   PrerequisiteMissing,
   // A design's name is empty, too long, or holds a character the HUD cannot show.
   InvalidName,
-  // A new design uses a component the player has not unlocked (design §8).
+  // A new design uses a component the player has not unlocked (ADR-017 decision 4).
   ComponentLocked,
   // The player already has a design of these components.
   DuplicateDesign,
@@ -197,9 +197,9 @@ enum class CommandResult : std::uint8_t
   ComponentsFixed,
   // An attack's target is an enemy the player neither sees nor, for a structure, remembers (ADR-024).
   NotVisible,
-  // A Relay ordered in a sector that is not adjacent to one the player holds (Phase 2 design §6).
+  // A Relay ordered in a sector that is not adjacent to one the player holds (ADR-056 decision 4).
   NotAdjacent,
-  // A Mining Rig ordered onto an ore asteroid in a sector the player does not hold (Phase 2 design §4).
+  // A Mining Rig ordered onto an ore asteroid in a sector the player does not hold (ADR-056 decision 5).
   SectorNotHeld,
   // A hold names a point in no sector, or the map has no territory (ADR-059).
   NoSector,
@@ -210,14 +210,14 @@ enum class CommandResult : std::uint8_t
   AlreadyUpgrading,
   // An upgrade names a structure at its kind's highest level, which for a kind that does not grow is its first.
   TopLevel,
-  // A Shipyard's job names a hull above its level, or a Research Lab's a topic of a tier its level has not opened (Phase 3
-  // design §5, §6).
+  // A Shipyard's job names a hull above its level, or a Research Lab's a topic of a tier its level has not opened
+  // (ADR-064 decisions 9 and 10).
   LevelTooLow,
-  // A Relay would take the player past the nodes its Command Station's level lets it hold (Phase 3 design §7).
+  // A Relay would take the player past the nodes its Command Station's level lets it hold (ADR-064 decision 11).
   CapReached,
-  // A Relay ordered in a sector whose pirate outpost still has a structure standing (Phase 4 design §8).
+  // A Relay ordered in a sector whose pirate outpost still has a structure standing (ADR-056 decision 4).
   Guarded,
-  // A salvage order's target is not a derelict (Phase 4 design §9).
+  // A salvage order's target is not a derelict (ADR-074 decision 4).
   NotSalvageable,
   // A scheduled order's condition sets fewer than no command points (ADR-080).
   InvalidCondition,
@@ -236,11 +236,11 @@ public:
   Simulation(std::uint64_t _seed, std::uint32_t _ticksPerSecond);
 
   // Match setup, before the first tick: places the map's ore asteroids and then its fields, in the file's order, as
-  // entities with no owner (task 2.3), and keeps its sectors (ADR-036).
+  // entities with no owner, and keeps its sectors (ADR-036).
   void PlaceMap(const Map& _map);
 
   // Whether the match is played for territory: the map has sectors and the simulation has the tuning data's rules for
-  // them (Phase 2 design §4, ADR-056). Without, a Relay cannot be built and ore belongs to no sector, as in Phase 1.
+  // them (ADR-056 decision 1). Without, a Relay cannot be built and ore belongs to no sector.
   [[nodiscard]] bool HasTerritory() const noexcept
   {
     return m_tuning != nullptr && !m_sectors.empty();
@@ -253,8 +253,8 @@ public:
   }
 
   // Match setup: the tuning data the base's rules come from: structures, the Constructor, the Defence gun and Ore income
-  // (milestone 4). Without it the simulation still moves and fights, and rejects orders to build, repair or queue as not
-  // yet supported, which is what the movement and combat tests run on.
+  // (ADR-016 decision 2). Without it the simulation still moves and fights, and rejects orders to build, repair or queue
+  // as not yet supported, which is what the movement and combat tests run on.
   void UseTuning(const Tuning& _tuning);
 
   // Match setup, after UseTuning: fog of war (ADR-024). Each player then sees what its own ships and structures see, the
@@ -277,23 +277,23 @@ public:
   // The player's Ore in hundredths, or zero for a player not added.
   [[nodiscard]] std::int64_t OreHundredths(PlayerId _player) const noexcept;
 
-  // The topics the player has researched, in the order they finished; empty for a player not added (design §8).
+  // The topics the player has researched, in the order they finished; empty for a player not added (ADR-017 decision 1).
   [[nodiscard]] std::span<const ResearchTopicId> Researched(PlayerId _player) const noexcept;
 
   // What the player's research has done to its rates; none before UseTuning.
   [[nodiscard]] Upgrades UpgradesOf(PlayerId _player) const;
-  // A structure's full hit points at _level, in hundredths, and a Constructor's speed, with _owner's research (Phase 1
-  // design §6). A level's percent adds to research's (Phase 3 design §4).
+  // A structure's full hit points at _level, in hundredths, and a Constructor's speed, with _owner's research
+  // (ADR-033 decision 4). A level's percent adds to research's (ADR-064 decision 4).
   [[nodiscard]] std::int32_t StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning, std::int32_t _level = 1) const;
   [[nodiscard]] float ConstructorSpeed(PlayerId _owner) const;
 
   // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer sends a
-  // command (task 5.2).
+  // command (ADR-017 decision 6).
   DesignId SaveDesign(PlayerId _owner, std::string _name, const DesignComponents& _components, const DesignStats& _stats,
                       RetreatThreshold _retreat = DEFAULT_RETREAT);
 
-  // Match setup: saves every starting design for _owner (design §7). Throws Neuron::Exception when the tuning data has
-  // none.
+  // Match setup: saves every starting design for _owner (ADR-014 decision 2). Throws Neuron::Exception when the tuning
+  // data has none.
   void SaveStartingDesigns(PlayerId _owner, const Tuning& _tuning);
 
   // The design with this identifier, or nullptr.
@@ -307,7 +307,7 @@ public:
   EntityId SpawnShip(PlayerId _owner, DesignId _design, PlanePosition _position, float _headingRadians = 0.0f);
 
   // Places a ship that only moves: it has no weapon and no hit points, so combat does not touch it. Movement tests and
-  // task 2.7's load use it.
+  // the measurement load use it.
   EntityId SpawnShip(PlayerId _owner, DesignId _design, const ShipMovement& _movement, PlanePosition _position, HullId _hull = {},
                      float _headingRadians = 0.0f);
 
@@ -315,18 +315,19 @@ public:
   EntityId SpawnConstructor(PlayerId _owner, PlanePosition _position, float _headingRadians = 0.0f);
 
   // Places a built structure, which blocks movement unless it is a Mining Rig, which stands on its asteroid. Once the
-  // tuning data is known, a kind that carries a Defence gun is armed. Without hit points it is out of combat, as task
-  // 2.7's load places them. It stands at _level, which tests give it as they give its hit points (Phase 3 design §4).
+  // tuning data is known, a kind that carries a Defence gun is armed. Without hit points it is out of combat, as the
+  // measurement load places them. It stands at _level, which tests give it as they give its hit points
+  // (ADR-064 decision 3).
   EntityId SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters,
                           std::int32_t _hitPointsHundredths = 0, std::int32_t _armorHundredths = 0, std::int32_t _level = 1);
 
   // Match setup, after PlaceMap and UseTuning: gives every player its Command Station on its start and the starting
-  // Constructors in front of it, facing the map's center (design §6). Throws Neuron::Exception when the base would
-  // overlap an obstacle or cross the map's edge. From then on a player left with neither a Command Station nor a
-  // finished Shipyard loses the match (Phase 1 design §4).
+  // Constructors in front of it, facing the map's center (ADR-016 decision 3). Throws Neuron::Exception when the base
+  // would overlap an obstacle or cross the map's edge. From then on a player left with neither a Command Station nor a
+  // finished Shipyard loses the match (ADR-037 decision 1).
   void PlaceStartingBases(const Map& _map);
 
-  // A world's rules (Phase 5 design §8), set before PlaceStartingBases and saved with the world: domination is off and no
+  // A world's rules (ADR-084 decision 1), set before PlaceStartingBases and saved with the world: domination is off and no
   // match ends. A player who loses is told so (EventKind::EmpireLost), and _restartSeconds of ticks later, an hour in a
   // world and less in a test, its seat restarts at its start once the start is free: its Command Station and the starting
   // Constructors again, and its Ore raised to the starting Ore when it has less (owner, 2026-10-08). A start is free while
@@ -342,7 +343,7 @@ public:
   }
   static constexpr std::uint32_t RESTART_SECONDS = 3600;
 
-  // A battle matchup's setup (horizon §9, ADR-083), after PlaceMap and UseTuning and in place of the bases: each player's
+  // A battle matchup's setup (ADR-083), after PlaceMap and UseTuning and in place of the bases: each player's
   // fleet, of designs saved for it that never retreat, in rows facing the other's, the two _matchup's distance apart round a
   // sector's node the seed picks, or the map's center without sectors. The battle ends once a side's warships are all
   // destroyed, the other side winning, or as a draw after MATCHUP_SECONDS.
@@ -352,18 +353,18 @@ public:
   // it stands.
   [[nodiscard]] std::optional<std::uint64_t> RestartTick(PlayerId _player) const noexcept;
 
-  // Match setup, after PlaceMap and UseTuning: the pirates' outposts the map's seed placed (Phase 4 design §8, ADR-073),
+  // Match setup, after PlaceMap and UseTuning: the pirates' outposts the map's seed placed (ADR-073 decision 8),
   // each on its sector's node, with the tuning data's Defence Platforms and ships of the outpost's size, all owned by
   // PIRATES at the base level. Throws Neuron::Exception when an outpost's size is not in the tuning data, its chase would
   // leave its sector, or a structure of it would overlap an obstacle.
   void PlacePirates(const Map& _map);
 
-  // Match setup, after UseTuning: the derelicts the map's seed placed (Phase 4 design §9, ADR-074), each with the tuning
+  // Match setup, after UseTuning: the derelicts the map's seed placed (ADR-074 decision 8), each with the tuning
   // data's salvage work. None without salvage in the tuning data.
   void PlaceDerelicts(const Map& _map);
 
   // Whether a player has lost its Command Station and its last finished Shipyard, or on a map with territory has run out
-  // of tickets, which ends the match (Phase 1 design §4, Phase 2 design §8); the player who still stands won, or nobody
+  // of tickets, which ends the match (ADR-037 decision 1, ADR-057 decision 5); the player who still stands won, or nobody
   // when both fell in the same tick. Only a match whose bases were placed can end.
   [[nodiscard]] bool MatchOver() const noexcept
   {
@@ -381,14 +382,14 @@ public:
   // A player's tickets (ADR-057); zero for a player not added or without territory.
   [[nodiscard]] std::int32_t Tickets(PlayerId _player) const noexcept;
 
-  // How every ship picks its target. Only the balance check's headless battles change it (task 3.4).
+  // How every ship picks its target. Only the balance check's headless battles change it.
   void SetTargetRule(TargetRule _rule) noexcept
   {
     m_targetRule = _rule;
   }
 
   // Runs one tick: applies _commands in order at its start, then advances the world. Returns one result per command.
-  // _observer, when there is one, is told where each part of the tick begins and ends, for measurement (task 8.1). The
+  // _observer, when there is one, is told where each part of the tick begins and ends, for measurement. The
   // simulation reads no clock itself (ADR-009), and nothing the observer learns reaches the state.
   [[nodiscard]] std::vector<CommandResult> Tick(const std::vector<Command>& _commands, TickObserver* _observer = nullptr);
 
@@ -480,7 +481,7 @@ private:
     std::vector<EntityId> seen;
     std::vector<EntityView> remembered;
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
-    // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
+    // The Ore left in each ore asteroid the player has seen, as it last saw it (ADR-035 decision 4).
     std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
     // The topics a salvaged derelict recovered time of before they started, which take that much less once they do
     // (ADR-074).
@@ -490,7 +491,7 @@ private:
     // The sectors it holds in which it saw an enemy or pirate warship at the end of the last tick, which tells the next
     // tick's sightings from new ones (ADR-080).
     std::vector<std::int32_t> enemySectors;
-    // Under a world's rules, the tick it lost on, while it waits to restart (Phase 5 design §8).
+    // Under a world's rules, the tick it lost on, while it waits to restart (ADR-084 decision 3).
     std::optional<std::uint64_t> lostTick;
     ResearchEffects researchEffects;
 
@@ -637,18 +638,18 @@ private:
   // Works out again who holds each sector, which Relays are suppressed, which sectors are cut off (ADR-056) and which the
   // pirates guard (ADR-073).
   void UpdateTerritory();
-  // The nodes _player may hold (Phase 3 design §7): its Command Station's level's, or level 1's without one; zero for no
+  // The nodes _player may hold (ADR-064 decision 11): its Command Station's level's, or level 1's without one; zero for no
   // cap. And the nodes it holds or has taken with a Relay under construction.
   [[nodiscard]] std::int32_t NodeCapOf(PlayerId _player) const noexcept;
   [[nodiscard]] std::int32_t NodesTaken(PlayerId _player) const noexcept;
-  // The command points _player's warships may take (Phase 4 design §5): its Command Station's level's, or level 1's without
+  // The command points _player's warships may take (ADR-071 decision 1): its Command Station's level's, or level 1's without
   // one; zero for no cap. And what they take: every warship's, and every warship job a producer of its has started.
   [[nodiscard]] std::int32_t FleetCapOf(PlayerId _player) const noexcept;
   [[nodiscard]] std::int32_t CommandPointsOf(PlayerId _player) const noexcept;
   // What one warship of _hull takes; zero for an unknown hull.
   [[nodiscard]] std::int32_t CommandPointsOfHull(HullId _hull) const noexcept;
   // The share of its income a rig earns where it stands: none outside a sector its owner holds or in a suppressed one,
-  // the tuning data's share in one cut off, and all of it otherwise or without territory (Phase 2 design §4–§6).
+  // the tuning data's share in one cut off, and all of it otherwise or without territory (ADR-056 decision 5).
   [[nodiscard]] double TerritoryShare(const Entity& _rig) const noexcept;
   // Whether _position is in a sector _player holds and that is not suppressed, all of which it sees (ADR-056).
   [[nodiscard]] bool InSectorSight(PlayerId _player, PlanePosition _position) const noexcept;
@@ -667,9 +668,11 @@ private:
   CommandResult Apply(PlayerId _player, const SalvageCommand& _salvage);
   CommandResult Apply(PlayerId _player, const SetRetreatCommand& _retreat);
   CommandResult Apply(PlayerId _player, const ScheduleOrderCommand& _schedule);
-  // Applies one order as a player gives it, with what any order of a player's does besides: its ships leave the group they
-  // were planning with, end their retreat, and, for an order that gives them something to do, leave their standing and
-  // scheduled orders (ADR-032, ADR-059, ADR-075, ADR-080).
+  // Applies one order as a player gives it, with what an order of a player's does besides. A scheduled order does nothing
+  // more until it fires (ADR-080 decision 5). Any other takes its ships out of the group they were planning with
+  // (ADR-032); any but setting their retreat ends their retreat, as setting it to never does, and takes them out of the
+  // scheduled order they wait on (ADR-075 decision 6, ADR-080 decision 5); and a move, an attack-move, an attack or a
+  // stop ends their standing order (ADR-059 decision 5).
   CommandResult ApplyOrder(PlayerId _player, const Order& _order);
   // _ships wait on no scheduled order any more; an order none waits on is dropped.
   void LeaveScheduledOrders(const std::vector<EntityId>& _ships);
@@ -678,10 +681,11 @@ private:
   void FireScheduledOrders();
   // Whether _entity is a structure of its player's that repairs its ships near it (ADR-075).
   [[nodiscard]] bool IsRepairer(const Entity& _entity) const noexcept;
-  // Sends each of _ships back to the repairer the design's order picks for it, as a group with the others going to the same
-  // one, and ends the retreat of a ship with none to go to (ADR-075).
+  // Sends each of _ships back on its own to its repairer: the nearest Repair Bay, else the Command Station, else the
+  // nearest Shipyard, to a point beyond the repairer's footprint on the side the ship comes from. A ship with none to go
+  // to does not retreat, or stops retreating, and fights on (ADR-075 decision 5).
   void Retreat(const std::vector<EntityId>& _ships);
-  // Once a second, a retreating ship whose repairer fell goes to another, and one that stopped short sets out again.
+  // Once a second, a retreating ship whose repairer fell goes to the next one by the same rule (ADR-075 decision 5).
   void KeepRetreats();
   // Every repairer repairs the ships near it, and a retreating ship once whole stops retreating.
   void RepairShips();
@@ -714,8 +718,8 @@ private:
     {
       EntityId ship;
       PlanePosition goal;
-      // How far to the left of the band's middle the ship keeps along its route (ADR-047), and where its lane ends once
-      // its path is planned.
+      // How far to the left of the band's middle the ship keeps along its route (ADR-047 decision 1), and where its lane
+      // ends once its path is planned.
       float laneMeters = 0.0f;
       std::optional<std::vector<PlanePosition>> path;
       std::optional<PlanePosition> laneEnd;
@@ -737,7 +741,7 @@ private:
     PlanePosition destination;
     EntityId attackTarget;
     float widestRadiusMeters = 0.0f;
-    // Half the width of the band of lanes the group keeps along its routes (ADR-047), or 0 for none.
+    // Half the width of the band of lanes the group keeps along its routes (ADR-047 decision 1), or 0 for none.
     float bandHalfWidthMeters = 0.0f;
     std::vector<GroupRoutes::Route> routes;
     std::vector<Member> members;
@@ -785,7 +789,7 @@ private:
   void Produce();
   void Research();
   // The player gains the topic's upgrade or unlock at once: its designs take their new stats, and its ships keep the
-  // share of their hit points they had (design §8).
+  // share of their hit points they had (ADR-017 decision 2).
   void CompleteResearch(PlayerState& _player, ResearchTopicId _topic);
   // A structure's full hit points at _level with this factor from research, as StructureHitPoints gives them.
   [[nodiscard]] std::int32_t StructureHitPointsAt(const StructureTuning& _tuning, double _researchFactor, std::int32_t _level) const;
@@ -794,7 +798,7 @@ private:
   // What the player's built Mining Rigs earn each second, in hundredths of an Ore, with its research applied.
   [[nodiscard]] std::int64_t IncomeHundredthsPerSecond(PlayerId _player) const;
   // What one built rig earns each second, in hundredths, with its owner's income factor: its asteroid's rate, or the
-  // trickle once the asteroid has run dry (Phase 1 design §8).
+  // trickle once the asteroid has run dry (ADR-035 decision 2).
   [[nodiscard]] std::int64_t RigIncomeHundredthsPerSecond(const Entity& _rig, double _incomeFactor) const;
   // The Ore left in an ore asteroid as _player knows it: what it holds without fog of war, and what the player last saw
   // under it. None for one never seen, or one that never runs out.
@@ -810,7 +814,7 @@ private:
   // A player's Command Station on _start, and the starting Constructors in front of it, facing the map's center.
   void PlaceStartingBase(PlayerId _owner, PlanePosition _start);
   // On a map with territory, every drain interval: each player that holds fewer nodes than another loses tickets, and a
-  // player out of them ends the match (Phase 2 design §8, ADR-057).
+  // player out of them ends the match (ADR-057 decision 5).
   void Dominate();
   // The match ends now: _standing are the players still in it, of whom the winner is the one, if one.
   void EndMatch(const std::vector<PlayerId>& _standing, MatchEnding _ending);
@@ -861,7 +865,7 @@ private:
   std::uint64_t m_matchEndedTick = 0;
   MatchEnding m_ending = MatchEnding::LostProduction;
   bool m_fog = false;
-  // A world's rules, and each base player's start, where its seat restarts (Phase 5 design §8).
+  // A world's rules, and each base player's start, where its seat restarts (ADR-084 decision 5).
   bool m_worldRules = false;
   std::uint32_t m_restartSeconds = RESTART_SECONDS;
   std::vector<std::pair<PlayerId, PlanePosition>> m_starts;

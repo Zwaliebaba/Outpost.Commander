@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// Who plays a seat that has a deputy (Phase 5 design §6, gate H2, ADR-079). The seat is the deputy's until its player first
+// Who plays a seat that has a deputy (ADR-079 decision 4). The seat is the deputy's until its player first
 // takes it. The player plays it while the player's newest connection is open, and for DEPUTY_DELAY_SECONDS of ticks after
 // that connection has gone, so that a connection dropped and taken up again soon never sees the deputy. Past that the
 // deputy plays it, until the player takes the seat again. The server's thread asks once a tick.

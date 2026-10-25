@@ -91,9 +91,9 @@ Outpost::Hud::Content WithDesigner()
   return content;
 }
 
-// The mockup's designer (Phase 1 design §11): the tuning data's components, with the Large hull, the Fusion drive and the
-// Missile Rack locked until _unlocked, and with _fiveWeapons the two of Phase 1 as well; the topics that unlock them; one
-// saved design; and Shipyard 01, which has built four ships and has two in its queue.
+// The mockup's designer (Game §interface.windows.designer): the tuning data's components, with the Large hull, the Fusion
+// drive and the Missile Rack locked until _unlocked, and with _fiveWeapons the Flak Battery and the Rail Cannon as well; the
+// topics that unlock them; one saved design; and Shipyard 01, which has built four ships and has two in its queue.
 Outpost::Snapshot DesignerSnapshot(bool _unlocked = false, bool _fiveWeapons = false)
 {
   Outpost::Snapshot snapshot{.tick = 5, .player = PLAYER, .ore = 500};
@@ -151,13 +151,13 @@ std::string LongestName(char _last)
   return std::string(Outpost::DESIGN_NAME_LIMIT - 1, 'W') + _last;
 }
 
-// The longest content the game makes, with every window open (task 14.1), the Controls window among them (task 16.4), and
-// the orders and away windows (Phase 5 design §11): six designs of the longest names, four ships of each, all selected so
-// that the selection has its most bars (interface plan 2, task UI4.5), one of them loaded in the designer of five weapons,
-// every part locked or every part unlocked; a full queue at a Shipyard and at the Lab; a page of topics, among them Relay
-// Archives with both its prerequisites to do; a placement's hint, the status panel's lines, the alerts, the territory and
-// the banner. The Ore is five figures, more than any match in the review banked. With _hovered, the designer previews the
-// part under the pointer.
+// The longest content the game makes, with every window open (ADR-061 decision 5), the Controls window among them
+// (ADR-068 decision 4), and the orders and away windows (ADR-080 decision 9): six designs of the longest names, four ships
+// of each, all selected so that the selection has its most bars (ADR-088 decision 4), one of them loaded in the designer
+// of five weapons, every part locked or every part unlocked; a full queue at a Shipyard and at the Lab; a page of topics,
+// among them Relay Archives with both its prerequisites to do; a placement's hint, the status panel's lines, the alerts,
+// the territory and the banner. The Ore is five figures, more than any match in the review banked. With _hovered, the
+// designer previews the part under the pointer.
 Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
@@ -183,8 +183,9 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
   designer.Load(newest.designs.back());
   Outpost::Hud::Content content =
     Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, _hovered);
-  // The status panel at its fullest (task UI3.2): the longest topic the tuning data has, waiting, with four more queued; the
-  // Shipyards' counts at two figures, idle a chip; and the fleet against its cap. The column is as wide as the longest topic.
+  // The status panel at its fullest (ADR-066 decisions 1 and 3): the longest topic the tuning data has, waiting, with four
+  // more queued; the Shipyards' counts at two figures, idle a chip; and the fleet against its cap. The column is as wide as
+  // the longest topic.
   content.status = {{.runs = {{.text = "Mass Driver Calibration"}, {.text = " \xC2\xB7 waiting for Ore"}},
                      .bar = Outpost::Hud::StatusBar{.share = 0.99f, .figure = "+4", .under = true}},
                     {.runs = {{.text = "Shipyards \xC2\xB7 BUILDING 12 \xC2\xB7 WAITING 12 \xC2\xB7 "}, {.text = "IDLE 12", .chip = true}}},
@@ -393,7 +394,7 @@ TEST_CLASS(HudTests)
 {
 public:
   // ADR-030: the HUD names a font for every typeface and a sprite for every sprite, in their order. The default face is
-  // Segoe UI at the text's size; the figures take Cascadia Mono, or Consolas where it is not installed (gate H7).
+  // Segoe UI at the text's size; the figures take Cascadia Mono, or Consolas where it is not installed (ADR-030 decision 2).
   // ADR-062: the type scale, set in FaceUnits alone: labels and details at 13 units, figures at 14 in semibold, and the
   // name, title and large figures as the mockup has them.
   TEST_METHOD(NamesItsTypefacesAndSprites)
@@ -520,7 +521,7 @@ public:
     Assert::AreEqual(std::string("-4,500"), Outpost::WithThousands(-4500));
   }
 
-  // Task 3.6: the Ore stockpile, and no selection panel with nothing selected.
+  // ADR-015 decision 4: the Ore stockpile, and no selection panel with nothing selected.
   TEST_METHOD(ShowsTheOreAndNoPanelWithoutASelection)
   {
     // Earning, so that the Ore panel holds no warning chip.
@@ -546,14 +547,14 @@ public:
   }
 
   // Several ships: how many, how many of each design, most first, and their hit points together; and a bar for each ship,
-  // design by design in the lines' order, in place of the selection's one (interface plan 2, task UI4.5).
+  // design by design in the lines' order, in place of the selection's one (ADR-088 decision 4).
   TEST_METHOD(DescribesAGroupByDesign)
   {
     const std::vector<Outpost::EntityView> entities{Ship(1, LINE, 45000, 45000), Ship(2, SWARM, 10000, 19800), Ship(3, SWARM, 19800, 19800),
                                                     Ship(4, SWARM, 19800, 19800)};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{1}, Outpost::EntityId{2}, Outpost::EntityId{3}, Outpost::EntityId{4}};
     const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
-    // ADR-046: the count and the design between a multiplication sign.
+    // ADR-088 decision 4: the count and the design between a multiplication sign.
     const std::vector<std::string> expected{"4 ships", "3 \xC3\x97 Small+Ion+Mass Driver", "1 \xC3\x97 Medium+Ion+Lance",
                                             "Hit points 946 / 1,044"};
     Assert::IsTrue(content.selection == expected);
@@ -565,7 +566,7 @@ public:
     Assert::AreEqual(10000.0f / 19800.0f, content.shipBars[0].share, 1e-6f);
   }
 
-  // Interface plan 2, task UI4.5: ships of one design are titled once, with their count. Up to 24 ships have a bar each
+  // ADR-088 decision 4: ships of one design are titled once, with their count. Up to 24 ships have a bar each
   // under the lines, in rows of twelve, filled and colored by the ship's own share and outlined while it goes back to be
   // repaired; a click on one selects that ship alone, and one under the pointer has its edge lit. Past 24, the selection
   // has its one bar.
@@ -704,7 +705,7 @@ public:
     Assert::AreEqual(20.0f, layout.fontPixels, 0.01f);
   }
 
-  // Task 4.5: what the rigs earn, each second, beside the stockpile.
+  // ADR-043 decision 3: what the rigs earn, each second, beside the stockpile.
   TEST_METHOD(ShowsTheIncome)
   {
     const auto incomeText = [](std::int32_t _hundredths)
@@ -829,8 +830,8 @@ public:
     Assert::AreEqual(std::string("[2001:db8::5]:4433"), Outpost::Hud::ServerName("2001:db8::5", 4433));
   }
 
-  // Task 4.2: selected Constructors offer every structure they build, with its cost, dim when the player cannot afford
-  // it or already has its one Research Lab; the Command Station is not built.
+  // ADR-043 decision 4: selected Constructors offer every structure they build, with its cost, dim when the player cannot
+  // afford it or already has its one Research Lab; the Command Station is not built.
   TEST_METHOD(OffersTheStructuresToConstructors)
   {
     Outpost::Snapshot newest = Newest();
@@ -860,7 +861,7 @@ public:
                         .structure = Outpost::StructureKind::ResearchLab});
     content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::IsFalse(content.buttons[1].enabled, L"one Research Lab a player");
-    // ADR-046: the button says so in place of its cost; a button the player only cannot afford says nothing more.
+    // ADR-043 decision 4: the button says so in place of its cost; a button the player only cannot afford says nothing more.
     Assert::AreEqual(std::string("ONE PER PLAYER"), content.buttons[1].note);
     Assert::IsTrue(content.buttons[0].note.empty());
     const Outpost::Hud::Layout noted = Lay(content, 1920, 1080);
@@ -956,7 +957,7 @@ public:
                    content.marks.front().side == Outpost::Hud::Side::Neutral);
   }
 
-  // Interface plan 2, task UI1.2: a structure the player only remembers says how long ago it was last seen, under the
+  // ADR-081 decision 4: a structure the player only remembers says how long ago it was last seen, under the
   // pointer and on its selection panel, where what follows is as it was then; with no tick rate its age is not told.
   TEST_METHOD(DescribesAMemoryWithItsAge)
   {
@@ -992,7 +993,7 @@ public:
     Assert::IsFalse(now.marks.front().remembered);
   }
 
-  // Interface plan 2, task UI1.2: on the minimap a memory is a cross in its side's color, drawn over the fog so that the
+  // ADR-081 decision 4: on the minimap a memory is a cross in its side's color, drawn over the fog so that the
   // fog does not dim it twice, where what is seen is a filled square under the fog.
   TEST_METHOD(DrawsAMemoryAsACrossOverTheFog)
   {
@@ -1030,9 +1031,9 @@ public:
     Assert::IsTrue(square.front() < fogAt, L"what is seen stays under the fog");
   }
 
-  // Interface plan 2, task UI1.4: over the fog the minimap draws every sector's border, at 2:1 against the map, and a
+  // ADR-081 decision 7: over the fog the minimap draws every sector's border, at 2:1 against the map, and a
   // cut-off sector's outline in dashes. A node has no mark of its own; while the player places a Relay, each sector whose
-  // node it could claim now is outlined in its color inside the border (ADR-081 decision 7).
+  // node it could claim now is outlined in its color inside the border.
   TEST_METHOD(DrawsTheTerritoryOnTheMinimap)
   {
     Outpost::Snapshot newest = Newest();
@@ -1171,7 +1172,7 @@ public:
     content.fog = true;
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     // The nodes as the tickets read, the player's against the enemy's, with the station's cap of the map's beside "Nodes" in
-    // the labels' color (interface plan 2, task UI3.3).
+    // the labels' color (ADR-057 decision 8).
     const Outpost::Hud::Text& nodes = TextOf(layout, "Nodes");
     const Outpost::Hud::Text& cap = TextOf(layout, "cap 3 of 3");
     Assert::IsTrue(cap.top == nodes.top && cap.left > nodes.left, L"the cap beside the label");
@@ -1195,9 +1196,10 @@ public:
     Assert::IsTrue(stripes != layout.panels.end() && stripes > fog, L"the suppressed sector is striped over the fog");
   }
 
-  // Task 4.5, Phase 1 design §12: a selected structure shows its kind, hit points and construction; its queue and what it
+  // Game §interface.hud.selection: a selected structure shows its kind, hit points and construction; its queue and what it
   // can add to it are its windows', which its panel opens once it is the player's own and finished (owner, 2026-10-03).
-  // ADR-066: a line says what its front job is and how far it has come. Task 15.2: each window's button shows its key.
+  // ADR-066: a line says what its front job is and how far it has come. Game §interface.style.panels: each window's button
+  // shows its key.
   TEST_METHOD(DescribesAStructureAndOpensItsWindows)
   {
     Outpost::Snapshot newest = Newest();
@@ -1249,7 +1251,7 @@ public:
     Assert::IsTrue(content.buttons.empty());
   }
 
-  // Phase 3 design §9: a structure that grows names its level, says what the next one gives, and offers it with its time
+  // ADR-064 decision 7: a structure that grows names its level, says what the next one gives, and offers it with its time
   // and cost, dim while a level is being built or the Ore is short; at the top there is no button.
   TEST_METHOD(NamesALevelAndOffersTheNext)
   {
@@ -1335,7 +1337,7 @@ public:
     Assert::AreEqual(track->width / 4.0f, std::next(track)->width, 0.01f);
   }
 
-  // Phase 3 design §7: a Command Station's next level names the nodes it lets the player hold and the Defence guns it adds;
+  // ADR-064 decision 11: a Command Station's next level names the nodes it lets the player hold and the Defence guns it adds;
   // at the cap, a Constructor's Relay is dim with the reason, and so is placing one.
   TEST_METHOD(ShowsTheStationsCap)
   {
@@ -1380,9 +1382,9 @@ public:
     Assert::IsTrue(content.buttons[0].enabled && content.buttons[0].note.empty(), L"below the cap");
   }
 
-  // Phase 1 design §12: the production window shows one producer: the Command Station's Constructor or a Shipyard's saved
-  // designs, each with its abbreviation, dim once the queue is full or the Ore is short; the queue with the front job's
-  // progress or its wait for Ore; and with no producer, or no design, how to get one.
+  // Game §interface.windows.production: the production window shows one producer: the Command Station's Constructor or a
+  // Shipyard's saved designs, each with its abbreviation, dim once the queue is full or the Ore is short; the queue with the
+  // front job's progress or its wait for Ore; and with no producer, or no design, how to get one.
   TEST_METHOD(DescribesTheProductionWindow)
   {
     Outpost::Snapshot newest = DesignerSnapshot();
@@ -1435,8 +1437,8 @@ public:
     Assert::IsTrue(panel.options.empty() && !panel.hint.empty());
   }
 
-  // Task 4.5: an enabled button is a place to click, at the bottom's middle beside the selection, where there is one
-  // (interface plan 2, task UI4.2); a dim one is not.
+  // ADR-015: an enabled button is a place to click, at the bottom's middle beside the selection, where there is one
+  // (ADR-088 decision 2); a dim one is not.
   TEST_METHOD(LaysOutButtonsForClicks)
   {
     const Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
@@ -1452,7 +1454,7 @@ public:
     Assert::IsTrue(layout.Covers(area.left + 5.0f, area.top + 5.0f));
   }
 
-  // Phase 1 design §8: a Mining Rig's panel says how much Ore is left in its asteroid, as far as the player knows, and the
+  // ADR-035 decision 5: a Mining Rig's panel says how much Ore is left in its asteroid, as far as the player knows, and the
   // minimap draws an asteroid that has run out darker than one that has not.
   TEST_METHOD(ShowsTheOreLeft)
   {
@@ -1505,7 +1507,8 @@ public:
     Assert::IsTrue(colorAt(dry.position).x < colorAt(full.position).x, L"darker");
   }
 
-  // Task 4.5: the minimap shows the map's square, +x to the right and +z up, and a point on it is a point on the map.
+  // ADR-015 decision 4: the minimap shows the map's square, +x to the right and +z up, and a point on it is a point on the
+  // map.
   TEST_METHOD(MapsTheMinimapToTheMap)
   {
     Outpost::Snapshot newest = Newest();
@@ -1530,7 +1533,7 @@ public:
     Assert::IsFalse(layout.MapPointAt(map.left - 5.0f, map.top).has_value());
   }
 
-  // Interface plan 2, task UI5.3: the minimap draws the camera's view as the ground the screen's four corners show, joined
+  // ADR-015 decision 4: the minimap draws the camera's view as the ground the screen's four corners show, joined
   // in turn, so that it turns with the camera, and cuts what runs past the map at its edge.
   TEST_METHOD(DrawsTheViewAsItsFourCorners)
   {
@@ -1582,7 +1585,7 @@ public:
     Assert::AreEqual(map.left, cut.lines[0].segment.from.x, 0.01f, L"the north side starts at the west edge");
   }
 
-  // Task 5.1, Phase 1 design §12: the research window shows the Research Lab's queue, and offers each topic not researched
+  // ADR-017 decision 9: the research window shows the Research Lab's queue, and offers each topic not researched
   // or queued yet with what it does and what it costs, dim while its prerequisite is neither; the topic under way shows
   // under the Ore, in the status panel (ADR-066).
   TEST_METHOD(DescribesTheResearchLab)
@@ -1652,7 +1655,7 @@ public:
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Hull Plating"; }));
   }
 
-  // Phase 1 design §5, §11: a component's abbreviation is the capital initial of each word of its name.
+  // Game §ships.designs.names: a component's abbreviation is the capital initial of each word of its name.
   TEST_METHOD(AbbreviatesComponentsByTheirInitials)
   {
     Assert::AreEqual(std::string("S"), Outpost::Abbreviation("Small"));
@@ -1661,7 +1664,7 @@ public:
     Assert::AreEqual(std::string(""), Outpost::Abbreviation(""));
   }
 
-  // Phase 1 design §11: the designer belongs to the player, not to a Shipyard: it is described whenever GameClient gives
+  // ADR-017 decision 7: the designer belongs to the player, not to a Shipyard: it is described whenever GameClient gives
   // it, and a selected finished Shipyard of the player's offers to open it there.
   TEST_METHOD(OffersTheDesignerAtThePlayersShipyards)
   {
@@ -1689,9 +1692,9 @@ public:
     Assert::IsTrue(Outpost::Hud::Describe(newest, newest.entities, {}, std::nullopt, &designer).designer.has_value(), L"nothing selected");
   }
 
-  // Phase 1 design §11, after the mockup: the header's Shipyard, queue, ships built and Ore; the name and Saved; the saved
-  // design's chip; a card for each component with its numbers, the locked ones naming their research; the bars against the
-  // best any design reaches, locked components included; the damage cards rated by thirds; and Queue.
+  // Game §interface.windows.designer, after the mockup: the header's Shipyard, queue, ships built and Ore; the name and
+  // Saved; the saved design's chip; a card for each component with its numbers, the locked ones naming their research; the
+  // bars against the best any design reaches, locked components included; the damage cards rated by thirds; and Queue.
   TEST_METHOD(DescribesTheDesignerAfterTheMockup)
   {
     const Outpost::Snapshot newest = DesignerSnapshot();
@@ -1707,7 +1710,7 @@ public:
     Assert::AreEqual(std::string("SAVED"), panel.save.label);
     Assert::IsTrue(panel.save.selected && !panel.save.enabled);
     Assert::IsFalse(panel.rename.enabled, L"the name has not changed");
-    // Phase 4 design §10: the design's retreat, which a press on its row sets (interface plan 2, task UI4.3); a saved
+    // ADR-088 decision 3: the design's retreat, which a press on its row sets; a saved
     // design's new retreat is an update.
     Assert::IsTrue(panel.retreat == Outpost::RetreatThreshold::Quarter);
     {
@@ -1793,9 +1796,9 @@ public:
     Assert::IsTrue(panel.damage[1].reach.empty() && panel.damage[2].reach.empty());
   }
 
-  // Phase 1 design §11: hovering a part previews the design it would make, and how each number changes; lower is better
-  // for cost and build time. Hovering the pick previews nothing. Task 15.3: each figure reads the previewed number and its
-  // change as a signed number, a number that keeps reads alone, and a damage card adds its change per ship.
+  // Game §ships.designer.figures: hovering a part previews the design it would make, and how each number changes; lower is
+  // better for cost and build time. Hovering the pick previews nothing. Each figure reads the previewed number and
+  // its change as a signed number, a number that keeps reads alone, and a damage card adds its change per ship.
   TEST_METHOD(PreviewsAHoveredPart)
   {
     const Outpost::Snapshot newest = DesignerSnapshot();
@@ -1837,8 +1840,8 @@ public:
     Assert::IsFalse(same.bars[0].previewShare.has_value());
   }
 
-  // Phase 1 design §11: picks that are no saved design are saved first by Queue (ADR-023); ×N asks for N ships at N times
-  // the cost, from 1 up to the target's free slots; and with no Shipyard, Queue is dim.
+  // Game §ships.designer.queue: picks that are no saved design are saved first by Queue (ADR-023); ×N asks for N ships at N
+  // times the cost, from 1 up to the target's free slots; and with no Shipyard, Queue is dim.
   TEST_METHOD(QueuesNShipsAtTheTarget)
   {
     Outpost::Snapshot newest = DesignerSnapshot(true);
@@ -1878,7 +1881,7 @@ public:
     Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
   }
 
-  // Phase 3 design §5, §9: a Shipyard below a hull's level cannot build it. The designer still saves the design, and its
+  // ADR-064 decision 9: a Shipyard below a hull's level cannot build it. The designer still saves the design, and its
   // Queue is dim with the level the hull needs; the production window dims the design and says so; and the Shipyard's
   // panel names the hulls its next level adds.
   TEST_METHOD(SaysWhatAShipyardCannotBuild)
@@ -1919,7 +1922,7 @@ public:
     Assert::IsTrue(std::ranges::find(content.selection, std::string("L2: Medium hulls, 3,000 hit points")) != content.selection.end());
   }
 
-  // Phase 2 design §10: the production window shows a design's module after its components' initials, as the designer's
+  // ADR-058 decision 6: the production window shows a design's module after its components' initials, as the designer's
   // chips do, so that a scout reads apart from the plain design of its hull, drive and weapon.
   TEST_METHOD(NamesAModuleInTheProductionWindow)
   {
@@ -1938,10 +1941,10 @@ public:
     Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD\xC2\xB7SA"), panel.options[1].detail);
   }
 
-  // Phase 1 design §11, after the mockup at ADR-062's sizes: a window 818 units wide; the Shipyard's arrows in its title bar,
-  // pressed rather than grabbed; a card for each unlocked part to click and none for a locked one, which is hatched; the
-  // weapons wrap to a second line of cards once there are more than three; and Queue at the bottom.
-  // Phase 2 design §10: the designer's fourth row holds no module and each module; a design's chip names its module's
+  // Game §interface.windows.designer, after the mockup at ADR-062's sizes: a window 818 units wide; the Shipyard's arrows in
+  // its title bar, pressed rather than grabbed; a card for each unlocked part to click and none for a locked one, which is
+  // hatched; the weapons wrap to a second line of cards once there are more than three; and Queue at the bottom.
+  // ADR-058 decision 7: the designer's fourth row holds no module and each module; a design's chip names its module's
   // initials; a Sensors bar shows how far a module lets the ship see; and the window still fits a 1080-line screen.
   TEST_METHOD(OffersTheModulesInAFourthRow)
   {
@@ -2061,8 +2064,8 @@ public:
     Assert::AreEqual(size_t{0}, count(chips, Outpost::Hud::ActionKind::PreviousDesigns), L"at the first");
   }
 
-  // Phase 1 design §6: the research window lists the topics tier by tier, each with its tier. A topic of a tier the
-  // Research Lab has not opened is dim, and names the level that opens it (Phase 3 design §6).
+  // ADR-033 decision 5: the research window lists the topics tier by tier, each with its tier. A topic of a tier the
+  // Research Lab has not opened is dim, and names the level that opens it (ADR-064 decision 10).
   TEST_METHOD(ListsTheTopicsTierByTier)
   {
     Outpost::Snapshot newest = Newest();
@@ -2112,7 +2115,7 @@ public:
     Assert::IsTrue(panel.topics[2].needs == std::vector<std::string>{"HULL PLATING"});
   }
 
-  // Phase 3 design §6: a level 4 Research Lab shows how far each of its two running topics has come, and a Lab's panel
+  // ADR-064 decision 10: a level 4 Research Lab shows how far each of its two running topics has come, and a Lab's panel
   // names the tier its next level opens and the research it needs, its button dim until that is done.
   TEST_METHOD(ShowsTheLabsLevels)
   {
@@ -2165,7 +2168,7 @@ public:
     Assert::IsTrue(panel.queue[1].front && panel.queue[1].permille == 120 && !panel.queue[1].waiting);
   }
 
-  // Phase 1 design §12: the production and research windows are laid out side by side under the Ore, clear of the
+  // ADR-062 decision 6: the production and research windows are laid out side by side under the Ore, clear of the
   // designer; each enabled card is a place to click, and the research window scrolls its topics a row at a time.
   TEST_METHOD(LaysOutTheProductionAndResearchWindows)
   {
@@ -2243,7 +2246,8 @@ public:
     Assert::IsTrue(ore.color.x > ore.color.y && ore.color.y > ore.color.z, L"gold");
   }
 
-  // ADR-046: the Ore's gem and figure start at the panel's left whatever the figure, and the income keeps to its right.
+  // ADR-043 decision 3: the Ore's gem and figure start at the panel's left whatever the figure, and the income keeps to its
+  // right.
   TEST_METHOD(KeepsTheOreGemStillAsTheFigureChanges)
   {
     const auto oreAt = [](std::int32_t _ore)
@@ -2263,10 +2267,10 @@ public:
     Assert::IsTrue(oneDigit[0] < 40.0f, L"at the panel's left");
   }
 
-  // Interface plan 2, task UI4.1: the bars over an entity, on the screen, 32 by 5 units at the back buffer's scale and not
-  // the player's factor, centered over their foot and 4 units above it, the health bar over the build bar, each a back of the side's color with
-  // its fill from the left; in a list of their own, drawn before every panel and window, so under them, which takes no
-  // click and covers nothing; and none wholly off the screen.
+  // ADR-088 decision 5: the bars over an entity, on the screen, 32 by 5 units at the back buffer's scale and not the
+  // player's factor, centered over their foot and 4 units above it, the health bar over the build bar, each a back of the
+  // side's color with its fill from the left; in a list of their own, drawn before every panel and window, so under them,
+  // which takes no click and covers nothing; and none wholly off the screen.
   TEST_METHOD(LaysTheBarsOverTheEntities)
   {
     constexpr DirectX::XMFLOAT4 BACK{0.054f, 0.126f, 0.285f, 1.0f};
@@ -2317,8 +2321,8 @@ public:
     }
   }
 
-  // Interface plan 2, task UI4.1: a bar shows over a hurt ship or structure, or any while Alt is held (ADR-047), and a build
-  // bar over one unfinished; none over what the player only remembers (task UI1.2), or what has no hit points.
+  // ADR-088 decision 5: a bar shows over a hurt ship or structure, or any while Alt is held, and a build bar over one
+  // unfinished; none over what the player only remembers (ADR-081 decision 4), or what has no hit points.
   TEST_METHOD(PutsABarOnlyOverWhatShowsOne)
   {
     constexpr DirectX::XMFLOAT2 FOOT{120.0f, 340.0f};
@@ -2352,7 +2356,7 @@ public:
     Assert::IsFalse(Outpost::Hud::BarOver(rock, FOOT, BACK, true).has_value(), L"no hit points");
   }
 
-  // ADR-046: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
+  // ADR-088 decision 4: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
   TEST_METHOD(DrawsTheSelectionsHealthAsABar)
   {
     const Outpost::Hud::Content healthy{
@@ -2371,7 +2375,8 @@ public:
     Assert::IsTrue(track.top > panel.top + (panel.height / 2.0f) && track.top + track.height < panel.top + panel.height);
   }
 
-  // ADR-046: an ore asteroid's mark is the largest of the minimap's smallest marks, and a rig's own mark shows over it.
+  // ADR-043 decision 7: an ore asteroid's mark is the largest of the minimap's smallest marks, and a rig's own mark shows
+  // over it.
   TEST_METHOD(DrawsARigsMarkOverItsAsteroid)
   {
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 5000.0f};
@@ -2518,7 +2523,7 @@ public:
     Assert::AreEqual(std::string("1:02:03"), Outpost::MinutesAndSeconds(3723));
   }
 
-  // Task 6.2: once the match is over the player reads whether they won, and how long it took; nothing shows before.
+  // ADR-020 decision 9: once the match is over the player reads whether they won, and how long it took; nothing shows before.
   TEST_METHOD(DescribesHowTheMatchEnded)
   {
     Outpost::Snapshot newest = Newest();
@@ -2536,7 +2541,7 @@ public:
     newest.winner = {};
     Assert::AreEqual(std::string("Draw"), outcome().title);
 
-    // Phase 2 design §8: a domination says so.
+    // ADR-057 decision 8: a domination says so.
     newest.winner = PLAYER;
     newest.ending = Outpost::MatchEnding::Domination;
     Assert::AreEqual(std::string("By domination. Match length 6:13"), outcome().detail);
@@ -2548,7 +2553,7 @@ public:
     Assert::AreEqual(std::string("Out of time. Match length 6:13"), outcome().detail);
   }
 
-  // Phase 5 design §8: in a world no match ends, and a player who has lost is told when its seat restarts at its start, or
+  // ADR-084 decision 7: in a world no match ends, and a player who has lost is told when its seat restarts at its start, or
   // that it waits for its start to be clear; the banner keeps the way back to the menu.
   TEST_METHOD(SaysWhenAFallenSeatRestarts)
   {
@@ -2570,7 +2575,7 @@ public:
       std::ranges::any_of(layout.actions, [](const auto& _action) { return _action.second.kind == Outpost::Hud::ActionKind::BackToMenu; }));
   }
 
-  // Phase 4 design §10, §13: a selection's retreat is a row of three under its buttons (interface plan 2, task UI4.3),
+  // ADR-088 decision 3: a selection's retreat is a row of three under its buttons,
   // RETREAT over "25%", "50%" and "Never", the first ship's setting lit, or none and MIXED while the others differ; a press
   // on a cell sets it for every ship. A ship going back to be repaired says so.
   TEST_METHOD(SetsTheSelectionsRetreat)
@@ -2648,7 +2653,7 @@ public:
     Assert::AreEqual(std::string("Holding a sector"), content.selection.back());
   }
 
-  // Interface plan 2, task UI3.2: the Ore, status, territory and alerts panels are one width, the column's, whatever the
+  // ADR-066 decision 3: the Ore, status, territory and alerts panels are one width, the column's, whatever the
   // status panel holds, so that the column's edge stands still; no narrower than the alerts' 380 units. Research's progress
   // and the fleet against its cap are bars, filled for their share, at nothing, half and the whole: research's under its
   // name, across the panel, and the fleet's beside its label, short of its figure.
@@ -2740,7 +2745,7 @@ public:
       L"a mark round the alert's place");
   }
 
-  // Phase 5 design §7, §11: the orders window lists the seat's scheduled orders, the first ORDERS_SHOWN with how many ships
+  // ADR-080 decision 9: the orders window lists the seat's scheduled orders, the first ORDERS_SHOWN with how many ships
   // wait on each and how many more there are; and lays out the form, a row a field with the arrows that step it either way,
   // when the order fires, and the button that gives it to the selection's warships, which says why it cannot while it
   // cannot.
@@ -2820,7 +2825,7 @@ public:
     Assert::IsTrue(gives());
   }
 
-  // Design §11: the selection's panel names the scheduled order its ship waits on, whole.
+  // ADR-080 decision 9: the selection's panel names the scheduled order its ship waits on, whole.
   TEST_METHOD(NamesAShipsPendingOrder)
   {
     Outpost::Snapshot newest = OrdersSnapshot();
@@ -2839,8 +2844,8 @@ public:
     Assert::IsTrue(std::ranges::find(layout.texts, pending, &Outpost::Hud::Text::text) != layout.texts.end(), L"whole");
   }
 
-  // Design §11: on taking its seat again the player is told what happened while it was away, in a window of its own: how
-  // long, what was built and lost, the sectors gained and lost, and each order that fired.
+  // ADR-080 decisions 7 and 9: on taking its seat again the player is told what happened while it was away, in a window of
+  // its own: how long, what was built and lost, the sectors gained and lost, and each order that fired.
   TEST_METHOD(SaysWhatHappenedWhileAway)
   {
     Outpost::Snapshot newest = OrdersSnapshot();
@@ -2876,9 +2881,9 @@ public:
       Assert::IsTrue(std::ranges::find(layout.texts, line, &Outpost::Hud::Text::text) != layout.texts.end());
   }
 
-  // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs. Interface plan 2,
-  // task UI3.3: under the tickets, who the drain takes from, at what a minute, and when they run out, the drains their
-  // tickets last rounded up, times the interval; a warning chip when it is the player, and "No drain" level on nodes.
+  // ADR-057 decision 8: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs; under the
+  // tickets, who the drain takes from, at what a minute, and when they run out, the drains their tickets last rounded up,
+  // times the interval; a warning chip when it is the player, and "No drain" level on nodes.
   TEST_METHOD(ShowsTheTickets)
   {
     const Outpost::PlayerId enemy{2};
@@ -2937,7 +2942,7 @@ public:
     Assert::IsFalse(layout.Covers(960.0f, 540.0f), L"the middle of the screen stays on the world");
   }
 
-  // Task 6.2: the main menu starts a skirmish, at each difficulty from the easiest down (ADR-065), or quits, from the middle
+  // ADR-065 decision 4: the main menu starts a skirmish, at each difficulty from the easiest down, or quits, from the middle
   // of the screen at any size.
   TEST_METHOD(LaysOutTheMenu)
   {
@@ -2996,7 +3001,7 @@ public:
     Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join world");
   }
 
-  // Interface plan 2, task UI4.2: a selection with a warship offers its orders first, each with its key's cap, Hold sector
+  // ADR-088 decision 2: a selection with a warship offers its orders first, each with its key's cap, Hold sector
   // only where the map has sectors and the armed one lit; a selection of Constructors alone offers none. The buttons stand
   // against the selection panel's right edge, bottom-aligned, the pair centered, at every width the selection panel takes.
   TEST_METHOD(OffersTheOrdersBesideTheSelection)
@@ -3067,7 +3072,7 @@ public:
     }
   }
 
-  // Interface plan 2, task UI4.4: the button under the pointer has its edge lit, and the status line under it lies on the
+  // ADR-088 decision 1: the button under the pointer has its edge lit, and the status line under it lies on the
   // cards' color, with any line whose click does the same; nothing else changes, and without a pointer nothing is lit.
   TEST_METHOD(LightsWhatThePointerIsOver)
   {
@@ -3173,7 +3178,7 @@ public:
     Assert::AreEqual(size_t{1}, status.size());
     Assert::AreEqual(std::string("Research Lab IDLE"), status[0].Text());
     Assert::IsTrue(status[0].Warns() && status[0].action == research);
-    // Researching: the topic over a bar of how far it has come, and how many more are queued at its end (task UI3.2).
+    // Researching: the topic over a bar of how far it has come, and how many more are queued at its end (ADR-066 decision 1).
     entities.back().research = {Outpost::ResearchTopicId{2}};
     status = statusOf(entities);
     Assert::AreEqual(std::string("Hull Plating \xC2\xB7 waiting for Ore"), status[0].Text());
@@ -3267,8 +3272,8 @@ public:
     Assert::IsTrue(layout.ActionAt(idle.left + 4.0f, idle.top + 6.0f) == content.status[1].action, L"the chip too");
   }
 
-  // Phase 4 design §5: a Shipyard whose front warship does not fit under the cap says it waits for the cap, not for Ore, in
-  // its selection panel and its production window. Interface plan 2, task UI3.1: on the status line the cap is then what
+  // ADR-071 decision 4: a Shipyard whose front warship does not fit under the cap says it waits for the cap, not for Ore, in
+  // its selection panel and its production window. ADR-066 decision 1: on the status line the cap is then what
   // holds the Shipyards back, as it is when the fleet has room for none of the saved designs. The line says so, plainly,
   // with what the Command Station's next level adds, or how far its upgrade has come, and a click selects the station.
   // Otherwise the line counts the Shipyards and ends with the fleet against its cap; without a cap it says nothing of it.
@@ -3362,7 +3367,7 @@ public:
 
   // ADR-066: the selection panel of the player's own finished Shipyard, Command Station or Research Lab says what its front
   // job is and how far it has come, or that it waits for Ore, with how many more are queued; or that it is idle. An enemy
-  // structure's queue stays unshown (task 9.4).
+  // structure's queue stays unshown.
   TEST_METHOD(SaysWhatASelectedProducerIsDoing)
   {
     Outpost::Snapshot newest = Newest();
@@ -3400,8 +3405,8 @@ public:
     Assert::AreEqual(std::string(), lineOf(theirs), L"not the enemy's");
   }
 
-  // Task 15.2: a button that opens a window shows its key at its right end, as a cap, an outline with the letter in the
-  // label face; a Build button, which has its cost there, shows none.
+  // Game §interface.style.panels: a button that opens a window shows its key at its right end, as a cap, an outline with the
+  // letter in the label face; a Build button, which has its cost there, shows none.
   TEST_METHOD(ShowsAWindowsKeyOnItsButton)
   {
     const Outpost::Hud::Content content{.ore = 500,
@@ -3435,8 +3440,8 @@ public:
     Assert::AreEqual(std::string("R"), Outpost::KeyCap(Outpost::KEY_RESEARCH));
   }
 
-  // Task 15.4: a production or research window not yet moved opens in the first of the two places under the Ore that no
-  // open window holds, production's and then research's, so that research alone opens at the margin, and the two stand
+  // ADR-031 decision 2: a production or research window not yet moved opens in the first of the two places under the Ore that
+  // no open window holds, production's and then research's, so that research alone opens at the margin, and the two stand
   // side by side in the order they opened. A moved window stays where it was left.
   TEST_METHOD(OpensAWindowWhereThereIsRoom)
   {
@@ -3478,7 +3483,7 @@ public:
     Assert::AreEqual(MARGIN_UNITS, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
   }
 
-  // ADR-068 (task 16.1): the designer writes its queue as the other windows do, over its slots, and its ships built apart;
+  // ADR-068 decision 1: the designer writes its queue as the other windows do, over its slots, and its ships built apart;
   // arrows 24 units square flank what they step, the designer's Shipyard and production's producer; research says where
   // its page is; and a window's body is opaque.
   TEST_METHOD(WritesTheWindowsHeaders)
@@ -3555,7 +3560,7 @@ public:
     Assert::AreEqual(std::string("TOPICS \xC2\xB7 13-21 OF 21"), pageOf(Outpost::Hud::StepTopics(20, 0, 21)));
   }
 
-  // ADR-068 (task 16.2): an ore asteroid's mark is an outlined square, so that it differs from an enemy's filled one in
+  // ADR-043 decision 8: an ore asteroid's mark is an outlined square, so that it differs from an enemy's filled one in
   // shape; a field stands at 2:1 or more against the map, and a dry asteroid at 3:1, computed as the text's contrast is.
   TEST_METHOD(SetsTheMinimapsMarksApart)
   {
@@ -3607,7 +3612,7 @@ public:
                    L"a dry asteroid darker than one with ore");
   }
 
-  // ADR-068 (task 16.3): a Shipyard's card says how long its design takes and how it does against each hull, three
+  // ADR-068 decision 3: a Shipyard's card says how long its design takes and how it does against each hull, three
   // segments a hull lit by the designer's rating, three for Good, two for Fair and one for Poor; the Constructor's card says
   // how long it takes.
   TEST_METHOD(SaysWhatAProductionCardBuilds)
@@ -3671,7 +3676,7 @@ public:
     Assert::IsTrue(constructors.options[0].strengths.empty());
   }
 
-  // ADR-068 (task 16.4): F1's Controls window lists every key the game reads, each from KeyBindings.h, where the input code
+  // ADR-068 decision 4: F1's Controls window lists every key the game reads, each from KeyBindings.h, where the input code
   // reads it, so that the two cannot disagree; and it opens in the middle of the screen.
   TEST_METHOD(ListsEveryKeyInTheControlsWindow)
   {
@@ -3738,8 +3743,8 @@ public:
     Assert::AreEqual(Outpost::KeyBindings().size(), keys.size(), L"a line in the column for each binding");
   }
 
-  // ADR-070 (task 17.1): Ctrl+= and Ctrl+- step the interface's own scale through its steps, a factor on the screen's, as
-  // far as the designer, laid out for the match's components, and the Controls window fit the screen between its margins;
+  // ADR-070 decisions 2 to 4: Ctrl+= and Ctrl+- step the interface's own scale through its steps, a factor on the screen's,
+  // as far as the designer, laid out for the match's components, and the Controls window fit the screen between its margins;
   // a new screen or match takes it down to the largest step that fits.
   TEST_METHOD(StepsTheInterfaceAsFarAsItsWindowsFit)
   {
@@ -3770,7 +3775,7 @@ public:
     Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 0, nullptr, 1920, 1080), L"the menu keeps it");
   }
 
-  // ADR-070 (task 17.1): a moved window stays where it can be taken hold of across a step of the interface's own scale, and
+  // ADR-070 decision 1: a moved window stays where it can be taken hold of across a step of the interface's own scale, and
   // the layout is set at the step.
   TEST_METHOD(KeepsAMovedWindowOnTheScreenAcrossAStep)
   {
@@ -3790,8 +3795,8 @@ public:
     }
   }
 
-  // Task 14.1: at either size, with the longest content, every text ends inside the smallest panel it starts in, measured
-  // with the fonts it is drawn in. Every offender is named, not only the first.
+  // ADR-061 decision 5: at either size, with the longest content, every text ends inside the smallest panel it starts in,
+  // measured with the fonts it is drawn in. Every offender is named, not only the first.
   TEST_METHOD(KeepsEveryTextInsideItsPanel)
   {
     std::wstring offenders;
@@ -3829,8 +3834,8 @@ public:
     Assert::IsTrue(offenders.empty(), offenders.c_str());
   }
 
-  // Task 14.1: at either size, with the longest content, no two texts' line boxes meet within a layer. Every pair that
-  // meets is named, not only the first.
+  // ADR-061 decision 5: at either size, with the longest content, no two texts' line boxes meet within a layer. Every pair
+  // that meets is named, not only the first.
   TEST_METHOD(OverlapsNoTwoTexts)
   {
     std::wstring offenders;
@@ -3864,8 +3869,8 @@ public:
     Assert::IsTrue(offenders.empty(), offenders.c_str());
   }
 
-  // Task 14.2: every text stands at 4.5:1 or more against what it is drawn on, the panels under its first pixel with a
-  // hatched panel's stripes and the gaps between them both, as the review computed contrast. K1 exempts no text (ADR-062).
+  // ADR-062 decision 3: every text stands at 4.5:1 or more against what it is drawn on, the panels under its first pixel with
+  // a hatched panel's stripes and the gaps between them both, as the review computed contrast. No text is exempt.
   // Every offender is named, at the least contrast it meets.
   TEST_METHOD(SetsEveryTextAtFourAndAHalfToOne)
   {

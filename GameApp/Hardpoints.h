@@ -6,7 +6,7 @@ namespace Outpost
 // decided here, and a model with a tag the game does not know fails to load.
 enum class HardpointKind : std::uint8_t
 {
-  // Where a shot leaves from. Weapons are turrets (design §7), so only its position is used.
+  // Where a shot leaves from. Weapons are turrets (Game §combat.turrets), so only its position is used.
   Gun,
   // Where an engine's exhaust leaves, pointing the way the exhaust streams, its size the nozzle's radius (ADR-019).
   Exhaust
@@ -66,8 +66,8 @@ inline constexpr float MAX_STANCE_TILT_RADIANS = 0.5f;
 [[nodiscard]] DirectX::XMFLOAT4X4 StanceMatrix(const ModelPose& _pose, const Stance& _stance) noexcept;
 
 // Where a shot at _target leaves the model from: its gun nearest the target, on the ground. Nothing for a model with no
-// gun. It is presentation only: the server measures range from the ship's center (design §7). A shot of a further gun,
-// such as a Command Station's second Defence gun (Phase 3 design §7), leaves from the next nearest, _gun places on, and
+// gun. It is presentation only: the server measures range from the ship's center (ADR-014 decision 7). A shot of a further
+// gun, such as a Command Station's second Defence gun (ADR-064 decision 11), leaves from the next nearest, _gun places on, and
 // wraps round when the model has fewer guns than that.
 [[nodiscard]] std::optional<PlanePosition> NearestMuzzle(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose,
                                                          PlanePosition _target, std::uint8_t _gun = 0);

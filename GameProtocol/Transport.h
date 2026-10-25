@@ -2,9 +2,9 @@
 
 namespace Outpost
 {
-// One player's connection to the server: commands go out and snapshots come in (ADR-002 decision 6). In the MVP it is
-// the loopback, in-process queues in GameLogic; a network transport takes its place later without changing the types it
-// carries (ADR-004).
+// One player's connection to the server: commands go out and snapshots come in (ADR-002 decision 6). It is QUIC
+// (QuicTransport), or for a stepped server the in-process loopback's queues in GameLogic, and either carries the same
+// types (ADR-060 decision 1).
 class Transport : Neuron::NonCopyable
 {
 public:

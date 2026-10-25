@@ -37,7 +37,7 @@ Outpost::EntityView Swarm(std::uint32_t _id, Outpost::PlayerId _owner)
 TEST_CLASS(MatchLogTests)
 {
 public:
-  // Plan task 6.3: the seed, each player's research as it finishes, each warship once as it first appears, and the end.
+  // ADR-038 decision 5: the seed, each player's research as it finishes, each warship once as it first appears, and the end.
   TEST_METHOD(RecordsResearchShipsAndTheEnd)
   {
     std::ostringstream out;
@@ -78,7 +78,7 @@ public:
                      out.str());
   }
 
-  // Phase 2 design §10: a warship with a module is recorded with the module's name after its components', so that a
+  // ADR-058 decision 6: a warship with a module is recorded with the module's name after its components', so that a
   // scout reads apart from a plain ship of its hull, drive and weapon.
   TEST_METHOD(RecordsAShipsModule)
   {
@@ -129,7 +129,7 @@ public:
                      out.str());
   }
 
-  // Phase 2 plan task 19.1: the first shot; an engagement once both sides fire in a sector, and another there only after
+  // ADR-038 decision 1: the first shot; an engagement once both sides fire in a sector, and another there only after
   // 30 quiet seconds; each change of a sector's holder; each player's tickets with its fleet; and how the match ended. A
   // shot both players' snapshots show is counted once, and the side of a shooter a snapshot does not show is the other
   // side from its target's.
@@ -198,7 +198,7 @@ public:
                      out.str());
   }
 
-  // Phase 4 plan task 34.1 (U1): a fight with the pirates is recorded once a player and sector, and the sector once they no
+  // ADR-038 decision 1: a fight with the pirates is recorded once a player and sector, and the sector once they no
   // longer guard it; it is no contact and no engagement, which are the players' fights (ADR-073).
   TEST_METHOD(RecordsThePiratesFightsApart)
   {
@@ -229,8 +229,8 @@ public:
     Assert::IsTrue(written.find("engagement") == std::string::npos);
   }
 
-  // Phase 4 plan task 34.1: a derelict gone from the sight of the Constructors at it was salvaged by their player, not by one
-  // who only saw it (U1); a warship that turns for home, comes back whole and fires again (U3).
+  // ADR-038 decision 1: a derelict gone from the sight of the Constructors at it was salvaged by their player, not by one
+  // who only saw it; a warship that turns for home, comes back whole and fires again.
   TEST_METHOD(RecordsSalvageRetreatsAndRepairs)
   {
     std::ostringstream out;
@@ -277,7 +277,7 @@ public:
     Assert::AreEqual(written.find("again"), written.rfind("again"), L"once");
   }
 
-  // Phase 1 plan task 13.1: each tier the player's Research Lab opens (Phase 3 design §6), the player's own warships every
+  // ADR-038 decision 1: each tier the player's Research Lab opens (Game §research.tiers), the player's own warships every
   // 30 seconds and at their peak, and an asteroid as it runs dry, once.
   TEST_METHOD(RecordsTiersFleetsAndDryAsteroids)
   {
@@ -322,8 +322,8 @@ public:
                      out.str());
   }
 
-  // Phase 3 plan task 25.1: each upgrade started, finished or lost, from its owner's snapshots; a structure above level 1
-  // the first time it is shot at that level (T4); and the ticks both players sat at their caps with as many nodes (T2).
+  // ADR-038 decision 1: each upgrade started, finished or lost, from its owner's snapshots; a structure above level 1
+  // the first time it is shot at that level; and the ticks both players sat at their caps with as many nodes.
   TEST_METHOD(RecordsUpgradesAttacksAndTheStall)
   {
     std::ostringstream out;

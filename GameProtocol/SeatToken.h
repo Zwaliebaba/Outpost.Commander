@@ -3,7 +3,7 @@
 namespace Outpost
 {
 // What a client shows to take its seat, besides its player: 128 random bits the server's owner hands its player, so that
-// only that player takes it (Phase 5 design §4, ADR-078). The server's hello carries it, and a seat refuses any other.
+// only that player takes it (ADR-078 decision 3). The server's hello carries it, and a seat refuses any other.
 using SeatToken = std::array<std::uint8_t, 16>;
 
 // A new token from the system's source of randomness. Never in the simulation, which draws only from its own PRNG

@@ -446,8 +446,7 @@ CheckParts Added(const CheckParts& _now, const CheckParts& _before)
 }
 
 // (a) and (b) over one stage. (b) judges the components of _judged: a later tier's stage asks only the components the
-// tier adds to be worth building, since the tier before judged its own at the budgets that fit them (owner, 2026-10-03,
-// gate H9).
+// tier adds to be worth building, since the tier before judged its own at the budgets that fit them (owner, 2026-10-03).
 void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs, const CheckParts& _parts, const CheckParts& _judged,
               const std::vector<double>& _budgets, const GameLogicTests::CheckOptions& _options, Failures& _failures, std::set<Leg>& _legs,
               std::string& _report)
@@ -522,7 +521,7 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
     }
   }
   // (b) does not ask a drive whose case is speed to be worth building, since a battle cannot see speed; what it leaves out
-  // is still reported (Phase 1 design §7).
+  // is still reported (ADR-033 decision 6).
   CheckParts required = _judged;
   CheckParts speedOnly;
   for (const GameLogicTests::CheckDrive& drive : _judged.drives)
@@ -549,7 +548,7 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
                       const GameLogicTests::CheckOptions& _options, Failures& _failures, std::string& _report)
 {
   // The other side has every topic of the tiers before: the start for tier 1, as the MVP's (d), and every design and
-  // upgrade of the tier before for a later tier (Phase 1 design §7).
+  // upgrade of the tier before for a later tier (ADR-033 decision 6).
   std::vector<const Outpost::ResearchTopicTuning*> before;
   for (const Outpost::ResearchTopicTuning& topic : _tuning.research)
   {
@@ -838,9 +837,9 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
   }
 
   // Each side a square-ish grid, front row first, facing the other across the gap. The second side is the first turned
-  // half a turn about the middle, as the map's starts are (design §4): mirrored instead, a partial last row would sit on
-  // the same flank of both, and the formation, which is the same under a turn but not under a reflection, gives the
-  // second side every battle at 9,000 Ore.
+  // half a turn about the middle, as the map's starts are (Game §map.starts): mirrored instead, a partial last row
+  // would sit on the same flank of both, and the formation, which is the same under a turn but not under a reflection,
+  // gives the second side every battle at 9,000 Ore.
   std::array<std::vector<Outpost::EntityId>, 2> ships;
   std::array<Outpost::PlanePosition, 2> centers{};
   for (size_t side = 0; side < 2; ++side)
@@ -914,7 +913,7 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
 
 GameLogicTests::CheckResult GameLogicTests::RunBalanceCheck(const Outpost::Tuning& _tuning, const CheckOptions& _options)
 {
-  // The stages of Phase 1 design §7: the starting components, then each tier's, each at the budgets that fit when its
+  // The stages: the starting components, then each tier's, each at the budgets that fit when its
   // components arrive, and each tier's research against the tier before.
   const CheckParts all = PartsFrom(_tuning);
   const CheckParts starting = Researched(all, _tuning, {});

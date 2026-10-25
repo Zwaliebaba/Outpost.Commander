@@ -172,7 +172,7 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
 TEST_CLASS(MapTests)
 {
 public:
-  // Phase 4 design §6, §7: 10 km a side, the starts in opposite corners 1 km in from the edges, and Phase 1's four rings of
+  // Game §map: 10 km a side, the starts in opposite corners 1 km in from the edges, and Phase 1's four rings of
   // ore, each richer and further out than the last: each home's three asteroids fixed, and the rest placed from the seed,
   // as many of each yield in each sector as its kind names, 459,000 Ore in all whatever the seed.
   TEST_METHOD(TheRepositoryMapHasPhaseFoursShape)
@@ -234,7 +234,7 @@ public:
     }
   }
 
-  // Phase 4 design §6: the map is laid out in 25 sectors of 2 km for Phase 2's territory, each of a kind. They tile the
+  // ADR-036 decision 4: the map is laid out in 25 sectors of 2 km for Phase 2's territory, each of a kind. They tile the
   // map, each holds its node, every asteroid and start lies in one, two are adjacent exactly when they share a border, and
   // every sector can be reached from both starts' sectors.
   TEST_METHOD(TheRepositoryMapIsLaidOutInSectors)
@@ -321,7 +321,7 @@ public:
   }
 
   // A ship as wide as the narrowest passage the map promises gets from either start to the side of every asteroid and
-  // every field (plan task 2.3), on maps the seed placed.
+  // every field (ADR-072 decision 5), on maps the seed placed.
   TEST_METHOD(EveryAsteroidCanBeReachedFromBothStarts)
   {
     for (const std::uint64_t seed : std::span(SEEDS).first(3))
@@ -384,7 +384,7 @@ public:
     }
   }
 
-  // The seed places the pirates' outposts by sector kind (Phase 4 design §8, ADR-072): on each side a camp in two of the
+  // The seed places the pirates' outposts by sector kind (ADR-072 decision 7): on each side a camp in two of the
   // four contested sectors, and a stronghold on both rich corners and the center, each with its mirror.
   TEST_METHOD(PlacesOutpostsFromTheSeed)
   {
@@ -426,7 +426,7 @@ public:
       Assert::IsTrue(plain.oreAsteroids[i].position == full.oreAsteroids[i].position);
   }
 
-  // The seed places the derelicts by sector kind (Phase 4 design §9, ADR-074): on each side one of the two flanks, two of
+  // The seed places the derelicts by sector kind (ADR-072 decision 8): on each side one of the two flanks, two of
   // the three near sectors, two of the four contested and the between sector, each with its mirror, and a third of the
   // pairs naming a topic.
   TEST_METHOD(PlacesDerelictsFromTheSeed)
@@ -528,7 +528,7 @@ public:
     Assert::AreEqual(50.0f, map.minimumGapMeters);
     Assert::IsTrue(map.starts[1] == Outpost::PlanePosition{.xMeters = 300.0f, .zMeters = 300.0f});
     Assert::IsTrue(map.oreAsteroids[1].yield == Outpost::OreYield::Contested);
-    // Phase 1 design §8: every ore asteroid holds a reserve.
+    // ADR-035 decision 1: every ore asteroid holds a reserve.
     Assert::AreEqual(12000, map.oreAsteroids[1].reserveOre.value_or(0));
     Assert::AreEqual(100.0f, map.asteroidFields[0].radiusMeters);
   }
@@ -550,7 +550,7 @@ public:
     ExpectLoadError(Replace("\"minimumGapMeters\": 50,", ""), "the file: has no \"minimumGapMeters\"");
   }
 
-  // The loader's checks of the sectors (Phase 1 design §8).
+  // The loader's checks of the sectors (ADR-036 decision 2).
   TEST_METHOD(RejectsBrokenSectors)
   {
     constexpr std::string_view SECTORS = R"(], "sectors": [

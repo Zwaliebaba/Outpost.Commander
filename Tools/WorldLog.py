@@ -1,5 +1,5 @@
-"""Summarizes a world's log, for the owner's week (Phase 5 design sections 2 and 10, ADR-082): W1's starts, recoveries
-and saves, and W4's half that the world log can answer, each seat's income, fleet and research in the hours its player
+"""Summarizes a world's log, for the owner's week (ADR-082, Game §world.log): its starts, recoveries and saves, and
+what the log can tell of what a player's presence buys, each seat's income, fleet and research in the hours its player
 played it against the hours its deputy did. It also counts each seat's battles by whether its player was present, and
 the losses, waits and restarts of a world without an end (ADR-084).
 

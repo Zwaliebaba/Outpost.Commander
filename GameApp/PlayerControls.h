@@ -2,15 +2,15 @@
 
 namespace Outpost
 {
-// Design §9's player controls, turned from input into selection and orders (task 2.6). Selection and control groups are
+// The player's controls, turned from input into selection and orders (ADR-013 decision 5). Selection and control groups are
 // client state; orders leave as Commands for the transport (ADR-002).
 //
 //   Left-click selects a ship, or one of the player's structures, a left-drag selects the player's ships in the box,
 //   Shift adds, and a double-click selects every visible ship of that design. Right-click moves the selected ships, or
 //   attacks an enemy ship or structure under the cursor; selected Constructors right-clicked on one of the player's own
-//   ships or structures that is damaged or under construction repair or build it (task 4.2). A, then a left-click,
+//   ships or structures that is damaged or under construction repair or build it (ADR-016 decision 5). A, then a left-click,
 //   attack-moves; Escape cancels it. H, then a left-click, holds the sector clicked in, and T, then a left-click, patrols
-//   to the point clicked (Phase 2 design §9, ADR-059). S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
+//   to the point clicked (ADR-059 decision 7). S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
 //   centers the camera on it. The HUD arms a structure's placement, which the next left-click on the ground orders the
 //   selected Constructors to build, and which right-click or Escape cancels; Shift keeps it armed for another. An order to
 //   the selection folds the Constructors' structures into the HUD's Build button, which opens them again, as selecting
@@ -32,7 +32,7 @@ public:
   // The orders given since the last call, in the order they were given.
   [[nodiscard]] std::vector<Command> TakeCommands();
 
-  // From the HUD (task 4.5): arms placing a structure, when the selection holds a Constructor.
+  // From the HUD (ADR-013 decision 5): arms placing a structure, when the selection holds a Constructor.
   void ArmPlacement(StructureKind _structure, std::span<const EntityView> _entities);
 
   [[nodiscard]] std::optional<StructureKind> Placing() const noexcept
@@ -52,27 +52,27 @@ public:
 
   // From the HUD: a job for a Shipyard's or the Command Station's queue.
   void Queue(EntityId _producer, DesignId _design);
-  // From the HUD: a topic for the Research Lab's queue (task 5.1).
+  // From the HUD: a topic for the Research Lab's queue (ADR-017 decision 1).
   void Research(EntityId _lab, ResearchTopicId _topic);
-  // From the HUD: the structure's next level, which Constructors then build (Phase 3 design §4).
+  // From the HUD: the structure's next level, which then builds itself (ADR-064 decisions 2 and 3).
   void Upgrade(EntityId _structure);
   // From the HUD: _entity selected on its own, as a click on it selects it, and any order armed for the selection before
-  // dropped with it (interface plan 2, task UI3.1).
+  // dropped with it (ADR-066 decision 1).
   void SelectAlone(EntityId _entity);
-  // From the HUD's order buttons and from their keys alike (interface plan 2, task UI4.2): arm attack-move, or holding a
+  // From the HUD's order buttons and from their keys alike (ADR-088 decision 2): arm attack-move, or holding a
   // sector or a patrol, for the next left-click, while the selection holds a ship, dropping whatever was armed before; or
   // stop the selected ships at once. _entities is the interpolated view.
   void ArmAttackMove(std::span<const EntityView> _entities);
   void ArmStanding(StandingOrder _standing, std::span<const EntityView> _entities);
   void Stop(std::span<const EntityView> _entities);
-  // From the designer: a new design, or a new name for a saved one (task 5.2).
+  // From the designer: a new design, or a new name for a saved one (ADR-017 decision 6).
   void SaveDesign(SaveDesignCommand _save);
-  // From the selection panel: the selected ships' retreat (Phase 4 design §10).
+  // From the selection panel: the selected ships' retreat (ADR-075 decision 7).
   void SetRetreat(RetreatThreshold _retreat, std::span<const EntityView> _entities);
   // From the minimap: the selected ships move to a point.
   void MoveTo(PlanePosition _destination, std::span<const EntityView> _entities);
   // From the orders window: _form's scheduled order for the selection, when it can give one, its time of day the next
-  // moment after _now that _clock reads it (Phase 5 design §7).
+  // moment after _now that _clock reads it (ADR-080 decision 6).
   void Schedule(const OrderForm& _form, std::chrono::sys_seconds _now, const PlayerClock& _clock, const Snapshot& _newest,
                 std::span<const EntityView> _entities);
 
@@ -96,7 +96,7 @@ public:
   // The box being dragged, while the left button is held past DRAG_PIXELS.
   [[nodiscard]] std::optional<ScreenRect> DragBox() const noexcept;
 
-  // The last move order given since the last call, and when the input that gave it was read (task 2.7).
+  // The last move order given since the last call, and when the input that gave it was read.
   struct MoveOrder
   {
     std::vector<EntityId> ships;

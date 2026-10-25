@@ -155,7 +155,7 @@ Outpost::Snapshot FullSnapshot()
   snapshot.startingTickets = 96;
   snapshot.drainIntervalSeconds = 3.25;
   snapshot.drainTicketsPerNodeDifference = 97;
-  // An order fired (ADR-080), with every field set; and the last kind of event, a world's restarted seat (Phase 5 design §8),
+  // An order fired (ADR-080), with every field set; and the last kind of event, a world's restarted seat (ADR-084 decision 4),
   // and the tick its seat restarts at.
   const Outpost::EventView fired{.kind = Outpost::EventKind::OrderFired,
                                  .sector = 98,

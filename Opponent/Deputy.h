@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// A seat's deputy (Phase 5 design §6, gate H3, ADR-079): a keeper, which keeps its player's empire running while the player
+// A seat's deputy (ADR-079 decision 6): a keeper, which keeps its player's empire running while the player
 // is away and plays for nothing more. It watches the seat while its player plays it, and plays it while the server says
 // the player is away. Once a second it:
 //

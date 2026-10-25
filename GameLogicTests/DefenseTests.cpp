@@ -28,7 +28,7 @@ std::vector<Outpost::ShotView> TickShots(MatchArena& _arena)
 TEST_CLASS(DefenseTests)
 {
 public:
-  // Design §6, §12: the Defence gun does 30 a second at 250 m, past the Lance's 220 m and short of the Missile Rack's
+  // ADR-016 decision 7: the Defence gun does 30 a second at 250 m, past the Lance's 220 m and short of the Missile Rack's
   // 280 m.
   TEST_METHOD(TheGunHasTheLadderRange)
   {
@@ -55,7 +55,8 @@ public:
       Assert::IsTrue(shot.shooter == platform && shot.target == lance, L"only the platform reaches");
   }
 
-  // Design §6: armor 10 cuts a Mass Driver hit from 14 to 4 on the armed structures, and every other structure has none.
+  // Game §structures.kinds: armor 10 cuts a Mass Driver hit from 14 to 4 on the armed structures, and every other
+  // structure has none.
   TEST_METHOD(ArmorCutsAMassDriverHitToFour)
   {
     MatchArena arena;
@@ -77,8 +78,8 @@ public:
     Assert::AreEqual(before - (hits * 400), arena.Get(platform).hitPointsHundredths);
   }
 
-  // The Command Station carries the gun too (design §6); a Shipyard does not, and a platform under construction does not
-  // fire.
+  // The Command Station carries the gun too (ADR-016 decision 7); a Shipyard does not, and a platform under
+  // construction does not fire.
   TEST_METHOD(OnlyBuiltArmedStructuresFire)
   {
     MatchArena arena;
@@ -106,7 +107,7 @@ public:
       Assert::IsTrue(shooter == station, L"only the Command Station fires");
   }
 
-  // Phase 3 design §7, gate K6: a Command Station has one Defence gun at levels 1 and 2, two at 3 and 4, and three at 5,
+  // ADR-064 decision 11: a Command Station has one Defence gun at levels 1 and 2, two at 3 and 4, and three at 5,
   // each the station's gun firing on its own rhythm; a Defence Platform has one at any level. Each shot names its gun.
   TEST_METHOD(AStationsLevelGivesItsGuns)
   {

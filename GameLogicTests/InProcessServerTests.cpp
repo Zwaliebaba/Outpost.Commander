@@ -60,7 +60,7 @@ public:
     Assert::IsTrue(redSnapshots[2].player == RED);
   }
 
-  // Task 13.1: a headless run steps the server a tick at a time, with no wall time between ticks.
+  // ADR-038 decision 2: a headless run steps the server a tick at a time, with no wall time between ticks.
   TEST_METHOD(StepsOneTickAtOnce)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
@@ -256,7 +256,7 @@ public:
     Assert::IsTrue(replay.World() == server.World());
   }
 
-  // W2 (Phase 5 design §2): what two AI empires cost the server's thread over an hour of world, as the tick's 99th
+  // What two AI empires cost the server's thread over an hour of world, as the tick's 99th
   // percentile and its longest, and the hosted players' part of them. Run on its own, with OUTPOST_WORLD_MEASURE set.
   TEST_METHOD(MeasuresTheHostedPlayersTicks)
   {
@@ -313,8 +313,8 @@ public:
                                                L"once it has started");
   }
 
-  // Design §6: every player starts with its Command Station on its start and the starting Constructors in front of it,
-  // facing the map's center and clear of each other, all at full strength.
+  // ADR-016 decision 3: every player starts with its Command Station on its start and the starting Constructors in
+  // front of it, facing the map's center and clear of each other, all at full strength.
   TEST_METHOD(PlacesEachPlayersStartingBase)
   {
     const Outpost::Tuning tuning = RepositoryTuning();

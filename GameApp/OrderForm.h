@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// A field of the orders window's form, which its arrows step (Phase 5 design §7).
+// A field of the orders window's form, which its arrows step (ADR-080 decision 9).
 enum class OrderField : std::uint8_t
 {
   Trigger,
@@ -15,7 +15,7 @@ enum class OrderField : std::uint8_t
   Condition
 };
 
-// The orders window's form (Phase 5 design §7, §11, ADR-080): the scheduled order it gives the selection, a field at a time.
+// The orders window's form (ADR-080 decisions 4 and 9): the scheduled order it gives the selection, a field at a time.
 // Its trigger is a time of day on the player's clock, or an event in a sector the player holds; its action goes to a
 // sector's node, or takes a target in that sector, an enemy for an attack and an ore asteroid for a Mining Rig; and its
 // condition is the most command points of enemy warships it goes ahead against, or none. It is client state, kept while
@@ -101,7 +101,7 @@ public:
 
 private:
   ScheduledTriggerKind m_trigger = ScheduledTriggerKind::TimeOfDay;
-  // The design's own example, an attack at 02:00 (design §7).
+  // The form starts at a 02:00 attack-move (ADR-080 decision 9).
   int m_hour = 2;
   int m_minute = 0;
   std::int32_t m_triggerSector = 0;
@@ -115,7 +115,7 @@ private:
 // unless over 8 CP", its time of day read on _clock.
 [[nodiscard]] std::string DescribeScheduledOrder(const ScheduledOrderView& _order, const Snapshot& _newest, const PlayerClock& _clock);
 
-// The selection panel's line for the scheduled orders the ships of _selected wait on (design §11): the one, "Scheduled: at
+// The selection panel's line for the scheduled orders the ships of _selected wait on (ADR-080 decision 9): the one, "Scheduled: at
 // 02:00, attack-move to North", or how many; nothing when none waits.
 [[nodiscard]] std::optional<std::string> PendingOrderLine(std::span<const EntityId> _selected, std::span<const EntityView> _entities,
                                                           const Snapshot& _newest, const PlayerClock& _clock);

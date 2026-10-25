@@ -10,7 +10,7 @@ constexpr std::uint32_t TICKS_PER_SECOND = 20;
 constexpr std::uint64_t DELAY_TICKS = std::uint64_t{Outpost::DEPUTY_DELAY_SECONDS} * TICKS_PER_SECOND;
 } // namespace
 
-// Phase 5 design §6, gate H2 (ADR-079): who plays a seat that has a deputy.
+// ADR-079 decision 4: who plays a seat that has a deputy.
 TEST_CLASS(SeatControllerTests)
 {
 public:

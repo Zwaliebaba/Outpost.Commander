@@ -1,4 +1,5 @@
-"""Summarizes a measurement log the game wrote with --measure (task 2.7 and task 3.7, design section 3).
+"""Summarizes a measurement log the game wrote with --measure, against the frame, tick and response budgets of
+Design/Budgets.md.
 
 The game writes OutpostCommander-measure.log to the temporary folder. Each line is one record:
 
@@ -7,9 +8,9 @@ The game writes OutpostCommander-measure.log to the temporary folder. Each line 
   frame_cpu_ns <ns>                           one frame's CPU work, from the swap chain's wait to Present's return
   frame_gpu_ns <ns>                           one frame's GPU work, between timestamps at its command list's ends
   tick_ns <ns>                                one server tick
-  tick_part_names <name> ...                  the parts of a tick, in the order tick_parts_ns gives them (task 8.1)
+  tick_part_names <name> ...                  the parts of a tick, in the order tick_parts_ns gives them
   tick_parts_ns <ns> ...                      the tick just logged, part by part; the parts nest (GameProtocol/Server.h)
-  response_ns <ns> input_read_ns ... presented_ns ...   Q5: a move order to its first visible response
+  response_ns <ns> input_read_ns ... presented_ns ...   a move order to its first visible response
   startup_ns <stage> <ns>                     when a stage of startup was done, from the start of wWinMain (ADR-049)
 
 Usage: python Tools/FrameTimes.py [log] [--skip-frames N]
@@ -118,7 +119,7 @@ def main():
   if response_ms:
     print(describe("Order to response", response_ms, RESPONSE_TARGET_MS))
   if part_names and tick_parts:
-    # Where the time goes over the whole run, and in the ticks over the target, which are the ones to fix (task 8.1).
+    # Where the time goes over the whole run, and in the ticks over the target, which are the ones to fix.
     every = [parts for _, parts in tick_parts]
     slow = [parts for total, parts in tick_parts if total > TICK_TARGET_MS]
     for line in describe_parts(part_names, every, "Tick parts, every tick"):
@@ -126,7 +127,8 @@ def main():
     for line in describe_parts(part_names, slow, f"Tick parts, ticks over {TICK_TARGET_MS:.0f} ms"):
       print(line)
 
-  # Q4: 99% of frames within 16.7 ms, on the CPU and on the GPU, and every tick within 5 ms.
+  # The frame and tick budgets (Design/Budgets.md): 99% of frames within 16.7 ms, on the CPU and on the GPU, and every
+  # tick within 5 ms.
   if cpu_ms and gpu_ms and tick_ms:
     frames_met = all(percentile(sorted(values), FRAME_SHARE) <= FRAME_TARGET_MS for values in (cpu_ms, gpu_ms))
     slow_ticks = sum(1 for value in tick_ms if value > TICK_TARGET_MS)

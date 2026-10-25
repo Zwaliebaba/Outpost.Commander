@@ -1,7 +1,4 @@
-"""Summarizes the matches the game logged, for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3, design section
-3), Phase 1's P1, P2 and P4 (Phase 1 plan task 13.1, Phase 1 design sections 2 and 10), Phase 2's S1 to S4 (Phase 2
-plan task 19.1, Phase 2 design section 2), Phase 3's T1 to T4 (Phase 3 plan task 25.1, Phase 3 design section 2) and
-Phase 4's U1 to U5 (Phase 4 plan task 34.1, Phase 4 design section 2).
+"""Summarizes the matches the game logged, for the owner's playtests (ADR-038 decision 4).
 
 The game adds every match against the AI to OutpostCommander-matches.log in the temporary folder, and its --ai-matches
 switch writes ten seeded AI-against-AI matches to OutpostCommander-ai-matches.log there. Each line is one record,
@@ -10,7 +7,7 @@ every time in ticks:
   match seed <seed> ticks_per_second <rate>                       a match starts
   matchup <number>                                                the match is that battle matchup, from 1 (ADR-083)
   research <tick> player <player> topic <id> <name>               a player finished a research topic
-  tier <tick> player <player> tier <tier>                         a player's Research Lab opened a tier (Phase 3 design §6)
+  tier <tick> player <player> tier <tier>                         a player's Research Lab opened a tier (ADR-033 decision 2)
   built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared; a module ends its name
   fleet <tick> player <player> warships <count>                   a player's warships, every 30 seconds
   dry <tick> asteroid <id>                                        an ore asteroid ran dry
@@ -34,17 +31,17 @@ every time in ticks:
   end <tick> winner <player, or 0 for a draw>                     the match ended
   left <tick>                                                     the match was left before it ended
 
-For each match this prints its length and outcome (P1 and S4 ask for 45 to 60 minutes) and how it ended (S3), its first
-shot (S1 asks for one by minute 5), its engagements before minute 20 and the sectors they were in (S2 asks for at least
-five, in at least three sectors), the asteroids that ran dry, and for each player its research with the time it
-finished, the times it opened each tier, its peak warship count (P4), its warships by design in each tier (P2 asks
-whether each tier changes what gets built), and its warships by design in windows of the match. On a map with territory it
-adds Phase 3's: how long the caps stalled the nodes (T2), each player's highest level of the Command Station, a Shipyard
-and the Research Lab (T3), and the structures above level 1 attacked (T4). With Phase 4's records it adds the players'
-first shot at each other and what each side salvaged and fought of the pirates before it (U1), each side's warships at
-minute 20 (U2), the warships each side turned for home, had repaired and saw fight again (U3), and the engagements before
-minute 40 (U4). With more than one match it ends with their lengths' median and spread, P1's and S4's repeatable figure,
-S1's to S3's, T2's to T4's, and U1's to U5's.
+For each match this prints its length and outcome (the runs ask for 45 to 60 minutes) and how it ended, its first shot
+(asked for by minute 5), its engagements before minute 20 and the sectors they were in (at least five are asked for, in
+at least three sectors), the asteroids that ran dry, and for each player its research with the time it finished, the
+times it opened each tier, its peak warship count, its warships by design in each tier (which shows whether each tier
+changes what gets built), and its warships by design in windows of the match. On a map with territory it adds how long
+the caps stalled the nodes, each player's highest level of the Command Station, a Shipyard and the Research Lab, and the
+structures above level 1 attacked. With the pirates', salvage's and repair's records it adds the players' first shot at
+each other and what each side salvaged and fought of the pirates before it, each side's warships at minute 20, the
+warships each side turned for home, had repaired and saw fight again, and the engagements before minute 40. With more
+than one match it ends with their lengths' median and spread, and each figure the owner's runs are scored by, against
+the thresholds below.
 
 Usage: python Tools/MatchLog.py [log] [--all] [--ai-matches] [--window-minutes N]
 
@@ -65,25 +62,26 @@ PLAYER_NAMES = {1: "Player", 2: "AI"}
 # The pirates' owner, as the log writes it (ADR-073).
 PIRATES = 0xFFFFFFFF
 AI_MATCHES_PLAYER_NAMES = {1: "AI 1", 2: "AI 2"}
+# The thresholds the owner's runs are scored by, each named for the label it is printed under (ADR-038 decision 4). A
+# match is to last 45 to 60 minutes.
 P1_MINUTES = (45, 60)
-# Phase 2 design section 2: contact by minute 5 (S1), and before minute 20 at least five engagements in at least three
-# sectors (S2).
+# Contact by minute 5, and before minute 20 at least five engagements in at least three sectors.
 S1_MINUTES = 5
 S2_MINUTES = 20
 S2_ENGAGEMENTS = 5
 S2_SECTORS = 3
-# Phase 3 design section 2: the caps stall the nodes for under 5 minutes in the median match (T2); each side reaches level 3
-# of the Command Station, a Shipyard and the Research Lab, and tier 3 is opened, in at least half the matches (T3); and in
-# the median match at least one structure above level 1 is attacked (T4).
+# The caps stall the nodes for under 5 minutes in the median match; each side reaches level 3 of the Command Station, a
+# Shipyard and the Research Lab, and tier 3 is opened, in at least half the matches; and in the median match at least one
+# structure above level 1 is attacked.
 T2_MINUTES = 5
 T3_LEVEL = 3
 T3_KINDS = ("station", "shipyard", "lab")
 T4_ATTACKS = 1
-# Phase 4 design section 2: in the median match each side salvages at least 2 derelicts and fights at least 1 pirate
-# outpost before the players first fire on each other, and that first shot comes between minute 8 and minute 20 in at
-# least 30 of 40 matches (U1); neither side ever has more than 40 warships, and at minute 20 each has fewer than 20 (U2);
-# each side sends at least 10 warships back to be repaired, and at least half of them fight again (U3); before minute 40
-# there are at least five engagements, in at least three sectors (U4); and every match ends, by both endings (U5).
+# In the median match each side salvages at least 2 derelicts and fights at least 1 pirate outpost before the players
+# first fire on each other, and that first shot comes between minute 8 and minute 20 in at least 30 of 40 matches;
+# neither side ever has more than 40 warships, and at minute 20 each has fewer than 20; each side sends at least 10
+# warships back to be repaired, and at least half of them fight again; before minute 40 there are at least five
+# engagements, in at least three sectors; and every match ends, by both endings.
 U1_SALVAGED = 2
 U1_PIRATES = 1
 U1_MINUTES = (8, 20)
@@ -143,7 +141,7 @@ class Match:
     return max((tier for at, owner, tier in self.tiers if owner == player and at <= tick), default=1)
 
   def early_engagements(self):
-    """The engagements before S2's minute 20, and the sectors they were in."""
+    """The engagements before minute 20, and the sectors they were in."""
     early = [sector for tick, sector in self.engagements if self.seconds(tick) < S2_MINUTES * 60]
     return len(early), len(set(early))
 
@@ -155,7 +153,7 @@ class Match:
     return count >= S2_ENGAGEMENTS and sectors >= S2_SECTORS
 
   def players(self):
-    """The players, not the pirates, whose warships are written as anyone's are (Phase 4 design section 8)."""
+    """The players, not the pirates, whose warships are written as anyone's are (ADR-038 decision 4)."""
     return sorted(({player for _, player, _ in self.research} | {player for _, player, _ in self.built} |
                    {player for _, player, _ in self.fleets}) - {PIRATES})
 
@@ -174,7 +172,8 @@ class Match:
     return sorted({owner for _, owner, tier in self.tiers if tier >= 3})
 
   def phase_four(self):
-    """Whether the log has Phase 4's records: a match on a map with derelicts and pirates leaves some."""
+    """Whether the log has the pirates', salvage's and repair's records: a match on a map with derelicts and pirates leaves
+    some."""
     return bool(self.salvaged or self.pirates or self.retreats)
 
   def before_contact(self, records, player):
@@ -202,7 +201,7 @@ class Match:
     return len(ships(self.retreats)), len(ships(self.repaired)), len(ships(self.again))
 
   def u4(self):
-    """The engagements before U4's minute 40, and the sectors they were in."""
+    """The engagements before minute 40, and the sectors they were in."""
     early = [sector for tick, sector in self.engagements if self.seconds(tick) < U4_MINUTES * 60]
     return len(early), len(set(early))
 
@@ -419,7 +418,7 @@ def describe(match, window_minutes, names):
 
 
 def summarize(matches):
-  """P1's repeatable figure: the median length of the matches that ended, with the spread."""
+  """The figures over all the matches: first the median length of those that ended, with the spread."""
   lengths = sorted(match.seconds(match.end_tick) for match in matches if match.end_tick is not None)
   unfinished = len(matches) - len(lengths)
   lines = [f"{len(matches)} matches, {len(lengths)} ended"]
@@ -487,7 +486,8 @@ def summarize(matches):
 
 
 def summarize_phase_four(matches):
-  """U1 to U5 over the matches with Phase 4's records, each side's figure taken at the median."""
+  """The figures of the pirates', salvage's and repair's records, over the matches that have them, each side's figure
+  taken at the median."""
   if not matches:
     return []
   lines = []

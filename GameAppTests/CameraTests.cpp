@@ -59,7 +59,7 @@ void ExpectRejected(std::string_view _replace, std::string_view _with)
 TEST_CLASS(CameraTests)
 {
 public:
-  // Design §4: the default view is about 500 m wide, whatever the screen's shape.
+  // Game §interface.camera: the default view is about 500 m wide, whatever the screen's shape.
   TEST_METHOD(ShowsTheDefaultWidthAtTheDefaultZoom)
   {
     const Outpost::CameraSettings settings = RepositorySettings();
@@ -177,7 +177,7 @@ public:
     Assert::IsTrue(camera.Focus().x > 0.0f);
   }
 
-  // A and S are orders (design §9): they must not move the camera. The arrow keys do.
+  // A and S are orders (ADR-012 decision 8): they must not move the camera. The arrow keys do.
   TEST_METHOD(PansWithTheArrowKeysAndNotWithAOrS)
   {
     Outpost::Camera camera(RepositorySettings());
@@ -249,7 +249,7 @@ public:
     }
   }
 
-  // Interface plan 2, task UI4.1: the bars over an entity stand in its column, level with the highest corner on the screen
+  // ADR-088 decision 5: the bars over an entity stand in its column, level with the highest corner on the screen
   // of its model's bounds, so above the model and above every point of its footprint's rim, with the camera turned a
   // quarter at a time, zoomed in and out; and the HUD lays them out there, 4 units above, filling from the left, whichever
   // way the camera faces.

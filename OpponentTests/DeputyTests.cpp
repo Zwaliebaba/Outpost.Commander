@@ -117,7 +117,7 @@ template <typename Order> std::vector<Order> OrdersOf(const std::vector<Outpost:
 }
 } // namespace
 
-// Phase 5 design §6, gate H3 (ADR-079): a deputy keeps its player's empire running, and plays for nothing more.
+// ADR-079 decision 6: a deputy keeps its player's empire running, and plays for nothing more.
 TEST_CLASS(DeputyTests)
 {
 public:

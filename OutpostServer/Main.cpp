@@ -12,7 +12,7 @@
 
 namespace
 {
-// The dedicated server (Phase 5 design §4, ADR-078). It makes a world's folder with --new-world, and runs the world a folder
+// The dedicated server (ADR-078). It makes a world's folder with --new-world, and runs the world a folder
 // holds when given the folder.
 constexpr std::wstring_view NEW_WORLD_SWITCH = L"--new-world";
 constexpr std::wstring_view HOST_OPTION = L"--host";
@@ -135,7 +135,7 @@ void GiveSeatToAi(Outpost::WorldSettings& _settings, std::wstring_view _value)
 // --new-world: the settings of a new world in _folder, written as its World.json.
 int MakeWorld(const std::filesystem::path& _folder, std::span<const std::wstring> _options)
 {
-  // A seat for each of the map's starts (Phase 5 design §1).
+  // A seat for each of the map's starts (ADR-078 decision 2).
   const Neuron::ByteBuffer mapBytes = Neuron::BinaryFile::ReadFile(L"Map.json");
   if (mapBytes.empty())
     throw Neuron::Exception("The game data file Assets\\Map.json is missing or cannot be read.");

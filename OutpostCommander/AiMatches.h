@@ -2,8 +2,8 @@
 
 namespace Outpost
 {
-// Phase 1 plan task 13.1: matches between two AIs on the real server, played headlessly as fast as it ticks, for P1's
-// repeatable figure (Phase 1 design §2). Each match is stepped a tick at a time, its snapshots handed to both AIs and its
+// Matches between two AIs on the real server, played headlessly as fast as it ticks, for a repeatable figure of how long
+// a match lasts (ADR-038 decision 3). Each match is stepped a tick at a time, its snapshots handed to both AIs and its
 // commands applied at the next tick, so it reproduces from its seed and the two AIs' settings. What the switch is asked to
 // play is read in Opponent (AiMatchesOptions.h); only the executable holds both the AI and the log (ADR-038).
 

@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The design the AI builds against _enemyWarships, one entry for each enemy warship it has seen (design §10): the first
+// The design the AI builds against _enemyWarships, one entry for each enemy warship it has seen (ADR-020 decision 8): the first
 // counter, from _settings, to the most common of them by hull, drive and weapon whose every component the AI has
 // unlocked in _snapshot; the default design when there is none, and when it has seen no warship. A tie goes to the design
 // of the lowest hull, then drive, then weapon.
@@ -12,7 +12,7 @@ namespace Outpost
 // The same against the enemy warships _snapshot shows.
 [[nodiscard]] DesignComponents ChooseAnswer(const AiSettings& _settings, const Snapshot& _snapshot);
 
-// The computer opponent of design §10. It is a client like the human's (ADR-002): it reads its own player's snapshot every
+// The computer opponent (ADR-020 decision 1). It is a client like the human's (ADR-002): it reads its own player's snapshot every
 // tick and answers with orders, which the server validates as it does the human's. Nothing it does is hidden from the
 // server or given to it by the server, so it plays by the same rules.
 //
@@ -24,13 +24,13 @@ namespace Outpost
 // across the map's center from its own base, where the point-symmetric map puts the enemy's. An attack that has lost too
 // many ships falls back and regroups, and the AI fortifies its base as its Shipyards grow (ADR-041).
 //
-// On a map with territory (Phase 2 design §12, ADR-020 decision 13) it builds a Relay before its rigs in another sector,
+// On a map with territory (ADR-020 decision 13) it builds a Relay before its rigs in another sector,
 // claims free sectors next to its territory one at a time once its first Shipyard stands, and puts a Defence Platform by
 // each Relay on its front. It keeps a scout with a Sensor Array touring the enemy's flank sectors, raids an enemy sector
 // it sees no warship guarding with a few warships, holds its front with its reserve's standing order, and attacks in
 // force only with a lead in nodes or a larger reserve (ADR-041).
 //
-// It starts from any state of its player (Phase 5 design §6, ADR-020 decision 16): the structures its player already has
+// It starts from any state of its player (ADR-020 decision 16): the structures its player already has
 // are taken into its plan, not built again beside it, and its player's ships join its reserve. So an AI empire plays on
 // from a world the server restored, which kept nothing of the AI.
 class AiPlayer
@@ -120,9 +120,9 @@ private:
   void AdoptClaims(const Snapshot& _snapshot);
   // Adds the next Shipyard to the plan once the income calls for it.
   void PlanShipyards(const Snapshot& _snapshot);
-  // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (Phase 1 design §13).
+  // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (ADR-020 decision 5).
   void FollowOre(const Snapshot& _snapshot);
-  // The plan's rig on _asteroid, after a Relay in the asteroid's sector when the plan has none there yet (Phase 2 design §4),
+  // The plan's rig on _asteroid, after a Relay in the asteroid's sector when the plan has none there yet (ADR-020 decision 19),
   // and a Defence Platform beside a rig of the plan, on the side of its base.
   void AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid);
   void AddRelaySlot(const Snapshot& _snapshot, const SectorView& _sector);
@@ -142,7 +142,7 @@ private:
   [[nodiscard]] bool IsNearer(PlanePosition _a, PlanePosition _b, PlanePosition _from) const noexcept;
   // Whether a ship is one of its scouts: of the scout design's module.
   [[nodiscard]] bool IsScout(const EntityView& _ship) const noexcept;
-  // A Defence Platform round the base, toward the map's center, built once the income reaches _minimumIncome (task 12.2).
+  // A Defence Platform round the base, toward the map's center, built once the income reaches _minimumIncome (ADR-041 decision 3).
   void AddHomePlatform(const Snapshot& _snapshot, std::int32_t _minimumIncomeHundredthsPerSecond);
   // Where the enemy's Command Stations are, or under fog of war, where the enemy's base must be.
   [[nodiscard]] std::vector<PlanePosition> EnemyStations(const Snapshot& _snapshot) const;
@@ -162,20 +162,20 @@ private:
   // Orders the next structures of the plan, and says what they leave of the Ore.
   [[nodiscard]] PlanOre Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
   void Produce(const Snapshot& _snapshot, bool _structureWaiting, std::vector<Command>& _orders);
-  // Upgrades a Shipyard below the level its production design needs (Phase 3 design §5), and the Research Lab when its
-  // research order reaches a tier the Lab has not opened (§6), paying from _ore. Each says whether one waits for Ore.
+  // Upgrades a Shipyard below the level its production design needs (ADR-020 decision 14), and the Research Lab when its
+  // research order reaches a tier the Lab has not opened, paying from _ore. Each says whether one waits for Ore.
   [[nodiscard]] bool UpgradeShipyards(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
   [[nodiscard]] bool UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
-  // Upgrades its Command Station when the fleet cap would hold back its Shipyards' next round of warships (Phase 4 design
-  // §12), paying from _ore, unless the station's next level is already ordered. Says whether it waits for Ore.
+  // Upgrades its Command Station when the fleet cap would hold back its Shipyards' next round of warships
+  // (ADR-020 decision 15), paying from _ore, unless the station's next level is already ordered. Says whether it waits for Ore.
   [[nodiscard]] bool UpgradeStationForFleet(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
   // Its Command Station, when it can be upgraded now; nullptr otherwise. Build upgrades it in place of a Relay its cap holds
-  // back (§7).
+  // back (ADR-020 decision 14).
   [[nodiscard]] const EntityView* UpgradableStation(const Snapshot& _snapshot) const;
-  // Orders _structure's next level, which builds itself (Phase 3 design §4).
+  // Orders _structure's next level, which builds itself (ADR-064 decision 3).
   void OrderUpgrade(const EntityView& _structure, std::vector<Command>& _orders) const;
   void CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders);
-  // Phase 4 design §12 (ADR-076). It remembers what it has seen of each pirate outpost, in Ore and Defence Platforms; sends
+  // Pirates, salvage and repair (ADR-076). It remembers what it has seen of each pirate outpost, in Ore and Defence Platforms; sends
   // a detachment of its reserve at one that outweighs it by the settings' margin, a camp next to its territory or a
   // stronghold once it has no free sector left to claim; sends one Constructor at a time to salvage the nearest derelict it
   // knows in or next to its territory, once its home rigs stand; and plans a Repair Bay behind its front.
@@ -244,10 +244,10 @@ private:
   // The ships of the attack group already ordered to attack its target from close by, once each.
   std::vector<EntityId> m_closingIn;
   // The ships the attack group had when it last grew, which its losses are counted against, and the tick before which a
-  // reserve that fell back does not attack again (task 12.2).
+  // reserve that fell back does not attack again (ADR-041 decision 2).
   size_t m_launchShips = 0;
   std::uint64_t m_regroupUntilTick = 0;
-  // The Defence Platforms planned round the base so far, which places the next (task 12.2).
+  // The Defence Platforms planned round the base so far, which places the next (ADR-041 decision 3).
   size_t m_homePlatforms = 0;
   // Blockers' list: what blocks in the snapshot of the decision under way, the first m_snapshotBlockers, gathered once at
   // the decision's first call, and after them the planned structures of the last call.

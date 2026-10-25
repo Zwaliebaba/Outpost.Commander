@@ -92,7 +92,7 @@ public:
     Assert::IsFalse(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS).valid, L"no sectors, no Relay");
   }
 
-  // Phase 4 design §8: a Relay's ghost is red in a sector the pirates guard, which every player sees (ADR-073).
+  // ADR-073 decision 7: a Relay's ghost is red in a sector the pirates guard, which every player sees.
   TEST_METHOD(ARelayWaitsForThePiratesToFall)
   {
     constexpr Outpost::PlayerId PLAYER{1};
@@ -104,7 +104,7 @@ public:
     Assert::IsTrue(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS, sectors, PLAYER).valid);
   }
 
-  // Phase 3 design §7: a Relay's ghost is red while the player has taken its Command Station's cap of nodes, and a Relay
+  // ADR-056 decisions 4 and 11: a Relay's ghost is red while the player has taken its Command Station's cap of nodes, and a Relay
   // still under construction has taken its node.
   TEST_METHOD(ARelayWaitsAtTheNodeCap)
   {
@@ -131,7 +131,7 @@ public:
     Assert::IsFalse(Outpost::AtNodeCap(sectors, world, Outpost::PlayerId{2}, 2), L"another player's");
   }
 
-  // Interface plan 2, task UI1.1: a node is marked claimable by the rule that makes the Relay's ghost green there, for
+  // ADR-081 decision 2: a node is marked claimable by the rule that makes the Relay's ghost green there, for
   // every sector, player and cap, with the node clear or covered.
   TEST_METHOD(ClaimsANodeByTheGhostsRule)
   {
@@ -165,7 +165,7 @@ public:
     Assert::IsFalse(Outpost::CanClaim(sectors[1], 30.0f, world, MAP_SIZE_METERS, sectors, Outpost::PlayerId{1}, 0), L"guarded");
   }
 
-  // Phase 2 design §4: on a map with sectors a rig's ghost is green only in a sector the player holds.
+  // ADR-056 decision 5: on a map with sectors a rig's ghost is green only in a sector the player holds.
   TEST_METHOD(ARigNeedsAHeldSector)
   {
     constexpr Outpost::PlayerId PLAYER{1};
@@ -177,7 +177,7 @@ public:
     Assert::IsTrue(Outpost::PlaceGhost(Rig(), ASTEROID, world, MAP_SIZE_METERS).valid, L"without sectors, ore anywhere");
   }
 
-  // Phase 4 design §6, gate L5: on a map with sectors a Shipyard's ghost is green only in a sector the player holds.
+  // ADR-056 decision 5: on a map with sectors a Shipyard's ghost is green only in a sector the player holds.
   TEST_METHOD(AShipyardNeedsAHeldSector)
   {
     constexpr Outpost::PlayerId PLAYER{1};
@@ -193,7 +193,7 @@ public:
     Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a sector it took");
     Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), EAST, world, MAP_SIZE_METERS).valid, L"without sectors, anywhere");
 
-    // Phase 4 design §10: so is a Repair Bay's.
+    // ADR-075 decision 1: so is a Repair Bay's.
     const Outpost::StructureTypeView bay{.structure = Outpost::StructureKind::RepairBay, .nameUtf8 = "Repair Bay", .radiusMeters = 30.0f};
     sectors[2].holder = {};
     Assert::IsTrue(Outpost::PlaceGhost(bay, WEST, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a bay in its own sector");
@@ -225,7 +225,7 @@ public:
     Assert::IsTrue(Outpost::PlaceGhost(Shipyard(), {0.0f, 400.0f}, world, MAP_SIZE_METERS).valid);
   }
 
-  // Design §6: a Mining Rig snaps to a free ore asteroid within reach of the cursor, and covers it.
+  // ADR-016 decision 4: a Mining Rig snaps to a free ore asteroid within reach of the cursor, and covers it.
   TEST_METHOD(ARigSnapsToAFreeAsteroid)
   {
     std::vector<Outpost::EntityView> world = World();

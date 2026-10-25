@@ -59,7 +59,7 @@ Outpost::PlanePosition Middle(const std::vector<const Outpost::Entity*>& _ships)
 }
 } // namespace
 
-// Horizon §9 (ADR-083): the battle matchups, fought with no bases, the AI's battle behavior on both sides.
+// ADR-083: the battle matchups, fought with no bases, the AI's battle behavior on both sides.
 TEST_CLASS(MatchupTests)
 {
 public:

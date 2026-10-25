@@ -9,7 +9,7 @@ namespace
 {
 constexpr float PI = std::numbers::pi_v<float>;
 
-// Presentation, not tuning (design §11). The sky only has to read as deep space behind the battlefield, never compete
+// Presentation, not tuning (Game §look.sky). The sky only has to read as deep space behind the battlefield, never compete
 // with it: no star is as bright or as saturated as an exhaust, a shot or a team color.
 
 // One seed for the whole sky: the same stars every run.
@@ -34,7 +34,7 @@ constexpr float COUNT_POWER = -1.5f;
 // A burst's square, and so its cross's arms, grows from the dimmest burst to the brightest, with the logarithm of its
 // light, and its color is the star's tint at this brightness. The cross has its own dot at its center, so a burst is
 // never a point as well. Small, so that the crosses are fine marks in the line art rather than flares. A warm star's
-// cross is white instead: an orange cross read as a marker in the Ore's gold (owner, 2026-10-03, ADR-046).
+// cross is white instead: an orange cross read as a marker in the Ore's gold (owner, 2026-10-03, ADR-028 decision 3).
 constexpr float MIN_BURST_RADIUS_PIXELS = 6.0f;
 constexpr float MAX_BURST_RADIUS_PIXELS = 16.0f;
 constexpr float BURST_PEAK = 0.6f;

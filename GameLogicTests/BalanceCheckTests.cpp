@@ -38,7 +38,7 @@ public:
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
-    // Forty-five: three hulls, three drives and five weapons (Phase 1 design §5).
+    // Forty-five: three hulls, three drives and five weapons (Game §ships).
     Assert::AreEqual(size_t{45}, designs.size());
     for (const CheckDesign& design : designs)
     {
@@ -113,8 +113,8 @@ public:
     Assert::IsTrue(first >= 7 && second >= 7, (std::to_wstring(first) + L" to " + std::to_wstring(second)).c_str());
   }
 
-  // Task 3.4, the part CI runs: the counters that design §12 records as holding in the simulation, at the smallest
-  // budget, so that a change that breaks them fails here rather than only in the full check.
+  // The part CI runs: the counters recorded as holding in the simulation, at the smallest budget, so that a change that
+  // breaks them fails here rather than only in the full check.
   TEST_METHOD(TheRecordedCountersHold)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
@@ -122,16 +122,16 @@ public:
     constexpr std::uint32_t BATTLES = 20;
     for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
     {
-      // The swarm beats the line, and the brawler beats the swarm (design §7).
+      // The swarm beats the line, and the brawler beats the swarm.
       Assert::IsTrue(Wins(Named(designs, "S+I+MD"), Named(designs, "M+I+La"), 6000.0, mode, BATTLES) >= 16);
       Assert::IsTrue(Wins(Named(designs, "M+I+MD"), Named(designs, "S+I+MD"), 6000.0, mode, BATTLES) >= 16);
       // The picket beats the heavy.
       Assert::IsTrue(Wins(Named(designs, "S+I+La"), Named(designs, "L+F+MD"), 6000.0, mode, BATTLES) >= 16);
     }
-    // The line beats the brawler under focus fire only: under spread fire it does not (design §12).
+    // The line beats the brawler under focus fire only: under spread fire it does not.
     Assert::IsTrue(Wins(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 6000.0, FireMode::Focus, BATTLES) >= 16);
 
-    // Phase 1 design §5, at the smallest budget of each component's tier (task 10.3): the Flak Battery breaks the swarm,
+    // Game §ships, at the smallest budget of each component's tier: the Flak Battery breaks the swarm,
     // a Pulse picket beats the heavy brawler, and the Rail Cannon kills the heavy Lance line.
     for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
     {
@@ -141,14 +141,14 @@ public:
     }
   }
 
-  // Task 3.4: the whole balance check against the simulation. It takes minutes in Release and hours in Debug, so it runs
+  // The whole balance check against the simulation. It takes minutes in Release and hours in Debug, so it runs
   // only when OUTPOST_BALANCE_FULL is set, and otherwise says that it did not. CI never sets it; the owner runs it in
   // Release:
   //   set OUTPOST_BALANCE_FULL=1
   //   vstest.console.exe x64\Release\GameLogicTests.dll
   // The switch is in the test rather than a vstest filter because the native test adapter ignores a filter on its
   // TestCategory trait. The report goes to the test's output and to BalanceCheck-report.txt in the temporary folder.
-  // The verdicts are recorded in design §12.
+  // The verdicts are recorded in GameDesign/Records/BalanceLog.md.
   BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
   TEST_METHOD_ATTRIBUTE(L"TestCategory", L"BalanceFull") END_TEST_METHOD_ATTRIBUTE() TEST_METHOD(TheFullCheck)
   {

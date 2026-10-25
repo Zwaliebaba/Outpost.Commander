@@ -178,7 +178,7 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
 TEST_CLASS(TuningTests)
 {
 public:
-  // The acceptance of plan task 3.1: the game loads the numbers the file holds, the ones Tools/BattleModel.py reads.
+  // ADR-008 decision 3: the game loads the numbers the file holds, the ones Tools/BattleModel.py reads.
   TEST_METHOD(LoadsEveryNumberInTheRepositoryFile)
   {
     const std::string text = ReadRepositoryTuning();
@@ -564,9 +564,9 @@ public:
   {
     ExpectLoadError(Replace("\"kind\": \"DefensePlatform\"", "\"kind\": \"MiningRig\""), "structures[4].kind");
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"Factory\""), "structures[1].kind");
-    // Phase 2 design §5: the Relay is a structure kind like the others, which the file must have.
+    // ADR-056 decision 2: the Relay is a structure kind like the others, which the file must have.
     ExpectLoadError(Replace("\"kind\": \"Relay\"", "\"kind\": \"Shipyard\""), "structures[5].kind");
-    // Phase 4 design §10: so is the Repair Bay.
+    // ADR-075 decision 1: so is the Repair Bay.
     ExpectLoadError(Replace("\"kind\": \"RepairBay\"", "\"kind\": \"Relay\""), "structures[6].kind");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
                             "\"footprintRadiusMeters\": 45, \"structureWeapon\": 2 },"),
@@ -575,7 +575,7 @@ public:
     ExpectLoadError(Replace(", \"cost\": 300,\n      \"buildConstructorSeconds\": 40", ", \"cost\": 300"), "structures[1].cost");
   }
 
-  // Phase 3 design §4, ADR-064: the levels above the first, which only three kinds have, up to the fifth.
+  // ADR-064 decision 1: the levels above the first, which only three kinds have, up to the fifth.
   TEST_METHOD(LoadsStructureLevels)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(MINIMAL_TUNING);
@@ -587,7 +587,7 @@ public:
     Assert::AreEqual(2, shipyard.TopLevel());
     Assert::AreEqual(1, tuning.structures[5].TopLevel());
 
-    // The repository's: the Command Station to 5, the Shipyard to 3 and the Lab to 4 (gate K3).
+    // The repository's: the Command Station to 5, the Shipyard to 3 and the Lab to 4 (owner, 2026-10-04).
     const Outpost::Tuning repository = Outpost::LoadTuning(ReadRepositoryTuning());
     const auto top = [&repository](Outpost::StructureKind _kind)
     { return std::ranges::find(repository.structures, _kind, &Outpost::StructureTuning::kind)->TopLevel(); };
@@ -595,14 +595,14 @@ public:
     Assert::AreEqual(3, top(Outpost::StructureKind::Shipyard));
     Assert::AreEqual(4, top(Outpost::StructureKind::ResearchLab));
     Assert::AreEqual(1, top(Outpost::StructureKind::Relay));
-    // The station's cap and guns at each level (gates K6, L4).
+    // The station's cap and guns at each level (ADR-064 decision 11).
     for (std::int32_t level = 1; level <= 5; ++level)
     {
       Assert::AreEqual((3 * level) + 1, Outpost::NodeCap(repository, level));
       Assert::AreEqual(std::array{1, 1, 2, 2, 3}[static_cast<size_t>(level - 1)],
                        Outpost::StationGuns(repository, Outpost::StructureKind::CommandStation, level));
       Assert::AreEqual(1, Outpost::StationGuns(repository, Outpost::StructureKind::DefensePlatform, level));
-      // The fleet cap at each level (Phase 4 design §5, gate L2).
+      // The fleet cap at each level (ADR-071 decision 1).
       Assert::AreEqual(std::array{12, 20, 30, 40, 50}[static_cast<size_t>(level - 1)], Outpost::FleetCap(repository, level));
     }
     // What each hull takes of it: Small 1, Medium 2, Large 4.
@@ -625,7 +625,7 @@ public:
                             "{ \"cost\": 1, \"buildSeconds\": 1 }, { \"cost\": 1, \"buildSeconds\": 1 }, "
                             "{ \"cost\": 1, \"buildSeconds\": 1 } ]"),
                     "structures[1].levels");
-    // A Shipyard's hulls (Phase 3 design §5): only a Shipyard names them, each hull exists, and none is named twice.
+    // A Shipyard's hulls (ADR-064 decision 9): only a Shipyard names them, each hull exists, and none is named twice.
     (void)Outpost::LoadTuning(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
                                       "\"hulls\": [], \"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"hulls\": [1] } ]"));
     ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
@@ -637,14 +637,14 @@ public:
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30,",
                             "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30, \"hulls\": [1],"),
                     "structures[2].hulls");
-    // A Command Station's cap and guns (Phase 3 design §7), which no other kind has, and at least one of each.
+    // A Command Station's cap and guns (ADR-064 decision 11), which no other kind has, and at least one of each.
     ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
                             "\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"nodes\": 4 } ]"),
                     "structures[1].levels[0].nodes");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
                             "\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1, \"guns\": 0 },"),
                     "structures[0].guns");
-    // The fleet cap (Phase 4 design §5): a Command Station's, at least one point, and at least one a hull.
+    // The fleet cap (ADR-071 decision 1): a Command Station's, at least one point, and at least one a hull.
     ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
                             "\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"commandPoints\": 20 } ]"),
                     "structures[1].levels[0].commandPoints");
@@ -653,7 +653,7 @@ public:
                     "structures[0].commandPoints");
     ExpectLoadError(Replace("\"turnRateDegreesPerSecond\": 180 }", "\"turnRateDegreesPerSecond\": 180, \"commandPoints\": 0 }"),
                     "hulls[0].commandPoints");
-    // A kind the owner gave no levels to (Phase 3 design §11).
+    // A kind the owner gave no levels to (ADR-064 decision 1).
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40 }",
                             "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40, \"levels\": [] }"),
                     "structures[5].levels");
@@ -668,11 +668,12 @@ public:
     ExpectLoadError(Replace("\"unlockDrive\": 1", "\"unlockDrive\": 2"), "research[2].effect.unlockDrive");
     ExpectLoadError(Replace("\"weapon\": 1, \"stat\"", "\"weapon\": 4, \"stat\""), "research[1].effect.weapon");
     ExpectLoadError(Replace("\"weapon\": 1, \"stat\": \"fireRate\"", "\"weapon\": 1, \"stat\": \"damage\""), "research[1].effect.stat");
-    // Design §8: an upgrade raises its target's one rate, so a weapon's hit points are no upgrade the game can apply.
+    // ADR-017 decision 4: an upgrade raises its target's one rate, so a weapon's hit points are no upgrade the game can
+    // apply.
     ExpectLoadError(Replace("\"weapon\": 1, \"stat\": \"fireRate\"", "\"weapon\": 1, \"stat\": \"hitPoints\""), "research[1].effect.stat");
     ExpectLoadError(Replace("\"upgrade\": \"allHulls\",", "\"upgrade\": \"allHulls\", \"weapon\": 1,"), "research[0].effect.weapon");
     ExpectLoadError(Replace("{ \"unlockDrive\": 1 }", "{}"), "research[2].effect");
-    // Phase 1 design §6: each target raises its one rate, and a structure weapon's upgrade names one that exists.
+    // ADR-033 decision 4: each target raises its one rate, and a structure weapon's upgrade names one that exists.
     ExpectLoadError(Replace("\"stat\": \"speed\"", "\"stat\": \"hitPoints\""), "research[6].effect.stat");
     ExpectLoadError(Replace("\"structureWeapon\": 1, \"stat\"", "\"structureWeapon\": 2, \"stat\""), "research[5].effect.structureWeapon");
   }
@@ -680,7 +681,8 @@ public:
   // ADR-033: a topic has a tier, from 1 to the last; a gateway opens its own tier, which has no other; every other topic of
   // a later tier requires its gateway; and no topic requires one of a later tier.
   // ADR-033: a topic has a tier, from 1 to the last, and requires none of a later tier; each tier after the first is
-  // opened by one level of the Research Lab, a later tier by a later level, and a level's topics exist (Phase 3 design §6).
+  // opened by one level of the Research Lab, a later tier by a later level, and a level's topics exist
+  // (ADR-064 decision 10).
   TEST_METHOD(RejectsBrokenTiers)
   {
     ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1", "\"name\": \"Ion Drive\""), "research[2]: has no \"tier\"");
@@ -703,8 +705,8 @@ public:
                     "research[6].effect");
   }
 
-  // Phase 1 design §6: the kinds of effect load; and a tier is opened by the Research Lab's level, which also gives the
-  // second slot (Phase 3 design §6).
+  // ADR-033 decision 4: the kinds of effect load; and a tier is opened by the Research Lab's level, which also gives the
+  // second slot (ADR-064 decision 10).
   TEST_METHOD(LoadsTheTiersEffects)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(MINIMAL_TUNING);

@@ -155,7 +155,7 @@ private:
 
 using Ids = std::vector<std::uint32_t>;
 
-// Task 4.2's world: World(), with a Constructor of mine, a Shipyard of mine under construction, a whole Command Station
+// A base's world: World(), with a Constructor of mine, a Shipyard of mine under construction, a whole Command Station
 // of mine, and an enemy Shipyard.
 constexpr std::uint32_t CONSTRUCTOR = 11;
 constexpr std::uint32_t SITE = 12;
@@ -338,7 +338,7 @@ public:
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
   }
 
-  // Interface plan 2, task UI4.2: the HUD's order buttons do what their keys do. Each arms its order for the next click in
+  // ADR-088 decision 2: the HUD's order buttons do what their keys do. Each arms its order for the next click in
   // place of what was armed, or stops at once; with nothing selected, none does anything.
   TEST_METHOD(GivesTheOrdersOfTheHudsButtons)
   {
@@ -399,7 +399,7 @@ public:
     Assert::AreEqual(0.0f, driver.CameraView().Focus().y, 0.01f);
   }
 
-  // Task 4.5: a click on one of my structures selects it alone, and a box takes ships only.
+  // ADR-013 decision 5: a click on one of my structures selects it alone, and a box takes ships only.
   TEST_METHOD(SelectsOneOfMyStructures)
   {
     Driver driver;
@@ -414,7 +414,7 @@ public:
     Assert::IsTrue(std::ranges::find(boxed, STATION) == boxed.end());
   }
 
-  // Interface plan 2, task UI3.1: the HUD selects one of my structures alone, as the status line selects the Command Station
+  // ADR-066 decision 1: the HUD selects one of my structures alone, as the status line selects the Command Station
   // at the fleet cap, and what was armed for the selection before goes with it.
   TEST_METHOD(SelectsAStructureFromTheHud)
   {
@@ -428,8 +428,8 @@ public:
     Assert::IsFalse(driver.Controls().Placing().has_value(), L"the placement goes with the Constructor");
   }
 
-  // Task 4.2: selected Constructors right-clicked on my own structure under construction, or damaged, work on it, and
-  // the warships with them go there; a whole one is only a destination.
+  // ADR-013 decision 5: selected Constructors right-clicked on my own structure under construction, or damaged, work on it,
+  // and the warships with them go there; a whole one is only a destination.
   TEST_METHOD(ConstructorsRepairAFriendlyThatNeedsIt)
   {
     Driver driver;
@@ -497,8 +497,8 @@ public:
     Assert::IsTrue(Only<Outpost::AttackCommand>(commands)->target == Outpost::EntityId{ENEMY_YARD});
   }
 
-  // Task 4.2: the HUD arms a placement for selected Constructors; the next left-click on the ground orders the build,
-  // Shift keeps it armed, and right-click or Escape cancels it.
+  // ADR-013 decision 5: the HUD arms a placement for selected Constructors; the next left-click on the ground orders the
+  // build, Shift keeps it armed, and right-click or Escape cancels it.
   TEST_METHOD(PlacesAStructureWithTheNextLeftClick)
   {
     Driver driver;
@@ -535,8 +535,8 @@ public:
     Assert::IsFalse(driver.Controls().Placing().has_value());
   }
 
-  // ADR-046: a Mining Rig is ordered only by an asteroid the controls are given, which leaves out those in space the
-  // player has never seen. A click by none orders nothing and leaves the placement armed.
+  // ADR-046 decision 8: a Mining Rig is ordered only by an asteroid the controls are given, which leaves out those in space
+  // the player has never seen. A click by none orders nothing and leaves the placement armed.
   TEST_METHOD(OrdersAMiningRigOnlyByAKnownAsteroid)
   {
     Driver driver;
@@ -636,7 +636,7 @@ public:
     Assert::IsTrue(Only<Outpost::QueueShipCommand>(commands)->producer == Outpost::EntityId{STATION});
   }
 
-  // Phase 4 design §10: the selection panel's retreat goes to every ship selected.
+  // ADR-088 decision 3: the selection panel's retreat goes to every ship selected.
   TEST_METHOD(SetsTheSelectionsRetreatFromTheHud)
   {
     Driver driver;
@@ -661,7 +661,7 @@ public:
   }
 
   // The research, production and designer windows order through the controls, which pass each order on as it was given
-  // and in the order given (tasks 5.1 and 5.2, Phase 3 design §4).
+  // and in the order given (ADR-017, ADR-064).
   TEST_METHOD(PassesOnTheOrdersOfTheWindows)
   {
     Driver driver;
@@ -717,7 +717,7 @@ public:
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
   }
 
-  // Phase 5 design §11: O is the orders window's, which GameClient opens, and not the controls'; the window's button gives
+  // ADR-080 decision 9: O is the orders window's, which GameClient opens, and not the controls'; the window's button gives
   // the form's scheduled order to the selected warships, and nothing while none is selected.
   TEST_METHOD(SchedulesTheOrdersWindowsOrderForTheSelection)
   {

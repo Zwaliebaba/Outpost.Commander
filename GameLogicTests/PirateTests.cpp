@@ -13,7 +13,7 @@ constexpr Outpost::PlayerId BLUE = TerritoryMatch::BLUE;
 constexpr std::uint32_t TICKS_PER_SECOND = TerritoryMatch::TICKS_PER_SECOND;
 // Blue's home, the repository map's start in the southwest (ADR-036).
 constexpr Outpost::PlanePosition BLUE_HOME{.xMeters = -4000.0f, .zMeters = -4000.0f};
-// Tuning.json's guard and chase (Phase 4 design §8).
+// Tuning.json's guard and chase (ADR-073 decision 5).
 constexpr float GUARD_METERS = 600.0f;
 constexpr float CHASE_METERS = 900.0f;
 // A group back at its node stands about this close to it (Simulation's HOLD_RETURN_METERS).
@@ -94,8 +94,9 @@ std::pair<bool, std::size_t> Assault(TerritoryMatch& _match, std::int32_t _secto
 TEST_CLASS(PirateTests)
 {
 public:
-  // Phase 4 design §8: a camp is a Defence Platform and three Small Mass Driver ships, a stronghold two Defence Platforms
-  // and four Medium ships, one with a Lance, on their sectors' nodes, at the base level, holding their nodes for no one.
+  // Game §neutrals.outposts: a camp is a Defence Platform and three Small Mass Driver ships, a stronghold two Defence
+  // Platforms and four Medium ships, one with a Lance, on their sectors' nodes, at the base level, holding their nodes
+  // for no one.
   TEST_METHOD(OutpostsStandOnTheirNodesForNoOne)
   {
     TerritoryMatch match(true);
@@ -215,7 +216,7 @@ public:
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::Applied, L"then a Relay");
   }
 
-  // Phase 4 design §8: a first fleet of Small ships clears a camp with losses. Measured: four Pickets clear it and lose
+  // ADR-073: a first fleet of Small ships clears a camp with losses. Measured: four Pickets clear it and lose
   // one; Swarms need eight, since a Mass Driver does a Defence Platform's armor little harm.
   TEST_METHOD(AFirstFleetClearsACampWithLosses)
   {

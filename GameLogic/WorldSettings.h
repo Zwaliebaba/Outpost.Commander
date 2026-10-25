@@ -11,7 +11,7 @@ inline constexpr std::string_view WORLD_SETTINGS_FILE = "World.json";
 inline constexpr std::array<std::string_view, 3> AI_DIFFICULTIES{"Easy", "Normal", "Hard"};
 
 // One of a world's seats: its player, and either the token its player takes it with (ADR-078), or the difficulty of the AI
-// empire that plays it, one of AI_DIFFICULTIES (Phase 5 design §1, ADR-079).
+// empire that plays it, one of AI_DIFFICULTIES (ADR-079 decision 7).
 struct WorldSeat
 {
   PlayerId player;
@@ -20,7 +20,7 @@ struct WorldSeat
   std::string ai;
 };
 
-// A world's settings (Phase 5 design §4, ADR-078), which its owner makes once, with the world, and the dedicated server
+// A world's settings (ADR-078 decision 2), which its owner makes once, with the world, and the dedicated server
 // reads each time it runs it: the address and port it listens on, the host its players reach it at, the seed the world
 // was made with, and its seats.
 struct WorldSettings

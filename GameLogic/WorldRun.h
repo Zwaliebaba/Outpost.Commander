@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The world run (Phase 5 design §10, ADR-082): a world with the server's own player in every seat, stepped as fast as the
+// The world run (ADR-082 decision 4): a world with the server's own player in every seat, stepped as fast as the
 // processor allows, killed between two ticks at random and made afresh from its folder each time, beside the same world
 // run straight through. A kill destroys the server and everything it held in memory; the server made afresh comes back as
 // its newest save and the commands logged since make it, and its players are made anew. The world run straight through

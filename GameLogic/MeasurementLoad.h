@@ -2,8 +2,8 @@
 
 namespace Outpost
 {
-// Task 2.7's load for measuring the tick half of Q4: 200 ships and 40 structures on the map (design §3). It is match
-// setup for a measurement run only, never for a match.
+// The load for measuring the tick: 200 ships and 40 structures on the map. It is match setup for a measurement run only,
+// never for a match.
 inline constexpr size_t MEASUREMENT_SHIPS = 200;
 inline constexpr size_t MEASUREMENT_STRUCTURES = 40;
 

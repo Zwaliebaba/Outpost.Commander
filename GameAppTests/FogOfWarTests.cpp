@@ -37,7 +37,7 @@ public:
     Assert::AreEqual(Outpost::FogOfWar::SEEN_BEFORE_SHADE, fog.ShadeAt({.xMeters = -500.0f, .zMeters = 0.0f}));
   }
 
-  // Interface plan 2, task UI1.3: on the ground, what was seen before is darker than the minimap shows it, short of what
+  // ADR-081 decision 6: on the ground, what was seen before is darker than the minimap shows it, short of what
   // was never seen, which keeps its shade under the ground mask's knee.
   TEST_METHOD(DarkensWhatWasSeenBeforeOnTheGround)
   {
@@ -160,7 +160,8 @@ public:
     Assert::IsTrue(std::ranges::none_of(fog.ChangedRows(), [](std::uint8_t _row) { return _row != 0; }), L"nothing changed");
   }
 
-  // ADR-046: the player has seen an asteroid once it has seen any of it, and stays so; without fog it has seen the map.
+  // ADR-046 decision 8: the player has seen an asteroid once it has seen any of it, and stays so; without fog it has seen
+  // the map.
   TEST_METHOD(SaysWhetherAnyOfACircleWasSeen)
   {
     Outpost::FogOfWar fog;

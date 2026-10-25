@@ -2,8 +2,8 @@
 
 namespace Outpost
 {
-// Phase 1 plan task 13.1: matches between two AIs on the real server, played headlessly as fast as it ticks, for P1's
-// repeatable figure (Phase 1 design §2). The executable plays them (AiMatches.h); what it is asked to play is read here,
+// ADR-038 decision 3: matches between two AIs on the real server, played headlessly as fast as it ticks, for a
+// repeatable figure of how long a match lasts. The executable plays them (AiMatches.h); what it is asked to play is read here,
 // where a test can reach it.
 struct AiMatchesDesc
 {
@@ -13,8 +13,8 @@ struct AiMatchesDesc
   std::uint32_t limitMinutes = 120;
 };
 
-// What the --ai-matches switch is asked to play (ADR-063). With no options it is P1's ten matches of the packaged AI
-// against itself (ADR-038); a script such as Tools/SelfPlay.py names the seeds, each AI's settings and the log.
+// What the --ai-matches switch is asked to play (ADR-063). With no options it is the ten matches of the packaged AI
+// against itself (ADR-038 decision 3); a script such as Tools/SelfPlay.py names the seeds, each AI's settings and the log.
 struct AiMatchesOptions
 {
   AiMatchesDesc desc;

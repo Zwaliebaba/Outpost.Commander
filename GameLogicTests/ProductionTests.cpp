@@ -31,7 +31,7 @@ size_t Warships(const MatchArena& _arena, Outpost::PlayerId _player)
 TEST_CLASS(ProductionTests)
 {
 public:
-  // Design §6: a queue holds five jobs, and a sixth is refused.
+  // ADR-016 decision 6: a queue holds five jobs, and a sixth is refused.
   TEST_METHOD(AQueueHoldsFiveJobs)
   {
     MatchArena arena;
@@ -43,7 +43,7 @@ public:
     Assert::AreEqual(size_t{5}, arena.World().BuildSnapshot(BLUE).entities.back().queue.size());
   }
 
-  // Design §5, §6: a job is paid for when it starts, at the front of the queue, and takes its design's build time; the
+  // ADR-016 decision 6: a job is paid for when it starts, at the front of the queue, and takes its design's build time; the
   // ship appears beside the Shipyard.
   TEST_METHOD(BuildsInTheDesignsTimeAndPaysAtTheStart)
   {
@@ -77,7 +77,7 @@ public:
     Assert::IsTrue(ship.position.xMeters > YARD.xMeters, L"on the side facing the map's center");
   }
 
-  // Phase 1 design §11: Shipyards are numbered as they are finished, each per player and never reused, and count the
+  // ADR-016 decision 6: Shipyards are numbered as they are finished, each per player and never reused, and count the
   // ships they build. Only their owner sees either.
   TEST_METHOD(NumbersShipyardsAndCountsTheirShips)
   {
@@ -106,7 +106,7 @@ public:
     Assert::AreEqual(0u, viewOf(RED, second).shipsBuilt);
   }
 
-  // Phase 3 design §5, gate K1: a Shipyard builds Small hulls at level 1, Medium too at level 2, and Large too at level 3;
+  // ADR-064 decision 9: a Shipyard builds Small hulls at level 1, Medium too at level 2, and Large too at level 3;
   // a job above its level is refused. A Large hull also needs its research, which saving the design checks.
   TEST_METHOD(BuildsTheHullsOfItsLevel)
   {
@@ -142,12 +142,12 @@ public:
                      L"the client knows each hull's level");
   }
 
-  // Design §5: a job that cannot be paid for waits at the front of the queue until it can.
+  // ADR-016 decision 6: a job that cannot be paid for waits at the front of the queue until it can.
   TEST_METHOD(AJobWaitsForTheOre)
   {
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
-    // A Small ship, which a level 1 Shipyard builds (Phase 3 design §5).
+    // A Small ship, which a level 1 Shipyard builds (ADR-064 decision 9).
     const Outpost::DesignId swarm = arena.Design(BLUE, SMALL, MASS_DRIVER);
     const std::int32_t cost = arena.World().FindDesign(swarm)->stats.cost;
     // Spend the Ore down to less than one Small ship, on a rig site and Shipyards elsewhere, which the Constructor leaves
@@ -175,7 +175,7 @@ public:
     Assert::AreEqual(size_t{1}, Warships(arena, BLUE));
   }
 
-  // Design §6: the Command Station builds Constructors, in the tuning data's time and for its cost.
+  // ADR-016 decision 6: the Command Station builds Constructors, in the tuning data's time and for its cost.
   TEST_METHOD(TheCommandStationBuildsConstructors)
   {
     MatchArena arena;

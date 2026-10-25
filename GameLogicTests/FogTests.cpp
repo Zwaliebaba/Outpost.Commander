@@ -155,7 +155,7 @@ public:
   }
 
   // A remembered structure carries the tick of the last snapshot its player saw it in, which the client tells its age by
-  // (interface plan 2, task UI1.2), and that tick stands while the structure stays out of sight. One seen now carries none.
+  // (ADR-081 decision 4), and that tick stands while the structure stays out of sight. One seen now carries none.
   TEST_METHOD(RemembersWhenAStructureWasLastSeen)
   {
     MatchArena arena;

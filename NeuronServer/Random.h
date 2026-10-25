@@ -2,7 +2,7 @@
 
 namespace Neuron
 {
-// The simulation's one source of randomness (ADR-002 decision 8, ADR-009): xoshiro256** 1.0 by Blackman and Vigna,
+// The simulation's one source of randomness (ADR-009 decision 5): xoshiro256** 1.0 by Blackman and Vigna,
 // seeded through SplitMix64. The algorithm is written here rather than taken from <random>, whose distributions differ
 // between standard libraries, so the same seed gives the same draws on every build. Changing it breaks every recorded
 // replay, and RandomTests pins its output.

@@ -76,7 +76,8 @@ public:
     }
   }
 
-  // ADR-046: a cross is white or a hot star's blue-white, never warm, so it is not read as a marker in the Ore's gold.
+  // ADR-028 decision 3: a cross is white or a hot star's blue-white, never warm, so it is not read as a marker in the Ore's
+  // gold.
   TEST_METHOD(DrawsNoBurstWarm)
   {
     const Outpost::Starfield sky = Outpost::BuildStarfield();

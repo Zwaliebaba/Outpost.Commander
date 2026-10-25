@@ -12,7 +12,7 @@ struct EntityMotion
   float turnRadiansPerSecond = 0.0f;
 };
 
-// The client's view of the world between snapshots (task 2.5, ADR-013). It keeps the last few snapshots and shows the
+// The client's view of the world between snapshots (ADR-013 decision 3). It keeps the last few snapshots and shows the
 // world as it was one tick before the newest, interpolated between the two that bracket that moment, so that ships move
 // smoothly at any frame rate from a 20 Hz tick. It never draws server state and never extrapolates: when snapshots stop
 // coming, the view holds on the newest (ADR-002 decision 5).

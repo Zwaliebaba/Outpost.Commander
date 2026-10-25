@@ -60,7 +60,7 @@ public:
     const Outpost::ModelSet& tarkan = catalog.Set("Tarkan");
     Assert::AreEqual(size_t{3}, catalog.Set("Asteroids").models.size());
 
-    // The two sides have the same models, so that every design can be drawn for either (design §11).
+    // The two sides have the same models, so that every design can be drawn for either (Game §look.models.sets).
     Assert::AreEqual(human.models.size(), tarkan.models.size());
     for (const Outpost::ModelEntry& model : human.models)
       Assert::AreEqual(model.lengthMeters, tarkan.Model(model.name).lengthMeters);
@@ -69,7 +69,7 @@ public:
     Assert::IsTrue(catalog.SetForPlayer(Outpost::PlayerId{1}) == &human);
     Assert::IsTrue(catalog.SetForPlayer(Outpost::PlayerId{2}) == &tarkan);
     Assert::IsNull(catalog.SetForPlayer(Outpost::PlayerId{3}));
-    // The pirates draw with the Tarkan set's meshes, in a color of their own (Phase 4 design §8, ADR-073).
+    // The pirates draw with the Tarkan set's meshes, in a color of their own (ADR-073 decision 10).
     const Outpost::ModelSet& pirate = *catalog.SetForPlayer(Outpost::PIRATES);
     Assert::AreEqual(std::string("Tarkan"), pirate.meshes);
     Assert::AreEqual(tarkan.models.size(), pirate.models.size());
@@ -92,7 +92,7 @@ public:
     Assert::AreEqual(std::string("ResearchLab"), catalog.ModelForStructure(Outpost::StructureKind::ResearchLab)->model);
     Assert::AreEqual(std::string("MiningRig"), catalog.ModelForStructure(Outpost::StructureKind::MiningRig)->model);
     Assert::AreEqual(std::string("DefensePlatform"), catalog.ModelForStructure(Outpost::StructureKind::DefensePlatform)->model);
-    // The Relay and the Repair Bay borrow a model and are told apart by their tint, until they have art (Phase 4 design §10).
+    // The Relay and the Repair Bay borrow a model and are told apart by their tint, until they have art (ADR-056, ADR-075).
     Assert::AreEqual(std::string("Shipyard"), catalog.ModelForStructure(Outpost::StructureKind::RepairBay)->model);
     Assert::IsTrue(catalog.ModelForStructure(Outpost::StructureKind::RepairBay)->tint < 1.0f);
     Assert::AreEqual(std::string("Constructor"), catalog.constructor);
@@ -157,7 +157,7 @@ public:
     ExpectRejected(catalog(R"({ "name": "Pirate", "color": { "red": 0.6, "green": 0.2, "blue": 0.9 }, "meshes": "Pirate" })", "Pirate"));
   }
 
-  // Task 1.3's acceptance: the hulls load at their intended relative sizes in both sets, and the same hull is the same
+  // ADR-011 decision 2: the hulls load at their intended relative sizes in both sets, and the same hull is the same
   // size in both.
   TEST_METHOD(LoadsTheHullsAtTheirIntendedSizes)
   {
@@ -201,9 +201,9 @@ public:
     Assert::AreEqual(std::wstring(L"Models\\Human\\ResearchLab_L1.nmf"), Outpost::ModelFileName(human, human.Model("ResearchLab")));
   }
 
-  // Phase 3 design §4, gate K5: every level of a structure's model is drawn at level 1's size. A level after the first
+  // ADR-064 decision 8: every level of a structure's model is drawn at level 1's size. A level after the first
   // stands within the wider of level 1's length and depth, whatever its own shape, and a structure is drawn at its own
-  // level as far as its model has levels (ADR-064).
+  // level as far as its model has levels.
   TEST_METHOD(FitsEveryLevelOnTheFirstLevelsGround)
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
@@ -392,7 +392,8 @@ public:
           ++models;
       }
     }
-    // Nine models in each ship set, three hulls, the Constructor and the five structures, and the three rocks (design §11).
+    // Nine models in each ship set, three hulls, the Constructor and the five structures, and the three rocks
+    // (Game §look.models).
     Assert::AreEqual(size_t{21}, models);
   }
 

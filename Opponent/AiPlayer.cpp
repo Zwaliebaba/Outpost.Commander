@@ -31,7 +31,7 @@ constexpr float RESEND_METERS = 50.0f;
 // large structure can be out of the ship's range; a ship of the attack group this close to its target structure is
 // ordered to attack it, which closes it into range.
 constexpr float CLOSE_IN_METERS = 500.0f;
-// The Defence Platforms planned round the base for its Shipyards (task 12.2) stand in rings toward the map's center: the
+// The Defence Platforms planned round the base for its Shipyards (ADR-041 decision 3) stand in rings toward the map's center: the
 // first this far from the Command Station, beyond the rally, then each ring this much further out, at these turns from
 // the way to the center.
 constexpr float HOME_PLATFORM_RING_METERS = 260.0f;
@@ -95,13 +95,13 @@ bool IsBuilt(const EntityView& _entity) noexcept
   return _entity.builtPermille >= Outpost::PERMILLE;
 }
 
-// The highest tier the player's Research Lab has opened by its level (Phase 3 design §6): 1 before any.
+// The highest tier the player's Research Lab has opened by its level (ADR-033 decision 5): 1 before any.
 std::int32_t OpenedTier(const Snapshot& _snapshot) noexcept
 {
   return _snapshot.researchTier;
 }
 
-// What one warship of _hull takes of its player's fleet cap (Phase 4 design §5), from the snapshot's hulls; 0 when the
+// What one warship of _hull takes of its player's fleet cap (ADR-071 decision 1), from the snapshot's hulls; 0 when the
 // match sets no cap.
 std::int32_t CommandPointsOf(const Snapshot& _snapshot, Outpost::HullId _hull) noexcept
 {
@@ -109,7 +109,7 @@ std::int32_t CommandPointsOf(const Snapshot& _snapshot, Outpost::HullId _hull) n
   return hull != _snapshot.hulls.end() ? hull->commandPoints : 0;
 }
 
-// How many topics a Research Lab at _level researches at once (Phase 3 design §6), from the snapshot's levels.
+// How many topics a Research Lab at _level researches at once (ADR-064 decision 10), from the snapshot's levels.
 std::int32_t ResearchSlotsOf(const Outpost::StructureTypeView* _lab, std::int32_t _level) noexcept
 {
   std::int32_t slots = 1;
@@ -118,8 +118,8 @@ std::int32_t ResearchSlotsOf(const Outpost::StructureTypeView* _lab, std::int32_
   return slots;
 }
 
-// The attack group goes for production first: Shipyards, then the Command Station, then anything else (Phase 1 design
-// §4, §13). A lower rank comes first.
+// The attack group goes for production first: Shipyards, then the Command Station, then anything else
+// (ADR-041 decision 6). A lower rank comes first.
 int AttackRank(const EntityView& _structure) noexcept
 {
   if (_structure.structure == StructureKind::Shipyard)
@@ -127,7 +127,7 @@ int AttackRank(const EntityView& _structure) noexcept
   return _structure.structure == StructureKind::CommandStation ? 1 : 2;
 }
 
-// The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5); 1 for a hull the snapshot does not list.
+// The level a Shipyard must be at to build a hull of _hull (ADR-064 decision 9); 1 for a hull the snapshot does not list.
 std::int32_t ShipyardLevelFor(const Snapshot& _snapshot, Outpost::HullId _hull) noexcept
 {
   const auto hull = std::ranges::find(_snapshot.hulls, _hull, &Outpost::HullView::id);
@@ -142,7 +142,7 @@ const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureK
 
 // The nearest place to _preferred, in rings around it, where a structure of _type keeps _gapMeters clear of every blocker
 // and of the map's edge, and where the rules of _snapshot's map let its player build one: a Shipyard only in a sector the
-// player holds (Phase 4 design §6).
+// player holds (ADR-020 decision 19).
 std::optional<PlanePosition> FindPlace(const Outpost::StructureTypeView& _type, PlanePosition _preferred,
                                        std::span<const EntityView> _blockers, const Snapshot& _snapshot, float _gapMeters)
 {
@@ -227,7 +227,7 @@ std::int32_t ShipOre(const Snapshot& _snapshot, const EntityView& _ship)
          CostOf(_snapshot.modules, _ship.module);
 }
 
-// A ship of _player's going back to be repaired is left to it, since any order would end its retreat (ADR-075): it is
+// A ship of _player's going back to be repaired is left to it, since any order would end its retreat (ADR-076 decision 9): it is
 // taken out of every order, and an order left with no ship is dropped.
 void LeaveRetreatsAlone(const Snapshot& _snapshot, Outpost::PlayerId _player, std::vector<Outpost::Command>& _orders)
 {
@@ -369,8 +369,8 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   const auto station = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                             { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
   const bool hasStation = station != _snapshot.entities.end();
-  // A lost Command Station is lost for good, and the AI plays on without it, building no more Constructors (Phase 1
-  // design §4). Made afresh for a player that has lost it, it lays its plan round what stands in for it.
+  // A lost Command Station is lost for good, and the AI plays on without it, building no more Constructors
+  // (ADR-020 decision 18). Made afresh for a player that has lost it, it lays its plan round what stands in for it.
   if (!m_planned)
   {
     const EntityView* anchor = hasStation ? &*station : StandIn(_snapshot);
@@ -413,7 +413,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   // Research, one topic at a time, in its order.
   const auto lab = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                         { return IsStructure(_entity, StructureKind::ResearchLab) && _entity.owner == m_player; });
-  // As many at once as its Lab researches, each of a tier its Lab has opened (Phase 3 design §6).
+  // As many at once as its Lab researches, each of a tier its Lab has opened (ADR-064 decision 10).
   const StructureTypeView* labType = FindType(_snapshot, StructureKind::ResearchLab);
   if (lab != _snapshot.entities.end() && IsBuilt(*lab) && std::cmp_less(lab->research.size(), ResearchSlotsOf(labType, lab->level)))
   {
@@ -854,7 +854,7 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
                                                                                 _entity.radiusMeters + _slot.radiusMeters;
                                                                      }))
     return true;
-  // A Repair Bay stands only in a sector it holds (Phase 4 design §10); one whose sector it lost waits to hold it again.
+  // A Repair Bay stands only in a sector it holds (ADR-075 decision 1); one whose sector it lost waits to hold it again.
   if (_slot.structure == StructureKind::RepairBay && !_snapshot.sectors.empty())
   {
     const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
@@ -879,7 +879,7 @@ bool Outpost::AiPlayer::IsReady(const Slot& _slot, const Snapshot& _snapshot) co
     return sector != nullptr && sector->holder == m_player;
   if (_slot.structure != StructureKind::Relay)
     return true;
-  // A Relay past its Command Station's cap waits for the station's next level (Phase 3 design §7).
+  // A Relay past its Command Station's cap waits for the station's next level (ADR-020 decision 14).
   return IsClaimable(_slot, _snapshot) && !AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
 }
 
@@ -932,7 +932,7 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
   std::erase_if(m_work,
                 [&](Work& _work)
                 {
-                  // A Constructor gone, or going back to be repaired, which ended its work order, leaves the crew (ADR-075).
+                  // A Constructor gone, or going back to be repaired, which ended its work order, leaves the crew (ADR-076 decision 9).
                   std::erase_if(_work.constructors,
                                 [&_snapshot](EntityId _id)
                                 {
@@ -997,8 +997,8 @@ Outpost::AiPlayer::PlanOre Outpost::AiPlayer::Build(const Snapshot& _snapshot, s
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     Slot& slot = m_slots[i];
-    // A Relay its Command Station's cap holds back has the station's next level take its place in the plan's order (Phase 3
-    // design §7, plan task 23.1). Plan task 24.1 makes this play.
+    // A Relay its Command Station's cap holds back has the station's next level take its place in the plan's order
+    // (ADR-020 decision 14).
     const bool capped =
       slot.structure == StructureKind::Relay && AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
     if (capped && !slot.abandoned && !IsBlocked(slot, _snapshot) && !IsDone(slot, _snapshot) && IsClaimable(slot, _snapshot))
@@ -1132,7 +1132,7 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
 }
 
 // A Shipyard below the level its production design's hull needs is upgraded, one level and one Shipyard at a time, once
-// the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this play.
+// the Ore is there (ADR-020 decision 14).
 bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders)
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::Shipyard);
@@ -1155,7 +1155,7 @@ bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::int32_t
 }
 
 // The Research Lab is upgraded when the next topic of its research order is of a tier it has not opened, once what the
-// level requires is researched and the Ore is there (Phase 3 design §6, plan task 22.1). Plan task 24.1 makes this play.
+// level requires is researched and the Ore is there (ADR-020 decision 14).
 bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders)
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::ResearchLab);
@@ -1178,7 +1178,7 @@ bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore
   const auto topic = std::ranges::find(_snapshot.research, *next, &ResearchTopicView::id);
   const StructureLevelView& level = type->levels[static_cast<size_t>(lab->level - 1)];
   // A level that opens the tier of its next topic, or once its open tier is the settings', the one that gives a second
-  // slot while two topics of its order are left (Phase 3 design §8).
+  // slot while two topics of its order are left (ADR-020 decision 14).
   const auto left =
     std::ranges::count_if(m_settings.researchOrder, [&](ResearchTopicId _id)
                           { return std::ranges::contains(_snapshot.research, _id, &ResearchTopicView::id) && !researched(_id); });
@@ -1220,8 +1220,8 @@ bool Outpost::AiPlayer::UpgradeStationForFleet(const Snapshot& _snapshot, std::i
   return false;
 }
 
-// The AI's Command Station, when it can be upgraded now: finished, not being upgraded, and below its top level (Phase 3
-// design §7).
+// The AI's Command Station, when it can be upgraded now: finished, not being upgraded, and below its top level
+// (ADR-064 decision 2).
 const Outpost::EntityView* Outpost::AiPlayer::UpgradableStation(const Snapshot& _snapshot) const
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::CommandStation);
@@ -1271,7 +1271,7 @@ void Outpost::AiPlayer::ClaimTerritory(const Snapshot& _snapshot)
   const SectorView* claimed = nullptr;
   for (const SectorView& sector : _snapshot.sectors)
   {
-    // A sector its plan already takes, by a rig's Relay, is no claim: the claims are beyond those (Phase 3 design §8).
+    // A sector its plan already takes, by a rig's Relay, is no claim: the claims are beyond those (ADR-020 decision 13).
     const bool planned = std::ranges::any_of(m_slots, [&sector](const Slot& _slot)
                                              { return _slot.structure == StructureKind::Relay && _slot.position == sector.node; });
     if (sector.holder.IsValid() || sector.guarded || planned || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
@@ -1336,7 +1336,7 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
   // For the opening it explores its own half, moving from node to node of the sectors nearer its base than the enemy's,
   // its home aside, so that it finds derelicts and outposts without seeking a fight: it looks at a sector the pirates guard
   // from a lookout outside their reach, so that it learns what a detachment must outweigh. Then it goes round the enemy's
-  // flanks (Phase 4 design §2 U1, ADR-076).
+  // flanks (ADR-076 decision 4).
   const bool ownHalf = _snapshot.tick < static_cast<std::uint64_t>(std::llround(m_settings.scoutOwnHalfSeconds * m_ticksPerSecond));
   if (!ownHalf && !m_scoutsOnFlanks)
   {
@@ -1413,7 +1413,7 @@ void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Com
 void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
   // Its scouts go their own way (CommandScouts). A ship going back to be repaired leaves its group, and rejoins the reserve
-  // once it is whole (ADR-075).
+  // once it is whole (ADR-076 decision 9).
   std::vector<const EntityView*> warships;
   for (const EntityView& ship : _snapshot.entities)
   {
@@ -1477,7 +1477,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
                          std::ranges::find(m_pirateGroup, _ship->id) != m_pirateGroup.end();
                 });
   // An attack that has lost the settings' share of the ships it set out with falls back to the rally, out of the fight,
-  // and rejoins the reserve, which waits before it attacks again (task 12.2): a lost battle costs part of a fleet, not
+  // and rejoins the reserve, which waits before it attacks again (ADR-041 decision 2): a lost battle costs part of a fleet, not
   // all of it.
   const bool fallBack =
     !m_attackGroup.empty() && m_settings.retreatLossShare > 0.0 &&
@@ -1547,7 +1547,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
   const EntityView* target = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget);
   bool grown = false;
   std::int32_t groupShips = m_settings.attackGroupShips + ((OpenedTier(_snapshot) - 1) * m_settings.attackGroupGrowthPerTier);
-  // The fleet cap may leave room for fewer ships of its production design's hull than that (Phase 4 design §5): the attack
+  // The fleet cap may leave room for fewer ships of its production design's hull than that (ADR-041 decision 1): the attack
   // then goes once the reserve holds attackCapShare of the room its scouts and its raid leave it under the cap.
   std::int64_t capShips = std::numeric_limits<std::int64_t>::max();
   if (const std::int32_t hullPoints = CommandPointsOf(_snapshot, m_productionDesign.hull); _snapshot.fleetCap > 0 && hullPoints > 0)
@@ -1607,7 +1607,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       if (entity.kind != EntityKind::Structure || !entity.owner.IsValid() || entity.owner == m_player || entity.owner == PIRATES)
         continue;
       // Within a rank, a structure's levels bring it nearer: a Shipyard at level 3 is worth more than one at level 1
-      // (Phase 3 design §8).
+      // (ADR-041 decision 6).
       const auto worthMeters = [&](const EntityView& _structure)
       {
         return Distance(_structure.position, center) -
@@ -1742,11 +1742,11 @@ void Outpost::AiPlayer::WatchPirates(const Snapshot& _snapshot)
   }
 }
 
-// Phase 4 design §12: a detachment of its reserve clears a pirate outpost that it outweighs by the settings' margin in Ore,
+// A detachment of its reserve clears a pirate outpost that it outweighs by the settings' margin in Ore,
 // as far as it has seen the outpost: a camp next to its territory, or a stronghold there once no free sector is left to
 // claim. It attack-moves on the node, ordered on every few seconds, until the sector is no longer guarded, and its ships
 // then rejoin the reserve. One that has lost the raids' share of its ships falls back to the rally, and the next waits the
-// raids' interval (ADR-076).
+// raids' interval (ADR-076 decision 2).
 void Outpost::AiPlayer::CommandPirates(const Snapshot& _snapshot, std::vector<const EntityView*>& _reserve, std::vector<Command>& _orders)
 {
   if (!m_pirateGroup.empty())
@@ -1829,9 +1829,9 @@ void Outpost::AiPlayer::CommandPirates(const Snapshot& _snapshot, std::vector<co
   _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = std::move(detachment), .destination = target->node}));
 }
 
-// Phase 4 design §12: once its home rigs stand, one Constructor at a time salvages the nearest derelict it knows in a
+// Once its home rigs stand, one Constructor at a time salvages the nearest derelict it knows in a
 // sector it holds, or in a free one next to its territory, ahead of the contested rigs of its plan; never in a sector the
-// enemy holds or the pirates guard (ADR-076).
+// enemy holds or the pirates guard (ADR-076 decision 5).
 void Outpost::AiPlayer::SendSalvage(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
 {
   if (m_salvager.IsValid())
@@ -1888,8 +1888,8 @@ void Outpost::AiPlayer::SendSalvage(const Snapshot& _snapshot, std::vector<Entit
   _orders.push_back(MakeCommand(m_player, SalvageCommand{.constructors = {m_salvager}, .derelict = m_salvageTarget}));
 }
 
-// Phase 4 design §12: once it has a Shipyard, a Repair Bay behind its front, the sector its reserve holds, toward its base;
-// a new one each time the front moves, and the old ones stay (ADR-076).
+// Once it has a Shipyard, a Repair Bay behind its front, the sector its reserve holds, toward its base;
+// a new one each time the front moves, and the old ones stay (ADR-076 decision 6).
 void Outpost::AiPlayer::PlanRepairBay(const Snapshot& _snapshot)
 {
   const bool shipyard =

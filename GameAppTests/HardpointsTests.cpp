@@ -214,7 +214,7 @@ public:
     Assert::IsFalse(Outpost::NearestMuzzle(exhaustOnly, pose, {}).has_value());
   }
 
-  // Phase 3 design §7: a Command Station's further guns fire from the next nearest hardpoints, and wrap round a model with
+  // ADR-019 decision 5: a Command Station's further guns fire from the next nearest hardpoints, and wrap round a model with
   // fewer guns than that.
   TEST_METHOD(AFurtherGunFiresFromTheNextNearest)
   {
@@ -260,7 +260,7 @@ public:
   }
 
   // Every model that fires has a gun, and every model that moves has an exhaust, in both players' sets (ADR-018): the
-  // hulls, the Constructor, and the two armed structures of design §6.
+  // hulls, the Constructor, and the two armed structures of Game §structures.armed.
   TEST_METHOD(EveryModelHasTheHardpointsItsRoleNeeds)
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));

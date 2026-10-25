@@ -23,7 +23,7 @@ void ExpectRefused(std::string_view _from, std::string_view _to, const wchar_t* 
 }
 } // namespace
 
-// Phase 5 design §4, ADR-078: a world's settings, which its owner makes once, and the join file each seat's player is
+// ADR-078 decisions 2 and 8: a world's settings, which its owner makes once, and the join file each seat's player is
 // handed.
 TEST_CLASS(WorldSettingsTests)
 {

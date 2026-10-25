@@ -15,7 +15,7 @@ public:
   static constexpr float NEVER_SEEN_SHADE = 0.9f;
   // On the ground, what was seen before is darker than its shade, so that the edge of sight is where the grid and the stars
   // go out; never seen keeps its shade. The minimap keeps SEEN_BEFORE_SHADE, where telling what was explored from what never
-  // was matters for scouting. The ground's mask maps one to the other (interface plan 2, task UI1.3).
+  // was matters for scouting. The ground's mask maps one to the other (ADR-081 decision 6).
   static constexpr float GROUND_SEEN_BEFORE_SHADE = 0.8f;
 
   // Starts over on a map of this side, centered on the origin, none of it seen; empty while the side is zero.
@@ -67,7 +67,7 @@ public:
   [[nodiscard]] float ShadeAt(PlanePosition _point) const noexcept;
 
   // Whether the player has ever seen any of the circle of _radiusMeters round _center: a cell whose center is in it, or
-  // the cell that holds its center. Without fog of war it has seen all of the map (ADR-046).
+  // the cell that holds its center. Without fog of war it has seen all of the map (ADR-046 decision 8).
   [[nodiscard]] bool HasSeen(PlanePosition _center, float _radiusMeters) const noexcept;
 
 private:

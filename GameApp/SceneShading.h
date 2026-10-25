@@ -3,7 +3,7 @@
 namespace Outpost
 {
 // The light over the scene, which MeshPipeline's shaders work out from these numbers (ADR-090). It is presentation, not
-// tuning: the design asks only that the scene reads clearly (design §11).
+// tuning: none of it changes a rule (Game §look).
 //
 // A warm key comes from above and behind the default view's top-left, its edge between light and shade softened by
 // KEY_WRAP, and a cool fill blends from SKY_FILL on a face that looks up to GROUND_FILL on one that looks down. Each is a
@@ -41,13 +41,13 @@ inline constexpr float OCCLUSION_STRENGTH = 1.0f;
 // color made up to EDGE_BRIGHTNESS brighter, but no further than its brightest channel reaching 1, so that its hue holds
 // rather than clipping toward cyan or orange, and then EDGE_WHITE_SHARE of the way to white: about 4:1 above the faces
 // beside them on the lit side and nearly 3:1 on the dark side. The rocks are terrain, so their lines are only
-// ROCK_EDGE_BRIGHTNESS brighter and keep their gray: near white, they outshone both fleets (owner, 2026-10-02, ADR-028).
+// ROCK_EDGE_BRIGHTNESS brighter and keep their gray: near white, they outshone both fleets (owner, 2026-10-02, ADR-040 decision 1).
 inline constexpr float EDGE_BRIGHTNESS = 2.0f;
 inline constexpr float EDGE_WHITE_SHARE = 0.35f;
 inline constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
 inline constexpr float FILL_SHADE = 0.3f;
 // A rock's faces are darker still, half a ship's, so that at the default zoom the terrain stands back from the fleet; its
-// lines keep ROCK_EDGE_BRIGHTNESS and carry its shape (interface plan 2, task UI5.1).
+// lines keep ROCK_EDGE_BRIGHTNESS and carry its shape (ADR-040 decision 1).
 inline constexpr float ROCK_FILL_SHADE = 0.15f;
 // A field's rocks are darker than an ore asteroid, so the two read apart.
 inline constexpr float FIELD_SHADE = 0.7f;

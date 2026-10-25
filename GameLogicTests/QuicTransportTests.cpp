@@ -229,7 +229,7 @@ public:
     Assert::IsTrue(!SnapshotsOf(second, 1).empty(), L"and a refused one takes nothing from it");
   }
 
-  // Phase 5 design §6, gate H2 (ADR-079): a seat's deputy plays it until its player takes it, watches while the player plays,
+  // ADR-079 decision 4: a seat's deputy plays it until its player takes it, watches while the player plays,
   // takes it again a minute of ticks after the player's connection has gone, and gives it back when the player returns.
   TEST_METHOD(ADeputyPlaysItsSeatWhileItsPlayerIsAway)
   {
@@ -247,7 +247,7 @@ public:
       Outpost::QuicTransport blue(blueSeat, BLUE);
       server->Step();
       Assert::AreEqual(std::uint64_t{1}, deputy.watches, L"the player plays the seat it took");
-      // What happened in the tick the deputy played, which the player's first snapshot tells it (design §11, ADR-080).
+      // What happened in the tick the deputy played, which the player's first snapshot tells it (ADR-080 decision 7).
       const std::vector<Outpost::Snapshot> first = SnapshotsOf(blue, 1);
       Assert::IsTrue(!first.empty() &&
                        first.front().away.value_or(Outpost::AwayReport{.sinceTick = firstPlayed + 1}).sinceTick == firstPlayed,

@@ -17,7 +17,7 @@ std::chrono::sys_seconds Utc(int _year, unsigned _month, unsigned _day, int _hou
 TEST_CLASS(PlayerClockTests)
 {
 public:
-  // Phase 5 design §7 (owner, 2026-10-08): a time of day is the next moment the player's clock reads it, today's while it
+  // ADR-080 decision 6 (owner, 2026-10-08): a time of day is the next moment the player's clock reads it, today's while it
   // is still to come and tomorrow's once it has passed, and the clock reads a moment back as the player set it.
   TEST_METHOD(FindsTheNextMomentTheClockReadsATime)
   {
