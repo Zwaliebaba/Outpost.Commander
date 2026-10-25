@@ -12,4 +12,7 @@
     <ClCompile Include="ServerCertificateTests.cpp" />
     <ClCompile Include="QuicChannelTests.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>

@@ -103,7 +103,17 @@
       <Project>{ea9ed838-5d41-4e78-a994-0d527f7e3980}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.3\build\native\Microsoft.Native.Quic.MsQuic.schannel.targets" Condition="Exists('..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.3\build\native\Microsoft.Native.Quic.MsQuic.schannel.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.3\build\native\Microsoft.Native.Quic.MsQuic.schannel.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.3\build\native\Microsoft.Native.Quic.MsQuic.schannel.targets'))" />
+  </Target>
 </Project>

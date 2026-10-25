@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Network">
@@ -33,10 +33,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.2\build\native\bin\$(Platform)\msquic.dll">
+    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.3\build\native\bin\$(Platform)\msquic.dll">
       <Filter>Network</Filter>
     </Content>
-    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.2\LICENSE">
+    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.3\LICENSE">
       <Filter>Network</Filter>
     </Content>
   </ItemGroup>
