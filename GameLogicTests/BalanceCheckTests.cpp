@@ -148,7 +148,7 @@ public:
   //   vstest.console.exe x64\Release\GameLogicTests.dll
   // The switch is in the test rather than a vstest filter because the native test adapter ignores a filter on its
   // TestCategory trait. The report goes to the test's output and to BalanceCheck-report.txt in the temporary folder.
-  // The verdicts are recorded in GameDesign/Records/BalanceLog.md.
+  // The verdicts are recorded in Docs/Records/BalanceLog.md.
   BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
   TEST_METHOD_ATTRIBUTE(L"TestCategory", L"BalanceFull") END_TEST_METHOD_ATTRIBUTE() TEST_METHOD(TheFullCheck)
   {

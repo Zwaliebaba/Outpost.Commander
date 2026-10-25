@@ -70,7 +70,7 @@ void Report(std::string_view _scenario, const Outcome& _outcome)
 } // namespace
 
 // The hand estimates of the structure numbers, played by the simulation. Their figures are recorded in
-// GameDesign/Records/BalanceLog.md; a number that misses its intent is raised with the owner, not retuned silently.
+// Docs/Records/BalanceLog.md; a number that misses its intent is raised with the owner, not retuned silently.
 TEST_CLASS(HandCheckTests)
 {
 public:

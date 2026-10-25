@@ -285,7 +285,7 @@ public:
     Action action;
   };
 
-  // The designer's window, after the owner's mockup (Game §interface.windows.designer; GameDesign/Mockups/ShipDesigner.png).
+  // The designer's window, after the owner's mockup (Game §interface.windows.designer; Docs/Mockups/ShipDesigner.png).
   struct DesignerPanel
   {
     // The target Shipyard, such as "SHIPYARD 01", or "NO SHIPYARD"; its queue's length, the ships it has built, and the

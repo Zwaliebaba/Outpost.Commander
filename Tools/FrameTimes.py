@@ -1,5 +1,5 @@
 """Summarizes a measurement log the game wrote with --measure, against the frame, tick and response budgets of
-Design/Budgets.md.
+Docs/Budgets.md.
 
 The game writes OutpostCommander-measure.log to the temporary folder. Each line is one record:
 
@@ -127,7 +127,7 @@ def main():
     for line in describe_parts(part_names, slow, f"Tick parts, ticks over {TICK_TARGET_MS:.0f} ms"):
       print(line)
 
-  # The frame and tick budgets (Design/Budgets.md): 99% of frames within 16.7 ms, on the CPU and on the GPU, and every
+  # The frame and tick budgets (Docs/Budgets.md): 99% of frames within 16.7 ms, on the CPU and on the GPU, and every
   # tick within 5 ms.
   if cpu_ms and gpu_ms and tick_ms:
     frames_met = all(percentile(sorted(values), FRAME_SHARE) <= FRAME_TARGET_MS for values in (cpu_ms, gpu_ms))

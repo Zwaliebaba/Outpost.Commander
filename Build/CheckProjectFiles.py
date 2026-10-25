@@ -1061,7 +1061,7 @@ def copy_tree(_destination):
                           capture_output=True, check=True)
   for name in result.stdout.decode().split("\0"):
     source = REPO_ROOT / name
-    if not name or not source.is_file() or name.split("/")[0] in ("Art", "GameDesign", "Design", "Tools"):
+    if not name or not source.is_file() or name.split("/")[0] in ("Art", "Docs", "Tools"):
       continue
     target = _destination / name
     target.parent.mkdir(parents=True, exist_ok=True)

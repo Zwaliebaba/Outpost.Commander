@@ -909,7 +909,7 @@ Hud::Rect Frame(Hud::Layout& _layout, float _left, float _top, float _width, flo
   return body;
 }
 
-// The designer's window (ADR-017 decision 7), laid out as the owner's mockup, GameDesign/Mockups/ShipDesigner.png, which is
+// The designer's window (ADR-017 decision 7), laid out as the owner's mockup, Docs/Mockups/ShipDesigner.png, which is
 // drawn at the reference scale: every place below is in reference units from the window's top-left corner.
 // Three part cards from CARDS_LEFT, and the mockup's room right of them (ADR-062).
 constexpr float DESIGNER_WIDTH = 818.0f;
