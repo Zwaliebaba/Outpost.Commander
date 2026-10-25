@@ -323,9 +323,22 @@ def main():
       f"{sum(1 for r in sheets if r['kind'] == 'level sheet')} level), {len(textures['textures'])} textures (×3 images), "
       f"{len(textures['logos'])} logos (+1 sheet). `renders.json` lists all {len(records)} images with set, model, view and "
       "size" + (f"; **missing on disk: {missing}**." if missing else "; none is missing on disk."))
-  out("- Render time: about 2.5 s of wall time a render with four processes, 236 renders (146 for the models, 90 tiles for the "
-      "level sheets) in about ten minutes.")
+  out("- Render time: 236 renders (146 for the models, 90 unlabelled tiles for the level sheets, since deleted) in 470 s with "
+      "four processes, about 7–10 s of CPU each.")
   out("")
+
+  # Structures drawn wider than their footprint diameter by more than 10 %.
+  wide = []
+  for st in stats:
+    if st["kind"] != "structure" or st["set"] not in ("Human", "Tarkan"):
+      continue
+    kind_name = st["entry"] if st["variantOf"] else structure_kind_of_model.get(st["model"], st["model"])
+    _, radius = footprint[kind_name]
+    scale = 2.0 * radius / st["lengthMeters"]
+    widest = max(st["fittedExtentsMeters"][0], st["fittedExtentsMeters"][2]) * scale
+    if widest > 1.1 * 2.0 * radius:
+      wide.append(f"{st['set']} {st['entry']} {widest:.0f} m against {2 * radius:g} m")
+  oversize = "; ".join(wide) if wide else "none"
 
   # ── Open / unclear ──
   out("## Open / unclear")
@@ -338,6 +351,7 @@ def main():
     "**Field rocks** are darker than an ore asteroid (`FIELD_SHADE` 0.7, `GameClient.cpp:1522`); only the ore-asteroid look is rendered.",
     "**Mining Rig** is rendered alone; in the game it stands tilted on its rock's surface (ADR-044, `RigStance`, `GameClient.cpp:1718-`).",
     "**Structures are drawn larger than `lengthMeters`.** A structure is drawn across its footprint, `2 × footprintRadiusMeters` (`GameClient.cpp:1661-1664`), so e.g. a Command Station L1 is 90 m long on the map against `lengthMeters` 60, a Mining Rig 50 m against 4, a Research Lab 60 m against 12. The *Drawn in game* column gives each; ADR-011 decision 2 calls `lengthMeters` how big a model is, which holds for ships but not for structures. Recorded for A2/A5, not as a conflict: the code is explicit.",
+    "**Some structures reach well past their footprint.** Fitted along x only (`FitMesh`) and then drawn across the footprint, a model whose depth (z) exceeds its length is wider on the map than its footprint diameter. Over 10 % past it, computed from the table: " + oversize + ". The Human Command Station's arms run along z, so it spans about 181 m against its 90 m footprint at every level. Whether that is intended is the owner's; recorded for A2/A5.",
     "**Logos are placeholders** (above): if the reference shows a logo, there is none to show.",
     "**Three of the five textures are referenced by no code** (`glow`, `cloudyglow`, `laser`), and `starburst` only by a test; they are in the package all the same.",
   ]:
@@ -369,7 +383,8 @@ def main():
     out(f"| C{i} | {a} | {b} | {c} |")
   out("")
   out("No conflict found between the shaders, `SceneShading.h` and ADR-090/091/092/040 on any number the renders use; ADR-092's "
-      "mesh totals and ADR-045's spin periods match the files.")
+      "mesh totals, ADR-045's spin periods, ADR-027's rock triangle counts (32, 54, 78) and ADR-011's hull lengths (1.25 × the "
+      "footprint diameters 16, 28, 48 m of `Tuning.json` `hulls[].footprintRadiusMeters` 8, 14, 24) match the files.")
   out("")
   (A6 / "A6.md").write_text("\n".join(lines) + "\n")
   print(f"A6.md written, {len(records)} images listed, missing {missing}")
