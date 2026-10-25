@@ -24,12 +24,12 @@ Task numbers carry the prefix RF, and gates are lettered F.
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | RF1.1 | The decisions that need no code, in their ADRs | — | F4, F6, F7, F8 | done in the PR that adds this plan |
-| RF2.1 | The designer reserves a row for each bar it draws | — | F3 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting the owner's run |
-| RF2.2 | The Controls window says what a click selects | — | F9 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting a run |
-| RF2.3 | The Orders window's Give lights under the pointer | — | F13 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting a run |
-| RF2.4 | A click selects another player's structure, for its panel | — | F16 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); awaiting the owner's run |
-| RF3.1 | The HUD draws each side in its own color | — | F1 | merged, [#117](https://github.com/Zwaliebaba/Outpost.Commander/pull/117); awaiting the runs as seat 1 and seat 2 and the owner's run |
-| RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | merged, [#118](https://github.com/Zwaliebaba/Outpost.Commander/pull/118); awaiting the owner's run |
+| RF2.1 | The designer reserves a row for each bar it draws | — | F3 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); done, run by the owner on 2026-10-25 |
+| RF2.2 | The Controls window says what a click selects | — | F9 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); done, run by the owner on 2026-10-25 |
+| RF2.3 | The Orders window's Give lights under the pointer | — | F13 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); done, run by the owner on 2026-10-25 |
+| RF2.4 | A click selects another player's structure, for its panel | — | F16 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); done, run by the owner on 2026-10-25 |
+| RF3.1 | The HUD draws each side in its own color | — | F1 | merged, [#117](https://github.com/Zwaliebaba/Outpost.Commander/pull/117); done, run by the owner on 2026-10-25 |
+| RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | merged, [#118](https://github.com/Zwaliebaba/Outpost.Commander/pull/118); done, run by the owner on 2026-10-25 |
 | RF5.1 | A refused command is told to the player | — | F10 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a dedicated server |
 | RF5.2 | A waiting scheduled order can be cancelled from the Orders window | RF5.1 | F11 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run |
 | RF5.3 | No away report on a seat's first join | — | F12 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a new world joined, left and joined again |
@@ -39,7 +39,7 @@ The owner's track, beside the plan:
 
 | Item | What | Gate | Status |
 |---|---|---|---|
-| RF-O1 | Rework the Human Command Station's L1–L5 art toward a square plan, and bake it again | F2 | done from the owner's model sheet; awaiting the owner's run |
+| RF-O1 | Rework the Human Command Station's L1–L5 art toward a square plan, and bake it again | F2 | done from the owner's model sheet, and run by the owner on 2026-10-25 |
 | RF-O2 | Remove the Mining Rig's `gun` hardpoint, and bake it again | F8 | todo |
 | RF-O3 | Look at the designer's Large hull card at 1080p with Cascadia Mono installed | F15 | todo |
 

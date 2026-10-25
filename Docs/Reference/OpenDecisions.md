@@ -4,7 +4,7 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-18 gates are open, in 6 documents.
+5 gates are open, in 4 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
@@ -16,23 +16,8 @@ Every owner decision that is still open: each row of a gate table whose Status i
 
 | Gate | Decision | Blocks |
 |---|---|---|
-| G1 | **Progression gated by the galaxy** (horizon O1). Research tiers opened by holding systems with derelicts and a precursor vault; the derelicts that recover research are its first step ([ADR-074](../ADR/ADR-074-salvage.md) decision 5). What losing a vault does to a tier not finished, and whether the Lab's levels stay as a second gate. | Milestone 43, progression from the galaxy |
-| G2 | **Travel between systems** (horizon O8): a jump between linked Relays, or a gate at a system's edge; its time, and whether a fleet in transit can be met. | Milestone 41, travel between systems |
-| G3 | **The economy over weeks:** a sink or a bound on the bank before fields that recover (§2.8); then fields that recover, or fields that appear (horizon O3). | Milestone 44, the economy over weeks |
-| G4 | **The fleet cap across systems** (horizon O2): one cap per empire from its best Command Station, or a Command Station per system. | Milestone 40, systems in one simulation |
-| G5 | **The galaxy's shape:** how many systems, their kinds, and how a generated galaxy is fair to N seats. Placement mirrors through the center ([ADR-072](../ADR/ADR-072-seeded-placement.md) decision 4), which is a rule for two. | Milestone 42, the galaxy from the seed |
-| G6 | **The strategic view.** One map has no strategic view (owner, 2026-10-03; Game §limits); a galaxy needs a view of systems. | Milestone 45, the client's galaxy |
 | F1 | **Seats:** how many, and how a friend joins a running season or leaves it (a deputy, then an AI empire, horizon §4). | Milestone 48, seats for N players |
-| F2 | **A season of weeks:** how it starts, how it ends (horizon O9 in its first form), and what is kept between seasons. | Milestone 49, seasons |
-| F3 | **Diplomacy** (horizon O6): accepted as it comes, or designed for. Proposed: as it comes, with the world log recording who fought whom. | Phase 7's design |
 | F4 | **Reach** (horizon O7): the server posts to the friends' group chat through WinHTTP, in the Windows SDK, so R14 holds. Which service, and which events are worth a message. The dependency on a service is an ADR. | Milestone 50, notifications |
-| F5 | **Bandwidth:** what a snapshot takes each connected player, as [the budgets](../Budgets.md) measure it. Proposed: acceptable for friends on broadband; if it is not, deltas, or datagrams for state that may be dropped, are a new protocol version ([ADR-060](../ADR/ADR-060-quic-in-process.md)). | Milestone 48, seats for N players over the network |
-
-## [`Docs/Plans/ImplementationPlan-Look.md`](../Plans/ImplementationPlan-Look.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| A7 | **What a plate is** (LV4.1–LV4.3). Proposed in LV4's tasks: fleets found by nearness on the screen, a plate's count and the arc of its hit points, its hull's glyph, plates that merge or move apart where they meet, a click that selects the fleet, and health bars only on Alt, under the pointer and close in. It rewrites [ADR-088](../ADR/ADR-088-selection-and-commands.md) decision 5, which holds when a bar shows, its place and its size. | LV4 |
 
 ## [`Docs/Plans/ImplementationPlan-SelfPlay.md`](../Plans/ImplementationPlan-SelfPlay.md)
 
@@ -45,11 +30,3 @@ Every owner decision that is still open: each row of a gate table whose Status i
 | Gate | Decision | Blocks |
 |---|---|---|
 | H10 | Whether a galaxy or friends come next, decided from W6 and the week's world log (§4) | The next phase design: a galaxy, or a season with friends on one system ([the horizon](../Horizon.md) §11) |
-
-## [`Docs/Plans/SelfPlayNetwork.md`](../Plans/SelfPlayNetwork.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| N2 | The decision step: 5, 10 or 30 seconds. Proposed: 10 seconds. | SP2.1, and the observation and the trajectories of SP2.2 and SP2.3 |
-| N3 | The heads: the six of §6, with Phase 3's levels in the investment head and the defence reflex, the scout and placement left to the body; or the defence as a seventh head. Proposed: the six, since the defence reflex is a reaction within a second, not a decision. | SP2.1, and the heads of SP2.2 |
-| N5 | The budget: how many hours of the laptop a run gets. Proposed: 35 hours for the plan of §12, run over several nights with `--resume`. | SP2.1, and the owner's run of SP2.4 |
