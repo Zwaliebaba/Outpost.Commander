@@ -13,11 +13,13 @@
 
 namespace
 {
-// The .nmf layout, version 2 (ADR-018, ADR-045). Sizes are in bytes.
+// The .nmf layout, version 3 (ADR-018, ADR-045, ADR-092). Sizes are in bytes. A vertex is its position and its normal,
+// then how open it is, from 0 to OPEN_STEPS, and three bytes of zero.
 constexpr std::array<std::uint8_t, 4> NMF_MAGIC{'N', 'M', 'F', '\0'};
-constexpr std::uint32_t NMF_VERSION = 2;
-constexpr size_t FILE_VERTEX_BYTES = 6 * sizeof(float);
-static_assert(sizeof(Neuron::MeshVertex) == FILE_VERTEX_BYTES, "A file vertex is copied straight into a MeshVertex.");
+constexpr std::uint32_t NMF_VERSION = 3;
+constexpr size_t FILE_VERTEX_FLOAT_BYTES = 6 * sizeof(float);
+constexpr size_t FILE_VERTEX_BYTES = FILE_VERTEX_FLOAT_BYTES + 4;
+constexpr float OPEN_STEPS = 255.0f;
 constexpr size_t MAXIMUM_TAG_LENGTH = 31;
 // Unit vectors and right angles are checked to this, far looser than float32 rounding and far tighter than a mistake.
 constexpr float DIRECTION_TOLERANCE = 1e-3f;
@@ -167,7 +169,16 @@ Neuron::MeshData Neuron::ParseNmf(std::span<const std::uint8_t> _bytes, std::str
   MeshData mesh;
   const auto vertexBytes = reader.TakeArray(vertexCount, FILE_VERTEX_BYTES);
   mesh.vertices.resize(vertexCount);
-  std::memcpy(mesh.vertices.data(), vertexBytes.data(), vertexBytes.size());
+  for (std::uint32_t i = 0; i < vertexCount; ++i)
+  {
+    const std::span<const std::uint8_t> record = vertexBytes.subspan(size_t{i} * FILE_VERTEX_BYTES, FILE_VERTEX_BYTES);
+    MeshVertex& vertex = mesh.vertices[i];
+    std::memcpy(&vertex.position, record.data(), sizeof(vertex.position));
+    std::memcpy(&vertex.normal, record.data() + sizeof(vertex.position), sizeof(vertex.normal));
+    if (record[FILE_VERTEX_FLOAT_BYTES + 1] != 0 || record[FILE_VERTEX_FLOAT_BYTES + 2] != 0 || record[FILE_VERTEX_FLOAT_BYTES + 3] != 0)
+      reader.Fail("a vertex's padding is not zero");
+    vertex.openness = static_cast<float>(record[FILE_VERTEX_FLOAT_BYTES]) / OPEN_STEPS;
+  }
   for (const MeshVertex& vertex : mesh.vertices)
   {
     for (const float value : {vertex.position.x, vertex.position.y, vertex.position.z, vertex.normal.x, vertex.normal.y, vertex.normal.z})

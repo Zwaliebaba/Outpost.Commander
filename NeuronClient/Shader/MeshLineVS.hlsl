@@ -1,16 +1,22 @@
 // A line in the scene, placed as MeshVS.hlsl places a mesh, then pulled liftShare of the way toward the eye. A point
 // moved along its own sightline stays where it is on the screen, so the line does not stand off a silhouette as a lift
 // along the surface's normal did, yet it is nearer than the surface it lies on and wins the depth test (ADR-040).
-// cbuffer Frame, cbuffer Draw, struct Object and VertexOut are declared again, identically, in MeshVS.hlsl, and must
-// match MeshPipeline.cpp (ADR-053).
+// cbuffer Frame, cbuffer Draw and struct Object are declared again, identically, in MeshVS.hlsl, and VertexOut in
+// MeshLinePS.hlsl; a line takes no openness (ADR-092). They must match MeshPipeline.cpp (ADR-053).
 
 cbuffer Frame : register(b0)
 {
   row_major float4x4 viewProjection;
   float3 directionToLight;
-  float ambient;
+  float keyWrap;
   float3 eyePosition;
-  float unused0;
+  float occlusionStrength;
+  float3 keyColor;
+  float unused1;
+  float3 skyFill;
+  float unused2;
+  float3 groundFill;
+  float unused3;
 };
 
 cbuffer Draw : register(b1)

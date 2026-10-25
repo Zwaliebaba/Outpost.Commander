@@ -2,11 +2,14 @@
 
 namespace Neuron
 {
-// One vertex as the mesh pipeline reads it: a position and a normal, in meters once the mesh is fitted (ADR-011).
+// One vertex as the mesh pipeline reads it: a position and a normal, in meters once the mesh is fitted (ADR-011), and how
+// open it is, from 0, shut in by the rest of its mesh, to 1, nothing near it above its surface (ADR-092). A vertex made on
+// the CPU, such as a ring's or a line's, is open.
 struct MeshVertex
 {
   DirectX::XMFLOAT3 position;
   DirectX::XMFLOAT3 normal;
+  float openness = 1.0f;
 };
 
 // A place on a mesh where something attaches, such as where a gun fires from or an engine's exhaust leaves (ADR-018).
@@ -61,8 +64,8 @@ struct MeshData
 };
 
 // Reads the bytes of an .nmf file, the format Tools/BakeMeshes.py writes (ADR-018, ADR-045). Throws Neuron::Exception
-// naming _fileName and the byte offset when the file is not version 2 of the format, is cut short or has bytes left
-// over, has no triangles or an index past its vertices, holds a number that is not finite, has a hardpoint whose tag is
+// naming _fileName and the byte offset when the file is not version 3 of the format, is cut short or has bytes left
+// over, has a vertex whose padding is not zero, has no triangles or an index past its vertices, holds a number that is not finite, has a hardpoint whose tag is
 // not lowercase letters and digits, whose directions are not unit vectors at right angles, or whose size is not
 // positive, or has a part whose axis is not a unit vector or whose period is not positive, or whose runs of indices do
 // not follow the triangles that stand still, and each other, to the end in whole triangles.

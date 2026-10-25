@@ -16,6 +16,7 @@
 #include <DirectXMath.h>
 
 #include "Window.h"
+#include "Bloom.h"
 #include "Renderer.h"
 #include "MeshData.h"
 #include "TextureData.h"

@@ -5,24 +5,38 @@ namespace Neuron
 class Mesh;
 class Renderer;
 
-// Draws meshes flat-lit in one color each (ADR-011): a root signature, a pipeline state, and a constant buffer per frame
-// in flight for the camera and the light. Every object drawn is an instance: where it is and its color are written into
-// the frame's slot of an upload buffer, and the copies of one mesh drawn together are one instanced draw (ADR-053). It
-// knows no game concept: the caller says where each mesh is and its color.
+// Draws meshes flat-lit in one color each (ADR-011), by a key light and a fill (ADR-090): a root signature, a pipeline
+// state, and a constant buffer per frame in flight for the camera and the light. Every object drawn is an instance: where
+// it is and its color are written into the frame's slot of an upload buffer, and the copies of one mesh drawn together are
+// one instanced draw (ADR-053). It knows no game concept: the caller says where each mesh is, its color and the light.
 class MeshPipeline : NonCopyable
 {
 public:
-  // What every mesh in a frame shares. The layout matches cbuffer Frame in Shader/MeshVS.hlsl and MeshPS.hlsl.
+  // What every mesh in a frame shares. The layout matches cbuffer Frame in Shader/MeshVS.hlsl, MeshPS.hlsl, MeshLineVS.hlsl
+  // and MeshLinePS.hlsl.
+  //
+  // A face is lit by a key from one direction and a fill from above and below, each a linear color with its brightness in
+  // it: the key times how far the face turns toward it, softened by keyWrap so that light reaches a little past the edge
+  // between light and shade, plus the fill blended from groundFill for a face that looks straight down to skyFill for one
+  // that looks straight up. A line takes the luminance of that light and keeps its own hue (ADR-090).
   struct FrameConstants
   {
     DirectX::XMFLOAT4X4 viewProjection;
-    // A unit vector from the scene toward the light.
+    // A unit vector from the scene toward the key.
     DirectX::XMFLOAT3 directionToLight;
-    // The share of an object's color it keeps where the light does not reach it, from 0 to 1.
-    float ambient;
+    // How far past the edge between light and shade the key reaches: 0 stops it at the edge, as Lambert's law does.
+    float keyWrap;
     // Where the camera is, in the world, toward which DrawLines pulls a line.
     DirectX::XMFLOAT3 eyePosition;
-    float unused0;
+    // How far a face's light is darkened by how shut in its vertices are (MeshVertex::openness, ADR-092): 0 ignores it,
+    // and 1 takes a face that is wholly shut in to black. A line is never darkened.
+    float occlusionStrength;
+    DirectX::XMFLOAT3 keyColor;
+    float unused1;
+    DirectX::XMFLOAT3 skyFill;
+    float unused2;
+    DirectX::XMFLOAT3 groundFill;
+    float unused3;
   };
 
   // Where one copy of a mesh is drawn and how: its world matrix, which may turn, move and scale uniformly, its linear
@@ -74,11 +88,11 @@ public:
   // false. Only after BeginDrawing.
   bool DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color);
 
-  // Draws _lines, a line list such as BuildCreaseLines makes, placed by _world, as one-pixel lines lit as a mesh is, in a
-  // linear color. They are tested against the depth of what is drawn but write none, so the far side of a mesh hides its
-  // own lines. Each vertex is pulled _liftShare of its distance toward the eye, which moves it nowhere on the screen but
-  // puts it in front of the surface it lies on: Direct3D gives a line no depth bias (ADR-040). The pipeline is back on
-  // Draw's state and topology when it returns.
+  // Draws _lines, a line list such as BuildCreaseLines makes, placed by _world, as one-pixel lines in a linear color, as
+  // bright as the light on a mesh is there but in their own hue (ADR-090). They are tested against the depth of what is
+  // drawn but write none, so the far side of a mesh hides its own lines. Each vertex is pulled _liftShare of its distance
+  // toward the eye, which moves it nowhere on the screen but puts it in front of the surface it lies on: Direct3D gives a
+  // line no depth bias (ADR-040). The pipeline is back on Draw's state and topology when it returns.
   void DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
                  const DirectX::XMFLOAT4& _color, float _liftShare);
 

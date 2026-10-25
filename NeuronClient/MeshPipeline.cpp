@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MeshPipeline.h"
 
+#include "CompiledShader/MeshLinePS.h"
 #include "CompiledShader/MeshLineVS.h"
 #include "CompiledShader/MeshPS.h"
 #include "CompiledShader/MeshVS.h"
@@ -63,10 +64,11 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   ID3D12Device* device = _renderer.Device();
   m_rootSignature = CreateRootSignature(device);
 
-  // Matches MeshVertex.
-  const std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputLayout{{
+  // Matches MeshVertex. The lines' vertex shader takes no openness, which the input layout may offer it all the same.
+  const std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{{
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, normal), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    {"OPENNESS", 0, DXGI_FORMAT_R32_FLOAT, 0, offsetof(MeshVertex, openness), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
   }};
 
   // The defaults cull back faces, which are the counterclockwise ones, and test depth with less-than (ADR-011).
@@ -88,10 +90,10 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
-  // Lines: the same pixel shader, so a line is lit as the surface it lies on, rasterized as a line list. They are tested
-  // against the depth of what is drawn but write none, so the line drawn last never hides another. Direct3D gives a
-  // line no depth bias, so a line that must show over a surface is pulled toward the eye by its own vertex shader
-  // (ADR-040). Multisampling on, a line is a quadrilateral a pixel wide that the samples smooth.
+  // Lines: a pixel shader of their own, so a line is as bright as the surface it lies on is lit but keeps its hue (ADR-090),
+  // rasterized as a line list. They are tested against the depth of what is drawn but write none, so the line drawn last
+  // never hides another. Direct3D gives a line no depth bias, so a line that must show over a surface is pulled toward the
+  // eye by its own vertex shader (ADR-040). Multisampling on, a line is a quadrilateral a pixel wide that the samples smooth.
   CD3DX12_DEPTH_STENCIL_DESC lineDepth(D3D12_DEFAULT);
   lineDepth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
   lineDepth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
@@ -99,6 +101,7 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   lineRasterizer.MultisampleEnable = TRUE;
   D3D12_GRAPHICS_PIPELINE_STATE_DESC lineDescription = description;
   lineDescription.VS = CD3DX12_SHADER_BYTECODE(g_MeshLineVS, sizeof(g_MeshLineVS));
+  lineDescription.PS = CD3DX12_SHADER_BYTECODE(g_MeshLinePS, sizeof(g_MeshLinePS));
   lineDescription.RasterizerState = lineRasterizer;
   lineDescription.DepthStencilState = lineDepth;
   lineDescription.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;

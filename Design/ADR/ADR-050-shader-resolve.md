@@ -19,7 +19,7 @@ The interface was drawn into the 4-sample target with the scene, so every interf
 
 1. **`Renderer::BeginInterface` resolves the scene with a shader.**
    - Its pipeline is one triangle over the screen, made from the vertex index (`Shader/ResolveVS.hlsl`).
-   - Its pixel shader (`Shader/ResolvePS.hlsl`) loads the pixel's samples from the scene through its `TEXTURE2DMS` view in the renderer's shader-visible heap (ADR-051), and returns their mean. The shader's `SAMPLE_COUNT` matches `Renderer::SAMPLE_COUNT`, so its loop unrolls.
+   - Its pixel shader (`Shader/ResolvePS.hlsl`) loads the pixel's samples from the scene through its `TEXTURE2DMS` view in the renderer's shader-visible heap (ADR-051), and returns their mean, with the scene's glow added ([ADR-091](ADR-091-a-phosphor-glow.md)). The shader's `SAMPLE_COUNT` matches `Renderer::SAMPLE_COUNT`, so its loop unrolls.
    - It writes the back buffer through an sRGB render target view; each back buffer has one, after the scene target's in the renderer's RTV heap.
    - The intermediate texture, the `ResolveSubresource` and the `CopyResource` are gone.
 2. **The interface is drawn after it, straight into the back buffer, at one sample and with no depth buffer.** `UiPipeline`'s pipeline state is built for `RENDER_TARGET_FORMAT`, one sample and `DXGI_FORMAT_UNKNOWN` depth.
@@ -32,4 +32,4 @@ The interface was drawn into the 4-sample target with the scene, so every interf
 - A frame no longer reads and writes a full-screen intermediate texture: at 1920×1080 that is about 8 MB written by the resolve and read again by the copy, every frame. The resolve now runs in the pixel shader instead of in the hardware's resolve path. Some GPUs resolve compressed multisampled surfaces faster than a shader reads them, so the GPU time is measured with `--measure --stress` (`frame_gpu_ns`) before this is taken as settled. If the shader is slower, the old path can come back without the interface moving.
 - **The interface loses multisampling.** Text and sprites are laid on whole pixels and do not change. A panel edge that falls between pixels is now either drawn or not, where four samples blended it. The HUD is laid out in reference units scaled to the screen (ADR-006), so some edges can fall between pixels. This is a visible change to check on screen.
 - The interface no longer pays for four samples a pixel in the scene target.
-- **Forecloses** drawing anything multisampled after `BeginInterface`. **Leaves open** post-processing between the resolve and the interface, which would read the back buffer or a target of its own.
+- **Forecloses** drawing anything multisampled after `BeginInterface`. **Leaves open** post-processing between the resolve and the interface, which would read the back buffer or a target of its own. The scene's glow is made before the resolve, which adds it ([ADR-091](ADR-091-a-phosphor-glow.md)).

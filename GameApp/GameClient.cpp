@@ -15,10 +15,14 @@ constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
 // The keys are KeyBindings.h's, which the HUD's buttons and the Controls window show (tasks 15.2 and 16.4).
 
-// One light from above and behind the default view's top-left, and how much of an object's color the unlit side keeps.
-// Presentation, not tuning: the design asks only that the scene reads clearly (design §11).
-constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
-constexpr float AMBIENT = 0.3f;
+// The light, and the colors of a model's faces and lines in it, are SceneShading.h's (ADR-090).
+
+// The scene glows as a vector screen's phosphor glows (ADR-091): light above SCENE_BLOOM's threshold, eased in over its
+// knee, is blurred and added back, its levels weighed by its spread so that the glow stays close to what is bright. They
+// are first values, set by replaying the glow's passes on a lit Human ship's line over its faces: the line brightens by a
+// tenth, the face a pixel from it by half and four pixels from it by a sixth, and no channel of the line passes 1. The
+// faces, the grid and the dim side of every model stay under the threshold.
+constexpr Neuron::BloomDesc SCENE_BLOOM{.thresholdLuminance = 0.35f, .kneeLuminance = 0.15f, .intensity = 2.0f, .spread = 0.6f};
 
 // The grid covers the 10,000 m map (Phase 4 design §6) with a line every 100 m, each a pixel wide at any zoom, in the line art
 // of the asteroids' ridges (ADR-028). It is a dim blue-gray, barely there, so the sky shows through (ADR-022) and the
@@ -31,40 +35,22 @@ constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
 // low-poly on purpose, big facets with clear ridges for the edge lines (owner 2026-10-02, ADR-027). A
 // rock takes the small mesh up to SMALL_ROCK_MAX_METERS of radius and the large one from LARGE_ROCK_MIN_METERS, so its
 // facets come out about the same size on the screen whatever its size: an ore asteroid, 45 m, is medium, and a field
-// mixes all three.
+// mixes all three. A field is a cluster of rocks inside its circle, as FieldLayout lays it out from its identifier, its ring
+// closed to gaps no wider than the smallest hull (interface plan 2, task UI5.2); the server blocks the whole circle (MVP
+// design §4).
 constexpr std::string_view ASTEROID_SET = "Asteroids";
 constexpr std::array<std::string_view, 3> ROCK_MODELS{"Small", "Medium", "Large"};
 constexpr float SMALL_ROCK_MAX_METERS = 35.0f;
 constexpr float LARGE_ROCK_MIN_METERS = 55.0f;
-// A field is a cluster of rocks inside its circle, as FieldLayout lays it out from its identifier, its ring closed to gaps
-// no wider than the smallest hull (interface plan 2, task UI5.2). The server blocks the whole circle (MVP design §4). A field
-// is darker than an ore asteroid, so the two read apart.
-constexpr float FIELD_SHADE = 0.7f;
 // Every model, rock, ship and structure, also shows its edges as thin lines, for a vector look from the eighties (owner,
 // 2026-10-02, ADR-027). Only the edges where its surface bends by more than CREASE_DEGREES are drawn: on low-poly
-// models that is nearly every edge between two facets, and two triangles that lie almost flat read as one facet. The
-// faces are dark, FILL_SHADE of the model's color, and the lines, lit as the model is, carry its shape (ADR-040). A ship's
-// or structure's lines are its color made up to EDGE_BRIGHTNESS brighter, but no further than its brightest channel
-// reaching 1, so that its hue holds rather than clipping toward cyan or orange, and then EDGE_WHITE_SHARE of the way to
-// white: about 4:1 above the faces beside them on the lit side and nearly 3:1 on the dark side. The rocks are terrain,
-// so their lines are only ROCK_EDGE_BRIGHTNESS brighter and keep their gray: near white, they outshone both fleets
-// (owner, 2026-10-02, ADR-028).
+// models that is nearly every edge between two facets, and two triangles that lie almost flat read as one facet. How the
+// faces and the lines are colored is SceneShading.h's.
 constexpr float CREASE_DEGREES = 10.0f;
-constexpr float EDGE_BRIGHTNESS = 2.0f;
-constexpr float EDGE_WHITE_SHARE = 0.35f;
-constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
-constexpr float FILL_SHADE = 0.3f;
-// A rock's faces are darker still, half a ship's, so that at the default zoom the terrain stands back from the fleet; its
-// lines keep ROCK_EDGE_BRIGHTNESS and carry its shape (interface plan 2, task UI5.1).
-constexpr float ROCK_FILL_SHADE = 0.15f;
 // A model's lines are pulled this share of their distance toward the eye: about two and a half pixels of depth at the
 // camera's 45 degree field of view on a 1080-pixel screen. They show over the faces they lie on and move nowhere on the
 // screen, so they no longer stand off a silhouette as a lift along the normal did (ADR-040).
 constexpr float LINE_LIFT_SHARE = 0.002f;
-// A structure stands back from the ships, which are what take orders: its color STRUCTURE_GRAY_SHARE of the way to a gray
-// as light as it, and its faces STRUCTURE_FILL_SHADE of that rather than FILL_SHADE (ADR-040).
-constexpr float STRUCTURE_GRAY_SHARE = 0.35f;
-constexpr float STRUCTURE_FILL_SHADE = 0.22f;
 // Every structure stands on a faint ring the size of its selection ring, which puts it on the ground and says its size: a
 // line one pixel wide at any zoom, RING_LINE_SEGMENTS long, in its side's color at FOOTPRINT_RING_SHADE. Under the
 // pointer, and under every structure while one is placed, it takes the color of the structure's own lines. Selected, the
@@ -353,33 +339,6 @@ std::vector<DirectX::XMFLOAT3> RigFeet(const Neuron::MeshData& _rig)
   return feet;
 }
 
-// A color times _scale, kept at most 1.
-DirectX::XMFLOAT4 Shaded(const DirectX::XMFLOAT4& _color, float _scale) noexcept
-{
-  return {std::min(1.0f, _color.x * _scale), std::min(1.0f, _color.y * _scale), std::min(1.0f, _color.z * _scale), _color.w};
-}
-
-// A model's lines in its _color: made up to _brightness brighter, but no further than its brightest channel reaching 1,
-// so that the hue holds, then _whiteShare of the way to a white as bright as that channel. A darker color, such as a
-// structure's while it is built, gives darker lines.
-DirectX::XMFLOAT4 EdgeColor(const DirectX::XMFLOAT4& _color, float _brightness, float _whiteShare) noexcept
-{
-  const float brightest = std::max({_color.x, _color.y, _color.z});
-  if (brightest <= 0.0f)
-    return _color;
-  const float gain = std::min(_brightness, 1.0f / brightest);
-  const float peak = brightest * gain;
-  const auto channel = [gain, peak, _whiteShare](float _channel) { return std::lerp(_channel * gain, peak, _whiteShare); };
-  return {channel(_color.x), channel(_color.y), channel(_color.z), _color.w};
-}
-
-// _color _share of the way to a gray as light as it is, by the luminance weights of linear sRGB.
-DirectX::XMFLOAT4 TowardGray(const DirectX::XMFLOAT4& _color, float _share) noexcept
-{
-  const float lightness = (0.2126f * _color.x) + (0.7152f * _color.y) + (0.0722f * _color.z);
-  return {std::lerp(_color.x, lightness, _share), std::lerp(_color.y, lightness, _share), std::lerp(_color.z, lightness, _share), _color.w};
-}
-
 // The color a model is drawn in: its set's, times its tint, and darker while it is built (task 4.2). A ship has no tint
 // and is always built, so it is its set's color.
 DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, std::int32_t _builtPermille) noexcept
@@ -458,6 +417,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_particles(_ticksPerSecond),
     m_explosions(_ticksPerSecond)
 {
+  _renderer.SetBloom(SCENE_BLOOM);
   // Gate H7: which face the figures found, Cascadia Mono or Consolas in its place (Phase 1 design §11).
   Neuron::DebugTrace(L"The interface's figures are set in {}.\n", m_ui.FamilyOf(static_cast<std::size_t>(Hud::Typeface::Figure)));
   // The models are kept in the catalog's order, which ModelIndex counts on, as LoadClientAssets made them.
@@ -1167,9 +1127,13 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
   Neuron::MeshPipeline::FrameConstants constants{};
   constants.viewProjection = m_camera.ViewProjection(aspectRatio);
-  DirectX::XMStoreFloat3(&constants.directionToLight, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&TOWARD_LIGHT)));
-  constants.ambient = AMBIENT;
+  DirectX::XMStoreFloat3(&constants.directionToLight, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&TOWARD_KEY)));
+  constants.keyWrap = KEY_WRAP;
+  constants.keyColor = KEY_COLOR;
+  constants.skyFill = SKY_FILL;
+  constants.groundFill = GROUND_FILL;
   constants.eyePosition = m_camera.EyePosition(aspectRatio);
+  constants.occlusionStrength = OCCLUSION_STRENGTH;
 
   // The sky first, under everything. Its stars are sized on the reference frame, so they keep their look at any
   // resolution (ADR-006, ADR-022).
