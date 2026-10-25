@@ -1,0 +1,356 @@
+{
+ "Art/Models/Asteroids/Large.glb": [
+  78,
+  0,
+  0,
+  []
+ ],
+ "Art/Models/Asteroids/Medium.glb": [
+  54,
+  0,
+  0,
+  []
+ ],
+ "Art/Models/Asteroids/Small.glb": [
+  32,
+  0,
+  0,
+  []
+ ],
+ "Art/Models/Human/CommandStation_L1.glb": [
+  520,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/CommandStation_L2.glb": [
+  520,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/CommandStation_L3.glb": [
+  520,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/CommandStation_L4.glb": [
+  828,
+  6,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/CommandStation_L5.glb": [
+  1032,
+  6,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Constructor.glb": [
+  266,
+  1,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/DefensePlatform.glb": [
+  440,
+  6,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Large.glb": [
+  256,
+  5,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Medium.glb": [
+  160,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/MiningRig.glb": [
+  262,
+  1,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/ResearchLab_L1.glb": [
+  288,
+  0,
+  1,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/ResearchLab_L2.glb": [
+  344,
+  0,
+  1,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/ResearchLab_L3.glb": [
+  480,
+  0,
+  1,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/ResearchLab_L4.glb": [
+  576,
+  0,
+  1,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/ResearchLab_L5.glb": [
+  704,
+  0,
+  3,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Shipyard_L1.glb": [
+  392,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Shipyard_L2.glb": [
+  456,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Shipyard_L3.glb": [
+  772,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Shipyard_L4.glb": [
+  920,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Shipyard_L5.glb": [
+  1236,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Human/Small.glb": [
+  70,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/CommandStation_L1.glb": [
+  218,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/CommandStation_L2.glb": [
+  218,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/CommandStation_L3.glb": [
+  218,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/CommandStation_L4.glb": [
+  236,
+  6,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/CommandStation_L5.glb": [
+  236,
+  6,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Constructor.glb": [
+  202,
+  1,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/DefensePlatform.glb": [
+  84,
+  6,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Large.glb": [
+  142,
+  5,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Medium.glb": [
+  94,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/MiningRig.glb": [
+  166,
+  1,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/ResearchLab_L1.glb": [
+  240,
+  0,
+  1,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/ResearchLab_L2.glb": [
+  240,
+  0,
+  1,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/ResearchLab_L3.glb": [
+  336,
+  0,
+  2,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/ResearchLab_L4.glb": [
+  336,
+  0,
+  2,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/ResearchLab_L5.glb": [
+  380,
+  0,
+  2,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Shipyard_L1.glb": [
+  188,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Shipyard_L2.glb": [
+  204,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Shipyard_L3.glb": [
+  336,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Shipyard_L4.glb": [
+  468,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Shipyard_L5.glb": [
+  468,
+  0,
+  0,
+  [
+   "team"
+  ]
+ ],
+ "Art/Models/Tarkan/Small.glb": [
+  100,
+  3,
+  0,
+  [
+   "team"
+  ]
+ ]
+}

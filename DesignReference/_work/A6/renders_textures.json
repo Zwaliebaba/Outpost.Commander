@@ -1,0 +1,266 @@
+[
+ {
+  "file": "DesignReference/_work/assets/textures/Particle.png",
+  "set": null,
+  "model": "Particle",
+  "view": null,
+  "size": [
+   16,
+   16
+  ],
+  "kind": "texture as stored",
+  "source": "OutpostCommander/Assets/Textures/Particle.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/Particle_on_dark.png",
+  "set": null,
+  "model": "Particle",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha-blended over a dark checker, enlarged",
+  "source": "OutpostCommander/Assets/Textures/Particle.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/Particle_alpha.png",
+  "set": null,
+  "model": "Particle",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha as gray, enlarged",
+  "source": "OutpostCommander/Assets/Textures/Particle.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/cloudyglow.png",
+  "set": null,
+  "model": "cloudyglow",
+  "view": null,
+  "size": [
+   128,
+   128
+  ],
+  "kind": "texture as stored",
+  "source": "OutpostCommander/Assets/Textures/cloudyglow.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/cloudyglow_on_dark.png",
+  "set": null,
+  "model": "cloudyglow",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha-blended over a dark checker, enlarged",
+  "source": "OutpostCommander/Assets/Textures/cloudyglow.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/cloudyglow_alpha.png",
+  "set": null,
+  "model": "cloudyglow",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha as gray, enlarged",
+  "source": "OutpostCommander/Assets/Textures/cloudyglow.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/glow.png",
+  "set": null,
+  "model": "glow",
+  "view": null,
+  "size": [
+   128,
+   128
+  ],
+  "kind": "texture as stored",
+  "source": "OutpostCommander/Assets/Textures/glow.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/glow_on_dark.png",
+  "set": null,
+  "model": "glow",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha-blended over a dark checker, enlarged",
+  "source": "OutpostCommander/Assets/Textures/glow.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/glow_alpha.png",
+  "set": null,
+  "model": "glow",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha as gray, enlarged",
+  "source": "OutpostCommander/Assets/Textures/glow.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/laser.png",
+  "set": null,
+  "model": "laser",
+  "view": null,
+  "size": [
+   128,
+   32
+  ],
+  "kind": "texture as stored",
+  "source": "OutpostCommander/Assets/Textures/laser.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/laser_on_dark.png",
+  "set": null,
+  "model": "laser",
+  "view": null,
+  "size": [
+   512,
+   128
+  ],
+  "kind": "texture alpha-blended over a dark checker, enlarged",
+  "source": "OutpostCommander/Assets/Textures/laser.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/laser_alpha.png",
+  "set": null,
+  "model": "laser",
+  "view": null,
+  "size": [
+   512,
+   128
+  ],
+  "kind": "texture alpha as gray, enlarged",
+  "source": "OutpostCommander/Assets/Textures/laser.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/starburst.png",
+  "set": null,
+  "model": "starburst",
+  "view": null,
+  "size": [
+   128,
+   128
+  ],
+  "kind": "texture as stored",
+  "source": "OutpostCommander/Assets/Textures/starburst.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/starburst_on_dark.png",
+  "set": null,
+  "model": "starburst",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha-blended over a dark checker, enlarged",
+  "source": "OutpostCommander/Assets/Textures/starburst.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/textures/starburst_alpha.png",
+  "set": null,
+  "model": "starburst",
+  "view": null,
+  "size": [
+   512,
+   512
+  ],
+  "kind": "texture alpha as gray, enlarged",
+  "source": "OutpostCommander/Assets/Textures/starburst.dds"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/LockScreenLogo.scale-200.png",
+  "set": null,
+  "model": "LockScreenLogo.scale-200",
+  "view": null,
+  "size": [
+   48,
+   48
+  ],
+  "kind": "app logo (copied as is)",
+  "source": "OutpostCommander/Assets/LockScreenLogo.scale-200.png"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/SplashScreen.scale-200.png",
+  "set": null,
+  "model": "SplashScreen.scale-200",
+  "view": null,
+  "size": [
+   1240,
+   600
+  ],
+  "kind": "app logo (copied as is)",
+  "source": "OutpostCommander/Assets/SplashScreen.scale-200.png"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/Square150x150Logo.scale-200.png",
+  "set": null,
+  "model": "Square150x150Logo.scale-200",
+  "view": null,
+  "size": [
+   300,
+   300
+  ],
+  "kind": "app logo (copied as is)",
+  "source": "OutpostCommander/Assets/Square150x150Logo.scale-200.png"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/Square44x44Logo.scale-200.png",
+  "set": null,
+  "model": "Square44x44Logo.scale-200",
+  "view": null,
+  "size": [
+   88,
+   88
+  ],
+  "kind": "app logo (copied as is)",
+  "source": "OutpostCommander/Assets/Square44x44Logo.scale-200.png"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/Square44x44Logo.targetsize-24_altform-unplated.png",
+  "set": null,
+  "model": "Square44x44Logo.targetsize-24_altform-unplated",
+  "view": null,
+  "size": [
+   24,
+   24
+  ],
+  "kind": "app logo (copied as is)",
+  "source": "OutpostCommander/Assets/Square44x44Logo.targetsize-24_altform-unplated.png"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/StoreLogo.png",
+  "set": null,
+  "model": "StoreLogo",
+  "view": null,
+  "size": [
+   50,
+   50
+  ],
+  "kind": "app logo (copied as is)",
+  "source": "OutpostCommander/Assets/StoreLogo.png"
+ },
+ {
+  "file": "DesignReference/_work/assets/logos/Wide310x150Logo.scale-200.png",
+  "set": null,
+  "model": "Wide310x150Logo.scale-200",
+  "view": null,
+  "size": [
+   620,
+   300
+  ],
+  "kind": "app logo (copied as is)",
+  "source": "OutpostCommander/Assets/Wide310x150Logo.scale-200.png"
+ }
+]
