@@ -40,7 +40,7 @@ The owner chose on 2026-10-08 to show the territory and the edge of sight in the
 7. **The minimap draws the territory:**
    - each held or guarded sector washed faintly in its holder's color under the marks;
    - over its fog, every sector's border in (0.11, 0.13, 0.17), at 2:1 against the map;
-   - the held and guarded sectors' outlines over it, a cut-off one's in dashes of 6 units with gaps of 4, and a suppressed one's hatched;
+   - the held and guarded sectors' outlines over it, a cut-off one's in dashes of 6 units with gaps of 4, and a suppressed sector hatched over its whole square in its holder's color;
    - no mark on a node, for the reason decision 3 gives;
    - while the player places a Relay, each sector whose node it could claim now outlined 3 units inside its border in the player's blue, clear of the outline of its held sector beside it.
 

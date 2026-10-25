@@ -54,7 +54,7 @@ It asks that nothing move to a slower clock to fit a world (owner, 2026-10-04), 
 
 Bears on: Game §world, Game §ai.deputy, Game §orders.standing, Game §orders.scheduled, Game §orders.retreat, Game §session.server.
 
-**Where the game strains it.** The deputy is a keeper: it defends what its player holds and builds again what its Shipyards last built, but it never attacks, claims a sector or clears pirates (Game §ai.deputy), so a present player gains ground that an absent one only holds. How much presence buys is what W3 and W4 of [the Phase 5 design](OutpostCommander-Phase5.md) measure.
+**Where the game strains it.** The deputy is a keeper: it defends what its player holds and builds again what its Shipyards last built, but it never attacks, claims a sector or clears pirates (Game §ai.deputy), so a present player gains ground that an absent one only holds. How much presence buys is what the week's questions W3 and W4 measure ([OutpostCommander-Phase5.md](OutpostCommander-Phase5.md)).
 
 ---
 

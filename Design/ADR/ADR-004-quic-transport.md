@@ -29,7 +29,7 @@ MsQuic is Microsoft's QUIC implementation. It is MIT-licensed, and the GDK docum
 - **QUIC needs Windows 11 or Windows Server 2022.** QUIC requires TLS 1.3, and Schannel supports TLS 1.3 only from those versions (Microsoft Learn: *Protocols in TLS/SSL (Schannel SSP)*, and the platform dependencies of .NET's QUIC support). Every match uses QUIC, so the package's minimum is [ADR-060](ADR-060-quic-in-process.md) decision 8's, and the dedicated server needs Windows Server 2022 or later.
 - **The server needs a certificate.** TLS 1.3 authenticates the server, so the server needs a certificate and the client needs a way to trust it. The server makes a self-signed one, and the client pins its hash ([ADR-060](ADR-060-quic-in-process.md) decision 6); a world keeps its certificate in its folder ([ADR-078](ADR-078-dedicated-server.md) decision 7).
 - **The licence travels with the DLL.** MsQuic is MIT-licensed (`LICENSE` in the package). The MSIX package carries that text as `Licenses\MsQuic.txt`, next to `msquic.dll`.
-- **A real network adds latency** to [ADR-002](ADR-002-authoritative-server.md)'s, and it is measured before a match crosses one ([`Design/Budgets.md`](../Budgets.md)).
+- **Latency over a real network is not measured.** A world joined from another machine crosses one ([ADR-078](ADR-078-dedicated-server.md) decision 9); the order-to-response budget, and what of it is still to be measured, are [`Design/Budgets.md`](../Budgets.md)'s.
 
 ## What this forecloses
 

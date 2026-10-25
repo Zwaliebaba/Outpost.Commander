@@ -1,6 +1,6 @@
 # Outpost Commander — Balance log
 
-Every measurement of the game's balance, its performance and its screen, dated. Entries are appended, each section in date order, and an entry is changed afterwards only to correct a factual error. [Design/Budgets.md](../../Design/Budgets.md) keeps each budget's target and its latest measurement; this log keeps every measurement, old and new.
+Every measurement of the game's balance, its performance, its screen and its code, dated. Entries are appended, each section in date order, and an entry is changed afterwards only to correct a factual error. [Design/Budgets.md](../../Design/Budgets.md) keeps each budget's target and its latest measurement; this log keeps every measurement, old and new.
 
 **An entry** is one run: the date it was measured, what was measured, the figures, and under them the build (the code's state, where it ran and in what configuration), the seeds, the method and the source. A source is the commit that wrote the figure down, with the pull request that merged it where there was one; `git show <commit>` gives the document as it stood. Where two documents give one measurement differently, the entry gives each as stated, with its source. Figures worked out by arithmetic from the tuning data or the map, and estimates, are not measurements and are not here.
 
@@ -189,6 +189,17 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Method:** The owner's play, summarized by `Tools/MatchLog.py` from the match log.
 - **Source:** the MVP design, §3 (commit `fe50a7a`).
 
+### 2026-10-01 · A group pushed into the enemy, before ships stood to fire
+
+| Quantity | Value |
+|---|---|
+| A group of Lances closing on an enemy, with every overlapping pair pushed apart half each | the rear rows shoved the front into the enemy: the group ended 60 m inside its 220 m range |
+
+- **Build:** The MVP before the push of 2026-10-01 that lets a ship standing to fire keep its range (ADR-010 decision 7); where it ran is not stated
+- **Seeds:** not stated
+- **Method:** Not stated.
+- **Source:** ADR-010, Decision (commit `0000892`, #36).
+
 ### 2026-10-02 · The Q2 check under fog of war
 
 | Quantity | Value |
@@ -344,6 +355,22 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Method:** AI against AI.
 - **Source:** the Phase 1 plan, task 12.2 (commit `86b3bc2`, #51).
 
+### 2026-10-03 · Two AIs before the longer match, as ADR-041 gives it (task 12.2)
+
+| Quantity | Value |
+|---|---|
+| Match length | a median of 24 minutes over 140 seeds |
+| Minute 4 | each side has 12 warships and starts attacking |
+| Minute 10 | both fleets stand at about 53 ships |
+| Minute 12 | the two fleets meet in one battle; the loser keeps about 13 of its 65 ships, and the winner 60 to 80 |
+| About minute 23 | the winner grinds down the base |
+| Tier 2 | both AIs open it at 15:04, and the match is decided before tier 2 can change anything |
+
+- **Build:** Phase 1 after task 7.2's arcs and before task 12.2, on the 5 km map; where it ran is not stated
+- **Seeds:** 140 seeds; which ones is not stated, nor which match the minutes describe
+- **Method:** AI against AI.
+- **Source:** ADR-041, Context (commit `86b3bc2`, #51).
+
 ### 2026-10-03 · The AI plays a longer match (task 12.2)
 
 | Quantity | Value |
@@ -375,6 +402,32 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Seeds:** 1 to 40 and 41 to 80
 - **Method:** AI against AI with the match log; a match not ended at 150 minutes counts as the longest.
 - **Source:** the Phase 1 plan, task 9.7 (commit `ced8fc8`, #52); ADR-047, Consequences (commit `ced8fc8`, #52).
+
+### 2026-10-03 · Groups keep their lanes: the probe (task 9.7)
+
+| Quantity | Value |
+|---|---|
+| The group's length along its mean heading over its width across it, worst while it moves: before / after | open space 1.0 / 1.0; a field across the way 4.9 / 1.3; a field 150 m off the line 4.1 / 1.2; two fields with a gap narrower than the band 4.1 / 2.4 |
+| Partial changes tried first, with the field across the way | each ship given its own lane round the field: 3.9, since letting a corner go at sight of the next undid the lanes; the lanes' corners kept without the lanes: 4.9 |
+| Arrival | every case arrives in the same time as before, 38 to 40 s; through a gap narrower than the band the ships still close up to pass it |
+
+- **Build:** Phase 1 at task 9.7, in the Linux container
+- **Seeds:** not applicable
+- **Method:** A probe of 25 Small+Ion ships in a 5 × 5 block, ordered 3 km past one field 200 m in radius. `MovementTests.AGroupPassesAnObstacleSideBySide` holds the field across the way to at most 2.0.
+- **Source:** ADR-047, Context and Consequences (commit `ced8fc8`, #52).
+- **Note:** The same table's row for an Attack order on a moving target came with task 14.4: its entry is of 2026-10-04.
+
+### 2026-10-03 · Matches that do not end (tasks 12.2 and 9.7)
+
+| Quantity | Value |
+|---|---|
+| Why 3 of seeds 41-80 had not ended at 150 minutes after task 12.2 | not looked into |
+| What such a match looks like, after task 9.7 | one AI holds about 200 warships against about 50 for the last hour and never finishes the match |
+
+- **Build:** Phase 1 after tasks 12.2 and 9.7, on the 5 km map, in the Linux container
+- **Seeds:** 41 to 80
+- **Method:** AI against AI with the match log; a match not ended at 150 minutes counts as the longest.
+- **Source:** ADR-041, Consequences (commit `86b3bc2`, #51); ADR-047, Consequences (commit `ced8fc8`, #52).
 
 ### 2026-10-03 · Territory: the AI claims its flanks (task 14.5)
 
@@ -426,6 +479,20 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Seeds:** not applicable
 - **Method:** Movement tests in the container.
 - **Source:** the Phase 1 plan, task 7.2 (commit `8c6acd2`, #49); the Phase 1 design, §9 (commit `5a7d99d`, #49).
+
+### 2026-10-03 · Ships turn in arcs: a single ship's move, as ADR-039 gives it (task 7.2)
+
+| Quantity | Value |
+|---|---|
+| A ship sent 100 m behind itself | Small+Ion arrives in 2.05 s against 1.90 s before; Large+Fusion in 8.55 s against 7.90 s |
+| A Small+Ion ship sent to a point 15 m abeam | reached exactly in 0.75 s; the old rule took 6.3 s and gave up 2.1 m short, when its stall rule ended the circling |
+| A route with gentle bends | flown as before |
+
+- **Build:** Phase 1 at task 7.2, in the Linux container
+- **Seeds:** not applicable
+- **Method:** One ship on an open map.
+- **Source:** ADR-039, Context and Consequences (commit `5a7d99d`, #49).
+- **Note:** The entry above is the same run as the Phase 1 plan gives it, with the abeam point at 0.75-3.6 s by hull and 2 m short.
 
 ### 2026-10-04 · S1 to S4: the fall-back tuned (task 19.2)
 
@@ -916,6 +983,17 @@ Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time
 - **Method:** The server times each tick on its own clock: its commands, its simulation step and every snapshot (`Server::TakeTickDurations`). `--load` places 200 ships and 40 structures and orders both players' ships across the map every 200 ticks.
 - **Source:** the MVP design, §3 (commit `0d90731`).
 
+### 2026-09-30 · MsQuic's DLL
+
+| Quantity | Value |
+|---|---|
+| The x64 `msquic.dll`, which every match loads | 548 KB |
+
+- **Build:** The package `Microsoft.Native.Quic.MsQuic.Schannel` 2.6.1, as `NeuronCore/packages.config` named it on 2026-09-30
+- **Seeds:** not applicable
+- **Method:** The file's size; how it was read is not stated.
+- **Source:** ADR-004, Consequences (commit `c0b4e76`, #26).
+
 ### 2026-10-01 · Q5 on the development machine
 
 | Quantity | Value |
@@ -1383,6 +1461,19 @@ Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time
 
 The figures of the reviews of the screen, and of the meshes as drawn: sizes, contrast, brightness and hues.
 
+### 2026-10-01 · The placeholder meshes against their sources and their bake
+
+| Quantity | Value |
+|---|---|
+| The 29 `.cmo` files against their `.obj` sources | the same bounds; 22,544 of their 22,552 triangles wind right-handed about their stored normals, so the left-handed game drew each model mirrored |
+| How symmetric the models are | the Tarkan `Station`: only 86% of its vertices have a mirror partner within 2% of its size; the Tarkan `Medium`: 95% |
+| Every baked file against its `.cmo` | positions bit for bit the `.cmo` positions turned to face +x and mirrored across the game's z; every triangle's corners reversed exactly; normals within 1.2e-7, apart from the four that were repaired |
+
+- **Build:** The placeholder meshes of 2026-10-01 and their bake
+- **Seeds:** not applicable
+- **Method:** Scripts that parsed every file.
+- **Source:** ADR-018, Context and Consequences (commit `cedc905`, #41).
+
 ### 2026-10-02 · The owner's low-poly models
 
 | Quantity | Value |
@@ -1406,6 +1497,18 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Method:** Counted from the meshes.
 - **Source:** the MVP plan, task C.1 (commit `8197633`).
 
+### 2026-10-02 · The models' triangles and creases (task C.1)
+
+| Quantity | Value |
+|---|---|
+| The ships and structures before the owner's low-poly ones | 280 to 1,150 triangles and 330 to 970 creases each, too dense for lines on every crease |
+| The owner's low-poly models | 86 to 277 creases a ship and 249 to 736 a structure |
+
+- **Build:** The models of 2026-10-02, before the structures' five levels of 2026-10-03 (ADR-045)
+- **Seeds:** not applicable
+- **Method:** Not stated; the creases are the edges `Neuron::BuildCreaseLines` keeps.
+- **Source:** ADR-027, Context and Consequences (commit `81e50fa`, #46).
+
 ### 2026-10-03 · Ships turn in arcs, and bank (task 7.2)
 
 | Quantity | Value |
@@ -1428,6 +1531,24 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Method:** The tests' cases, on the shipped meshes.
 - **Source:** the Phase 1 plan, task 9.5 (commit `1d8b4f3`, #51).
 
+### 2026-10-03 · A Mining Rig on its rock, as ADR-044 gives it (task 9.5)
+
+| Quantity | Value |
+|---|---|
+| Lowered until its lowest foot met the rock, before the change | on a 45 m rock, whose top is 26.8 m up, the Human rig's feet stood 0.4-6.9 m up by its turn, so the rig sat about 20 m into the rock |
+| Held level, with no foot in the rock | a Human leg hangs up to 17.5 m over the rock, a Tarkan one up to 12.8 m |
+| Tilted about its middle, its origin 16 m above its feet | a foot swings across the rock's steep shoulder and the fit diverges: a Human leg hung up to 34 m |
+| Tilted about the middle of its feet | the fit settles in three passes; the game's rocks need up to 18° |
+| The Tarkan rig, on three legs | stands on all three, no foot more than 0.6 m over the rock, tilted up to 18° |
+| The Human rig, on four legs | rests on two and hangs the others: 0.7-6.2 m on a 45 m rock, 1.9-5.7 m on a 60 m rock; on the 45 m rock the crown goes up to 10 m into its body between its legs |
+| Feet and drills | no foot in the rock in any of the twenty stances; both rigs' drills 6-20 m into the rock |
+
+- **Build:** Phase 1 at task 9.5: the shipped meshes, in the Linux container
+- **Seeds:** not applicable
+- **Method:** Five turns of each rig on each rock.
+- **Source:** ADR-044, Context and Consequences (commit `1d8b4f3`, #51).
+- **Note:** The entry above is the same work as the Phase 1 plan gives it.
+
 ### 2026-10-03 · The first interface review
 
 | Quantity | Value |
@@ -1444,6 +1565,18 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Seeds:** not stated
 - **Method:** Sizes are `Hud::Typefaces`' sizes in reference units, pixels at 1080p; contrast is WCAG's ratio of the relative luminances of the linear colors, encoded to sRGB, as the contrast test computes it; computed, not measured on a screen; the ring's band and the bank are read off the screenshots; the designer's size is computed from the layout.
 - **Source:** the Interface plan, what the review found, its gates and task 14.2 (commits `59300ed` and `0763dc7` (#65)).
+
+### 2026-10-03 · The review of a big fight (task 9.7)
+
+| Quantity | Value |
+|---|---|
+| A fleet in a fight between two AIs | the Tarkan fleet a single-file line about 700 pixels long, its head being destroyed while its tail still marched in |
+| The health bars at that zoom | a few pixels of green, which did not say which ships were hurt |
+
+- **Build:** The game of 2026-10-03, a screenshot the owner shared; the machine and the build are not stated
+- **Seeds:** not stated
+- **Method:** Read off the screenshot.
+- **Source:** ADR-047, Context (commit `ced8fc8`, #52).
 
 ### 2026-10-04 · A type scale that reads (task 14.2)
 
@@ -1467,6 +1600,17 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Seeds:** not applicable
 - **Method:** Measured from the baked files.
 - **Source:** the Phase 3 design, §4 (commit `6a596f9`, #63); the Phase 3 plan, task 20.2 (commit `5e258bc`, #67).
+
+### 2026-10-04 · Structure levels' meshes, as ADR-064 gives them
+
+| Quantity | Value |
+|---|---|
+| The Human Command Station's depth over its length, level 1 being square | 1.57 at levels 2 and 3; 1.13 and 1.14 at levels 4 and 5 |
+
+- **Build:** The baked `_L<n>.nmf` files of 2026-10-04
+- **Seeds:** not applicable
+- **Method:** Read from every vertex by a script.
+- **Source:** ADR-064, Consequences (commit `51f5887`, #67).
 
 ### 2026-10-05 · The minimap's marks (task 16.2)
 
@@ -1572,3 +1716,41 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Seeds:** not applicable
 - **Method:** A Python script replaying `MeshPS.hlsl`'s light, `GameClient.cpp`'s face and line colors and `Models.json`'s side colors over every unit normal in 3° steps that the camera can see at its lowest pitch, 40°; WCAG's ratio of the linear luminances, as ADR-040 computed it. Computed, not measured on a screen.
 - **Source:** the Look plan, what the review found and LV1.1 (commit `fdcc5f5`, #107).
+
+## The code
+
+Counts taken over the source tree and its history.
+
+### 2026-10-07 · Pull requests merged
+
+| Quantity | Value |
+|---|---|
+| Pull requests merged in the repository since 2026-09-29 | 87 |
+
+- **Build:** The repository on 2026-10-07
+- **Seeds:** not applicable
+- **Method:** A count of pull requests; how it was taken is not stated.
+- **Source:** the horizon plan, §2 (commit `f72cf05`, #89).
+
+### 2026-10-07 · Tests in each suite
+
+| Quantity | Value |
+|---|---|
+| `TEST_METHOD`s in each test project, when the two test DLLs became one a library | `NeuronCoreTests` 37, `NeuronServerTests` 11, `NeuronClientTests` 32, `GameProtocolTests` 16, `OpponentTests` 22, `GameLogicTests` 258 and `GameAppTests` 235: 611, the same set of test names as the two DLLs held before |
+
+- **Build:** The tree at the split into a test DLL per library (ADR-089)
+- **Seeds:** not applicable
+- **Method:** `TEST_METHOD` counted in each project.
+- **Source:** ADR-089, Consequences (commit `1de242d`, merged in #94).
+
+### 2026-10-11 · `noexcept` in the tree
+
+| Quantity | Value |
+|---|---|
+| Lines of the `.h` and `.cpp` files outside the test projects and `d3dx12.h` that carry `noexcept` | 741 |
+
+- **Build:** The tree of #108
+- **Seeds:** not applicable
+- **Method:** `git grep`.
+- **Source:** ADR-093, Context (commit `d647385`, #108).
+- **Note:** Not counted since.

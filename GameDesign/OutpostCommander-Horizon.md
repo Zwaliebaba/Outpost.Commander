@@ -16,6 +16,8 @@ The owner's question (owner, 2026-10-04): how the game could evolve towards a ga
 
 **What it becomes.** A persistent world for a circle of friends, played in seasons of two to four weeks at first and of two to four months later (§7). While a player is online the game is played as a match is; while the player is away, the orders the player gave carry on. After a short ramp it is a war over territory, closer to PlanetSide's fights over areas of space than to Starborne's slow build-up over a season. Its first step, one system that keeps running, is built (§11; Game §world).
 
+**A premise, proposed and not built.** The game tells no story, and no screen names a faction (Game §limits). The one proposed for it: a century after the jump relays went dark, the colonists left on the far side, the Terrakin, rebuild in the Kessler Reach from its ore and the wrecks of a fleet that never went home, against the Tarkan High Command, which plants its own outposts there, so that research is the recovery of what was lost.
+
 ---
 
 ## 2. Decided by the owner (2026-10-04)
@@ -115,18 +117,20 @@ Whether a front stays interesting for weeks with a few friends and their deputie
 
 ## 10. Open questions
 
-Each is the owner's. A phase design that takes one up decides it there, and [the Horizon plan](ImplementationPlan-Horizon.md) proposes in which phase.
+Each is the owner's. A phase design that takes one up decides it there; until then each open one is a gate of [the Horizon plan](ImplementationPlan-Horizon.md), which proposes in which phase, and is listed there rather than here.
+
+- **O1 — Progression** (§6.1): the Horizon plan's G1.
+- **O2 — The bound on fleets** (§6.2). Decided (owner, 2026-10-06): a cap on command points that the Command Station's level buys, rather than the nodes a player holds, with dearer ships (Game §economy.fleetcap; ADR-071). How the cap works across a galaxy's systems is the Horizon plan's G4.
+- **O3 — Ore over a season** (§6.3): the Horizon plan's G3, which puts a sink or a bound on the bank first.
+- **O4 — The deputy's directives** (§4). Decided for a world: the deputy is a keeper (owner, 2026-10-08; Game §ai.deputy; ADR-079 decision 6).
+- **O5 — Where triggers are evaluated** (§5). Decided: the server, whose events the client's alerts read too (owner, 2026-10-08; Game §orders.scheduled; ADR-080 decision 1; ADR-059 decision 1).
+- **O6 — Diplomacy**: the Horizon plan's F3.
+- **O7 — Reach**: the Horizon plan's F4. A web view of the galaxy would reopen ADR-001 and R14.
+- **O8 — The world beyond one map.** Decided (owner, 2026-10-06): a system is as large as the game's map, `sizeMeters` in `Map.json`, and that map is the first system (Game §map); a Shipyard and a Repair Bay stand only in a held sector (Game §structures.sites). How a fleet travels between systems is the Horizon plan's G2; whether a galaxy is one `Simulation` or one for each system is its §2; whether a system needs pathing by sector waits on the tick's budget in Release ([Budgets](../Design/Budgets.md)).
+- **O9 — Seasons of months** (§7): no phase design takes it up yet, so it is a gate here.
 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
-| O1 | **Progression** (§6.1): research tiers opened by holding systems with derelicts and a precursor vault; what losing a vault does to a tier not finished; whether the Lab's levels stay as a second gate. | this document | A galaxy's progression (the Horizon plan's Phase 6) | open |
-| O2 | **The bound on fleets** (§6.2). Decided (owner, 2026-10-06): a cap on command points that the Command Station's level buys, rather than the nodes a player holds, with dearer ships (Game §economy.fleetcap; ADR-071). Open: how the cap works across the systems of a galaxy. | this document | A galaxy's fleet cap (the Horizon plan's Phase 6) | open |
-| O3 | **Ore over a season** (§6.3): fields that recover, or fields that appear; the Horizon plan proposes a sink or a bound on the bank first. | this document | A galaxy's economy (the Horizon plan's Phase 6) | open |
-| O4 | **The deputy's directives** (§4): what a player can tell its deputy, and how well it must play. Decided for a world: the deputy is a keeper (owner, 2026-10-08; Game §ai.deputy; ADR-079 decision 6). | this document | nothing | decided 2026-10-08 |
-| O5 | **Where triggers are evaluated** (§5): the server or the deputy. Decided: the server, whose events the client's alerts read too (owner, 2026-10-08; Game §orders.scheduled; ADR-080 decision 1; ADR-059 decision 1). | this document | nothing | decided 2026-10-08 |
-| O6 | **Diplomacy.** A free-for-all among friends and AI empires grows alliances by itself, and with them a player who decides the winner between the others. Accepted as it comes, or designed for. | this document | A season with friends (the Horizon plan's Phase 7) | open |
-| O7 | **Reach.** A check-in needs the PC. The server can post "40 ships inbound to Kessler-3, arriving 21:40" to the friends' group chat through WinHTTP, which is in the Windows SDK, so R14 is not touched, though a dependency on a service deserves an ADR. A web view of the galaxy would reopen ADR-001 and R14. | this document | Notifications (the Horizon plan's Phase 7) | open |
-| O8 | **The world beyond one map.** A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems. Decided (owner, 2026-10-06): a system is as large as the game's map, `sizeMeters` in `Map.json`, and that map is the first system (Game §map); a Shipyard and a Repair Bay stand only in a held sector, rather than anywhere (Game §structures.sites). Open: how a fleet travels between systems, by a jump between linked Relays or a gate at a system's edge; whether a galaxy is one `Simulation` or one for each system (§3); and whether a system needs pathing by sector, the next step if the engine misses its budget on the game's map in Release (owner, 2026-10-07; [Budgets](../Design/Budgets.md)). | this document | A galaxy (the Horizon plan's Phase 6) | open |
 | O9 | **Seasons of months** (§7): upgrade steps between state versions, the galaxy's arc over a season, how a season ends, and how far a deputy carries a seat over absences of weeks. | this document | Seasons of months (the Horizon plan's Phase 8) | open |
 
 ---

@@ -1,6 +1,6 @@
 # ADR-005 — PIX event markers in the client, in Debug
 
-Status: **accepted** · 2026-09-30
+Status: **accepted** · 2026-10-11
 Owns: pix-markers, pix-event-runtime-package
 
 ## Context

@@ -31,7 +31,7 @@ ADR-002 decision 5 has the client draw only snapshots, never server state, and A
    - **The HUD's own clicks:** a press on a HUD button queues a job or arms a placement, a left press or drag on the minimap moves the camera there, and a right press on it sends the selected ships there. None of these reach the controls as clicks in the world.
    - **Control groups:** Ctrl+digit stores the selection, and the digit recalls it. A second tap within 400 ms centers the camera on the group.
    - **Pruning:** ships that are gone, or no longer the player's, drop out of the selection and the groups.
-   - **Feedback:** the selection is drawn as a ring on the ground around each ship, green, or amber while attack-move or a standing order waits for its click ([ADR-059](ADR-059-alerts-and-standing-orders.md) decision 7). The drag box is drawn as its outline on the ground.
+   - **Feedback:** the selection is drawn as a ring on the ground around each ship, green, or amber while attack-move or a standing order waits for its click ([ADR-067](ADR-067-selection-ring-at-a-fixed-width.md) decision 1). The drag box is drawn as its outline on the ground.
 6. *(retired)*
 
 ## Consequences

@@ -8,9 +8,7 @@ This document says what the game is, rule by rule, as a player meets it in the b
 
 ## Overview [§overview]
 
-Outpost Commander is a real-time strategy game in space, built on the model of Warzone 2100. Two players each start with a Command Station in opposite corners of a star system. They mine its asteroids for Ore, recover lost technology through research, design their own warships from components, and use them to take the system's territory and destroy each other's production. Both play by one set of rules, with the same components, research and numbers, whoever plays them (ADR-008 decision 3).
-
-**The premise.** A century ago the jump relays went dark. The colonists on the far side, the Terrakin, were left with what they had brought: mining tools, a few shipyards, and the wrecks of a fleet that would never go home. The Kessler Reach is thick with ore and with those wrecks, and whoever holds it can rebuild. The player is an outpost commander; the rival is the Tarkan High Command, which plants its own outposts in the Reach. Research is the recovery of what was lost rather than invention. The premise is flavor: no screen names a faction, and the two sides differ only in how they are drawn (Game §look.models.sets).
+Outpost Commander is a real-time strategy game in space, built on the model of Warzone 2100. Two players each start with a Command Station in opposite corners of a star system. They mine its asteroids for Ore, research components and upgrades, design their own warships from components, and use them to take the system's territory and destroy each other's production. Both play by one set of rules, with the same components, research and numbers, whoever plays them (ADR-008 decision 3).
 
 **The loop.**
 
@@ -718,7 +716,7 @@ Ships and armed structures fight by a few fixed rules that the server plays ever
 
 ## Research [§research]
 
-Research is recovery: the technology lost with the old fleet, taken back a topic at a time. A player's one Research Lab works through a queue of topics, each paid for in Ore when it starts and taking its own time. A topic either raises a rate or unlocks a component, and what a player researches decides which designs it can build. The topics come in three tiers, and the Lab's levels open the second and the third. What research does is its player's alone.
+A player's one Research Lab works through a queue of topics, each paid for in Ore when it starts and taking its own time. A topic either raises a rate or unlocks a component, and what a player researches decides which designs it can build. The topics come in three tiers, and the Lab's levels open the second and the third. What research does is its player's alone.
 
 ### The Research Lab [§research.lab]
 
@@ -806,7 +804,7 @@ Research is recovery: the technology lost with the old fleet, taken back a topic
 
 ## Pirates, salvage and repair [§neutrals]
 
-Beside the two players, the map holds two kinds of neutral content. Pirates guard outposts on some nodes, keep their sectors from being claimed, and leave a wreck when they are cleared. Derelicts, wrecks of the old fleet, lie in the sectors between the homes and the middle, and a player's Constructors salvage them for Ore and for research. Where both are placed is Game §map. A damaged ship is repaired by Constructors or at a base, for nothing.
+Beside the two players, the map holds two kinds of neutral content. Pirates guard outposts on some nodes, keep their sectors from being claimed, and leave a wreck when they are cleared. Derelicts, wrecks with no owner, lie in the sectors between the homes and the middle, and a player's Constructors salvage them for Ore and for research. Where both are placed is Game §map. A damaged ship is repaired by Constructors or at a base, for nothing.
 
 ### Pirates [§neutrals.pirates]
 
@@ -847,7 +845,7 @@ Beside the two players, the map holds two kinds of neutral content. Pirates guar
 
 ### Derelicts [§neutrals.derelicts]
 
-- **A derelict is a wreck of the old fleet.** It has no owner and no hit points, and nothing can fire at it (ADR-074 decision 1).
+- **A derelict is a wreck.** It has no owner and no hit points, and nothing can fire at it (ADR-074 decision 1).
 - **It holds Ore, and may name a research topic** (ADR-074 decision 1; Game §map.derelicts).
 - **It blocks no path, but no structure may stand on one**, and the ghost of a structure placed over one is red (ADR-074 decision 1).
 - **Under fog it is treated as an enemy's structure:** it is seen within sight, remembered out of sight with what it holds, and forgotten once its place is in sight without it (ADR-074 decision 7; Game §sight.memory).
@@ -1122,7 +1120,7 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 - **The AI plays at Easy, Normal or Hard:** a skirmish at the difficulty the menu's button named, and a world's AI empire at its seat's difficulty (ADR-065 decisions 1 and 4; ADR-079 decision 7; Game §session.menu).
 - **Each difficulty is a settings file of its own:** Normal is `Opponent.json`, and `OpponentEasy.json` and `OpponentHard.json` stand beside it, each whole and read as strictly as the tuning data. The server never reads them: they are how one player plays, not the match's rules (ADR-065 decision 1; ADR-020 decision 2).
 - **Every difficulty plays the same rules; only the numbers differ** ([Catalogue: constructors](Reference/Catalogue.md#constructors), [Catalogue: contestedAsteroids](Reference/Catalogue.md#contestedAsteroids), [Catalogue: incomePerShipyardOrePerSecond](Reference/Catalogue.md#incomePerShipyardOrePerSecond), [Catalogue: shipyardQueueJobs](Reference/Catalogue.md#shipyardQueueJobs), [Catalogue: reviewIntervalSeconds](Reference/Catalogue.md#reviewIntervalSeconds), [Catalogue: attackGroupShips](Reference/Catalogue.md#attackGroupShips), [Catalogue: retreatLossShare](Reference/Catalogue.md#retreatLossShare), [Catalogue: attackWithoutLeadShare](Reference/Catalogue.md#attackWithoutLeadShare), [Catalogue: attackCapShare](Reference/Catalogue.md#attackCapShare), [Catalogue: raidShips](Reference/Catalogue.md#raidShips), [Catalogue: claimSectors](Reference/Catalogue.md#claimSectors), [Catalogue: pirateMargin](Reference/Catalogue.md#pirateMargin)).
-  - **Easy has a smaller hand.** Against Normal it keeps fewer Constructors, takes fewer contested rigs, builds fewer Shipyards for its income, keeps fewer jobs queued, reviews the enemy's fleet less often, waits for a larger reserve before its main attack, and a larger one again without a lead, waits for a full fleet cap, falls back after fewer losses, wants a larger margin over a pirate outpost, sends no raids and claims no sector beyond those its rigs take it to (ADR-065 decision 2; ADR-041 decisions 1 and 2; ADR-076 decision 3).
+  - **Easy has a smaller hand.** Against Normal it keeps fewer Constructors, takes fewer contested rigs, builds fewer Shipyards for its income, keeps fewer jobs queued, reviews the enemy's fleet less often, waits for a larger reserve before its main attack, and a larger one again without a lead, waits under the fleet cap for all the room the cap leaves it rather than a share of it, falls back after fewer losses, wants a larger margin over a pirate outpost, sends no raids and claims no sector beyond those its rigs take it to (ADR-065 decision 2; ADR-041 decisions 1 and 2; ADR-076 decision 3).
   - **Hard fights harder for territory.** Against Normal it keeps more Constructors, reviews the enemy's fleet more often, raids with more ships, attacks with a smaller group that falls back after fewer losses, and wants a smaller margin over a pirate outpost (ADR-065 decision 3; ADR-041 decisions 1 and 2; ADR-076 decision 3).
 - **A deputy plays from Normal's file,** whatever the difficulty of the world's AI empires (ADR-079 decision 6).
 
@@ -1439,7 +1437,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **Every entity is a mark at its size, or at a least size:** a ship a small square, a structure a larger one, in its side's color, the player's blue, the enemy's red and the pirates' violet. The neutral marks are drawn first, so a rig's mark shows over its asteroid's (ADR-015 decision 4; ADR-043 decision 7; ADR-073 decision 10).
 - **An ore asteroid is an outlined square in a darkened gold,** at least 8 units across, so it differs from an enemy's filled mark in shape as well as in color. One that has run dry is outlined in rust. An asteroid field is a dark gray square, darker than ore, and a derelict a light gray one (ADR-043 decisions 7 and 8; ADR-035 decision 5; ADR-074 decision 10).
 - **The fog lies over the marks,** dark where the player has never seen and dimmed where it has seen before, as Game §sight.drawn has it, with the explored ground lighter here than on the ground of the world (ADR-052 decision 4; ADR-081 decision 6).
-- **The territory is drawn over the fog, since every player sees it:** every sector's border, and each held or guarded sector washed faintly in its holder's color under the marks and outlined in it over the fog, its outline dashed while it is cut off and hatched while it is suppressed. While the player places a Relay, each sector whose node it could claim now is outlined inside its border in the player's blue. No node has a mark (ADR-081 decision 7; Game §territory.shown).
+- **The territory is drawn over the fog, since every player sees it:** every sector's border, and each held or guarded sector washed faintly in its holder's color under the marks and outlined in it over the fog, its outline dashed while it is cut off, and the whole sector hatched in its holder's color while it is suppressed. While the player places a Relay, each sector whose node it could claim now is outlined inside its border in the player's blue. No node has a mark (ADR-081 decision 7; Game §territory.shown).
 - **What the player only remembers is a cross in its side's color over the fog,** a derelict's in the derelicts' gray (ADR-081 decision 4).
 - **Each alert's place is an outlined square in the warning's color,** over everything else (ADR-059 decision 2).
 - **The camera's view is the ground the screen's four corners show, joined in turn,** so it shows the near side and the far and turns with the camera; what runs past the map is cut at the minimap's edge (ADR-015 decision 4).
@@ -1679,7 +1677,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 What the game does not do, at the head of `main`. A rule that a chapter already states as an absence is that chapter's, and is only pointed to here. What the game may become is the [Horizon](OutpostCommander-Horizon.md)'s, which decides nothing.
 
 - **Play.**
-  - There is no campaign and no story beyond the premise (Game §overview).
+  - There is no campaign and no story: no screen names a faction, and the two sides differ only in how they are drawn (Game §look.models.sets).
   - Two people play each other only in a world; a skirmish is always against the AI (Game §session.skirmish).
   - There is one map, the one the game ships, with two starts: no other map, no map with spare starts, and no world of more than two seats (ADR-036 decision 4; ADR-078 decision 2).
   - There is one star system: no travel between systems, and no jump from Relay to Relay (Game §map).
