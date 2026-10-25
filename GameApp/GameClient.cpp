@@ -716,8 +716,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     const bool designerOpen = m_windows.IsOpen(WindowKind::Designer);
     if (!designerOpen)
       m_designer.EndEditing();
+    // A locked part's card answers the pointer with its preview, and takes no click (ADR-017 decision 7).
     const std::optional<Hud::Action> hovered =
-      m_hudLayout.ActionAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
+      m_hudLayout.HoverAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
     // The order the next left-click gives, whose button the HUD lights (ADR-088 decision 2).
     std::optional<Hud::ActionKind> armed;
     if (m_controls.IsAttackMoveArmed())

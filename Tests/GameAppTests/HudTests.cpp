@@ -289,12 +289,14 @@ std::vector<float> ReachableSteps(std::uint32_t _widthPixels, std::uint32_t _hei
   return reachable;
 }
 
-// What 14.1's and 14.2's tests lay out: the menu, and the longest content with its parts locked and unlocked, and with the
-// Small hull previewed in place of the loaded design's Medium, which makes some figures better and some worse; at every
-// step of the interface's own scale that the windows fit (ADR-070), each named with its step.
+// What 14.1's and 14.2's tests lay out: the menu, and the longest content with its parts locked and unlocked, with the
+// Small hull previewed in place of the loaded design's Medium, which makes some figures better and some worse, and with
+// the locked Large hull previewed, whose help line names its topic (ADR-017 decision 7); at every step of the interface's own scale
+// that the windows fit (ADR-070), each named with its step.
 std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
 {
   const Outpost::Hud::Action smallHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}};
+  const Outpost::Hud::Action largeHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{3}};
   std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> layouts;
   for (const float factor : ReachableSteps(_widthPixels, _heightPixels))
   {
@@ -303,6 +305,8 @@ std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::u
     layouts.emplace_back(L"locked" + step, Lay(LongestContent(false), _widthPixels, _heightPixels, {}, nullptr, factor));
     layouts.emplace_back(L"unlocked" + step, Lay(LongestContent(true), _widthPixels, _heightPixels, {}, nullptr, factor));
     layouts.emplace_back(L"previewing" + step, Lay(LongestContent(true, smallHull), _widthPixels, _heightPixels, {}, nullptr, factor));
+    layouts.emplace_back(L"previewing a locked part" + step,
+                         Lay(LongestContent(false, largeHull), _widthPixels, _heightPixels, {}, nullptr, factor));
   }
   return layouts;
 }
@@ -1957,6 +1961,110 @@ public:
     const Outpost::Hud::DesignerPanel same =
       DesignerOf(newest, designer, Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}});
     Assert::IsFalse(same.bars[0].previewShare.has_value());
+  }
+
+  // ADR-017 decision 7: a locked hull, drive, weapon or module previews the design it would make, as an open
+  // one does, at the player's research as it stands, and the help line names the topic that unlocks it, so the preview
+  // is not read as a pick. Each previews the same figures as the part would once researched.
+  TEST_METHOD(PreviewsALockedPart)
+  {
+    using Kind = Outpost::Hud::ActionKind;
+    const Outpost::ModuleView sensors{
+      .id = Outpost::ModuleId{1}, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .speedFactor = 0.9, .cost = 40};
+    Outpost::Snapshot locked = DesignerSnapshot();
+    locked.modules = {sensors};
+    Outpost::Snapshot open = DesignerSnapshot(true);
+    open.modules = {sensors};
+    open.modules.front().available = true;
+    Outpost::Designer designer;
+    designer.Update(locked);
+    const std::array<std::pair<Outpost::Hud::Action, std::string>, 4> parts{{
+      {{.kind = Kind::PickHull, .hull = Outpost::HullId{3}}, "Preview: with Large, once Large Hull is researched"},
+      {{.kind = Kind::PickDrive, .drive = Outpost::DriveId{2}}, "Preview: with Fusion, once Fusion Drive is researched"},
+      {{.kind = Kind::PickWeapon, .weapon = Outpost::WeaponId{3}}, "Preview: with Missile Rack, once Missile Rack is researched"},
+      // No topic unlocks a module.
+      {{.kind = Kind::PickModule, .module = Outpost::ModuleId{1}}, "Preview: with Sensor Array, once it is researched"},
+    }};
+    for (const auto& [part, hint] : parts)
+    {
+      const Outpost::Hud::DesignerPanel panel = DesignerOf(locked, designer, part);
+      Assert::AreEqual(hint, panel.hint);
+      const Outpost::Hud::DesignerPanel researched = DesignerOf(open, designer, part);
+      Assert::AreEqual(researched.bars.size(), panel.bars.size());
+      Assert::IsTrue(std::ranges::any_of(panel.bars, [](const Outpost::Hud::StatBar& _bar) { return _bar.previewShare.has_value(); }));
+      for (std::size_t i = 0; i < panel.bars.size(); ++i)
+      {
+        Assert::AreEqual(researched.bars[i].previewValue, panel.bars[i].previewValue, std::wstring(winrt::to_hstring(hint)).c_str());
+        Assert::IsTrue(researched.bars[i].previewShare == panel.bars[i].previewShare);
+        Assert::IsTrue(researched.bars[i].change == panel.bars[i].change);
+      }
+      for (std::size_t i = 0; i < panel.damage.size(); ++i)
+      {
+        Assert::AreEqual(researched.damage[i].perShip, panel.damage[i].perShip);
+        Assert::AreEqual(researched.damage[i].perShipChange, panel.damage[i].perShipChange);
+      }
+      Assert::AreEqual(std::string("Small"), panel.slots[0].picked, L"nothing is picked");
+    }
+    // The Large hull's own figures, as Game §ships.designer.figures lays a preview out.
+    const Outpost::Hud::DesignerPanel large = DesignerOf(locked, designer, parts[0].first);
+    Assert::AreEqual(std::string("1,080 (+882)"), large.bars[0].previewValue);
+  }
+
+  // ADR-017 decision 7: a locked card answers the pointer and takes no click. Its area is a preview's, which HoverAt finds and
+  // ActionAt does not; hovered, it keeps its hatching, its research line and its edge, and lights nothing, and the help
+  // line naming its topic is laid out whole.
+  TEST_METHOD(ALockedCardPreviewsAndTakesNoClick)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot();
+    Outpost::Designer designer;
+    designer.Update(newest);
+    const Outpost::Hud::Action large{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{3}};
+    const auto layOut = [&](std::optional<Outpost::Hud::Action> _hovered)
+    {
+      Outpost::Hud::Content content;
+      content.designer = DesignerOf(newest, designer, _hovered);
+      return Lay(content, 1920, 1080, {}, nullptr, 1.0f, _hovered);
+    };
+    const Outpost::Hud::Layout still = layOut(std::nullopt);
+    const auto card = std::ranges::find(still.previews, large, [](const auto& _entry) { return _entry.second; });
+    Assert::IsTrue(card != still.previews.end(), L"the locked card answers the pointer");
+    Assert::IsTrue(std::ranges::none_of(still.actions, [&](const auto& _entry) { return _entry.second == large; }), L"and is no button");
+    const float x = card->first.left + (card->first.width / 2.0f);
+    const float y = card->first.top + (card->first.height / 2.0f);
+    Assert::IsFalse(still.ActionAt(x, y).has_value(), L"a click on it does nothing");
+    Assert::IsTrue(still.HoverAt(x, y) == large, L"the pointer on it previews the Large hull");
+    const Outpost::Hud::Action small{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{2}};
+    const auto open = std::ranges::find(still.actions, small, [](const auto& _entry) { return _entry.second; });
+    Assert::IsTrue(open != still.actions.end());
+    Assert::IsTrue(still.HoverAt(open->first.left + 1.0f, open->first.top + 1.0f) == small, L"an open card is a button still");
+
+    const Outpost::Hud::Layout hovered = layOut(large);
+    const auto inCard = [&](const Outpost::Hud::Layout& _layout)
+    {
+      std::vector<Outpost::Hud::Rect> panels;
+      std::ranges::copy_if(_layout.panels, std::back_inserter(panels),
+                           [&](const Outpost::Hud::Rect& _panel)
+                           {
+                             return _panel.left >= card->first.left && _panel.left < card->first.left + card->first.width &&
+                                    _panel.top >= card->first.top && _panel.top < card->first.top + card->first.height;
+                           });
+      return panels;
+    };
+    const std::vector<Outpost::Hud::Rect> before = inCard(still);
+    const std::vector<Outpost::Hud::Rect> after = inCard(hovered);
+    Assert::AreEqual(before.size(), after.size());
+    for (std::size_t i = 0; i < before.size(); ++i)
+    {
+      Assert::IsTrue(before[i].color.x == after[i].color.x && before[i].color.y == after[i].color.y &&
+                       before[i].color.z == after[i].color.z && before[i].fill == after[i].fill,
+                     L"its face, hatching and edge as they were: it lights nothing");
+    }
+    Assert::IsTrue(std::ranges::find(hovered.texts, std::string("RESEARCH \xC2\xB7 LARGE HULL"), &Outpost::Hud::Text::text) !=
+                     hovered.texts.end(),
+                   L"its research line stays");
+    Assert::IsTrue(std::ranges::find(hovered.texts, std::string("Preview: with Large, once Large Hull is researched"),
+                                     &Outpost::Hud::Text::text) != hovered.texts.end(),
+                   L"the help line, whole");
   }
 
   // Game §ships.designer.queue: picks that are no saved design are saved first by Queue (ADR-023); ×N asks for N ships at N

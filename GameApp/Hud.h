@@ -719,8 +719,8 @@ public:
   };
 
   // A floating window as laid out (ADR-031): its kind; where it stands, its title bar and its close box, in pixels; its
-  // top-left corner in reference units, as WindowManager::Grab takes it; and where its panels, lines, texts, sprites and
-  // buttons start in the layout's lists. Each runs to where the next window's starts, or to the list's end.
+  // top-left corner in reference units, as WindowManager::Grab takes it; and where its panels, lines, texts, sprites,
+  // buttons and previews start in the layout's lists. Each runs to where the next window's starts, or to the list's end.
   struct Window
   {
     WindowKind kind = WindowKind::Designer;
@@ -733,6 +733,7 @@ public:
     std::size_t firstText = 0;
     std::size_t firstSprite = 0;
     std::size_t firstAction = 0;
+    std::size_t firstPreview = 0;
   };
 
   // A layer's share of one of the layout's lists, from first up to end.
@@ -752,6 +753,8 @@ public:
     std::vector<Text> texts;
     // Where each enabled button is, for clicks.
     std::vector<std::pair<Rect, Action>> actions;
+    // Where each locked part's card is, which answers the pointer with its preview and takes no click (ADR-017 decision 7).
+    std::vector<std::pair<Rect, Action>> previews;
     // The minimap's drawing area, the map's square; empty when there is no minimap.
     Rect minimap;
     float mapSizeMeters = 0.0f;
@@ -774,6 +777,7 @@ public:
     [[nodiscard]] Span TextsOf(std::size_t _layer) const noexcept;
     [[nodiscard]] Span SpritesOf(std::size_t _layer) const noexcept;
     [[nodiscard]] Span ActionsOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span PreviewsOf(std::size_t _layer) const noexcept;
     // The front window under a point, if any.
     [[nodiscard]] const Window* WindowAt(float _xPixels, float _yPixels) const noexcept;
 
@@ -781,6 +785,9 @@ public:
     [[nodiscard]] bool Covers(float _xPixels, float _yPixels) const noexcept;
     // The enabled button of the front layer under a point, if any: a button of the HUD under a window takes no click.
     [[nodiscard]] std::optional<Action> ActionAt(float _xPixels, float _yPixels) const noexcept;
+    // What the pointer is over in the front layer: its enabled button, as ActionAt finds it, or else a locked part's card,
+    // whose pick the designer previews and a click does not make.
+    [[nodiscard]] std::optional<Action> HoverAt(float _xPixels, float _yPixels) const noexcept;
     // The point on the map under a point on the minimap, if it is on the minimap.
     [[nodiscard]] std::optional<PlanePosition> MapPointAt(float _xPixels, float _yPixels) const noexcept;
     // Where a point on the map shows on the minimap, in pixels, held to the minimap's edge.

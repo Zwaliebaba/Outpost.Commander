@@ -612,6 +612,7 @@ The designer is the window in which a player puts designs together, saves them a
   - Each card is rated against the best any design does to that hull: good from two thirds of it, fair from a third, and poor below. The production window's cards carry the same rating (ADR-017 decision 7; ADR-068 decision 3).
   - A weapon with a splash is counted for every ship of a formation of that hull that one hit reaches, and the card says how many (ADR-014 decision 12; Game §combat.splash).
 - **Hovering a card previews it.** The bars and the damage cards show the design with that component in place, and the change against the design picked; the help line says so (ADR-017 decision 7; ADR-058 decision 7).
+- **A locked card previews what its topic buys.** Hovered, it shows the design it would make at the player's research as it stands, and the help line names the topic that unlocks it; it still takes no click, and keeps its hatching and its research line (ADR-017 decision 7).
 
 #### Saving and queuing [§ships.designer.queue]
 
