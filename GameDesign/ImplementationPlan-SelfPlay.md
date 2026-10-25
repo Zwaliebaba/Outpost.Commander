@@ -2,23 +2,23 @@
 
 Status: **open** · Started 2026-10-04, when the owner opened self-play as a side project and answered its first questions · Revised that day for Phase 3's draft and the horizon · Derived from [ADR-063](../Design/ADR/ADR-063-self-play-probe.md) and [the network's blueprint](../Design/SelfPlayNetwork.md)
 
-Self-play is a side project beside the game's phases. AIs fight each other, and a search keeps what wins. It is a probe of the match's rules, and it changes nothing a player sees. [The Phase 2 plan](Archive/ImplementationPlan-Phase2.md) stays the game's open plan. This plan says **in what order** the side project is built, as a queue of tasks. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed. [The horizon](OutpostCommander-Horizon.md), the owner's long-term direction, amends nothing here; the blueprint's §16 says what it changes for the network.
+Self-play is a side project beside the game's phases. AIs fight each other, and a search keeps what wins. It is a probe of the match's rules, and it changes nothing a player sees. The game's phases keep plans of their own. This plan says **in what order** the side project is built, as a queue of tasks. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed. [The horizon](OutpostCommander-Horizon.md), the owner's long-term direction, amends nothing here; the blueprint's §16 says what it changes for the network.
 
 ---
 
 ## The owner's answers, 2026-10-04
 
 - **What the network decides:** macro decisions and fleet tactics. Macro decisions are research, designs, and when to attack, hold, raid or claim. Fleet tactics are which target a group goes for and when it falls back. The scripted AI keeps placement, the Constructors and pathing.
-- **What it is for:** a probe of the rules. The opponent the game ships stays the scripted one (design §10, ADR-041).
+- **What it is for:** a probe of the rules. The opponent the game ships stays the scripted one (Game §ai, ADR-041).
 - **Where it trains:** an x64 laptop, on the Release|x64 build.
 - **What comes first:** a search over `Opponent.json`'s numbers, with no network. It is the baseline a network has to beat.
 - **For Phase 3 and the horizon,** later that day: the blueprint and this plan target Phase 3's rules, and take from the horizon only what costs nothing on today's map. The network stays the probe, and becomes the benchmark for the horizon's deputy. Whether a learned policy should ever command a seat in a season is gate N6, still open.
 
 ## How an agent uses this plan
 
-1. **Read AGENTS.md, ADR-063 and ADR-020, then the blueprint for milestone SP2, and Phase 3's draft, whose rules SP2 targets.**
+1. **Read AGENTS.md, ADR-063 and ADR-020, then the blueprint for milestone SP2, and [the living design](OutpostCommander.md) for the rules as built.** SP2 targets Phase 3's rules, and [the post-mortems](Records/PostMortems.md) say what each phase since has changed.
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone, in milestone order.
-3. **Tasks are numbered SP\<milestone\>.\<task\>,** apart from the game's milestones, so that the phases keep their numbers. The blueprint's open questions are gates N1 to N6.
+3. **Tasks are numbered SP\<milestone\>.\<task\>,** apart from the game's milestones, so that the phases keep their numbers. The blueprint's open questions are gates N1 to N6, and this plan's own is gate S1.
 4. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU. The server, the AI and the switch build and run there against a stand-in for the Windows headers, as the phases' did. A search on the real build is the owner's run.
 
 ---
@@ -29,18 +29,29 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 |---|---|---|---|---|
 | SP1.1 | `--ai-matches` plays any two settings | — | — | done, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
 | SP1.2 | The search over the AI's numbers | SP1.1 | — | done, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
-| SP1.3 | The first search, and what it found | SP1.2 | — | todo: owner run |
+| SP1.3 | The first search, and what it found | SP1.2, SP1.5 | — | todo: owner run |
 | SP1.4 | The search follows Phase 3 | SP1.2, Phase 3's AI | — | done, [#80](https://github.com/Zwaliebaba/Outpost.Commander/pull/80) |
-| SP2.1 | The network's shape, as an ADR | SP1.3 | N1–N6 decided | todo |
+| SP1.5 | Knobs for Phase 4's AI numbers | SP1.4 | — | todo |
+| SP2.1 | The network's shape, as an ADR | SP1.3 | S1, N1–N6 | todo |
 | SP2.2 | The network plays | SP2.1, Phase 3 built | — | todo |
 | SP2.3 | Trajectories, the warm start and the trainer | SP2.2 | — | todo |
 | SP2.4 | The league, and what the network found | SP2.3 | — | todo: owner run |
 
 ### Milestone order
 
-SP1, then SP2. The network is built only once the search over the numbers has a result, because that result is its baseline. SP1 answers what fixed numbers can do. SP2 answers what decisions that adapt to the match can do on top of them.
+SP1, then SP2. The network is built only once the search over the numbers has a result, because that result is its baseline. SP1 answers what fixed numbers can do. SP2 answers what decisions that adapt to the match can do on top of them. SP1.5 comes before SP1.3, since the search's self-test fails until the knobs follow `Opponent.json` again.
 
 SP2 targets Phase 3's rules, which were built and run by 2026-10-04, so SP2.2 waits only for SP2.1. SP1.4 brought the search up to Phase 3's AI ([#80](https://github.com/Zwaliebaba/Outpost.Commander/pull/80)). Nothing in this plan builds for the horizon's galaxy, its seasons or more than two players; the blueprint's §16 lists what waits for a phase design that takes them up.
+
+---
+
+## Gates
+
+The network's own questions are the blueprint's gates N1 to N6, which SP2.1 needs decided. This plan has one more.
+
+| Gate | Decision | Proposed in | Blocks | Status |
+|---|---|---|---|---|
+| S1 | **What follows the first search.** Once SP1.3 has sorted what the champion does into a rule that wants changing, a weakness of the scripted AI, or neither, the owner decides what follows: a rules change, an AI change, SP2, or nothing. | SP1.3 | SP2.1 | open |
 
 ---
 
@@ -68,12 +79,12 @@ SP2 targets Phase 3's rules, which were built and run by 2026-10-04, so SP2.2 wa
   - Run `Tools\SelfPlay.py`, with `--generations` set to what the night allows.
   - Read `report.txt`.
   - Record here what the champion does, and sort each finding: a rule that wants changing, a weakness of the scripted AI, or neither.
-  - The owner decides what follows: a rules change, an AI change, SP2, or nothing.
+  - The owner decides what follows: a rules change, an AI change, SP2, or nothing (gate S1).
 - **Verify:** **owner run.**
 
 ### SP1.4 — The search follows Phase 3
 
-- **Goal:** the search moves Phase 3's numbers too, once Phase 3's AI has them in `Opponent.json` (Phase 3 §8).
+- **Goal:** the search moves Phase 3's numbers too, once Phase 3's AI has them in `Opponent.json` (Game §ai.levels).
 - **Scope:** `Tools/SelfPlay.py`'s table of knobs follows `Opponent.json` as Phase 3 leaves it. Its upgrade numbers are added, each with a range that holds its packaged value, and any number Phase 3 removes is taken out. The research order follows the packaged file by itself: 23 topics once the gateways go.
 - **Verify:** `--self-test`, which checks that the packaged settings lie in every range and decode to themselves, and a short search in the container.
 - **As built:** [ADR-063](../Design/ADR/ADR-063-self-play-probe.md) decisions 3 and 6, and ADR-020 decision 14, edited in place.
@@ -83,6 +94,15 @@ SP2 targets Phase 3's rules, which were built and run by 2026-10-04, so SP2.2 wa
   - **The report** gives each side's tier 3 beside its tier 2, and when it first finished each level of its Command Station, Shipyards and Lab.
   - **Run in the container:** a search of 6 generations against a stand-in for the game, which writes match logs from the settings it is given, played its matches, promoted its champions and wrote the report with each side's levels. Stopped after 2 generations and resumed to 4, it gave the same history and report as a run straight to 4, and a state saved by version 1 was refused. The stand-in decides nothing as the game does, so this checks the script, not the AI.
   - **The AI, run in the container** on the server and AI built with clang 18 against a stand-in for the Windows headers: seeds 1 to 4, both players at each `secondSlotTier` from 1 to 4. At 1, 2 and 3 every seed logged the same bytes. At 4 no Lab reached level 4, and the two seeds where player 1's Lab had reached it at 3, seeds 1 and 4, played on differently; seed 4's winner then won by production at 50:45 rather than by domination at 57:00. In seeds 2 and 3 no Lab came within reach of level 4, so 4 changed nothing there. A match took 11 to 29 CPU seconds, about 0.42 ms a tick. Floats replay only on one build (ADR-009), so MSVC's Release build may play these seeds differently.
+
+### SP1.5 — Knobs for Phase 4's AI numbers
+
+- **Goal:** the search follows `Opponent.json` again, so that its self-test passes and SP1.3 searches every number the packaged AI plays by.
+- **Why:** Phase 4's AI added three numbers to `Opponent.json` that the table of knobs in `Tools/SelfPlay.py` lacks: `attackCapShare`, the share of the room under the fleet cap that the attack group takes (ADR-041 decision 1); `pirateMargin`, how far a detachment outweighs a pirate outpost in Ore (ADR-076 decisions 2 and 3); and `scoutOwnHalfSeconds`, how long the scout explores its own half (ADR-076 decision 4). The self-test checks that every number of the file has a knob, so `python3 Tools/SelfPlay.py --self-test` fails on `main`: "Opponent.json's numbers and the knobs differ: ['attackCapShare', 'pirateMargin', 'scoutOwnHalfSeconds']".
+- **Scope:**
+  - The three join the table, each with a range that holds its packaged value in `Opponent.json` and keeps to what `AiSettings` accepts: a share above 0 and at most 1, a margin above 0, and seconds not below 0. The table's 24 knobs become 27, and the script's own account of them says so.
+  - The saved state's version moves on, as SP1.4's did, so a search saved with fewer knobs is refused rather than read wrongly.
+- **Verify:** `--self-test`, and a short search in the container, stopped and resumed.
 
 ---
 

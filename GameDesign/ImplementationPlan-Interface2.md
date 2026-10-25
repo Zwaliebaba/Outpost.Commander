@@ -10,7 +10,7 @@ This plan puts the review's recommendations in order, as a queue of tasks. It is
 
 ## How an agent uses this plan
 
-1. **Read AGENTS.md, then the ADRs the task names, then the Phase 5 design's §11** for what the client gains beside this plan. The review is not in the repository; what it found is summarized below, with how each figure was found.
+1. **Read AGENTS.md, then the ADRs the task names, then Game §interface.windows.orders and Game §world.away** for what the client gains beside this plan. The review is not in the repository; what it found is summarized below, with how each figure was found.
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone (owner, 2026-09-30), in the milestone order below, and where V1 places it against Phase 5.
 3. **A gate is an owner decision.** The task does not start until the owner has answered, and the answer is written into the gates table, with its date, first. An answer that changes what a design or an ADR says the interface shows is recorded in the task's ADR, naming what it changes.
 4. **ADRs are edited in place** (AGENTS.md §6). A new one takes the next free number when its task lands; Phase 5's milestones 38 and 39 take numbers too, so this plan reserves none.
@@ -95,18 +95,18 @@ A task whose gate the owner turns down is dropped, and its milestone ships witho
 
 ## Gates
 
-Each is an owner decision, proposed here and in the task it gates. All eight were decided on 2026-10-08, as proposed. Where a proposal left a choice to its task's ADR, the task makes it and records it under its "As built".
+Each is an owner decision, proposed here and in the task it gates. Where a proposal left a choice to its task's ADR, the task makes it and records it under its "As built".
 
-| Gate | Decision | Proposed in | Blocks |
-|---|---|---|---|
-| V1 | **Where this plan stands against Phase 5.** Proposed: UI1, UI2.1 and UI3.1 land before Phase 5's 39.3, the owner's week. A world played for a week is where the map and the memories matter most, and W6 judges the rhythm by it. The rest goes beside Phase 5 or after it. Phase 5's 38.1 moves the alerts' source to the server, and its 38.3 adds an orders window. UI2.1 restyles the alerts' newest line, and UI4.2 the selection's commands; whichever lands second fits around the other. **Decided on 2026-10-08:** as proposed. | this plan | the order |
-| V2 | **Territory and sight in the world** (UI1.1, UI1.3, UI1.4). Sector borders as one-pixel lines in the holder's color. A neutral border brighter than the grid and never wider, the way back ADR-028 left for major lines. A mark on every node, and a node the player could claim now in the player's color. A suppressed and a cut-off border, each told apart from a held one and from each other by pattern, not color. The borders drawn over the fog, as the minimap's are. The same lattice, nodes and states on the minimap. And a seen-before shade of about 0.8 on the ground, up from 0.55, which takes the grid outside sight from 15 of 255 to about 7, computed, against 27 in sight and about 4 where never seen. It changes ADR-028 decision 1's "all alike" and ADR-024 decision 9's shade. **Decided on 2026-10-08:** as proposed. **Revised on 2026-10-09:** no mark on every node, which made the screen busy; the nodes the player could claim are marked only while it places a Relay, in the world and on the minimap. | UI1.1, UI1.3 | UI1.1, UI1.3, UI1.4 |
-| V3 | **Memories** (UI1.2). A remembered entity drawn after the fog, as lines without faces and without bars, with its age on hover and on its selection panel. And where the age comes from. Proposed: the server keeps the tick each remembered structure was last seen, so the age survives a save and a seat taken again (Phase 5). It adds to what `Simulation` holds, so `WORLD_STATE_VERSION` and `PROTOCOL_VERSION` rise (AGENTS.md R18). The other way, the client noting when a structure turned remembered, changes neither, but knows no age after a join. **Decided on 2026-10-08:** as proposed. | UI1.2 | UI1.2 |
-| V4 | **One meaning per color** (UI2.1–UI2.3). A warning as a chip: the word, dark, on a filled tag of the warning's color, never plain text in that color. It marks an idle line's IDLE, an income of nothing and the newest alert; the enemy's figures stay plain text. Build progress in a neutral light gray. For the blast and the glyph, one of three: Ore's glyph becomes another CPU-drawn shape in the same gold (proposed); the particles become round spots, which reverses the owner's choice in ADR-026; or both stay. **Decided on 2026-10-08:** as proposed. | UI2.1 | UI2.1, UI2.2, UI2.3 |
-| V5 | **The status and territory panels** (UI3.1–UI3.3). The Shipyards' line reports what binds them: the cap and the station level that lifts it, Ore, or idle with room. It warns only when an idle Shipyard could start a ship. A click at the cap selects the Command Station. The column's panels take one fixed width, with research and the fleet as bars. The nodes read "3 : 2", with "cap 10 of 25" as a label, under a drain row saying who loses how much a minute and when they reach nothing. The drain row needs the drain's two numbers in the snapshot, so `PROTOCOL_VERSION` rises. **Decided on 2026-10-08:** as proposed. | UI3.1 | UI3.1, UI3.2, UI3.3 |
-| V6 | **Selection and commands** (UI4.2, UI4.3, UI4.5). The command panel stands against the selection panel's right edge, the pair centered at the bottom, so that the two read as one. Attack-move, Hold sector, Patrol and Stop buttons, each with its key's cap, for a selection with a warship. The retreat as three choices. One bar per ship, up to 24, a click on one selecting it. A new design's default name: where its hull, drive and weapon are a starting design's, that design's name with its module's code, "Lancer+SA". **Decided on 2026-10-08:** as proposed. | UI4.2 | UI4.2, UI4.3, UI4.5 |
-| V7 | **Bars on the screen** (UI4.1). Health and build bars drawn by the HUD above their entity, 32 × 5 reference units at any zoom, filling left to right however the camera has turned, under every panel and window. ADR-047's least size becomes the size. It rewrites ADR-028 decision 7's place and ADR-047 decision 4. **Decided on 2026-10-08:** as proposed. | UI4.1 | UI4.1 |
-| V8 | **The scene's weight** (UI5.1, UI5.2). Rock faces at a shade of their own, about half the 0.3 they share with the ships now, with their lines kept. Every field's rocks laid out from its identifier. The gaps between a field's rocks filled with smaller ones, so that the field looks as solid as the circle the server blocks. **Decided on 2026-10-08:** as proposed. | UI5.1 | UI5.1, UI5.2 |
+| Gate | Decision | Proposed in | Blocks | Status |
+|---|---|---|---|---|
+| V1 | **Where this plan stands against Phase 5.** Proposed: UI1, UI2.1 and UI3.1 land before Phase 5's 39.3, the owner's week. A world played for a week is where the map and the memories matter most, and W6 judges the rhythm by it. The rest goes beside Phase 5 or after it. Phase 5's 38.1 moves the alerts' source to the server, and its 38.3 adds an orders window. UI2.1 restyles the alerts' newest line, and UI4.2 the selection's commands; whichever lands second fits around the other. As proposed. | this plan | the order | decided 2026-10-08 |
+| V2 | **Territory and sight in the world** (UI1.1, UI1.3, UI1.4). Sector borders as one-pixel lines in the holder's color. A neutral border brighter than the grid and never wider, the way back ADR-028 left for major lines. A mark on every node, and a node the player could claim now in the player's color. A suppressed and a cut-off border, each told apart from a held one and from each other by pattern, not color. The borders drawn over the fog, as the minimap's are. The same lattice, nodes and states on the minimap. And a seen-before shade of about 0.8 on the ground, up from 0.55, which takes the grid outside sight from 15 of 255 to about 7, computed, against 27 in sight and about 4 where never seen. It changes ADR-028 decision 1's "all alike" and ADR-024 decision 9's shade. As proposed (owner, 2026-10-08), but with no mark on every node, which made the screen busy: the nodes the player could claim are marked only while it places a Relay, in the world and on the minimap (owner, 2026-10-09). | UI1.1, UI1.3 | UI1.1, UI1.3, UI1.4 | decided 2026-10-09 |
+| V3 | **Memories** (UI1.2). A remembered entity drawn after the fog, as lines without faces and without bars, with its age on hover and on its selection panel. And where the age comes from. Proposed: the server keeps the tick each remembered structure was last seen, so the age survives a save and a seat taken again (Phase 5). It adds to what `Simulation` holds, so `WORLD_STATE_VERSION` and `PROTOCOL_VERSION` rise (AGENTS.md R18). The other way, the client noting when a structure turned remembered, changes neither, but knows no age after a join. As proposed. | UI1.2 | UI1.2 | decided 2026-10-08 |
+| V4 | **One meaning per color** (UI2.1–UI2.3). A warning as a chip: the word, dark, on a filled tag of the warning's color, never plain text in that color. It marks an idle line's IDLE, an income of nothing and the newest alert; the enemy's figures stay plain text. Build progress in a neutral light gray. For the blast and the glyph, one of three: Ore's glyph becomes another CPU-drawn shape in the same gold (proposed); the particles become round spots, which reverses the owner's choice in ADR-026; or both stay. As proposed. | UI2.1 | UI2.1, UI2.2, UI2.3 | decided 2026-10-08 |
+| V5 | **The status and territory panels** (UI3.1–UI3.3). The Shipyards' line reports what binds them: the cap and the station level that lifts it, Ore, or idle with room. It warns only when an idle Shipyard could start a ship. A click at the cap selects the Command Station. The column's panels take one fixed width, with research and the fleet as bars. The nodes read "3 : 2", with "cap 10 of 25" as a label, under a drain row saying who loses how much a minute and when they reach nothing. The drain row needs the drain's two numbers in the snapshot, so `PROTOCOL_VERSION` rises. As proposed. | UI3.1 | UI3.1, UI3.2, UI3.3 | decided 2026-10-08 |
+| V6 | **Selection and commands** (UI4.2, UI4.3, UI4.5). The command panel stands against the selection panel's right edge, the pair centered at the bottom, so that the two read as one. Attack-move, Hold sector, Patrol and Stop buttons, each with its key's cap, for a selection with a warship. The retreat as three choices. One bar per ship, up to 24, a click on one selecting it. A new design's default name: where its hull, drive and weapon are a starting design's, that design's name with its module's code, "Lancer+SA". As proposed. | UI4.2 | UI4.2, UI4.3, UI4.5 | decided 2026-10-08 |
+| V7 | **Bars on the screen** (UI4.1). Health and build bars drawn by the HUD above their entity, 32 × 5 reference units at any zoom, filling left to right however the camera has turned, under every panel and window. ADR-047's least size becomes the size. It rewrites the bars' place and their least size, which [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 5 now holds. As proposed. | UI4.1 | UI4.1 | decided 2026-10-08 |
+| V8 | **The scene's weight** (UI5.1, UI5.2). Rock faces at a shade of their own, about half the 0.3 they share with the ships now, with their lines kept. Every field's rocks laid out from its identifier. The gaps between a field's rocks filled with smaller ones, so that the field looks as solid as the circle the server blocks. As proposed. | UI5.1 | UI5.1, UI5.2 | decided 2026-10-08 |
 
 ---
 
@@ -223,11 +223,11 @@ The milestone's tasks share one ADR: one meaning per color.
   - **The HUD gains a chip:** a word in the windows' dark navy on a filled tag of `WARNING_COLOR`, set inside a line of text. Nothing else in the HUD is drawn that way, so a warning differs from the enemy's figures by shape and fill, not by a hue 3° away.
   - **It marks three things:**
     - a status line's IDLE (ADR-066 decision 2);
-    - an income of nothing, "+0/s" (ADR-047 decision 5);
+    - an income of nothing, "+0/s" (ADR-085 decision 1, which now holds the warning);
     - the newest alert (ADR-059 decision 2), whose line otherwise takes the text's color.
   - **The enemy's figures stay plain text** in `ENEMY_COLOR`. A refused name in the designer keeps its color, since it stands in its own field, away from any enemy figure.
   - **Phase 5's 38.1** moves the alerts' source to the server's events. The chip is the HUD's either way.
-- **ADR:** the milestone's. It rewrites ADR-066 decision 2, ADR-047 decision 5 and ADR-059 decision 2 in place.
+- **ADR:** the milestone's. It rewrites ADR-066 decision 2 and ADR-059 decision 2 in place, and takes the warning of an income of nothing, which ADR-085 decision 1 now holds.
 - **Acceptance:** `HudTests`: each of the three drawn as a chip, with a panel under its word; no text in `ENEMY_COLOR` has one; 14.2's contrast test with the chip's text against its fill.
 - **Verify:** CI; run; **owner run.**
 - **As built (2026-10-09):** [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 1.
@@ -305,7 +305,7 @@ The milestone's tasks share one ADR: one meaning per color.
   - **The Ore, status, territory and alerts panels take one fixed width,** so the column's edge stands still. It is the wider of the alerts' 380 units and the measured line of the longest topic's name. This rewrites ADR-066 decision 3's fitted width.
   - **Research reads as its topic's name over a progress bar,** with the queued count at the bar's end, "+3", in place of "Researching Reinforced Structures, 91% (+3 queued)".
   - **The Shipyards read as their counts,** a short label and a figure each, "BUILDING 0 · WAITING 2 · IDLE 3". The fleet reads as a bar against its cap, with "29 / 30".
-  - **The column leaves its foot free** for what Phase 5 adds: §11's panel of what happened while away, and 38.3's orders window.
+  - **The column leaves its foot free** for what Phase 5 adds: the panel of what happened while away (Game §world.away), and 38.3's orders window.
 - **ADR:** ADR-066's.
 - **Acceptance:** `HudTests`: the panels' widths equal and unchanged across every status content; bars at 0, 50 and 100%; 14.1's and 14.2's tests.
 - **Verify:** CI; run; **owner run.**
@@ -331,7 +331,7 @@ The milestone's tasks share one ADR: one meaning per color.
   - **The drain's two numbers join the snapshot's rules,** as `constructorBuildSeconds` did (ADR-068): `drainIntervalSeconds` and `drainTicketsPerNodeDifference` (ADR-057 decision 1). `PROTOCOL_VERSION` rises.
     - The time is the drains needed at the current nodes, rounded up, times the interval.
     - The next drain may be up to an interval away, which the row does not try to show.
-  - **A world has no domination** (Phase 5 §8), so it has no ticket rows, as now.
+  - **A world has no domination** (Game §territory.domination), so it has no ticket rows, as now.
 - **ADR:** ADR-057 decisions 7 and 8 rewritten in place, and ADR-056 decision 11's panel line.
 - **Acceptance:**
   - `HudTests`: ahead, level and behind; the times at shot 1's figures, 32:06, and at shot 5's, 12:09.
@@ -362,18 +362,18 @@ The milestone's looks share one ADR: selection and commands.
   - **A bar is 32 × 5 reference units** at `Hud::Scale`. Whether the player's factor (ADR-070) scales it too, as it scales the HUD and not the world's marks, is the ADR's.
   - **It fills left to right however the camera has turned:**
     - health over build;
-    - the back in the side's color at 0.3 (ADR-028 decision 7);
+    - the back in the side's color at 0.3 (ADR-088 decision 5, which now holds the bars);
     - the health fill green, amber or red as now, and the build fill UI2.2's gray.
   - **Bars are drawn first,** so every panel and window covers them. A remembered entity has none (UI1.2).
   - **When a bar shows does not change:** hurt, under construction, or any while Alt is held (ADR-047).
   - **`DrawHealthBars` and its strips on the ground go.**
   - **The cost** is four quads a bar, against the interface's 8,192 a frame (`UiPipeline::MAX_QUADS`): Alt over 300 entities is 1,200.
-- **ADR:** the milestone's. It rewrites ADR-028 decision 7's place, 1.5 m off the footprint, and ADR-047 decision 4, whose least size becomes the size.
+- **ADR:** the milestone's. It rewrites the bars' place, 1.5 m off the footprint, and their least size, which becomes the size; ADR-088 decision 5 now holds both.
 - **Acceptance:**
   - `GameAppTests`: a bar's place above its entity with the camera turned 0°, 90°, 180° and 270°, its fill growing to the right in each.
   - `HudTests`: bars under the panels; none for a remembered entity; the size at 1080p and 2160p.
 - **Verify:** CI; run, turning the camera; **owner run.**
-- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 5. [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md) decision 7, [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 4 and [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 2 are rewritten in place, and [ADR-031](../Design/ADR/ADR-031-floating-windows.md) decision 4 names the bars.
+- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 5, which holds the bars' back, place and size that [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md) and [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md) held. [ADR-085](../Design/ADR/ADR-085-one-meaning-per-color.md) decision 2 is rewritten in place, and [ADR-031](../Design/ADR/ADR-031-floating-windows.md) decision 4 names the bars.
   - **The player's factor (ADR-070) does not scale a bar,** since it sizes the HUD and not the world's marks.
   - **The bars are a list of the layout's own (`Layout::bars`),** not panels. A panel covers the world for clicks (ADR-015 decision 5), and a bar must not.
   - **The bars stand above the model's own bounds on the screen,** not on the footprint's top raised by its projected radius, as the scope proposed (owner, 2026-10-10). That rule put a Command Station's bar 173 pixels over its rim at the default view and 576 at the nearest, often off the screen.
@@ -449,12 +449,12 @@ The milestone's looks share one ADR: selection and commands.
     - A click on a bar selects that ship alone.
     - Past 24 ships, the selection's single bar stands as now.
   - **A new design's default name.** Where its hull, drive and weapon are a starting design's, it is that design's name with its module's code, "Lancer+SA" (`Designer::Name`, ADR-069). Otherwise it is the components' name, as now. A typed name wins, as now.
-- **ADR:** rewrites ADR-046 decision 6 and ADR-069.
+- **ADR:** rewrites the selection's title, which ADR-088 decision 4 now holds, and ADR-069.
 - **Acceptance:**
   - `HudTests`: the titles; seven bars, with one hurt and one retreating; a click on a bar; 25 ships falling back to the single bar.
   - The designer's tests: "Lancer+SA", and a typed name kept.
 - **Verify:** CI; run; **owner run.**
-- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 4. [ADR-046](../Design/ADR/ADR-046-second-look-at-the-screen.md) decision 6 is rewritten in place, and [ADR-069](../Design/ADR/ADR-069-starting-design-names.md) gains decision 5.
+- **As built (2026-10-10):** [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 4, which holds the selection's title that [ADR-046](../Design/ADR/ADR-046-second-look-at-the-screen.md) held, and [ADR-069](../Design/ADR/ADR-069-starting-design-names.md) gains decision 5.
   - **The bars are for two to 24 ships.** One ship keeps the selection's one bar, since a bar of its own would be the same bar, narrower.
   - **The client has no list of the starting designs,** so `Designer::Name` follows a saved design without a module on the same hull, drive and weapon whose name is not its components'. A starting design the player has renamed lends its new name.
   - **A click on a ship's bar also centers the camera on it,** as `ActionKind::Select` does (UI3.1).
@@ -472,10 +472,10 @@ The milestone's looks share one ADR: selection and commands.
   - **Rocks get a face shade of their own,** about half the `FILL_SHADE` of 0.3 they share with the ships now.
   - **`ROCK_EDGE_BRIGHTNESS` stays,** and `FIELD_SHADE` stays relative to the new shade.
   - **The review's measure is repeated at the owner's run:** a field's lit pixels and brightness against a group of ships, at the default zoom.
-- **ADR:** ADR-040 and ADR-028 decision 4 rewritten in place.
+- **ADR:** ADR-040 and ADR-028's rock shades, rewritten in place; ADR-040 decision 1 now holds those shades.
 - **Acceptance:** none pure.
 - **Verify:** CI; run, with the measure; **owner run.**
-- **As built (2026-10-10):** [ADR-040](../Design/ADR/ADR-040-lines-over-dark-faces.md) decision 1 and [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md) decision 4, rewritten in place.
+- **As built (2026-10-10):** [ADR-040](../Design/ADR/ADR-040-lines-over-dark-faces.md) decision 1, rewritten in place; it holds the rocks' shades that [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md) held.
   - `ROCK_FILL_SHADE` is 0.15, half the ships' `FILL_SHADE`, for ore asteroids and fields alike; `ROCK_EDGE_BRIGHTNESS` and `FIELD_SHADE` are unchanged.
   - `GameClient` alone, which needs D3D12: CI builds it. Not yet seen on screen, and the review's measure is the owner's run's.
 
@@ -518,8 +518,8 @@ The milestone's looks share one ADR: selection and commands.
 ## Not in this plan
 
 - **The sky's crosses.** The owner kept them on 2026-10-05 (task 16.6). This review saw two beside the fleet in shots 3–4, where a move marker would stand, and does not reopen the decision.
-- **The bank.** The shots hold 15,387–25,586 Ore. Phase 5's H9 keeps Phase 4's economy, and the sink is Phase 6's (gate G3). UI3.1 shows what holds the Shipyards back; it changes nothing they cost.
+- **The bank.** The shots hold 15,387–25,586 Ore. [The Phase 5 plan](ImplementationPlan-Phase5.md)'s gate H9 keeps Phase 4's economy, and the sink is Phase 6's ([the horizon plan](ImplementationPlan-Horizon.md)'s gate G3). UI3.1 shows what holds the Shipyards back; it changes nothing they cost.
 - **Green for the selection, health, the drag box and Good.** It stays. Where it misled was the health bars inside the selection rings, and UI4.1 moves the bars above the units.
 - **Selection rings chaining in a tight formation,** at 1.3 times the footprint (ADR-067). They are looked at again at UI4.1's run, once the bars are out of them.
 - **Motion and flashes.** Stills cannot show them. The beam's 0.25 s, the blasts and the camera's feel belong to an owner run, and what it finds becomes a task.
-- **A strategic view.** It is the horizon's gate G6.
+- **A strategic view.** It is [the horizon plan](ImplementationPlan-Horizon.md)'s gate G6.

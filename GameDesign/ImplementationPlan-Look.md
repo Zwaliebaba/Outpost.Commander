@@ -42,9 +42,9 @@ Task numbers carry the prefix LV, and gates are lettered A.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | merged, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); the owner's run accepts it |
-| LV1.2 | A phosphor glow | — | A2 | merged, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); the owner's run accepts it, zoomed in and out |
-| LV2.1 | Occlusion baked into every vertex | LV1 | A3 | built; awaiting CI and the owner's run |
+| LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11 |
+| LV1.2 | A phosphor glow | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11, zoomed in and out |
+| LV2.1 | Occlusion baked into every vertex | LV1 | A3 | merged, [#108](https://github.com/Zwaliebaba/Outpost.Commander/pull/108); awaiting the owner's run |
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | todo |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | todo |
 | LV3.1 | Beacons | LV2.2 | A5 | todo |
@@ -67,15 +67,15 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 
 ## Gates
 
-| Gate | Decision | Proposed in | Blocks |
-|---|---|---|---|
-| A1 | **The ground.** Proposed in the review: held sectors drawn as dark plates tinted in their holder's color, with a glowing band at their borders and the sector's name laid on them, as the reference draws its countries. **Decided on 2026-10-11:** not yet. | the review | nothing |
-| A2 | **The light and the glow** (LV1). A warm key and a cool fill from above in `MeshPS.hlsl`, with a soft terminator, no face darker than today's ambient where the camera looks; a glow on what is bright, added in the resolve; and a test that holds every model's lines over its faces. **Decided on 2026-10-11:** as proposed. | the review | LV1 |
-| A3 | **Where occlusion comes from** (LV2.1). Proposed: `BakeMeshes.py` computes it from each model's own triangles, so no model needs a step in Blender and every edit bakes it again; the alternative was the owner baking it in Blender into a color attribute. **Decided on 2026-10-11:** the baker computes it. | the review | LV2.1 |
-| A4 | **Paint slots** (LV2.2, LV2.3). Proposed: `team`, `trim` and `light`, by material name, in one format version. **Decided on 2026-10-11:** as proposed. | the review | LV2.2, LV2.3 |
-| A5 | **Beacons** (LV3.1). Proposed: a hardpoint tag `beacon` that blinks a light in its side's color, so a mast or an antenna can carry one. **Decided on 2026-10-11:** as proposed. | the review | LV3.1 |
-| A6 | **Plates over the fleets as a milestone of this plan** (LV4). **Decided on 2026-10-11:** yes. | the review | LV4 |
-| A7 | **What a plate is** (LV4.1–LV4.3). Proposed in LV4's tasks: fleets found by nearness on the screen, a plate's count and the arc of its hit points, its hull's glyph, plates that merge or move apart where they meet, a click that selects the fleet, and health bars only on Alt, under the pointer and close in. It rewrites [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 4 and [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 5. **Open.** | LV4.1 | LV4 |
+| Gate | Decision | Proposed in | Blocks | Status |
+|---|---|---|---|---|
+| A1 | **The ground.** Proposed in the review: held sectors drawn as dark plates tinted in their holder's color, with a glowing band at their borders and the sector's name laid on them, as the reference draws its countries. Decided: not yet. | the review | nothing | decided 2026-10-11 |
+| A2 | **The light and the glow** (LV1). A warm key and a cool fill from above in `MeshPS.hlsl`, with a soft terminator, no face darker than today's ambient where the camera looks; a glow on what is bright, added in the resolve; and a test that holds every model's lines over its faces. As proposed. | the review | LV1 | decided 2026-10-11 |
+| A3 | **Where occlusion comes from** (LV2.1). Proposed: `BakeMeshes.py` computes it from each model's own triangles, so no model needs a step in Blender and every edit bakes it again; the alternative was the owner baking it in Blender into a color attribute. Decided: the baker computes it. | the review | LV2.1 | decided 2026-10-11 |
+| A4 | **Paint slots** (LV2.2, LV2.3). Proposed: `team`, `trim` and `light`, by material name, in one format version. As proposed. | the review | LV2.2, LV2.3 | decided 2026-10-11 |
+| A5 | **Beacons** (LV3.1). Proposed: a hardpoint tag `beacon` that blinks a light in its side's color, so a mast or an antenna can carry one. As proposed. | the review | LV3.1 | decided 2026-10-11 |
+| A6 | **Plates over the fleets as a milestone of this plan** (LV4). Decided: yes. | the review | LV4 | decided 2026-10-11 |
+| A7 | **What a plate is** (LV4.1–LV4.3). Proposed in LV4's tasks: fleets found by nearness on the screen, a plate's count and the arc of its hit points, its hull's glyph, plates that merge or move apart where they meet, a click that selects the fleet, and health bars only on Alt, under the pointer and close in. It rewrites [ADR-088](../Design/ADR/ADR-088-selection-and-commands.md) decision 5, which holds when a bar shows, its place and its size. | LV4.1 | LV4 | open |
 
 ---
 
@@ -197,7 +197,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 ### LV4.3 — Health bars where the plates are not
 
 - **Gate:** A7.
-- **Scope, as proposed:** a ship's own bar shows while Alt is held, under the pointer, and close in; elsewhere its fleet's plate stands for it. A structure keeps its bar. It rewrites ADR-047 decision 4 and ADR-088 decision 5.
+- **Scope, as proposed:** a ship's own bar shows while Alt is held, under the pointer, and close in; elsewhere its fleet's plate stands for it. A structure keeps its bar. It rewrites ADR-088 decision 5.
 - **Acceptance:** `HudTests.PutsABarOnlyOverWhatShowsOne` for each case.
 
 ---

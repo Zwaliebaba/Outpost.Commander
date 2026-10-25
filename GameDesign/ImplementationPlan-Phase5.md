@@ -2,18 +2,18 @@
 
 Status: **open** · Started 2026-10-08, when the owner accepted [the Phase 5 design](OutpostCommander-Phase5.md) with gates H1 to H9 decided as proposed · Derived from the Phase 5 design
 
-The Phase 5 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 4 plan](Archive/ImplementationPlan-Phase4.md) is closed.
+[The living design](OutpostCommander.md) says *what* is built, and [the Phase 5 design](OutpostCommander-Phase5.md) what of Phase 5 is still open; AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. The Phase 4 plan is closed, and what it learned is in [the post-mortems](Records/PostMortems.md).
 
 ---
 
 ## How an agent uses this plan
 
-1. **Read AGENTS.md, then the Phase 5 design, then the ADRs the task names.** Phase 5 amends Phase 4, which amends the designs before it.
+1. **Read AGENTS.md, then the living design's sections the task names, then the ADRs it names.** The living design says what the game is as built, Phase 5 included.
 2. **Take the lowest-numbered task whose status is `todo` and whose dependencies are `done`.** One PR per milestone (owner, 2026-09-30), in milestone order.
 3. **ADRs are edited in place** (AGENTS.md §6), and new ones take the next free number, ADR-077 onward.
 4. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU. The server, the AI and `GameLogicTests` build and run there against a stand-in for the Windows headers, the test framework and MsQuic, as Phases 2 to 4 did; the QUIC tests do not. The dedicated server's executable, the client and every week-long run are CI's or the owner's. Tasks marked *Owner run* stay `in review` until the owner has run them.
 5. **The AI keeps playing at every milestone,** and `AiPlayerTests` keep passing.
-6. **The gates are the design's, H1 to H10** (design §14).
+6. **The gates are H1 to H11,** in the gates table below. [The Phase 5 design](OutpostCommander-Phase5.md) sets out the two still open, H10 and H11; H11 came of milestone 39.
 
 Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan's outline put the dedicated server first; the owner chose to start with the world that survives a restart (2026-10-08), so it is milestone 35 and the server 36.
 
@@ -34,7 +34,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 38.1 | The server's events, and alerts read from them | — | H4 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
 | 38.3 | The client's orders window | 38.2 | H5 | merged, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97); awaiting the owner's run |
-| 39.1 | A world without an end | 37.3 | H6 | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
+| 39.1 | A world without an end | 37.3 | H6 | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
 | 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
 | 39.3 | The battle matchups | — | — | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
 | 39.4 | W1–W6 | all above | — | the container's part done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's week |
@@ -45,6 +45,26 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 
 ---
 
+## Gates
+
+Each is an owner decision, proposed where the table says.
+
+| Gate | Decision | Proposed in | Blocks | Status |
+|---|---|---|---|---|
+| H1 | **Where the server runs:** the owner's PC, or a Windows Server 2022 VM if the owner chooses one at the run. A client finds it by an address, the certificate's hash and a seat token, handed over out of band. | [the horizon plan](ImplementationPlan-Horizon.md) | 36.1, 36.2, 36.3 | decided 2026-10-08 |
+| H2 | **The hand-over:** a deputy takes a seat 60 s after its player's connection drops, and gives it back when the player takes the seat again. What it ordered stands until the player changes it. | [the horizon plan](ImplementationPlan-Horizon.md) | 37.3 | decided 2026-10-08 |
+| H3 | **The deputy is a keeper.** | [the horizon plan](ImplementationPlan-Horizon.md) | 37.3 | decided 2026-10-08 |
+| H4 | **Triggers are evaluated on the server.** | [the horizon plan](ImplementationPlan-Horizon.md) | 38.1, 38.2 | decided 2026-10-08 |
+| H5 | **The order vocabulary is fixed and small:** one trigger, one action and at most one condition, as Game §orders.scheduled lists them. | [the horizon plan](ImplementationPlan-Horizon.md) | 38.2, 38.3 | decided 2026-10-08 |
+| H6 | **A player who loses** restarts at a free start after an hour, with starting Ore, keeping its research and designs. | [the horizon plan](ImplementationPlan-Horizon.md) | 39.1 | decided 2026-10-08 |
+| H7 | **Recovery:** a save every 60 s of ticks; the command log written as each tick applies it; and a world that pauses while its server is down. | [the horizon plan](ImplementationPlan-Horizon.md) | 35.2 | decided 2026-10-08 |
+| H8 | **The pin:** a save is pinned to a state version, not to a build. | [the horizon plan](ImplementationPlan-Horizon.md) | 35.1 | decided 2026-10-08 |
+| H9 | **The economy:** Phase 4's is unchanged, and the bank is recorded. | [the horizon plan](ImplementationPlan-Horizon.md) | — | decided 2026-10-08 |
+
+Gates H10 and H11 are open, and their one home is the gate table of [the Phase 5 design](OutpostCommander-Phase5.md).
+
+---
+
 ## Milestone 35 — A world that survives a restart
 
 ### 35.1 — A world's state saved and loaded
@@ -52,7 +72,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 - **Gate:** H8, decided.
 - **Scope:**
   - The wire format's writer and reader become `GameProtocol`'s `ByteWriter` and `ByteReader`, and its field lists and enumerations' last values `WireFields.h`, so that a save writes `Simulation`'s state as a message is written (ADR-060 decision 4). The wire's bytes do not change.
-  - `Simulation::SaveState` and `Simulation::LoadState`: every member of `Simulation` named by one structured binding, so a member added and not considered does not compile; the state written from field lists; what follows from it worked out again on load (design §5).
+  - `Simulation::SaveState` and `Simulation::LoadState`: every member of `Simulation` named by one structured binding, so a member added and not considered does not compile; the state written from field lists; what follows from it worked out again on load (Game §world.persistence).
   - A save's header: its kind, `WORLD_STATE_VERSION`, the seed, the tick rate and the hash of the tuning data's and the map's files. A checksum after the state.
   - A description of the saved state's layout, and its hash, which a test pins for each state version (AGENTS.md R18).
 - **ADR:** a new one, ADR-077: a world's state on disk. ADR-060 decision 4 edited in place for the shared field lists.
@@ -122,7 +142,7 @@ Recorded in [ADR-078](../Design/ADR/ADR-078-dedicated-server.md).
 
 ## Milestone 37 — Deputies
 
-Scoped from design §6. The owner decided two things the design left open (2026-10-08): a deputy keeps as many Constructors as its player had when it took the seat, and its defenders go back to where they stood once an attack is over.
+Scoped from Game §ai.deputy and Game §world.handover. The owner decided two things the design left open (2026-10-08): a deputy keeps as many Constructors as its player had when it took the seat, and its defenders go back to where they stood once an attack is over.
 
 ### 37.1 — The AI starts from any state
 
@@ -145,7 +165,7 @@ Scoped from design §6. The owner decided two things the design left open (2026-
   - `SeatController`: the deputy's until the player takes the seat, the player's while its connection is open and for 60 s of ticks after it has gone, then the deputy's until the player is back.
   - `QuicChannel::HasGone`.
   - A ship's order in its owner's snapshot (`PROTOCOL_VERSION` 12, `WORLD_STATE_VERSION` 2).
-  - `Deputy`, the keeper of design §6.
+  - `Deputy`, the keeper of Game §ai.deputy.
   - In `OutpostServer`: AI seats in `World.json` (`--ai <player>[:<difficulty>]`), and a deputy hosted for each player's seat.
 - **ADR:** ADR-079; ADR-002, ADR-077 and ADR-078 edited in place.
 - **Acceptance:**
@@ -164,13 +184,13 @@ Recorded in [ADR-079](../Design/ADR/ADR-079-seat-controller-and-deputy.md) and A
 - **W3, headless.** Over minutes 10 to 20, a deputy's Shipyards stood idle with Ore to spend 0.8–1.4% of their time and its Lab 0.2%, against the AI's 0.0–5.4% and 0.0–0.2%, over seeds 1 to 4. Its first version waited for the Ore and the cap before queueing, and stood idle 50.6% of the time.
 - **W2 in the container,** with two AI empires on the server's thread over an hour: a tick's 99th percentile 0.25–0.40 ms; the hosted players' 0.08–0.09 ms, at most 3.20 ms.
 - **Run in CI.** Debug|x64 on Windows passes all 602 tests, among them `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`, the hand-over over a real connection. Its W3 test measured the same there as in the container: the deputy's Shipyards idle 0.8% of the time, the AI's 0.0%.
-- **Not in this milestone.** The client's panel saying what happened while the player was away (design §11) needs the server's events, so it comes with milestone 38. A hand-over is logged with the world log, at milestone 39.
+- **Not in this milestone.** The client's panel saying what happened while the player was away (Game §world.away) needs the server's events, so it comes with milestone 38. A hand-over is logged with the world log, at milestone 39.
 
 ## Milestone 38 — Orders that run while away
 
-Design §7 and §11, gates H4 and H5. The owner decided on 2026-10-08 what the design left open:
+Game §orders.scheduled and Game §world.away, gates H4 and H5. The owner decided on 2026-10-08 what the design left open:
 
-- **A time of day is the player's clock.** The client turns the hour and minute the player picks into the next such moment on the player's own clock, and sends it as UTC; the host turns that into a tick as the command arrives (design §7).
+- **A time of day is the player's clock.** The client turns the hour and minute the player picks into the next such moment on the player's own clock, and sends it as UTC; the host turns that into a tick as the command arrives (Game §orders.scheduled.time).
 - **An event trigger watches one sector the player picks,** and the action's target is fixed when the order is given.
 - **The panel of what happened while away survives a restart:** the server keeps each seat's report and saves it with the world.
 
@@ -182,7 +202,7 @@ Design §7 and §11, gates H4 and H5. The owner decided on 2026-10-08 what the d
 
 ### 38.2 — Scheduled orders
 
-*Gates H4, H5.* `ScheduleOrderCommand` gives a selection one trigger, one action and at most one condition (design §7). The server keeps it as a standing order is kept, fires it at the end of the tick its trigger's event is raised, and drops it. Any other order to one of its ships takes that ship out of it. A player's snapshot shows its scheduled orders, and which order each of its ships waits on.
+*Gates H4, H5.* `ScheduleOrderCommand` gives a selection one trigger, one action and at most one condition (Game §orders.scheduled.parts). The server keeps it as a standing order is kept, fires it at the end of the tick its trigger's event is raised, and drops it. Any other order to one of its ships takes that ship out of it. A player's snapshot shows its scheduled orders, and which order each of its ships waits on.
 
 - The host turns a time of day into a tick as the command arrives, so the log holds the tick and the world replays.
 - The deputy leaves alone a ship that waits on a scheduled order.
@@ -191,7 +211,7 @@ Design §7 and §11, gates H4 and H5. The owner decided on 2026-10-08 what the d
 
 ### 38.3 — The client's orders window
 
-*Gate H5.* The orders window (O) lists the seat's scheduled orders and gives a new one to the selection: its trigger, a time or a sector, its action and the condition. The selection's panel names a ship's pending order, and a panel says what happened while the player was away when it takes its seat again (design §11).
+*Gate H5.* The orders window (O) lists the seat's scheduled orders and gives a new one to the selection: its trigger, a time or a sector, its action and the condition. The selection's panel names a ship's pending order, and a panel says what happened while the player was away when it takes its seat again (Game §interface.windows.orders).
 
 - **Done when:** `HudTests` lay out the window, the pending order and the report; `PlayerControlsTests` open the window and send the order. *Owner run:* a 02:00 attack, in play (W5).
 
@@ -207,16 +227,16 @@ Recorded in [ADR-080](../Design/ADR/ADR-080-events-and-scheduled-orders.md); ADR
 
 ## Milestone 39 — A world without an end, the world log and the week
 
-Design §8–§10, gate H6, and horizon §9. The owner decided on 2026-10-08 what the design left open:
+Game §world.loss, Game §world.restart and Game §world.log, gate H6, and [the horizon](OutpostCommander-Horizon.md)'s battle measurement (Game §session.matchup). The owner decided on 2026-10-08 what the design left open:
 
-- **A player who loses keeps its bank,** raised to the starting Ore when it has less, as it keeps its research, its designs and what still stands of its own (design §8).
-- **The battle matchups are measured headless and played live:** a file of matchups, each run AI against AI over many seeds for the baseline, and a switch that starts one in the game against the AI for the owner to play (horizon §9, W4).
+- **A player who loses keeps its bank,** raised to the starting Ore when it has less, as it keeps its research, its designs and what still stands of its own (Game §world.restart).
+- **The battle matchups are measured headless and played live:** a file of matchups, each run AI against AI over many seeds for the baseline, and a switch that starts one in the game against the AI for the owner to play (the horizon's battle measurement, W4).
 
 ### 39.1 — A world without an end
 
 *Gate H6.* In a world, domination is off and no match ends. A player who loses (ADR-037) is told so, and an hour of ticks later its seat restarts at its start once that is free: a Command Station and the starting Constructors, and its Ore raised to the starting Ore. A start is free while no other player holds its home sector or has a structure in it. An AI empire plans afresh round its new Command Station. The client's banner says when the seat restarts, or that it waits for its start.
 
-- **Done when:** `WorldRulesTests` keep a world with a lost player running without domination, restart the seat on the hour with its bank and research, hold it while its start is taken, and bring a saved lost seat back on the same tick; `HudTests` lay out the banner.
+- **Done when:** `WorldRulesTests` keep a world with a lost player running without domination, restart the seat on the hour with its bank and research, hold it while its start is taken, and bring a saved lost seat back on the same tick; `HudTests` lay out the banner. *Owner run:* the banner, and an AI empire that plans afresh round its new station, in play.
 
 ### 39.2 — The world log and `--world-run`
 
@@ -226,7 +246,7 @@ The server writes a world log beside its saves, as ADR-038's match log is writte
 
 ### 39.3 — The battle matchups
 
-Horizon §9: a matchups file of fleets on each side, played without bases on the 10 km map, the AI's battle behavior on both sides, each over many seeds; and the game's `--matchup <n>`, which starts one against the AI for the owner to play.
+[The horizon](OutpostCommander-Horizon.md)'s battle measurement: a matchups file of fleets on each side, played without bases on the 10 km map, the AI's battle behavior on both sides, each over many seeds; and the game's `--matchup <n>`, which starts one against the AI for the owner to play.
 
 - **Done when:** `MatchupTests` place a matchup and end it when one side's warships are gone; the container's baseline over 40 seeds is recorded. *Owner run:* the matchups played live (W4).
 
@@ -241,10 +261,10 @@ Recorded in [ADR-084](../Design/ADR/ADR-084-world-without-an-end.md), [ADR-082](
 - **Run in the container.** `GameLogicTests` passes, 332 tests, apart from the 8 `QuicTransportTests`, which need QUIC; `GameAppTests` 165, `OpponentTests` 32 and `GameProtocolTests` 19 pass. clang-tidy 18 with the repository's checks is clean over the changed files.
 - **Each new test was checked against a broken build,** as the three ADRs' consequences list. Two breaks are not caught: dropping a replaced AI's waiting orders in the world run, since none waits at the ticks it is replaced (ADR-082), and the same line through a matchup's field on every seed, since the seed still picks the sector (ADR-083).
 - **A day of world, killed 10 times,** ended equal to the world run straight through: 1,728,000 ticks twice in 615 s, the Normal AI in both seats (ADR-082). A week of world is about 50 minutes of the container's processor.
-- **W2 in the container.** The day's 1,451 saves were 46–81 KB and took a median 0.30 ms of the server's thread, the longest 6.03 ms, against the 50 ms the design allows. With Blue's seat played by its deputy and Red's by the Normal AI for an hour (`InProcessServerTests.MeasuresTheHostedPlayersTicks`, run with a `Deputy` in Blue's seat), a tick's 99th percentile was 0.22–0.25 ms and the hosted players' 0.05–0.06 ms over seeds 1 to 3, against U7's 5 ms. The longest tick was 6.30–17.07 ms, of which the hosted players took at most 2.53 ms.
+- **W2 in the container.** The day's 1,451 saves were 46–81 KB and took a median 0.30 ms of the server's thread, the longest 6.03 ms, against the 50 ms W2 allows. With Blue's seat played by its deputy and Red's by the Normal AI for an hour (`InProcessServerTests.MeasuresTheHostedPlayersTicks`, run with a `Deputy` in Blue's seat), a tick's 99th percentile was 0.22–0.25 ms and the hosted players' 0.05–0.06 ms over seeds 1 to 3, against the 5 ms tick that [the budgets](../Design/Budgets.md) set. The longest tick was 6.30–17.07 ms, of which the hosted players took at most 2.53 ms.
 - **W3 again,** with milestone 39's AI: over minutes 10 to 20 the deputy's Shipyards stood idle with Ore to spend 0.8% of their time and its Lab 0.2%, against the AI's 0.0% and 0.2%, as at milestone 37.
-- **The bank, as design §9 asked it recorded.** In the day of world both seats had researched every topic by hour 1 and kept their fleets at the cap all day. Blue's bank reached 513,829 Ore at hour 23, on an income that fell from 40 Ore a second to 10. That is gate G3's question for Phase 6.
-- **A restarted seat is taken again at once.** In the same day Red lost its base 11 times and restarted 11 times, each on the hour, never waiting, because enemy warships on a start do not keep it from being free. Seven of those bases fell 12–14.5 s after their restart (ADR-084). Whether a start with enemy warships on it is free, or a restarted base is spared for a while, is the owner's to decide on gate H6.
+- **The bank, as gate H9 asked it recorded.** In the day of world both seats had researched every topic by hour 1 and kept their fleets at the cap all day. Blue's bank reached 513,829 Ore at hour 23, on an income that fell from 40 Ore a second to 10. That is [the horizon plan](ImplementationPlan-Horizon.md)'s gate G3, for Phase 6.
+- **A restarted seat is taken again at once.** In the same day Red lost its base 11 times and restarted 11 times, each on the hour, never waiting, because enemy warships on a start do not keep it from being free. Seven of those bases fell 12–14.5 s after their restart (ADR-084). Whether a start with enemy warships on it is free, or a restarted base is spared for a while, is gate H11.
 - **The matchups' baseline,** 40 seeds each, side 1 first (ADR-083): the mirror 25 to 15, the swarm against the line 0 to 40, Flak against the swarm 40 to 0, the heavy line 19 to 21 and the Missiles against the Lances 0 to 40, with medians of 9 to 41 s. Over 200 seeds the mirror went 114 to 86 for side 1, a p of about 0.06; and three of the five stayed one-sided.
 - **The client, in part.** The container builds the banner's and the endings' words in `Hud`, `MatchLog` and their tests over stand-in glyphs; it does not build `GameClient` or `WinMain`, where `--matchup` starts a battle. CI checks those.
-- **Awaiting the owner:** the week (W1, W4 and W6); W2's tick in Release; the matchups played live with `--matchup <n>` (W4); the banner and an AI empire that plans afresh round its new station, in play; and the decision on a start that enemy warships hold.
+- **Awaiting the owner:** the week (W1, W4 and W6); W2's tick in Release; the matchups played live with `--matchup <n>` (W4); the banner and an AI empire that plans afresh round its new station, in play (39.1); and gate H11, on a start that enemy warships hold.
