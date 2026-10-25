@@ -39,7 +39,7 @@ The owner's track, beside the plan:
 
 | Item | What | Gate | Status |
 |---|---|---|---|
-| RF-O1 | Rework the Human Command Station's L1–L5 art toward a square plan, and bake it again | F2 | todo |
+| RF-O1 | Rework the Human Command Station's L1–L5 art toward a square plan, and bake it again | F2 | done from the owner's model sheet; awaiting the owner's run |
 | RF-O2 | Remove the Mining Rig's `gun` hardpoint, and bake it again | F8 | todo |
 | RF-O3 | Look at the designer's Large hull card at 1080p with Cascadia Mono installed | F15 | todo |
 
