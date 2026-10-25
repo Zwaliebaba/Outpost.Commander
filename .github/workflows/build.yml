@@ -175,9 +175,11 @@ jobs:
           $vstest = & $vswhere -latest -products * -find '**\vstest.console.exe' | Select-Object -First 1
           if (-not $vstest) { throw "vstest.console.exe not found." }
 
-          # ReachesTierThree plays the AI to tier 3, about four of the step's seven minutes, so it runs in a vstest
-          # process of its own beside the other suites, which skip it under OUTPOST_TIER_THREE_APART. A name filter that
-          # ran nothing would read as a pass, so its process must run exactly that one test and pass it.
+          # The tests take about half an hour one after another, nearly all of it GameLogicTests' matches, so they run in
+          # vstest processes side by side, one to each of the runner's cores (four on a public repository's Windows runner).
+          # ReachesTierThree, the longest of the AI's matches, runs in a process of its own beside the rest, which skip it
+          # under OUTPOST_TIER_THREE_APART. A name filter that ran nothing would read as a pass, so its process must run
+          # exactly that one test and pass it.
           $tierThree = "x64\$env:CONFIGURATION\GameLogicTests.dll"
           if (-not (Test-Path $tierThree)) { throw "$tierThree was not built." }
           $apart = Start-Process -FilePath $vstest -NoNewWindow -PassThru `
@@ -186,14 +188,44 @@ jobs:
                             '/Logger:trx;LogFileName=ReachesTierThree.trx', '/ResultsDirectory:TestResults')
           $null = $apart.Handle  # kept, so that ExitCode is still there once the process has exited
 
+          # The rest are dealt out to SHARDS processes in the order the suites list them, so that a class's long matches
+          # spread over the processes rather than queue in one. A process names its tests by /Tests, which matches by name:
+          # a test whose name holds another's may run twice, and none may be missed, which is checked once they end against
+          # what the suites list.
           $env:OUTPOST_TIER_THREE_APART = '1'
-          & $vstest $suites /Platform:x64 /Logger:trx /ResultsDirectory:TestResults
-          $rest = $LASTEXITCODE
+          $shards = 4
+          $listing = & $vstest @suites /ListTests
+          if ($LASTEXITCODE -ne 0) { $listing; throw "vstest could not list the tests." }
+          $names = @($listing | Where-Object { $_ -match '^\s{4}(\S+)\s*$' } | ForEach-Object { $Matches[1] } | Select-Object -Unique)
+          if ($names.Count -eq 0) { throw "The suites list no tests." }
+          $processes = foreach ($shard in 0..($shards - 1)) {
+            $mine = for ($i = $shard; $i -lt $names.Count; $i += $shards) { $names[$i] }
+            $process = Start-Process -FilePath $vstest -NoNewWindow -PassThru `
+              -RedirectStandardOutput "Shard$shard.log" -RedirectStandardError "Shard$shard.err.log" `
+              -ArgumentList (@($suites) + @("/Tests:$($mine -join ',')", '/Platform:x64',
+                                            "/Logger:trx;LogFileName=Shard$shard.trx", '/ResultsDirectory:TestResults'))
+            $null = $process.Handle  # kept, so that ExitCode is still there once the process has exited
+            $process
+          }
 
+          $failedShards = @()
+          foreach ($shard in 0..($shards - 1)) {
+            $processes[$shard].WaitForExit()
+            Write-Output "--- Shard $shard of $shards ---"
+            Get-Content "Shard$shard.log", "Shard$shard.err.log"
+            if ($processes[$shard].ExitCode -ne 0) { $failedShards += $shard }
+          }
           $apart.WaitForExit()
           Write-Output "--- ReachesTierThree, in its own process ---"
           Get-Content ReachesTierThree.log, ReachesTierThree.err.log
-          if ($rest -ne 0) { throw "vstest reported failures." }
+          if ($failedShards.Count -gt 0) { throw "vstest reported failures in shards $($failedShards -join ', ')." }
+          $ran = [System.Collections.Generic.HashSet[string]]::new()
+          foreach ($shard in 0..($shards - 1)) {
+            foreach ($result in ([xml](Get-Content "TestResults\Shard$shard.trx")).TestRun.Results.UnitTestResult) { $null = $ran.Add($result.testName) }
+          }
+          $missed = @($names | Where-Object { -not $ran.Contains($_) })
+          if ($missed.Count -gt 0) { throw "Listed but never run: $($missed -join ', ')." }
+          Write-Output "Every one of the $($names.Count) tests the suites list ran, in $shards processes beside ReachesTierThree's."
           if ($apart.ExitCode -ne 0) { throw "ReachesTierThree failed." }
           $counters = ([xml](Get-Content TestResults\ReachesTierThree.trx)).TestRun.ResultSummary.Counters
           if ($counters.total -ne '1' -or $counters.passed -ne '1') {
