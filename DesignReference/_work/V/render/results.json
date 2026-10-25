@@ -1,0 +1,1337 @@
+[
+ {
+  "w": 1440,
+  "h": 2203.25,
+  "scrollW": 1440,
+  "maxRight": 1378,
+  "maxBottom": 2139.25,
+  "imgs": [
+   {
+    "src": "/_blob/504eb4e8321a27fae7841f79a01bf099",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "Main.dc.html",
+  "boardW": 1440,
+  "boardH": 2298
+ },
+ {
+  "w": 1440,
+  "h": 2130.890625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2066.890625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "game-pitch.dc.html",
+  "boardW": 1440,
+  "boardH": 2220
+ },
+ {
+  "w": 1440,
+  "h": 3875.8125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3811.8125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "game-loops.dc.html",
+  "boardW": 1440,
+  "boardH": 4017
+ },
+ {
+  "w": 1440,
+  "h": 4649.171875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4585.171875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "glossary-1.dc.html",
+  "boardW": 1440,
+  "boardH": 4852
+ },
+ {
+  "w": 1440,
+  "h": 4197.828125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4133.828125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "glossary-2.dc.html",
+  "boardW": 1440,
+  "boardH": 4348
+ },
+ {
+  "w": 1440,
+  "h": 4938.921875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4874.921875,
+  "imgs": [
+   {
+    "src": "/_blob/1ac85e225be5d2b41f9f0fe5d756249a",
+    "ok": true
+   },
+   {
+    "src": "/_blob/02d4a772826522f21c8e5b0b10e5ad00",
+    "ok": true
+   },
+   {
+    "src": "/_blob/087bf52940f052312a112d3e34e92d82",
+    "ok": true
+   },
+   {
+    "src": "/_blob/2a64a0dc1eef4481ff0725d1aa8953b7",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "sides.dc.html",
+  "boardW": 1440,
+  "boardH": 5113
+ },
+ {
+  "w": 1440,
+  "h": 3188.859375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3124.859375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "economy-ore.dc.html",
+  "boardW": 1440,
+  "boardH": 3310
+ },
+ {
+  "w": 1440,
+  "h": 3900.5625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3836.5625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "economy-map.dc.html",
+  "boardW": 1440,
+  "boardH": 4043
+ },
+ {
+  "w": 1440,
+  "h": 4722.3125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4658.3125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "economy-territory.dc.html",
+  "boardW": 1440,
+  "boardH": 4889
+ },
+ {
+  "w": 1440,
+  "h": 4268.96875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4204.96875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "structures.dc.html",
+  "boardW": 1440,
+  "boardH": 4404
+ },
+ {
+  "w": 1440,
+  "h": 1391.96875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1327.96875,
+  "imgs": [
+   {
+    "src": "/_blob/112492f86018a7328c4d165d8fb724c4",
+    "ok": true
+   },
+   {
+    "src": "/_blob/faf3e409a7479c5fc532624b89dd0aed",
+    "ok": true
+   },
+   {
+    "src": "/_blob/68b9f5eaeaa81de54f77406ff955708b",
+    "ok": true
+   },
+   {
+    "src": "/_blob/d8c345870217615be782ab1d29bdfc1d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/f5eb2f30f57bf79fd83929ed711939c6",
+    "ok": true
+   },
+   {
+    "src": "/_blob/5999970e36d3177ce516f6a0b3a5bd8a",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "structures-levels.dc.html",
+  "boardW": 1440,
+  "boardH": 1458
+ },
+ {
+  "w": 1440,
+  "h": 5572.515625,
+  "scrollW": 1739,
+  "maxRight": 1738.984375,
+  "maxBottom": 5508.515625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "ships-parts.dc.html",
+  "boardW": 1440,
+  "boardH": 5570
+ },
+ {
+  "w": 1440,
+  "h": 2701.453125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2637.453125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "ships-designs.dc.html",
+  "boardW": 1440,
+  "boardH": 2808
+ },
+ {
+  "w": 1440,
+  "h": 3553.234375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3489.234375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "ships-damage.dc.html",
+  "boardW": 1440,
+  "boardH": 3685
+ },
+ {
+  "w": 1440,
+  "h": 3186.53125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3122.53125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "research.dc.html",
+  "boardW": 1440,
+  "boardH": 3309
+ },
+ {
+  "w": 1440,
+  "h": 6265.96875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6201.96875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "combat.dc.html",
+  "boardW": 1440,
+  "boardH": 6480
+ },
+ {
+  "w": 1440,
+  "h": 2804.953125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2740.953125,
+  "imgs": [
+   {
+    "src": "/_blob/02a97cb47a56c6a8167b3e0859732507",
+    "ok": true
+   },
+   {
+    "src": "/_blob/28ca391224221968b8730848f4ccb64f",
+    "ok": true
+   },
+   {
+    "src": "/_blob/ede0df66176e640d8eb2992c90d58f7d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/b081b4f51e0040258b97001964f0c104",
+    "ok": true
+   },
+   {
+    "src": "/_blob/4656a394530fc7b4ee7779d03dddeffa",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "combat-effects.dc.html",
+  "boardW": 1440,
+  "boardH": 2914
+ },
+ {
+  "w": 1440,
+  "h": 5510.25,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5446.25,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "orders.dc.html",
+  "boardW": 1440,
+  "boardH": 5701
+ },
+ {
+  "w": 1440,
+  "h": 6093.4375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6029.4375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "orders-scheduled.dc.html",
+  "boardW": 1440,
+  "boardH": 6284
+ },
+ {
+  "w": 1440,
+  "h": 3393.96875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3329.96875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "ai.dc.html",
+  "boardW": 1440,
+  "boardH": 3541
+ },
+ {
+  "w": 1440,
+  "h": 3398.484375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3334.484375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "ai-difficulty.dc.html",
+  "boardW": 1440,
+  "boardH": 3525
+ },
+ {
+  "w": 1440,
+  "h": 2941.859375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2877.859375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "world.dc.html",
+  "boardW": 1440,
+  "boardH": 3075
+ },
+ {
+  "w": 1440,
+  "h": 3836.296875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3772.296875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "world-state.dc.html",
+  "boardW": 1440,
+  "boardH": 3977
+ },
+ {
+  "w": 1440,
+  "h": 3959.234375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3895.234375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "visual-colors.dc.html",
+  "boardW": 1440,
+  "boardH": 4104
+ },
+ {
+  "w": 1440,
+  "h": 3261.78125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3197.78125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "visual-type.dc.html",
+  "boardW": 1440,
+  "boardH": 3383
+ },
+ {
+  "w": 1440,
+  "h": 1466.625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1402.625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "visual-components.dc.html",
+  "boardW": 1440,
+  "boardH": 1542
+ },
+ {
+  "w": 1440,
+  "h": 4396.015625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4332.015625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "visual-anatomy-1.dc.html",
+  "boardW": 1440,
+  "boardH": 4572
+ },
+ {
+  "w": 1440,
+  "h": 3435.296875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3371.296875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "visual-anatomy-2.dc.html",
+  "boardW": 1440,
+  "boardH": 3507
+ },
+ {
+  "w": 1440,
+  "h": 4801.375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4737.375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "visual-rules.dc.html",
+  "boardW": 1440,
+  "boardH": 4971
+ },
+ {
+  "w": 1440,
+  "h": 3260.375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3196.375,
+  "imgs": [
+   {
+    "src": "/_blob/cc2aa2f51f17ff6ec9bce92620de249a",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "visual-scale.dc.html",
+  "boardW": 1440,
+  "boardH": 3383
+ },
+ {
+  "w": 1440,
+  "h": 3778.90625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3714.90625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screens-flow.dc.html",
+  "boardW": 1440,
+  "boardH": 3936
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-startup-loading.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-menu-default.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-menu-join-world.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-menu-connection-lost.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-menu-join-failed.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-menu-scale-125.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-match-awaiting-first-snapshot.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-match-start.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1349.875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1349.875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-busy-warships.dc.html",
+  "boardW": 2440,
+  "boardH": 1425
+ },
+ {
+  "w": 2440,
+  "h": 1260.875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1260.875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-scale-110.dc.html",
+  "boardW": 2440,
+  "boardH": 1334
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-constructors.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-placing-relay.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-relay-node-cap.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-one-ship.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-shipyard-selected.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-station-upgrading.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-lab-needs-research.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-derelict-hint.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-server-silent.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-end-victory.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-hud-end-empire-fallen.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1577.875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1577.875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-designer-default.dc.html",
+  "boardW": 2440,
+  "boardH": 1664
+ },
+ {
+  "w": 2440,
+  "h": 1516.375,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1516.375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-designer-preview.dc.html",
+  "boardW": 2440,
+  "boardH": 1601
+ },
+ {
+  "w": 2440,
+  "h": 1597.875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1597.875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-designer-unsaved-editing.dc.html",
+  "boardW": 2440,
+  "boardH": 1685
+ },
+ {
+  "w": 2440,
+  "h": 1488.875,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1488.875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-designer-no-shipyard.dc.html",
+  "boardW": 2440,
+  "boardH": 1573
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-production-shipyard.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-production-station.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-production-none.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1095.3125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1095.3125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-research-page1.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-research-no-lab.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-controls.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1562.8125,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1562.8125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-orders-time-of-day.dc.html",
+  "boardW": 2440,
+  "boardH": 1648
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-orders-event-disabled.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 1080,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 1080,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-away.dc.html",
+  "boardW": 2440,
+  "boardH": 1137
+ },
+ {
+  "w": 2440,
+  "h": 2409,
+  "scrollW": 2440,
+  "maxRight": 2440,
+  "maxBottom": 2409,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "screen-window-three-windows-default.dc.html",
+  "boardW": 2440,
+  "boardH": 2528
+ },
+ {
+  "w": 1440,
+  "h": 1849.8125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1785.8125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "spec-menu.dc.html",
+  "boardW": 1440,
+  "boardH": 1950
+ },
+ {
+  "w": 1440,
+  "h": 5031.25,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4967.25,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "spec-hud-1.dc.html",
+  "boardW": 1440,
+  "boardH": 5207
+ },
+ {
+  "w": 1440,
+  "h": 4537.46875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4473.46875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "spec-hud-2.dc.html",
+  "boardW": 1440,
+  "boardH": 4737
+ },
+ {
+  "w": 1440,
+  "h": 1768.359375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1704.359375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "spec-windows.dc.html",
+  "boardW": 1440,
+  "boardH": 1847
+ },
+ {
+  "w": 1440,
+  "h": 4260.71875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4196.71875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "spec-designer.dc.html",
+  "boardW": 1440,
+  "boardH": 4394
+ },
+ {
+  "w": 1440,
+  "h": 2955.53125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2891.53125,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "spec-production-research.dc.html",
+  "boardW": 1440,
+  "boardH": 3010
+ },
+ {
+  "w": 1440,
+  "h": 1954.546875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1890.546875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "spec-orders-away.dc.html",
+  "boardW": 1440,
+  "boardH": 2058
+ },
+ {
+  "w": 1440,
+  "h": 5117.71875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5053.71875,
+  "imgs": [
+   {
+    "src": "/_blob/a370fcd668b12e05b4e64229f9be406e",
+    "ok": true
+   },
+   {
+    "src": "/_blob/81da41260631b2e54978a606cc2d9c65",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "battlefield-1.dc.html",
+  "boardW": 1440,
+  "boardH": 5297
+ },
+ {
+  "w": 1440,
+  "h": 5382.359375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5318.359375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "battlefield-2.dc.html",
+  "boardW": 1440,
+  "boardH": 5569
+ },
+ {
+  "w": 1440,
+  "h": 5392.859375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 5328.859375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "battlefield-3.dc.html",
+  "boardW": 1440,
+  "boardH": 5579
+ },
+ {
+  "w": 1440,
+  "h": 2041.546875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 1977.546875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "battlefield-4.dc.html",
+  "boardW": 1440,
+  "boardH": 2128
+ },
+ {
+  "w": 1440,
+  "h": 6299.625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6235.625,
+  "imgs": [
+   {
+    "src": "/_blob/1ac85e225be5d2b41f9f0fe5d756249a",
+    "ok": true
+   },
+   {
+    "src": "/_blob/02d4a772826522f21c8e5b0b10e5ad00",
+    "ok": true
+   },
+   {
+    "src": "/_blob/087bf52940f052312a112d3e34e92d82",
+    "ok": true
+   },
+   {
+    "src": "/_blob/2a64a0dc1eef4481ff0725d1aa8953b7",
+    "ok": true
+   },
+   {
+    "src": "/_blob/783526f6a5a01159afde8469eeb070ff",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "assets-sheets.dc.html",
+  "boardW": 1440,
+  "boardH": 6515
+ },
+ {
+  "w": 1440,
+  "h": 2099.03125,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2035.03125,
+  "imgs": [
+   {
+    "src": "/_blob/112492f86018a7328c4d165d8fb724c4",
+    "ok": true
+   },
+   {
+    "src": "/_blob/68b9f5eaeaa81de54f77406ff955708b",
+    "ok": true
+   },
+   {
+    "src": "/_blob/f5eb2f30f57bf79fd83929ed711939c6",
+    "ok": true
+   },
+   {
+    "src": "/_blob/faf3e409a7479c5fc532624b89dd0aed",
+    "ok": true
+   },
+   {
+    "src": "/_blob/d8c345870217615be782ab1d29bdfc1d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/5999970e36d3177ce516f6a0b3a5bd8a",
+    "ok": true
+   },
+   {
+    "src": "/_blob/3a675ba412d72f19527a7e5fafe421b5",
+    "ok": true
+   },
+   {
+    "src": "/_blob/4ec47c9364c1832f4bf79b7554f719c2",
+    "ok": true
+   },
+   {
+    "src": "/_blob/a67442e7a0c3635affb6d607dc3f2cf7",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "assets-levels.dc.html",
+  "boardW": 1440,
+  "boardH": 2187
+ },
+ {
+  "w": 1440,
+  "h": 3562.84375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3498.84375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "assets-table-1.dc.html",
+  "boardW": 1440,
+  "boardH": 3577
+ },
+ {
+  "w": 1440,
+  "h": 3448.21875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3384.21875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "assets-table-2.dc.html",
+  "boardW": 1440,
+  "boardH": 3459
+ },
+ {
+  "w": 1440,
+  "h": 3284.25,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3220.25,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "assets-table-3.dc.html",
+  "boardW": 1440,
+  "boardH": 3387
+ },
+ {
+  "w": 1440,
+  "h": 3701.921875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3637.921875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "assets-files.dc.html",
+  "boardW": 1440,
+  "boardH": 3838
+ },
+ {
+  "w": 1440,
+  "h": 3888.859375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3824.859375,
+  "imgs": [
+   {
+    "src": "/_blob/02a97cb47a56c6a8167b3e0859732507",
+    "ok": true
+   },
+   {
+    "src": "/_blob/28ca391224221968b8730848f4ccb64f",
+    "ok": true
+   },
+   {
+    "src": "/_blob/ede0df66176e640d8eb2992c90d58f7d",
+    "ok": true
+   },
+   {
+    "src": "/_blob/b081b4f51e0040258b97001964f0c104",
+    "ok": true
+   },
+   {
+    "src": "/_blob/4656a394530fc7b4ee7779d03dddeffa",
+    "ok": true
+   },
+   {
+    "src": "/_blob/bfc9893e1bf9f43ade2228f459ade4a2",
+    "ok": true
+   }
+  ],
+  "over": [],
+  "nOver": 0,
+  "file": "assets-textures.dc.html",
+  "boardW": 1440,
+  "boardH": 4030
+ },
+ {
+  "w": 1440,
+  "h": 2513.0625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 2449.0625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "controls.dc.html",
+  "boardW": 1440,
+  "boardH": 2615
+ },
+ {
+  "w": 1440,
+  "h": 3696.046875,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 3632.046875,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "open-owner.dc.html",
+  "boardW": 1440,
+  "boardH": 3833
+ },
+ {
+  "w": 1440,
+  "h": 4698.890625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4634.890625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "open-conflicts-1.dc.html",
+  "boardW": 1440,
+  "boardH": 4864
+ },
+ {
+  "w": 1440,
+  "h": 4913.890625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4849.890625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "open-conflicts-2.dc.html",
+  "boardW": 1440,
+  "boardH": 5086
+ },
+ {
+  "w": 1440,
+  "h": 4660.734375,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 4596.734375,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "open-conflicts-3.dc.html",
+  "boardW": 1440,
+  "boardH": 4825
+ },
+ {
+  "w": 1440,
+  "h": 6994.140625,
+  "scrollW": 1440,
+  "maxRight": 1376,
+  "maxBottom": 6930.140625,
+  "imgs": [],
+  "over": [],
+  "nOver": 0,
+  "file": "open-gaps.dc.html",
+  "boardW": 1440,
+  "boardH": 7229
+ }
+]

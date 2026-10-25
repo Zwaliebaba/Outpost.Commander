@@ -111,8 +111,8 @@ a{{color:{C['ACCENT_COLOR']}}}a:hover{{color:{C['TEXT_COLOR']}}}
 .md code{{font-family:{MONO};font-size:12.5px;color:{C['ROW_LABEL_COLOR']};background:{C['FIELD_COLOR']};border:1px solid {C['EDGE_COLOR']};padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}}
 .md blockquote{{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid {C['GOLD_COLOR']};background:{C['FIELD_COLOR']};color:{C['NUMBERS_COLOR']};font-family:{READ};font-size:16px}}
 .md table{{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}}
-.md th{{font-family:{LABEL};font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:{C['LABEL_COLOR']};text-align:left;padding:6px 8px;border-bottom:1px solid {C['EDGE_COLOR']};vertical-align:bottom;background:{C['FIELD_COLOR']}}}
-.md td{{padding:5px 8px;border-bottom:1px solid {C['EDGE_COLOR']};vertical-align:top;color:{C['NUMBERS_COLOR']};overflow-wrap:anywhere}}
+.md th{{font-family:{LABEL};font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:{C['LABEL_COLOR']};text-align:left;padding:6px 8px;border-bottom:1px solid {C['EDGE_COLOR']};vertical-align:bottom;background:{C['FIELD_COLOR']};overflow-wrap:anywhere;word-break:break-word}}
+.md td{{padding:5px 8px;border-bottom:1px solid {C['EDGE_COLOR']};vertical-align:top;color:{C['NUMBERS_COLOR']};overflow-wrap:anywhere;word-break:break-word}}
 .md td code{{font-size:11.5px}}
 .md pre{{margin:6px 0 14px 0;padding:12px 14px;background:{C['FIELD_COLOR']};border:1px solid {C['EDGE_COLOR']};overflow:hidden;white-space:pre-wrap}}
 .md pre code{{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:{C['NUMBERS_COLOR']};white-space:pre-wrap}}

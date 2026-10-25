@@ -1,0 +1,30 @@
+R1	spec-orders-away.dc.html	orders.form.label	24, 247
+R2	sides.dc.html	Human	(0.18, 0.42, 0.95) blue
+R3	orders.dc.html	Sector name	The sector's name from the map (A1–E5 on the repository's map), or "the field" when the event names no sector
+R4	economy-territory.dc.html		900
+R5	structures.dc.html		L1
+R6	battlefield-2.dc.html	Later levels	fitted across level 1's widest (x or z) extent
+R7	spec-hud-1.dc.html	row 0 bar	28, 102, ≈356, 4
+R8	sides.dc.html		#AAAAAD[0.4, 0.4, 0.42] linear
+R9	economy-map.dc.html	6	−3000…−1000
+R10	economy-map.dc.html	center	4 contested (r 45, 12,000)
+R11	battlefield-1.dc.html	Unused textures	starburst.dds (128×128) packaged, not drawn; glow.dds not used
+R12	ships-parts.dc.html	3	0.75
+R13	spec-windows.dc.html	Production	the first free slot under the Ore. Slot 0: (16, 178). Slot 1: (16 + 16 + 560, 178) = (592, 178)
+R14	spec-designer.dc.html	designer.slot.*.picked	text, Name, cut at 78
+R15	battlefield-2.dc.html	Field sizes	150 m and 180 m radius; 80 fields
+R16	ships-parts.dc.html	Constructor	0
+R17	battlefield-3.dc.html	Hover	ADR-081 §Decision 4
+R18	visual-rules.dc.html	BUTTON_INSET	12
+R19	battlefield-1.dc.html	Depth	32-bit float, cleared to 1, less-than; back faces culled
+R20	battlefield-2.dc.html	Ore asteroid	(0.052, 0.048, 0.045)
+R21	battlefield-4.dc.html	Composite	resolve adds level 1 through a tent × intensity / Σ level weights
+R22	ai.dc.html	Lab	secondSlotTier 3
+R23	ships-damage.dc.html	Medium+Ion+Missile Rack	9.0
+R24	spec-hud-2.dc.html	outcome.backToMenu	712, 138, 496, 34
+R25	visual-anatomy-2.dc.html	State	Label (Label, tracked, at (14, 16))
+R26	orders-scheduled.dc.html	WHEN	Trigger name (§4.2)
+R27	visual-rules.dc.html	Status panel	3250
+R28	ai.dc.html	Its state is never saved	ADR-079 §Decision 2
+R29	ai-difficulty.dc.html	50	1.5
+R30	ships-designs.dc.html	Defence gun	Defence Autoloader +20% (T2)

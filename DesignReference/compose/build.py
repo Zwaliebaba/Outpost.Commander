@@ -110,14 +110,13 @@ def steps_of(markdown_text):
       continue
     rest = m.group(2).strip()
     b = re.match(r"^\*\*(.+?)\*\*[:.]?\s*(.*)$", rest)
-    c = re.match(r"^`([^`]+)`\s*(?:—|-)?\s*(.*)$", rest)
+    c = re.match(r"^`([^`]+)`\s*(?:—|-)\s+(.*)$", rest)
     if b:
       title, body = b.group(1).rstrip(":.").strip(), b.group(2)
     elif c:
       title, body = c.group(1), c.group(2)
     else:
-      words = re.split(r"[;,—]", re.sub(r"`[^`]+`", "", rest))[0].split()
-      title, body = " ".join(words[:6]), rest
+      title, body = "", rest
     out.append((m.group(1), title, body, []))
   return out
 
@@ -152,11 +151,11 @@ def md_inline(text):
 def core_loop():
   """MVP.md:40 names the loop: mine, build, research, design, fight. Each node says what it is as built (A1's match loop)."""
   nodes = [
-    ("Mine", "Constructors build Mining Rigs on ore asteroids in held sectors; income flows each tick.", "A1 match loop 4; Simulation.cpp:3003-3027"),
-    ("Build", "Relays claim sectors; Shipyard, Research Lab, Defence Platforms and Repair Bay; paid at the start.", "A1 match loop 5-6; Simulation.cpp:2145-2185"),
-    ("Research", "Topics within the Lab's open tier; structures upgraded a level at a time.", "A1 match loop 8; ADR-064 §Decision 9-11"),
-    ("Design", "Warships from saved designs: a hull, a drive, a weapon and an optional module.", "A1 match loop 9; ADR-014; ADR-058"),
-    ("Fight", "Suppress and destroy Relays, defend sectors; damaged ships retreat to be repaired.", "A1 match loop 10; ADR-056 §Decision 6; ADR-075 §Decision 5"),
+    ("Mine", "Constructors build Mining Rigs on ore asteroids in held sectors; income flows each tick.", "match loop step 4; Simulation.cpp:3003-3027"),
+    ("Build", "Relays claim sectors; Shipyard, Research Lab, Defence Platforms and Repair Bay; paid at the start.", "match loop steps 5-6; Simulation.cpp:2145-2185"),
+    ("Research", "Topics within the Lab's open tier; structures upgraded a level at a time.", "match loop step 8; ADR-064 §Decision 9-11"),
+    ("Design", "Warships from saved designs: a hull, a drive, a weapon and an optional module.", "match loop step 9; ADR-014; ADR-058"),
+    ("Fight", "Suppress and destroy Relays, defend sectors; damaged ships retreat to be repaired.", "match loop step 10; ADR-056 §Decision 6; ADR-075 §Decision 5"),
   ]
   cx, cy, r = 420, 330, 230
   parts = []
@@ -305,20 +304,54 @@ def research_tree():
 # ---------------------------------------------------------------------------------------------------- visual language
 
 
+def srgb_hex(value):
+  """A linear value (r, g, b), or one linear brightness, encoded to sRGB as the back buffer's sRGB view encodes it."""
+  def enc(c):
+    c = max(0.0, min(1.0, c))
+    return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+  rgb = [value] * 3 if isinstance(value, (int, float)) else value[:3]
+  return "#" + "".join(f"{round(enc(c) * 255):02X}" for c in rgb)
+
+
+def shared_hexes():
+  seen = {}
+  for group in ("colors", "light", "effects"):
+    for n, e in TOKENS[group].items():
+      if e.get("hex"):
+        seen.setdefault(e["hex"].upper(), []).append(n.split(" ")[0])
+  return seen
+
+
 def swatches(names, group):
+  shared = shared_hexes()
   rows = []
   for n in names:
-    entry = TOKENS[group][n] if n in TOKENS[group] else None
+    entry = TOKENS[group].get(n)
     if entry is None:
       continue
-    hx = entry.get("hex") or "#000000"
+    value = entry.get("value")
     meaning = entry.get("meaning") or entry.get("role") or ""
     src = entry.get("source") or ""
+    if isinstance(value, dict):
+      params = ", ".join(f"{k} {v}" for k, v in value.items())
+      swatch = (f'<div style="flex:0 0 64px;height:44px;box-sizing:border-box;border:1px dashed {C["EDGE_COLOR"]};font-family:{MONO};font-size:10px;'
+                f'line-height:44px;text-align:center;color:{C["LABEL_COLOR"]}">not a color</div>')
+      hx_text = params
+      meaning = meaning or "Bloom settings of the phosphor glow, not a color"
+    else:
+      hx = entry.get("hex") or (srgb_hex(value) if value is not None else None)
+      if hx is None:
+        continue
+      computed = "" if entry.get("hex") else " (sRGB of the linear value, computed)"
+      swatch = f'<div style="flex:0 0 64px;height:44px;background:{hx};border:1px solid {C["EDGE_COLOR"]}"></div>'
+      hx_text = hx + computed
+      others = [o for o in shared.get(hx.upper(), []) if o != n.split(" ")[0]]
+      if others:
+        hx_text += " · same value as " + ", ".join(others)
     rows.append(
-      f'<div style="display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid {C["EDGE_COLOR"]}">'
-      f'<div style="flex:0 0 64px;height:44px;background:{hx};border:1px solid {C["EDGE_COLOR"]}"></div>'
-      f'<div style="flex:1"><div style="display:flex;gap:12px;align-items:baseline"><span style="font-family:{MONO};font-weight:600;font-size:13px;color:{C["TEXT_COLOR"]}">{esc(n)}</span>'
-      f'<span style="font-family:{MONO};font-size:13px;color:{C["ACCENT_COLOR"]}">{esc(hx)}</span></div>'
+      f'<div style="display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid {C["EDGE_COLOR"]}">{swatch}'
+      f'<div style="flex:1"><div style="display:flex;flex-wrap:wrap;column-gap:12px;align-items:baseline"><span style="font-family:{MONO};font-weight:600;font-size:13px;color:{C["TEXT_COLOR"]}">{esc(n)}</span>'
+      f'<span style="font-family:{MONO};font-size:13px;color:{C["ACCENT_COLOR"]}">{esc(hx_text)}</span></div>'
       f'<div style="font-size:13px;line-height:1.4;color:{C["NUMBERS_COLOR"]}">{esc(meaning)}</div>'
       f'<div style="font-family:{MONO};font-size:11px;color:{C["LABEL_COLOR"]};margin-top:2px">{esc(src)}</div></div></div>')
   return f'<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:36px">{"".join(rows)}</div>'
@@ -418,11 +451,11 @@ def component_gallery():
             f'<span style="display:inline-block;margin-left:16px;width:10px;height:10px;border:1px solid {C["AMBER_COLOR"]}"></span>'
             f'<span style="display:inline-block;margin-left:16px">{gem(13)} {gem(8)}</span>')
   return "".join([
-    item("Window chrome", window, "Opaque WINDOW_COLOR body; hatched title bar in TITLE_HATCH_COLOR that drags the window; close box in CLOSE_BOX_COLOR with ×; 12-unit corner brackets in WINDOW_EDGE_COLOR. The name in the Label face, tracking 2, HEADER_LABEL_COLOR.", "Hud.cpp:871-899, 852-867; ADR-031 d3; A5 Components"),
+    item("Window chrome", window, "Opaque WINDOW_COLOR body; hatched title bar in TITLE_HATCH_COLOR that drags the window; close box in CLOSE_BOX_COLOR with ×; 12-unit corner brackets in WINDOW_EDGE_COLOR. The name in the Label face, tracking 2, HEADER_LABEL_COLOR.", "Hud.cpp:871-899, 852-867; ADR-031 d3"),
     item("HUD panel", panel_, "Every HUD panel takes the windows' look: WINDOW_COLOR body and the four corners.", "Hud.cpp:903-908; ADR-043 d1"),
     item("Warning chip", chip, "A warning is a chip: dark WINDOW_COLOR words on a WARNING_COLOR tag, 4 units wider than its words each side, 22 tall. Plain WARNING_COLOR text only for an invalid name or the menu notice.", "Hud.cpp:1155-1168; ADR-085 d1"),
     item("Part cards: picked, normal, locked", cards, "Picked: PICKED_COLOR face, PICKED_EDGE_COLOR edge. Normal: CARD_COLOR, EDGE_COLOR. Locked: LOCKED_COLOR hatched with LOCKED_HATCH_COLOR, words in LOCKED_TEXT_COLOR, and the research that unlocks it in AMBER_COLOR beside a checkbox. 220 × 80 (96 with a note) in the game; drawn narrower here.", "Hud.cpp:1429-1482; ADR-062 d4"),
-    item("HUD buttons: picked, hovered, enabled, disabled", buttons, "Face PICKED_COLOR when selected, CARD_COLOR when enabled, FIELD_COLOR when disabled; edge PICKED_EDGE_COLOR, HOVER_EDGE_COLOR (hovered) or EDGE_COLOR; label in the Name face; a key cap, a cost (gem + figure) or a note at the right. No button has a pressed state: Not specified.", "Hud.cpp:1264-1323; ADR-043 d4; ADR-088 d1; A5 Open items"),
+    item("HUD buttons: picked, hovered, enabled, disabled", buttons, "Face PICKED_COLOR when selected, CARD_COLOR when enabled, FIELD_COLOR when disabled; edge PICKED_EDGE_COLOR, HOVER_EDGE_COLOR (hovered) or EDGE_COLOR; label in the Name face; a key cap, a cost (gem + figure) or a note at the right. No button has a pressed state: Not specified.", "Hud.cpp:1264-1323; ADR-043 d4; ADR-088 d1; Open items (gaps)"),
     item("Retreat as three choices", retreat, "Three cells 116 × 34, 4 apart; the setting is picked; no cell is lit while the ships differ.", "Hud.cpp:463-477, 1328-1346, 3441-3452"),
     item("Bars", bars, "Per-ship bars 17 × 10 in rows of 12; health fill GOOD above 1/2, FAIR above 1/4, POOR below; own progress in BAR_FILL_COLOR on BAR_TRACK_COLOR; bars over entities 32 × 5 on the side's color × 0.3, build progress in BUILD_BAR_COLOR.", "Hud.cpp:1026-1029, 3095-3126; ADR-085 d2; ADR-088 d5"),
     item("The Queue button", queue, "The commit action: QUEUE_COLOR hatched with QUEUE_HATCH_COLOR, QUEUE_EDGE_COLOR edge, QUEUE_TEXT_COLOR words, and the cost of the count.", "Hud.cpp:826-833, 1581-1597"),
@@ -467,7 +500,7 @@ def image(key, alt, width=None, caption=None):
   return f'<figure style="margin:0 0 18px 0"><img src="{img(key)}" alt="{esc(alt)}" style="{w}height:auto;display:block;border:1px solid {C["EDGE_COLOR"]}">{cap}</figure>'
 
 
-APPROX = "Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game."
+APPROX = "Approximation of the in-game look: rendered from the shipped .nmf by a software rasterizer (DesignReference/_work/A6/tool), replaying MeshPS/MeshLinePS, not captured from the game."
 
 
 # ---------------------------------------------------------------------------------------------------- chapters
@@ -520,7 +553,7 @@ def build_all():
   # 02 The game
   board("game-pitch", "p02", "The game: pitch and pillars", W, doc(
     chapter_head(2, "The game", "The pitch and the pillars in the owner's words, the loop the MVP set out to test, and how a match and a world run.",
-                 ["MVP.md", "Phase1–5 designs", "A1"]) +
+                 ["MVP.md", "Phase1–5 designs"]) +
     card("Pitch and pillars", sec("A1/A1.md", "Pitch and pillars")) +
     card("The core loop", core_loop()) + footer_note(), W))
   loops = section("A1/A1.md", "Loops")
@@ -550,17 +583,17 @@ def build_all():
   sheets = "".join(f'<div>{image(f"sheets/{n}.png", f"{n} models", None, n)}</div>' for n in ("Human", "Tarkan", "Pirate", "Wreck"))
   board("sides", "p03", "Sides", W, doc(
     chapter_head(3, "Sides", "Human and Tarkan with their own meshes; Pirate on Tarkan's meshes in its own color; Wreck in grey. Colors come from Models.json.",
-                 ["Models.json", "A5 Sides", "A6 Sets and colors", "A7 Side colors"]) +
+                 ["Models.json", "ModelCatalog.h", "SceneShading.h", "GameClient.cpp"]) +
     card("The four sides and the rocks", side_table + md(TOKENS["sides"].get("_method", ""))) +
     card("Every model of each side", f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">{sheets}</div><p class="md" style="color:{C["LABEL_COLOR"]}">{APPROX}</p>') +
-    card("Sides as A5 resolved them", sec("A5/A5.md", "Sides")) +
-    card("Sets and colors in the renders", sec("A6/A6.md", "Sets and colors")) +
+    card("Sides, resolved to colors", sec("A5/A5.md", "Sides")) +
+    card("Sets and colors as rendered", sec("A6/A6.md", "Sets and colors")) +
     card("Side colors in the world", sec("A7/A7.md", "Side colors")) + footer_note(), W))
 
   # 04 Economy & territory
   board("economy-ore", "p04", "Ore, Mining Rigs and depletion", W, doc(
     chapter_head(4, "Economy & territory", "Ore in hundredths, Mining Rigs and the reserves they draw down, the 10 km map of 25 sectors, territory held by Relays, domination and the fleet cap.",
-                 ["Tuning.json", "Map.json", "A1", "ADR-016/035/036/056/057/071/072"]) +
+                 ["Tuning.json", "Map.json", "Simulation.cpp", "ADR-016/035/036/056/057/071/072"]) +
     card("Ore", sec("A1/A1.md", "Ore: units")) +
     card("Mining Rigs", sec("A1/A1.md", "Mining Rigs")) +
     card("Ore depletion", sec("A1/A1.md", "Ore depletion")) + footer_note(), W))
@@ -578,7 +611,7 @@ def build_all():
                    for k in ("CommandStation", "Shipyard", "ResearchLab") for s in ("Human", "Tarkan"))
   board("structures", "p05", "Structures", W, doc(
     chapter_head(5, "Structures", "Every structure with its levels, costs and effects as the data gives them. Only the Command Station reaches L5; the Shipyard stops at L3 and the Research Lab at L4.",
-                 ["Tuning.json: structures", "A2 Structures", "ADR-016", "ADR-064"]) +
+                 ["Tuning.json: structures", "Simulation.cpp", "ADR-016", "ADR-064"]) +
     card("Structures", sec("A2/A2.md", "Structures")) + footer_note(), W))
   board("structures-levels", "p05", "Structure levels as drawn", W, doc(
     card("Levels as drawn", f'<p class="md" style="color:{C["LABEL_COLOR"]}">{APPROX} The art ships five levels for each; the data reaches L5, L3 and L4 (see Open items).</p>'
@@ -587,7 +620,7 @@ def build_all():
   # 06 Ships & the Designer
   board("ships-parts", "p06", "Hulls, drives, weapons, modules", W, doc(
     chapter_head(6, "Ships & the Designer", "Hulls, drives, weapons and the module; how a design's stats are derived; the starting designs; damage after armor as the Designer shows it.",
-                 ["Tuning.json", "A2", "ADR-014/017/018/058/069"]) +
+                 ["Tuning.json", "DesignStats.h", "Hud.cpp", "ADR-014/017/018/058/069"]) +
     card("Units and the clock", sec("A2/A2.md", "Units of measure")) +
     card("Hulls", sec("A2/A2.md", "Hulls")) + card("Drives", sec("A2/A2.md", "Drives")) +
     card("Weapons", sec("A2/A2.md", "Weapons")) + card("Modules", sec("A2/A2.md", "Modules")) +
@@ -602,14 +635,14 @@ def build_all():
   # 07 Research
   board("research", "p07", "Research", W, doc(
     chapter_head(7, "Research", "Twenty-three topics in three tiers, opened by the Research Lab's levels; a topic that needs another is drawn hatched, as the Research window draws it.",
-                 ["Tuning.json: research", "A2 Research tree", "ADR-033"]) +
+                 ["Tuning.json: research", "Research.cpp", "ADR-033"]) +
     card("The tree", research_tree(), label="drawn from Tuning.json: research") +
-    card("Research tree as A2 traced it", sec("A2/A2.md", "Research tree")) + footer_note(), W))
+    card("Research tree, tier by tier", sec("A2/A2.md", "Research tree")) + footer_note(), W))
 
   # 08 Combat
   board("combat", "p08", "Combat", W, doc(
     chapter_head(8, "Combat", "How hits land, matchups, retreat and repair, salvage, Pirates and losing all production.",
-                 ["A1", "A2", "Tuning.json", "Matchups.json", "ADR-014/073/074/075/083"]) +
+                 ["Tuning.json", "Matchups.json", "Simulation.cpp", "ADR-014/073/074/075/083"]) +
     card("Combat rules", sec("A2/A2.md", "Combat rules")) +
     card("Movement as far as it changes play", sec("A2/A2.md", "Movement as far as")) +
     card("Repair and retreat", sec("A1/A1.md", "Repair and retreat")) +
@@ -626,7 +659,7 @@ def build_all():
   # 09 Orders & automation
   board("orders", "p09", "Selection, commands, standing orders, alerts", W, doc(
     chapter_head(9, "Orders & automation", "Selection and commands, the two standing orders, alerts, scheduled orders, the deputy and the Away report, as the player meets them.",
-                 ["A3", "Phase5.md", "ADR-059/079/080/088"]) +
+                 ["Phase5.md", "OrderForm.cpp", "Alerts.cpp", "ADR-059/079/080/088"]) +
     card("Selection and commands", sec("A3/A3.md", "1. Selection and commands")) +
     card("Standing orders", sec("A3/A3.md", "2. Standing orders")) +
     card("Alerts", sec("A3/A3.md", "3. Alerts")) + footer_note(), W))
@@ -639,7 +672,7 @@ def build_all():
   # 10 AI & difficulty
   board("ai", "p10", "AI behavior", W, doc(
     chapter_head(10, "AI & difficulty", "What the AI does as the player meets it, and how Easy, Normal and Hard differ, field by field.",
-                 ["Opponent.json", "OpponentEasy.json", "OpponentHard.json", "A3", "ADR-020/041/065/076"]) +
+                 ["Opponent.json", "OpponentEasy.json", "OpponentHard.json", "AiPlayer.cpp", "ADR-020/041/065/076"]) +
     card("AI behavior", sec("A3/A3.md", "7. AI behavior")) + footer_note(), W))
   board("ai-difficulty", "p10", "Easy, Normal, Hard", W, doc(
     card("Difficulty, field by field", sec("A3/A3.md", "8. Difficulty diff")) + footer_note(), W))
@@ -647,7 +680,7 @@ def build_all():
   # 11 The persistent world
   board("world", "p11", "The persistent world", W, doc(
     chapter_head(11, "The persistent world", "A world on a dedicated server: seats taken with a token, saves every minute and a log of every command, a deputy while the player is away, and no end.",
-                 ["Phase5.md", "A3", "A1", "ADR-077/078/079/082/084/086"]) +
+                 ["Phase5.md", "OutpostServer", "WorldFolder.cpp", "ADR-077/078/079/082/084/086"]) +
     card("The dedicated server", sec("A3/A3.md", "10. The dedicated server")) +
     card("Join world, --join, lost connection", sec("A3/A3.md", "11. Join world")) +
     card("Join → play → lost connection", flow(steps_of(section("A3/A3.md", "14.2 Join")), 4)) + footer_note(), W))
@@ -662,7 +695,7 @@ def build_all():
   all_colors = list(TOKENS["colors"].keys())
   board("visual-colors", "p12", "Color tokens", W, doc(
     chapter_head(12, "Visual language", "The design system the game draws its interface with: one meaning per color, the type scale and its contrast, the components and their states, and how it scales.",
-                 ["Hud.cpp", "Hud.h", "GameClient.cpp", "A5 tokens.json", "ADR-030/043/061/062/085/090/091"]) +
+                 ["Hud.cpp", "Hud.h", "GameClient.cpp", "UiPS.hlsl", "ADR-030/043/061/062/085/090/091"]) +
     card("How a color reaches the screen", sec("A5/A5.md", "How a color reaches the screen")) +
     card("Color tokens", swatches(all_colors, "colors"), label=f"{len(all_colors)} tokens, each with its one meaning") +
     card("Scene light and effects", swatches(list(TOKENS["light"].keys()), "light") + swatches(list(TOKENS["effects"].keys()), "effects")) + footer_note(), W))
@@ -688,7 +721,7 @@ def build_all():
   # 13 Screens
   board("screens-flow", "p13", "Screens: inventory and flow", W, doc(
     chapter_head(13, "Screens", "Every screen and window in each state, drawn at 1920×1080 from the layout Hud.cpp computes, with numbered callouts that cite the rule behind each element.",
-                 ["Hud.cpp", "A4 layouts", "ADR-013/015/031/043/066/070/088"]) +
+                 ["Hud.cpp", "WindowManager.cpp", "ADR-013/015/031/043/066/070/088"]) +
     card("Flow", screen_flow()) +
     card("State inventory", sec("A4/A4.md", "State inventory")) + footer_note(), W))
   idx = json.loads((WORK / "A4" / "layouts" / "_index.json").read_text())
@@ -732,7 +765,7 @@ def build_all():
     inner = ""
     if first:
       inner += chapter_head(14, "The battlefield", "What the world looks like and the rule behind each element: camera, sky, grid, the lit vector look, fog and memories, territory, rings, bars, exhaust and the phosphor glow.",
-                            ["Camera.json", "GameClient.cpp", "NeuronClient/Shader", "A7", "ADR-012/019/022/024/026/028/040/081/090/091/092"])
+                            ["Camera.json", "GameClient.cpp", "NeuronClient/Shader", "ADR-012/019/022/024/026/028/040/081/090/091/092"])
       inner += card("The vector look, in the game's light", f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
                     f'{image("models/Human/Medium_34_512.png", "Human Medium hull", None, "Human Medium · " + APPROX)}'
                     f'{image("models/Tarkan/Medium_34_512.png", "Tarkan Medium hull", None, "Tarkan Medium · " + APPROX)}</div>')
@@ -745,7 +778,7 @@ def build_all():
   set_sheets = "".join(image(f"sheets/{n}.png", f"{n} sheet", None, f"{n} · every model, 3/4 and top") for n in ("Human", "Tarkan", "Pirate", "Wreck", "Asteroids"))
   board("assets-sheets", "p15", "Contact sheets", W, doc(
     chapter_head(15, "Asset catalogue", "Every shipped model of every set in the game's look, the level sheets, the textures and the app's logos, with lengths, triangles, bounds and hashes.",
-                 ["Models.json", "OutpostCommander/Assets/Models/*.nmf", "Art/Models/*.glb", "A6"]) +
+                 ["Models.json", "OutpostCommander/Assets/Models/*.nmf", "Art/Models/*.glb", "Tools/BakeMeshes.py"]) +
     card("Renderer", sec("A6/A6.md", "Renderer and how")) +
     card("Sheets", f'<p class="md" style="color:{C["LABEL_COLOR"]}">{APPROX}</p>{set_sheets}') + footer_note(), W))
   all_levels = "".join(image(f"sheets/{st}_{k}_levels.png", f"{st} {k} levels", None, f"{st} · {k} · L1 → L5")
@@ -763,14 +796,14 @@ def build_all():
   board("assets-textures", "p15", "Textures and logos", W, doc(
     card("Textures", f'<div style="display:flex;gap:16px;flex-wrap:wrap">{tex2}</div>' + sec("A6/A6.md", "Textures")) +
     card("App logos", image("logos/_logos_on_dark_and_white.png", "App logos on dark and white", None, "The packaged logos (OutpostCommander/Assets/*.png)") + sec("A6/A6.md", "App logos")) +
-    card("Open and conflicts (A6)", sec("A6/A6.md", "Open / unclear") + sec("A6/A6.md", "Conflicts")) + footer_note(), W))
+    card("Assets: open items and conflicts", sec("A6/A6.md", "Open / unclear") + sec("A6/A6.md", "Conflicts")) + footer_note(), W))
 
   # 16 Controls
   ctrl, n_actions, n_heads = controls()
   board("controls", "p16", "Controls", W, doc(
     chapter_head(16, "Controls", f"Every binding the Controls window lists ({n_actions} actions under {n_heads} headings), grouped as the window groups them. "
                  f"The window is built from KeyBindings.h, so it cannot name a key the code does not read (ADR-068 d4).",
-                 ["KeyBindings.h:93-125", "Hud.cpp:1888-1926", "A4 §4.4"]) + ctrl +
+                 ["KeyBindings.h:93-125", "Hud.cpp:1888-1926"]) + ctrl +
     card("Keys and mouse for orders", sec("A3/A3.md", "1.2 Keys and mouse")) + footer_note(), W))
 
   # 17 Open items
@@ -818,62 +851,90 @@ def stats():
 
 
 def screen_flow():
-  """A4's Flow table as a graph: menu → match → windows → end / lost connection."""
+  """A4's Flow table as a graph: menu → match → windows → end / lost connection. Edges carry a number; the legend says
+  each one's trigger, so no label crosses a box."""
   nodes = {
-    "launch": ("Launch", 40, 40), "menu": ("Main menu", 360, 40), "exit": ("Exit / message box", 40, 260),
-    "match": ("Match, before its first snapshot", 680, 40), "hud": ("Match HUD", 1000, 40),
-    "windows": ("Windows: Designer, Production, Research, Controls, Orders", 1000, 260), "away": ("Away window", 1000, 480),
-    "banner": ("End banner: Victory, Defeat, Draw, Empire fallen", 680, 260), "silent": ("HUD: No word from the server", 680, 480),
-    "lost": ("Main menu with a notice", 360, 260),
+    "launch": ("Launch", 20, 130), "menu": ("Main menu", 350, 130), "exit": ("Exit / message box", 20, 400),
+    "match": ("Match, before its first snapshot", 680, 130), "hud": ("Match HUD", 1000, 130),
+    "windows": ("Windows: Designer, Production, Research, Controls, Orders", 1000, 400), "away": ("Away window", 1000, 600),
+    "banner": ("End banner: Victory, Defeat, Draw, Empire fallen", 680, 400), "silent": ("HUD: No word from the server", 680, 600),
+    "lost": ("Main menu with a notice", 350, 400),
   }
   edges = [
-    ("launch", "menu", "loaded (window shown)"), ("launch", "match", "--join <file>, --measure"), ("launch", "exit", "load failure"),
-    ("menu", "match", "Easy / Normal / Hard skirmish, Join world"), ("menu", "lost", "join fails"), ("menu", "exit", "Quit"),
-    ("match", "hud", "first snapshot"), ("hud", "windows", "D P R F1 O, buttons"), ("windows", "hud", "×, Esc, key"),
-    ("hud", "away", "snapshot with a report"), ("hud", "banner", "matchOver / restartTick"), ("banner", "menu", "Back to menu"),
-    ("hud", "silent", "no snapshot 2 s"), ("silent", "lost", "receive throws"), ("hud", "lost", "connection lost"),
+    ("launch", "menu", "Loaded: the hidden window is shown", "WinMain.cpp:273-316, 366; ADR-049"),
+    ("launch", "match", "--join <file> joins a world; --measure plays the Normal AI; --load and --stress start a match with a load driver or a stress scene, and no AI", "WinMain.cpp:226-235, 251-252, 329-334, 367-370"),
+    ("launch", "exit", "A load failure, or a lost device", "WinMain.cpp:95-101, 559-572"),
+    ("menu", "match", "Easy, Normal or Hard skirmish; Join world (with a join file)", "GameClient.cpp:883-886; WinMain.cpp:319-358, 487-490, 505-508"),
+    ("menu", "lost", "The join fails: Could not join the world: {error}", "WinMain.cpp:359-364"),
+    ("menu", "exit", "Quit", "WinMain.cpp:509-511"),
+    ("match", "hud", "The first snapshot; the camera centres on the player's ships", "GameClient.cpp:548-567, 689-775"),
+    ("hud", "windows", "D, P, R, F1, O; a window button, a status line, a ship bar", "GameClient.cpp:645-674, 896-923, 957-963"),
+    ("windows", "hud", "×, Esc on the front window, or its key again", "GameClient.cpp:659-660, 801-807, 987-991"),
+    ("hud", "away", "The first snapshot that carries an away report", "GameClient.cpp:539-544"),
+    ("hud", "banner", "Snapshot::matchOver, or restartTick in a world", "Hud.cpp:2188-2218"),
+    ("banner", "menu", "Back to menu", "GameClient.cpp:890-892; WinMain.cpp:491-504"),
+    ("hud", "silent", "No snapshot for 2 s or more; the next snapshot ends it", "Hud.cpp:3324-3336"),
+    ("silent", "lost", "Receive throws: the connection closed", "WinMain.cpp:409-416, 454-467; ADR-078 d10"),
   ]
-  bw, bh = 240, 64
+  bw, bh = 240, 72
+  bends = {("launch", "match"): -150, ("hud", "away"): -300}  # these two would cross a box; bend them round it
   svg = [f'<defs><marker id="fa" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="{C["WINDOW_EDGE_COLOR"]}"/></marker></defs>']
 
   def center(k):
     _, x, y = nodes[k]
     return x + bw / 2, y + bh / 2
 
-  for a, b, label in edges:
+  def cut(cx, cy, ux, uy):
+    tx = (bw / 2 + 4) / abs(ux) if ux else 1e9
+    ty = (bh / 2 + 4) / abs(uy) if uy else 1e9
+    t = min(tx, ty)
+    return cx + ux * t, cy + uy * t
+
+  pairs = {(a, b) for a, b, *_ in edges}
+  badges = []
+  for i, (a, b, label, src) in enumerate(edges, 1):
     (x0, y0), (x1, y1) = center(a), center(b)
     dx, dy = x1 - x0, y1 - y0
-    # cut at the boxes' edges
-    def cut(cx, cy, ux, uy):
-      tx = (bw / 2) / abs(ux) if ux else 1e9
-      ty = (bh / 2) / abs(uy) if uy else 1e9
-      t = min(tx, ty)
-      return cx + ux * t, cy + uy * t
     d = math.hypot(dx, dy)
     ux, uy = dx / d, dy / d
-    sx, sy = cut(x0, y0, ux, uy)
-    ex, ey = cut(x1, y1, -ux, -uy)
-    off = 6 if (b, a) in [(e[0], e[1]) for e in edges] else 0
-    sx += -uy * off; ex += -uy * off; sy += ux * off; ey += ux * off
-    svg.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="{C["WINDOW_EDGE_COLOR"]}" stroke-width="1.5" marker-end="url(#fa)"/>')
-    mx, my = (sx + ex) / 2, (sy + ey) / 2
-    svg.append(f'<text x="{mx:.1f}" y="{my - 6:.1f}" text-anchor="middle" style="font-family:{MONO};font-size:11px" fill="{C["NUMBERS_COLOR"]}">{esc(label)}</text>')
+    bend = bends.get((a, b))
+    if bend:
+      qx, qy = (x0 + x1) / 2 - uy * bend, (y0 + y1) / 2 + ux * bend
+      v0 = (qx - x0, qy - y0)
+      v1 = (qx - x1, qy - y1)
+      n0, n1 = math.hypot(*v0), math.hypot(*v1)
+      sx, sy = cut(x0, y0, v0[0] / n0, v0[1] / n0)
+      ex, ey = cut(x1, y1, v1[0] / n1, v1[1] / n1)
+      svg.append(f'<path d="M{sx:.1f},{sy:.1f} Q{qx:.1f},{qy:.1f} {ex:.1f},{ey:.1f}" fill="none" stroke="{C["WINDOW_EDGE_COLOR"]}" stroke-width="1.5" marker-end="url(#fa)"/>')
+      mx, my = 0.25 * sx + 0.5 * qx + 0.25 * ex, 0.25 * sy + 0.5 * qy + 0.25 * ey
+    else:
+      sx, sy = cut(x0, y0, ux, uy)
+      ex, ey = cut(x1, y1, -ux, -uy)
+      off = 9 if (b, a) in pairs else 0
+      sx, ex, sy, ey = sx - uy * off, ex - uy * off, sy + ux * off, ey + ux * off
+      svg.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="{C["WINDOW_EDGE_COLOR"]}" stroke-width="1.5" marker-end="url(#fa)"/>')
+      mx, my = sx + (ex - sx) * 0.45, sy + (ey - sy) * 0.45
+    badges.append(f'<circle cx="{mx:.1f}" cy="{my:.1f}" r="11" fill="{C["FIELD_COLOR"]}" stroke="{C["ACCENT_COLOR"]}" stroke-width="1.2"/>'
+                  f'<text x="{mx:.1f}" y="{my + 4:.1f}" text-anchor="middle" style="font-family:{MONO};font-weight:700;font-size:11px" fill="{C["ACCENT_COLOR"]}">{i}</text>')
   for k, (title, x, y) in nodes.items():
     svg.append(f'<rect x="{x}" y="{y}" width="{bw}" height="{bh}" fill="{C["WINDOW_COLOR"]}" stroke="{C["WINDOW_EDGE_COLOR"]}" stroke-width="1"/>')
-    words = title.split(" ")
-    lines, cur = [], ""
+    words, lines, cur = title.split(" "), [], ""
     for w in words:
-      if len(cur) + len(w) > 30:
+      if len(cur) + len(w) > 28:
         lines.append(cur)
         cur = w
       else:
         cur = (cur + " " + w).strip()
     lines.append(cur)
-    for i, ln in enumerate(lines):
-      svg.append(f'<text x="{x + bw / 2}" y="{y + bh / 2 + 5 + (i - (len(lines) - 1) / 2) * 18:.1f}" text-anchor="middle" '
+    for j, ln in enumerate(lines):
+      svg.append(f'<text x="{x + bw / 2}" y="{y + bh / 2 + 5 + (j - (len(lines) - 1) / 2) * 18:.1f}" text-anchor="middle" '
                  f'style="font-family:{LABEL};font-weight:600;font-size:15px" fill="{C["TEXT_COLOR"]}">{esc(ln)}</text>')
-  graph = (f'<svg role="img" aria-label="Screen flow" width="1280" height="580" viewBox="0 0 1280 580" style="display:block">{"".join(svg)}</svg>')
-  return graph + sec("A4/A4.md", "Flow", demote_by=1)
+  graph = (f'<svg role="img" aria-label="Screen flow: launch, menu, match, HUD, windows, away, banner, lost connection" width="1320" height="700" '
+           f'viewBox="0 0 1320 700" style="display:block">{"".join(svg)}{"".join(badges)}</svg>')
+  legend = "".join(f'<tr><td style="width:36px"><strong>{i}</strong></td><td>{esc(nodes[a][0])} → {esc(nodes[b][0])}</td><td>{esc(label)}</td><td><code>{esc(src)}</code></td></tr>'
+                   for i, (a, b, label, src) in enumerate(edges, 1))
+  legend += ('<tr><td>—</td><td>Any screen → the same screen</td><td>Ctrl+= or Ctrl+- takes the next or previous interface step</td><td><code>GameClient.cpp:779-799</code></td></tr>')
+  return graph + (f'<div class="md"><table><thead><tr><th>#</th><th>From → to</th><th>Trigger</th><th>Source</th></tr></thead><tbody>{legend}</tbody></table></div>')
 
 
 # ---------------------------------------------------------------------------------------------------- canvas

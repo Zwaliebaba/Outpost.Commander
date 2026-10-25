@@ -15,6 +15,8 @@ const path = require('path');
     await page.waitForTimeout(150);
     const h = await page.evaluate(() => Math.ceil(document.querySelector('[data-root]').getBoundingClientRect().height));
     heights[file] = Math.ceil(h * 1.03) + 24;
+    const wide = await page.evaluate(() => Math.ceil(document.querySelector('[data-root]').scrollWidth));
+    if (wide > b.w + 1) console.log('OVERFLOW', file, wide, '>', b.w);
     if (process.argv[4]) await page.screenshot({ path: path.join(process.argv[4], file.replace('.dc.html', '.png')), fullPage: true });
     await page.close();
   }

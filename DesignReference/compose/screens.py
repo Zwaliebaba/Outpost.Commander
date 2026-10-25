@@ -13,24 +13,61 @@ LAYOUTS = WORK / "A4" / "layouts"
 SIDE_BAR_BACK = "#426391"  # Human's bar back, Shaded(side, HEALTH_BACK_SHADE 0.3): A5 tokens.json sides.Human.derived
 
 
-def resolve(spec):
-  """A layout's color string to CSS: a token, a token at an alpha, or one of the few described colors."""
+def _enc(c):
+  c = max(0.0, min(1.0, c))
+  return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
+def _hex(lin):
+  return "#" + "".join(f"{round(_enc(c) * 255):02X}" for c in lin)
+
+
+def _linear(name):
+  value = COLORS[name].get("value")
+  return list(value[:3]), (float(value[3]) if len(value) > 3 else 1.0)
+
+
+def _over(top, alpha, under):
+  return [t * alpha + u * (1 - alpha) for t, u in zip(top, under)]
+
+
+# The interface blends in linear light (UiPipeline.cpp:110-116, an sRGB render-target view, Renderer.h:25), so a
+# translucent color is composited here, in linear, over what it is drawn on, and drawn opaque. The minimap's ground is
+# MAP_COLOR over the black world; anything else translucent sits on a window.
+_MAP_RGB, _MAP_A = _linear("MAP_COLOR")
+MAP_GROUND = _over(_MAP_RGB, _MAP_A, [0.0, 0.0, 0.0])
+WINDOW_GROUND = _linear("WINDOW_COLOR")[0]
+
+
+def resolve(spec, ground=None):
+  """A layout's color string to CSS: a token, a token at an alpha (composited in linear light over `ground`), or one
+  of the few described colors."""
   if not spec:
     return None
   spec = spec.strip()
   name = spec.split("@")[0].split(" ")[0]
-  if "@" in spec and name in COLORS:
-    m = re.search(r"\(([\d.]+)\)|@([\d.]+)", spec)
-    a = float(m.group(1) or m.group(2)) if m else 1.0
-    return color(name, a)
+  if name in COLORS and COLORS[name].get("value") and isinstance(COLORS[name]["value"], list):
+    rgb, a = _linear(name)
+    if "@" in spec:
+      m = re.search(r"\(([\d.]+)\)|@([\d.]+)", spec)
+      a = float(m.group(1) or m.group(2)) if m else 1.0
+    if a >= 0.999:
+      return color(name, 1.0)
+    under = ground if ground is not None else ([0.0, 0.0, 0.0] if name == "MAP_COLOR" else WINDOW_GROUND)
+    return _hex(_over(rgb, a, under))
   if name in COLORS:
     return color(name)
   if spec.startswith("side color"):
     return SIDE_BAR_BACK
   if spec.startswith("black"):
-    return "rgba(0,0,0,0.55)"
+    return FOG_CSS
   raise KeyError(f"unresolved layout color {spec!r}")
 
+
+# Fog: black at 0.55 over what was seen before (FogOfWar.h:13-15: 0 in sight, 0.55 seen, 0.9 never seen). Blended in
+# linear light, black at a over c leaves c × (1 − a); the sRGB alpha that gives the same is 1 − (1 − a)^(1/2.2).
+FOG_ALPHA = 0.55
+FOG_CSS = f"rgba(0,0,0,{1 - (1 - FOG_ALPHA) ** (1 / 2.2):.3f})"
 
 DRAW_LIST = {"bars": 0, "panels": 1, "lines": 2, "sprites": 3, "texts": 4}
 
@@ -45,11 +82,12 @@ def _box(e):
 
 def draw_element(e):
   kind = e["kind"]
+  ground = MAP_GROUND if e["id"].startswith("minimap") and e["id"] not in ("minimap.map",) else None
   if kind in ("panel", "button", "bar", "entityBar"):
     fill = e.get("fill", "solid")
     if fill == "none":
       return ""
-    css = resolve(e.get("color"))
+    css = resolve(e.get("color"), ground)
     if css is None:
       return ""
     if fill == "hatched":
@@ -57,17 +95,17 @@ def draw_element(e):
       shift = -((e["x"] + e["y"]) % 7)
       bg = f"background:{hatch(css)};background-position:{shift:.2f}px 0"
     elif fill == "fog":
-      bg = "background:rgba(0,0,0,0.55)"
+      bg = f"background:{FOG_CSS}"
     else:
       bg = f"background:{css}"
     return f'<div style="position:absolute;{_box(e)};{bg}"></div>'
   if kind == "outline":
-    css = resolve(e.get("edge"))
+    css = resolve(e.get("edge"), ground)
     width = e.get("edgeWidth", 1)
     style = "dashed" if e.get("pattern") else "solid"
     return f'<div style="position:absolute;{_box(e)};box-sizing:border-box;border:{width}px {style} {css}"></div>'
   if kind == "sprite":
-    css = resolve(e.get("color"))
+    css = resolve(e.get("color"), ground)
     w, h = e["w"], e["h"]
     sprite = e.get("sprite")
     if sprite == "Corner":
@@ -88,9 +126,9 @@ def draw_element(e):
     return (f'<svg aria-hidden="true" style="position:absolute;left:{e["x"]:.2f}px;top:{e["y"]:.2f}px;overflow:visible" '
             f'width="{w}" height="{h}" viewBox="0 0 {w} {h}">{inner}</svg>')
   if kind == "text":
-    css = resolve(e.get("color"))
+    css = resolve(e.get("color"), ground)
     face = e.get("typeface") or "Name"
-    size = e.get("size") or 16
+    size = round(e.get("size") or 16)  # rasterized at round(units × scale) px (UiPipeline.cpp:28-31)
     tracking = e.get("tracking") or 0
     label = e.get("label") or ""
     return (f'<div style="position:absolute;left:{e["x"]:.2f}px;top:{e["y"]:.2f}px;height:{e["h"]:.2f}px;line-height:{e["h"]:.2f}px;'
@@ -105,7 +143,7 @@ def lines_overlay(elements):
   for e in elements:
     if e["kind"] != "line":
       continue
-    css = resolve(e.get("color"))
+    css = resolve(e.get("color"), MAP_GROUND if e["id"].startswith("minimap") else None)
     pts = " ".join(f"{x:.2f},{y:.2f}" for x, y in e["points"])
     segs.append(f'<polyline points="{pts}" stroke="{css}" stroke-width="{e.get("widthPixels", 1)}" fill="none"/>')
   if not segs:
@@ -283,6 +321,8 @@ def frame(layout_file):
     f'<p style="margin:0 0 8px 0">Geometry derived from Hud.cpp by A4\'s derive_layouts.py, not dumped from the game: '
     f'{estimated} of {len(elements)} elements depend on DirectWrite text measurement and are estimated. '
     f'Content values are samples built from Tuning.json and Map.json. {world_note}'
+    f'Translucent colors are composited in linear light, as the game blends them; the minimap\'s fog is drawn at 0.55, '
+    f'the shade of what was seen before: the game draws 0 in sight and 0.9 where never seen (FogOfWar.h:13-15). '
     f'Dashed boxes and numbered discs in {ANNOTATION} are this reference\'s annotations, not the game.</p>'
     f'<ul style="margin:0;padding-left:18px">{notes}</ul>'
     f'<p style="margin:8px 0 0 0;font-family:{MONO};font-size:11.5px">DesignReference/_work/A4/layouts/{esc(layout_file)}</p></div></aside>')
