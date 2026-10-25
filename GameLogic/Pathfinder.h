@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// A circle that blocks movement: an asteroid or a field now, a structure later (design §4, §6).
+// A circle that blocks movement: an asteroid, a field or a structure (ADR-010 decision 1).
 struct Obstacle
 {
   PlanePosition center;
@@ -11,7 +11,7 @@ struct Obstacle
   friend constexpr bool operator==(const Obstacle&, const Obstacle&) = default;
 };
 
-// Shortest paths around circular obstacles for a ship that must keep a clearance, its footprint radius (task 2.4).
+// Shortest paths around circular obstacles for a ship that must keep a clearance, its footprint radius (ADR-010 decision 1).
 // Each obstacle is grown by the clearance and ringed by a polygon whose edges touch the grown circle; a path runs
 // straight between the polygons' corners wherever nothing blocks it. The graph of those corners depends only on the
 // obstacles and the clearance, so it is built once per clearance and kept: extended when obstacles are added, and
@@ -87,7 +87,7 @@ public:
   // its grid cannot answer exactly, and what tests hold it to.
   [[nodiscard]] bool IsStraightPathClearOfEveryObstacle(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;
 
-  // Tells _observer when a graph is built, as TickPart::GraphBuild (task 8.1); nullptr for no one. The simulation sets it
+  // Tells _observer when a graph is built, as TickPart::GraphBuild; nullptr for no one. The simulation sets it
   // for one tick at a time.
   void Observe(TickObserver* _observer) noexcept
   {
@@ -156,9 +156,9 @@ private:
 class GroupRoutes
 {
 public:
-  // Where the group's band of lanes crosses a route at one of its corners (ADR-047): a ship's lane passes the corner at
-  // middle + across * its place across the band, in meters. across lies along the corner's mitre, and is stretched so
-  // that a lane keeps its distance from the route on both legs.
+  // Where the group's band of lanes crosses a route at one of its corners (ADR-047 decision 1): a ship's lane passes the
+  // corner at middle + across * its place across the band, in meters. across lies along the corner's mitre, and is
+  // stretched so that a lane keeps its distance from the route on both legs.
   struct Band
   {
     PlanePosition middle;
@@ -195,7 +195,7 @@ public:
   // Searches the group's route from _center, its ships' mean position.
   void SearchFrom(PlanePosition _center);
 
-  // A ship's way: its waypoints, and the last of those that are its lane (ADR-047), when it keeps one.
+  // A ship's way: its waypoints, and the last of those that are its lane (ADR-047 decision 2), when it keeps one.
   struct Way
   {
     std::vector<PlanePosition> waypoints;
@@ -217,8 +217,8 @@ private:
   [[nodiscard]] std::optional<Way> Join(const Route& _route, PlanePosition _start, PlanePosition _goal, float _clearanceMeters,
                                         float _laneMeters) const;
   // The ship's lane along _route from its _corner on, from _start to _next: each corner moved _laneMeters across the band
-  // from its middle, or towards the corner as far as the way needs (ADR-047). Nothing when the route has no bands, or the
-  // lane cannot be made clear.
+  // from its middle, or towards the corner as far as the way needs (ADR-047 decision 1). Nothing when the route has no
+  // bands, or the lane cannot be made clear.
   [[nodiscard]] std::optional<std::vector<PlanePosition>> Lane(const Route& _route, std::size_t _corner, PlanePosition _start,
                                                                float _laneMeters, PlanePosition _next, float _clearanceMeters) const;
   // The band at each of _corners, a route from _from searched for _clearanceMeters; none when the group keeps no lanes.

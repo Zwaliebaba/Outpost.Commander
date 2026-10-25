@@ -83,7 +83,7 @@ std::int32_t ShipyardLevelFor(const Snapshot& _snapshot, Outpost::HullId _hull) 
   return hull != _snapshot.hulls.end() ? hull->shipyardLevel : 1;
 }
 
-// How many topics a Research Lab at _level researches at once (Phase 3 design §6), from the snapshot's levels.
+// How many topics a Research Lab at _level researches at once (ADR-064 decision 10), from the snapshot's levels.
 std::int32_t ResearchSlotsOf(const Outpost::StructureTypeView* _lab, std::int32_t _level) noexcept
 {
   std::int32_t slots = 1;
@@ -232,7 +232,7 @@ void Outpost::Deputy::Decide(const Snapshot& _snapshot, std::vector<Command>& _o
 }
 
 // One topic at a time while its Lab has a slot free: the next of the AI's order, and once that order is done, the first
-// topic of the tuning data's that the Lab can take (Phase 3 design §6).
+// topic of the tuning data's that the Lab can take (ADR-033 decision 2).
 void Outpost::Deputy::Research(const Snapshot& _snapshot, std::vector<Command>& _orders) const
 {
   const EntityView* lab = FindOwned(_snapshot, StructureKind::ResearchLab, m_player);
@@ -285,7 +285,7 @@ const Outpost::DesignView* Outpost::Deputy::NextDesign(const Snapshot& _snapshot
   return most != fleet.end() ? buildable(most->first) : nullptr;
 }
 
-// A job waits in its queue until the Ore pays for it and the fleet cap has room for it (Phase 1 design §5, Phase 4 design §5),
+// A job waits in its queue until the Ore pays for it and the fleet cap has room for it (ADR-016 decision 6, ADR-071 decision 3),
 // so a Shipyard kept one job ahead starts its next ship as soon as it can, and spends nothing until then.
 bool Outpost::Deputy::Produce(const Snapshot& _snapshot, std::vector<Command>& _orders) const
 {
@@ -306,7 +306,7 @@ bool Outpost::Deputy::Produce(const Snapshot& _snapshot, std::vector<Command>& _
   return capped;
 }
 
-// The Command Station's next level, once it can be upgraded and the Ore is there (Phase 4 design §12), as the AI upgrades
+// The Command Station's next level, once it can be upgraded and the Ore is there (ADR-079 decision 6), as the AI upgrades
 // its own when the cap holds its Shipyards back.
 void Outpost::Deputy::UpgradeStation(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders) const
 {

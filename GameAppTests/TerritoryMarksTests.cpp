@@ -59,7 +59,7 @@ std::vector<Outpost::TerritoryMarks::Line> LinesOf(const Outpost::TerritoryMarks
 }
 } // namespace
 
-// Interface plan 2, task UI1.1: the territory drawn in the world, over the fog.
+// ADR-081 decision 3: the territory drawn in the world, over the fog.
 TEST_CLASS(TerritoryMarksTests)
 {
 public:

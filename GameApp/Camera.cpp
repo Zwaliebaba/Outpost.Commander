@@ -18,8 +18,8 @@ constexpr float NEAR_PLANE_SHARE_OF_DISTANCE = 0.01f;
 constexpr float MINIMUM_NEAR_PLANE_METERS = 1.0f;
 constexpr float FAR_PLANE_BEYOND_FOCUS_METERS = 8000.0f;
 
-// The arrow keys pan: A and S are attack-move and stop (design §9), decided by the owner on 2026-09-30. The camera's keys
-// are KeyBindings.h's, which the Controls window lists (task 16.4).
+// The arrow keys pan: A and S are attack-move and stop (ADR-012 decision 8), decided by the owner on 2026-09-30. The
+// camera's keys are KeyBindings.h's, which the Controls window lists (ADR-068 decision 4).
 
 float Radians(float _degrees) noexcept
 {

@@ -82,7 +82,7 @@ Outpost::Command Order(Outpost::PlayerId _player, Outpost::Order _order)
 TEST_CLASS(CombatTests)
 {
 public:
-  // Task 3.3: each weapon fires at its interval, and each hit does its damage after the target's armor.
+  // ADR-014 decisions 3 and 4: each weapon fires at its interval, and each hit does its damage after the target's armor.
   TEST_METHOD(FiresAtItsIntervalAndDamagesAfterArmor)
   {
     for (const auto [weapon, intervalTicks] : {std::pair{MASS_DRIVER, 8u}, std::pair{LANCE, 54u}})
@@ -117,7 +117,7 @@ public:
     }
   }
 
-  // Task 3.3: the nearest enemy ship in range, over any structure, and kept while it lives and stays in range.
+  // ADR-014 decision 8: the nearest enemy ship in range, over any structure, and kept while it lives and stays in range.
   TEST_METHOD(TargetsTheNearestShipAndKeepsIt)
   {
     Arena arena;
@@ -147,7 +147,7 @@ public:
     Assert::IsTrue(next.IsValid() && next != farShip && arena.World().FindEntity(next)->kind == Outpost::EntityKind::Ship);
   }
 
-  // Task 3.3: with no enemy ship in range, the nearest enemy structure.
+  // ADR-014 decision 8: with no enemy ship in range, the nearest enemy structure.
   TEST_METHOD(TargetsAStructureWhenNoShipIsInRange)
   {
     Arena arena;
@@ -159,7 +159,7 @@ public:
     Assert::IsTrue(arena.World().FindEntity(ship)->target == nearer);
   }
 
-  // Task 3.3: an attack-moving ship stops at its own range and fires.
+  // ADR-014 decision 9: an attack-moving ship stops at its own range and fires.
   TEST_METHOD(AttackMoveStopsAtRange)
   {
     Arena arena;
@@ -176,9 +176,9 @@ public:
     Assert::AreEqual(arena.World().FindEntity(ship)->maxHitPointsHundredths, arena.World().FindEntity(ship)->hitPointsHundredths);
   }
 
-  // Design §7, decided by the owner on 2026-10-01: a group attack-moving on an enemy stands at its own range. Its rear
-  // ships move up round its front ships, which give way sideways round the target, instead of pushing them forward into
-  // the enemy; so nearly every ship gets into range.
+  // ADR-010 decision 7, decided by the owner on 2026-10-01: a group attack-moving on an enemy stands at its own range.
+  // Its rear ships move up round its front ships, which give way sideways round the target, instead of pushing them
+  // forward into the enemy; so nearly every ship gets into range.
   TEST_METHOD(AGroupKeepsItsStandOff)
   {
     Arena arena;
@@ -208,7 +208,7 @@ public:
     Assert::IsTrue(firing >= 12, (std::to_wstring(firing) + L" of 16 in range").c_str());
   }
 
-  // Task 5.3, ADR-014: a Missile Rack hit also hits every other enemy ship and structure whose center is within its 30 m
+  // ADR-014 decision 12: a Missile Rack hit also hits every other enemy ship and structure whose center is within its 30 m
   // splash of the target's, each after its own armor, and never the shooter's own side.
   TEST_METHOD(SplashHitsEveryEnemyNearTheTarget)
   {
@@ -246,8 +246,8 @@ public:
     Assert::AreEqual(0, lost(friendly), L"no friendly fire");
   }
 
-  // Phase 1 design §5: the Flak Battery splashes as the Missile Rack does, 26 m around its target, which reaches the next
-  // Small hull in a formation, and its hit of 20 still tells against a Medium hull's armor (gate H10).
+  // Game §ships.weapons: the Flak Battery splashes as the Missile Rack does, 26 m around its target, which reaches the next
+  // Small hull in a formation, and its hit of 20 still tells against a Medium hull's armor (owner, 2026-10-03).
   TEST_METHOD(FlakSplashesItsHits)
   {
     Arena arena;
@@ -280,7 +280,7 @@ public:
     Assert::AreEqual(1200, lost(armored), L"15 m away, after its armor");
   }
 
-  // Phase 1 design §5: the Rail Cannon outranges the Lance, and one hit breaks the fragile Pulse raider.
+  // Game §ships.weapons: the Rail Cannon outranges the Lance, and one hit breaks the fragile Pulse raider.
   TEST_METHOD(ARailCannonOutrangesTheLance)
   {
     Arena arena;
@@ -300,7 +300,7 @@ public:
     Assert::IsNull(arena.World().FindEntity(picket), L"a 318 hit breaks a raider of 165");
   }
 
-  // Task 3.3: weapons are turrets, so a ship fires while it moves.
+  // ADR-014 decision 9: weapons are turrets, so a ship fires while it moves.
   TEST_METHOD(FiresWhileMoving)
   {
     Arena arena;
@@ -318,7 +318,7 @@ public:
     Assert::IsTrue(shotsWhileMoving >= 3, std::to_wstring(shotsWhileMoving).c_str());
   }
 
-  // Task 3.3: an attack order closes on its target, destroys it, and ends; the target leaves the world and the snapshot
+  // ADR-014: an attack order closes on its target, destroys it, and ends; the target leaves the world and the snapshot
   // says where it went.
   TEST_METHOD(AnAttackOrderClosesAndDestroys)
   {
@@ -354,7 +354,7 @@ public:
     Assert::IsTrue(results[0] == Outpost::CommandResult::NotAnEnemy && results[1] == Outpost::CommandResult::NotAnEnemy);
   }
 
-  // Task 3.3: ships that find a target together fire their first shots at random moments within one interval.
+  // ADR-014 decision 5: ships that find a target together fire their first shots at random moments within one interval.
   TEST_METHOD(FirstShotsAreSpreadOverAnInterval)
   {
     Arena arena;

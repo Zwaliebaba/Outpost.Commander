@@ -76,7 +76,7 @@ public:
     Assert::AreEqual(PI, std::abs(std::remainder(across, 2.0f * PI)), 1e-3f);
   }
 
-  // Task 2.5's owner run asks for smooth motion at 60 fps from a 20 Hz tick. With a snapshot arriving every third frame,
+  // The view moves smoothly at 60 fps from a 20 Hz tick (ADR-013 decision 3). With a snapshot arriving every third frame,
   // the ship's shown position must move forward every frame, by close to the same step, and never jump back.
   TEST_METHOD(MovesSmoothlyAtSixtyFramesFromTwentyTicks)
   {

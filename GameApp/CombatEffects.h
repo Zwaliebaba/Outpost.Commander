@@ -2,11 +2,12 @@
 
 namespace Outpost
 {
-// The minimum that makes combat readable (design §11, task 3.5): a muzzle flash where a shot leaves, a tracer, a beam or
-// a slug to where it lands, as its weapon's look has it (ADR-034), a spark there, and a blast ring as wide as its splash for a splash weapon (task 5.3). A ship or
-// structure destroyed is the ParticleSystem's and the ExplosionManager's (ADR-026). Hits are instant on the server
-// (design §7); everything here is presentation, played from the shots the snapshots report, at the moment the view
-// reaches them. It keeps no GPU state: it says which flat shapes to draw, and GameClient draws them.
+// The minimum that makes combat readable (Game §look.shots): a muzzle flash where a shot leaves, a tracer, a beam or
+// a slug to where it lands, as its weapon's look has it (ADR-034), a spark there, and a blast ring as wide as its splash
+// for a splash weapon (ADR-034 decision 2). A ship or structure destroyed is the ParticleSystem's and the
+// ExplosionManager's (ADR-026). Hits are instant on the server (ADR-014 decision 6); everything here is presentation,
+// played from the shots the snapshots report, at the moment the view reaches them. It keeps no GPU state: it says which
+// flat shapes to draw, and GameClient draws them.
 class CombatEffects
 {
 public:
@@ -40,8 +41,8 @@ public:
   // It takes the shooter, the point it fires at and which of the shooter's guns fired (ShotView::gun).
   using MuzzleLocator = std::function<std::optional<PlanePosition>(EntityId, PlanePosition, std::uint8_t)>;
 
-  // The color a shooter's beam is drawn in, so that the player sees whose fire it is (ADR-028): GameClient gives one from
-  // the shooter's side. Nothing when it cannot, and the beam is then a neutral pale blue.
+  // The color a shooter's beam is drawn in, so that the player sees whose fire it is (ADR-034 decision 4): GameClient gives
+  // one from the shooter's side. Nothing when it cannot, and the beam is then a neutral pale blue.
   using BeamTint = std::function<std::optional<DirectX::XMFLOAT4>(EntityId)>;
 
   // _shots gives each weapon's look; a weapon not listed fires tracers.

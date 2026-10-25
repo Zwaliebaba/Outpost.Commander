@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Equal-Ore battle model for the balance check of the MVP design.
+"""Equal-Ore battle model for the balance check.
 
-The balance check asks whether ship design matters (GameDesign/Archive/OutpostCommander-MVP.md §3), the MVP's question Q2,
-after which the MVP's documents and the ADRs call it the Q2 check. This model answers the first-order version of that
-question: a fast first guess at what a change does. The scripted headless battles in GameLogicTests decide, and the
-tuning numbers are tuned against them (§12). The model is not taught the simulation's geometry, so it
+The balance check asks whether ship design matters (ADR-014, ADR-033 decision 6). This model answers the first-order
+version of that question: a fast first guess at what a change does. The scripted headless battles in GameLogicTests
+decide, and the tuning numbers are tuned against them. The model is not taught the simulation's geometry, so it
 can disagree with them (owner, 2026-10-01).
 
 It reads the hulls, drives, weapons and research topics from OutpostCommander/Assets/Tuning.json, the same file the game
@@ -12,12 +11,12 @@ loads (ADR-008), so the model and the game cannot disagree: change a number or a
 
 The model is deliberately small, and each simplification is one the design document also makes or leaves open:
 
-  - Hits are instant (§7). There is no accuracy, tracking or projectile flight.
-  - Damage taken is max(damage x 0.25, damage - armour) (§7).
+  - Hits are instant (Game §combat.hits). There is no accuracy, tracking or projectile flight.
+  - Damage taken is max(damage x 0.25, damage - armor) (ADR-014 decision 3).
   - Each side is one clump of identical ships bought with the same Ore. Every ship in range of the enemy clump can
     shoot any ship in it. There is no pathing or terrain.
   - A clump stands in a square grid, as a group forms up in the game: its ships are FORMATION_SPACING_RADII footprint
-    radii apart (ADR-010), from the footprints the hulls' sizes give (gate G5). Only splash needs the grid.
+    radii apart (ADR-010), from the footprints the hulls' sizes give (ADR-010 decision 8). Only splash needs the grid.
   - Each battle's Ore is drawn from within 15% of the nominal budget, the same for both sides. Armies in a match are
     never bought at an exact figure. The draws are stratified: battle k of n takes its Ore from the k-th of n equal
     slices of that window, so n battles cover the window evenly rather than wherever the random draws fall.
@@ -30,16 +29,17 @@ The model is deliberately small, and each simplification is one the design docum
   - Targets are picked at random (spread fire) or as the weakest enemy (focus fire). Shots land together at the end
     of each tick, so focus fire overkills.
   - A splash weapon's hit also hits every other ship of the target's clump whose center is within its splash radius of
-    the target's, each after its armour (§7, ADR-014). Ships do not close up as others die.
+    the target's, each after its armor (ADR-014 decision 12). Ships do not close up as others die.
   - Structures are not modelled.
   - Research is applied only in check (d), to one side, and comes free: that side spends no Ore on it.
 
 Every verdict is taken with a 95% confidence interval (Wilson). A win rate whose interval straddles its threshold is
 run again with --max-seeds battles, and if it still straddles it, the verdict is UNSURE, which fails the check.
 
-The balance check (§3) runs at the stages of Phase 1 design §7: the starting components (those no research topic unlocks), at
-6,000-13,500 Ore; tier 1's, the MVP's every component, at 6,000-36,000; tier 2's at 13,500-36,000; and tier 3's at
-18,000-36,000: three times the MVP's budgets, since Phase 4 tripled every component's cost (Phase 4 design §4). It passes when, at every budget of every stage and in both fire modes:
+The balance check runs per tier (ADR-033 decision 6), at four stages: the starting components (those no research topic
+unlocks), at 6,000-13,500 Ore; tier 1's at 6,000-36,000; tier 2's at 13,500-36,000; and tier 3's at 18,000-36,000. A
+battle fights designs bought with equal Ore, so a factor on every component's cost moves the budgets by the same factor
+and leaves every win rate as it was. It passes when, at every budget of every stage and in both fire modes:
   (a) every design has a counter that beats it at least 80% of the time,
   (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon of the stage at
       one budget of the stage or more, in each fire mode (owner, 2026-10-01): a heavy hull need not pay at the
@@ -48,7 +48,7 @@ The balance check (§3) runs at the stages of Phase 1 design §7: the starting c
   (d) no research topic, taken with its prerequisites by one side only, gives that side a design that none of the
       other side's designs beats at least half the time. A topic of tier 1 is played at the starting budgets against
       the starting designs; one of a later tier at its tier's budgets against every design and upgrade of the tier
-      before. (b) at a later tier asks only the components the tier adds (owner, 2026-10-03, gate H9), and does not ask the
+      before. (b) at a later tier asks only the components the tier adds (owner, 2026-10-03), and does not ask the
       Pulse Drive to be worth building: its case is speed, which no battle here sees.
 
 Usage:
@@ -71,7 +71,7 @@ from pathlib import Path
 
 TUNING_DEFAULT = Path(__file__).resolve().parents[1] / "OutpostCommander" / "Assets" / "Tuning.json"
 
-ARMOUR_FLOOR = 0.25  # §7: damage taken = max(damage x 0.25, damage - armour)
+ARMOUR_FLOOR = 0.25  # ADR-014 decision 3: damage taken = max(damage x 0.25, damage - armor)
 START_GAP_M = 400.0  # both clumps start out of range of every weapon
 BUDGET_SPREAD = 0.15  # each battle's Ore is drawn from within 15% of the nominal budget
 TIME_LIMIT_S = 600.0
@@ -95,7 +95,7 @@ class Hull:
   armour: float
   speed: float
   cost: float
-  footprint: float  # the footprint's radius in metres (gate G5)
+  footprint: float  # the footprint's radius in meters (ADR-010 decision 8)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -142,7 +142,7 @@ class Topic:
   target: str  # what an upgrade changes: "All hulls", a weapon, or a target no battle feels, such as "Mining Rig"
   stat: str  # the stat an upgrade changes, or ""
   factor: float  # 1 + the upgrade's percentage
-  tier: int = 1  # its research tier (Phase 1 design §6), which a level of the Research Lab opens (Phase 3 design §6)
+  tier: int = 1  # its research tier (ADR-033 decision 1), which a level of the Research Lab opens (ADR-033 decision 2)
 
 
 UPGRADES = {("All hulls", "HP"): "hp", ("weapon", "fire rate"): "interval", ("weapon", "damage"): "damage",
@@ -150,7 +150,7 @@ UPGRADES = {("All hulls", "HP"): "hp", ("weapon", "fire rate"): "interval", ("we
 # Upgrades with no effect on a battle between two clumps: the economy, structures, speed, Constructors and ore. The model
 # reads them, names them, and leaves them out.
 # Drives whose case is speed, which a battle between two clumps cannot see: (b) does not ask them to be worth building
-# (Phase 1 design §5, §7; owner, 2026-10-02, gate H4).
+# (owner, 2026-10-02; ADR-033 decision 6).
 SPEED_DRIVES = ("Pulse",)
 ECONOMY = {("Mining Rig", "income"), ("Shipyard", "build speed"), ("All structures", "HP"), ("Structure weapon", "fire rate"),
            ("All ships", "speed"), ("Constructors", "build rate"), ("Asteroids", "ore reserve")}
@@ -583,7 +583,7 @@ def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs, spe
   """Runs (a) and (b) for one stage of a match, adding the counters it finds to `legs` for (c).
 
   (b) judges the components of `judged`, by default every one of the stage: a later tier's stage asks only the
-  components the tier adds (owner, 2026-10-03, gate H9). It does not ask a drive in `speed_drives` to be worth building,
+  components the tier adds (owner, 2026-10-03). It does not ask a drive in `speed_drives` to be worth building,
   since a battle cannot see speed; that is still reported.
   """
   judged = parts if judged is None else judged
@@ -637,8 +637,8 @@ def unused_components(parts, used, unmodelled):
 def research_check(pool, parts, topics, tier, budgets, args, dt, failures):
   """(d): each topic of `tier`, with its prerequisites, researched by one side only.
 
-  The other side has every topic of the tiers before: none for tier 1, as the MVP's (d), and every design and upgrade
-  of the tier before for a later tier (Phase 1 design §7). Only the designs the topic adds or changes are tested.
+  The other side has every topic of the tiers before: none for tier 1, and every design and upgrade of the tier before
+  for a later tier (ADR-033 decision 6). Only the designs the topic adds or changes are tested.
   """
   before = [t for t in topics if t.tier < tier]
   answers = designs_from(*upgraded(available(parts, topics, before), before))
@@ -710,8 +710,8 @@ def run(args):
   failures = {key: [] for key in ("a", "a?", "b", "c", "c?", "d", "d?")}
   legs = set()
   with concurrent.futures.ProcessPoolExecutor(max_workers=args.jobs) as pool:
-    # The stages of Phase 1 design §7: each tier's components at the budgets that fit when they arrive, the starting
-    # components, and each tier's research against the tier before.
+    # The check's stages, tier by tier (ADR-033 decision 6): each tier's components at the budgets that fit when they
+    # arrive, the starting components, and each tier's research against the tier before.
     for tier in range(1, last_tier + 1):
       now = through_tier(every, topics, tier)
       before = through_tier(every, topics, tier - 1) if tier > 1 else ([], [], [])

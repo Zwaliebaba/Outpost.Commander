@@ -9,10 +9,10 @@ namespace
 using Glow = Neuron::GlowPipeline::Glow;
 using Outpost::ParticleSystem;
 
-// Placeholder looks, after DeepSpaceOutpost's Particle::SetupParticles, and presentation rather than tuning (design §11).
+// Placeholder looks, after DeepSpaceOutpost's Particle::SetupParticles, and presentation rather than tuning (Game §look.explosions).
 // The colors are linear and carry DeepSpaceOutpost's brightness, its 90/255 alpha, since a glow's color includes its
 // brightness (ADR-019). Its fireball and debris were red; here they run from a white-yellow flash to amber, so that a
-// blast is never read as the Tarkan's red (owner, 2026-10-02, ADR-028). A fireball's puff is born near white and half as
+// blast is never read as the Tarkan's red (owner, 2026-10-02, ADR-026 decision 8). A fireball's puff is born near white and half as
 // bright again, and cools to its own color over its first moments, so that a blast reads as heat rather than dust. Its
 // smoke stays gray. Its sizes and speeds were in its own units; here they are shares of a blast's reach, so that a blast
 // is as big as what blew up.

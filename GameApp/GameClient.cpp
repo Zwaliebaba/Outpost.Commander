@@ -13,20 +13,20 @@ constexpr auto CAMERA_FILE = L"Camera.json";
 // The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
-// The keys are KeyBindings.h's, which the HUD's buttons and the Controls window show (tasks 15.2 and 16.4).
+// The keys are KeyBindings.h's, which the HUD's buttons and the Controls window show (ADR-068 decision 4).
 
 // The light, and the colors of a model's faces and lines in it, are SceneShading.h's (ADR-090).
 
-// The scene glows as a vector screen's phosphor glows (ADR-091): light above SCENE_BLOOM's threshold, eased in over its
-// knee, is blurred and added back, its levels weighed by its spread so that the glow stays close to what is bright. They
-// are first values, set by replaying the glow's passes on a lit Human ship's line over its faces: the line brightens by a
-// tenth, the face a pixel from it by half and four pixels from it by a sixth, and no channel of the line passes 1. The
-// faces, the grid and the dim side of every model stay under the threshold.
+// The scene glows as a vector screen's phosphor glows (ADR-091 decision 3): light above SCENE_BLOOM's threshold, eased in
+// over its knee, is blurred and added back, its levels weighed by its spread so that the glow stays close to what is
+// bright. Replayed on a lit Human ship's line over its faces, the glow's passes brighten the line by a tenth, the face a
+// pixel from it by half and four pixels from it by 15%, and no channel of the line passes 1 (ADR-091). The faces, the
+// grid and the dim side of every model stay under the threshold.
 constexpr Neuron::BloomDesc SCENE_BLOOM{.thresholdLuminance = 0.35f, .kneeLuminance = 0.15f, .intensity = 2.0f, .spread = 0.6f};
 
-// The grid covers the 10,000 m map (Phase 4 design §6) with a line every 100 m, each a pixel wide at any zoom, in the line art
-// of the asteroids' ridges (ADR-028). It is a dim blue-gray, barely there, so the sky shows through (ADR-022) and the
-// ridges stand out above it, and it is what shows the ground moving when the view pans.
+// The grid covers the 10,000 m map (ADR-036 decision 4) with a line every 100 m, each a pixel wide at any zoom, in the
+// line art of the asteroids' ridges (ADR-028 decision 1). It is a dim blue-gray, barely there, so the sky shows through
+// (ADR-022) and the ridges stand out above it, and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 5000.0f;
 constexpr float GRID_SPACING_METERS = 100.0f;
 constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
@@ -36,8 +36,8 @@ constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
 // rock takes the small mesh up to SMALL_ROCK_MAX_METERS of radius and the large one from LARGE_ROCK_MIN_METERS, so its
 // facets come out about the same size on the screen whatever its size: an ore asteroid, 45 m, is medium, and a field
 // mixes all three. A field is a cluster of rocks inside its circle, as FieldLayout lays it out from its identifier, its ring
-// closed to gaps no wider than the smallest hull (interface plan 2, task UI5.2); the server blocks the whole circle (MVP
-// design §4).
+// closed to gaps no wider than the smallest hull (ADR-087 decision 2); the server blocks the whole circle (ADR-087
+// decision 3).
 constexpr std::string_view ASTEROID_SET = "Asteroids";
 constexpr std::array<std::string_view, 3> ROCK_MODELS{"Small", "Medium", "Large"};
 constexpr float SMALL_ROCK_MAX_METERS = 35.0f;
@@ -53,11 +53,11 @@ constexpr float CREASE_DEGREES = 10.0f;
 constexpr float LINE_LIFT_SHARE = 0.002f;
 // Every structure stands on a faint ring the size of its selection ring, which puts it on the ground and says its size: a
 // line one pixel wide at any zoom, RING_LINE_SEGMENTS long, in its side's color at FOOTPRINT_RING_SHADE. Under the
-// pointer, and under every structure while one is placed, it takes the color of the structure's own lines. Selected, the
+// pointer, and under every structure while one is placed, it takes its side's ship-line color (ADR-042). Selected, the
 // selection's green ring takes its place (ADR-042). At rest it is there for the far view, where a structure is small, and
-// fades as the camera comes in: at full strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
+// fades as the camera comes in: at its resting strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
 // and gone from RING_GONE_VIEW_SHARE. A Mining Rig's ring, its own footprint's laid over its rock, shows only under the
-// pointer and while a structure is placed (owner, 2026-10-03, ADR-046).
+// pointer and while a structure is placed (owner, 2026-10-03, ADR-042 decision 4).
 constexpr float FOOTPRINT_RING_SHADE = 0.35f;
 constexpr int RING_LINE_SEGMENTS = 96;
 constexpr float RING_FULL_VIEW_SHARE = 0.03f;
@@ -71,7 +71,7 @@ constexpr float RIG_FOOT_RADIUS_SHARE = 0.5f;
 constexpr float RIG_FOOT_HEIGHT_SHARE = 0.05f;
 
 // A beam is its shooter's side's color taken this share of the way to white, so that the player sees whose fire it is
-// and it still reads as light (ADR-028).
+// and it still reads as light (ADR-034 decision 4).
 constexpr float BEAM_WHITE_SHARE = 0.35f;
 
 // The selection is a ring on the ground around each selected ship or structure, green, or amber while attack-move waits for
@@ -90,16 +90,16 @@ constexpr DirectX::XMFLOAT4 SELECTION_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 constexpr DirectX::XMFLOAT4 ATTACK_MOVE_COLOR{1.0f, 0.65f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 
-// The back of the bars over a ship or a structure, which the HUD draws on the screen (interface plan 2, task UI4.1): its
-// side's color darkened to HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02,
-// ADR-028); dark gray for a side the data does not name. Held, KEY_EVERY_HEALTH_BAR shows a bar over every ship and
-// structure, whole or not (ADR-047).
+// The back of the bars over a ship or a structure, which the HUD draws on the screen (ADR-088 decision 5): its side's
+// color darkened to HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02); dark gray
+// for a side the data does not name. Held, KEY_EVERY_HEALTH_BAR shows a bar over every ship and structure, whole or not
+// (ADR-088 decision 5).
 constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
 constexpr float HEALTH_BACK_SHADE = 0.3f;
 // A structure under construction: its color darkens toward this share at the start, and a bar under its health bar shows
 // the share built (ADR-085 decision 2).
 constexpr float UNBUILT_SHADE = 0.35f;
-// The territory, drawn over the fog, since every player sees it (interface plan 2, task UI1.1): the lattice of sector
+// The territory, drawn over the fog, since every player sees it (ADR-056 decision 10): the lattice of sector
 // borders one pixel wide in TERRITORY_LATTICE_COLOR, brighter than the grid and never wider (ADR-028); an outline inside each
 // held or guarded sector in its holder's color at TERRITORY_OUTLINE_SHADE, dashed while suppressed and dotted while cut
 // off; and, while the player places a Relay, two rings on each node it could claim now, the outer the size of a Relay's
@@ -115,7 +115,7 @@ constexpr int TERRITORY_DOTS = 100;
 constexpr float TERRITORY_DOT_SHARE = 0.2f;
 // A structure or derelict the player only remembers (ADR-024) is drawn over the fog as its lines alone: no faces, no bar
 // and no ring, in its side's color MEMORY_GRAY_SHARE of the way to a gray as light as it, at MEMORY_SHADE, however far it
-// was built. What the player sees now has faces; a memory does not (interface plan 2, task UI1.2).
+// was built. What the player sees now has faces; a memory does not (ADR-081 decision 4).
 constexpr float MEMORY_GRAY_SHARE = 0.5f;
 constexpr float MEMORY_SHADE = 0.6f;
 // The ghost: a flat disc of the footprint, a little above the ground.
@@ -339,7 +339,7 @@ std::vector<DirectX::XMFLOAT3> RigFeet(const Neuron::MeshData& _rig)
   return feet;
 }
 
-// The color a model is drawn in: its set's, times its tint, and darker while it is built (task 4.2). A ship has no tint
+// The color a model is drawn in: its set's, times its tint, and darker while it is built (ADR-040 decision 1). A ship has no tint
 // and is always built, so it is its set's color.
 DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, std::int32_t _builtPermille) noexcept
 {
@@ -348,7 +348,7 @@ DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, st
   return {std::min(1.0f, _setColor.x * shade), std::min(1.0f, _setColor.y * shade), std::min(1.0f, _setColor.z * shade), _setColor.w};
 }
 
-// The wall clock, to the second, which a scheduled order's time of day is counted from (Phase 5 design §7).
+// The wall clock, to the second, which a scheduled order's time of day is counted from (ADR-080 decision 6).
 std::chrono::sys_seconds WallClockNow() noexcept
 {
   return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
@@ -418,7 +418,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_explosions(_ticksPerSecond)
 {
   _renderer.SetBloom(SCENE_BLOOM);
-  // Gate H7: which face the figures found, Cascadia Mono or Consolas in its place (Phase 1 design §11).
+  // Which face the figures found, Cascadia Mono or Consolas in its place (ADR-030 decision 2).
   Neuron::DebugTrace(L"The interface's figures are set in {}.\n", m_ui.FamilyOf(static_cast<std::size_t>(Hud::Typeface::Figure)));
   // The models are kept in the catalog's order, which ModelIndex counts on, as LoadClientAssets made them.
   m_models.reserve(_assets.models.size());
@@ -534,8 +534,8 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
     m_effects.Receive(snapshot);
     Explode(snapshot);
     m_alerts.Observe(snapshot, m_ticksPerSecond);
-    // What happened while the player was away comes once, with its first snapshot after it takes its seat again (Phase 5
-    // design §11).
+    // What happened while the player was away comes once, with its first snapshot after it takes its seat again (ADR-080
+    // decision 7).
     if (snapshot.away.has_value())
     {
       m_away = snapshot.away;
@@ -612,7 +612,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     }
   }
   // What the player may order on: the view, less the asteroids in space it has never seen, which it cannot claim with a
-  // Mining Rig (ADR-046).
+  // Mining Rig (ADR-046 decision 8).
   m_knownEntities.clear();
   for (const EntityView& entity : m_entities)
   {
@@ -639,9 +639,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_controls.Queue(queue.producer, queue.design);
   }
   HandleTyping(input);
-  // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12). D, P and R open or close
-  // the designer, the production window and the research window, F1 the Controls window (task 16.4), and O the orders
-  // window (Phase 5 design §11). Space moves the camera to the newest alert (ADR-059).
+  // Esc closes the front window, and then is the window's, not the controls' (ADR-031 decision 5). D, P and R open or close
+  // the designer, the production window and the research window, F1 the Controls window (ADR-068 decision 4), and O the
+  // orders window (ADR-080 decision 9). Space moves the camera to the newest alert (ADR-059).
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
@@ -696,7 +696,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                                { return _entity.kind == EntityKind::Structure || _entity.kind == EntityKind::Derelict; });
     const std::vector<PlanePosition> view = ViewOnGround();
     // Selecting a Shipyard while the designer is open aims it there, and a producer while the production window is open
-    // shows it (Phase 1 design §11, §12).
+    // shows it (ADR-031 decision 6).
     const std::vector<EntityId>& selected = m_controls.Selected();
     const EntityId sole = selected.size() == 1 ? selected.front() : EntityId{};
     if (sole != m_soleSelected && m_windows.IsOpen(WindowKind::Designer))
@@ -710,7 +710,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_designer.EndEditing();
     const std::optional<Hud::Action> hovered =
       m_hudLayout.ActionAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
-    // The order the next left-click gives, whose button the HUD lights (interface plan 2, task UI4.2).
+    // The order the next left-click gives, whose button the HUD lights (ADR-088 decision 2).
     std::optional<Hud::ActionKind> armed;
     if (m_controls.IsAttackMoveArmed())
       armed = Hud::ActionKind::AttackMove;
@@ -720,7 +720,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                                          hovered, m_ticksPerSecond, armed, m_controls.IsBuildFolded());
     content.fog = m_fog.CellsPerSide() > 0;
     // The bars over the entities that show one, each placed by the camera above its model on the screen, for the HUD to lay
-    // out (interface plan 2, task UI4.1).
+    // out (ADR-088 decision 5).
     for (const EntityView& entity : m_entities)
     {
       const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
@@ -737,8 +737,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       content.entityBars.push_back(bar);
     }
     content.connection = Hud::Connection{.server = m_server, .silentSeconds = static_cast<std::int32_t>(m_silentSeconds)};
-    // What a derelict under the pointer holds (Phase 4 design §13), and how long ago a structure the player only remembers
-    // was seen (interface plan 2, task UI1.2), unless a placement's hint says more.
+    // What a derelict under the pointer holds (ADR-074 decision 10), and how long ago a structure the player only remembers
+    // was seen (ADR-081 decision 4), unless a placement's hint says more.
     if (const auto pointed = std::ranges::find(m_entities, m_hovered.value_or(EntityId{}), &EntityView::id);
         content.hint.empty() && pointed != m_entities.end())
     {
@@ -765,7 +765,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_away.reset();
     if (m_away.has_value())
       content.away = Hud::DescribeAway(m_view.Newest(), *m_away, m_awayTick, m_ticksPerSecond);
-    // The scheduled order the selected ships wait on, on their panel (design §11).
+    // The scheduled order the selected ships wait on, on their panel (ADR-080 decision 9).
     if (std::optional<std::string> pending = PendingOrderLine(selected, m_entities, m_view.Newest(), m_clock);
         pending.has_value() && !content.selection.empty())
       content.selection.push_back(std::move(*pending));
@@ -1071,7 +1071,7 @@ void Outpost::GameClient::WatchForResponse()
     return std::hypot(_now.position.xMeters - _before.position.xMeters, _now.position.zMeters - _before.position.zMeters) > MOVED_METERS ||
            std::abs(InterpolateHeading(_before.headingRadians, _now.headingRadians, 1.0f) - _before.headingRadians) > TURNED_RADIANS;
   };
-  // Q5's "visibly responding": the ship's center or its nose, a footprint's radius ahead of the center, has moved at
+  // What counts as visibly responding: the ship's center or its nose, a footprint's radius ahead of the center, has moved at
   // least a pixel on screen.
   const auto hasVisiblyChanged = [this](const EntityView& _before, const EntityView& _now)
   {
@@ -1179,7 +1179,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawGlows(_renderer, _commandList);
   DrawFog(_renderer, _commandList);
   // Over the fog, what every player sees whatever the fog, the territory, and what the player only remembers, which the fog
-  // would otherwise dim as it dims the ground round it (interface plan 2, tasks UI1.1 and UI1.2).
+  // would otherwise dim as it dims the ground round it (ADR-081 decision 5).
   m_pipeline.Resume(_commandList);
   DrawTerritory(_commandList);
   DrawMemories(_commandList);
@@ -1275,7 +1275,7 @@ void Outpost::GameClient::DrawFog(const Neuron::Renderer& _renderer, ID3D12Graph
                                                              .cellMeters = FogOfWar::CELL_METERS,
                                                              .cellsPerSide = m_fog.CellsPerSide(),
                                                              // What was seen before, darker on the ground than on the minimap
-                                                             // (interface plan 2, task UI1.3).
+                                                             // (ADR-081 decision 6).
                                                              .kneeShade = FogOfWar::SEEN_BEFORE_SHADE,
                                                              .kneeOpacity = FogOfWar::GROUND_SEEN_BEFORE_SHADE};
   // The shades go to the GPU only when they change, and only the rows that did; the minimap samples the same texture
@@ -1297,7 +1297,7 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   // The layout's own scale, which its font size was set by.
   const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
   m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, scale);
-  // The bars over the entities, under every panel (interface plan 2, task UI4.1).
+  // The bars over the entities, under every panel (ADR-088 decision 5).
   for (const Hud::Rect& bar : m_hudLayout.bars)
     m_ui.FillRect(bar.left, bar.top, bar.width, bar.height, bar.color);
   // The HUD, then each window back to front: each layer's panels, then its lines, then its sprites, then its texts (ADR-031).
@@ -1369,7 +1369,7 @@ void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList
   m_ringDraws.clear();
   for (const EntityView& structure : m_entities)
   {
-    // A memory stands on no ring: it may not be there (interface plan 2, task UI1.2).
+    // A memory stands on no ring: it may not be there (ADR-081 decision 4).
     if (structure.kind != EntityKind::Structure || structure.remembered || std::ranges::find(selected, structure.id) != selected.end())
       continue;
     const ModelSet* side = m_catalog.SetForPlayer(structure.owner);
@@ -1407,7 +1407,7 @@ bool Outpost::GameClient::DrapeRigRing(const EntityView& _rig)
   const auto type = std::ranges::find(newest.structureTypes, StructureKind::MiningRig, &StructureTypeView::structure);
   if (type == newest.structureTypes.end())
     return false;
-  // The rig stands at its asteroid's center, and its entity's radius is the rock's (design §6). Its ring is its own
+  // The rig stands at its asteroid's center, and its entity's radius is the rock's (ADR-016 decision 4). Its ring is its own
   // footprint's, as every structure's is.
   const float radius = type->radiusMeters * RING_SIZE_PER_FOOTPRINT;
   const float rockRadius = _rig.radiusMeters;
@@ -1607,7 +1607,8 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
                          start, seed);
     if (placed.has_value())
     {
-      // The shards are the faces' color, which is the model's darkened (ADR-027), and a structure's grayer (ADR-040).
+      // The shards are the faces' color, which is the model's darkened (ADR-040 decision 1), and a structure's grayer
+      // (ADR-040 decision 4).
       const bool structure = destroyed.kind == EntityKind::Structure;
       const DirectX::XMFLOAT4 color = ModelColor(placed->set->color, placed->tint, entity.builtPermille);
       const DirectX::XMFLOAT4 faces =
@@ -1720,7 +1721,7 @@ void Outpost::GameClient::UpdateBanking(float _elapsedSeconds)
 
 Outpost::Stance Outpost::GameClient::RigStance(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const
 {
-  // The rig stands at its asteroid's center (design §6), so its entity's radius is the rock's.
+  // The rig stands at its asteroid's center (ADR-016 decision 4), so its entity's radius is the rock's.
   const float rockRadius = _rig.radiusMeters;
   const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, RockModel(rockRadius));
   // Without feet over the rock, the rig's lowest point stands on the rock's top.
@@ -1816,7 +1817,7 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   const auto type = std::ranges::find(newest.structureTypes, *placing, &StructureTypeView::structure);
   if (type == newest.structureTypes.end())
     return;
-  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046). A
+  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046 decision 8). A
   // Relay snaps to its sector's node, and waits at its Command Station's node cap, and a rig needs a sector the player holds
   // (ADR-056).
   const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities,

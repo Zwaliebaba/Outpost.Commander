@@ -99,7 +99,7 @@ private:
 TEST_CLASS(MatchOutcomeTests)
 {
 public:
-  // Phase 1 design §4: a player with no finished Shipyard that loses its Command Station loses the match, and the other
+  // ADR-037 decision 1: a player with no finished Shipyard that loses its Command Station loses the match, and the other
   // player wins; every snapshot says so.
   TEST_METHOD(LosingTheCommandStationLosesTheMatch)
   {
@@ -133,8 +133,8 @@ public:
     Assert::AreEqual(ended, later.matchEndedTick);
   }
 
-  // Phase 1 design §4: a finished Shipyard keeps a player in the match once its Command Station has fallen, and is shown
-  // to the opponent through fog of war from then on; losing it as well loses the match.
+  // ADR-037 decisions 1 and 3: a finished Shipyard keeps a player in the match once its Command Station has fallen, and
+  // is shown to the opponent through fog of war from then on; losing it as well loses the match.
   TEST_METHOD(TheLastShipyardKeepsAPlayerIn)
   {
     RaidedMatch match(RED, BLUE);
@@ -163,7 +163,7 @@ public:
     Assert::IsTrue(match.World().Winner() == RED);
   }
 
-  // Phase 1 design §4: a Shipyard still under construction keeps no one in the match.
+  // ADR-037 decision 1: a Shipyard still under construction keeps no one in the match.
   TEST_METHOD(AShipyardSiteDoesNotCount)
   {
     RaidedMatch match(RED, BLUE);
@@ -185,7 +185,7 @@ public:
                    L"the site still stands, unfinished");
   }
 
-  // Gate H5: a lost Command Station is lost for good, as no Constructor can build one.
+  // ADR-037 decision 2: a lost Command Station is lost for good, as no Constructor can build one.
   TEST_METHOD(ALostCommandStationIsLostForGood)
   {
     RaidedMatch match(RED, BLUE);
@@ -205,7 +205,7 @@ public:
     Assert::IsFalse(simulation.MatchOver());
   }
 
-  // Design §10: a player sees the design of every ship it sees as its components, so the AI can answer the player's
+  // ADR-020 decision 3: a player sees the design of every ship it sees as its components, so the AI can answer the player's
   // designs (ADR-024).
   TEST_METHOD(SnapshotsShowEveryShipsComponents)
   {

@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The territory as the world shows it (interface plan 2, task UI1.1): the lattice of sector borders, each drawn once; an
+// The territory as the world shows it (ADR-081 decision 3): the lattice of sector borders, each drawn once; an
 // outline inside each held or guarded sector, in its holder's look, in a pattern that says whether it is suppressed or
 // cut off; and the nodes the player could claim now. Every player sees the territory, fog or not (ADR-056 decision 10), so
 // GameClient draws it over the fog, as the minimap draws its outlines. Pure, so that it is tested without a GPU.

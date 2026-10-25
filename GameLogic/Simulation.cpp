@@ -125,9 +125,9 @@ bool IsInRange(const Outpost::Entity& _ship, const Outpost::Entity& _target, flo
   return Outpost::Dot(between, between) <= _rangeMeters * _rangeMeters;
 }
 
-// A group ordered as one keeps a loose formation (design §9, ADR-010): the ships ahead now take its front rows, each row
+// A group ordered as one keeps a loose formation (ADR-010 decision 4): the ships ahead now take its front rows, each row
 // from one side to the other, so that few paths cross. The group keeps the formation's width as a band of lanes along its
-// route (ADR-047).
+// route (ADR-047 decision 1).
 void SortForFormation(std::vector<Outpost::Entity*>& _ships, PlanePosition _center, PlaneVector _forward)
 {
   const PlaneVector side = Outpost::Perpendicular(_forward);
@@ -253,7 +253,7 @@ float Outpost::Simulation::SightMetersOf(const Entity& _entity) const noexcept
 {
   if (!m_tuning)
     return 0.0f;
-  // A ship with a module that sees further sees that far, whatever its weapon (Phase 2 design §10, ADR-058).
+  // A ship with a module that sees further sees that far, whatever its weapon (ADR-058 decision 5).
   const ShipDesign* design = _entity.kind == EntityKind::Ship ? FindDesign(_entity.design) : nullptr;
   const float moduleSight = design != nullptr ? design->stats.moduleSightMeters : 0.0f;
   if (const std::optional<Armament> armament = ArmamentOf(_entity))
@@ -314,7 +314,7 @@ void Outpost::Simulation::UpdateVision(std::uint64_t _seenTick)
         player.remembered.push_back(std::move(view));
     }
     // A player that has lost its Command Station has its finished Shipyards shown to its opponents, as remembered
-    // structures, so that the end of a match is not a search of the map for one building (Phase 1 design §4, ADR-037).
+    // structures, so that the end of a match is not a search of the map for one building (ADR-037 decision 3).
     for (const Entity& entity : m_entities)
     {
       if (entity.kind != EntityKind::Structure || entity.structure != StructureKind::Shipyard || !entity.IsBuilt() ||
@@ -328,7 +328,7 @@ void Outpost::Simulation::UpdateVision(std::uint64_t _seenTick)
       else
         player.remembered.push_back(std::move(view));
     }
-    // The Ore left in each ore asteroid in sight, which the player remembers once it is out of sight (Phase 1 design §8).
+    // The Ore left in each ore asteroid in sight, which the player remembers once it is out of sight (ADR-035 decision 4).
     for (const Entity& asteroid : m_entities)
     {
       if (asteroid.kind != EntityKind::Asteroid || !asteroid.oreReserveHundredths.has_value() ||
@@ -825,7 +825,7 @@ void Outpost::Simulation::PlacePirates(const Map& _map)
       throw Neuron::Exception(std::format("PlacePirates: the map has no sector {}", placed.sector));
     const SectorPlacement& where = sector->placement;
     const PlanePosition node = where.node;
-    // The ships never leave their sector (Phase 4 design §8), which holds when the chase does.
+    // The ships never leave their sector (ADR-073 decision 5), which holds when the chase does.
     if (node.xMeters - chase < where.minXMeters || node.xMeters + chase > where.maxXMeters || node.zMeters - chase < where.minZMeters ||
         node.zMeters + chase > where.maxZMeters)
       throw Neuron::Exception(std::format("PlacePirates: an outpost's ships would chase out of sector {}", where.name));
@@ -940,7 +940,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   // The world advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
   // and work orders head for their targets, and Constructors in reach build and repair; levels build, queues produce,
   // labs research and Mining Rigs earn; ships steer along their paths, then make room for each other, then leave any
-  // obstacle they were pushed into. Each part is told to the observer, if there is one (task 8.1).
+  // obstacle they were pushed into. Each part is told to the observer, if there is one.
   {
     const ObservedPart part(m_observer, TickPart::Fight);
     Fight();
@@ -985,8 +985,9 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   }
   RaiseSightings();
   FireScheduledOrders();
-  // A tick that planned no paths builds again one graph the obstacles' last change dropped, so that the next order finds
-  // it built (ADR-032). The graphs are a cache: when they are built changes no path.
+  // A tick that planned no paths brings one graph up to date, extended over the obstacles placed since and reduced by
+  // those taken away, so that the next order finds it ready (ADR-032 decision 2, ADR-054 decisions 5 to 7). The graphs
+  // are a cache: when they are brought up to date changes no path.
   if (!m_plannedThisTick)
     (void)m_pathfinder.PrepareNext();
   m_plannedThisTick = false;
@@ -1100,7 +1101,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
         topic.recovered = std::ranges::find(state->recovered, topic.id) != state->recovered.end();
     }
     snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
-    // The tier its finished Research Lab's level has opened (Phase 3 design §6).
+    // The tier its finished Research Lab's level has opened (ADR-033 decision 5).
     for (const Entity& entity : m_entities)
     {
       if (entity.kind == EntityKind::Structure && entity.structure == StructureKind::ResearchLab && entity.owner == _player &&
@@ -1152,7 +1153,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     if (!Sees(_player, entity))
       continue;
     EntityView& view = snapshot.entities.emplace_back(EntityViewOf(entity, !m_fog || entity.owner == _player));
-    // A Shipyard's number and the ships it has built are its owner's alone, fog of war or not (Phase 1 design §11).
+    // A Shipyard's number and the ships it has built are its owner's alone, fog of war or not (ADR-016 decision 6).
     if (entity.owner == _player)
     {
       view.shipyardNumber = entity.shipyardNumber;
@@ -1170,7 +1171,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                                 { return std::ranges::find(_order.ships, entity.id) != _order.ships.end(); });
       view.scheduledOrder = waiting != m_scheduledOrders.end() ? waiting->id : 0;
     }
-    // An ore asteroid's Ore left, and a rig's asteroid's, as far as the player knows it (Phase 1 design §8).
+    // An ore asteroid's Ore left, and a rig's asteroid's, as far as the player knows it (ADR-035 decision 5).
     if (entity.kind == EntityKind::Asteroid)
       view.oreReserveHundredths = ReserveKnownTo(_player, entity.id);
     else if (entity.kind == EntityKind::Structure && entity.structure == StructureKind::MiningRig && entity.site.IsValid())
@@ -1222,16 +1223,16 @@ Outpost::CommandResult Outpost::Simulation::ValidateShips(PlayerId _player, cons
   return CommandResult::Applied;
 }
 
-// A group ordered as one keeps a loose formation (design §9): a grid of slots around the destination, facing the way the
-// group travels, with the ships that are ahead now taking the front slots so that few paths cross. The group searches one
-// route, and each ship joins it on the way to its own slot (ADR-010). Each goes at the speed that brings the whole group
-// in at the same moment, which is no faster than its slowest ship allows.
+// A group ordered as one keeps a loose formation (ADR-010 decision 4): a grid of slots around the destination, facing
+// the way the group travels, with the ships that are ahead now taking the front slots so that few paths cross. The group
+// searches one route, and each ship joins it on the way to its own slot (ADR-010). Each goes at the speed that brings
+// the whole group in at the same moment, which is no faster than its slowest ship allows.
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const MoveCommand& _move)
 {
   return OrderMove(_player, _move.ships, _move.destination, ShipOrder::Move);
 }
 
-// An attack-move is a move whose ships stand to fire while an enemy is in range (design §7).
+// An attack-move is a move whose ships stand to fire while an enemy is in range (ADR-014 decision 9).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const AttackMoveCommand& _attackMove)
 {
   return OrderMove(_player, _attackMove.ships, _attackMove.destination, ShipOrder::AttackMove);
@@ -1266,7 +1267,7 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
   SortForFormation(ships, center, forward);
 
   // A grid of slots round the destination, facing the way the group travels, the ships ahead in front (ADR-010). The
-  // group keeps the grid's width as a band of lanes along its route (ADR-047).
+  // group keeps the grid's width as a band of lanes along its route (ADR-047 decision 1).
   const std::size_t columns = FormationColumns(ships.size());
   const float spacing = FORMATION_SPACING_RADII * widestRadius;
   const float bandHalfWidth = static_cast<float>(columns - 1) * spacing / 2.0f;
@@ -1407,9 +1408,9 @@ void Outpost::Simulation::FinishPlannedOrders()
   }
 }
 
-// Each ship closes on the target, along a route the group searched once, and fires at it once it is in range (design §7).
-// Each goes at its own top speed: a chase is not a formation, but the group keeps a band of lanes round obstacles as a
-// moving group does, and paths again as a group when its target moves (ADR-047).
+// Each ship closes on the target, along a route the group searched once, and fires at it once it is in range
+// (ADR-014 decision 9). Each goes at its own top speed: a chase is not a formation, but the group keeps a band of lanes
+// round obstacles as a moving group does, and paths again as a group when its target moves (ADR-047 decision 3).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const AttackCommand& _order)
 {
   if (const CommandResult result = ValidateShips(_player, _order.ships); result != CommandResult::Applied)
@@ -1496,8 +1497,8 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StopCo
   return CommandResult::Applied;
 }
 
-// Design §7's rule, or one of the balance check's extremes. Ships come before structures: a structure is chosen only
-// when no enemy ship is in range.
+// ADR-014 decision 8's rule, or one of the balance check's extremes. Ships come before structures: a structure is chosen
+// only when no enemy ship is in range.
 Outpost::EntityId Outpost::Simulation::ChooseTarget(const Entity& _ship, float _rangeMeters, TargetRule _rule)
 {
   const auto isEnemy = [&_ship](const Entity& _other)
@@ -1578,7 +1579,8 @@ void Outpost::Simulation::Fight()
       return;
     }
     // A cold weapon fires its first shot at a random moment within its interval, so that a group's volleys do not land
-    // together (design §7, the balance check's model). A ship that lost its target only for a moment keeps its rhythm.
+    // together (ADR-014 decision 5, as in the balance check's model). A ship that lost its target only for a moment keeps
+    // its rhythm.
     if (_reloadMilliticks <= -intervalMilliticks && intervalMilliticks > 0)
       _reloadMilliticks = static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks)));
     _reloadMilliticks -= MILLITICKS_PER_TICK;
@@ -1648,7 +1650,7 @@ void Outpost::Simulation::Fight()
     const Armament& gun = *armament;
     fire(ship, gun, ship.target, ship.reloadMilliticks, 0);
 
-    // A Command Station's further Defence guns, which its level gives (Phase 3 design §7), each the gun it carries, at the
+    // A Command Station's further Defence guns, which its level gives (ADR-064 decision 11), each the gun it carries, at the
     // target the station keeps, on a rhythm of its own.
     if (ship.kind == EntityKind::Structure)
     {
@@ -1673,7 +1675,7 @@ void Outpost::Simulation::Fight()
     anyDestroyed |= target.hitPointsHundredths <= 0;
   }
   // A ship that survives a hit that leaves it below its threshold goes back to be repaired, unless it is already going
-  // (Phase 4 design §10, ADR-075).
+  // (ADR-075 decision 5).
   std::vector<EntityId> retreats;
   for (const Hit& hit : hits)
   {
@@ -1735,7 +1737,7 @@ void Outpost::Simulation::Fight()
   Retreat(retreats);
 }
 
-// Phase 4 design §8: a cleared outpost leaves a derelict where its largest structure stood. Its Defence Platforms are all
+// ADR-074 decision 6: a cleared outpost leaves a derelict where its largest structure stood. Its Defence Platforms are all
 // one size, so it is where the last of them fell, the first of them in identifier order when the last fall together.
 void Outpost::Simulation::LeaveWrecks()
 {
@@ -1763,7 +1765,7 @@ void Outpost::Simulation::LeaveWrecks()
 
 // A ship on an attack order stands while its target is in range, and otherwise heads for it, pathing again when the
 // target has moved away from where it last pathed to, at most once a second. The ships of one player that path again to
-// one target in the same tick path as a group, along one route in a band of lanes, as they set out (ADR-047).
+// one target in the same tick path as a group, along one route in a band of lanes, as they set out (ADR-047 decision 3).
 void Outpost::Simulation::ChaseTargets()
 {
   // The ships to path again, by their owner and target, in the order their groups' first ships come.
@@ -1852,8 +1854,9 @@ void Outpost::Simulation::ChaseTargets()
 // A corner of the path is only a way round an obstacle, so a ship lets it go as soon as it is within its own radius of it,
 // or can see the waypoint after it: ships crowding round the same corner then do not have to queue for its exact point.
 // Only the last waypoint, the ship's slot, has to be reached. A corner of the ship's lane is its place in its group's band
-// as well (ADR-047), so the ship lets it go at sight of the next only from within a place in the formation of it: a ship
-// that cut to its slot as soon as it saw it past an obstacle would pass the obstacle where every other ship does.
+// as well (ADR-047 decision 2), so the ship lets it go at sight of the next only from within a place in the formation
+// of it: a ship that cut to its slot as soon as it saw it past an obstacle would pass the obstacle where every other
+// ship does.
 void Outpost::Simulation::MoveShips()
 {
   const auto mayLetGo = [this](const Entity& _ship)
@@ -1870,7 +1873,7 @@ void Outpost::Simulation::MoveShips()
   {
     if (ship.kind != EntityKind::Ship || ship.path.empty())
       continue;
-    // An attack-moving ship stands to fire while an enemy is in range (design §7).
+    // An attack-moving ship stands to fire while an enemy is in range (ADR-014 decision 9).
     if (ship.order == ShipOrder::AttackMove && ship.target.IsValid())
       continue;
     while (ship.path.size() > 1 && mayLetGo(ship))
@@ -1925,9 +1928,9 @@ void Outpost::Simulation::MoveShips()
   }
 }
 
-// Ships do not collide, but they do not overlap either (design §9): each overlapping pair is pushed apart along the line
-// between them, in identifier order. Two that both move, or both stand idle, part half each. A ship standing to fire
-// keeps its range (design §7, decided by the owner on 2026-10-01): pushed by a ship that is still moving up, it gives way
+// Ships do not collide, but they do not overlap either (ADR-010 decision 7): each overlapping pair is pushed apart along
+// the line between them, in identifier order. Two that both move, or both stand idle, part half each. A ship standing to
+// fire keeps its range (decided by the owner on 2026-10-01): pushed by a ship that is still moving up, it gives way
 // only sideways round its target, never toward it or away, and the mover takes the rest. A group closing on an enemy so
 // spreads its front into an arc at range, and its rear ships find their own places on it rather than shoving the front
 // into the enemy. An idle ship holds its ground against a moving one, which slides round it.
@@ -1997,8 +2000,8 @@ void Outpost::Simulation::SeparateShips()
   }
 }
 
-// Asteroids and fields block movement (design §4), and the map has an edge: a ship pushed into either leaves it by the
-// shortest way.
+// Asteroids and fields block movement (ADR-010 decision 7), and the map has an edge: a ship pushed into either leaves it
+// by the shortest way.
 void Outpost::Simulation::KeepShipsClear()
 {
   for (Entity& ship : m_entities)
@@ -2035,7 +2038,7 @@ std::optional<Outpost::Simulation::Armament> Outpost::Simulation::ArmamentOf(con
                     .splashRadiusMeters = design->stats.splashRadiusMeters,
                     .weapon = design->components.weapon};
   }
-  // A structure fires once it is built (design §6).
+  // A structure fires once it is built (ADR-016 decision 7).
   if (_entity.kind != EntityKind::Structure || !_entity.structureWeapon.IsValid() || !_entity.IsBuilt() || !m_tuning)
     return std::nullopt;
   const auto gun = std::ranges::find(m_tuning->structureWeapons, _entity.structureWeapon, &StructureWeaponTuning::id);
@@ -2060,9 +2063,9 @@ Outpost::CommandResult Outpost::Simulation::ValidateConstructors(PlayerId _playe
 }
 
 // A structure stands on the plane with a circular footprint that overlaps nothing and stays inside the map's edge. A
-// Mining Rig instead snaps to the free ore asteroid it was placed on or beside, and stands at its center (design §6); on
-// a map with territory the asteroid must be in a sector the player holds. A Relay snaps to the node of the sector it was
-// placed in, which must be free and adjacent to a sector the player holds (Phase 2 design §4–§6, ADR-056).
+// Mining Rig instead snaps to the free ore asteroid it was placed on or beside, and stands at its center
+// (ADR-016 decision 4); on a map with territory the asteroid must be in a sector the player holds. A Relay snaps to
+// the node of the sector it was placed in, which must be free and adjacent to a sector the player holds (ADR-056 decision 4).
 Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, StructureKind _kind, float _radiusMeters,
                                                            PlanePosition& _position) const
 {
@@ -2113,8 +2116,8 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
   if (m_mapHalfSizeMeters > 0.0f && (std::abs(_position.xMeters) + _radiusMeters > m_mapHalfSizeMeters ||
                                      std::abs(_position.zMeters) + _radiusMeters > m_mapHalfSizeMeters))
     return CommandResult::InvalidPlacement;
-  // A Shipyard or a Repair Bay stands only in a sector its player holds, so that production follows territory (Phase 4
-  // design §6, §10).
+  // A Shipyard or a Repair Bay stands only in a sector its player holds, so that production follows territory
+  // (ADR-056 decision 5).
   if ((_kind == StructureKind::Shipyard || _kind == StructureKind::RepairBay) && HasTerritory())
   {
     const Sector* sector = SectorAt(_position);
@@ -2129,7 +2132,7 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
     if (blocks && Distance(other.position, _position) < other.radiusMeters + _radiusMeters)
       return CommandResult::InvalidPlacement;
   }
-  // A Relay's node is free now, since nothing stands on it; it must be next to the player's territory (Phase 2 design §6).
+  // A Relay's node is free now, since nothing stands on it; it must be next to the player's territory (ADR-056 decision 4).
   if (relaySector != nullptr && std::ranges::none_of(relaySector->placement.adjacent,
                                                      [this, _player](std::int32_t _id)
                                                      {
@@ -2141,7 +2144,7 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, Str
 }
 
 // The structure is paid for and its site placed at once, blocking from then on; the Constructors head for it and build it
-// (design §5, §6).
+// (ADR-016 decision 4).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const BuildStructureCommand& _build)
 {
   if (const CommandResult result = ValidateConstructors(_player, _build.constructors); result != CommandResult::Applied)
@@ -2166,7 +2169,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const BuildS
   if (const CommandResult result = CheckPlacement(_player, _build.structure, radius, position); result != CommandResult::Applied)
     return result;
   // A Relay past the nodes the player's Command Station lets it hold is refused; one under construction counts, as it
-  // takes its node (Phase 3 design §7).
+  // takes its node (ADR-064 decision 11).
   if (const std::int32_t cap = NodeCapOf(_player); _build.structure == StructureKind::Relay && cap > 0 && NodesTaken(_player) >= cap)
     return CommandResult::CapReached;
   PlayerState* player = FindPlayer(_player);
@@ -2200,7 +2203,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Repair
   return CommandResult::Applied;
 }
 
-// Phase 4 design §9: Constructors salvage a derelict their player sees or remembers, as they build a site (ADR-074).
+// Constructors salvage a derelict their player sees or remembers, as they build a site (ADR-074 decision 4).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SalvageCommand& _salvage)
 {
   if (const CommandResult result = ValidateConstructors(_player, _salvage.constructors); result != CommandResult::Applied)
@@ -2237,7 +2240,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const QueueS
     const ShipDesign* design = FindDesign(_queue.design);
     if (design == nullptr || design->owner != _player)
       return CommandResult::UnknownDesign;
-    // A Shipyard builds the hulls of its level and below (Phase 3 design §5).
+    // A Shipyard builds the hulls of its level and below (ADR-064 decision 9).
     if (producer->level < ShipyardLevelFor(*m_tuning, design->components.hull))
       return CommandResult::LevelTooLow;
     job = {.role = ShipRole::Warship, .design = _queue.design};
@@ -2249,7 +2252,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const QueueS
 }
 
 // The upgrade is paid for now and builds itself over the level's time (BuildLevels); the structure keeps working
-// meanwhile (Phase 3 design §4, ADR-064).
+// meanwhile (ADR-064 decision 3).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade)
 {
   Entity* structure = FindMutableEntity(_upgrade.structure);
@@ -2265,7 +2268,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Upgrad
   if (structure->level >= tuning->TopLevel())
     return CommandResult::TopLevel;
   const StructureLevelTuning& next = tuning->levels[static_cast<size_t>(structure->level - 1)];
-  // A Research Lab's level may need topics researched first (Phase 3 design §6).
+  // A Research Lab's level may need topics researched first (ADR-064 decision 10).
   const std::span<const ResearchTopicId> researched = Researched(_player);
   if (!std::ranges::all_of(next.prerequisites,
                            [&researched](ResearchTopicId _topic) { return std::ranges::find(researched, _topic) != researched.end(); }))
@@ -2394,8 +2397,8 @@ void Outpost::Simulation::ApproachWork()
   }
 }
 
-// Constructors in reach of their target build it while it is under construction, and repair it once it is built (design
-// §6, gate G8). Building: one Constructor does a tick's work each tick, and each further one adds the tuning data's
+// Constructors in reach of their target build it while it is under construction, and repair it once it is built
+// (ADR-016 decision 5). Building: one Constructor does a tick's work each tick, and each further one adds the tuning data's
 // share of one more; a site's hit points rise with its progress from a tenth to full. Repair: each Constructor restores
 // the tuning data's percentage of the target's maximum each second, for nothing. A finished job ends the order. A level
 // being built is no work of theirs (BuildLevels). Salvage is built as a site is, and a derelict salvaged pays the player
@@ -2482,9 +2485,9 @@ void Outpost::Simulation::Work()
     std::erase_if(m_entities, [&salvaged](const Entity& _entity) { return std::ranges::find(salvaged, _entity.id) != salvaged.end(); });
 }
 
-// Phase 4 design §9: the Ore is paid at once. The topic's share of its research time comes off now if a Lab of the player's
+// The Ore is paid at once. The topic's share of its research time comes off now if a Lab of the player's
 // is researching it, and otherwise off the topic when it starts, whatever its tier; a topic researched already gains
-// nothing (ADR-074).
+// nothing (ADR-074 decisions 4 and 5).
 void Outpost::Simulation::Salvage(PlayerState& _player, const Entity& _derelict)
 {
   _player.oreHundredths += std::int64_t{_derelict.salvageOre} * HUNDREDTHS;
@@ -2516,7 +2519,7 @@ void Outpost::Simulation::Salvage(PlayerState& _player, const Entity& _derelict)
     _player.recovered.push_back(topic);
 }
 
-// Phase 4 design §10: a ship's retreat is set on a selection, and a ship set never to retreat stops going back.
+// ADR-075 decision 7: a ship's retreat is set on a selection, and a ship set never to retreat stops going back.
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SetRetreatCommand& _retreat)
 {
   if (const CommandResult result = ValidateShips(_player, _retreat.ships); result != CommandResult::Applied)
@@ -2551,8 +2554,9 @@ bool IsInRepairRange(const Outpost::Entity& _ship, const Outpost::Entity& _repai
 }
 } // namespace
 
-// Phase 4 design §10: the nearest Repair Bay, else the Command Station, else the nearest Shipyard. Each ship goes on its
-// own, to the side of its repairer it comes from, so that every one of them stops within reach of the repair.
+// ADR-075 decision 5: the nearest Repair Bay, else the Command Station, else the nearest Shipyard, a tie going to the
+// lower identifier. Each ship goes on its own, to the side of its repairer it comes from, so that every one of them stops
+// within reach of the repair. A ship with none to go to does not retreat, or stops retreating, and fights on.
 void Outpost::Simulation::Retreat(const std::vector<EntityId>& _ships)
 {
   const auto rank = [](StructureKind _kind) {
@@ -2601,7 +2605,7 @@ void Outpost::Simulation::KeepRetreats()
   Retreat(again);
 }
 
-// Phase 4 design §10: each repairer, in identifier order, repairs the most damaged of its player's ships in its reach that
+// ADR-075 decision 3: each repairer, in identifier order, repairs the most damaged of its player's ships in its reach that
 // no earlier one has repaired this tick, as many as the tuning data says.
 void Outpost::Simulation::RepairShips()
 {
@@ -2649,7 +2653,7 @@ void Outpost::Simulation::RepairShips()
 
 // A structure being upgraded builds its next level itself, a tick of the level's time each tick, which no Constructor
 // and no research shortens (owner, 2026-10-04). The level lands whole when it is in, and the structure keeps the share
-// of its hit points it had (Phase 3 design §4).
+// of its hit points it had (ADR-064 decision 4).
 void Outpost::Simulation::BuildLevels()
 {
   for (Entity& structure : m_entities)
@@ -2668,8 +2672,8 @@ void Outpost::Simulation::BuildLevels()
 }
 
 // Each built Shipyard and Command Station works on the front of its queue. A job starts, and is paid for, once the
-// player has the Ore (design §5), and a warship's once it fits under its player's fleet cap (Phase 4 design §5); until
-// then it waits. A finished ship appears beside its producer, on the side facing
+// player has the Ore (ADR-016 decision 6), and a warship's once it fits under its player's fleet cap
+// (ADR-071 decision 3); until then it waits. A finished ship appears beside its producer, on the side facing
 // the map's center.
 void Outpost::Simulation::Produce()
 {
@@ -2734,7 +2738,8 @@ void Outpost::Simulation::Produce()
       producer.jobWorkNeeded = std::max(1, static_cast<std::int32_t>(std::llround(seconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
       producer.jobWorkDone = 0;
     }
-    // Automated Shipyards speed a Shipyard's work, the job under way included (design §8); not the Command Station's.
+    // Automated Shipyards speed a Shipyard's work, the job under way included; not the Command Station's
+    // (ADR-017 decision 2).
     producer.jobWorkDone +=
       producer.structure == StructureKind::Shipyard
         ? static_cast<std::int32_t>(std::llround(MILLITICKS_PER_TICK * EffectsOf(producer.owner).upgrades.shipyardBuildSpeedFactor))
@@ -2763,9 +2768,9 @@ void Outpost::Simulation::Produce()
   }
 }
 
-// Each built Mining Rig adds its asteroid's income to its owner's Ore every tick (design §5), with the owner's research
-// applied (design §8). The income is counted per second in hundredths and paid a tick's share at a time, the remainder
-// carried, so that a rate that is not a whole number of hundredths a tick is still paid in full (ADR-017).
+// Each built Mining Rig adds its asteroid's income to its owner's Ore every tick, with the owner's research applied
+// (ADR-017 decision 2). The income is counted per second in hundredths and paid a tick's share at a time, the remainder
+// carried, so that a rate that is not a whole number of hundredths a tick is still paid in full (ADR-016 decision 11).
 std::int64_t Outpost::Simulation::IncomeHundredthsPerSecond(PlayerId _player) const
 {
   const double factor = EffectsOf(_player).upgrades.miningIncomeFactor;
@@ -2807,8 +2812,8 @@ const Outpost::Simulation::Sector* Outpost::Simulation::SectorById(std::int32_t 
 // A sector is held by the owner of the finished Relay or the Command Station on its node; a site under construction holds
 // nothing yet. A Relay is suppressed while an enemy warship is within the tuning data's radius of it and none of its
 // owner's is; a Command Station never is. A held sector is linked when its holder holds a path of adjacent sectors to one
-// of its home sectors, the ones its Command Station holds, suppressed ones included; one that is not is cut off (Phase 2
-// design §4–§6, ADR-056). A sector a pirate structure stands in is guarded, and cannot be claimed (ADR-073).
+// of its home sectors, the ones its Command Station holds, suppressed ones included; one that is not is cut off
+// (ADR-056). A sector a pirate structure stands in is guarded, and cannot be claimed (ADR-073).
 void Outpost::Simulation::UpdateTerritory()
 {
   if (!HasTerritory())
@@ -3010,7 +3015,7 @@ void Outpost::Simulation::Mine()
   }
 
   // Each built rig draws what it earns from its asteroid's reserve, so Improved Extraction drains it faster, and a player
-  // with Deep Core Survey draws less for the same Ore (Phase 1 design §8). The trickle of a dry asteroid draws nothing,
+  // with Deep Core Survey draws less for the same Ore (ADR-035 decision 3). The trickle of a dry asteroid draws nothing,
   // and the last tick's draw takes what was left.
   for (Entity& rig : m_entities)
   {
@@ -3028,9 +3033,9 @@ void Outpost::Simulation::Mine()
 }
 
 // Each built Research Lab works on the front of its queue, and from the level that gives it a second slot on the topic
-// behind it too (Phase 3 design §6). A topic starts, and is paid for, once the player has the Ore (design §5), and the
-// second once the first has started and what it requires is researched; until then it waits. A finished topic applies at
-// once (design §8).
+// behind it too (ADR-064 decision 10). A topic starts, and is paid for, once the player has the Ore
+// (ADR-017 decision 1), and the second once the first has started and what it requires is researched; until then it
+// waits. A finished topic applies at once (ADR-017 decision 2).
 void Outpost::Simulation::Research()
 {
   std::vector<std::pair<PlayerId, ResearchTopicId>> finished;
@@ -3042,7 +3047,7 @@ void Outpost::Simulation::Research()
     if (player == nullptr)
       continue;
     // The front topic, and from the level that gives a second slot the one behind it, once what it requires is researched,
-    // not only queued ahead of it (Phase 3 design §6). Each is paid for when it starts.
+    // not only queued ahead of it (ADR-017 decision 1). Each is paid for when it starts.
     const std::int32_t slots =
       std::min<std::int32_t>(ResearchSlots(*m_tuning, lab.level), static_cast<std::int32_t>(lab.researchQueue.size()));
     const auto work = [&](std::size_t _slot) -> std::pair<std::int32_t&, std::int32_t&>
@@ -3167,7 +3172,7 @@ float Outpost::Simulation::ConstructorSpeed(PlayerId _owner) const
 }
 
 // A topic joins the back of the lab's queue; it is paid for when it reaches the front and starts (Research). It may
-// follow its prerequisites there, since one lab researches them in order (design §8).
+// follow its prerequisites there, since one lab researches them in order (ADR-017 decision 1).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StartResearchCommand& _research)
 {
   Entity* lab = FindMutableEntity(_research.lab);
@@ -3187,7 +3192,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StartR
     return CommandResult::AlreadyResearched;
   if (!std::ranges::all_of(topic->prerequisites, known))
     return CommandResult::PrerequisiteMissing;
-  // A tier is researched only once the Lab's level has opened it (Phase 3 design §6).
+  // A tier is researched only once the Lab's level has opened it (ADR-033 decision 2).
   if (lab->level < LabLevelFor(*m_tuning, topic->tier))
     return CommandResult::LevelTooLow;
   if (lab->researchQueue.size() >= QUEUE_LIMIT)
@@ -3222,7 +3227,8 @@ Outpost::CommandResult Outpost::Simulation::ApplyOrder(PlayerId _player, const O
         return m_tuning ? Apply(_player, _given) : CommandResult::NotYetSupported;
     },
     _order);
-  // A scheduled order gives its ships nothing to do until it fires (ADR-080), and a retreat is no order (ADR-075).
+  // A scheduled order gives its ships nothing to do until it fires (ADR-080 decision 5), and leaves their retreat alone
+  // until then (ADR-075 decision 6).
   if (result != CommandResult::Applied || std::holds_alternative<ScheduleOrderCommand>(_order))
     return result;
   std::visit(
@@ -3237,8 +3243,9 @@ Outpost::CommandResult Outpost::Simulation::ApplyOrder(PlayerId _player, const O
       }
       if constexpr (!std::is_same_v<OrderType, SetRetreatCommand>)
       {
-        // Any order a player gives a ship ends its retreat; a hit below its threshold starts it again (ADR-075). And it takes
-        // the ship out of the scheduled order it waited on (ADR-080).
+        // Any order a player gives a ship but setting its retreat ends its retreat, and a hit below its threshold starts it
+        // again; setting it to never ends it too, in its own Apply (ADR-075 decision 6). And it takes the ship out of the
+        // scheduled order it waited on (ADR-080 decision 5).
         const auto endRetreat = [this](const std::vector<EntityId>& _ships)
         {
           for (const EntityId id : _ships)
@@ -3433,8 +3440,8 @@ void Outpost::Simulation::FireScheduledOrders()
   }
 }
 
-// Phase 2 design §9: the warships hold the sector that holds the point. They go to its node, answer any enemy ship they
-// see in the sector, and go back to the node once none is left (KeepStandingOrders, ADR-059).
+// The warships hold the sector that holds the point. They go to its node, answer any enemy ship they
+// see in the sector, and go back to the node once none is left (KeepStandingOrders, ADR-059 decision 3).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const HoldSectorCommand& _hold)
 {
   if (const CommandResult result = ValidateShips(_player, _hold.ships); result != CommandResult::Applied)
@@ -3459,8 +3466,8 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const HoldSe
   return OrderMove(_player, warships, sector->placement.node, ShipOrder::AttackMove);
 }
 
-// Phase 2 design §9: the warships attack-move to the point, then back to the middle of where they were ordered from, and
-// so on (KeepStandingOrders, ADR-059).
+// The warships attack-move to the point, then back to the middle of where they were ordered from, and
+// so on (KeepStandingOrders, ADR-059 decision 3).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const PatrolCommand& _patrol)
 {
   if (const CommandResult result = ValidateShips(_player, _patrol.ships); result != CommandResult::Applied)
@@ -3573,10 +3580,10 @@ bool Outpost::Simulation::IsPlanning(EntityId _ship) const noexcept
                              { return std::ranges::find(_order.members, _ship, &PlannedOrder::Member::ship) != _order.members.end(); });
 }
 
-// Phase 4 design §8: once a second, each outpost's ships go after the nearest of the players' ships and structures within
+// Once a second, each outpost's ships go after the nearest of the players' ships and structures within
 // the guard of its node, and stay after it while it stays within the chase; with none, they go back to the node. They
 // never raid and never leave their sector. They see through fog of war, as a Defence gun does: pirates are a rule the
-// simulation runs, not a player (ADR-073).
+// simulation runs, not a player (ADR-073 decision 5).
 void Outpost::Simulation::GuardOutposts()
 {
   if (m_outposts.empty() || m_tick % m_ticksPerSecond != 0)
@@ -3678,8 +3685,8 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
   return CommandResult::Applied;
 }
 
-// A player whose base was placed and who has neither a Command Station nor a finished Shipyard has lost (Phase 1 design
-// §4, ADR-037). The match ends then, once: the world runs on, but the outcome stands (owner, 2026-10-01).
+// A player whose base was placed and who has neither a Command Station nor a finished Shipyard has lost
+// (ADR-037 decision 1). The match ends then, once: the world runs on, but the outcome stands (owner, 2026-10-01).
 void Outpost::Simulation::DecideMatch()
 {
   if (m_matchupEnd.has_value())
@@ -3709,7 +3716,7 @@ void Outpost::Simulation::DecideMatch()
     EndMatch(standing, MatchEnding::LostProduction);
 }
 
-// In a world no match ends (Phase 5 design §8): a player who loses is told so in the tick it does, and an hour of ticks
+// In a world no match ends (ADR-084 decision 2): a player who loses is told so in the tick it does, and an hour of ticks
 // later its seat restarts at its start, once no other player holds the start's sector or has a structure in it. A player
 // that builds itself a Shipyard again in the meantime stands again, and waits for nothing.
 void Outpost::Simulation::RestartLostPlayers(const std::vector<PlayerId>& _standing)
@@ -3772,9 +3779,9 @@ std::optional<std::uint64_t> Outpost::Simulation::RestartTick(PlayerId _player) 
   return *player->lostTick + (std::uint64_t{m_restartSeconds} * m_ticksPerSecond);
 }
 
-// Phase 2 design §8, as Phase 4 amends it: every drain interval, a player that holds fewer nodes than the most any player
+// ADR-057 decisions 2 and 3: every drain interval, a player that holds fewer nodes than the most any player
 // holds loses the tuning data's tickets for each node it is behind, whatever the map's size; a suppressed Relay counts for
-// its owner, and a free node for no one. A player out of tickets loses (ADR-057).
+// its owner, and a free node for no one. A player out of tickets loses (ADR-057 decision 5).
 void Outpost::Simulation::Dominate()
 {
   if (m_matchOver || m_basePlayers.empty() || !HasTerritory() || m_worldRules)

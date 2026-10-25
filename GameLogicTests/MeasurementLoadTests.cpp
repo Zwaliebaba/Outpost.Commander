@@ -9,7 +9,8 @@ namespace GameLogicTests
 TEST_CLASS(MeasurementLoadTests)
 {
 public:
-  // Task 2.7: 200 ships and 40 structures, the starting bases counted, each clear of every obstacle and of each other.
+  // The measurement load: 200 ships and 40 structures, the starting bases counted, each clear of every obstacle and of
+  // each other.
   TEST_METHOD(PlacesTwoHundredShipsAndFortyStructures)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
@@ -65,7 +66,7 @@ public:
     Assert::IsTrue(server.TakeTickTimings().empty());
   }
 
-  // Task 8.1: an order tick on the measurement load names where its time went: the ships' paths, inside its commands,
+  // An order tick on the measurement load names where its time went: the ships' paths, inside its commands,
   // inside the tick.
   TEST_METHOD(TimesTheOrdersOfATick)
   {

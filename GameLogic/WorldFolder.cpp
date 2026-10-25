@@ -177,7 +177,7 @@ void Outpost::WorldFolder::Log(std::uint64_t _tick, std::span<const Command> _co
     m_log.write(header.data(), header.size());
     m_log.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
   }
-  // Handed to the system now, so that a process killed after this tick keeps them (Phase 5 design §5).
+  // Handed to the system now, so that a process killed after this tick keeps them (ADR-077 decision 7).
   m_log.flush();
   if (!m_log)
     throw Neuron::Exception(std::format("The world's command log in {} cannot be written.", m_folder.string()));

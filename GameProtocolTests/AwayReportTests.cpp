@@ -4,7 +4,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace GameProtocolTests
 {
-// Phase 5 design §11 (ADR-080): what a player's report of a time away makes of its events.
+// ADR-080 decision 7: what a player's report of a time away makes of its events.
 TEST_CLASS(AwayReportTests)
 {
 public:

@@ -38,7 +38,8 @@ Census Count(const Outpost::Simulation& _simulation)
 TEST_CLASS(StressLoadTests)
 {
 public:
-  // Task 3.7: 200 armed ships and 40 structures that can be destroyed, fighting, and kept at full size as ships are lost.
+  // The stress scene: 200 armed ships and 40 structures that can be destroyed, fighting, and kept at full size as ships
+  // are lost.
   TEST_METHOD(KeepsTwoHundredShipsFighting)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());

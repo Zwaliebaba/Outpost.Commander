@@ -18,7 +18,7 @@ constexpr Outpost::PlanePosition STATION{.xMeters = 400.0f, .zMeters = -400.0f};
 // Far from everything, where parked warships keep out of the way.
 constexpr Outpost::PlanePosition PARK{.xMeters = 1000.0f, .zMeters = 1200.0f};
 
-// The repository's fleet cap at each Command Station level, and without a station level 1's (Phase 4 design §5, gate L2).
+// The repository's fleet cap at each Command Station level, and without a station level 1's (ADR-071 decision 1).
 constexpr std::array<std::int32_t, 5> CAPS{12, 20, 30, 40, 50};
 
 Outpost::Command Queue(Outpost::PlayerId _player, Outpost::EntityId _producer, Outpost::DesignId _design = {})
@@ -49,7 +49,7 @@ std::uint32_t SmallBuildTicks(const MatchArena& _arena)
 TEST_CLASS(FleetCapTests)
 {
 public:
-  // Phase 4 design §5: a warship job that would take its player past the cap waits at the front of its queue, neither paid
+  // ADR-071 decision 3: a warship job that would take its player past the cap waits at the front of its queue, neither paid
   // for nor started, and starts once a ship is lost.
   TEST_METHOD(AJobWaitsAtTheCapUntilAShipIsLost)
   {
@@ -101,7 +101,7 @@ public:
   TEST_METHOD(AHullTakesItsPoints)
   {
     MatchArena arena;
-    // Level 2 builds Medium hulls (Phase 3 design §5).
+    // Level 2 builds Medium hulls (ADR-064 decision 9).
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD, 2);
     Park(arena, BLUE, CAPS[0] - 1);
     (void)arena.Tick({Queue(BLUE, yard, arena.Design(BLUE, MEDIUM, MASS_DRIVER))});
@@ -151,7 +151,7 @@ public:
       Assert::AreEqual(CAPS[level + 1], station->levels[level].commandPoints);
   }
 
-  // Data that sets no cap has none (Phase 4 design §5), as data without nodes has no node cap.
+  // Data that sets no cap has none (ADR-071 decision 1), as data without nodes has no node cap.
   TEST_METHOD(NoCapWithoutTheData)
   {
     Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());

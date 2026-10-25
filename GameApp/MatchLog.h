@@ -2,50 +2,49 @@
 
 namespace Outpost
 {
-// The record of one match for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3), and Phase 1's P1, P2 and P4
-// (Phase 1 plan task 13.1). It holds how long the match ran and how it ended; when each player finished each research
-// topic, and each research tier its Research Lab opened; every warship as it first appeared, by its components and its module;
-// each player's warship count every 30 seconds, and its peak; and each ore asteroid as it ran dry. For Phase 3's T2 to T4
-// (Phase 3 plan task 25.1) it holds each upgrade, each structure above level 1 that is attacked, and how long both
-// players sat at their node caps with equal nodes. For Phase 4's U1 and U3 (Phase 4 plan task 34.1) it holds each derelict
-// salvaged, each pirate outpost fought and cleared, and each warship that turns for home, is repaired and fights again. It
-// reads only snapshots, as any client does. Tools/MatchLog.py summarizes it.
+// The record of one match for the owner's playtests (ADR-038 decisions 1 and 5). It holds how long the match ran and how
+// it ended; when each player finished each research topic, and each research tier its Research Lab opened; every warship
+// as it first appeared, by its components and its module; each player's warship count every 30 seconds, and its peak;
+// each ore asteroid as it ran dry; each upgrade, each structure above level 1 that is attacked, and how long both players
+// sat at their node caps with equal nodes; and each derelict salvaged, each pirate outpost fought and cleared, and each
+// warship that turns for home, is repaired and fights again. It reads only snapshots, as any client does.
+// Tools/MatchLog.py summarizes it (ADR-038 decision 4).
 //
 // One line a record, every time in ticks:
 //
 //   match seed <seed> ticks_per_second <rate>
 //   matchup <number>                                 the match is that battle matchup, from 1 (ADR-083)
 //   research <tick> player <player> topic <id> <name>
-//   tier <tick> player <player> tier <tier>          the player's Research Lab opened the tier (Phase 3 design §6)
+//   tier <tick> player <player> tier <tier>          the player's Research Lab opened the tier (ADR-033 decision 2)
 //   built <tick> player <player> hull <id> drive <id> weapon <id> <hull name>+<drive name>+<weapon name>[+<module name>]
 //   fleet <tick> player <player> warships <count>    every 30 seconds, from the player's own snapshots
-//   dry <tick> asteroid <id>                         the asteroid's reserve ran out (Phase 1 design §8)
+//   dry <tick> asteroid <id>                         the asteroid's reserve ran out (ADR-035)
 //   peak <tick> player <player> warships <count>     the most warships the player had at once, and when it first had
 //                                                    them; written as the match ends or is left
-//   contact <tick> sector <id>                       the match's first shot, in the sector it was fired from (Phase 2 S1)
+//   contact <tick> sector <id>                       the match's first shot, in the sector it was fired from
 //   engagement <tick> sector <id>                    ships of both sides firing in one sector within 10 seconds of each
-//                                                    other; another there is counted after 30 seconds with no shot
-//                                                    (Phase 2 S2). A sector of 0 is none.
+//                                                    other; another there is counted after 30 seconds with no shot. A
+//                                                    sector of 0 is none.
 //   sector <tick> sector <id> holder <player or 0>   a sector's holder changed, the homes' included at the start
 //   tickets <tick> player <player> tickets <count>   every 30 seconds with its fleet, on a map with territory
 //   upgrade <tick> player <player> structure <id> <kind> level <level> <started, finished or lost>
 //                                                    a player's structure began, finished or lost the work on a level,
 //                                                    from its own snapshots; <kind> is station, shipyard or lab
 //   attacked <tick> player <owner> structure <id> <kind> level <level>
-//                                                    a shot first hit a structure at a level above 1 (Phase 3 T4)
+//                                                    a shot first hit a structure at a level above 1
 //   stall <tick> ticks <count>                       the ticks during which both players were at their node caps and held
-//                                                    as many nodes as each other (Phase 3 T2); written with the peaks, on
+//                                                    as many nodes as each other; written with the peaks, on
 //                                                    a map with territory
 //   salvaged <tick> player <player> derelict <id> ore <ore>
 //                                                    a derelict left the player's sight while its Constructors were at it:
-//                                                    they salvaged it (Phase 4 U1). Two players' crews at one both count.
-//   pirates <tick> player <player> sector <id>       a first shot between the player and the pirates of the sector (U1)
+//                                                    they salvaged it. Two players' crews at one both count.
+//   pirates <tick> player <player> sector <id>       a first shot between the player and the pirates of the sector
 //   cleared <tick> sector <id>                       the pirates no longer guard the sector
-//   retreat <tick> player <player> ship <id>         a warship of the player's turned for home to be repaired (U3)
-//   repaired <tick> player <player> ship <id>        a warship that turned for home stopped, whole (U3)
-//   again <tick> player <player> ship <id>           a repaired warship fired, the first time since its repair (U3)
+//   retreat <tick> player <player> ship <id>         a warship of the player's turned for home to be repaired
+//   repaired <tick> player <player> ship <id>        a warship that turned for home stopped, whole
+//   again <tick> player <player> ship <id>           a repaired warship fired, the first time since its repair
 //   ending <tick> <production, domination, fleet or time>
-//                                                    how the match ended, just before its end (Phase 2 S3); a battle
+//                                                    how the match ended, just before its end (ADR-057 decision 6); a battle
 //                                                    matchup's by a fleet destroyed or its time run out (ADR-083)
 //   end <tick> winner <player, or 0 for a draw>
 //   left <tick>                                      the match was left before it ended (Finish)
@@ -82,9 +81,9 @@ private:
   void RecordUpgrades(const Snapshot& _snapshot);
   // Whether both players are at their caps with equal nodes in the tick of _snapshot, once both players' snapshots of it are in.
   void RecordStall(const Snapshot& _snapshot);
-  // The player's warships that turn for home and come back whole, from its own snapshots (Phase 4 U3).
+  // The player's warships that turn for home and come back whole, from its own snapshots.
   void RecordRetreats(const Snapshot& _snapshot);
-  // The derelicts the player's Constructors finish, from its own snapshots (Phase 4 U1).
+  // The derelicts the player's Constructors finish, from its own snapshots.
   void RecordSalvage(const Snapshot& _snapshot);
 
   std::ostream* m_out = nullptr;
@@ -93,7 +92,7 @@ private:
   std::uint64_t m_gapTicks = 0;
   std::uint64_t m_lastTick = 0;
   bool m_ended = false;
-  // Fire in one sector: the last tick each side fired there, and whether an engagement there is under way (Phase 2 S2).
+  // Fire in one sector: the last tick each side fired there, and whether an engagement there is under way.
   struct SectorFire
   {
     std::int32_t sector = 0;

@@ -2,10 +2,9 @@
 
 namespace GameLogicTests
 {
-// The balance check of design §3, played by the real simulation instead of Tools/BattleModel.py's abstract clumps (task
-// 3.4). The MVP's documents and the ADRs call it the Q2 check, after the MVP's question it answers: does ship design
-// matter? It follows the model's method: the same stages, budgets, fire modes, criteria (a)-(d) and confidence
-// intervals. Two things differ, and both are what the simulation is.
+// The balance check, played by the real simulation instead of Tools/BattleModel.py's abstract clumps. It answers the
+// question: does ship design matter? It follows the model's method: the same stages, budgets, fire modes, criteria
+// (a)-(d) and confidence intervals. Two things differ, and both are what the simulation is.
 //   - Armies are whole ships. The model fields the Ore left over as a fractional ship; the simulation cannot. Battle k
 //     of n spends the budget at the center of the k-th of n equal slices of the ±15% window, and buys as many whole
 //     ships as that affords. The Ore left over is not fielded.
@@ -73,9 +72,9 @@ enum class FireMode : std::uint8_t
 
 struct CheckOptions
 {
-  // Ore a side at each stage (Phase 1 design §7): tier 1's, the MVP's every component; the starting components' and tier
+  // Ore a side at each stage: tier 1's, the MVP's every component; the starting components' and tier
   // 1's research; and tiers 2 and 3, whose research is played at their own budgets. Three times the MVP's, since Phase 4
-  // tripled every component's cost (Phase 4 design §4), so that each buys the fleets it bought before.
+  // tripled every component's cost, so that each buys the fleets it bought before.
   std::vector<double> budgets{6000, 9000, 13500, 18000, 27000, 36000};
   std::vector<double> earlyBudgets{6000, 9000, 13500};
   std::vector<double> tierTwoBudgets{13500, 18000, 27000, 36000};
@@ -83,7 +82,7 @@ struct CheckOptions
   // The last tier played; 1 is the MVP's check.
   std::int32_t lastTier = Outpost::RESEARCH_TIERS;
   // Drives whose case is speed, which a battle between two groups cannot see: (b) reports them when no design worth
-  // building uses them, and does not fail on it (Phase 1 design §5, §7; owner, 2026-10-02, gate H4).
+  // building uses them, and does not fail on it (ADR-033 decision 6; owner, 2026-10-02).
   std::vector<std::string> speedDrives{"Pulse"};
   std::uint32_t battles = 60;
   std::uint32_t robustBattles = 30;
@@ -111,7 +110,7 @@ struct CheckResult
 // The parts of PartsFrom that no research topic unlocks, or that a topic of _tier or an earlier one unlocks.
 [[nodiscard]] CheckParts PartsThrough(const Outpost::Tuning& _tuning, std::int32_t _tier);
 
-// Every design of the parts: every hull, drive and weapon, the Missile Rack's splash included (task 5.3).
+// Every design of the parts: every hull, drive and weapon, the Missile Rack's splash included (ADR-014 decision 12).
 [[nodiscard]] std::vector<CheckDesign> DesignsFrom(const Outpost::Tuning& _tuning, const CheckParts& _parts);
 
 // One battle: battle _battle of _battles between _a and _b, at _budgetOre each give or take the window, under fog of war

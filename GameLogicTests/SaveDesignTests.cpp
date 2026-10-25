@@ -38,7 +38,7 @@ const Outpost::DesignView* ViewOf(const Outpost::Snapshot& _snapshot, Outpost::D
 TEST_CLASS(SaveDesignTests)
 {
 public:
-  // Phase 2 design §10, ADR-058: a design may carry a module, the Sensor Array, from the start. It adds 120 Ore, slows the
+  // ADR-058: a design may carry a module, the Sensor Array, from the start. It adds 120 Ore, slows the
   // ship by a tenth and lets it see 700 m whatever its weapon; the same components without it are another design.
   TEST_METHOD(SavesADesignWithASensorArray)
   {
@@ -77,7 +77,7 @@ public:
     Assert::IsTrue(Result(arena, save) == Outpost::CommandResult::UnknownComponent);
   }
 
-  // Design §7, §9: the designer saves a design of components the player has, under a name the HUD can show, and the
+  // ADR-017 decision 6: the designer saves a design of components the player has, under a name the HUD can show, and the
   // server numbers it; a saved design is renamed under its identifier.
   TEST_METHOD(SavesAndRenamesADesign)
   {

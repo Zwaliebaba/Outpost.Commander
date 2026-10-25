@@ -17,7 +17,7 @@ constexpr Outpost::WeaponId LANCE{2};
 constexpr Outpost::DesignId SWARM{1};
 
 // A snapshot with OutpostCommander/Assets/Tuning.json's components as the server sends them before any research: the
-// Large hull, the Fusion drive and the Missile Rack locked (design §7, §8). _unlocked opens all three.
+// Large hull, the Fusion drive and the Missile Rack locked (Game §research.unlocks). _unlocked opens all three.
 Outpost::Snapshot Components(bool _unlocked = false)
 {
   Outpost::Snapshot snapshot{.tick = 1, .player = PLAYER, .ore = 1000};
@@ -82,8 +82,8 @@ Neuron::InputEvent Character(std::uint32_t _character)
 TEST_CLASS(DesignerTests)
 {
 public:
-  // Phase 2 design §10: the module slot starts empty and stays so until the player picks one; a module's cost and speed
-  // join the design's, its initials follow the Swarm's name, and saving and loading carry it.
+  // ADR-058 decisions 6 and 7: the module slot starts empty and stays so until the player picks one; a module's cost and
+  // speed join the design's, its initials follow the Swarm's name, and saving and loading carry it.
   TEST_METHOD(PicksAModuleOrNone)
   {
     constexpr Outpost::ModuleId SENSOR_ARRAY{1};
@@ -119,7 +119,7 @@ public:
     Assert::IsFalse(designer.Picked().module.IsValid(), L"a module the snapshot no longer lists is dropped");
   }
 
-  // Interface plan 2, task UI4.5: a module on a starting design's hull, drive and weapon takes that design's short name and
+  // ADR-069 decision 5: a module on a starting design's hull, drive and weapon takes that design's short name and
   // the module's initials, "Lancer+SA"; a typed name still wins. Without a saved design of a short name to follow, or where
   // the two are too long a name, the components name it, the module's whole name after them where it fits.
   TEST_METHOD(NamesAModuleAfterItsStartingDesign)
@@ -168,7 +168,7 @@ public:
     Assert::IsTrue(designer.Picked() == Outpost::DesignComponents{SMALL, ION, LANCE}, L"the Large hull is locked");
   }
 
-  // Design §9, task 5.2: the live stats are the battle model's, damage per second after armor against each hull
+  // ADR-017 decision 7: the live stats are the battle model's, damage per second after armor against each hull
   // included.
   TEST_METHOD(ShowsTheBattleModelsStats)
   {
@@ -214,7 +214,7 @@ public:
     Assert::AreEqual(std::string("Swarm"), swarm.Name(snapshot), L"the name follows the snapshot again");
   }
 
-  // Phase 4 design §10: a design's retreat follows the saved design until the player picks one, and saving sends it; a
+  // ADR-088 decision 3: a design's retreat follows the saved design until the player picks one, and saving sends it; a
   // saved design whose retreat changed is saved again under its name.
   TEST_METHOD(SetsTheDesignsRetreat)
   {
@@ -275,7 +275,7 @@ public:
     Assert::IsTrue(refused.TakeQueueCommands(snapshot).empty(), L"dropped once the wait was over");
   }
 
-  // Phase 1 design §11: the designer's queue goes to one of the player's finished Shipyards: the lowest numbered at first,
+  // ADR-017 decision 7: the designer's queue goes to one of the player's finished Shipyards: the lowest numbered at first,
   // one the player picks, the next or the previous by number round the end, and the lowest again when its own is gone.
   TEST_METHOD(AimsTheQueueAtAShipyard)
   {
@@ -318,7 +318,7 @@ public:
     Assert::AreEqual(30u, target(), L"its own is gone");
   }
 
-  // Phase 1 design §11: one Queue asks for from 1 up to as many ships as the target's queue has free slots (owner,
+  // Game §ships.designer.queue: one Queue asks for from 1 up to as many ships as the target's queue has free slots (owner,
   // 2026-10-02), and asks a new design's save for each.
   TEST_METHOD(QueuesAsManyAsTheQueueHasRoomFor)
   {
@@ -358,7 +358,7 @@ public:
     Assert::AreEqual(std::string("Swarm"), designer.Name(snapshot));
   }
 
-  // Phase 1 design §11: the saved designs' chips scroll sideways, from the first to the last, and no further.
+  // Game §interface.windows.designer: the saved designs' chips scroll sideways, from the first to the last, and no further.
   TEST_METHOD(ScrollsTheSavedDesigns)
   {
     Outpost::Designer designer;

@@ -69,8 +69,8 @@ void Report(std::string_view _scenario, const Outcome& _outcome)
 }
 } // namespace
 
-// Task 4.6: design §6's hand estimates of the structure numbers, played by the simulation. Their figures are recorded in
-// design §6 and §12; a number that misses its intent is raised with the owner, not retuned silently.
+// The hand estimates of the structure numbers, played by the simulation. Their figures are recorded in
+// Docs/Records/BalanceLog.md; a number that misses its intent is raised with the owner, not retuned silently.
 TEST_CLASS(HandCheckTests)
 {
 public:

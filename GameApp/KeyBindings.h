@@ -3,10 +3,10 @@
 namespace Outpost
 {
 // The keys the game reads, in one place, so that what a button's cap or the Controls window says cannot disagree with what
-// the input code does (tasks 15.2 and 16.4). Each is a Windows virtual-key code; a letter's is its capital.
+// the input code does (ADR-068 decision 4). Each is a Windows virtual-key code; a letter's is its capital.
 
-// The orders (design §9): attack-move and stop, and the standing orders, hold a sector and patrol (ADR-059). Control
-// groups are the digits, assigned with Ctrl.
+// The orders (ADR-013 decision 5): attack-move and stop, and the standing orders, hold a sector and patrol (ADR-059
+// decision 7). Control groups are the digits, assigned with Ctrl.
 inline constexpr std::uint8_t KEY_ATTACK_MOVE = 'A';
 inline constexpr std::uint8_t KEY_STOP = 'S';
 inline constexpr std::uint8_t KEY_HOLD_SECTOR = 'H';
@@ -22,19 +22,20 @@ inline constexpr std::uint8_t KEY_PAN_RIGHT = VK_RIGHT;
 inline constexpr std::uint8_t KEY_TURN_COUNTERCLOCKWISE = 'Q';
 inline constexpr std::uint8_t KEY_TURN_CLOCKWISE = 'E';
 
-// The keys that open and close the designer, the production window and the research window (Phase 1 design §12), clear of
-// the orders' A and S, the camera's Q and E and arrows, and the control groups' digits; and the Controls window (task 16.4).
+// The keys that open and close the designer, the production window and the research window (ADR-031 decision 6), clear of
+// the orders' A and S, the camera's Q and E and arrows, and the control groups' digits; and the Controls window (ADR-068
+// decision 4).
 inline constexpr std::uint8_t KEY_DESIGNER = 'D';
 inline constexpr std::uint8_t KEY_PRODUCTION = 'P';
 inline constexpr std::uint8_t KEY_RESEARCH = 'R';
 inline constexpr std::uint8_t KEY_CONTROLS = VK_F1;
-// The orders window, the seat's scheduled orders and the form that gives one (Phase 5 design §11).
+// The orders window, the seat's scheduled orders and the form that gives one (ADR-080 decision 9).
 inline constexpr std::uint8_t KEY_ORDERS = 'O';
 // Closes the front window, and with none open cancels what the controls have armed.
 inline constexpr std::uint8_t KEY_CANCEL = VK_ESCAPE;
 // Moves the camera to the newest alert (ADR-059).
 inline constexpr std::uint8_t KEY_LATEST_ALERT = VK_SPACE;
-// Held, shows a bar over every ship and structure, whole or not (ADR-047).
+// Held, shows a bar over every ship and structure, whole or not (ADR-088 decision 5).
 inline constexpr std::uint8_t KEY_EVERY_HEALTH_BAR = VK_MENU;
 // With Ctrl, make the interface larger or smaller, as far as its windows fit (ADR-070): the keys that read = and - on a US
 // keyboard.
@@ -77,7 +78,7 @@ inline constexpr std::uint8_t KEY_SMALLER_INTERFACE = VK_OEM_MINUS;
   }
 }
 
-// A line of the Controls window (task 16.4): the keys or the mouse action, and what it does; or, with nothing it does, the
+// A line of the Controls window (ADR-068 decision 4): the keys or the mouse action, and what it does; or, with nothing it does, the
 // heading of the lines under it.
 struct KeyBinding
 {

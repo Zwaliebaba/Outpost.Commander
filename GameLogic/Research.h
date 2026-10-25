@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// What a player's finished research does to its rates (design §8, Phase 1 design §6), as factors on the base numbers of
+// What a player's finished research does to its rates (ADR-017 decision 2), as factors on the base numbers of
 // the tuning data. Upgrades change rates, never the size of a hit or a range: hull and structure hit points, a weapon's
 // and a structure weapon's fire rate, a Mining Rig's income, a Shipyard's build speed, every ship's speed, the
 // Constructors' build and repair rate, and how much ore an asteroid holds. Two topics on one rate add their percentages
@@ -18,7 +18,7 @@ struct Upgrades
   std::vector<std::pair<StructureWeaponId, double>> structureWeaponFireRateFactors;
   double shipSpeedFactor = 1.0;
   double constructorRateFactor = 1.0;
-  // Divides what a rig of the player's draws from its asteroid's reserve for the Ore it earns (Phase 1 design §8).
+  // Divides what a rig of the player's draws from its asteroid's reserve for the Ore it earns (ADR-035 decision 3).
   double oreReserveFactor = 1.0;
 
   [[nodiscard]] double FireRateFactor(WeaponId _weapon) const noexcept;
@@ -31,7 +31,7 @@ struct Upgrades
 [[nodiscard]] Upgrades UpgradesFrom(const Tuning& _tuning, std::span<const ResearchTopicId> _researched);
 
 // Whether a player who has researched _researched may build with this component: it is one no topic unlocks, or one a
-// topic in _researched unlocks (design §7, §8).
+// topic in _researched unlocks (ADR-017 decision 4).
 [[nodiscard]] bool IsAvailable(const Tuning& _tuning, std::span<const ResearchTopicId> _researched, HullId _hull);
 [[nodiscard]] bool IsAvailable(const Tuning& _tuning, std::span<const ResearchTopicId> _researched, DriveId _drive);
 [[nodiscard]] bool IsAvailable(const Tuning& _tuning, std::span<const ResearchTopicId> _researched, WeaponId _weapon);

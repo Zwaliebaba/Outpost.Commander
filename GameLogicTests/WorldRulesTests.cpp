@@ -74,7 +74,7 @@ std::int64_t StartingOreHundredths(const TerritoryMatch& _match)
 }
 } // namespace
 
-// Phase 5 design §8 (gate H6): a world has no domination and no end. A player who loses is told so, and its seat restarts
+// ADR-084 decisions 2 to 4: a world has no domination and no end. A player who loses is told so, and its seat restarts
 // at its start an hour later, once the start is free, with its research, its designs and what of its own still stands.
 TEST_CLASS(WorldRulesTests)
 {

@@ -216,7 +216,7 @@ constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 7> STR
   {"RepairBay", Outpost::StructureKind::RepairBay},
 }};
 
-// The hulls a Shipyard, or one of its levels, builds: an optional list, which no other kind has (Phase 3 design §5).
+// The hulls a Shipyard, or one of its levels, builds: an optional list, which no other kind has (ADR-064 decision 9).
 std::vector<Outpost::HullId> ReadHulls(ObjectReader& _reader, const Outpost::StructureTuning& _structure)
 {
   const JsonValue* hulls = _reader.Optional("hulls");
@@ -233,7 +233,7 @@ std::vector<Outpost::HullId> ReadHulls(ObjectReader& _reader, const Outpost::Str
   return ids;
 }
 
-// What a level of the Research Lab gives and needs (Phase 3 design §6): the tier it opens, the topics it requires and the
+// What a level of the Research Lab gives and needs (ADR-064 decision 10): the tier it opens, the topics it requires and the
 // topics it researches at once, each optional, and none of them a level of any other kind's.
 void ReadLabLevel(ObjectReader& _reader, const Outpost::StructureTuning& _structure, Outpost::StructureLevelTuning& _level)
 {
@@ -262,8 +262,8 @@ void ReadLabLevel(ObjectReader& _reader, const Outpost::StructureTuning& _struct
     _level.researchSlots = _reader.Integer("researchSlots", 2);
 }
 
-// A Command Station's cap on nodes, its Defence guns (Phase 3 design §7) and its fleet cap (Phase 4 design §5), at level 1
-// or at one of its levels: each optional, and none another kind's.
+// A Command Station's cap on nodes, its Defence guns (ADR-064 decision 11) and its fleet cap (ADR-071 decision 1), at
+// level 1 or at one of its levels: each optional, and none another kind's.
 void ReadStationNumbers(ObjectReader& _reader, const Outpost::StructureTuning& _structure, std::int32_t& _nodes, std::int32_t& _guns,
                         std::int32_t& _commandPoints)
 {
@@ -312,7 +312,7 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
   if (const JsonValue* weapon = _reader.Optional("structureWeapon"))
     structure.structureWeapon = ReadId<Outpost::StructureWeaponId>(*weapon, _reader.PathOf("structureWeapon"));
 
-  // Levels are art the owner gave three kinds (ADR-045); the others have none to draw (Phase 3 design §11).
+  // Levels are art the owner gave three kinds (ADR-045); the others have none to draw (ADR-064 decision 1).
   if (const JsonValue* levels = _reader.Optional("levels"))
   {
     const std::string path = _reader.PathOf("levels");
@@ -361,7 +361,7 @@ constexpr std::array<std::pair<std::string_view, Outpost::UpgradeStat>, 7> UPGRA
   {"oreReserve", Outpost::UpgradeStat::OreReserve},
 }};
 
-// Each target has the one rate the game raises (design §8, Phase 1 design §6): upgrades change rates, never the size of a
+// Each target has the one rate the game raises (Game §research.upgrades): upgrades change rates, never the size of a
 // hit or a range.
 constexpr std::array<std::pair<Outpost::UpgradeTarget, Outpost::UpgradeStat>, 9> UPGRADE_PAIRS = {{
   {Outpost::UpgradeTarget::MiningRig, Outpost::UpgradeStat::Income},
@@ -447,7 +447,7 @@ void CheckReferences(const Outpost::Tuning& _tuning)
     if (structure.structureWeapon.IsValid())
       CheckExists(_tuning.structureWeapons, structure.structureWeapon, std::format("{}.structureWeapon", path), "structure weapon");
 
-    // A Shipyard that names its hulls names each hull once, so that every hull is built at one level (Phase 3 design §5).
+    // A Shipyard that names its hulls names each hull once, so that every hull is built at one level (ADR-064 decision 9).
     std::vector<Outpost::HullId> named;
     const auto check = [&](const std::vector<Outpost::HullId>& _hulls, const std::string& _path)
     {
@@ -507,8 +507,8 @@ void CheckReferences(const Outpost::Tuning& _tuning)
 
 // Every topic must be reachable: repeatedly mark the topics whose prerequisites are all marked, and any left over
 // require themselves through a cycle.
-// The tiers (Phase 1 design §6, ADR-033): a topic requires none of a later tier, and each tier after the first that has
-// topics is opened by one level of the Research Lab, a later tier by a later level (Phase 3 design §6).
+// The tiers (ADR-033 decision 2): a topic requires none of a later tier, and each tier after the first that has
+// topics is opened by one level of the Research Lab, a later tier by a later level.
 void CheckTiers(const Outpost::Tuning& _tuning)
 {
   const std::vector<Outpost::ResearchTopicTuning>& research = _tuning.research;

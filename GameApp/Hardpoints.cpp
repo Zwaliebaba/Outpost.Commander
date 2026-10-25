@@ -9,7 +9,7 @@ namespace
 constexpr std::string_view GUN_TAG = "gun";
 constexpr std::string_view EXHAUST_TAG = "exhaust";
 
-// Placeholder looks for an exhaust, chosen to read from the RTS camera (design §11): presentation, not tuning, so they
+// Placeholder looks for an exhaust, chosen to read from the RTS camera (Game §look.exhaust): presentation, not tuning, so they
 // live here, as the combat effects' do. Sizes are in nozzle radii.
 // The core sits a little out of the nozzle, so the hull does not hide half of it, and is as bright at rest as a ship
 // that is waiting with its engines lit.

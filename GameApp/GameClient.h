@@ -42,8 +42,8 @@ struct ClientAssets
 [[nodiscard]] Neuron::UiAtlas RasterizeInterface(std::uint32_t _widthPixels, std::uint32_t _heightPixels);
 
 // The client's view of the game: every model loaded into video memory, the camera, and the world drawn through it from
-// interpolated snapshots (task 2.5, ADR-013). It never sees server state, only what the transport brings. It starts on the
-// main menu; the shell starts a match on it, and takes it back to the menu, when the player asks for either (task 6.2).
+// interpolated snapshots (ADR-013 decision 3). It never sees server state, only what the transport brings. It starts on the
+// main menu; the shell starts a match on it, and takes it back to the menu, when the player asks for either (ADR-020 decision 10).
 class GameClient : Neuron::NonCopyable
 {
 public:
@@ -108,7 +108,7 @@ public:
   // Draws the HUD, the windows or the menu over the world, after Renderer::BeginInterface (ADR-050).
   void RenderInterface(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
 
-  // Task 2.7's order-to-response probe. When the frame just drawn is the first to show a ship of the last move order
+  // The order-to-response probe. When the frame just drawn is the first to show a ship of the last move order
   // visibly respond, its center or nose moved by a pixel or more, this returns when the order's input was read, once. The caller takes the time after presenting
   // the frame and has the latency. An order given to ships already moving is not measured: their motion would not be
   // its response.
@@ -181,15 +181,15 @@ private:
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model, int _level = FIRST_MODEL_LEVEL) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
-  // The corners of _entity's model's bounds where its pose puts them, which the bars over it stand above (interface plan 2,
-  // task UI4.1); for an entity without a model, the corners of its footprint's square on the ground.
+  // The corners of _entity's model's bounds where its pose puts them, which the bars over it stand above (ADR-088
+  // decision 5); for an entity without a model, the corners of its footprint's square on the ground.
   [[nodiscard]] std::array<DirectX::XMFLOAT3, 8> BoundsCorners(const EntityView& _entity) const;
   // Leans each ship of the view into its turn, by its bank limits, for a frame of _elapsedSeconds (ADR-029).
   void UpdateBanking(float _elapsedSeconds);
   // How a Mining Rig, the model _set/_model drawn at _scale, stands on its rock: tilted and lifted so that its legs stand on
   // the rock under them, or without feet over the rock, its lowest point on the rock's top (ADR-044).
   [[nodiscard]] Stance RigStance(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
-  // The color of the shooter's beams: its side's, made lighter (ADR-028). Nothing for a shooter the view does not hold.
+  // The color of the shooter's beams: its side's, made lighter (ADR-034 decision 4). Nothing for a shooter the view does not hold.
   [[nodiscard]] std::optional<DirectX::XMFLOAT4> BeamColor(EntityId _shooter) const;
   // The shooter's gun nearest _target where the view draws it this frame, or for a further gun the next nearest, for the
   // combat effects (ADR-018).
@@ -205,8 +205,8 @@ private:
   // (ADR-053), and its creases over them as lines, lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
   void QueueModel(std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color,
                   float _fillShade, int _level = FIRST_MODEL_LEVEL);
-  // A structure queued at its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
-  // (task 4.2).
+  // A structure queued at its footprint, grayer and darker than a ship (ADR-040 decision 4), and darker still while it is
+  // built (ADR-040 decision 1).
   void QueueStructure(const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
@@ -230,7 +230,7 @@ private:
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   // A faint ring, one pixel wide, in its side's color under every structure that is not selected, fading as the camera comes
   // in, and at full strength under the one the pointer is on and under all of them while a structure is placed; a Mining
-  // Rig's only then (ADR-042, ADR-046).
+  // Rig's only then (ADR-042).
   void DrawFootprints(ID3D12GraphicsCommandList* _commandList);
   // The ring of a Mining Rig's own footprint, laid over its asteroid's rock, into m_drapedRing as a line list in the world
   // (ADR-042); false when the rig's kind is not known.
@@ -242,10 +242,10 @@ private:
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   // Under fog of war, the ground the player does not see now, dimmed or dark, over everything but the HUD (ADR-024).
   void DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
-  // The sectors' borders, each held or guarded sector's outline and every node's ring, over the fog, since every player sees
-  // the territory (interface plan 2, task UI1.1). The mesh pipeline must be bound.
+  // The sectors' borders, each held or guarded sector's outline and, while the player places a Relay, the rings on the nodes
+  // it could claim, over the fog, since every player sees the territory (ADR-081 decision 3). The mesh pipeline must be bound.
   void DrawTerritory(ID3D12GraphicsCommandList* _commandList);
-  // Every structure and derelict the player only remembers, as its lines alone, over the fog (interface plan 2, task UI1.2).
+  // Every structure and derelict the player only remembers, as its lines alone, over the fog (ADR-081 decision 4).
   // The mesh pipeline must be bound.
   void DrawMemories(ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
@@ -295,8 +295,8 @@ private:
   Alerts m_alerts;
   std::optional<std::uint64_t> m_fogTick;
   std::optional<std::uint64_t> m_fogRevisionShown;
-  // The territory as the world shows it, worked out again once a snapshot, at the tick it was (interface plan 2, task
-  // UI1.1); and this frame's lines and rings, kept so that their storage is not allocated every frame.
+  // The territory as the world shows it, worked out again once a snapshot, at the tick it was (ADR-081
+  // decision 3); and this frame's lines and rings, kept so that their storage is not allocated every frame.
   TerritoryMarks m_territory;
   std::optional<std::uint64_t> m_territoryTick;
   std::vector<Neuron::MeshPipeline::MeshDraw> m_territoryDraws;
@@ -306,11 +306,11 @@ private:
   // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
   WindowManager m_windows;
   EntityId m_soleSelected;
-  // The producer the production window shows, and the first topic the research window shows (Phase 1 design §12).
+  // The producer the production window shows, and the first topic the research window shows (ADR-068 decision 1).
   ProductionTarget m_production;
   std::size_t m_firstTopic = 0;
   // The orders window's form, and the player's clock its times of day are read on; and what happened while the player was
-  // away, with the tick of the snapshot that told it, while the away window shows it (Phase 5 design §11).
+  // away, with the tick of the snapshot that told it, while the away window shows it (ADR-080 decision 9).
   OrderForm m_orderForm;
   PlayerClock m_clock = PlayerClock::Local();
   std::optional<AwayReport> m_away;
@@ -330,7 +330,7 @@ private:
   std::vector<Neuron::MeshVertex> m_shardVertices;
   std::vector<ExplosionManager::Batch> m_shardBatches;
   // The view's entities this frame, which the renderer draws; and those the controls are given, less the asteroids in space
-  // the player has never seen (ADR-046).
+  // the player has never seen (ADR-046 decision 8).
   std::vector<EntityView> m_entities;
   std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;
@@ -358,7 +358,7 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ringLine;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
-  // Lines 1 long on the ground, whole, dashed and dotted, scaled to each side of a sector (interface plan 2, task UI1.1).
+  // Lines 1 long on the ground, whole, dashed and dotted, scaled to each side of a sector (ADR-081 decision 3).
   std::unique_ptr<Neuron::Mesh> m_solidLine;
   std::unique_ptr<Neuron::Mesh> m_dashedLine;
   std::unique_ptr<Neuron::Mesh> m_dottedLine;
@@ -374,7 +374,7 @@ private:
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
   std::array<float, 3> m_rockTops{};
   // How far the narrowest of the rock meshes reaches on the ground, at a radius of 1, which closes a field's ring
-  // (FieldLayout, interface plan 2, task UI5.2).
+  // (FieldLayout, ADR-087 decision 2).
   float m_rockReachShare = 1.0f;
   bool m_cameraPlaced = false;
   // Alt is held this frame, and every ship and structure shows its health bar.

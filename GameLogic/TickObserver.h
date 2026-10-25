@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// What the simulation tells a measurement about where a tick's time goes (task 8.1): where each part of the tick begins
+// What the simulation tells a measurement about where a tick's time goes: where each part of the tick begins
 // and ends, nested as TickPart says. The simulation never reads a clock (ADR-009): an observer does, and nothing it learns
 // reaches the simulation's state.
 class TickObserver
@@ -42,7 +42,7 @@ private:
   TickPart m_part;
 };
 
-// Times each part of a tick on std::chrono::steady_clock, for the server's measurement (task 8.1). A part that begins
+// Times each part of a tick on std::chrono::steady_clock, for the server's measurement. A part that begins
 // again before it ends, as a graph built inside another graph's part cannot, restarts its timing.
 class TickProfiler final : public TickObserver
 {

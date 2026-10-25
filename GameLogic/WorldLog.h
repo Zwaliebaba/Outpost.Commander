@@ -5,7 +5,7 @@ namespace Outpost
 // The world's log, in its folder beside its saves (ADR-082).
 inline constexpr std::string_view WORLD_LOG_FILE = "World.log";
 
-// Who plays a seat in a tick of a world (Phase 5 design §10): its player, its deputy while the player is away (ADR-079), or
+// Who plays a seat in a tick of a world: its player, its deputy while the player is away (ADR-079), or
 // the AI, when the seat is an AI empire's.
 enum class SeatPlay : std::uint8_t
 {
@@ -22,8 +22,8 @@ struct SeatTick
   const Snapshot* snapshot = nullptr;
 };
 
-// A world's log (Phase 5 design §10, ADR-082): ADR-038's match log for a world that keeps running, written by its server
-// beside its saves, for the owner's week (W1–W6) and the world run. It reads what the server knows after each tick: each
+// A world's log (ADR-082 decision 1): ADR-038's match log for a world that keeps running, written by its server
+// beside its saves, for the owner's week and the world run. It reads what the server knows after each tick: each
 // seat's snapshot, and who played it.
 //
 // One line a record, every time in ticks:
@@ -42,7 +42,7 @@ struct SeatTick
 //   hour <tick> player <p> ore <n> income <hundredths a second> fleet <command points> cap <n> nodes <n> researched <n>
 //        present <s> deputy <s>                    every hour of ticks: the seat's bank, income, fleet against its cap,
 //                                                  nodes held and topics researched, and the seconds of the hour its
-//                                                  player and its deputy played it (design §9)
+//                                                  player and its deputy played it (ADR-082 decision 3)
 //   battle <start> <end> sector <id> player <p> <play> player <p> <play>
 //                                                  two seats' ships firing at each other in one sector within 10 seconds,
 //                                                  until 30 seconds pass with no such shot there, as the match log's

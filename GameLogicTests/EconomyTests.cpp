@@ -62,8 +62,8 @@ std::int64_t ReserveSeenBy(MatchArena& _arena, Outpost::PlayerId _player, Outpos
 TEST_CLASS(EconomyTests)
 {
 public:
-  // Design §5: a built Mining Rig earns its asteroid's rate, 5 Ore a second at home and 8 on a contested asteroid, a
-  // twentieth of it every tick.
+  // Game §economy.income: a built Mining Rig earns its asteroid's rate, 5 Ore a second at home and 8 on a contested
+  // asteroid, a twentieth of it every tick.
   TEST_METHOD(ARigEarnsItsAsteroidsRateEveryTick)
   {
     MatchArena arena;
@@ -81,8 +81,9 @@ public:
     Assert::AreEqual(0, arena.World().BuildSnapshot(RED).oreIncomeHundredthsPerSecond);
   }
 
-  // Phase 1 design §8: a rig draws its asteroid's reserve down by what it earns, and once the reserve is gone earns a
-  // trickle, a fifth of its rate, for the rest of the match. Its asteroid's reserve is in the snapshot, the rig's too.
+  // ADR-035 decisions 2 and 3: a rig draws its asteroid's reserve down by what it earns, and once the reserve is gone
+  // earns a trickle, a fifth of its rate, for the rest of the match. Its asteroid's reserve is in the snapshot, the
+  // rig's too.
   TEST_METHOD(AnAsteroidRunsDryToATrickle)
   {
     // 35 Ore: ten seconds of a home rig.
@@ -112,14 +113,14 @@ public:
     Assert::AreEqual(350, endless.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
   }
 
-  // Phase 1 design §8: Improved Extraction draws the reserve as fast as it earns, so the reserve lasts a fifth less, and
+  // ADR-035 decision 3: Improved Extraction draws the reserve as fast as it earns, so the reserve lasts a fifth less, and
   // Deep Core Survey makes every reserve last 30% longer, what is left included, for the player who researched it only.
   TEST_METHOD(ResearchChangesHowFastAReserveDrains)
   {
     MatchArena arena(5000);
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     (void)arena.Structure(RED, Outpost::StructureKind::MiningRig, MatchArena::CONTESTED_ASTEROID);
-    // At level 2, which has opened Deep Core Survey's tier (Phase 3 design §6).
+    // At level 2, which has opened Deep Core Survey's tier (ADR-064 decision 10).
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {-600.0f, -600.0f}, 2);
     // What each asteroid loses in a second.
     const auto drain = [&arena](Outpost::PlanePosition _asteroid)
@@ -141,7 +142,7 @@ public:
     Assert::AreEqual(std::int64_t{550}, drain(MatchArena::CONTESTED_ASTEROID), L"only for the player who researched it");
   }
 
-  // Phase 1 design §8, ADR-024: under fog of war a player sees the Ore left in an asteroid it can see, and remembers the
+  // ADR-035 decision 4: under fog of war a player sees the Ore left in an asteroid it can see, and remembers the
   // figure from when it last saw it; of one it has never seen it knows nothing.
   TEST_METHOD(RemembersTheReserveItLastSaw)
   {
@@ -162,7 +163,7 @@ public:
                      L"its own rig's asteroid, in sight");
   }
 
-  // Design §5: a job is paid for when it starts, and nothing is refunded when it is lost.
+  // ADR-016 decision 6: a job is paid for when it starts, and nothing is refunded when it is lost.
   TEST_METHOD(PaysWhenTheJobStartsAndNeverRefunds)
   {
     MatchArena arena;
@@ -200,7 +201,7 @@ public:
     Assert::AreEqual(left, arena.World().OreHundredths(BLUE), L"a refused job costs nothing");
   }
 
-  // Design §5, §6: an ore asteroid holds one rig, which snaps to it, and it is free again once the rig is destroyed.
+  // Game §economy.rigs: an ore asteroid holds one rig, which snaps to it, and it is free again once the rig is destroyed.
   TEST_METHOD(OneRigPerAsteroid)
   {
     MatchArena arena;

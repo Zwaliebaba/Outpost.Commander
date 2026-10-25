@@ -6,7 +6,7 @@
 
 namespace
 {
-// The orders' keys are KeyBindings.h's, which the Controls window lists (task 16.4).
+// The orders' keys are KeyBindings.h's, which the Controls window lists (ADR-068 decision 4).
 
 // Whether _later follows _earlier closely enough to be a double click or a double tap. The millisecond clock wraps,
 // and unsigned subtraction wraps with it.
@@ -211,7 +211,7 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
   }
   // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed. A
   // Mining Rig is ordered only by an asteroid among the entities the controls are given, which leave out those in space
-  // the player has never seen; a click that orders none leaves the placement armed (ADR-046).
+  // the player has never seen; a click that orders none leaves the placement armed (ADR-046 decision 8).
   if (m_placing.has_value())
   {
     const std::optional<PlanePosition> site =
@@ -265,7 +265,7 @@ void Outpost::PlayerControls::OnLeftUp(const Neuron::InputEvent& _event, const F
     PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [player](const EntityView& _ship) { return _ship.owner == player; });
   if (!picked.has_value())
   {
-    // One of the player's structures is selected on its own, for its queue and its state (task 4.5).
+    // One of the player's structures is selected on its own, for its queue and its state (ADR-013 decision 5).
     const std::optional<EntityId> structure =
       PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
                  [player](const EntityView& _entity) { return _entity.kind == EntityKind::Structure && _entity.owner == player; });
@@ -335,7 +335,7 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
         GiveToShips(MoveCommand{.ships = std::move(ships), .destination = target->position});
       return;
     }
-    // A derelict under the cursor is salvaged, the rest of the selection going there too (Phase 4 design §9, ADR-074).
+    // A derelict under the cursor is salvaged, the rest of the selection going there too (ADR-074 decision 10).
     const std::optional<EntityId> derelict = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
                                                         [](const EntityView& _entity) { return _entity.kind == EntityKind::Derelict; });
     if (derelict.has_value())

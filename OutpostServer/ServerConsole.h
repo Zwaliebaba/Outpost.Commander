@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The dedicated server's console (Phase 5 design §4, ADR-078): the lines it prints, and the stop that Ctrl+C, Ctrl+Break,
+// The dedicated server's console (ADR-078): the lines it prints, and the stop that Ctrl+C, Ctrl+Break,
 // closing its window, signing out or shutting down asks for. Windows ends the process once the handler of a close, a
 // sign-out or a shutdown returns, so the handler waits, a few seconds at most, until the server says it has finished and
 // its world's last save is written.

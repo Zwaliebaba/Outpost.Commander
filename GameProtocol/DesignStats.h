@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// How a ship moves: from its hull and drive (design §7, §12), set when it is spawned.
+// How a ship moves: from its hull and drive (ADR-010 decision 8), set when it is spawned.
 struct ShipMovement
 {
   float speedMetersPerSecond = 0.0f;
@@ -13,14 +13,14 @@ struct ShipMovement
   friend constexpr bool operator==(const ShipMovement&, const ShipMovement&) = default;
 };
 
-// The damage one hit does to a target, in hundredths: max(damage × 0.25, damage − armor) (design §7). The quarter is
+// The damage one hit does to a target, in hundredths: max(damage × 0.25, damage − armor) (ADR-014 decision 3). The quarter is
 // rounded down to a hundredth, which no number in the tuning data needs.
 [[nodiscard]] constexpr std::int32_t HitHundredths(std::int32_t _damageHundredths, std::int32_t _armorHundredths) noexcept
 {
   return std::max(_damageHundredths / 4, _damageHundredths - _armorHundredths);
 }
 
-// A component's abbreviation, as the designer's saved-design chips and the match log write it (Phase 1 design §5, §11):
+// A component's abbreviation, as the designer's saved-design chips and the match log write it (ADR-058 decision 6):
 // the capital initial of each word of its name, "S" for Small and "MD" for Mass Driver.
 [[nodiscard]] inline std::string Abbreviation(std::string_view _name)
 {
@@ -36,7 +36,7 @@ struct ShipMovement
   return abbreviation;
 }
 
-// One hull, drive and weapon, and a module or none (Phase 2 design §10).
+// One hull, drive and weapon, and a module or none (ADR-058 decision 3).
 struct DesignComponents
 {
   HullId hull;
@@ -47,7 +47,7 @@ struct DesignComponents
   friend constexpr bool operator==(const DesignComponents&, const DesignComponents&) = default;
 };
 
-// What every ship of one hull, drive and weapon is (design §7): the numbers the designer shows and combat uses. The server
+// What every ship of one hull, drive and weapon is (ADR-014 decision 1): the numbers the designer shows and combat uses. The server
 // and the designer derive them with the same function, DesignStatsOf, from the same component numbers (ADR-017).
 struct DesignStats
 {
@@ -63,17 +63,17 @@ struct DesignStats
   double fireIntervalSeconds = 0.0;
   float rangeMeters = 0.0f;
   // Every other enemy whose center is this close to the target's takes the same hit, after its own armor; zero for a
-  // weapon without splash (design §7, ADR-014).
+  // weapon without splash (ADR-014 decision 12).
   float splashRadiusMeters = 0.0f;
   // How far the ship sees because of its module, whatever its weapon; zero without one, when the weapon sets its sight
-  // (Phase 2 design §10, ADR-024).
+  // (ADR-058 decisions 4 and 5).
   float moduleSightMeters = 0.0f;
 
   friend bool operator==(const DesignStats&, const DesignStats&) = default;
 };
 
-// The stats of a ship of this hull, drive and weapon, and module if any, from the numbers as the player has them (design
-// §7, Phase 2 design §10): a module's cost is added, its speed factor slows the ship, and its sight is the ship's own.
+// The stats of a ship of this hull, drive and weapon, and module if any, from the numbers as the player has them
+// (ADR-058 decision 4): a module's cost is added, its speed factor slows the ship, and its sight is the ship's own.
 [[nodiscard]] inline DesignStats DesignStatsOf(const HullView& _hull, const DriveView& _drive, const WeaponView& _weapon,
                                                const ModuleView* _module = nullptr) noexcept
 {
@@ -94,7 +94,7 @@ struct DesignStats
           .moduleSightMeters = _module != nullptr ? static_cast<float>(_module->sightMeters) : 0.0f};
 }
 
-// Damage per second against a target of _armorHundredths, after armor (design §9: what the designer shows).
+// Damage per second against a target of _armorHundredths, after armor (ADR-017 decision 7: what the designer shows).
 [[nodiscard]] inline double DamagePerSecond(const DesignStats& _stats, std::int32_t _armorHundredths) noexcept
 {
   if (_stats.fireIntervalSeconds <= 0.0)
@@ -103,7 +103,7 @@ struct DesignStats
 }
 
 // Room between neighbors in a formation, in footprint radii of the group's widest ship: two radii for the ships
-// themselves, one for the gap. Loose, as design §9 asks (ADR-010).
+// themselves, one for the gap: a loose formation (ADR-010 decision 4).
 inline constexpr float FORMATION_SPACING_RADII = 3.0f;
 
 // The ships of a formation of hulls of _radiusMeters that one hit with a splash of _splashRadiusMeters reaches, its target

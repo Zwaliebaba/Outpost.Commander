@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The camera's numbers, from OutpostCommander/Assets/Camera.json (design §4, ADR-012). The zoom limits are gate G3's.
+// The camera's numbers, from OutpostCommander/Assets/Camera.json, the zoom limits among them (ADR-012 decision 3).
 struct CameraSettings
 {
   // How wide the ground is across the middle of the screen, at the focus point.
@@ -42,7 +42,7 @@ struct Viewport
 // 90 degrees.
 [[nodiscard]] CameraSettings LoadCameraSettings(std::string_view _json);
 
-// The RTS camera (design §4, ADR-012): a focus point on the ground, a direction to look in and a zoom, with the pitch
+// The RTS camera (ADR-012): a focus point on the ground, a direction to look in and a zoom, with the pitch
 // following the zoom. It is client state, not server state (ADR-002). Its math is pure, so it is tested without a GPU.
 class Camera
 {
@@ -50,7 +50,7 @@ public:
   explicit Camera(const CameraSettings& _settings) noexcept;
 
   // Pans by edge scroll, the arrow keys and middle-drag, zooms by the wheel and turns by Q and E. Edge scroll works only
-  // while the cursor is held inside the window (ADR-012). A and S are orders, not pans (design §9).
+  // while the cursor is held inside the window (ADR-012). A and S are orders, not pans (ADR-012 decision 8).
   void Update(const Neuron::InputState& _input, float _elapsedSeconds, std::uint32_t _viewportWidthPixels,
               std::uint32_t _viewportHeightPixels) noexcept;
 
@@ -101,7 +101,7 @@ public:
                                                               const Viewport& _viewport) const noexcept;
   // Where a mark over an entity stands on the viewport, in pixels: in the column of its point on the ground, and level with
   // the highest on the screen of _cornersMeters, the corners of its model's bounds where its pose puts them, so above the
-  // model however the camera has turned (interface plan 2, task UI4.1). Nothing when any of them is behind the camera.
+  // model however the camera has turned (ADR-088 decision 5). Nothing when any of them is behind the camera.
   [[nodiscard]] std::optional<DirectX::XMFLOAT2> PixelAbove(PlanePosition _point, std::span<const DirectX::XMFLOAT3> _cornersMeters,
                                                             const Viewport& _viewport) const noexcept;
 

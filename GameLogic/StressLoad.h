@@ -2,8 +2,8 @@
 
 namespace Outpost
 {
-// Task 3.7's scene for measuring Q4: 200 ships and 40 structures in combat (design §3). It is match setup and upkeep for
-// a measurement run only, never for a match.
+// The stress scene, for measuring the frame and the tick: 200 ships and 40 structures in combat. It is match setup and
+// upkeep for a measurement run only, never for a match.
 inline constexpr size_t STRESS_SHIPS_PER_PLAYER = 100;
 inline constexpr size_t STRESS_STRUCTURES_PER_PLAYER = 20;
 

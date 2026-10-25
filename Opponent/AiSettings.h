@@ -2,8 +2,8 @@
 
 namespace Outpost
 {
-// One line of design §7's counters as the AI reads it: when the enemy fields most of this design, build that one. A design
-// may be answered more than once, in order of preference: the first answer the AI has unlocked is the one it builds.
+// One line of the AI's counters as it reads them (ADR-020 decision 8): when the enemy fields most of this design, build
+// that one. A design may be answered more than once, in order of preference: the first answer the AI has unlocked is the one it builds.
 struct CounterRule
 {
   DesignComponents enemy;
@@ -15,12 +15,12 @@ struct CounterRule
 // AI only sees through its snapshots.
 struct AiSettings
 {
-  // Warships the AI gathers in reserve before it commits them to an attack (gate G9), and how many more for each tier its
-  // player has opened past the first (Phase 1 plan task 12.2).
+  // Warships the AI gathers in reserve before it commits them to an attack, and how many more for each tier its player
+  // has opened past the first (ADR-041 decision 1).
   std::int32_t attackGroupShips = 0;
   std::int32_t attackGroupGrowthPerTier = 0;
   // An attack group that has lost this share of the ships it set out with falls back to the rally and rejoins the
-  // reserve, which then waits regroupSeconds before it attacks again (task 12.2). Zero never falls back.
+  // reserve, which then waits regroupSeconds before it attacks again (ADR-041 decision 2). Zero never falls back.
   double retreatLossShare = 0.0;
   double regroupSeconds = 0.0;
 
@@ -36,10 +36,10 @@ struct AiSettings
   // Ore asteroids beyond those that it takes too, nearest first, each with a Defence Platform beside it.
   std::int32_t contestedAsteroids = 0;
   // Together, how many of its rigs it keeps on asteroids with ore left: when one runs dry, it takes the nearest asteroid
-  // it knows still holds ore, with a platform beside it as a contested one (Phase 1 design §13). A dry rig stays for its
+  // it knows still holds ore, with a platform beside it as a contested one (ADR-020 decision 5). A dry rig stays for its
   // trickle.
   // Defence Platforms it plans round its base for each Shipyard, each built once its income reaches that Shipyard's share
-  // (task 12.2).
+  // (ADR-041 decision 3).
   std::int32_t homePlatformsPerShipyard = 0;
   // Jobs it keeps in each Shipyard's queue.
   std::int32_t shipyardQueueJobs = 0;
@@ -55,7 +55,7 @@ struct AiSettings
   DesignComponents defaultDesign;
   std::vector<CounterRule> counters;
 
-  // On a map with territory (Phase 2 design §12, ADR-020 decision 13). Scouts it keeps, of a design with a Sensor Array,
+  // On a map with territory (ADR-020 decision 13). Scouts it keeps, of a design with a Sensor Array,
   // built ahead of its warships, which tour the enemy's flank sectors.
   std::int32_t scouts = 0;
   DesignComponents scoutDesign;
@@ -72,22 +72,22 @@ struct AiSettings
   // Free sectors it claims at most, beyond those its rigs take it to.
   std::int32_t claimSectors = 0;
 
-  // Structure levels (Phase 3 design §8). It upgrades its Research Lab to the level that gives a second research slot
+  // Structure levels (ADR-020 decision 14). It upgrades its Research Lab to the level that gives a second research slot
   // once its open tier has reached this one. Choosing what to attack, a structure counts as this many meters nearer for
   // each level it has above the first, among structures of one rank.
   std::int32_t secondSlotTier = 0;
   double attackLevelMeters = 0.0;
 
-  // The fleet cap (Phase 4 design §5, §12). Its main attack also goes once its reserve holds this share of the ships its
+  // The fleet cap (ADR-041 decision 1). Its main attack also goes once its reserve holds this share of the ships its
   // cap lets it have of its production design's hull, when that is fewer than attackGroupShips asks, so that the cap never
   // keeps it from attacking. A share of 1 waits for a full cap.
   double attackCapShare = 1.0;
 
-  // Pirates (Phase 4 design §12, ADR-076): a detachment of its reserve goes at a pirate outpost once the detachment's Ore is
+  // Pirates (ADR-076 decision 2): a detachment of its reserve goes at a pirate outpost once the detachment's Ore is
   // at least this many times the outpost's, as far as it has seen the outpost.
   double pirateMargin = 1.0;
   // Its scouts explore its own half of the map for this long, moving through the sectors the pirates do not guard, before
-  // they go round the enemy's flanks (Phase 4 design §2 U1, ADR-076).
+  // they go round the enemy's flanks (ADR-076 decision 4).
   double scoutOwnHalfSeconds = 0.0;
 };
 

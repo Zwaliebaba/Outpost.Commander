@@ -2,11 +2,11 @@
 
 namespace Outpost
 {
-// Phase 2 design §9's alerts (ADR-059): what the player should know of a front it is not looking at, read from the events
+// The alerts (ADR-059 decision 1): what the player should know of a front it is not looking at, read from the events
 // the server raises in its snapshots (ADR-080), which are what its scheduled orders fire on too. One of its Relays
 // suppressed, or hit by an enemy shot; one of its Mining Rigs destroyed; enemy warships seen entering a sector it holds;
-// and, from Phase 4 design §13, one of its ships going back to be repaired, and a sector the pirates guarded cleared of
-// them; and one of its scheduled orders fired (Phase 5 design §7). An alert of one kind in one sector is not repeated within
+// one of its ships going back to be repaired, and a sector the pirates guarded cleared of them; and one of its scheduled
+// orders fired (ADR-080 decision 5). An alert of one kind in one sector is not repeated within
 // REPEAT_SECONDS, but for an order fired, each of which is told. The HUD lists the alerts of the last
 // SHOWN_SECONDS, newest first, and marks them on the minimap; a key moves the camera to the newest.
 class Alerts

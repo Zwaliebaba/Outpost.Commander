@@ -8,7 +8,7 @@ namespace
 {
 using Outpost::ExplosionManager;
 
-// Placeholder looks, after DeepSpaceOutpost's explosion.cpp, and presentation rather than tuning (design §11). Its speeds
+// Placeholder looks, after DeepSpaceOutpost's explosion.cpp, and presentation rather than tuning (Game §look.explosions). Its speeds
 // were in its own units; here they are in shares of what blew up, so that a big hull's shards fly as far, for its size,
 // as a small one's.
 

@@ -46,8 +46,8 @@ Outpost::CommandResult Give(TerritoryMatch& _match, Outpost::Order _order)
 TEST_CLASS(StandingOrderTests)
 {
 public:
-  // Phase 2 design §9: a group holding a sector goes to its node, answers an enemy ship it sees in the sector, and goes back
-  // to the node once none is left; it keeps the order, which only its player sees.
+  // ADR-059 decision 4: a group holding a sector goes to its node, answers an enemy ship it sees in the sector, and
+  // goes back to the node once none is left; it keeps the order, which only its player sees.
   TEST_METHOD(AGroupHoldsItsSector)
   {
     TerritoryMatch match;
@@ -80,7 +80,7 @@ public:
     Assert::IsTrue(match.World().FindEntity(ships.front())->standing == Outpost::StandingOrder::None);
   }
 
-  // Phase 2 design §9: a patrolling group attack-moves to its point, then back to where it was ordered from, and on.
+  // ADR-059 decision 4: a patrolling group attack-moves to its point, then back to where it was ordered from, and on.
   TEST_METHOD(AGroupPatrolsBetweenTwoPoints)
   {
     TerritoryMatch match;

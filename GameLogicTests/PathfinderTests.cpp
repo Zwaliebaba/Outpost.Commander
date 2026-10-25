@@ -171,8 +171,9 @@ public:
                    L"the second ship did not join the first one's path");
   }
 
-  // ADR-047: ships of a group with a band keep their own lanes round the obstacle, side by side, rather than each passing
-  // the route's corner. The band moves off the obstacle, so the innermost lane passes the corner and the rest pass outside.
+  // ADR-047 decision 1: ships of a group with a band keep their own lanes round the obstacle, side by side, rather than
+  // each passing the route's corner. The band moves off the obstacle, so the innermost lane passes the corner and the
+  // rest pass outside.
   TEST_METHOD(ShipsOfAGroupKeepTheirLanesRoundAnObstacle)
   {
     constexpr float LANE_SPACING_METERS = 30.0f;
@@ -337,7 +338,7 @@ public:
     }
   }
 
-  // ADR-054, Phase 4 plan task 28.0: a graph whose obstacles were taken away, one at a time or several together, from the
+  // ADR-054 decision 7: a graph whose obstacles were taken away, one at a time or several together, from the
   // map's or the structures', and some added in the same step, is brought up to date to the very graph a whole build over
   // what is left makes, and finds the same paths.
   TEST_METHOD(TakenAwayObstaclesReduceTheGraphsToWhatAWholeBuildMakes)

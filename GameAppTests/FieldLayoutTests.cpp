@@ -30,7 +30,7 @@ std::vector<Outpost::FieldRock> RocksOf(const Outpost::FieldLayout& _layout)
 TEST_CLASS(FieldLayoutTests)
 {
 public:
-  // Interface plan 2, task UI5.2: a field is laid out from its identifier, the same every time.
+  // ADR-087 decision 1: a field is laid out from its identifier, the same every time.
   TEST_METHOD(LaysOutAFieldTheSameEveryTime)
   {
     const Outpost::FieldLayout first = Outpost::FieldLayout::Of(Outpost::EntityId{7}, 180.0f, REACH_SHARE, GAP_METERS);

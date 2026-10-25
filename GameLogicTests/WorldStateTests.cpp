@@ -68,7 +68,7 @@ public:
     Assert::IsTrue(NextSnapshots(loaded) == NextSnapshots(world), L"and shows the players the same");
   }
 
-  // Design §11 (ADR-080): a save keeps each seat's report of a time away beside the state, and gives them back.
+  // ADR-080 decision 7: a save keeps each seat's report of a time away beside the state, and gives them back.
   TEST_METHOD(KeepsTheSeatsReports)
   {
     WorldMatch match(5);
@@ -89,9 +89,9 @@ public:
                    L"a world with none keeps none");
   }
 
-  // Design §5: a world loaded from a save and given the commands the running world applied after it is, ticks later, the
-  // world that never stopped, to the bit, on the same build (ADR-009). The path graphs it builds again are the very graphs
-  // the running world kept up to date (ADR-054).
+  // ADR-077 decision 4: a world loaded from a save and given the commands the running world applied after it is, ticks
+  // later, the world that never stopped, to the bit, on the same build (ADR-009). The path graphs it builds again are
+  // the very graphs the running world kept up to date (ADR-054).
   TEST_METHOD(RunsOnAsIfItNeverStopped)
   {
     WorldMatch match(9);

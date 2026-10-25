@@ -294,7 +294,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_GRAPHICS_PPV_ARGS(m_fence)));
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
 
-  // Q4 measures a frame's GPU work, not the present interval (ADR-006).
+  // The frame budget measures a frame's GPU work, not the present interval (ADR-006).
   const D3D12_QUERY_HEAP_DESC timestampHeapDescription{
     .Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP,
     .Count = TIMESTAMPS_PER_FRAME * FRAME_COUNT,

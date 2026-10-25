@@ -6,10 +6,10 @@
 
 namespace
 {
-// How often each player's warships are counted (Phase 1 design §10).
+// How often each player's warships are counted (ADR-038 decision 1).
 constexpr std::uint64_t FLEET_SAMPLE_SECONDS = 30;
 // An engagement is both sides firing in one sector within this of each other, and ends once neither has fired there for
-// the gap (Phase 2 design §2, S2).
+// the gap (ADR-038 decision 1).
 constexpr std::uint64_t ENGAGEMENT_WINDOW_SECONDS = 10;
 constexpr std::uint64_t ENGAGEMENT_GAP_SECONDS = 30;
 // A Constructor this far beyond its footprint and a derelict's is at the derelict: the server's reach for work, 20 m, and a
@@ -179,13 +179,13 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
     if (std::ranges::find(m_shotsCounted, key) != m_shotsCounted.end())
       continue;
     m_shotsCounted.push_back(key);
-    // A repaired warship fights again once it fires, at a player or the pirates (Phase 4 U3).
+    // A repaired warship fights again once it fires, at a player or the pirates.
     if (const auto repaired = m_repaired.find(shot.shooter); repaired != m_repaired.end())
     {
       *m_out << std::format("again {} player {} ship {}\n", _snapshot.tick, repaired->second.value, shot.shooter.value);
       m_repaired.erase(repaired);
     }
-    // A fight with the pirates is recorded once a player and sector, in the sector of the pirates' end of the shot (U1). The
+    // A fight with the pirates is recorded once a player and sector, in the sector of the pirates' end of the shot. The
     // contact and the engagements are of the players' fights, so it counts toward neither.
     const PlayerId shooterOwner = ownerOf(shot.shooter);
     const PlayerId targetOwner = ownerOf(shot.target);
@@ -200,7 +200,7 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
     PlayerId side = shooterOwner;
     if (!side.IsValid() && (targetOwner.value == 1 || targetOwner.value == 2))
       side = PlayerId{3 - targetOwner.value};
-    // A structure above level 1 under fire, once a structure and level (Phase 3 T4).
+    // A structure above level 1 under fire, once a structure and level.
     if (const auto target = std::ranges::find(_snapshot.entities, shot.target, &EntityView::id);
         target != _snapshot.entities.end() && target->kind == EntityKind::Structure && target->level > 1 &&
         m_attacked.insert({target->id, target->level}).second)
@@ -240,7 +240,7 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
   }
 }
 
-// A warship's retreat and repair are its owner's to see (ADR-075). A retreat that ends with the ship whole is a repair; one
+// A warship's retreat and repair are its owner's to see (ADR-075 decision 8). A retreat that ends with the ship whole is a repair; one
 // that ends by an order is neither.
 void Outpost::MatchLog::RecordRetreats(const Snapshot& _snapshot)
 {
@@ -335,14 +335,14 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
     m_researched.push_back(key);
     *m_out << std::format("research {} player {} topic {} {}\n", _snapshot.tick, _snapshot.player.value, topic.id.value, topic.nameUtf8);
   }
-  // Each tier the player's Research Lab opens, once, the first time it opens it (Phase 3 design §6).
+  // Each tier the player's Research Lab opens, once, the first time it opens it (ADR-033 decision 2).
   auto tier = std::ranges::find(m_tiers, _snapshot.player, &std::pair<PlayerId, std::int32_t>::first);
   if (tier == m_tiers.end())
     tier = m_tiers.insert(m_tiers.end(), {_snapshot.player, 1});
   for (; tier->second < _snapshot.researchTier; ++tier->second)
     *m_out << std::format("tier {} player {} tier {}\n", _snapshot.tick, _snapshot.player.value, tier->second + 1);
 
-  // A player sees the components of every ship it sees (design §10, ADR-024), and every snapshot lists every component by
+  // A player sees the components of every ship it sees (ADR-020 decision 3), and every snapshot lists every component by
   // name, unlocked or not; one it does not list is written as its identifier.
   const auto nameOf = [](const auto& _views, auto _id)
   {
@@ -360,7 +360,7 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
       ++warships;
     if (!m_built.insert(entity.id).second)
       continue;
-    // A module joins the name when the ship has one (Phase 2 design §10), so a scout reads apart from its plain design.
+    // A module joins the name when the ship has one (ADR-058 decision 6), so a scout reads apart from its plain design.
     const std::string module = entity.module.IsValid() ? std::format("+{}", nameOf(_snapshot.modules, entity.module)) : std::string();
     *m_out << std::format("built {} player {} hull {} drive {} weapon {} {}+{}+{}{}\n", _snapshot.tick, entity.owner.value,
                           entity.hull.value, entity.drive.value, entity.weapon.value, nameOf(_snapshot.hulls, entity.hull),

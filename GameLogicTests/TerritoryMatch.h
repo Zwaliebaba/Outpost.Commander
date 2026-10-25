@@ -5,7 +5,7 @@
 namespace GameLogicTests
 {
 // A match on the repository's map and data, with both bases placed and fog of war, as the game plays it but for the
-// pirates and derelicts, which a test asks for (Phase 2 design §4–§8): Blue's home in the southwest and Red's in the northeast. A
+// pirates and derelicts, which a test asks for: Blue's home in the southwest and Red's in the northeast. A
 // warship is of the starting design Small+Ion+Mass Driver.
 class TerritoryMatch
 {
@@ -15,7 +15,7 @@ public:
   static constexpr std::uint32_t TICKS_PER_SECOND = 20;
   // With _content, the seed places the pirates' outposts and the derelicts as in a match (ADR-073, ADR-074); without, every
   // sector is free and empty, as the tests of the territory rules want it. With _restartSeconds, it plays by a world's rules,
-  // a lost seat restarting that long after (Phase 5 design §8).
+  // a lost seat restarting that long after (ADR-084 decision 4).
   explicit TerritoryMatch(bool _content = false, std::optional<std::uint32_t> _restartSeconds = std::nullopt);
 
   [[nodiscard]] static Outpost::Map MapFor(bool _content);

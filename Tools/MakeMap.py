@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the repository's map, OutpostCommander/Assets/Map.json (ADR-036 decision 4, Phase 4 design §6).
+"""Writes the repository's map, OutpostCommander/Assets/Map.json (ADR-036 decision 4, Game §map).
 
 The map is 10 km a side: 25 sectors of 2 km on a 5 x 5 grid, named by column A to E from west to east and row 1 to 5 from
 south to north, the homes in the corners A1 and E5, point-symmetric about the center. Two asteroid fields stand on every
@@ -53,10 +53,10 @@ KIND_ORE = {
     "center": [("contested", 4)],
     "rich": [("rich", 2)],
 }
-# The pirates' outposts (Phase 4 design §8), as (outpost, kind, pairs of sectors): a camp in two of the four contested
+# The pirates' outposts (ADR-072 decision 7), as (outpost, kind, pairs of sectors): a camp in two of the four contested
 # sectors on each side, drawn by the seed, and a stronghold on both rich corners and the center (owner, 2026-10-07).
 OUTPOSTS = [("camp", "contested", 2), ("stronghold", "rich", 1), ("stronghold", "center", 1)]
-# The derelicts (Phase 4 design §9), as (kind, pairs of sectors, Ore, hull, radius): on each side one of the two flanks, two of
+# The derelicts (ADR-072 decision 8), as (kind, pairs of sectors, Ore, hull, radius): on each side one of the two flanks, two of
 # the three near sectors, two of the four contested and the between sector, richer the further out, and a third of their
 # pairs naming a research topic (owner, 2026-10-07). The rich corners and the center have none: their strongholds leave a
 # wreck of their own.

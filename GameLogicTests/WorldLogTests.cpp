@@ -53,7 +53,7 @@ bool Has(const std::vector<std::string>& _lines, std::string_view _line)
 }
 } // namespace
 
-// Phase 5 design §10 (ADR-082): a world's log, as ADR-038's match log is written for a match.
+// ADR-082 decision 1: a world's log, as ADR-038's match log is written for a match.
 TEST_CLASS(WorldLogTests)
 {
 public:

@@ -118,8 +118,8 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
     }
     if (sites.size() + existing < STRESS_STRUCTURES_PER_PLAYER)
       throw Neuron::Exception("The map has too little open ground for the stress load's structures.");
-    // A Mining Rig stands on an ore asteroid, as one built in a match does (design §6): on the free ones nearest the
-    // structures, in the map's order where they tie (owner, 2026-10-03).
+    // A Mining Rig stands on an ore asteroid, as one built in a match does (ADR-046 decision 9): on the free ones nearest
+    // the structures, in the map's order where they tie (owner, 2026-10-03).
     std::vector<OreAsteroidPlacement> ores = _map.oreAsteroids;
     std::ranges::stable_sort(ores, {}, [structuresAt](const OreAsteroidPlacement& _ore) { return Distance(_ore.position, structuresAt); });
     const auto taken = [&_simulation](const OreAsteroidPlacement& _ore)

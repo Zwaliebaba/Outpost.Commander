@@ -15,7 +15,7 @@ Outpost::AiSettings RepositorySettings()
   return Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
 }
 
-// Phase 5 design §2 W3: how often a player's built Shipyards and its Research Lab stand idle with Ore to spend, as shares
+// How often a player's built Shipyards and its Research Lab stand idle with Ore to spend, as shares
 // of the seconds each stood.
 struct Idleness
 {
@@ -77,11 +77,11 @@ struct Idleness
 };
 } // namespace
 
-// Phase 5 design §2 W3 (ADR-079): the deputy keeps its player's empire running on the real server as the AI keeps its own.
+// ADR-079 decision 6: the deputy keeps its player's empire running on the real server as the AI keeps its own.
 TEST_CLASS(DeputyPlayTests)
 {
 public:
-  // Phase 5 design §2 W3: two AIs play for ten minutes, and then blue's seat is its deputy's for ten more. The deputy keeps
+  // Two AIs play for ten minutes, and then blue's seat is its deputy's for ten more. The deputy keeps
   // blue's Shipyards and Lab busy at least as well as the AI keeps red's, and it only keeps and defends: it attacks
   // nothing, claims nothing, salvages nothing and builds nothing but a lost rig.
   TEST_METHOD(KeepsAnEmpireRunningAsTheAiKeepsItsOwn)

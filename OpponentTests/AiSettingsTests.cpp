@@ -42,11 +42,10 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
 TEST_CLASS(AiSettingsTests)
 {
 public:
-  // Gate G9 (owner, 2026-10-01) had the AI attack with twelve ships; task 12.2 tuned the attack so that two AIs play a
-  // 45-60 minute match (owner, 2026-10-03): twenty ships and twelve more for each tier past the first, behind two Defence
-  // Platforms for each Shipyard. Phase 2's task 19.2 tuned the fall-back against S4 with territory: after losing one in
-  // ten, regrouping for 240 seconds (ADR-041). Phase 3's task 25.2 tuned it against T1–T4: twenty-five ships, falling back
-  // after losing 15 in a hundred. The rest is the owner's milestone 6 answers.
+  // The repository file's numbers, tuned so that two AIs play a 45-60 minute match (owner, 2026-10-03): an attack of
+  // twenty-five ships and twelve more for each tier past the first, falling back after losing 15 in a hundred and
+  // regrouping for 240 seconds, behind two Defence Platforms for each Shipyard (ADR-041). The rest are the owner's
+  // (owner, 2026-10-01).
   TEST_METHOD(LoadsTheRepositoryFile)
   {
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
@@ -60,7 +59,7 @@ public:
     Assert::AreEqual(10.0, settings.incomePerShipyardOrePerSecond);
     Assert::AreEqual(3, settings.homeAsteroids);
     Assert::AreEqual(3, settings.contestedAsteroids);
-    // Tier 1, then tier 2 with the Flak Battery first, then tier 3 with the Rail Cannon first (task 10.4).
+    // Tier 1, then tier 2 with the Flak Battery first, then tier 3 with the Rail Cannon first.
     const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7, 11, 10, 13, 16, 17, 14, 15, 12, 19, 20, 21, 22, 24, 23, 25};
     Assert::AreEqual(order.size(), settings.researchOrder.size());
     for (size_t i = 0; i < order.size(); ++i)
@@ -69,10 +68,9 @@ public:
     Assert::AreEqual(size_t{24}, settings.counters.size());
   }
 
-  // Task 18.1: territory's play (Phase 2 design §12). One scout, a Small+Ion+Mass Driver with a Sensor Array; raids of
-  // two that fall back after losing one and wait three minutes between them; a main attack with a lead of one node or
-  // half as many ships again; a Defence Platform by each Relay on its front; and two free sectors claimed beyond its rigs'
-  // (Phase 3's task 25.2).
+  // ADR-020 decision 13: territory's play. One scout, a Small+Ion+Mass Driver with a Sensor Array; raids of two that
+  // fall back after losing one and wait three minutes between them; a main attack with a lead of one node or half as
+  // many ships again; a Defence Platform by each Relay on its front; and two free sectors claimed beyond its rigs'.
   TEST_METHOD(LoadsTheTerritoryPlay)
   {
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
@@ -88,7 +86,7 @@ public:
     Assert::AreEqual(2, settings.claimSectors);
   }
 
-  // Task 24.1: structure levels' play (Phase 3 design §8). The Lab's second slot once tier 3 is open, and a level worth
+  // ADR-020 decision 14: structure levels' play. The Lab's second slot once tier 3 is open, and a level worth
   // 500 m when choosing what to attack.
   TEST_METHOD(LoadsTheLevelsPlay)
   {
@@ -97,7 +95,7 @@ public:
     Assert::AreEqual(500.0, settings.attackLevelMeters);
   }
 
-  // Task 27.4: the fleet cap's play (Phase 4 design §12). Its main attack goes once its reserve fills 80% of the room the cap
+  // ADR-041 decision 1: the fleet cap's play. Its main attack goes once its reserve fills 80% of the room the cap
   // leaves it, at most a share of 1; the Easy AI waits for a full cap.
   TEST_METHOD(LoadsTheFleetCapPlay)
   {
@@ -108,7 +106,7 @@ public:
     ExpectLoadError(Replace("\"attackCapShare\": 0.8", "\"attackCapShare\": 1.5"), "attackCapShare");
   }
 
-  // Task 33.1: pirates' play (Phase 4 design §12, ADR-076). A detachment goes once it outweighs an outpost by half again
+  // ADR-076 decisions 2 and 3: pirates' play. A detachment goes once it outweighs an outpost by half again
   // in Ore; the Easy AI waits for twice, and the Hard one goes at a fifth more.
   TEST_METHOD(LoadsThePiratesPlay)
   {
@@ -116,7 +114,7 @@ public:
     Assert::AreEqual(2.0, Outpost::LoadAiSettings(ReadRepositoryData("OpponentEasy.json")).pirateMargin);
     Assert::AreEqual(1.2, Outpost::LoadAiSettings(ReadRepositoryData("OpponentHard.json")).pirateMargin);
     ExpectLoadError(Replace("\"pirateMargin\": 1.5", "\"pirateMargin\": 0"), "pirateMargin");
-    // Its scout explores its own half for the first ten minutes (U1).
+    // Its scout explores its own half for the first ten minutes (ADR-076 decision 4).
     Assert::AreEqual(600.0, Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json")).scoutOwnHalfSeconds);
   }
 

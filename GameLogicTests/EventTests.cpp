@@ -54,7 +54,7 @@ const Outpost::Entity& StationOf(TerritoryMatch& _match, Outpost::PlayerId _play
 }
 } // namespace
 
-// Phase 5 design §7 (ADR-080): the server raises each player's events in the tick they happen, and the player's snapshot of
+// ADR-080 decision 1: the server raises each player's events in the tick they happen, and the player's snapshot of
 // that tick carries them, for its alerts and its scheduled orders.
 TEST_CLASS(EventTests)
 {

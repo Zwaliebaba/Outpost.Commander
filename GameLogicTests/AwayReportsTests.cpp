@@ -15,7 +15,7 @@ Outpost::Snapshot SnapshotOf(Outpost::PlayerId _player, std::uint64_t _tick, std
 }
 } // namespace
 
-// Phase 5 design §11 (ADR-080): each seat's report, kept while its deputy plays, and handed to its player when it takes the
+// ADR-080 decision 7: each seat's report, kept while its deputy plays, and handed to its player when it takes the
 // seat again.
 TEST_CLASS(AwayReportsTests)
 {

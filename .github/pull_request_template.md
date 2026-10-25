@@ -10,7 +10,7 @@
 ## Why
 
 <!-- The problem, or the decision this implements. Link the ADR if there is one; add one under
-     Design/ADR/ if this change IS a decision (AGENTS.md §6). -->
+     Docs/ADR/ if this change IS a decision (AGENTS.md §6). -->
 
 ## How it was verified
 
@@ -22,6 +22,8 @@
 - [ ] `python Build\CheckProjectFiles.py`
 - [ ] `python Build\CheckFormat.py`
 - [ ] `python Build\RunClangTidy.py`
+- [ ] `python Build\GenerateDocs.py --check` (and, if it fails, `python Build\GenerateDocs.py`, with what it writes committed)
+- [ ] `python Build\CheckCitations.py`
 - [ ] Release built locally (CI does not build it — AGENTS.md §6)
 - [ ] Ran the executable (**required** if this touches rendering, input, audio or presentation)
 

@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The ship designer (task 5.2, design §9; Phase 1 design §11): a pick for each slot, a name the player may type, the live
+// The ship designer (ADR-017 decision 7; Game §ships.designer): a pick for each slot, a name the player may type, the live
 // stats of the picked design, derived from the snapshot's components with the function the server uses (ADR-017), the
 // Shipyard its queue goes to, and how many ships one Queue asks for. It is client state and pauses nothing. The HUD
 // draws it in its window (ADR-031); this holds what it shows and what saving and queuing send.
@@ -51,7 +51,7 @@ public:
   {
     m_weapon = _weapon;
   }
-  // A module, or none (Phase 2 design §10): the slot may stay empty, and is empty until the player picks one.
+  // A module, or none (ADR-058 decision 7): the slot may stay empty, and is empty until the player picks one.
   void PickModule(ModuleId _module) noexcept
   {
     m_module = _module;
@@ -61,8 +61,8 @@ public:
     return {m_hull, m_drive, m_weapon, m_module};
   }
 
-  // The design's retreat (Phase 4 design §10): as picked, or else the matching design's, or else the default; and picking
-  // one from the designer's row of three (interface plan 2, task UI4.3). Saving sends it.
+  // The design's retreat (ADR-075 decision 7): as picked, or else the matching design's, or else the default; and picking
+  // one from the designer's row of three (ADR-088 decision 3). Saving sends it.
   [[nodiscard]] RetreatThreshold Retreat(const Snapshot& _newest) const noexcept;
   void SetRetreat(RetreatThreshold _retreat) noexcept
   {
@@ -74,8 +74,8 @@ public:
 
   // The name as typed, or else the matching design's. Or else, for a module on the components of a saved design without
   // one whose name is not theirs, such as the Lancer, that name and the module's initials, "Lancer+SA". Or else the
-  // components' names as design §7 writes them, such as "Small+Ion+Mass Driver", and the module's after them, or its
-  // initials where the whole would be too long a name.
+  // components' names as the server writes them (ADR-058 decision 6), such as "Small+Ion+Mass Driver", and the module's
+  // after them, or its initials where the whole would be too long a name.
   [[nodiscard]] std::string Name(const Snapshot& _newest) const;
 
   // The picked design's stats, or none while a pick names nothing in the snapshot.

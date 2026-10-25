@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// One group of a matchup's fleet: ships of one design, by its components and module, and how many (horizon §9, ADR-083).
+// One group of a matchup's fleet: ships of one design, by its components and module, and how many (ADR-083).
 struct MatchupGroup
 {
   HullId hull;

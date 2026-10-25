@@ -13,7 +13,7 @@ namespace
 constexpr Outpost::PlayerId BLUE = MatchArena::BLUE;
 constexpr Outpost::PlayerId RED = MatchArena::RED;
 constexpr std::uint32_t TICKS_PER_SECOND = MatchArena::TICKS_PER_SECOND;
-// Tuning.json's 30 s of one Constructor's work (Phase 4 design §9).
+// Tuning.json's 30 s of one Constructor's work (ADR-074 decision 4).
 constexpr std::uint32_t SALVAGE_TICKS = 30 * TICKS_PER_SECOND;
 constexpr Outpost::PlanePosition WRECK{.xMeters = -900.0f, .zMeters = 300.0f};
 // A Constructor this close to the wreck is in reach of it at once.
@@ -42,7 +42,7 @@ bool HasResearched(MatchArena& _arena, Outpost::ResearchTopicId _topic)
 }
 } // namespace
 
-// Phase 4 design §9, ADR-074: a Constructor salvages a derelict as it builds a site.
+// ADR-074 decision 4: a Constructor salvages a derelict as it builds a site.
 TEST_CLASS(SalvageTests)
 {
 public:
@@ -175,7 +175,7 @@ public:
     Assert::IsFalse(view(RED).has_value(), L"Red never saw it");
   }
 
-  // Phase 4 design §8: a cleared stronghold leaves a derelict paying 1,200 Ore where its last platform fell, naming no
+  // ADR-074 decision 6: a cleared stronghold leaves a derelict paying 1,200 Ore where its last platform fell, naming no
   // topic; and no structure stands on it.
   TEST_METHOD(AClearedStrongholdLeavesAWreck)
   {

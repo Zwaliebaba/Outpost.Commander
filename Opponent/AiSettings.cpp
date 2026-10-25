@@ -12,7 +12,7 @@ Outpost::DesignComponents ReadComponents(ObjectReader& _parent, std::string_view
   Outpost::DesignComponents components{.hull = reader.Identifier<Outpost::HullId>("hull"),
                                        .drive = reader.Identifier<Outpost::DriveId>("drive"),
                                        .weapon = reader.Identifier<Outpost::WeaponId>("weapon")};
-  // A module is optional, as in a design (Phase 2 design §10).
+  // A module is optional, as in a design (ADR-058 decision 3).
   if (reader.Optional("module") != nullptr)
     components.module = reader.Identifier<Outpost::ModuleId>("module");
   reader.Finish();

@@ -90,14 +90,14 @@ public:
     return m_commandLog;
   }
 
-  // Match setup for a measurement run: places task 3.7's stress scene and keeps it at full size before every tick.
+  // Match setup for a measurement run: places the stress scene and keeps it at full size before every tick.
   void StartStressLoad();
 
   // The end of match setup: builds the pathfinding graphs for every hull and the Constructor ahead of their first order,
   // once every structure of the setup stands (ADR-032). Called once, after the bases and any load are placed.
   void PreparePathfinding();
 
-  // Match setup for a world (Phase 5 design §5, ADR-077), before PreparePathfinding: from here the server logs every tick's
+  // Match setup for a world (ADR-077 decision 7), before PreparePathfinding: from here the server logs every tick's
   // commands to _folder and saves the world there every WORLD_SAVE_SECONDS of ticks. With _recovery, which
   // WorldFolder::Recover made of _folder, the simulation becomes the world it saved, and the commands logged since are
   // applied to it, tick by tick, so that it comes back at the tick after the last of them. The world is saved at once,
@@ -170,7 +170,7 @@ private:
   std::vector<Connection> m_connections;
   std::vector<LoggedCommand> m_commandLog;
   std::optional<StressLoad> m_stressLoad;
-  // Times the parts of each tick on the thread that runs them (task 8.1): the simulation tells it where each begins and
+  // Times the parts of each tick on the thread that runs them: the simulation tells it where each begins and
   // ends, and the server times its snapshots.
   TickProfiler m_profiler;
   // Guards the tick timings and the failure, which the started server's thread writes and TakeTickTimings reads.

@@ -10,7 +10,7 @@ namespace
 constexpr Outpost::PlayerId BLUE{1};
 constexpr Outpost::PlayerId RED{2};
 
-// One row of the table `python Tools/BattleModel.py` prints for the repository's tuning data (task 3.2).
+// One row of the table `python Tools/BattleModel.py` prints for the repository's tuning data (ADR-014 decision 1).
 struct ModelRow
 {
   std::uint32_t hull;
@@ -25,8 +25,8 @@ struct ModelRow
   std::array<double, 3> damagePerSecond;
 };
 
-// Copied from the model's output on 2026-10-01, after §12 was retuned against the simulation. The model rounds damage
-// per second to one decimal. Phase 4 tripled every cost (Phase 4 design §4).
+// Copied from the model's output on 2026-10-01, after the starting numbers were retuned against the simulation. The model
+// rounds damage per second to one decimal. Phase 4 tripled every cost.
 constexpr std::array<ModelRow, 18> MODEL_TABLE{{
   {1, 1, 1, 261, 198, 2, 78.0, 120, {30.0, 15.0, 8.8}},
   {1, 1, 2, 411, 198, 2, 78.0, 220, {34.4, 32.2, 30.0}},
@@ -57,7 +57,7 @@ Outpost::Tuning RepositoryTuning()
 TEST_CLASS(DesignTests)
 {
 public:
-  // Task 3.2: every design's derived stats are the ones the battle model uses.
+  // ADR-014 decision 1: every design's derived stats are the ones the battle model uses.
   TEST_METHOD(MatchesTheBattleModelsTable)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
@@ -71,7 +71,7 @@ public:
       Assert::AreEqual(row.armor * Outpost::HUNDREDTHS, stats.armorHundredths, name.c_str());
       Assert::AreEqual(row.speedMetersPerSecond, static_cast<double>(stats.movement.speedMetersPerSecond), 1e-4, name.c_str());
       Assert::AreEqual(row.rangeMeters, static_cast<double>(stats.rangeMeters), 1e-9, name.c_str());
-      // Only the Missile Rack splashes, 30 m around its target (task 5.3).
+      // Only the Missile Rack splashes, 30 m around its target (ADR-014 decision 12).
       Assert::AreEqual(row.weapon == 3 ? 30.0f : 0.0f, stats.splashRadiusMeters, name.c_str());
       for (size_t hull = 0; hull < tuning.hulls.size(); ++hull)
       {
@@ -81,8 +81,8 @@ public:
     }
   }
 
-  // Phase 1 design §5: the Pulse Drive, the Flak Battery and the Rail Cannon, each locked until its topic is researched,
-  // and each with its abbreviation.
+  // Game §research.unlocks: the Pulse Drive, the Flak Battery and the Rail Cannon, each locked until its topic is
+  // researched, and each with its abbreviation.
   TEST_METHOD(DerivesThePhaseOneComponents)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
@@ -99,7 +99,8 @@ public:
     Assert::AreEqual(270.0f * std::numbers::pi_v<float> / 180.0f, raider.movement.turnRateRadiansPerSecond, 1e-4f);
     Assert::AreEqual(200.0f, raider.rangeMeters);
     Assert::AreEqual(26.0f, raider.splashRadiusMeters);
-    // 20 a hit every half second: 18 against a Small hull's armor of 2, and 12 against a Medium hull's 8 (gate H10).
+    // 20 a hit every half second: 18 against a Small hull's armor of 2, and 12 against a Medium hull's 8
+    // (owner, 2026-10-03).
     Assert::AreEqual(36.0, Outpost::DamagePerSecond(raider, armorOf(0)), 1e-9);
     Assert::AreEqual(24.0, Outpost::DamagePerSecond(raider, armorOf(1)), 1e-9);
 
@@ -130,8 +131,9 @@ public:
     Assert::AreEqual(std::string("RC"), Outpost::Abbreviation(tuning.weapons[4].name));
   }
 
-  // Design §7: max(damage × 0.25, damage − armor), in hundredths.
-  // Phase 2 design §10: a module's name follows the weapon's in a design's name, and its numbers change the design's.
+  // ADR-014 decision 3: max(damage × 0.25, damage − armor), in hundredths.
+  // ADR-058 decisions 4 and 6: a module's name follows the weapon's in a design's name, and its numbers change the
+  // design's.
   TEST_METHOD(AModuleJoinsTheDesign)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
@@ -151,7 +153,7 @@ public:
   {
     Assert::AreEqual(600, Outpost::HitHundredths(1400, 800));
     Assert::AreEqual(350, Outpost::HitHundredths(1400, 1400));
-    // Design §6: a Defence Platform's armor of 10 takes a Mass Driver hit from 14 to 4.
+    // Game §structures.kinds: a Defence Platform's armor of 10 takes a Mass Driver hit from 14 to 4.
     Assert::AreEqual(400, Outpost::HitHundredths(1400, 1000));
     Assert::AreEqual(9300, Outpost::HitHundredths(9500, 200));
     Assert::AreEqual(1400, Outpost::HitHundredths(1400, 0));
@@ -179,8 +181,8 @@ public:
     Assert::AreEqual(Outpost::DamagePerSecond(missiles, 1400), Outpost::FormationDamagePerSecond(missiles, 1400, 24.0f), 1e-9);
   }
 
-  // Design §7: the first minutes are played with the four designs of the components no research unlocks. ADR-069: each is
-  // saved under the short name the tuning data gives it, the MVP design's nicknames, and keeps its components' name besides.
+  // ADR-014 decision 2: the first minutes are played with the four designs of the components no research unlocks. ADR-069:
+  // each is saved under the short name the tuning data gives it, and keeps its components' name besides.
   TEST_METHOD(StartingDesignsAreTheFourOfTheFirstMinutes)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
@@ -200,7 +202,7 @@ public:
     Assert::AreEqual(std::string("Small+Ion+Mass Driver+Sensor Array"), Outpost::StartingDesignName(tuning, scout));
   }
 
-  // Design §6, §7, §9: every match starts with the starting designs saved, the starting Ore, and a base of a Command
+  // ADR-016 decision 3: every match starts with the starting designs saved, the starting Ore, and a base of a Command
   // Station and two Constructors, which are of no design.
   TEST_METHOD(EveryPlayerStartsWithItsDesignsAndABase)
   {

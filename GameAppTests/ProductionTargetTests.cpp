@@ -18,7 +18,7 @@ Outpost::EntityView Producer(std::uint32_t _id, Outpost::StructureKind _kind, st
 TEST_CLASS(ProductionTargetTests)
 {
 public:
-  // Phase 1 design §12: the production window steps through the player's finished producers, the Command Station first
+  // ADR-068 decision 1: the production window steps through the player's finished producers, the Command Station first
   // and then the Shipyards by number, round the end; it shows one the player selects, never another's or an unfinished
   // one, and the first again when its own is gone.
   TEST_METHOD(StepsThroughThePlayersProducers)

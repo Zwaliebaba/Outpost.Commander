@@ -85,7 +85,7 @@ std::unique_ptr<Outpost::InProcessServer> SetUpServer(const GameData& _data, Out
   auto server = std::make_unique<Outpost::InProcessServer>(_data.tuning, _data.map, _desc);
   if (!recovery)
   {
-    // A world has no end, and a player who loses restarts (Phase 5 design §8); a save carries its rules with it.
+    // A world has no end, and a player who loses restarts (ADR-084 decision 1); a save carries its rules with it.
     if (!_desc.world.empty())
       server->World().UseWorldRules();
     // A battle matchup's fleets fight with no bases (ADR-083).
@@ -152,7 +152,7 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   // Every match is played under fog of war (ADR-024), and a battle matchup in the open (ADR-083).
   if (!_desc.matchup.has_value())
     m_simulation.UseFog();
-  // One player per start, each with the starting Ore and the starting designs saved (design §5, §7).
+  // One player per start, each with the starting Ore and the starting designs saved (ADR-016 decision 3).
   for (size_t player = 0; player < m_map.starts.size(); ++player)
   {
     const PlayerId id{static_cast<std::uint32_t>(player + 1)};
@@ -635,7 +635,8 @@ void Outpost::InProcessServer::ReplaceHosted(PlayerId _player, std::unique_ptr<H
 
 void Outpost::InProcessServer::SaveWorld()
 {
-  // How long the save holds up the server's thread is its encoding; the folder writes it on a thread of its own (W2).
+  // How long the save holds up the server's thread is its encoding; the folder writes it on a thread of its own
+  // (ADR-077 decision 7).
   const auto started = std::chrono::steady_clock::now();
   std::vector<std::byte> save = EncodeWorld(m_simulation, m_identity, m_away.Reports());
   const auto encode = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started);

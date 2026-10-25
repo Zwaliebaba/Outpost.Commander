@@ -84,8 +84,8 @@ std::vector<Outpost::EntityId> Warships(TerritoryMatch& _match, Outpost::PlayerI
 }
 } // namespace
 
-// Phase 5 design §7, gates H4 and H5 (ADR-080): a scheduled order fires once, on the tick its trigger's event is raised, and
-// does its action, or holds its ships when its condition says the enemy is too strong. W5 in tests.
+// ADR-080 decisions 4 and 5: a scheduled order fires once, on the tick its trigger's event is raised, and does its action,
+// or holds its ships when its condition says the enemy is too strong.
 TEST_CLASS(ScheduledOrderTests)
 {
 public:

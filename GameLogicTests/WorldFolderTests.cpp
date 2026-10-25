@@ -48,7 +48,7 @@ void CutShort(const std::filesystem::path& _file, std::uintmax_t _bytes)
 }
 } // namespace
 
-// Phase 5 design §5, ADR-077: a world's folder keeps its saves and its command log, and a world comes back from them.
+// ADR-077 decision 7: a world's folder keeps its saves and its command log, and a world comes back from them.
 TEST_CLASS(WorldFolderTests)
 {
 public:
@@ -160,7 +160,7 @@ public:
     Assert::ExpectException<Neuron::Exception>([&]() { (void)Outpost::WorldFolder::Recover(folder.Path()); }, L"no save reads whole");
   }
 
-  // W2 (Phase 5 design §2): what a save of a late world costs the server's thread, and its size. Run on its own, with
+  // What a save of a late world costs the server's thread, and its size. Run on its own, with
   // OUTPOST_WORLD_MEASURE set, since it plays an hour of world.
   TEST_METHOD(MeasuresALateSave)
   {

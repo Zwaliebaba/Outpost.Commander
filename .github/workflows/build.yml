@@ -152,7 +152,7 @@ jobs:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed. No suites at all is a state this repository is still legitimately in.
       #
-      # The full balance check (implementation plan task 3.4) is thousands of battles that take minutes
+      # The full balance check is thousands of battles that take minutes
       # in Release and hours in Debug, so it runs only when OUTPOST_BALANCE_FULL is set, which CI never
       # does: the test says so in its output. CI runs its small part, TheRecordedCountersHold, with
       # the rest of the suite; the owner runs the whole. A /TestCaseFilter on its TestCategory does
@@ -393,3 +393,40 @@ jobs:
         run: |
           python3 Tools/BakeMeshes.py --check
           python3 Tools/BakeMeshes.py --self-test
+
+  docs:
+    name: Documents
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # The documents of AGENTS.md §8. Its own Linux job, like the meshes', since it needs Python and the checkout and
+    # nothing that builds, and it reports in seconds. Both scripts use the standard library only, so the runner's Python
+    # reads the tree as the owner's does. Neither is guarded: both are permanently in the tree, and a document that
+    # does not conform fails here, not later.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The catalogue, the controls, the colors, the ADR index and the open decisions are generated from the data, the
+      # code, the ADRs and the gate tables. --check regenerates them in memory and fails on any byte that differs from
+      # what is committed, naming the file, so a number, a key, a color, an Owns: line or a gate changed without
+      # regenerating fails here, and so does a generated document edited by hand; the fix is to run
+      # `python Build/GenerateDocs.py` and commit what it writes. The generator is strict, so an input it cannot read
+      # fails too. The self-test breaks a copy of each input once per check and fails if a check stays silent.
+      - name: Check the generated documents
+        run: |
+          python3 Build/GenerateDocs.py --check
+          python3 Build/GenerateDocs.py --self-test
+
+      # Every citation in the code's comments and in the Markdown must name an ADR, an ADR decision or a section key of
+      # the living design that exists and is not retired, and every relative link must reach a file and an anchor. The
+      # code, the ADRs, the living design and the living references must cite only those, never a plan's task, a gate,
+      # a milestone or a phase's design, which go when their plan closes. The self-test builds a small tree, breaks it
+      # once per check, and fails if a check stays silent.
+      - name: Check the citations and links
+        run: |
+          python3 Build/CheckCitations.py
+          python3 Build/CheckCitations.py --self-test

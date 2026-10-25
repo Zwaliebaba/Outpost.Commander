@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The AI's battle behavior for a battle matchup (horizon §9, ADR-083), on either side: once a second its warships attack-move
+// The AI's battle behavior for a battle matchup (ADR-083 decision 4), on either side: once a second its warships attack-move
 // on the enemy ship nearest the middle of them, or the nearest enemy structure once no enemy ship is in sight, and the
 // game's own targeting picks what each fires at. It plays as a client does, from its snapshots, and orders nothing once its
 // warships are gone.

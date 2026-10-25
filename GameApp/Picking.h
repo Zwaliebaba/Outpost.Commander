@@ -19,7 +19,7 @@ struct ScreenRect
   }
 };
 
-// Which ships a click or a box takes, from where each ship shows on the screen (task 2.6). Pure math over the camera and
+// Which ships a click or a box takes, from where each ship shows on the screen (ADR-013 decision 5). Pure math over the camera and
 // the snapshot's entities, so it is tested without a window.
 
 // A click this close to a ship takes it, however small the ship shows.
@@ -38,7 +38,7 @@ inline constexpr float PICK_TOLERANCE_PIXELS = 12.0f;
 [[nodiscard]] std::vector<EntityId> ShipsInBox(std::span<const EntityView> _entities, const Camera& _camera, const Viewport& _viewport,
                                                const ScreenRect& _box, PlayerId _player);
 
-// _player's ships on screen of the same design and hull as _like (design §9's double-click).
+// _player's ships on screen of the same design and hull as _like, for a double-click (ADR-013 decision 5).
 [[nodiscard]] std::vector<EntityId> VisibleShipsLike(std::span<const EntityView> _entities, const Camera& _camera,
                                                      const Viewport& _viewport, const EntityView& _like, PlayerId _player);
 } // namespace Outpost

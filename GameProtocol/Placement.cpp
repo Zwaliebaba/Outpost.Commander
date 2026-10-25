@@ -51,7 +51,7 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
                                                     _entity.structure == StructureKind::MiningRig &&
                                                     Distance(_entity.position, nearest->position) < 1.0f;
                                            });
-    // On a map with sectors, ore belongs to the sector it lies in (Phase 2 design §4).
+    // On a map with sectors, ore belongs to the sector it lies in (ADR-056 decision 5).
     const SectorView* sector = FindSector(_sectors, nearest->position);
     const bool held = _sectors.empty() || (sector != nullptr && sector->holder == _player);
     return {.position = nearest->position, .radiusMeters = std::max(_type.radiusMeters, nearest->radiusMeters), .valid = !taken && held};
@@ -60,7 +60,7 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
   const float half = _mapSizeMeters / 2.0f;
   const bool inside = std::abs(_cursor.xMeters) + _type.radiusMeters <= half && std::abs(_cursor.zMeters) + _type.radiusMeters <= half;
   // On a map with sectors, a Shipyard or a Repair Bay stands only in a sector the player holds, so that production follows
-  // territory (Phase 4 design §6, §10).
+  // territory (ADR-056 decision 5).
   if ((_type.structure == StructureKind::Shipyard || _type.structure == StructureKind::RepairBay) && !_sectors.empty())
   {
     const SectorView* sector = FindSector(_sectors, _cursor);

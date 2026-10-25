@@ -11,7 +11,7 @@ struct LoggedCommand
   Command command;
 };
 
-// How often a world is saved, in seconds of its ticks (Phase 5 design §5, gate H7).
+// How often a world is saved, in seconds of its ticks (ADR-077 decision 7).
 inline constexpr std::uint32_t WORLD_SAVE_SECONDS = 60;
 
 // A world's folder (ADR-077): its saves, the newest WorldFolder::SAVES_KEPT of them, and its command log, a file begun at

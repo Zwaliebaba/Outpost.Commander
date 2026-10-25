@@ -6,7 +6,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace GameLogicTests
 {
-// Phase 5 design §10 (ADR-082): the world run, which every later phase measures with.
+// ADR-082 decision 4: the world run, which every later phase measures with.
 TEST_CLASS(WorldRunTests)
 {
 public:

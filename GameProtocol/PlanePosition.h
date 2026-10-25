@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// A point on the battlefield plane, in meters (design §4). Everything sits on the plane, so there is no height: the
+// A point on the battlefield plane, in meters (Game §map.plane). Everything sits on the plane, so there is no height: the
 // renderer's y = 0 plane, with x and z as here.
 struct PlanePosition
 {

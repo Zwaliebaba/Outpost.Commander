@@ -11,7 +11,7 @@ constexpr Outpost::PlayerId BLUE{1};
 constexpr Outpost::DesignId DESIGN{1};
 constexpr int TICKS_PER_SECOND = 20;
 constexpr float SECONDS_PER_TICK = 1.0f / TICKS_PER_SECOND;
-// How far two settled ships' footprints may still overlap (plan task 2.4).
+// How far two settled ships' footprints may still overlap (ADR-010 decision 7).
 constexpr float OVERLAP_TOLERANCE_METERS = 0.5f;
 
 // The movements the repository's tuning data gives the fastest and the slowest ship.
@@ -78,7 +78,7 @@ std::vector<Outpost::EntityId> Block(Outpost::Simulation& _simulation, float _x)
   return ships;
 }
 
-// Writes down every part a tick tells it of, where it begins and where it ends (task 8.1). An observer may not throw, so
+// Writes down every part a tick tells it of, where it begins and where it ends. An observer may not throw, so
 // it keeps them in room set aside beforehand, and Take spells them "+name" and "-name".
 class PartRecorder final : public Outpost::TickObserver
 {
@@ -133,7 +133,7 @@ public:
     Assert::AreEqual(20.0f, Movement(3, 2).speedMetersPerSecond);
   }
 
-  // Task 8.1: the simulation tells its observer where each part of a tick begins and ends, nested, in the order it runs
+  // The simulation tells its observer where each part of a tick begins and ends, nested, in the order it runs
   // them; a graph built for an order is inside the order. It reads no clock itself (ADR-009), and it tells only the tick
   // it was given the observer for.
   TEST_METHOD(TellsItsObserverEachPartOfATick)
@@ -159,7 +159,7 @@ public:
     Assert::AreEqual(std::string(), recorder.Take());
   }
 
-  // Plan task 2.4: a ship reaches a target behind an obstacle, and never passes through it on the way.
+  // ADR-010 decision 1: a ship reaches a target behind an obstacle, and never passes through it on the way.
   TEST_METHOD(AShipReachesATargetBehindAnObstacle)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);
@@ -180,7 +180,7 @@ public:
     Assert::IsTrue(static_cast<float>(ticks) * SECONDS_PER_TICK > 800.0f / movement.speedMetersPerSecond);
   }
 
-  // Plan task 2.4: a mixed group arrives together, at its slowest member's pace.
+  // ADR-010 decision 4: a mixed group arrives together, at its slowest member's pace.
   TEST_METHOD(AMixedGroupArrivesTogetherAtItsSlowestPace)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);
@@ -211,8 +211,8 @@ public:
     Assert::IsTrue(static_cast<float>(fastArrival) * SECONDS_PER_TICK >= slowDistance / slow.speedMetersPerSecond - 1.0f);
   }
 
-  // Plan task 2.4: ships ordered from a heap end up side by side, their footprints overlapping by no more than the stated
-  // tolerance once they have settled.
+  // ADR-010 decision 7: ships ordered from a heap end up side by side, their footprints overlapping by no more than the
+  // stated tolerance once they have settled.
   TEST_METHOD(ShipsSettleWithoutOverlapping)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);
@@ -277,9 +277,9 @@ public:
     }
   }
 
-  // ADR-047: a group passes an obstacle side by side, each ship in its own lane, rather than in file through the one point
-  // where the obstacle's edge leaves room. Without lanes, the group below is 4.9 times as long as it is wide as it passes;
-  // in open space it is as long as it is wide.
+  // ADR-047 decision 1: a group passes an obstacle side by side, each ship in its own lane, rather than in file through
+  // the one point where the obstacle's edge leaves room. Without lanes, the group below is 4.9 times as long as it is
+  // wide as it passes; in open space it is as long as it is wide.
   TEST_METHOD(AGroupPassesAnObstacleSideBySide)
   {
     constexpr float MOST_LENGTH_PER_WIDTH = 2.0f;
@@ -332,7 +332,7 @@ public:
     Assert::IsTrue(mostLengthPerWidth <= MOST_LENGTH_PER_WIDTH, std::to_wstring(mostLengthPerWidth).c_str());
   }
 
-  // Phase 1 plan task 7.3, carried over to Phase 2 (ADR-047): a group given an Attack order on one enemy passes an
+  // ADR-047 decision 3: a group given an Attack order on one enemy passes an
   // obstacle side by side too, and keeps its lanes as it paths again after its moving target. Its ships all close on one
   // point, so past the obstacle the group narrows toward it, and the bound is looser than a move's: one shared route made
   // it 6.2 times as long as wide.
@@ -382,9 +382,9 @@ public:
     Assert::IsTrue(Outpost::Distance(simulation.FindEntity(ship)->position, {}) >= 108.0f - 0.01f);
   }
 
-  // Task 7.2, ADR-039: a ship turns in an arc, as an aircraft does. Sent to a point behind it, it never stands to turn:
-  // it moves every tick, turns no faster than its turn rate, comes about in a loop to one side at half its cruise speed
-  // or less, and arrives on the point.
+  // ADR-039 decisions 1 to 3: a ship turns in an arc, as an aircraft does. Sent to a point behind it, it never stands
+  // to turn: it moves every tick, turns no faster than its turn rate, comes about in a loop to one side at half its
+  // cruise speed or less, and arrives on the point.
   TEST_METHOD(AShipComesAboutInALoop)
   {
     for (const Outpost::ShipMovement movement : {Movement(1, 1), Movement(3, 2)})
@@ -417,7 +417,7 @@ public:
     }
   }
 
-  // Task 7.2, ADR-039: a point inside the circle a ship turns at full speed, 15 m abeam of a ship whose turn at full speed
+  // ADR-039 decision 3: a point inside the circle a ship turns at full speed, 15 m abeam of a ship whose turn at full speed
   // is 20 m across, is reached on a tighter arc, flown slower, and not circled.
   TEST_METHOD(AShipReachesAPointInsideItsTurn)
   {
@@ -547,8 +547,8 @@ public:
     Assert::IsTrue(simulation.FindEntity(ships[1])->destination == Outpost::PlanePosition{800.0f, 0.0f});
   }
 
-  // ADR-032: a structure placed drops the path graphs, and the quiet ticks after it build them again, one a tick, so that
-  // the next order finds them built; a tick that plans paths builds none of its own accord.
+  // ADR-032 decision 2: a structure placed extends the path graphs, which the quiet ticks after it bring up to date, one a
+  // tick, so that the next order finds them up to date; a tick that plans paths brings none up to date of its own accord.
   TEST_METHOD(RebuildsDroppedGraphsOnQuietTicks)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);

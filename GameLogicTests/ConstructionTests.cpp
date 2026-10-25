@@ -35,8 +35,8 @@ std::uint32_t TicksToBuild(MatchArena& _arena, Outpost::EntityId _structure, std
 TEST_CLASS(ConstructionTests)
 {
 public:
-  // Design §6: a structure's circle overlaps nothing and stays inside the map; the Command Station is not built; and a
-  // player has one Research Lab.
+  // ADR-016 decision 4: a structure's circle overlaps nothing and stays inside the map; the Command Station is not
+  // built; and a player has one Research Lab.
   TEST_METHOD(ChecksWhereAStructureMayStand)
   {
     MatchArena arena;
@@ -72,8 +72,8 @@ public:
     Assert::IsTrue(arena.Tick({Build({enemy}, Outpost::StructureKind::Shipyard, SITE)})[0] == Outpost::CommandResult::NotOwned);
   }
 
-  // Gate G8: one Constructor builds a structure in its build time, and a second adds half of one more. Hit points rise
-  // with the work from a tenth to full, and the order ends when the structure is built.
+  // ADR-016 decision 5: one Constructor builds a structure in its build time, and a second adds half of one more. Hit
+  // points rise with the work from a tenth to full, and the order ends when the structure is built.
   TEST_METHOD(BuildsFasterWithASecondConstructor)
   {
     const Outpost::StructureTuning shipyard = MatchArena().StructureData(Outpost::StructureKind::Shipyard);
@@ -144,8 +144,8 @@ public:
     Assert::IsTrue(Outpost::Distance(arena.Get(ship).position, {400.0f, 0.0f}) < 5.0f, L"the ship arrived");
   }
 
-  // Design §6, §9: a right-click on a damaged friendly repairs it, at the tuning data's percentage of its hit points per
-  // second for each Constructor, for nothing; the order ends when it is whole.
+  // ADR-016 decision 5: a right-click on a damaged friendly repairs it, at the tuning data's percentage of its hit
+  // points per second for each Constructor, for nothing; the order ends when it is whole.
   TEST_METHOD(RepairsADamagedFriendly)
   {
     MatchArena arena;

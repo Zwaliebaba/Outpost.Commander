@@ -20,18 +20,18 @@ template <typename Tag> struct Id
 // A ship, a structure or an asteroid, for the whole match. The server assigns them and never reuses one.
 using EntityId = Id<struct EntityTag>;
 using PlayerId = Id<struct PlayerTag>;
-// The neutral owner of the pirates' outposts (Phase 4 design §8, ADR-073): the enemy of every player, and never a player
+// The neutral owner of the pirates' outposts (ADR-073 decision 1): the enemy of every player, and never a player
 // itself, so it has no Ore, no research and no snapshot. The largest identifier, so that no seat is ever given it.
 inline constexpr PlayerId PIRATES{0xFFFF'FFFFu};
 
-// A saved ship design (design §7). The server assigns them when a design is first saved.
+// A saved ship design (ADR-017 decision 6). The server assigns them when a design is first saved.
 using DesignId = Id<struct DesignTag>;
 
-// Components and research topics, as the tuning data numbers them (implementation plan, task 3.1).
+// Components and research topics, as the tuning data numbers them (ADR-008).
 using HullId = Id<struct HullTag>;
 using DriveId = Id<struct DriveTag>;
 using WeaponId = Id<struct WeaponTag>;
-// A design's optional fourth component (Phase 2 design §10); no identifier for none.
+// A design's optional fourth component (ADR-058 decision 3); no identifier for none.
 using ModuleId = Id<struct ModuleTag>;
 using ResearchTopicId = Id<struct ResearchTopicTag>;
 } // namespace Outpost

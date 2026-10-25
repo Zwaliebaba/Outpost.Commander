@@ -134,7 +134,7 @@ std::string Outpost::Designer::Name(const Snapshot& _newest) const
   if (const ModuleView* module = Find(_newest.modules, m_module))
   {
     // A module on a saved design's hull, drive and weapon, where that design without one has a short name, as a starting
-    // design has (ADR-069), takes that name with the module's code: "Lancer+SA" (interface plan 2, task UI4.5).
+    // design has, takes that name with the module's code: "Lancer+SA" (ADR-069 decision 5).
     const auto base = std::ranges::find_if(
       _newest.designs, [this](const DesignView& _design)
       { return _design.hull == m_hull && _design.drive == m_drive && _design.weapon == m_weapon && !_design.module.IsValid(); });

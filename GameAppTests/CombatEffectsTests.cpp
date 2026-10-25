@@ -52,7 +52,7 @@ size_t CountOf(const std::vector<Outpost::CombatEffects::Draw>& _draws, Outpost:
 TEST_CLASS(CombatEffectsTests)
 {
 public:
-  // Task 3.5: an effect plays when the view reaches the tick its shot was fired at, one before its snapshot.
+  // ADR-013 decision 3: an effect plays when the view reaches the tick its shot was fired at, one before its snapshot.
   TEST_METHOD(WaitsForTheViewToReachTheShot)
   {
     Outpost::CombatEffects effects = Effects();
@@ -80,7 +80,7 @@ public:
     Assert::IsTrue(landed.front().from == TARGET, L"the spark is at the target");
   }
 
-  // Task 5.3: a splash weapon's hit throws a ring at the target that runs out to its splash radius, then fades.
+  // ADR-034 decision 2: a splash weapon's hit throws a ring at the target that runs out to its splash radius, then fades.
   TEST_METHOD(ASplashRingRunsOutToItsRadius)
   {
     Outpost::CombatEffects effects = Effects();
@@ -176,7 +176,7 @@ public:
       beamFrom([](Outpost::EntityId, Outpost::PlanePosition, std::uint8_t) { return std::optional<Outpost::PlanePosition>(); }) == GUN);
   }
 
-  // Phase 3 design §7: the view is told which of the shooter's guns fired, so a Command Station's further guns fire from
+  // ADR-019 decision 5: the view is told which of the shooter's guns fired, so a Command Station's further guns fire from
   // hardpoints of their own.
   TEST_METHOD(TheViewIsToldWhichGunFired)
   {

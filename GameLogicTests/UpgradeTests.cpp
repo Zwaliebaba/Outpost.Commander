@@ -15,7 +15,7 @@ constexpr Outpost::WeaponId LANCE{2};
 constexpr Outpost::PlanePosition YARD{.xMeters = 0.0f, .zMeters = 0.0f};
 constexpr Outpost::PlanePosition LAB{.xMeters = -600.0f, .zMeters = -600.0f};
 
-// The repository's topics that Reinforced Structures needs (design §8, Phase 1 design §6).
+// The repository's topics that Reinforced Structures needs (Game §research.topics).
 constexpr Outpost::ResearchTopicId IMPROVED_EXTRACTION{1};
 constexpr Outpost::ResearchTopicId HULL_PLATING{2};
 constexpr Outpost::ResearchTopicId REINFORCED_STRUCTURES{14};
@@ -33,7 +33,7 @@ Outpost::EntityId ConstructorBeside(MatchArena& _arena, Outpost::PlayerId _owner
                                          {.xMeters = _at.xMeters - (_radius + 10.0f + 15.0f), .zMeters = _at.zMeters + _sideMeters});
 }
 
-// The ticks the level after _level of a structure of this kind takes to build itself (Phase 3 design §4).
+// The ticks the level after _level of a structure of this kind takes to build itself (ADR-064 decision 3).
 std::uint32_t LevelTicks(const MatchArena& _arena, Outpost::StructureKind _kind, std::int32_t _level)
 {
   const Outpost::StructureLevelTuning& next = _arena.StructureData(_kind).levels[static_cast<size_t>(_level - 1)];
@@ -64,7 +64,7 @@ const Outpost::EntityView* FindView(const Outpost::Snapshot& _snapshot, Outpost:
 }
 } // namespace
 
-// Phase 3 design §4, ADR-064: a structure upgraded one level at a time, paid when ordered, each level building itself.
+// ADR-064 decisions 2 and 3: a structure upgraded one level at a time, paid when ordered, each level building itself.
 TEST_CLASS(UpgradeTests)
 {
 public:
@@ -156,7 +156,7 @@ public:
     Assert::IsTrue(arena.Tick({Upgrade(BLUE, yard)})[0] == Outpost::CommandResult::TopLevel);
   }
 
-  // Phase 3 design §3: a Shipyard keeps building while its next level is built.
+  // ADR-064 decision 3: a Shipyard keeps building while its next level is built.
   TEST_METHOD(KeepsWorkingWhileUpgraded)
   {
     MatchArena arena;
@@ -230,7 +230,7 @@ public:
     Assert::IsTrue(arena.Tick({Upgrade(BLUE, yard)})[0] == Outpost::CommandResult::Applied);
     Assert::IsTrue(TicksToLevel(arena, yard, 2, 2 * LevelTicks(arena, Outpost::StructureKind::Shipyard, 1)) > 0);
 
-    // A Lab at level 2, which has opened Reinforced Structures' tier (Phase 3 design §6).
+    // A Lab at level 2, which has opened Reinforced Structures' tier (ADR-064 decision 10).
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 2);
     for (const Outpost::ResearchTopicId topic : {IMPROVED_EXTRACTION, HULL_PLATING, REINFORCED_STRUCTURES})
     {

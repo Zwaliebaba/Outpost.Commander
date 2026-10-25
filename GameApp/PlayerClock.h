@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The player's own clock (Phase 5 design §7; owner, 2026-10-08). A scheduled order's time of day is the hour and minute the
+// The player's own clock (ADR-080 decision 6; owner, 2026-10-08). A scheduled order's time of day is the hour and minute the
 // clock reads, which the client turns into the next moment it reads them, in UTC, for the server's host to make a tick of
 // (ADR-080). It is the zone the system is set to, with its summer time, from the standard library's time zone database;
 // or a fixed offset from UTC, where the database cannot say the zone, and for a test.

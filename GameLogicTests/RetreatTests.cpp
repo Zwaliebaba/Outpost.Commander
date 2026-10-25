@@ -18,7 +18,7 @@ constexpr Outpost::WeaponId MISSILE_RACK{3};
 // and out of its own, so that only the platform fires.
 constexpr Outpost::PlanePosition FRONT{.xMeters = 0.0f, .zMeters = 0.0f};
 constexpr Outpost::PlanePosition PLATFORM{.xMeters = 240.0f, .zMeters = 0.0f};
-// The Repair Bay is the farthest of the repairers, which the ship still goes to first (Phase 4 design §10).
+// The Repair Bay is the farthest of the repairers, which the ship still goes to first (ADR-075 decision 5).
 constexpr Outpost::PlanePosition BAY{.xMeters = -1500.0f, .zMeters = 0.0f};
 constexpr Outpost::PlanePosition STATION{.xMeters = -1000.0f, .zMeters = 600.0f};
 constexpr Outpost::PlanePosition SHIPYARD{.xMeters = -700.0f, .zMeters = -500.0f};
@@ -60,7 +60,7 @@ float FootprintGap(const Outpost::Entity& _a, const Outpost::Entity& _b)
 TEST_CLASS(RetreatTests)
 {
 public:
-  // Phase 4 design §10: a hit that leaves a ship below its threshold sends it to the nearest Repair Bay, before the Command
+  // ADR-075 decision 5: a hit that leaves a ship below its threshold sends it to the nearest Repair Bay, before the Command
   // Station and a Shipyard, however much nearer they are. The bay repairs it there, and once whole it waits.
   TEST_METHOD(GoesToARepairBayAndIsRepaired)
   {
@@ -117,7 +117,7 @@ public:
     }
   }
 
-  // Design §10: a ship set never to retreat fights on, and the default is a quarter of its hit points.
+  // ADR-075 decision 4: a ship set never to retreat fights on, and the default is a quarter of its hit points.
   TEST_METHOD(NeverAndAQuarter)
   {
     {
@@ -166,7 +166,7 @@ public:
     Assert::IsTrue(arena.Get(ship).retreat == Outpost::RetreatThreshold::Never);
   }
 
-  // Design §10: a ship on a standing order keeps it while it is repaired, and goes back to it once whole (ADR-059).
+  // ADR-075 decision 6: a ship on a standing order keeps it while it is repaired, and goes back to it once whole (ADR-059).
   TEST_METHOD(AStandingOrderWaitsForTheRepair)
   {
     MatchArena arena;
@@ -184,8 +184,8 @@ public:
     Assert::IsTrue(arena.Get(ship).order == Outpost::ShipOrder::AttackMove, L"on patrol again");
   }
 
-  // Design §10: a repairer repairs at most four of its player's ships in its reach at a time, the most damaged first, by
-  // 3% of each one's full hit points a second, for nothing.
+  // ADR-075 decision 3: a repairer repairs at most four of its player's ships in its reach at a time, the most damaged
+  // first, by 3% of each one's full hit points a second, for nothing.
   TEST_METHOD(RepairsFourShipsAtATime)
   {
     MatchArena arena;
@@ -229,8 +229,8 @@ public:
     }
   }
 
-  // Design §10: a design carries a retreat, which every ship built to it starts with, and which its owner sets when it
-  // saves the design or renames it.
+  // ADR-075 decision 7: a design carries a retreat, which every ship built to it starts with, and which its owner sets
+  // when it saves the design or renames it.
   TEST_METHOD(ADesignCarriesItsRetreat)
   {
     MatchArena arena;

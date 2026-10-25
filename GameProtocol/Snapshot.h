@@ -12,22 +12,22 @@ enum class EntityKind : std::uint8_t
   Structure,
   // An ore asteroid: a Mining Rig can be built on it.
   Asteroid,
-  // A non-mineable asteroid field: only an obstacle (design §4).
+  // A non-mineable asteroid field: only an obstacle (Game §map.fields).
   AsteroidField,
-  // A wreck of the old fleet, which a Constructor salvages for Ore and research (Phase 4 design §9, ADR-074). It blocks no
+  // A wreck of the old fleet, which a Constructor salvages for Ore and research (ADR-074 decision 1). It blocks no
   // path, but no structure stands on it.
   Derelict
 };
 
 // What a ship is for. A warship is of a saved design; a Constructor is the one fixed design, which builds and repairs and
-// has no weapon (design §7).
+// has no weapon (Game §ships.kinds).
 enum class ShipRole : std::uint8_t
 {
   Warship,
   Constructor
 };
 
-// One job in a Shipyard's or the Command Station's queue (design §6): a ship of one of the player's designs, or a
+// One job in a Shipyard's or the Command Station's queue (ADR-016 decision 6): a ship of one of the player's designs, or a
 // Constructor.
 struct JobView
 {
@@ -38,13 +38,13 @@ struct JobView
   friend bool operator==(const JobView&, const JobView&) = default;
 };
 
-// Jobs a Shipyard's or the Command Station's queue holds (design §6).
+// Jobs a Shipyard's or the Command Station's queue holds (ADR-016 decision 6).
 inline constexpr size_t QUEUE_LIMIT = 5;
 
 // How far a structure's construction or a queue's front job has come, in thousandths.
 inline constexpr std::int32_t PERMILLE = 1000;
 
-// A standing order a warship keeps until given another (Phase 2 design §9, ADR-059).
+// A standing order a warship keeps until given another (ADR-059 decision 5).
 enum class StandingOrder : std::uint8_t
 {
   None,
@@ -52,7 +52,7 @@ enum class StandingOrder : std::uint8_t
   Patrol
 };
 
-// What a ship is doing because it was told to (design §7, §9). Firing is not an order: an armed ship fires at whatever its
+// What a ship is doing because it was told to (Game §orders.direct). Firing is not an order: an armed ship fires at whatever its
 // targeting picks, whatever its order.
 enum class ShipOrder : std::uint8_t
 {
@@ -78,8 +78,8 @@ struct EntityView
   // A ship's design; no design for anything else.
   DesignId design;
   // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), its
-  // weapon and its module, if it has one (Phase 2 design §10); none for anything else. A player sees the components of
-  // every ship it sees, so the AI can answer the designs it meets (design §10, ADR-020, ADR-024).
+  // weapon and its module, if it has one (ADR-058 decision 3); none for anything else. A player sees the components of
+  // every ship it sees, so the AI can answer the designs it meets (ADR-020 decision 3, ADR-024 decision 6).
   HullId hull;
   DriveId drive;
   WeaponId weapon;
@@ -98,27 +98,27 @@ struct EntityView
   std::int32_t hitPointsHundredths = 0;
   std::int32_t maxHitPointsHundredths = 0;
   // A structure's construction, in thousandths: PERMILLE once it is built, as everything else is. A structure under
-  // construction does nothing but stand there and block (design §6).
+  // construction does nothing but stand there and block (ADR-016 decision 5).
   std::int32_t builtPermille = PERMILLE;
-  // A structure's level, from 1 (Phase 3 design §4, ADR-064); 1 for anything else. An enemy structure the player remembers
+  // A structure's level, from 1 (ADR-064 decision 6); 1 for anything else. An enemy structure the player remembers
   // keeps the level it was last seen at.
   std::int32_t level = 1;
   // The next level's construction, in thousandths, while a finished structure is being upgraded; none otherwise. It is
   // shown as construction is, to whoever sees the structure.
   std::optional<std::int32_t> upgradePermille;
   // A finished Shipyard's number among its owner's, 1 for the first finished, never reused; and how many ships it has
-  // built this match (Phase 1 design §11). The owner's only; zero for anything else.
+  // built this match (ADR-016 decision 6). The owner's only; zero for anything else.
   std::uint32_t shipyardNumber = 0;
   std::uint32_t shipsBuilt = 0;
   // A Shipyard's or the Command Station's jobs, front first, and how far the front one has come in thousandths: zero
-  // while it waits for the Ore to start (design §5).
+  // while it waits for the Ore to start (ADR-016 decision 6).
   std::vector<JobView> queue;
-  // A Research Lab's topics, front first; the front one's progress is jobPermille, as a queue's is (design §8). Under fog
+  // A Research Lab's topics, front first; the front one's progress is jobPermille, as a queue's is (ADR-017 decision 1). Under fog
   // of war a player sees only its own queues (ADR-024).
   std::vector<ResearchTopicId> research;
   std::int32_t jobPermille = 0;
   // A Research Lab with a second slot: how far the second topic of its queue has come, in thousandths, while it is
-  // researched beside the first (Phase 3 design §6); zero otherwise.
+  // researched beside the first (ADR-017 decision 1); zero otherwise.
   std::int32_t secondJobPermille = 0;
   // An enemy structure out of the player's sight, as the player last saw it there (ADR-024). It may have changed, or be
   // gone: the player learns which once it sees the place again.
@@ -133,13 +133,13 @@ struct EntityView
   ShipOrder order = ShipOrder::None;
   // A ship's standing order, which only its owner sees (ADR-059).
   StandingOrder standing = StandingOrder::None;
-  // A ship's retreat, and whether it is going back to be repaired now (Phase 4 design §10, ADR-075); its owner's only.
+  // A ship's retreat, and whether it is going back to be repaired now (ADR-075 decision 8); its owner's only.
   RetreatThreshold retreat = RetreatThreshold::Never;
   bool retreating = false;
   // The scheduled order a ship waits on, which only its owner sees (ADR-080); zero for none.
   std::uint32_t scheduledOrder = 0;
   // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
-  // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
+  // as it last saw it. None for one it has never seen, or that never runs out (ADR-035 decision 5).
   std::optional<std::int64_t> oreReserveHundredths;
   // A derelict's: the Ore it pays, the topic whose time it recovers if any, and how far its salvage has come, in
   // thousandths (ADR-074). Whoever sees it sees them, and remembers them under fog of war as a structure is remembered.
@@ -150,8 +150,8 @@ struct EntityView
   friend bool operator==(const EntityView&, const EntityView&) = default;
 };
 
-// A hull as its player has it: its numbers after the player's research, and whether the player may build it yet (design
-// §7, §8). The designer derives a design's stats from these with DesignStatsOf, as the server does (ADR-017).
+// A hull as its player has it: its numbers after the player's research, and whether the player may build it yet
+// (ADR-017 decision 5). The designer derives a design's stats from these with DesignStatsOf, as the server does.
 struct HullView
 {
   HullId id;
@@ -165,9 +165,9 @@ struct HullView
   double buildSeconds = 0.0;
   // False until research unlocks it.
   bool available = false;
-  // The level a Shipyard must be at to build it (Phase 3 design §5).
+  // The level a Shipyard must be at to build it (ADR-064 decision 9).
   std::int32_t shipyardLevel = 1;
-  // What a warship of this hull takes of its player's fleet cap (Phase 4 design §5); 0 when the match sets no cap.
+  // What a warship of this hull takes of its player's fleet cap (ADR-071 decision 4); 0 when the match sets no cap.
   std::int32_t commandPoints = 0;
 };
 
@@ -195,7 +195,7 @@ struct WeaponView
   bool available = false;
 };
 
-// A module (Phase 2 design §10, ADR-058): what it does to a ship of a design that carries it. The Sensor Array is the
+// A module (ADR-058): what it does to a ship of a design that carries it. The Sensor Array is the
 // first: it sees sightMeters, whatever its weapon, and is slowed by its speed factor.
 struct ModuleView
 {
@@ -208,7 +208,7 @@ struct ModuleView
   bool available = false;
 };
 
-// A research topic (design §8): what it does in words, what it costs, what it needs first, and whether the player has
+// A research topic (ADR-017 decision 5): what it does in words, what it costs, what it needs first, and whether the player has
 // it.
 struct ResearchTopicView
 {
@@ -220,17 +220,17 @@ struct ResearchTopicView
   std::vector<ResearchTopicId> prerequisites;
   bool researched = false;
   // The component the topic unlocks, if it unlocks one, which the designer names on the component while it is locked
-  // (Phase 1 design §11).
+  // (ADR-017 decision 7).
   HullId unlocksHull;
   DriveId unlocksDrive;
   WeaponId unlocksWeapon;
-  // Its tier (Phase 1 design §6), which a level of the Research Lab opens (Phase 3 design §6).
+  // Its tier (ADR-033 decision 1), which a level of the Research Lab opens (ADR-033 decision 2).
   std::int32_t tier = 1;
   // A derelict the player salvaged recovered part of its time, which the topic takes off when it starts (ADR-074).
   bool recovered = false;
 };
 
-// One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.
+// One of the player's saved designs (ADR-017 decision 6), as the selection panel and, later, the designer show it.
 struct DesignView
 {
   DesignId id;
@@ -238,16 +238,16 @@ struct DesignView
   HullId hull;
   DriveId drive;
   WeaponId weapon;
-  // None for a design without a module (Phase 2 design §10).
+  // None for a design without a module (ADR-058 decision 3).
   ModuleId module;
-  // In whole Ore, paid when a Shipyard starts building one (design §5).
+  // In whole Ore, paid when a Shipyard starts building one (ADR-016 decision 6).
   std::int32_t cost = 0;
-  // What a ship built to it starts with (Phase 4 design §10, ADR-075).
+  // What a ship built to it starts with (ADR-075 decision 4).
   RetreatThreshold retreat = DEFAULT_RETREAT;
 };
 
-// What the client needs to know of a kind of structure to name it, draw it and place it (design §6).
-// One level above the first that a kind of structure is upgraded to (Phase 3 design §4, ADR-064): what the upgrade costs,
+// What the client needs to know of a kind of structure to name it, draw it and place it (ADR-016 decision 10).
+// One level above the first that a kind of structure is upgraded to (ADR-064 decision 6): what the upgrade costs,
 // how long one Constructor takes to build it, and the structure's full hit points once it is in, with the player's
 // research.
 struct StructureLevelView
@@ -255,13 +255,13 @@ struct StructureLevelView
   std::int32_t cost = 0;
   double buildSeconds = 0.0;
   std::int32_t maxHitPointsHundredths = 0;
-  // A Research Lab's level (Phase 3 design §6): the tier it opens, or 0; how many topics the Lab researches at once from
+  // A Research Lab's level (ADR-064 decision 10): the tier it opens, or 0; how many topics the Lab researches at once from
   // it on, or 0 where it does not change that; and the topics that must be researched before it is ordered.
   std::int32_t opensTier = 0;
   std::int32_t researchSlots = 0;
   std::vector<ResearchTopicId> prerequisites;
-  // A Command Station's level (Phase 3 design §7): the nodes its player may hold from it on, and its Defence guns; 0 where
-  // it does not change them. And the command points its player's warships may take from it on (Phase 4 design §5), 0
+  // A Command Station's level (ADR-064 decision 11): the nodes its player may hold from it on, and its Defence guns; 0 where
+  // it does not change them. And the command points its player's warships may take from it on (ADR-071 decision 1), 0
   // where it does not change them.
   std::int32_t nodes = 0;
   std::int32_t guns = 0;
@@ -282,7 +282,7 @@ struct StructureTypeView
   std::vector<StructureLevelView> levels;
 };
 
-// One of the map's sectors and who holds it (Phase 2 design §4–§6, ADR-056). Every player sees every sector's holder,
+// One of the map's sectors and who holds it (ADR-056 decision 10). Every player sees every sector's holder,
 // fog of war or not: the territory is the map both sides play for.
 struct SectorView
 {
@@ -303,7 +303,7 @@ struct SectorView
   // It is held but no longer linked to its holder's home sector through the sectors its holder holds: it earns the
   // tuning data's share.
   bool cutOff = false;
-  // A pirate structure stands in it, so that it cannot be claimed (Phase 4 design §8). Every player sees it, as it sees
+  // A pirate structure stands in it, so that it cannot be claimed (ADR-073 decision 6). Every player sees it, as it sees
   // the holder, though the pirates themselves are under fog of war like an enemy (ADR-073).
   bool guarded = false;
 
@@ -324,9 +324,9 @@ struct SectorView
   return found != _sectors.end() ? &*found : nullptr;
 }
 
-// How a match ended (Phase 2 design §8): a player lost its Command Station and every finished Shipyard (Phase 1 design
-// §4), or a player's tickets ran out because it held fewer nodes (ADR-057); or, in a battle matchup (ADR-083), a side's
-// warships were all destroyed, or its time ran out.
+// How a match ended (ADR-057 decision 6): a player lost its Command Station and every finished Shipyard
+// (ADR-037 decision 1), or a player's tickets ran out because it held fewer nodes (ADR-057); or, in a battle matchup
+// (ADR-083), a side's warships were all destroyed, or its time ran out.
 enum class MatchEnding : std::uint8_t
 {
   LostProduction,
@@ -344,8 +344,8 @@ struct TicketsView
   friend bool operator==(const TicketsView&, const TicketsView&) = default;
 };
 
-// A shot fired in the tick. Hits are instant (design §7), so this is presentation only: where the shot went from and to,
-// at the moment it was fired (task 3.5).
+// A shot fired in the tick. Hits are instant (ADR-014 decision 6), so this is presentation only: where the shot went from
+// and to, at the moment it was fired (ADR-014 decision 11).
 struct ShotView
 {
   EntityId shooter;
@@ -356,11 +356,11 @@ struct ShotView
   // How far its splash reached around `to`; zero for a weapon without splash.
   float splashRadiusMeters = 0.0f;
   // Which of the shooter's guns fired it: 0 for a ship's and a structure's first, and 1 on for a Command Station's further
-  // Defence guns (Phase 3 design §7), which the client draws from hardpoints of their own.
+  // Defence guns (ADR-064 decision 11), which the client draws from hardpoints of their own.
   std::uint8_t gun = 0;
 };
 
-// An entity destroyed in the tick, where it was, so the client can show it go after it has left the snapshot (task 3.5).
+// An entity destroyed in the tick, where it was, so the client can show it go after it has left the snapshot (ADR-014 decision 11).
 struct DestroyedView
 {
   EntityId id;
@@ -374,8 +374,8 @@ struct DestroyedView
   float radiusMeters = 0.0f;
 };
 
-// What happened to a player in a tick, which the server raises and the player's snapshot of that tick carries (Phase 5
-// design §7, ADR-080). Its alerts are read from them, and a scheduled order's trigger is one of them.
+// What happened to a player in a tick, which the server raises and the player's snapshot of that tick carries
+// (ADR-080 decision 1). Its alerts are read from them, and a scheduled order's trigger is one of them.
 enum class EventKind : std::uint8_t
 {
   // A Relay of the player's suppressed, or hit by an enemy's shot (ADR-059).
@@ -398,7 +398,7 @@ enum class EventKind : std::uint8_t
   // A scheduled order of the player's fired.
   OrderFired,
   // In a world, the player lost its Command Station and its last finished Shipyard, and its seat restarted at its start an
-  // hour later (Phase 5 design §8); each names the start's sector and the start.
+  // hour later (ADR-084 decisions 3 and 4); each names the start's sector and the start.
   EmpireLost,
   EmpireRestarted
 };
@@ -449,7 +449,7 @@ struct ScheduledOrderView
   friend bool operator==(const ScheduledOrderView&, const ScheduledOrderView&) = default;
 };
 
-// What happened to a player's empire while its deputy played its seat (Phase 5 design §11, ADR-080), which the server keeps
+// What happened to a player's empire while its deputy played its seat (ADR-080 decision 7), which the server keeps
 // and hands it when it takes the seat again.
 struct AwayReport
 {
@@ -531,8 +531,8 @@ struct Snapshot
   // The player's events of this tick, in the order the server raised them, and its scheduled orders (ADR-080).
   std::vector<EventView> events;
   std::vector<ScheduledOrderView> scheduled;
-  // What happened while the player was away, in the first snapshot after it takes its seat again from its deputy (Phase 5
-  // design §11); none otherwise.
+  // What happened while the player was away, in the first snapshot after it takes its seat again from its deputy
+  // (ADR-080 decision 7); none otherwise.
   std::optional<AwayReport> away;
   // The player's own: its Ore, whole, what its Mining Rigs earn each second in hundredths of an Ore, and its saved
   // designs.
@@ -547,24 +547,24 @@ struct Snapshot
   std::int32_t constructorCost = 0;
   double constructorBuildSeconds = 0.0;
   // The player's components and research topics, in the tuning data's order, with the player's research applied, and how
-  // much faster than the base rate its Shipyards build (design §8). Empty and 1 when the server has no tuning data.
+  // much faster than the base rate its Shipyards build (ADR-017 decision 5). Empty and 1 when the server has no tuning data.
   std::vector<HullView> hulls;
   std::vector<DriveView> drives;
   std::vector<WeaponView> weapons;
   std::vector<ModuleView> modules;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
-  // The highest research tier the player's finished Research Lab has opened by its level, and 1 without one (Phase 3
-  // design §6).
+  // The highest research tier the player's finished Research Lab has opened by its level, and 1 without one
+  // (ADR-033 decision 5).
   std::int32_t researchTier = 1;
   // On a map with territory, the nodes the player may hold, home included, by its Command Station's level, or level 1's
-  // without one (Phase 3 design §7); zero otherwise.
+  // without one (ADR-064 decision 11); zero otherwise.
   std::int32_t nodeCap = 0;
   // The command points the player's warships take, those its Shipyards have started included, and the most they may take
-  // by its Command Station's level, or level 1's without one (Phase 4 design §5); the cap is zero when the match sets none.
+  // by its Command Station's level, or level 1's without one (ADR-071 decision 4); the cap is zero when the match sets none.
   std::int32_t commandPoints = 0;
   std::int32_t fleetCap = 0;
-  // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
+  // The match is over once a player has neither a Command Station nor a finished Shipyard (ADR-037 decision 1): the winner
   // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
   // (owner, 2026-10-01).
   bool matchOver = false;
@@ -581,12 +581,12 @@ struct Snapshot
   std::vector<TicketsView> tickets;
   std::int32_t startingTickets = 0;
   // With the tickets, domination's drain from the tuning data (ADR-057 decision 1): every drainIntervalSeconds, the tickets
-  // a player loses for each node it is behind. The HUD tells by them who loses how fast, and when they run out (interface
-  // plan 2, task UI3.3).
+  // a player loses for each node it is behind. The HUD tells by them who loses how fast, and when they run out
+  // (ADR-057 decision 8).
   double drainIntervalSeconds = 0.0;
   std::int32_t drainTicketsPerNodeDifference = 0;
   // In a world, while the player has lost: the tick its seat restarts at its start, or has waited since for the start to
-  // be free (Phase 5 design §8); none while it stands, and none in a match.
+  // be free (ADR-084 decision 4); none while it stands, and none in a match.
   std::optional<std::uint64_t> restartTick;
 };
 } // namespace Outpost

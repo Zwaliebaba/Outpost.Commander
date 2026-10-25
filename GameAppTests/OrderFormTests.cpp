@@ -79,7 +79,7 @@ constexpr std::array SELECTED{Outpost::EntityId{1}, Outpost::EntityId{2}, Outpos
 TEST_CLASS(OrderFormTests)
 {
 public:
-  // Phase 5 design §7: each field steps both ways round its end; a time of day by the hour and by five minutes, and the
+  // ADR-080 decision 9: each field steps both ways round its end; a time of day by the hour and by five minutes, and the
   // condition from none up to the most command points and back to none.
   TEST_METHOD(StepsEachFieldRoundTheEnd)
   {
@@ -228,7 +228,7 @@ public:
   }
 
   // A scheduled order in words, its time of day on the player's clock; and the line a ship's panel adds for the order it
-  // waits on, or for how many its selection waits on (design §11).
+  // waits on, or for how many its selection waits on (ADR-080 decision 9).
   TEST_METHOD(DescribesAScheduledOrderAndTheOneAShipWaitsOn)
   {
     Outpost::Snapshot world = World();

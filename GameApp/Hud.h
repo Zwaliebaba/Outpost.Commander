@@ -10,13 +10,13 @@ enum class Difficulty : std::uint8_t
   Hard
 };
 
-// The HUD (tasks 3.6 and 4.5, design §9): the Ore stockpile and income, a panel describing the selection with a
+// The HUD (Game §interface.hud): the Ore stockpile and income, a panel describing the selection with a
 // structure's construction, the buttons that build structures and open a structure's windows, and the minimap. It is
 // laid out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer
 // by one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
-// the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore (task 5.1). Over it float
-// the designer, the production queue and the research as windows (ADR-031, Phase 1 design §11, §12). The main menu, and
-// the banner that says how a match ended, are laid out the same way (task 6.2).
+// the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore (ADR-017 decision 9). Over
+// it float the designer, the production queue and the research as windows (ADR-031; Game §interface.windows). The main
+// menu, and the banner that says how a match ended, are laid out the same way (ADR-020 decisions 9 and 10).
 class Hud
 {
 public:
@@ -26,7 +26,7 @@ public:
   static constexpr float FONT_UNITS = 20.0f;
 
   // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: Segoe UI, a text's default
-  // face, and the faces of the owner's mockup (Phase 1 design §11), which the windows and the HUD take (ADR-043): condensed
+  // face, and the faces of the owner's mockup (ADR-030 decision 1), which the windows and the HUD take (ADR-043): condensed
   // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed, with a
   // smaller size for a part card's numbers.
   enum class Typeface : std::uint8_t
@@ -106,19 +106,19 @@ public:
     PickHull,
     PickDrive,
     PickWeapon,
-    // The module, or none (Phase 2 design §10).
+    // The module, or none (ADR-058 decision 7).
     PickModule,
     EditName,
     SaveDesign,
     // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
     SaveAndQueue,
-    // The main menu's and the match end's (task 6.2): start a match against the AI at a difficulty (ADR-065), leave the
-    // game, or leave the match; and the menu's join of a world on another machine (ADR-078).
+    // The main menu's and the match end's (ADR-020 decisions 9 and 10): start a match against the AI at a difficulty
+    // (ADR-065), leave the game, or leave the match; and the menu's join of a world on another machine (ADR-078).
     StartSkirmish,
     Quit,
     BackToMenu,
     JoinWorld,
-    // The designer's window (Phase 1 design §11): open it aimed at a Shipyard, step its target Shipyard, ask for fewer or
+    // The designer's window (ADR-017 decision 7): open it aimed at a Shipyard, step its target Shipyard, ask for fewer or
     // more ships, load a saved design, and scroll the saved designs.
     OpenDesigner,
     PreviousShipyard,
@@ -128,7 +128,7 @@ public:
     LoadDesign,
     PreviousDesigns,
     NextDesigns,
-    // The production and research windows (Phase 1 design §12): open them, step the production window's producer, and
+    // The production and research windows (Game §interface.windows): open them, step the production window's producer, and
     // scroll the research window's topics.
     OpenProduction,
     OpenResearch,
@@ -136,18 +136,18 @@ public:
     NextProducer,
     PreviousTopics,
     NextTopics,
-    // Upgrades the selected structure by one level (Phase 3 design §4, §9).
+    // Upgrades the selected structure by one level (ADR-064 decisions 2 and 7).
     Upgrade,
-    // The designer's retreat is set to one, and a selection of ships is set to one (Phase 4 design §10, §13), each from a
-    // row of three (interface plan 2, task UI4.3).
+    // The designer's retreat is set to one, and a selection of ships is set to one (ADR-075 decision 7), each from a
+    // row of three (ADR-088 decision 3).
     DesignRetreat,
     SetRetreat,
-    // The orders window's form steps a field, and gives its order to the selection (Phase 5 design §7).
+    // The orders window's form steps a field, and gives its order to the selection (ADR-080 decision 9).
     StepOrder,
     GiveOrder,
-    // Selects one of the player's own entities on its own and moves the camera to it (interface plan 2, task UI3.1).
+    // Selects one of the player's own entities on its own and moves the camera to it (ADR-066 decision 1; ADR-088 decision 4).
     Select,
-    // A warship's orders, as their keys give them (interface plan 2, task UI4.2): arm attack-move, holding a sector or a
+    // A warship's orders, as their keys give them (ADR-088 decision 2): arm attack-move, holding a sector or a
     // patrol for the next left-click, or stop the selected ships at once.
     AttackMove,
     HoldSector,
@@ -170,7 +170,7 @@ public:
     WeaponId weapon;
     // A module to pick, or none.
     ModuleId module;
-    // How many ships a Queue asks for (Phase 1 design §11).
+    // How many ships a Queue asks for (ADR-017 decision 7).
     std::uint32_t count = 1;
     // The AI a skirmish is against (ADR-065).
     Difficulty difficulty = Difficulty::Normal;
@@ -192,16 +192,16 @@ public:
     // A designer's pick, drawn lit.
     bool selected = false;
     // Why a button that is not enabled may not be pressed, when the reason is not its cost, shown in place of the cost
-    // (ADR-046).
+    // (ADR-043 decision 4).
     std::string note;
     // How far the work the button started has come, in thousandths, drawn as a bar along its foot from left to right; none
     // while no such work is under way.
     std::optional<std::int32_t> progressPermille;
-    // The key that does what the button does, drawn as a cap at its right end (task 15.2); none for most buttons.
+    // The key that does what the button does, drawn as a cap at its right end (ADR-068 decision 4); none for most buttons.
     std::string key;
   };
 
-  // A component as the designer shows it on its card (Phase 1 design §11): its name, cost and numbers, a note under them,
+  // A component as the designer shows it on its card (ADR-017 decision 7): its name, cost and numbers, a note under them,
   // such as a weapon's splash, whether it is the pick, and while research has yet to unlock it, the line that names the
   // topic that does, "RESEARCH · LARGE HULL". A locked card takes no click.
   struct PartCard
@@ -239,7 +239,7 @@ public:
 
   // One of the picked design's numbers and its bar, measured against the best any design in the game reaches, locked
   // components included, so that the scale holds as research unlocks parts. With a part hovered, the design it would make:
-  // its figure with the change as a signed number, "242 (+44)" (task 15.3).
+  // its figure with the change as a signed number, "242 (+44)" (ADR-017 decision 7).
   struct StatBar
   {
     std::string label;
@@ -260,8 +260,8 @@ public:
     Good
   };
 
-  // Damage per second after armor against one hull (design §9), per ship and per 100 Ore: the hovered part's design while
-  // one is hovered, how it compares to the picked one, and its change per ship as a signed number, "+4.5" (task 15.3).
+  // Damage per second after armor against one hull (ADR-017 decision 7), per ship and per 100 Ore: the hovered part's design
+  // while one is hovered, how it compares to the picked one, and its change per ship as a signed number, "+4.5".
   struct DamageCard
   {
     std::string hull;
@@ -285,7 +285,7 @@ public:
     Action action;
   };
 
-  // The designer's window, after the owner's mockup (Phase 1 design §11, GameDesign/Mockups/ShipDesigner.png).
+  // The designer's window, after the owner's mockup (Game §interface.windows.designer; Docs/Mockups/ShipDesigner.png).
   struct DesignerPanel
   {
     // The target Shipyard, such as "SHIPYARD 01", or "NO SHIPYARD"; its queue's length, the ships it has built, and the
@@ -302,12 +302,12 @@ public:
     // SAVE for a new design, SAVED when the name and the parts are a saved design; RENAME for a saved design's new name.
     Button save;
     Button rename;
-    // The design's retreat, drawn as a row of three, its setting lit (Phase 4 design §10; interface plan 2, task UI4.3).
+    // The design's retreat, drawn as a row of three, its setting lit (ADR-088 decision 3).
     RetreatThreshold retreat = DEFAULT_RETREAT;
     // The saved designs, and the first shown of those that do not all fit.
     std::vector<DesignChip> chips;
     std::size_t firstChip = 0;
-    // Hull, drive, weapon and module (Phase 2 design §10).
+    // Hull, drive, weapon and module (ADR-058 decision 7).
     std::array<SlotRow, 4> slots;
     std::vector<StatBar> bars;
     std::vector<DamageCard> damage;
@@ -331,11 +331,11 @@ public:
     bool front = false;
     std::int32_t permille = 0;
     bool waiting = false;
-    // A waiting warship's wait is for its player's fleet cap, not for Ore (Phase 4 design §5).
+    // A waiting warship's wait is for its player's fleet cap, not for Ore (ADR-071 decision 4).
     bool capped = false;
   };
 
-  // How a design does against one hull, rated as the designer rates its damage (Phase 1 design §11): the hull's initial,
+  // How a design does against one hull, rated as the designer rates its damage (ADR-017 decision 7): the hull's initial,
   // and the rating.
   struct HullRating
   {
@@ -357,7 +357,7 @@ public:
     std::vector<HullRating> strengths;
   };
 
-  // The production window (Phase 1 design §12; owner, 2026-10-03): the producer it shows, such as "COMMAND STATION" or
+  // The production window (ADR-043 decision 6; owner, 2026-10-03): the producer it shows, such as "COMMAND STATION" or
   // "SHIPYARD 02", whether there are others to step to, its queue, and a button for each thing it builds: a Constructor
   // at the Command Station, each saved design at a Shipyard. With no producer, a line saying how to get one.
   struct ProductionPanel
@@ -371,9 +371,9 @@ public:
     std::string hint;
   };
 
-  // A research topic not researched or queued yet, as the research window shows it (design §8): what it does, its cost,
-  // its tier and time, and in capitals what it needs: the Research Lab's level, while its tier is not open (Phase 3 design
-  // §6), and each prerequisite neither researched nor queued. A topic that needs any is dim.
+  // A research topic not researched or queued yet, as the research window shows it (ADR-017 decision 9): what it does, its
+  // cost, its tier and time, and in capitals what it needs: the Research Lab's level, while its tier is not open
+  // (ADR-033 decision 5), and each prerequisite neither researched nor queued. A topic that needs any is dim.
   struct TopicCard
   {
     std::string name;
@@ -386,8 +386,8 @@ public:
     std::int32_t tier = 1;
   };
 
-  // The research window (Phase 1 design §12): the player's Research Lab, such as "RESEARCH LAB" or "NO RESEARCH LAB", its
-  // queue, and the topics, tier by tier, of which TOPICS_SHOWN are shown from firstTopic.
+  // The research window (Game §interface.windows.research): the player's Research Lab, such as "RESEARCH LAB" or
+  // "NO RESEARCH LAB", its queue, and the topics, tier by tier, of which TOPICS_SHOWN are shown from firstTopic.
   struct ResearchPanel
   {
     std::string lab;
@@ -419,10 +419,10 @@ public:
     float radiusMeters = 0.0f;
     Side side = Side::Neutral;
     EntityKind kind = EntityKind::Ship;
-    // An ore asteroid that has run out, as far as the player knows: drawn darker (Phase 1 design §8).
+    // An ore asteroid that has run out, as far as the player knows: drawn darker (ADR-035 decision 5).
     bool dry = false;
     // A structure or derelict the player only remembers (ADR-024): drawn over the fog as a cross, so that it differs from
-    // what is seen by its shape as well as from an ore asteroid's outline (interface plan 2, task UI1.2).
+    // what is seen by its shape as well as from an ore asteroid's outline (ADR-081 decision 4).
     bool remembered = false;
   };
 
@@ -436,14 +436,14 @@ public:
     float maxZMeters = 0.0f;
     Side side = Side::Neutral;
     bool suppressed = false;
-    // Cut off from its holder's home, which its outline's dashes say (interface plan 2, task UI1.4).
+    // Cut off from its holder's home, which its outline's dashes say (ADR-081 decision 7).
     bool cutOff = false;
     // Whether the player is placing a Relay and could claim the sector's node now, by the Relay ghost's rule (CanClaim).
     bool claimable = false;
   };
 
-  // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8). With them,
-  // how many the player's Command Station lets it hold (Phase 3 design §7), shown against its own; zero for none.
+  // How many nodes each side holds, of how many the map has, and each side's tickets (ADR-057 decision 8). With them,
+  // how many the player's Command Station lets it hold (ADR-064 decision 11), shown against its own; zero for none.
   struct Territory
   {
     std::int32_t ownNodes = 0;
@@ -453,7 +453,7 @@ public:
     std::optional<std::int32_t> ownTickets;
     std::optional<std::int32_t> enemyTickets;
     // With the tickets, who the drain takes them from, how fast, and when they run out, "Enemy -20 a minute · out in 32:06",
-    // or "No drain" while both hold as many nodes; a warning chip when it is the player's (interface plan 2, task UI3.3).
+    // or "No drain" while both hold as many nodes; a warning chip when it is the player's (ADR-057 decision 8).
     std::string drain;
     bool drainWarns = false;
   };
@@ -480,7 +480,7 @@ public:
     friend bool operator==(const StatusRun&, const StatusRun&) = default;
   };
 
-  // A status line's bar (interface plan 2, task UI3.2): the share of it filled, from 0 to 1, and the figure at its end, such
+  // A status line's bar (ADR-066 decision 3): the share of it filled, from 0 to 1, and the figure at its end, such
   // as "+3" queued or "29 / 30". Under its line's words, the width of the panel, or beside them, from their end.
   struct StatusBar
   {
@@ -513,7 +513,7 @@ public:
     OrderField field = OrderField::Trigger;
   };
 
-  // The orders window (Phase 5 design §7, §11, ADR-080): the seat's scheduled orders, the first ORDERS_SHOWN of them, each
+  // The orders window (ADR-080 decision 9): the seat's scheduled orders, the first ORDERS_SHOWN of them, each
   // with how many ships still wait on it, and how many more there are; and the form that gives the selection a new one, its
   // rows, the line that says when it fires, and the button that gives it, with why it cannot when it cannot.
   struct OrdersPanel
@@ -529,7 +529,7 @@ public:
   // The most rows the form has: the trigger, its hour and minute, the action, its sector and its target, and the condition.
   static constexpr std::size_t ORDER_ROWS = 7;
 
-  // What happened while the player was away (Phase 5 design §11): how long the deputy played its seat, and a line for each
+  // What happened while the player was away (ADR-080 decision 7): how long the deputy played its seat, and a line for each
   // of what was built and lost, the sectors gained and lost, and each order that fired.
   struct AwayPanel
   {
@@ -540,14 +540,14 @@ public:
   // The away window's lines at most: built, lost, gained and lost sectors, and every order its report keeps.
   static constexpr std::size_t AWAY_LINES = 4 + AwayReport::REPORTED_ORDERS;
 
-  // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.
+  // How the match ended for the player (ADR-020 decision 9): "Victory", "Defeat" or "Draw", and how long it lasted.
   struct Outcome
   {
     std::string title;
     std::string detail;
   };
 
-  // A selection's retreat, as the row of three under its buttons shows it (interface plan 2, task UI4.3): the first ship's
+  // A selection's retreat, as the row of three under its buttons shows it (ADR-088 decision 3): the first ship's
   // setting, and whether the others differ, which lights none and says MIXED.
   struct RetreatChoice
   {
@@ -555,7 +555,7 @@ public:
     bool mixed = false;
   };
 
-  // A ship's own bar under a selection of two to SHIP_BARS_MOST ships (interface plan 2, task UI4.5): the ship a click on
+  // A ship's own bar under a selection of two to SHIP_BARS_MOST ships (ADR-088 decision 4): the ship a click on
   // it selects alone, the share of its hit points it has left, and whether it is going back to be repaired, which its
   // outline marks.
   struct ShipBar
@@ -567,10 +567,10 @@ public:
 
   static constexpr std::size_t SHIP_BARS_MOST = 24;
 
-  // The bars over an entity on the screen (interface plan 2, task UI4.1): the point they stand a little above, the top of the
+  // The bars over an entity on the screen (ADR-088 decision 5): the point they stand a little above, the top of the
   // entity's model on the screen in its column, which GameClient finds with the camera, in back-buffer pixels; the share of
   // hit points left, while the health bar shows; the share built, while the build bar shows; and their back's color, the
-  // side's darkened (ADR-028 decision 7).
+  // side's darkened.
   struct EntityBar
   {
     DirectX::XMFLOAT2 footPixels{};
@@ -586,12 +586,12 @@ public:
     std::int32_t oreIncomeHundredthsPerSecond = 0;
     // The selection panel's lines, first to last; none when nothing is selected. With them, under the lines, a bar for
     // each ship of a selection of two to SHIP_BARS_MOST, or else the share of its hit points the whole selection has
-    // left, for one bar (ADR-046).
+    // left, for one bar (ADR-088 decision 4).
     std::vector<std::string> selection;
     std::optional<float> selectionHealth;
     std::vector<ShipBar> shipBars;
     std::vector<Button> buttons;
-    // The selection's retreat, under its buttons, while it holds a ship (interface plan 2, task UI4.3).
+    // The selection's retreat, under its buttons, while it holds a ship (ADR-088 decision 3).
     std::optional<RetreatChoice> retreat;
     // A line at the top while a structure's placement is armed.
     std::string hint;
@@ -599,15 +599,15 @@ public:
     // Shipyards' and the fleet's once the first Shipyard is finished.
     std::vector<StatusLine> status;
     // The match's research topics' names, which the column under the Ore is made wide enough for, so that its edge stands
-    // still whatever the Lab researches (interface plan 2, task UI3.2).
+    // still whatever the Lab researches (ADR-066 decision 3).
     std::vector<std::string> researchNames;
     std::optional<DesignerPanel> designer;
     // The production and research windows' content, while they are open; GameClient fills them.
     std::optional<ProductionPanel> production;
     std::optional<ResearchPanel> laboratory;
-    // Whether the Controls window is open (task 16.4); its lines are KeyBindings'.
+    // Whether the Controls window is open (ADR-068 decision 4); its lines are KeyBindings'.
     bool controls = false;
-    // The orders window's content and the away window's, while they are open (Phase 5 design §11); GameClient fills them.
+    // The orders window's content and the away window's, while they are open (ADR-080 decision 9); GameClient fills them.
     std::optional<OrdersPanel> orders;
     std::optional<AwayPanel> away;
     // No minimap when the map's size is not known.
@@ -625,7 +625,7 @@ public:
     std::optional<Outcome> outcome;
     // Where the match runs; GameClient fills it (ADR-086).
     std::optional<Connection> connection;
-    // The bars over the entities that show one; GameClient fills them (interface plan 2, task UI4.1).
+    // The bars over the entities that show one; GameClient fills them (ADR-088 decision 5).
     std::vector<EntityBar> entityBars;
   };
 
@@ -729,7 +729,7 @@ public:
     std::vector<SpriteMark> sprites;
     // Back to front, the order they are drawn in.
     std::vector<Window> windows;
-    // The bars over the entities, drawn before every layer, so under every panel and window (interface plan 2, task UI4.1).
+    // The bars over the entities, drawn before every layer, so under every panel and window (ADR-088 decision 5).
     // They take no click and cover nothing, so that a click on one is the world's.
     std::vector<Rect> bars;
 
@@ -767,7 +767,7 @@ public:
   // _hovered is the button under the pointer, and a part's previews the design it would make.
   // _ticksPerSecond is the server's rate, which tells how long ago a remembered structure was last seen; with none, its
   // age is not told. _armed is the order the controls have armed for the next left-click, AttackMove, HoldSector or
-  // Patrol, whose button is lit (interface plan 2, task UI4.2). With _buildFolded, the Constructors' structures are one
+  // Patrol, whose button is lit (ADR-088 decision 2). With _buildFolded, the Constructors' structures are one
   // Build button (ADR-088).
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
@@ -775,11 +775,11 @@ public:
                                         std::optional<ActionKind> _armed = std::nullopt, bool _buildFolded = false);
 
   // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
-  // (Phase 1 design §12).
+  // (Game §interface.windows.production).
   [[nodiscard]] static ProductionPanel DescribeProduction(const Snapshot& _newest, const EntityView* _producer);
 
   // The research window's content: the player's Research Lab among _entities, its queue, and the topics from _firstTopic
-  // (Phase 1 design §12).
+  // (Game §interface.windows.research).
   [[nodiscard]] static ResearchPanel DescribeResearch(const Snapshot& _newest, std::span<const EntityView> _entities,
                                                       std::size_t _firstTopic = 0);
 
@@ -787,34 +787,34 @@ public:
   // first, nor past where the last row is shown.
   [[nodiscard]] static std::size_t StepTopics(std::size_t _firstTopic, int _step, std::size_t _topics) noexcept;
 
-  // The orders window's content (Phase 5 design §7): _newest's scheduled orders, and _form's rows for the ships of _selected
+  // The orders window's content (ADR-080 decision 9): _newest's scheduled orders, and _form's rows for the ships of _selected
   // among _entities, its time of day read on _clock and counted from _now.
   [[nodiscard]] static OrdersPanel DescribeOrders(const Snapshot& _newest, std::span<const EntityView> _entities,
                                                   std::span<const EntityId> _selected, const OrderForm& _form, const PlayerClock& _clock,
                                                   std::chrono::sys_seconds _now);
 
-  // The away window's content (design §11): _report, which reached the player with the snapshot of _untilTick, its time
+  // The away window's content (ADR-080 decision 9): _report, which reached the player with the snapshot of _untilTick, its time
   // counted at _ticksPerSecond and its sectors named from _newest.
   [[nodiscard]] static AwayPanel DescribeAway(const Snapshot& _newest, const AwayReport& _report, std::uint64_t _untilTick,
                                               std::uint32_t _ticksPerSecond);
 
-  // What a derelict holds, as the hint under the pointer shows it (Phase 4 design §9, §13): its Ore, the topic whose time
+  // What a derelict holds, as the hint under the pointer shows it (ADR-074 decision 10): its Ore, the topic whose time
   // it recovers, if any, and how far its salvage has come; and, for one the player only remembers, how long ago it was
   // last seen, at _ticksPerSecond.
   [[nodiscard]] static std::string DescribeDerelict(const Snapshot& _newest, const EntityView& _derelict, std::uint32_t _ticksPerSecond);
 
-  // A structure the player only remembers, as the hint under the pointer shows it (interface plan 2, task UI1.2): what it
+  // A structure the player only remembers, as the hint under the pointer shows it (ADR-081 decision 4): what it
   // is, how long ago it was last seen at _ticksPerSecond, and how far it was built if it was not finished.
   [[nodiscard]] static std::string DescribeMemory(const Snapshot& _newest, const EntityView& _structure, std::uint32_t _ticksPerSecond);
 
   // The bars over _entity, standing on _footPixels with a back of _back: its health while it is hurt, or whole while _every
-  // is held (ADR-047), and its build while it is unfinished; nothing when neither shows, or when the player only remembers
-  // it, since its hit points and its building are as they were when it was seen (interface plan 2, task UI1.2).
+  // is held (ADR-088 decision 5), and its build while it is unfinished; nothing when neither shows, or when the player only
+  // remembers it, since its hit points and its building are as they were when it was seen (ADR-081 decision 4).
   [[nodiscard]] static std::optional<EntityBar> BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels,
                                                         const DirectX::XMFLOAT4& _back, bool _every) noexcept;
 
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs. In a world,
-  // which does not end, when the player's seat restarts after its loss (Phase 5 design §8).
+  // which does not end, when the player's seat restarts after its loss (ADR-084 decision 7).
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
 
   // A dedicated server's address as the tag in the top-right corner writes it (ADR-086): _host and _port, "203.0.113.5:4433",
@@ -831,8 +831,8 @@ public:
 
   // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, a notice in the
   // warning's color when _state has one, and buttons to start a skirmish against the AI, to join a world when _state
-  // offers one, and to quit (task 6.2). _factor is the interface's own scale (ADR-070). The plain menu is an overload rather
-  // than a default argument, which could not use MenuState's member initializers before Hud is complete.
+  // offers one, and to quit (ADR-020 decision 10). _factor is the interface's own scale (ADR-070). The plain menu is an
+  // overload rather than a default argument, which could not use MenuState's member initializers before Hud is complete.
   [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                                       float _factor = 1.0f)
   {
@@ -845,7 +845,7 @@ public:
   // size's scale. _view is the ground the camera shows, its corners in order, outlined on the minimap; empty when the
   // camera sees past the horizon. The floating windows (ADR-031) are those _windows has open, in its order and where it
   // left them; without a manager, every window the content has, at its default place. _hovered is the action under the
-  // pointer, which the HUD's button and status line that take it are lit for (interface plan 2, task UI4.4).
+  // pointer, which the HUD's button and status line that take it are lit for (ADR-088 decision 1).
   [[nodiscard]] static Layout Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels,
                                   std::uint32_t _heightPixels, std::span<const PlanePosition> _view = {},
                                   const WindowManager* _windows = nullptr, float _factor = 1.0f,
