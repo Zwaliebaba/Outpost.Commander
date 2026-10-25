@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sides</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 03</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Sides</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">Human and Tarkan with their own meshes; Pirate on Tarkan's meshes in its own color; Wreck in grey. Colors come from Models.json.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>Models.json</code> <code>A5 Sides</code> <code>A6 Sets and colors</code> <code>A7 Side colors</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The four sides and the rocks</div><div style="padding:20px 24px 24px 24px"><div class="md"><table><thead><tr><th>Color</th><th>Side</th><th>Value</th><th>Meshes</th><th>Role</th><th>Source</th></tr></thead><tbody><tr><td><span style="display:inline-block;width:40px;height:24px;background:#76ADF9;border:1px solid #2D364B"></span></td><td><strong>Human</strong></td><td><code>#76ADF9</code><br><code>[0.18, 0.42, 0.95]</code> linear</td><td>own (Human)</td><td>player 1 (Models.json:54); the player&#x27;s Terrakin (MVP design §11)</td><td><code>OutpostCommander/Assets/Models.json:5</code></td></tr><tr><td><span style="display:inline-block;width:40px;height:24px;background:#F38961;border:1px solid #2D364B"></span></td><td><strong>Tarkan</strong></td><td><code>#F38961</code><br><code>[0.9, 0.25, 0.12]</code> linear</td><td>own (Tarkan)</td><td>player 2 (Models.json:55); the AI&#x27;s Tarkan High Command (MVP design)</td><td><code>OutpostCommander/Assets/Models.json:20</code></td></tr><tr><td><span style="display:inline-block;width:40px;height:24px;background:#CE81F3;border:1px solid #2D364B"></span></td><td><strong>Pirate</strong></td><td><code>#CE81F3</code><br><code>[0.62, 0.22, 0.9]</code> linear</td><td>Tarkan (Models.json:36 &quot;meshes&quot;: &quot;Tarkan&quot;)</td><td>the pirates (Models.json:57); violet (ADR-073 decision 10)</td><td><code>OutpostCommander/Assets/Models.json:35</code></td></tr><tr><td><span style="display:inline-block;width:40px;height:24px;background:#AAAAAD;border:1px solid #2D364B"></span></td><td><strong>Wreck</strong></td><td><code>#AAAAAD</code><br><code>[0.4, 0.4, 0.42]</code> linear</td><td>Human (Models.json:41 &quot;meshes&quot;: &quot;Human&quot;)</td><td>derelicts (Models.json:58); grey (ADR-074)</td><td><code>OutpostCommander/Assets/Models.json:40</code></td></tr><tr><td><span style="display:inline-block;width:40px;height:24px;background:#A09995;border:1px solid #2D364B"></span></td><td><strong>Asteroids</strong></td><td><code>#A09995</code><br><code>[0.35, 0.32, 0.3]</code> linear</td><td>own (Small/Medium/Large rocks)</td><td>terrain; a field&#x27;s rocks are x FIELD_SHADE 0.7 (SceneShading.h:51, GameClient.cpp:1522)</td><td><code>OutpostCommander/Assets/Models.json:45</code></td></tr></tbody></table></div><div class="md"><p>Side colors are linear RGB in Models.json, read by ModelCatalog (ModelCatalog.h:20-25: "The color is linear and provisional until team colors are decided (design §15)"). hex = sRGB encoding of the value. The derived colors are computed by A5 from the formulas in GameApp/SceneShading.h/.cpp and GameClient.cpp, unlit (before the scene light, fog and bloom). The player-to-set map is absolute by player number: Models.json:53-56 (player 1 Human, player 2 Tarkan), "pirates": "Pirate" (:57), "derelicts": "Wreck" (:58).</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Every model of each side</div><div style="padding:20px 24px 24px 24px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px"><div><figure style="margin:0 0 18px 0"><img src="/_blob/1ac85e225be5d2b41f9f0fe5d756249a" alt="Human models" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Human</figcaption></figure></div><div><figure style="margin:0 0 18px 0"><img src="/_blob/02d4a772826522f21c8e5b0b10e5ad00" alt="Tarkan models" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Tarkan</figcaption></figure></div><div><figure style="margin:0 0 18px 0"><img src="/_blob/087bf52940f052312a112d3e34e92d82" alt="Pirate models" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Pirate</figcaption></figure></div><div><figure style="margin:0 0 18px 0"><img src="/_blob/2a64a0dc1eef4481ff0725d1aa8953b7" alt="Wreck models" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Wreck</figcaption></figure></div></div><p class="md" style="color:#8193AD">Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.</p></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Sides as A5 resolved them</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>These are the Models.json sets. The value is linear (<code>ModelCatalog.h:20-21</code>: "The color is linear and provisional until team colors are decided"). The hex is the sRGB encoding of the value, before light, fog and glow.</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Linear</th>
+<th>sRGB hex</th>
+<th>Meshes</th>
+<th>Who</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Human</td>
+<td>0.18, 0.42, 0.95</td>
+<td><code>#76ADF9</code></td>
+<td>own</td>
+<td>player 1 (Models.json:54)</td>
+<td>Models.json:5</td>
+</tr>
+<tr>
+<td>Tarkan</td>
+<td>0.90, 0.25, 0.12</td>
+<td><code>#F38961</code></td>
+<td>own</td>
+<td>player 2 (Models.json:55)</td>
+<td>Models.json:20</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>0.62, 0.22, 0.90</td>
+<td><code>#CE81F3</code></td>
+<td><strong>Tarkan's</strong> (Models.json:36)</td>
+<td><code>"pirates"</code> (Models.json:57)</td>
+<td>Models.json:35</td>
+</tr>
+<tr>
+<td>Wreck</td>
+<td>0.40, 0.40, 0.42</td>
+<td><code>#AAAAAD</code></td>
+<td><strong>Human's</strong> (Models.json:41)</td>
+<td><code>"derelicts"</code> (Models.json:58)</td>
+<td>Models.json:40</td>
+</tr>
+<tr>
+<td>Asteroids</td>
+<td>0.35, 0.32, 0.30</td>
+<td><code>#A09995</code></td>
+<td>own rocks</td>
+<td>terrain</td>
+<td>Models.json:45</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Derived from a side's color</strong>, unlit and computed by A5 from the formulas cited. tokens.json holds every value.</p>
+<table>
+<thead>
+<tr>
+<th>Recipe (source)</th>
+<th>Human</th>
+<th>Tarkan</th>
+<th>Pirate</th>
+<th>Wreck</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bar back ×0.3 (GameClient.cpp:98,727; ADR-028 d7)</td>
+<td><code>#426391</code></td>
+<td><code>#8E4D35</code></td>
+<td><code>#77498E</code></td>
+<td>— (fallback <code>HEALTH_BACK_COLOR</code>)</td>
+</tr>
+<tr>
+<td>Ship face ×<code>FILL_SHADE</code> 0.3 (SceneShading.h:47)</td>
+<td><code>#426391</code></td>
+<td><code>#8E4D35</code></td>
+<td><code>#77498E</code></td>
+<td><code>#616163</code></td>
+</tr>
+<tr>
+<td>Ship line <code>EdgeColor</code>(2.0, 0.35) (SceneShading.h:44-45)</td>
+<td><code>#B7D1FF</code></td>
+<td><code>#FFC1B0</code></td>
+<td><code>#E7BDFF</code></td>
+<td><code>#E9E9EC</code></td>
+</tr>
+<tr>
+<td>Structure face: <code>TowardGray</code> 0.35, then ×0.22 (SceneShading.h:55-56)</td>
+<td><code>#445572</code></td>
+<td><code>#6F483D</code></td>
+<td><code>#60456E</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Structure line (GameClient.cpp:1561,1577)</td>
+<td><code>#C7DBFF</code></td>
+<td><code>#FFCEC2</code></td>
+<td><code>#EBCBFF</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Footprint ring at rest ×0.35 (GameClient.cpp:61,1394); lit = ship line</td>
+<td><code>#476B9C</code></td>
+<td><code>#98533A</code></td>
+<td><code>#804E98</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Sector outline in the world ×0.5 (GameClient.cpp:110,1226)</td>
+<td><code>#557EB7</code></td>
+<td><code>#B36345</code></td>
+<td><code>#975DB3</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Beam, 35% to white (GameClient.cpp:75,1757)</td>
+<td><code>#B6CFFB</code></td>
+<td><code>#F8BEAF</code></td>
+<td><code>#E1BAF8</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Memory: <code>TowardGray</code> 0.5, then ×0.6 (GameClient.cpp:119-120,1195)</td>
+<td><code>#7488AB</code></td>
+<td><code>#A6786C</code></td>
+<td><code>#9373A5</code></td>
+<td><code>#878788</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The other derived colors:</strong></p>
+<ul>
+<li><strong>Rocks:</strong> the face is ×0.15 <code>#413E3C</code>, and the line is <code>EdgeColor</code>(1.35, 0) <code>#B7B0AB</code> (SceneShading.h:46,50). A field's rocks take ×0.7 first (SceneShading.h:51, GameClient.cpp:1522).</li>
+<li><strong>Tints:</strong> a Relay is ×1.6 on the ResearchLab model, and a RepairBay ×0.6 on the Shipyard model (Models.json:70-71). A structure being built is darker, by ×(0.35 + 0.65 × the share built) (GameClient.cpp:101,342-349).</li>
+<li><strong>Exhausts</strong> (Models.json:76-80; MVP §11 says "Ion is cyan, Fusion magenta"):</li>
+<li>Ion <code>#95EDFF</code></li>
+<li>Fusion <code>#FFA0ED</code></li>
+<li>Pulse <code>#C4FF95</code></li>
+<li>the Constructor <code>#E7E7E1</code></li>
+</ul>
+<p><strong>The HUD does not read Models.json.</strong></p>
+<ul>
+<li>Its minimap and territory figures use <code>OWN_</code>, <code>ENEMY_</code>, <code>PIRATE_</code> and <code>DERELICT_COLOR</code>, which are relative to the viewer.</li>
+<li>The scene's sets are absolute by player number (<code>ModelCatalog.cpp:304-316</code>).</li>
+<li>The two families differ in value for every side. Own <code>#A0D3FF</code> is not the same blue as Human <code>#76ADF9</code>. See Open.</li>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Sets and colors in the renders</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Colors are linear, as in the data; <code>#hex</code> is the sRGB the scene target shows for that linear color at full light. Face and line colors are before the light (the light multiplies them).</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th><code>Models.json</code> color (linear)</th>
+<th>Source</th>
+<th>Meshes</th>
+<th>Drawn for</th>
+<th>Ship faces</th>
+<th>Ship lines</th>
+<th>Structure faces</th>
+<th>Structure lines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Human</td>
+<td>(0.18, 0.42, 0.95) #76adf9</td>
+<td><code>Models.json:5</code> <code>sets[0].color</code></td>
+<td>Human</td>
+<td>player 1 (<code>Models.json: players[0]</code>)</td>
+<td>(0.054, 0.126, 0.285) #426391</td>
+<td>(0.473, 0.637, 1.000) #b7d1ff</td>
+<td>(0.057, 0.091, 0.167) #445572</td>
+<td>(0.572, 0.705, 1.000) #c7dbff</td>
+</tr>
+<tr>
+<td>Tarkan</td>
+<td>(0.90, 0.25, 0.12) #f38961</td>
+<td><code>Models.json:20</code> <code>sets[1].color</code></td>
+<td>Tarkan</td>
+<td>player 2 (<code>Models.json: players[1]</code>)</td>
+<td>(0.270, 0.075, 0.036) #8e4d35</td>
+<td>(1.000, 0.531, 0.437) #ffc1b0</td>
+<td>(0.158, 0.065, 0.046) #6f483d</td>
+<td>(1.000, 0.617, 0.541) #ffcec2</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>(0.62, 0.22, 0.90) #ce81f3</td>
+<td><code>Models.json:35</code> <code>sets[2].color</code></td>
+<td>Tarkan's (<code>"meshes": "Tarkan"</code>, line 36)</td>
+<td>the pirates (<code>Models.json: pirates</code>)</td>
+<td>(0.186, 0.066, 0.270) #77498e</td>
+<td>(0.798, 0.509, 1.000) #e7bdff</td>
+<td>(0.116, 0.059, 0.156) #60456e</td>
+<td>(0.833, 0.595, 1.000) #ebcbff</td>
+</tr>
+<tr>
+<td>Wreck</td>
+<td>(0.40, 0.40, 0.42) #aaaaad</td>
+<td><code>Models.json:40</code> <code>sets[3].color</code></td>
+<td>Human's (<code>"meshes": "Human"</code>, line 41)</td>
+<td>derelicts (<code>Models.json: derelicts</code>), by hull model only</td>
+<td>(0.120, 0.120, 0.126) #616163</td>
+<td>(0.814, 0.814, 0.840) #e9e9ec</td>
+<td>not drawn (derelicts are hulls)</td>
+<td>not drawn (derelicts are hulls)</td>
+</tr>
+<tr>
+<td>Asteroids</td>
+<td>(0.35, 0.32, 0.30) #a09995</td>
+<td><code>Models.json:45</code> <code>sets[4].color</code></td>
+<td>Asteroids</td>
+<td>asteroids and fields (<code>GameClient.cpp:41</code> <code>ASTEROID_SET</code>)</td>
+<td>rock: (0.052, 0.048, 0.045) #413e3c</td>
+<td>rock: (0.472, 0.432, 0.405) #b7b0ab</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Checks against the ADRs: the Human ship line (0.473, 0.637, 1.000) and the Tarkan ship line (1.000, 0.531, 0.437) match ADR-040 decision 1's (0.47, 0.64, 1.0) and (1.0, 0.53, 0.44). Tinted structures: Relay = the Research Lab's L1 mesh at tint 1.6 (<code>Models.json:70</code>), Repair Bay = the Shipyard's L1 mesh at tint 0.6 (<code>Models.json:71</code>); the tint multiplies the set's color before <code>TowardGray</code> (<code>GameClient.cpp:344-349, 1577</code>), so a Human Relay's color is (0.288, 0.672, 1.000) before graying, its blue clamped. Each has no levels in <code>Tuning.json</code> (<code>structures[5]</code>, <code>structures[6]</code>), so it draws its model's L1 (<code>DrawnLevel</code>, <code>GameApp/ModelCatalog.h:158-161</code>).</p>
+<p><strong>Which models each set renders, and why:</strong></p>
+<ul>
+<li><strong>Human, Tarkan</strong>: all 9 models of the set, the three levelled ones as 5 levels each (21 meshes), plus <strong>Relay</strong> and <strong>Repair Bay</strong> (tinted, above): 23 entries each.</li>
+<li><strong>Pirate</strong>: Tarkan's 21 meshes in the Pirate violet, since <code>"meshes": "Tarkan"</code> gives the set all of Tarkan's models (<code>ModelCatalog.cpp:223-230</code>) and <code>LoadClientAssets</code> loads every one. <em>In play</em> the simulation spawns pirates only as Defense Platforms (<code>GameLogic/Simulation.cpp:843</code>) and ships (<code>Simulation.cpp:868</code>) of hull 1 and hull 2 (<code>Tuning.json</code> <code>pirates.outposts[].ships</code>); no other spawn site in <code>GameLogic/</code> gives <code>PIRATES</code> anything, so the pirates' Command Station, Shipyard, Research Lab, Mining Rig, Large hull and Constructor are loaded but never drawn in a match. No Relay or Repair Bay for Pirate (only players build them).</li>
+<li><strong>Wreck</strong>: only the three hulls, Small, Medium, Large, from the Human meshes in gray: a derelict is drawn by its hull's model (<code>GameClient.cpp:1628-1639</code>, ADR-074, ADR-011 decision 3), although <code>"meshes": "Human"</code> gives the Wreck set all 21 Human meshes (and loads them). A derelict is drawn with ship colors (<code>FILL_SHADE</code>), scaled to <code>2 × radius / lengthMeters</code>.</li>
+<li><strong>Asteroids</strong>: Small, Medium, Large, in the ore-asteroid look.</li>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Side colors in the world</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: a side's color is its model set's color in <code>Models.json</code>; Human and Tarkan have their own meshes, Pirate borrows Tarkan's meshes in violet, Wreck borrows Human's in gray (ADR-011 §Decision 3, ADR-073).</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Color</th>
+<th>Meshes</th>
+<th>Who</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Human</td>
+<td>(0.18, 0.42, 0.95) blue</td>
+<td>own</td>
+<td>player 1</td>
+<td><code>Models.json:4-5,54</code></td>
+</tr>
+<tr>
+<td>Tarkan</td>
+<td>(0.9, 0.25, 0.12) orange-red</td>
+<td>own</td>
+<td>player 2</td>
+<td><code>Models.json:19-20,55</code></td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>(0.62, 0.22, 0.9) violet</td>
+<td>Tarkan's</td>
+<td>pirates</td>
+<td><code>Models.json:34-36,57</code></td>
+</tr>
+<tr>
+<td>Wreck</td>
+<td>(0.4, 0.4, 0.42) gray</td>
+<td>Human's, by hull model</td>
+<td>derelicts</td>
+<td><code>Models.json:39-41,58</code></td>
+</tr>
+<tr>
+<td>Asteroids</td>
+<td>(0.35, 0.32, 0.3) gray-brown</td>
+<td>own (Small/Medium/Large rocks)</td>
+<td>terrain</td>
+<td><code>Models.json:44-50</code></td>
+</tr>
+<tr>
+<td>Relay</td>
+<td>Research Lab model, tint 1.6 (brighter, clamped at 1)</td>
+<td>—</td>
+<td>—</td>
+<td><code>Models.json:70</code>; <code>GameClient.cpp:343-349</code></td>
+</tr>
+<tr>
+<td>Repair Bay</td>
+<td>Shipyard model, tint 0.6 (darker)</td>
+<td>—</td>
+<td>—</td>
+<td><code>Models.json:71</code></td>
+</tr>
+<tr>
+<td>Max tint</td>
+<td>2.0</td>
+<td>—</td>
+<td>—</td>
+<td><code>ModelCatalog.cpp:146-147</code></td>
+</tr>
+</tbody>
+</table>
+<p>Color keys: <code>Models.json: sets[name=Human].color</code>, <code>sets[name=Tarkan].color</code>, <code>sets[name=Pirate].color</code>, <code>sets[name=Wreck].color</code>, <code>sets[name=Asteroids].color</code>.</p>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5113}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

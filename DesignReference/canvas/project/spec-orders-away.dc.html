@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Windows: Orders and Away</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Orders</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> The seat's scheduled orders, and the form that gives the selection a new one: one trigger, one action and at most one condition (Phase 5 design §7, §11; ADR-080).</p>
+<p><strong>Geometry</strong> (Hud.cpp:1931-1980). The window is a fixed 640 × 560, so it does not jump as the form changes. Its default place is <code>1264, 178</code>.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect (window units)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>orders.titleLabel</td>
+<td>text, Label, tracking 2</td>
+<td><code>SCHEDULED ORDERS</code></td>
+<td>—</td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>24, 11</td>
+<td>Hud.cpp:1952</td>
+</tr>
+<tr>
+<td>orders.waiting.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>WAITING</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, 51</td>
+<td>Hud.cpp:1955</td>
+</tr>
+<tr>
+<td>orders.none</td>
+<td>text, Name</td>
+<td><code>None</code></td>
+<td>no scheduled orders</td>
+<td><code>DIM_TEXT_COLOR</code></td>
+<td>24, 70</td>
+<td>Hud.cpp:1957-1958</td>
+</tr>
+<tr>
+<td>orders.scheduled</td>
+<td>text, Name, up to 6, cut at 592</td>
+<td><code>{When}, {action}[, unless over {n} enemy CP] · {n} ship(s)</code>. When is <code>At {hh:mm}</code>, <code>When enemies enter {S}</code>, <code>When the Relay in {S} is threatened</code> or <code>When a Mining Rig in {S} is lost</code> (first letter raised); the action is as Alerts.cpp:12-29</td>
+<td><code>Snapshot::scheduled</code> (Snapshot.h:441-447, 533); <code>PlayerClock</code></td>
+<td><code>TEXT_COLOR</code></td>
+<td>24, 70 + 22·i</td>
+<td>Hud.cpp:1959-1963, 2231-2241; OrderForm.cpp:291-315</td>
+</tr>
+<tr>
+<td>orders.more</td>
+<td>text, Name</td>
+<td><code>and {n} more</code></td>
+<td>—</td>
+<td><code>DIM_TEXT_COLOR</code></td>
+<td>after the list</td>
+<td>Hud.cpp:1964-1965</td>
+</tr>
+<tr>
+<td>orders.form.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>NEW ORDER FOR THE SELECTION</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, 247</td>
+<td>Hud.cpp:1967</td>
+</tr>
+<tr>
+<td>orders.row{r}.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>WHEN</code>, then <code>HOUR</code> and <code>MINUTE</code> (time of day) or <code>WATCHING</code> (an event); then <code>DO</code>, <code>WHERE</code> (maps with sectors), <code>TARGET</code> (Attack or Build a Mining Rig), <code>UNLESS</code></td>
+<td>—</td>
+<td><code>ROW_LABEL_COLOR</code></td>
+<td>24, 266 + 30·r + 9</td>
+<td>Hud.cpp:1972, 2248-2274</td>
+</tr>
+<tr>
+<td>orders.row{r} value</td>
+<td>stepped: <code>&lt;</code> 24×24, the value in the Name face, <code>&gt;</code>; always enabled</td>
+<td>WHEN: <code>At a time of day</code>, <code>Enemies enter a sector</code>, <code>A Relay is threatened</code>, <code>A Mining Rig is lost</code>. HOUR <code>{hh}</code> (00-23). MINUTE <code>{mm}</code> (by 5). WATCHING <code>{sector}</code> or <code>None held</code>. DO: <code>Move</code>, <code>Attack-move</code>, <code>Attack</code>, <code>Hold the sector</code>, <code>Patrol</code>, <code>Build a Mining Rig</code>. WHERE <code>{sector}</code> or <code>None</code>. TARGET <code>{name} ({i} of {n})</code> or <code>None there</code>, where a name is <code>{Structure}</code>, <code>{Hull} ship</code>, <code>Pirate {…}</code>, or <code>Asteroid, Ore {n}</code>. UNLESS <code>Over {n} enemy CP there</code> (0-60 by 2) or <code>Never</code></td>
+<td><code>OrderForm</code> (OrderForm.h:23-112; Step OrderForm.cpp:83-125; NameOf 233-289); defaults 02:00, Attack-move (OrderForm.h:103-108)</td>
+<td><code>TEXT_COLOR</code></td>
+<td><code>&lt;</code> at 150, row + 3; value at 182, row + 6 (cut at 402); <code>&gt;</code> after</td>
+<td>Hud.cpp:1973-1976</td>
+</tr>
+<tr>
+<td>orders.fires</td>
+<td>text, Name</td>
+<td><code>Fires at {hh:mm} on your clock, in {h:mm:ss}</code>, or <code>Fires once, the first time it happens</code></td>
+<td><code>PlayerClock::NextMoment</code>, <code>Reading</code> (PlayerClock.cpp:16-35)</td>
+<td><code>NUMBERS_COLOR</code></td>
+<td>24, 484</td>
+<td>Hud.cpp:1978, 2276-2283</td>
+</tr>
+<tr>
+<td>orders.give</td>
+<td>button (AddButton)</td>
+<td><code>Give to {n} ship(s)</code>, or <code>Give the order</code> when none can take it; note in place of a cost when dim: <code>SELECT CONSTRUCTORS</code>, <code>SELECT WARSHIPS</code>, <code>NO SECTOR HELD</code>, <code>NO ASTEROID THERE</code>, <code>NO ENEMY SEEN THERE</code> or <code>NO SECTOR</code></td>
+<td><code>GiveOrder</code>; <code>OrderForm::ShipsFor</code>, <code>Missing</code> (OrderForm.cpp:174-205)</td>
+<td>as a HUD button</td>
+<td>24, 514, 592, 34</td>
+<td>Hud.cpp:1979, 2284-2289</td>
+</tr>
+</tbody>
+</table>
+<p><strong>States.</strong>
+- No orders, or up to 6 listed with <code>and {n} more</code> after.
+- The form for a time of day (6 rows), or for an event with a target (6 rows, of the 7 kept).
+- Give enabled, or dim with its reason.</p>
+<p>The selection panel names the scheduled order its ships wait on (§3.8). Layout files: <code>window-orders-time-of-day.json</code>, <code>window-orders-event-disabled.json</code>.</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Away</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> What happened while the deputy played the player's seat (Phase 5 design §11).
+- <strong>Opens itself</strong> with the first snapshot that carries the report (GameClient.cpp:539-544).
+- <strong>Once closed,</strong> the report is gone (GameClient.cpp:763-765).</p>
+<p><strong>Geometry</strong> (Hud.cpp:1983-2007).
+- <strong>Size.</strong> 600 × (36 + 12 + 30 + 22·n + 12), with n ≤ 20 lines (<code>AWAY_LINES</code> = 4 + 16, Hud.h:539).
+- <strong>Place.</strong> Centred on the screen. Example: n = 6 gives <code>660, 429, 600, 222</code>.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect (window units)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>away.titleLabel</td>
+<td>text, Label, tracking 2</td>
+<td><code>WHILE YOU WERE AWAY</code></td>
+<td>—</td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>24, 11</td>
+<td>Hud.cpp:1997</td>
+</tr>
+<tr>
+<td>away.since</td>
+<td>text, Title, cut at 552</td>
+<td><code>Away for {m:ss}</code> or <code>Away for {h:mm:ss}</code></td>
+<td><code>AwayReport::sinceTick</code>, up to the snapshot's tick (Snapshot.h:454-466)</td>
+<td><code>TEXT_COLOR</code></td>
+<td>24, 48</td>
+<td>Hud.cpp:2000, 2297</td>
+</tr>
+<tr>
+<td>away.line</td>
+<td>text, Name</td>
+<td><code>Built {n ship(s)\|no ships} and {n structure(s)\|no structures}</code>; <code>Lost …</code> likewise; <code>Sectors gained: {A, B}</code>; <code>Sectors lost: {…}</code>; then each fired order, as the alerts write it (Alerts.cpp:32-45)</td>
+<td><code>AwayReport</code> fields</td>
+<td><code>NUMBERS_COLOR</code></td>
+<td>24, 78 + 22·i</td>
+<td>Hud.cpp:2002-2006, 2298-2320</td>
+</tr>
+</tbody>
+</table>
+<p>Layout file: <code>window-away.json</code>.</p>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 2058}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

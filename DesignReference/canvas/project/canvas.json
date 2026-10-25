@@ -1,0 +1,1035 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-25T12:00:00Z"
+ },
+ "title": "Outpost Commander \u2014 Game Design Reference",
+ "launch": {
+  "view": "canvas",
+  "page": "p01"
+ },
+ "pages": [
+  {
+   "id": "p01",
+   "name": "01 Cover"
+  },
+  {
+   "id": "p02",
+   "name": "02 The game"
+  },
+  {
+   "id": "p03",
+   "name": "03 Sides"
+  },
+  {
+   "id": "p04",
+   "name": "04 Economy & territory"
+  },
+  {
+   "id": "p05",
+   "name": "05 Structures"
+  },
+  {
+   "id": "p06",
+   "name": "06 Ships & the Designer"
+  },
+  {
+   "id": "p07",
+   "name": "07 Research"
+  },
+  {
+   "id": "p08",
+   "name": "08 Combat"
+  },
+  {
+   "id": "p09",
+   "name": "09 Orders & automation"
+  },
+  {
+   "id": "p10",
+   "name": "10 AI & difficulty"
+  },
+  {
+   "id": "p11",
+   "name": "11 The persistent world"
+  },
+  {
+   "id": "p12",
+   "name": "12 Visual language"
+  },
+  {
+   "id": "p13",
+   "name": "13 Screens"
+  },
+  {
+   "id": "p14",
+   "name": "14 The battlefield"
+  },
+  {
+   "id": "p15",
+   "name": "15 Asset catalogue"
+  },
+  {
+   "id": "p16",
+   "name": "16 Controls"
+  },
+  {
+   "id": "p17",
+   "name": "17 Open items"
+  }
+ ],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 2298,
+   "title": "Cover",
+   "page": "p01"
+  },
+  "game-pitch.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 2220,
+   "title": "The game: pitch and pillars",
+   "page": "p02"
+  },
+  "game-loops.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 4017,
+   "title": "Match, tick and world loops",
+   "page": "p02"
+  },
+  "glossary-1.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 4852,
+   "title": "Glossary, part 1 of 2",
+   "page": "p02"
+  },
+  "glossary-2.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 4348,
+   "title": "Glossary, part 2 of 2",
+   "page": "p02"
+  },
+  "sides.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 5113,
+   "title": "Sides",
+   "page": "p03"
+  },
+  "economy-ore.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 3310,
+   "title": "Ore, Mining Rigs and depletion",
+   "page": "p04"
+  },
+  "economy-map.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 4043,
+   "title": "The map",
+   "page": "p04"
+  },
+  "economy-territory.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 4889,
+   "title": "Territory, domination and the fleet cap",
+   "page": "p04"
+  },
+  "structures.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 4404,
+   "title": "Structures",
+   "page": "p05"
+  },
+  "structures-levels.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1458,
+   "title": "Structure levels as drawn",
+   "page": "p05"
+  },
+  "ships-parts.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 5570,
+   "title": "Hulls, drives, weapons, modules",
+   "page": "p06"
+  },
+  "ships-designs.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 2808,
+   "title": "Derived stats and starting designs",
+   "page": "p06"
+  },
+  "ships-damage.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 3685,
+   "title": "Damage after armor",
+   "page": "p06"
+  },
+  "research.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 3309,
+   "title": "Research",
+   "page": "p07"
+  },
+  "combat.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 6480,
+   "title": "Combat",
+   "page": "p08"
+  },
+  "combat-effects.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 2914,
+   "title": "Effects that carry information",
+   "page": "p08"
+  },
+  "orders.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 5701,
+   "title": "Selection, commands, standing orders, alerts",
+   "page": "p09"
+  },
+  "orders-scheduled.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 6284,
+   "title": "Scheduled orders, Away, the deputy",
+   "page": "p09"
+  },
+  "ai.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 3541,
+   "title": "AI behavior",
+   "page": "p10"
+  },
+  "ai-difficulty.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 3525,
+   "title": "Easy, Normal, Hard",
+   "page": "p10"
+  },
+  "world.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 3075,
+   "title": "The persistent world",
+   "page": "p11"
+  },
+  "world-state.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 3977,
+   "title": "World state, log and the week",
+   "page": "p11"
+  },
+  "visual-colors.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 4104,
+   "title": "Color tokens",
+   "page": "p12"
+  },
+  "visual-type.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 3383,
+   "title": "Type",
+   "page": "p12"
+  },
+  "visual-components.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 1542,
+   "title": "Components",
+   "page": "p12"
+  },
+  "visual-anatomy-1.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 4572,
+   "title": "Component anatomy, part 1",
+   "page": "p12"
+  },
+  "visual-anatomy-2.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 3507,
+   "title": "Component anatomy, part 2",
+   "page": "p12"
+  },
+  "visual-rules.dc.html": {
+   "x": 0,
+   "y": 4692,
+   "w": 1440,
+   "h": 4971,
+   "title": "Rules, spacing and frame",
+   "page": "p12"
+  },
+  "visual-scale.dc.html": {
+   "x": 1520,
+   "y": 4692,
+   "w": 1440,
+   "h": 3383,
+   "title": "Interface scale and the mockup",
+   "page": "p12"
+  },
+  "screens-flow.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 3936,
+   "title": "Screens: inventory and flow",
+   "page": "p13"
+  },
+  "screen-startup-loading.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 2440,
+   "h": 1137,
+   "title": "Startup: no screen while loading",
+   "page": "p13"
+  },
+  "screen-menu-default.dc.html": {
+   "x": 4040,
+   "y": 0,
+   "w": 2440,
+   "h": 1137,
+   "title": "Main menu, no join file",
+   "page": "p13"
+  },
+  "screen-menu-join-world.dc.html": {
+   "x": 6560,
+   "y": 0,
+   "w": 2440,
+   "h": 1137,
+   "title": "Main menu with a join file in Documents\\Outpost Commander\\Join.json (ADR-078 d9)",
+   "page": "p13"
+  },
+  "screen-menu-connection-lost.dc.html": {
+   "x": 0,
+   "y": 4056,
+   "w": 2440,
+   "h": 1137,
+   "title": "Main menu after a lost connection, saying why (ADR-078 d10)",
+   "page": "p13"
+  },
+  "screen-menu-join-failed.dc.html": {
+   "x": 2520,
+   "y": 4056,
+   "w": 2440,
+   "h": 1137,
+   "title": "Main menu after a join that failed (WinMain.cpp:359-364)",
+   "page": "p13"
+  },
+  "screen-menu-scale-125.dc.html": {
+   "x": 5040,
+   "y": 4056,
+   "w": 2440,
+   "h": 1137,
+   "title": "Main menu at interface factor 125%, the largest the menu reaches on 16:9 (ADR-070)",
+   "page": "p13"
+  },
+  "screen-match-awaiting-first-snapshot.dc.html": {
+   "x": 7560,
+   "y": 4056,
+   "w": 2440,
+   "h": 1137,
+   "title": "A match started, before its first snapshot",
+   "page": "p13"
+  },
+  "screen-hud-match-start.dc.html": {
+   "x": 0,
+   "y": 5313,
+   "w": 2440,
+   "h": 1137,
+   "title": "First snapshot of a Normal skirmish: nothing selected",
+   "page": "p13"
+  },
+  "screen-hud-busy-warships.dc.html": {
+   "x": 2520,
+   "y": 5313,
+   "w": 2440,
+   "h": 1425,
+   "title": "Mid-match: twelve warships of three designs selected, attack-move armed, the pointer over Stop",
+   "page": "p13"
+  },
+  "screen-hud-scale-110.dc.html": {
+   "x": 5040,
+   "y": 5313,
+   "w": 2440,
+   "h": 1334,
+   "title": "The busy state at interface factor 110%, the most a match reaches on 16:9 (ADR-070 Consequences)",
+   "page": "p13"
+  },
+  "screen-hud-constructors.dc.html": {
+   "x": 7560,
+   "y": 5313,
+   "w": 2440,
+   "h": 1137,
+   "title": "Two Constructors selected: build buttons with their costs, and the retreat row",
+   "page": "p13"
+  },
+  "screen-hud-placing-relay.dc.html": {
+   "x": 0,
+   "y": 6858,
+   "w": 2440,
+   "h": 1137,
+   "title": "A Relay's placement armed: the hint, and the sectors it could claim outlined on the minimap",
+   "page": "p13"
+  },
+  "screen-hud-relay-node-cap.dc.html": {
+   "x": 2520,
+   "y": 6858,
+   "w": 2440,
+   "h": 1137,
+   "title": "Placing a Relay at the node cap: the hint says why, and the Relay button says NODE CAP",
+   "page": "p13"
+  },
+  "screen-hud-one-ship.dc.html": {
+   "x": 5040,
+   "y": 6858,
+   "w": 2440,
+   "h": 1137,
+   "title": "One Lancer selected, holding a sector, hurt; Hold sector armed",
+   "page": "p13"
+  },
+  "screen-hud-shipyard-selected.dc.html": {
+   "x": 7560,
+   "y": 6858,
+   "w": 2440,
+   "h": 1137,
+   "title": "A finished Shipyard selected: its work line, its next level and its window buttons with key caps",
+   "page": "p13"
+  },
+  "screen-hud-station-upgrading.dc.html": {
+   "x": 0,
+   "y": 8115,
+   "w": 2440,
+   "h": 1137,
+   "title": "The Command Station selected while its upgrade is built: the button says UPGRADING with its bar",
+   "page": "p13"
+  },
+  "screen-hud-lab-needs-research.dc.html": {
+   "x": 2520,
+   "y": 8115,
+   "w": 2440,
+   "h": 1137,
+   "title": "The Research Lab selected: its next level needs research, so Upgrade says NEEDS RESEARCH",
+   "page": "p13"
+  },
+  "screen-hud-derelict-hint.dc.html": {
+   "x": 5040,
+   "y": 8115,
+   "w": 2440,
+   "h": 1137,
+   "title": "The pointer over a derelict: the hint says what it holds",
+   "page": "p13"
+  },
+  "screen-hud-server-silent.dc.html": {
+   "x": 7560,
+   "y": 8115,
+   "w": 2440,
+   "h": 1137,
+   "title": "A world on a dedicated server whose snapshots stopped 5 s ago",
+   "page": "p13"
+  },
+  "screen-hud-end-victory.dc.html": {
+   "x": 0,
+   "y": 9372,
+   "w": 2440,
+   "h": 1137,
+   "title": "The match's end: Victory by domination, the world running on behind it",
+   "page": "p13"
+  },
+  "screen-hud-end-empire-fallen.dc.html": {
+   "x": 2520,
+   "y": 9372,
+   "w": 2440,
+   "h": 1137,
+   "title": "A world: the player's empire fell, and its seat restarts",
+   "page": "p13"
+  },
+  "screen-window-designer-default.dc.html": {
+   "x": 5040,
+   "y": 9372,
+   "w": 2440,
+   "h": 1664,
+   "title": "The designer on Shipyard 01, the Swarm loaded (saved), nothing hovered",
+   "page": "p13"
+  },
+  "screen-window-designer-preview.dc.html": {
+   "x": 7560,
+   "y": 9372,
+   "w": 2440,
+   "h": 1601,
+   "title": "The designer with the Lance card under the pointer: bars and damage cards preview the change",
+   "page": "p13"
+  },
+  "screen-window-designer-unsaved-editing.dc.html": {
+   "x": 0,
+   "y": 11156,
+   "w": 2440,
+   "h": 1685,
+   "title": "New picks (Medium + Ion + Lance + Sensor Array), the name being typed, too long for the server",
+   "page": "p13"
+  },
+  "screen-window-designer-no-shipyard.dc.html": {
+   "x": 2520,
+   "y": 11156,
+   "w": 2440,
+   "h": 1573,
+   "title": "The designer with no finished Shipyard: arrows dim, Queue dim, no slots filled",
+   "page": "p13"
+  },
+  "screen-window-production-shipyard.dc.html": {
+   "x": 5040,
+   "y": 11156,
+   "w": 2440,
+   "h": 1137,
+   "title": "Production on Shipyard 02 (L1): four starting designs, two dim as NEEDS L2, a queue of three",
+   "page": "p13"
+  },
+  "screen-window-production-station.dc.html": {
+   "x": 7560,
+   "y": 11156,
+   "w": 2440,
+   "h": 1137,
+   "title": "Production on the Command Station: the Constructor card, the front job waiting for Ore",
+   "page": "p13"
+  },
+  "screen-window-production-none.dc.html": {
+   "x": 0,
+   "y": 12961,
+   "w": 2440,
+   "h": 1137,
+   "title": "Production with no finished producer: the hint",
+   "page": "p13"
+  },
+  "screen-window-research-page1.dc.html": {
+   "x": 2520,
+   "y": 12961,
+   "w": 2440,
+   "h": 1137,
+   "title": "Research: the first page of topics, tier-2 topics needing the Lab's level, a queue of two",
+   "page": "p13"
+  },
+  "screen-window-research-no-lab.dc.html": {
+   "x": 5040,
+   "y": 12961,
+   "w": 2440,
+   "h": 1137,
+   "title": "Research with no Research Lab: no topic can be queued",
+   "page": "p13"
+  },
+  "screen-window-controls.dc.html": {
+   "x": 7560,
+   "y": 12961,
+   "w": 2440,
+   "h": 1137,
+   "title": "The Controls window (F1), at its default place in the middle of the screen",
+   "page": "p13"
+  },
+  "screen-window-orders-time-of-day.dc.html": {
+   "x": 0,
+   "y": 14218,
+   "w": 2440,
+   "h": 1648,
+   "title": "Orders (O): two orders waiting; a time-of-day attack-move ready to give to 12 ships",
+   "page": "p13"
+  },
+  "screen-window-orders-event-disabled.dc.html": {
+   "x": 2520,
+   "y": 14218,
+   "w": 2440,
+   "h": 1137,
+   "title": "Orders: an event trigger with a target, nothing selected that can take it (Give the order dim, SELECT WARSHIPS)",
+   "page": "p13"
+  },
+  "screen-window-away.dc.html": {
+   "x": 5040,
+   "y": 14218,
+   "w": 2440,
+   "h": 1137,
+   "title": "While you were away: opened by itself with the first snapshot after the seat is taken again (GameClient.cpp:539-544)",
+   "page": "p13"
+  },
+  "screen-window-three-windows-default.dc.html": {
+   "x": 7560,
+   "y": 14218,
+   "w": 2440,
+   "h": 2528,
+   "title": "Production, research and the designer open together, each at its default place (ADR-062 d6: side by side at 100%)",
+   "page": "p13"
+  },
+  "spec-menu.dc.html": {
+   "x": 0,
+   "y": 16866,
+   "w": 1440,
+   "h": 1950,
+   "title": "Main menu and startup",
+   "page": "p13"
+  },
+  "spec-hud-1.dc.html": {
+   "x": 1520,
+   "y": 16866,
+   "w": 1440,
+   "h": 5207,
+   "title": "HUD: Ore, status, territory, alerts, hint, connection",
+   "page": "p13"
+  },
+  "spec-hud-2.dc.html": {
+   "x": 3040,
+   "y": 16866,
+   "w": 1440,
+   "h": 4737,
+   "title": "HUD: selection, commands, minimap, bars, banner",
+   "page": "p13"
+  },
+  "spec-windows.dc.html": {
+   "x": 4560,
+   "y": 16866,
+   "w": 1440,
+   "h": 1847,
+   "title": "Windows: common rules",
+   "page": "p13"
+  },
+  "spec-designer.dc.html": {
+   "x": 0,
+   "y": 22193,
+   "w": 1440,
+   "h": 4394,
+   "title": "Window: Designer",
+   "page": "p13"
+  },
+  "spec-production-research.dc.html": {
+   "x": 1520,
+   "y": 22193,
+   "w": 1440,
+   "h": 3010,
+   "title": "Windows: Production and Research",
+   "page": "p13"
+  },
+  "spec-orders-away.dc.html": {
+   "x": 3040,
+   "y": 22193,
+   "w": 1440,
+   "h": 2058,
+   "title": "Windows: Orders and Away",
+   "page": "p13"
+  },
+  "battlefield-1.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 5297,
+   "title": "Frame, camera, sky and grid",
+   "page": "p14"
+  },
+  "battlefield-2.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 5569,
+   "title": "Models, light and motion",
+   "page": "p14"
+  },
+  "battlefield-3.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 5579,
+   "title": "Fog, territory and marks",
+   "page": "p14"
+  },
+  "battlefield-4.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 2128,
+   "title": "Glows and what is not built",
+   "page": "p14"
+  },
+  "assets-sheets.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 6515,
+   "title": "Contact sheets",
+   "page": "p15"
+  },
+  "assets-levels.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 2187,
+   "title": "Level sheets",
+   "page": "p15"
+  },
+  "assets-table-1.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 3577,
+   "title": "Per-model table, part 1 of 3",
+   "page": "p15"
+  },
+  "assets-table-2.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 3459,
+   "title": "Per-model table, part 2 of 3",
+   "page": "p15"
+  },
+  "assets-table-3.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 3387,
+   "title": "Per-model table, part 3 of 3",
+   "page": "p15"
+  },
+  "assets-files.dc.html": {
+   "x": 0,
+   "y": 6635,
+   "w": 1440,
+   "h": 3838,
+   "title": "Mesh files, hashes, duplicates",
+   "page": "p15"
+  },
+  "assets-textures.dc.html": {
+   "x": 1520,
+   "y": 6635,
+   "w": 1440,
+   "h": 4030,
+   "title": "Textures and logos",
+   "page": "p15"
+  },
+  "controls.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 2615,
+   "title": "Controls",
+   "page": "p16"
+  },
+  "open-owner.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 3833,
+   "title": "Open items: for the owner",
+   "page": "p17"
+  },
+  "open-conflicts-1.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 4864,
+   "title": "Conflicts, part 1 of 3",
+   "page": "p17"
+  },
+  "open-conflicts-2.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 5086,
+   "title": "Conflicts, part 2 of 3",
+   "page": "p17"
+  },
+  "open-conflicts-3.dc.html": {
+   "x": 4560,
+   "y": 0,
+   "w": 1440,
+   "h": 4825,
+   "title": "Conflicts, part 3 of 3",
+   "page": "p17"
+  },
+  "open-gaps.dc.html": {
+   "x": 6080,
+   "y": 0,
+   "w": 1440,
+   "h": 7229,
+   "title": "Gaps",
+   "page": "p17"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "game-pitch.dc.html",
+  "game-loops.dc.html",
+  "glossary-1.dc.html",
+  "glossary-2.dc.html",
+  "sides.dc.html",
+  "economy-ore.dc.html",
+  "economy-map.dc.html",
+  "economy-territory.dc.html",
+  "structures.dc.html",
+  "structures-levels.dc.html",
+  "ships-parts.dc.html",
+  "ships-designs.dc.html",
+  "ships-damage.dc.html",
+  "research.dc.html",
+  "combat.dc.html",
+  "combat-effects.dc.html",
+  "orders.dc.html",
+  "orders-scheduled.dc.html",
+  "ai.dc.html",
+  "ai-difficulty.dc.html",
+  "world.dc.html",
+  "world-state.dc.html",
+  "visual-colors.dc.html",
+  "visual-type.dc.html",
+  "visual-components.dc.html",
+  "visual-anatomy-1.dc.html",
+  "visual-anatomy-2.dc.html",
+  "visual-rules.dc.html",
+  "visual-scale.dc.html",
+  "screens-flow.dc.html",
+  "screen-startup-loading.dc.html",
+  "screen-menu-default.dc.html",
+  "screen-menu-join-world.dc.html",
+  "screen-menu-connection-lost.dc.html",
+  "screen-menu-join-failed.dc.html",
+  "screen-menu-scale-125.dc.html",
+  "screen-match-awaiting-first-snapshot.dc.html",
+  "screen-hud-match-start.dc.html",
+  "screen-hud-busy-warships.dc.html",
+  "screen-hud-scale-110.dc.html",
+  "screen-hud-constructors.dc.html",
+  "screen-hud-placing-relay.dc.html",
+  "screen-hud-relay-node-cap.dc.html",
+  "screen-hud-one-ship.dc.html",
+  "screen-hud-shipyard-selected.dc.html",
+  "screen-hud-station-upgrading.dc.html",
+  "screen-hud-lab-needs-research.dc.html",
+  "screen-hud-derelict-hint.dc.html",
+  "screen-hud-server-silent.dc.html",
+  "screen-hud-end-victory.dc.html",
+  "screen-hud-end-empire-fallen.dc.html",
+  "screen-window-designer-default.dc.html",
+  "screen-window-designer-preview.dc.html",
+  "screen-window-designer-unsaved-editing.dc.html",
+  "screen-window-designer-no-shipyard.dc.html",
+  "screen-window-production-shipyard.dc.html",
+  "screen-window-production-station.dc.html",
+  "screen-window-production-none.dc.html",
+  "screen-window-research-page1.dc.html",
+  "screen-window-research-no-lab.dc.html",
+  "screen-window-controls.dc.html",
+  "screen-window-orders-time-of-day.dc.html",
+  "screen-window-orders-event-disabled.dc.html",
+  "screen-window-away.dc.html",
+  "screen-window-three-windows-default.dc.html",
+  "spec-menu.dc.html",
+  "spec-hud-1.dc.html",
+  "spec-hud-2.dc.html",
+  "spec-windows.dc.html",
+  "spec-designer.dc.html",
+  "spec-production-research.dc.html",
+  "spec-orders-away.dc.html",
+  "battlefield-1.dc.html",
+  "battlefield-2.dc.html",
+  "battlefield-3.dc.html",
+  "battlefield-4.dc.html",
+  "assets-sheets.dc.html",
+  "assets-levels.dc.html",
+  "assets-table-1.dc.html",
+  "assets-table-2.dc.html",
+  "assets-table-3.dc.html",
+  "assets-files.dc.html",
+  "assets-textures.dc.html",
+  "controls.dc.html",
+  "open-owner.dc.html",
+  "open-conflicts-1.dc.html",
+  "open-conflicts-2.dc.html",
+  "open-conflicts-3.dc.html",
+  "open-gaps.dc.html"
+ ],
+ "notes": {
+  "t_p01": {
+   "x": 0,
+   "y": -300,
+   "text": "01 Cover",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p01"
+  },
+  "t_p02": {
+   "x": 0,
+   "y": -300,
+   "text": "02 The game",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p02"
+  },
+  "t_p03": {
+   "x": 0,
+   "y": -300,
+   "text": "03 Sides",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p03"
+  },
+  "t_p04": {
+   "x": 0,
+   "y": -300,
+   "text": "04 Economy & territory",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p04"
+  },
+  "t_p05": {
+   "x": 0,
+   "y": -300,
+   "text": "05 Structures",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p05"
+  },
+  "t_p06": {
+   "x": 0,
+   "y": -300,
+   "text": "06 Ships & the Designer",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p06"
+  },
+  "t_p07": {
+   "x": 0,
+   "y": -300,
+   "text": "07 Research",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p07"
+  },
+  "t_p08": {
+   "x": 0,
+   "y": -300,
+   "text": "08 Combat",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p08"
+  },
+  "t_p09": {
+   "x": 0,
+   "y": -300,
+   "text": "09 Orders & automation",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p09"
+  },
+  "t_p10": {
+   "x": 0,
+   "y": -300,
+   "text": "10 AI & difficulty",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p10"
+  },
+  "t_p11": {
+   "x": 0,
+   "y": -300,
+   "text": "11 The persistent world",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p11"
+  },
+  "t_p12": {
+   "x": 0,
+   "y": -300,
+   "text": "12 Visual language",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p12"
+  },
+  "t_p13": {
+   "x": 0,
+   "y": -300,
+   "text": "13 Screens",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p13"
+  },
+  "t_p14": {
+   "x": 0,
+   "y": -300,
+   "text": "14 The battlefield",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p14"
+  },
+  "t_p15": {
+   "x": 0,
+   "y": -300,
+   "text": "15 Asset catalogue",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p15"
+  },
+  "t_p16": {
+   "x": 0,
+   "y": -300,
+   "text": "16 Controls",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p16"
+  },
+  "t_p17": {
+   "x": 0,
+   "y": -300,
+   "text": "17 Open items",
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "p17"
+  }
+ },
+ "designSystems": []
+}

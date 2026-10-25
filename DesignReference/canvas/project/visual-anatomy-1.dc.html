@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Component anatomy, part 1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Anatomy and sources · part 1 of 2</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>Window chrome (<code>OpenWindow</code>, Hud.cpp:871-899; <code>AddCorners</code> :852-867; ADR-031 d3)</h4>
+<p><strong>Anatomy, in units from the window's top-left:</strong></p>
+<ul>
+<li><strong>Frame:</strong> the full width × (36 + body), in <code>WINDOW_COLOR</code>, opaque.</li>
+<li><strong>Title bar:</strong> (0, 0, width − 36, 36), hatched in <code>TITLE_HATCH_COLOR</code> over the frame. The window is dragged by it.</li>
+<li><strong>Close box:</strong> (width − 36, 0, 36, 36) in <code>CLOSE_BOX_COLOR</code>. Its "×" is in the Title face, <code>TEXT_COLOR</code>, at (11, 5) inside the box.</li>
+<li><strong>Corners:</strong> four brackets, 12 units each, in <code>WINDOW_EDGE_COLOR</code>.</li>
+<li><strong>No other edge.</strong> A window has no outline round its frame.</li>
+<li><strong>The title:</strong> <code>OpenWindow</code> can draw a title at (<code>PADDING</code> 12, 5) in Title, but every window passes an empty one (Hud.cpp:1351, 1722, 1823, 1903, 1949, 1993). Each window writes its own label instead: Label face, <code>HEADER_LABEL_COLOR</code>, tracking 2, at (24, 11). The labels are "PRODUCTION", "RESEARCH", "CONTROLS", "SCHEDULED ORDERS", "WHILE YOU WERE AWAY", and the designer's "&lt; SHIPYARD 05 &gt; · DESIGNER".</li>
+</ul>
+<p><strong>The header band</strong> (<code>HeaderBand</code>, Hud.cpp:1237-1242) is used by the designer, production and research windows:</p>
+<ul>
+<li>It runs the hatching on from y 36 to <code>DESIGNER_HEADER</code> 72.</li>
+<li>It ends in a 1-unit <code>EDGE_COLOR</code> line at y 71.</li>
+<li>The subject is in Title, <code>TEXT_COLOR</code>, at (24, 40).</li>
+</ul>
+<p><strong>The Ore box</strong> (<code>OreBox</code>, :1244-1249) is 116 × 30 at y 38, ending 24 from the right. It has a <code>FIELD_COLOR</code> face and an <code>EDGE_COLOR</code> outline, with the gem and figure in Title, <code>GOLD_COLOR</code>, right-aligned 10 in.</p>
+<p><strong>Stepped subject</strong> (<code>Stepped</code>, :1202-1213), "&lt; SHIPYARD 05 &gt;":</p>
+<ul>
+<li>Two arrow buttons stand round the subject, 8 units from it (<code>ARROW_GAP_UNITS</code>).</li>
+<li>In the title bar the arrows are at y 6. On the header's title line they are at y 43 (Hud.cpp:1049-1050).</li>
+</ul>
+<p><strong>States:</strong></p>
+<ul>
+<li>A window has no focused or unfocused look. The front window is only drawn last (Hud.cpp:3632-3690). <strong>Not specified</strong> otherwise.</li>
+<li>There is no hover state on the chrome.</li>
+<li>A window that is dragged off the screen keeps its title bar and 120 units of its width on the screen (Hud.h:646, 852-854).</li>
+</ul>
+<h4>HUD panel (<code>Frame</code>, Hud.cpp:903-908; ADR-043 d1)</h4>
+<ul>
+<li>It is a window's body without a title bar: <code>WINDOW_COLOR</code> and four 12-unit corners in <code>WINDOW_EDGE_COLOR</code>.</li>
+<li>The Ore, status, territory, alerts, hint, connection, banner, selection, buttons, minimap and menu panels are all drawn this way.</li>
+<li><strong>Ore panel</strong> (:3141-3156):</li>
+<li>It is 44 tall and as wide as the column.</li>
+<li>The gem and stockpile are in Title, <code>GOLD_COLOR</code>, from x 12.</li>
+<li>The income is in Figure, <code>NUMBERS_COLOR</code>, right-aligned; or, at "+0/s", a warning chip.</li>
+<li><strong>Status line</strong> (:3239-3307): the row under the pointer is filled with <code>CARD_COLOR</code>, edge to edge. Plain runs are in Name, <code>TEXT_COLOR</code>. A bar's figure is in Figure, <code>NUMBERS_COLOR</code>.</li>
+</ul>
+<h4>Warning chip (<code>Painter::Chip</code>, Hud.cpp:1155-1168; ADR-085 d1)</h4>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>The tag is a filled <code>WARNING_COLOR</code> rectangle as wide as the words + 2 × 4 units (<code>CHIP_PAD_UNITS</code>), and as tall as the line: <code>NAME_LINE_UNITS</code> 22, or <code>FIGURE_LINE_UNITS</code> 17 for the income.</li>
+<li>The words are in <code>WINDOW_COLOR</code>, 4 units in, in the line's face (Name, or Figure for the income).</li>
+<li>The tag starts 4 units left of the other lines, so the chip's words line up with theirs (:3208, 3232, 3334).</li>
+</ul>
+<p><strong>It marks:</strong></p>
+<ul>
+<li>a status line's IDLE run (:3277-3280)</li>
+<li>an income of nothing (:3152-3155)</li>
+<li>the newest alert (:3227-3232)</li>
+<li>the player's own drain (:3204-3208)</li>
+<li>"No word from the server · N s" (:3334-3338)</li>
+</ul>
+<p><strong>States:</strong> none. A chip is never cut short (:3272-3279). Contrast is 10.25:1.</p>
+<p><strong>Rule:</strong> no other filled tag in that color exists (ADR-085 "forecloses").</p>
+<h4>Saved-design chip (designer, Hud.cpp:1408-1427)</h4>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>216 × 26 at (70 + i × 222, 132); three are shown (<code>CHIPS_SHOWN</code>, :211).</li>
+<li>The name is in Label, <code>TEXT_COLOR</code>, at (8, 6).</li>
+<li>The code is in Detail, right-aligned 8 in, at y 7.</li>
+<li>When there are more chips, two 24-unit arrow buttons stand at the right.</li>
+</ul>
+<p><strong>States:</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Not shown</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>CODE_COLOR</code></td>
+</tr>
+<tr>
+<td>Shown</td>
+<td><code>PICKED_COLOR</code></td>
+<td><code>PICKED_EDGE_COLOR</code></td>
+<td><code>ACCENT_COLOR</code></td>
+</tr>
+</tbody>
+</table>
+<p>There is no hover state: the windows' cards do not light (ADR-088 consequences).</p>
+<h4>Part card (designer, Hud.cpp:1429-1482; ADR-062 d4)</h4>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>220 × 80, or 96 when any card in the row has a note (<code>CARD_NOTE_ROOM</code> 16). Three to a line, 7 apart, from x 118.</li>
+<li>The name is in Name at (12, 8).</li>
+<li>The cost is the gem and figure in Figure, right-aligned 12 in, at y 11.</li>
+<li>The numbers are in Detail at (12, 34), and the note in Detail at (12, 52).</li>
+<li>The lock line sits 20 units from the foot: a checkbox sprite, 10 units at x 12, then the words in Label at x 28.</li>
+<li>At the head of each slot row:</li>
+<li>the slot label in Label, <code>LABEL_COLOR</code>, tracked, at y +21;</li>
+<li>the pick in Name, <code>ACCENT_COLOR</code>, at y +39;</li>
+<li>a 1-unit <code>EDGE_COLOR</code> divider at x 108.</li>
+</ul>
+<p><strong>States:</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Name</th>
+<th>Cost</th>
+<th>Numbers</th>
+<th>Other</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>TEXT_COLOR</code></td>
+<td><code>GOLD_COLOR</code></td>
+<td><code>NUMBERS_COLOR</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Picked</td>
+<td><code>PICKED_COLOR</code></td>
+<td><code>PICKED_EDGE_COLOR</code></td>
+<td><code>TEXT_COLOR</code></td>
+<td><code>GOLD_COLOR</code></td>
+<td><code>NUMBERS_COLOR</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Locked</td>
+<td><code>LOCKED_COLOR</code> + hatched <code>LOCKED_HATCH_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>LOCKED_TEXT_COLOR</code></td>
+<td><code>LOCKED_TEXT_COLOR</code></td>
+<td><code>LOCKED_TEXT_COLOR</code></td>
+<td>Checkbox and "RESEARCH · LARGE HULL" in <code>AMBER_COLOR</code>. It takes no click.</td>
+</tr>
+</tbody>
+</table>
+<p>There is no hover state.</p>
+<h4>Production option card (Hud.cpp:1733-1779; ADR-068 d3)</h4>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>211 × 74 (computed: (478 − 48 − 8)/2), two to a row, 8 apart.</li>
+<li>The name is in Name at (12, 6).</li>
+<li>The code is in Detail, <code>CODE_COLOR</code>, at (12, 28). The cost is the gem and figure in Figure, right-aligned, at y 28.</li>
+<li>At y 50:</li>
+<li>the build time in Detail, <code>LABEL_COLOR</code>;</li>
+<li>right-aligned, for each hull, its initial in Label, <code>ROW_LABEL_COLOR</code>, then three segments 6 × 8, 2 apart. The initial stands 3 from its segments and the groups 10 apart.</li>
+<li>Lit segments: 3 for Good, 2 for Fair, 1 for Poor, in <code>GOOD_</code>, <code>FAIR_</code> or <code>POOR_COLOR</code>. Unlit segments are <code>BAR_TRACK_COLOR</code>.</li>
+</ul>
+<p><strong>States:</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Text</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enabled</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td>as above</td>
+</tr>
+<tr>
+<td>Disabled</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td>all <code>LOCKED_TEXT_COLOR</code>, segments included</td>
+</tr>
+</tbody>
+</table>
+<h4>Topic card (research, Hud.cpp:1842-1883; ADR-061 d4)</h4>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>252 wide (computed: (560 − 48 − 8)/2), two columns, ten cards a page.</li>
+<li>Height = 28 + lines × 18 + 4. Every card is as tall as the topic needing the most lines, and at least 2 lines.</li>
+<li>The name is in Name at (12, 6), and the cost in Figure right-aligned at y 9.</li>
+<li>The effect lines are in Detail, <code>NUMBERS_COLOR</code>, from y 28, 18 apart.</li>
+<li>Each need is a checkbox and "NEEDS · X", then "+ Y", in Label, <code>AMBER_COLOR</code>.</li>
+<li>Otherwise the time is in Detail, <code>LABEL_COLOR</code>.</li>
+</ul>
+<p><strong>States:</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Text</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td>as above</td>
+</tr>
+<tr>
+<td>Not enabled</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>LOCKED_TEXT_COLOR</code></td>
+</tr>
+<tr>
+<td>Blocked (has needs)</td>
+<td><code>LOCKED_COLOR</code> + hatched <code>LOCKED_HATCH_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>LOCKED_TEXT_COLOR</code>, needs in <code>AMBER_COLOR</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Damage card (designer, Hud.cpp:1508-1540)</h4>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li><code>FIELD_COLOR</code> with an <code>EDGE_COLOR</code> outline, 96 tall, 8 apart, from x 364.</li>
+<li>The hull is in Name, <code>TEXT_COLOR</code>, at (10, 8). The armor is in Label, <code>LABEL_COLOR</code>, right-aligned 8 in, at y 11.</li>
+<li>The per-ship damage is in LargeFigure at (10, 30). The reach is in Label, <code>LABEL_COLOR</code>, right-aligned at y 28. The change is in Figure, right-aligned at y 44.</li>
+<li>The rating bar is (w − 20) × 4 at (10, 66): <code>BAR_TRACK_COLOR</code>, filled with the rating's color.</li>
+<li>The per-100-ore line is in Detail, <code>SOFT_COLOR</code>, at (10, 76).</li>
+</ul>
+<p><strong>States:</strong> while a part is hovered, the figure and the change take <code>GOOD_COLOR</code> or <code>POOR_COLOR</code>, or <code>TEXT_COLOR</code> when nothing changes (<code>ChangeColor</code>, :1032-1035).</p>
+<h4>HUD button (<code>AddButton</code>, Hud.cpp:1264-1323; ADR-043 d4)</h4>
+<p><strong>Anatomy:</strong></p>
+<ul>
+<li>34 tall. In the HUD it is 356 wide (380 − 24); on the menu, 416; on the banner, 496.</li>
+<li>The label is in Name at x 12, centered: y = (34 − 22)/2.</li>
+<li>A cost after a "|" in the label is the gem and figure in Figure, right-aligned 12 in, at y = (34 − 17)/2.</li>
+<li><strong>Key cap</strong> (:1292-1301):</li>
+<li>20 × 20, right-aligned 12 in, centered;</li>
+<li><code>FIELD_COLOR</code> face and <code>ROW_LABEL_COLOR</code> outline;</li>
+<li>its letter in Label, <code>ROW_LABEL_COLOR</code>, at y +2.</li>
+<li><strong>Progress bar:</strong> inset 2, 3 tall, along the foot. <code>BAR_TRACK_COLOR</code>, filled with <code>BAR_FILL_COLOR</code>.</li>
+<li>A label is cut short with "..." only where it would meet the cost, the note or the key cap.</li>
+</ul>
+<p><strong>States:</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Label</th>
+<th>Cost</th>
+<th>Click</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>TEXT_COLOR</code></td>
+<td><code>GOLD_COLOR</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Hover (HUD layer and enabled only, :3130-3131)</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>HOVER_EDGE_COLOR</code></td>
+<td><code>TEXT_COLOR</code></td>
+<td><code>GOLD_COLOR</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Selected (the armed order)</td>
+<td><code>PICKED_COLOR</code></td>
+<td><code>PICKED_EDGE_COLOR</code> (beats hover)</td>
+<td><code>TEXT_COLOR</code></td>
+<td><code>GOLD_COLOR</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Disabled</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>LOCKED_TEXT_COLOR</code></td>
+<td><code>LOCKED_TEXT_COLOR</code>; a note, when there is one, takes the cost's place in Label, <code>LABEL_COLOR</code></td>
+<td><strong>none</strong></td>
+</tr>
+<tr>
+<td><strong>Pressed</strong></td>
+<td><strong>Not specified</strong>: the code has no pressed look</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>The menu's buttons and the orders window's Give button are laid out without hover, so they never light (Hud.cpp:2357, 1979).</li>
+</ul></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4572}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

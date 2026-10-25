@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gaps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Gaps</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>Gaps</h2>
+<p>Agent <strong>R</strong> (reconciliation). HEAD <code>a053fe294d91dc885bbb061c2f34d76ca6897738</code> (2026-10-25T08:33:55+01:00).</p>
+<p>Every "Not specified" and open item from <code>A1</code>–<code>A7</code>, deduplicated, plus the two cross-checks the brief asks for:</p>
+<ul>
+<li><strong>§B:</strong> elements on screen (A4's inventory and UI strings) whose rule no rules agent (A1, A2, A3, A7) explains.</li>
+<li><strong>§C:</strong> rules from A1, A2 and A3 with no visible surface on any screen A4 lists.</li>
+</ul>
+<p>A gap is something the sources do not say. The reference prints <strong>"Not specified"</strong> in its place. When a gap is a disagreement it is in <code>conflicts.md</code>, and the entry here points there.</p>
+<p>Each entry gives what is missing, where it shows, the agents, and the sources consulted.</p>
+<hr />
+<h3>A. Not specified, or open</h3>
+<h4>World, map and economy</h4>
+<p><strong>G-001 — The map's name.</strong>
+- <strong>Where:</strong> the map as a whole, and the reference's map section.
+- <strong>Agents:</strong> A1.
+- <strong>Sources:</strong> <code>Map.json</code> (no name field); <code>Phase4.md:248</code> ("10 km system", unnamed); <code>MVP.md:15-19</code> (the lore's "Kessler Reach" is a proposal, not the map's name).</p>
+<p><strong>G-002 — A cap on the Ore stockpile.</strong>
+- <strong>Where:</strong> the Ore panel.
+- <strong>Agents:</strong> A1.
+- <strong>Sources:</strong> <code>Tuning.json: rules</code>; <code>Simulation.cpp</code> (no cap found); <code>ADR-016</code>.</p>
+<p><strong>G-003 — A sink or bound for a world's bank.</strong>
+- <strong>Where:</strong> a world's economy.
+- <strong>Agents:</strong> A1, A3.
+- <strong>Sources:</strong> <code>Phase5.md:137</code> ("decided in Phase 6"); gate H9 (<code>Phase5.md:54</code>); <code>ADR-082</code> Consequences (Blue's bank at 513,829 Ore at hour 23).</p>
+<p><strong>G-004 — Placing a Mining Rig in a suppressed sector.</strong>
+- <strong>Where:</strong> placement.
+- <strong>Agents:</strong> A1.
+- <strong>What the code does:</strong> allows it, checking the holder only (<code>Simulation.cpp:2103-2108</code>). No document says either way.
+- <strong>Sources:</strong> <code>ADR-056</code> decision 5; <code>Phase2.md:53</code>.</p>
+<p><strong>G-005 — A held-sector rule for the Research Lab and the Defence Platform.</strong>
+- <strong>Where:</strong> placement.
+- <strong>Agents:</strong> A1.
+- <strong>What the code does:</strong> checks none (<code>Simulation.cpp:2113-2133</code>). No document states one. The Shipyard and the Repair Bay need a held sector (<code>Simulation.cpp:2118-2124</code>).</p>
+<p><strong>G-006 — Hostile starts (gate H6).</strong>
+- <strong>Where:</strong> the world's restart. The banner reads "It restarts once your start is clear of the enemy".
+- <strong>Agents:</strong> A1, A3.
+- <strong>What is open:</strong> whether a start with enemy warships on it is free. The code counts it free (<code>Simulation.cpp:3750-3765</code>). Also open: whether a restarted base is spared for a while.
+- <strong>Sources:</strong> <code>ADR-084</code> Consequences ("the owner's to decide"); <code>Plan5.md:247</code>.</p>
+<p><strong>G-007 — A seat whose home sector the other player holds.</strong>
+- <strong>Where:</strong> the world's restart.
+- <strong>Agents:</strong> A1.
+- <strong>What happens:</strong> it waits with no limit. <code>Phase5.md:129</code> calls this "the weakest rule of Phase 5, and the week will show how often it binds".</p>
+<p><strong>G-008 — The owner's pending runs.</strong>
+- <strong>Where:</strong> results throughout.
+- <strong>Agents:</strong> A1, A3, A7.
+- <strong>What is pending:</strong>
+  - the Phase 5 week, W1 to W6 (<code>Phase5.md:30-37</code>): W1, W4 and W6 are the owner's, and W2's tick figure is the owner's Release run;
+  - the 02:00 attack (W5);
+  - task 37.3 (an AI empire left for an hour);
+  - task 39.1 (the banner and replanning) (<code>Plan5.md:28-40, 156, 196, 206, 250</code>);
+  - the look's "first values" (ADR-019, 026, 034, 090, 091);
+  - interface plan 2's runs (<code>PlanUI2.md:64-81</code>).
+- <strong>Sources:</strong> as listed. No result exists at HEAD.</p>
+<p><strong>G-009 — Exact positions of seeded content.</strong>
+- <strong>Where:</strong> asteroids beyond the six home ones, pirate camps, derelicts, and derelict topics.
+- <strong>Agents:</strong> A1, A4 (its layout JSON samples).
+- <strong>What is fixed:</strong> these positions vary with the match's or world's seed (<code>ADR-072</code> Consequences). Only the counts per sector kind are fixed (<code>Map.json:150-170</code>).</p>
+<p><strong>G-010 — Whose the shared contested asteroids are, in ADR-036 decision 4.</strong>
+- <strong>Where:</strong> the per-player asteroid listing.
+- <strong>Agents:</strong> A1.
+- <strong>What is unclear:</strong> the per-player listing counts B4, D2 and the center inside one player's list. The totals check: 16 contested on the map. <code>ADR-072</code> Consequences says which start these lie nearer varies by seed.</p>
+<p><strong>G-011 — A match length target.</strong>
+- <strong>Where:</strong> match flow.
+- <strong>Agents:</strong> A1.
+- <strong>Sources:</strong> <code>Phase4.md:199</code> ("No match length target").</p>
+<p><strong>G-012 — Pirate structures and the start-free rule.</strong>
+- <strong>Where:</strong> the world's restart.
+- <strong>Agents:</strong> A1.
+- <strong>What is unstated:</strong> <code>IsStartFree</code> blocks on any other owner's structure, <code>PIRATES</code> included (<code>Simulation.cpp:3762-3763</code>; <code>Id.h:25</code>). No outpost can stand in a home sector on this map (<code>Map.json:159-163</code>), so it never arises. No document covers it.</p>
+<p><strong>G-013 — The premise and lore.</strong>
+- <strong>Where:</strong> the cover and the pitch.
+- <strong>Agents:</strong> A1.
+- <strong>What is open:</strong> the MVP marks the premise "proposal — edit freely": the Terrakin, the Kessler Reach, the Tarkan High Command (<code>MVP.md:15-23</code>). No later document confirms or amends it.</p>
+<h4>Units, structures and combat</h4>
+<p><strong>G-014 — Shipyard L4–L5 and Research Lab L5: art with no content.</strong>
+- <strong>Where:</strong> structure levels.
+- <strong>Agents:</strong> A2, lead.
+- <strong>Verdict:</strong> a gap, not a conflict. The design ends the Shipyard at L3 and the Lab at L4 on purpose. Their L4–L5 and L5 art "waits for content that needs it" (<code>Phase3.md:82, 104, 162, 172</code>, gate K3; <code>Phase3.md:11</code> "five levels each … to be used later").
+- <strong>What exists:</strong>
+  - <code>Tuning.json:48-59</code> gives the Shipyard 2 levels above L1 and the Lab 3.
+  - <code>Models.json:11-13, 26-28</code> give all three growing models 5 levels.
+  - The loader caps levels at the art's last (<code>ADR-064:13</code>, <code>MAXIMUM_STRUCTURE_LEVEL</code>).
+  - The client loads every level (<code>GameClient.cpp:360-376</code>) but draws only up to the structure's level (<code>DrawnLevel</code>, <code>ADR-064:28</code>). So Shipyard L4/L5 and Lab L5 are loaded and never drawn.
+- <strong>Not specified:</strong> their cost, time and effect.</p>
+<p><strong>G-015 — Hardpoints with no gun behind them.</strong>
+- <strong>Where:</strong> the meshes.
+- <strong>Agents:</strong> A2.
+- <strong>What is unstated:</strong> the Mining Rig mesh carries 1 <code>gun</code> hardpoint, though the rig has no weapon (<code>Tuning.json:60</code>). The Defence Platform carries 6 for its 1 Defence gun (R parsed the NMFs). <code>ADR-018</code> Consequences speaks only of "a gun on the two armed structures". No document says what the rig's hardpoint is for. Nothing fires from it.</p>
+<p><strong>G-016 — The Defence gun's own cost.</strong>
+- <strong>Where:</strong> the structure-weapon table.
+- <strong>Agents:</strong> A2.
+- <strong>Why there is none:</strong> the gun is part of its structure (<code>Tuning.json:37</code>). The Command Station is not buildable, and the Defence Platform costs 450 (<code>Tuning.json:61</code>).</p>
+<p><strong>G-017 — Damage against Constructors and structures.</strong>
+- <strong>Where:</strong> the Designer.
+- <strong>Agents:</strong> A2.
+- <strong>What is missing:</strong> the damage cards cover hulls only (<code>Hud.cpp:782-806</code>). Damage against a Constructor or a structure is shown nowhere. A2's table of those hits is derived from <code>DesignStats.h:18-21</code>, not displayed.</p>
+<p><strong>G-018 — How many ships a splash reaches in a real fight.</strong>
+- <strong>Where:</strong> the Designer's "×5 ships".
+- <strong>Agents:</strong> A2.
+- <strong>What is missing:</strong> the card counts a formation at 3 footprint radii (<code>DesignStats.h:105-129</code>; <code>ADR-010</code> decision 4). Ships pressed together in a fight can stand closer (<code>MVP.md:354</code>). The real count is not specified.</p>
+<p><strong>G-019 — Fire-rate upgrades hidden by rounding.</strong>
+- <strong>Where:</strong> the Designer's weapon card.
+- <strong>Agents:</strong> A2.
+- <strong>What happens:</strong> the interval is written to a tenth (<code>Hud.cpp:686-687</code>), so the Mass Driver's upgraded 0.3636 s still reads "0.4s". No document says whether that is intended.</p>
+<p><strong>G-020 — "8.8" for 8.75 rests on rounding a tie.</strong>
+- <strong>Where:</strong> the Designer's damage card.
+- <strong>Agents:</strong> A2.
+- <strong>What it depends on:</strong> <code>std::format("{:.1f}")</code> on MSVC (<code>HudTests.cpp:1718</code>). No document fixes the rounding rule.</p>
+<p><strong>G-021 — Code comments that point elsewhere.</strong>
+- <strong>Where:</strong> none on screen.
+- <strong>Agents:</strong> A2.
+- <strong>Which:</strong> <code>GameLogic/Matchup.h:5</code> cites "horizon §9"; the in-scope source is ADR-083. <code>Tools/BattleModel.py:86-88</code> puts <code>FORMATION_SPACING_RADII</code> in <code>Simulation.cpp</code>, but it lives in <code>GameProtocol/DesignStats.h:107</code>.</p>
+<p><strong>G-022 — Defence guns at Command Station L2 and L4.</strong>
+- <strong>Where:</strong> the station's next-level panel line.
+- <strong>Agents:</strong> A2.
+- <strong>What happens:</strong> those levels give no <code>guns</code> value. They keep the level below's by the <code>max</code> in <code>StationGuns</code> (<code>Tuning.cpp:754-763</code>), and the panel's line names no guns for them (<code>Hud.cpp:2658-2659</code>). <code>ADR-064:41</code> states the rule. No document says what a player should read at those two levels.</p>
+<h4>Orders, AI and the world</h4>
+<p><strong>G-023 — Can enemy ships be selected?</strong>
+- <strong>Where:</strong> the Controls window.
+- <strong>Agents:</strong> A3.
+- <strong>What is unclear:</strong> the window says "Click — Select a ship, or a structure of yours" (<code>KeyBindings.h:94</code>). The code picks only the player's own ships (<code>PlayerControls.cpp:251-253</code>). Whether "a ship" was meant to include an enemy's is not specified.</p>
+<p><strong>G-024 — A limit on scheduled orders per seat.</strong>
+- <strong>Where:</strong> the Orders window.
+- <strong>Agents:</strong> A3.
+- <strong>What exists:</strong> no cap is in <code>Simulation.cpp:3274-3313</code>. The window lists the first 6, then "and n more" (<code>Hud.h:526</code>, <code>Hud.cpp:1964-1965</code>).</p>
+<p><strong>G-025 — How the player learns of a refused command.</strong>
+- <strong>Where:</strong> everywhere.
+- <strong>Agents:</strong> A3.
+- <strong>What exists:</strong> nothing. "The protocol cannot tell the client yet" (<code>InProcessServer.cpp:482</code>). A scheduled order refused when given simply does not appear. Only a refusal when the order <em>fires</em> is told ("Order refused: …", <code>Alerts.cpp:39-40</code>).</p>
+<p><strong>G-026 — The scout's own-half time counts the world's ticks.</strong>
+- <strong>Where:</strong> AI behavior in a world.
+- <strong>Agents:</strong> A3.
+- <strong>What happens:</strong> <code>ownHalf</code> compares the snapshot's tick with 600 s of ticks (<code>Opponent/AiPlayer.cpp:1340</code>). An AI empire made afresh late in a world, after a restart, goes straight to the flanks.
+- <strong>Not specified:</strong> <code>ADR-076:14</code> says "for the first ten minutes", written for a match. Whether this is intended in a world is not specified. It may be a defect: R confirmed the code, and found no document.</p>
+<p><strong>G-027 — Deputy defenders at hand-back.</strong>
+- <strong>Where:</strong> the Away flow.
+- <strong>Agents:</strong> A3.
+- <strong>What happens:</strong> once the player plays, the deputy only watches (<code>Deputy.cpp:128-138</code>). Warships it sent to defend are not moved back. <code>Phase5.md</code> §6 says only "What the deputy ordered stands".</p>
+<p><strong>G-028 — An away report on the first join of a new world.</strong>
+- <strong>Where:</strong> the Away window.
+- <strong>Agents:</strong> A3.
+- <strong>What happens:</strong> a seat never taken is the deputy's from tick 0 (<code>SeatController.cpp:35-36</code>), so the first join carries a report (<code>AwayReports.cpp:49-50</code>). No document says whether this is intended.</p>
+<p><strong>G-029 — The total delay before a vanished client's deputy takes over.</strong>
+- <strong>Where:</strong> the Away flow.
+- <strong>Agents:</strong> A3.
+- <strong>What is known:</strong> 60 s after the connection is seen gone (<code>Server.h:32</code>), plus MsQuic's default idle timeout of 30 s, which no code sets (<code>ADR-079</code> decision 4). The total is not stated anywhere.</p>
+<p><strong>G-030 — A record of hand-overs in the client.</strong>
+- <strong>Where:</strong> the Away window.
+- <strong>Agents:</strong> A3.
+- <strong>What exists:</strong> the window shows the time away only. Hand-overs are in <code>World.log</code> <code>seat</code> records alone (<code>ADR-079</code> Consequences).</p>
+<h4>Screens and visual language</h4>
+<p><strong>G-031 — Text widths.</strong>
+- <strong>Where:</strong> every width that depends on measured text.
+- <strong>Agents:</strong> A4.
+- <strong>What is missing:</strong> about 2,200 of A4's 7,677 layout elements are estimated (<code>"measured": false</code>). That includes the HUD column's ≈380 (<code>ADR-066</code> gives only the 380 floor), the selection panel's width, the tag's width and every right-aligned left edge. Exact values need the <code>GameAppTests</code> dump on Windows (<code>ADR-061</code>).</p>
+<p><strong>G-032 — The picked weapon's name may be cut.</strong>
+- <strong>Where:</strong> the Designer's slot row.
+- <strong>Agents:</strong> A4.
+- <strong>What is unverified:</strong> "Mass Driver" in a 78-unit room, Name face (<code>Hud.cpp:1439-1440</code>), is borderline by estimate.</p>
+<p><strong>G-033 — A locked module card cannot appear.</strong>
+- <strong>Where:</strong> the Designer.
+- <strong>Agents:</strong> A4, A2.
+- <strong>Why:</strong> <code>ViewOf(ModuleTuning)</code> always sets <code>available = true</code> (<code>ShipDesign.cpp:76-84</code>), so the <code>RESEARCH</code> lock path (<code>Hud.cpp:716</code>) is unreachable with the current data.</p>
+<p><strong>G-034 — A loading screen, and a "connecting" indicator.</strong>
+- <strong>Where:</strong> startup, and Join world.
+- <strong>Agents:</strong> A4.
+- <strong>What exists:</strong> neither. The window is hidden until loaded (<code>WinMain.cpp:273-316</code>; <code>ADR-049</code> leaves a loading screen open). Join world blocks the frame loop up to 10 s (<code>QuicTransport.cpp:9, 26-35</code>).</p>
+<p><strong>G-035 — The minimap's view outline.</strong>
+- <strong>Where:</strong> the minimap.
+- <strong>Agents:</strong> A4.
+- <strong>What is missing:</strong> A4 replayed it from <code>Camera.cpp</code>/<code>Camera.json</code> at the default zoom with an estimated focus. It is not measured.</p>
+<p><strong>G-036 — Hover lighting.</strong>
+- <strong>Where:</strong> windows and the menu.
+- <strong>Agents:</strong> A4.
+- <strong>What exists:</strong> only the HUD's buttons, retreat cells, ship bars, status lines and the banner's "Back to menu" light under the pointer (<code>ADR-088</code> decision 1, <code>Hud.cpp:3129-3131</code>). The Orders window's Give button is drawn without a hovered flag (<code>Hud.cpp:1979</code>), and the menu has no hover. <code>ADR-088</code> Consequences says nothing in a window lights. Whether that is meant for Give is not specified.</p>
+<p><strong>G-037 — The Body face.</strong>
+- <strong>Where:</strong> the type list.
+- <strong>Agents:</strong> A4, A5.
+- <strong>What is unstated:</strong> Segoe UI 600 at 20 units is rasterized (<code>Hud.cpp:3010</code>), but no drawn text uses it. Whether it is kept on purpose is not specified.</p>
+<p><strong>G-038 — Interface-scale reach on a 4:3 screen.</strong>
+- <strong>Where:</strong> Interface scale.
+- <strong>Agents:</strong> A4.
+- <strong>What exists:</strong> A4 computes ≈150% in a match. No document states it. A5 did not recompute the reach, since <code>WindowsFit</code> now counts the Orders and Away windows (see C-022).</p>
+<p><strong>G-039 — A pressed state.</strong>
+- <strong>Where:</strong> every button, card and cell.
+- <strong>Agents:</strong> A5.
+- <strong>What exists:</strong> nothing changes on mouse-down.</p>
+<p><strong>G-040 — Front and back windows look the same.</strong>
+- <strong>Where:</strong> the floating windows.
+- <strong>Agents:</strong> A5.
+- <strong>What exists:</strong> the front window is only drawn last (<code>Hud.cpp:3632-3690</code>).</p>
+<p><strong>G-041 — Hue families shared by more than one meaning.</strong>
+- <strong>Where:</strong> the HUD and the world.
+- <strong>Agents:</strong> A5.
+- <strong>Which:</strong>
+  - <strong>Green:</strong> selection ring, healthy, better or Good, commit, valid ghost.
+  - <strong>Warm:</strong> Ore gold, waiting amber, Fair, hurt, armed-order ring.
+  - <strong>Red:</strong> enemy, worse or Poor, low health, invalid ghost.
+  - <strong>Blue:</strong> own, accent, own progress, window edge, pick.
+- <strong>Sources:</strong> beyond <code>ADR-085</code>'s three decisions, only <code>PlanUI1.md:285</code> addresses this ("each used consistently").</p>
+<p><strong>G-042 — Ore written as a word.</strong>
+- <strong>Where:</strong> the Designer and the hints.
+- <strong>Agents:</strong> A5.
+- <strong>Which:</strong>
+  - the Cost bar's unit "ore", lowercase, with the figure not grouped (<code>Hud.cpp:778</code>);
+  - "{n} / 100 ore" (<code>Hud.cpp:802</code>);
+  - "Derelict: 1,200 Ore" (<code>Hud.cpp:2137</code>);
+  - "Ore left 1,234" (<code>Hud.cpp:2594</code>).
+- <strong>What is unstated:</strong> <code>ADR-043</code> decision 3 does not list these. Whether they are meant exceptions is not specified.</p>
+<p><strong>G-043 — Each face's line box in pixels.</strong>
+- <strong>Where:</strong> type.
+- <strong>Agents:</strong> A5.
+- <strong>What it depends on:</strong> the installed font's metrics, <code>ceil(ascent + descent + lineGap)</code> (<code>GlyphAtlas.cpp:258-259</code>).</p>
+<p><strong>G-044 — Unsnapped 1-unit outlines.</strong>
+- <strong>Where:</strong> all panels at 1280×720.
+- <strong>Agents:</strong> A5.
+- <strong>What is unstated:</strong> a 1-unit outline there is 0.667 px (<code>UiPipeline.cpp:236-241</code>). No ADR says how it rasterizes.</p>
+<p><strong>G-045 — The gem is scaled.</strong>
+- <strong>Where:</strong> the Ore gem.
+- <strong>Agents:</strong> A5.
+- <strong>What happens:</strong> it is rasterized at 12 units and drawn at 13 or 8 (<code>Hud.cpp:3022</code>; <code>UiPipeline.cpp:290-305</code>). Recorded, not judged.</p>
+<p><strong>G-046 — Colors with no stated meaning.</strong>
+- <strong>Where:</strong> the minimap and the designer header.
+- <strong>Agents:</strong> A5, R.
+- <strong>Which:</strong>
+  - <code>NEUTRAL_COLOR</code> is the minimap's mark for "anything else" (<code>Hud.cpp:31, 3514</code>). Which entities draw it at HEAD is not stated: every rock on the map is an ore asteroid or a field.
+  - <code>SLOT_FILLED_COLOR</code> (<code>Hud.cpp:1013</code>) has no comment.
+  - <code>AMBER_COLOR</code> (<code>Hud.cpp:1000</code>) has no comment. Its meaning is read from <code>Phase1.md:284</code>.</p>
+<p><strong>G-047 — Dead parameters.</strong>
+- <strong>Where:</strong> none on screen.
+- <strong>Agents:</strong> A5.
+- <strong>Which:</strong> <code>CARD_COLOR</code> passed to <code>AddButton</code> is ignored (<code>Hud.cpp:1979, 2357, 3348, 3439</code>). <code>OpenWindow</code>'s title parameter is never drawn, since every caller passes "".</p>
+<p><strong>G-048 — The Wreck set's meshes.</strong>
+- <strong>Where:</strong> derelicts.
+- <strong>Agents:</strong> A6.
+- <strong>What happens:</strong> <code>"meshes": "Human"</code> gives the Wreck set all 21 Human meshes, and the game loads them. Only the three hulls are ever drawn (<code>GameClient.cpp:1628-1639</code>).</p>
+<p><strong>G-049 — The Pirate set's structures.</strong>
+- <strong>Where:</strong> pirates.
+- <strong>Agents:</strong> A6.
+- <strong>What happens:</strong> the Pirate set loads every Tarkan mesh, but pirates spawn only Defence Platforms (<code>Simulation.cpp:843</code>) and Small and Medium ships (<code>Simulation.cpp:868</code>; <code>Tuning.json:123-127</code>). Their Command Station, Shipyard, Research Lab, Mining Rig, Large hull and Constructor are never drawn.</p>
+<p><strong>G-050 — No in-game image exists.</strong>
+- <strong>Where:</strong> the whole reference.
+- <strong>Agents:</strong> A4, A6, A7.
+- <strong>What exists:</strong>
+  - <code>DesignReference/_work/screens/</code> is empty.
+  - A6's renders approximate the look. They differ in line width, projection, antialiasing and the glow's scale. They also leave out a structure under construction, the rig on its rock and field rocks.
+  - The app logos are placeholders (<code>Package.appxmanifest:20, 40-43</code>).
+  - The game was not built or run.</p>
+<p><strong>G-051 — A structure's size against <code>lengthMeters</code>.</strong>
+- <strong>Where:</strong> the world.
+- <strong>Agents:</strong> A6.
+- <strong>What happens:</strong> a structure is drawn across <code>2 × footprintRadiusMeters</code> (<code>GameClient.cpp:1658-1664</code>). For example, the Command Station is 90 m long against <code>lengthMeters</code> 60, and the Mining Rig 50 m against 4. <code>ADR-011</code> decision 2 calls <code>lengthMeters</code> "how big a model is", which holds for ships only. Not a conflict: the code is explicit.</p>
+<p><strong>G-052 — Smaller overhangs of the footprint.</strong>
+- <strong>Where:</strong> the world.
+- <strong>Agents:</strong> A6.
+- <strong>Which:</strong> fitted along x and drawn across the footprint, the Human Mining Rig spans about 57 m against 50 m (z/x 1.15), and the Tarkan Defence Platform about 46 m against 40 m (z/x 1.15). Both are computed from the NMFs; R parsed both.
+- <strong>Not specified:</strong> whether that is intended. The Human Command Station's far larger overhang is C-002.</p>
+<p><strong>G-053 — Textures no code reads.</strong>
+- <strong>Where:</strong> the package.
+- <strong>Agents:</strong> A6, A7.
+- <strong>Which:</strong> <code>glow.dds</code>, <code>cloudyglow.dds</code> and <code>laser.dds</code> are packaged but read by no code. <code>starburst.dds</code> is read only by a test (<code>OutpostCommander.vcxproj:122-124, 171</code>; <code>ADR-022</code> decision 4; <code>ADR-028</code> Consequences).</p>
+<p><strong>G-054 — Move and order markers.</strong>
+- <strong>Where:</strong> the world.
+- <strong>Agents:</strong> A7.
+- <strong>What exists:</strong> none is drawn (<code>GameClient.cpp:1125-1183</code>). <code>PlanUI2.md:520</code> mentions "where a move marker would stand". The only feedback is the selection ring's amber while an order is armed.</p>
+<p><strong>G-055 — The drag box's width.</strong>
+- <strong>Where:</strong> the world.
+- <strong>Agents:</strong> A7.
+- <strong>What exists:</strong> 1.5 m on the ground (<code>GameClient.cpp:88</code>), from code only. At 3,000 m wide it is under a pixel. No ADR states it.</p>
+<p><strong>G-056 — Which way the parts spin.</strong>
+- <strong>Where:</strong> Research Labs.
+- <strong>Agents:</strong> A7.
+- <strong>What is known:</strong> only that the Tarkan counter ring turns "the other way" (<code>ADR-045:12</code>). The others follow their baked axes, and no document states a sense.</p>
+<p><strong>G-057 — A held and guarded sector.</strong>
+- <strong>Where:</strong> territory marks.
+- <strong>Agents:</strong> A7.
+- <strong>What happens:</strong> the code outlines it as held only (<code>TerritoryMarks.cpp:42-49</code>). <code>ADR-081</code> does not cover the case.</p>
+<p><strong>G-058 — One pattern, two meanings.</strong>
+- <strong>Where:</strong> territory marks on the ground and on the minimap.
+- <strong>Agents:</strong> R, from A4 and A7.
+- <strong>What happens:</strong>
+  - On the ground, a <strong>suppressed</strong> sector's outline is dashed and a cut-off one's dotted (<code>ADR-081:26</code>; <code>TerritoryMarks.cpp:45-47</code>).
+  - On the minimap, a <strong>cut-off</strong> sector's outline is dashed (6 on, 4 off) and a suppressed one is hatched (<code>ADR-081:41</code>; <code>Hud.cpp:3573-3580</code>).
+- <strong>Not specified:</strong> both are decided, but no document explains why the dashed pattern means different states on the two surfaces. <code>ADR-085</code> (one meaning per color) covers color, not pattern.</p>
+<hr />
+<h3>B. On screen, with no rule explained by another agent</h3>
+<p>A4's element inventory and UI strings (<code>A4.md</code> §1–§4 and "UI strings" A and B) were checked against A1, A2, A3 and A7. Almost every element that carries a game rule is explained by a rules agent, or by an ADR A4 cites: status lines, territory and drain (<code>ADR-057</code> decision 7), alerts, hints, selection lines, buttons, designer, production, research, orders and away. These remain:</p>
+<p><strong>G-059 — Fallback labels.</strong>
+- <strong>Which:</strong>
+  - "Unknown design" (<code>Hud.cpp:191</code>, a design missing from the snapshot);
+  - "Unknown topic" (<code>Hud.cpp:2930</code>);
+  - "Structure" (<code>Hud.cpp:2163, 2568</code>; <code>OrderForm.cpp:281</code>);
+  - "a structure" (<code>Hud.cpp:2551</code>);
+  - "?" (<code>Hud.cpp:427, 2969</code>).
+- <strong>Not specified:</strong> when a player can meet any of these. No document names them.
+- <strong>Agents:</strong> R, from A4's string table.</p>
+<p><strong>G-060 — "last seen earlier".</strong>
+- <strong>Where:</strong> the hint over a remembered structure or derelict.
+- <strong>What the code does:</strong> shows "earlier" when the last-seen tick is 0 or later than the snapshot's (<code>Hud.cpp:452-460</code>). A4 states it only as "when it is only remembered".
+- <strong>Not specified:</strong> when a memory can have no known tick in play, for example across a world's recovery. No document says.
+- <strong>Agents:</strong> A4, R.</p>
+<hr />
+<h3>C. Rules with no visible surface</h3>
+<p>These rules are applied by the simulation, but A4 lists no screen that shows their figure. The reference can state each rule, but no screenshot can show it. Sources were checked by <code>grep</code> over <code>GameApp/Hud.cpp</code> (for example, no <code>turnRate</code>, <code>oreYield</code>, <code>suppression</code> or <code>repairPercent</code> appears there).</p>
+<p><strong>G-061 — Per-rig income and the asteroid's yield class.</strong>
+- <strong>The rule:</strong> home 3.5, near 4, contested 5.5, rich 6.5 Ore/s (<code>Tuning.json:6-9</code>).
+- <strong>What shows:</strong> only the total "+n/s" (<code>Hud.cpp:3146-3151</code>). A rig's panel gives the Ore left and its sector's state, not its rate. The minimap gives no class: the rich asteroid differs only by its radius, 60 m against 45.
+- <strong>Agents:</strong> A1, A4.</p>
+<p><strong>G-062 — Command points per hull.</strong>
+- <strong>The rule:</strong> Small 1, Medium 2, Large 4 (<code>Tuning.json:16-18</code>).
+- <strong>What shows:</strong> no Designer row or production card shows them. Only the totals show ("Fleet {cp} / {cap}", <code>Hud.cpp:375-379</code>) and the condition's "enemy CP" (<code>OrderForm.cpp:313</code>).
+- <strong>Agents:</strong> A1, A2.</p>
+<p><strong>G-063 — Turn rate and the drive's turn factor.</strong>
+- <strong>The rule:</strong> hull turn rate × drive factor (<code>DesignStats.h:83-84</code>).
+- <strong>What shows:</strong> nothing. The drive card reads "SPD ×f · HP ×f" (<code>Hud.cpp:669</code>), and the Designer's bars are Hit points, Armor, Speed, Range, Sensors, Cost and Build.
+- <strong>Agents:</strong> A2.</p>
+<p><strong>G-064 — Sight ranges.</strong>
+- <strong>The rule:</strong> weapon range + 50 m, 200 m for an unarmed ship or structure, the shooter revealed for 3 s (<code>Tuning.json:13</code>).
+- <strong>What shows:</strong> only the Sensors bar, for a module (<code>Hud.cpp:772-777</code>). The fog shows the result.
+- <strong>Agents:</strong> A1, A2.</p>
+<p><strong>G-065 — Suppression radius and the cut-off rule.</strong>
+- <strong>The rule:</strong> 400 m (<code>Tuning.json:14</code>), and a path of held sectors to home (<code>Simulation.cpp:2864-2891</code>).
+- <strong>What shows:</strong> only each sector's state ("suppressed, it earns nothing", "cut off, it earns half") and its marks.
+- <strong>Agents:</strong> A1.</p>
+<p><strong>G-066 — Pirate guard and chase distances, and camp against stronghold.</strong>
+- <strong>The rule:</strong> 600 m and 900 m (<code>Tuning.json:120-121</code>).
+- <strong>What shows:</strong> no ring, figure or label. Orders targets read "Pirate {name}" only (<code>OrderForm.cpp:288</code>).
+- <strong>Agents:</strong> A1.</p>
+<p><strong>G-067 — Repair rates and reach.</strong>
+- <strong>The rule:</strong> a Constructor repairs 2% a second each. A Repair Bay, the Command Station and a Shipyard repair 3% a second, up to 4 ships within 150 m (<code>Tuning.json:35, 131</code>).
+- <strong>What shows:</strong> only the health bars move.
+- <strong>Agents:</strong> A1, A2.</p>
+<p><strong>G-068 — Where a retreat goes.</strong>
+- <strong>The rule:</strong> the nearest Repair Bay, then the Command Station, then the nearest Shipyard (<code>Simulation.cpp:2556-2577</code>).
+- <strong>What shows:</strong> "Retreating to be repaired" and the "Ship retreating" alert. No destination is shown.
+- <strong>Agents:</strong> A1.</p>
+<p><strong>G-069 — Salvage's work time and recovery share.</strong>
+- <strong>The rule:</strong> 30 s of work and 50% recovery (<code>Tuning.json:130</code>).
+- <strong>What shows:</strong> "salvaged {p}%", ", and part of {topic}'s research time" and "· SALVAGED" (<code>Hud.cpp:2137-2141, 2979</code>). The 50% is never written.
+- <strong>Agents:</strong> A1.</p>
+<p><strong>G-070 — Paid at the start, never refunded, no cancel.</strong>
+- <strong>The rule:</strong> <code>ADR-016</code> decisions 4 and 6.
+- <strong>What shows:</strong> no cancel control and no text. A button is dim when the Ore is short.
+- <strong>Agents:</strong> A1, A2.</p>
+<p><strong>G-071 — The Constructor's helper share and the time with n Constructors.</strong>
+- <strong>The rule:</strong> 0.5 for each further Constructor (<code>Tuning.json:35</code>; <code>Simulation.cpp:2435-2437</code>).
+- <strong>What shows:</strong> the build buttons show cost only, and a site shows its progress.
+- <strong>Agents:</strong> A1, A2.</p>
+<p><strong>G-072 — Pirates never retreat, never raid, never respawn, never leave their sector.</strong>
+- <strong>The rule:</strong> <code>ADR-073</code> decisions 4–5; <code>ADR-075</code> decision 4.
+- <strong>What shows:</strong> nothing.
+- <strong>Agents:</strong> A1.</p>
+<p><strong>G-073 — Order within one tick.</strong>
+- <strong>The rule:</strong> a loss of production is decided before domination, so a player who loses both in one tick loses by production (<code>Simulation.cpp:946-951, 979</code>).
+- <strong>What shows:</strong> nothing.
+- <strong>Agents:</strong> A1.</p>
+<p><strong>G-074 — The deputy's play while away.</strong>
+- <strong>The rule:</strong> research, production, Constructors, rigs, repairs and defense (<code>Deputy.cpp</code>).
+- <strong>What shows:</strong> no live surface. Only the Away report afterwards, and <code>World.log</code>.
+- <strong>Agents:</strong> A3.</p>
+<p><strong>G-075 — Saves, recovery and the version pin.</strong>
+- <strong>The rule:</strong> every 60 s, the newest 3 kept, the refusal messages (<code>WorldFolder.h:15, 23</code>; <code>WorldState.cpp</code>).
+- <strong>What shows:</strong> nothing in the client. These are server-console and folder matters.
+- <strong>Agents:</strong> A3.</p>
+<p><strong>G-076 — The world log's hourly records and battles.</strong>
+- <strong>The rule:</strong> <code>WorldLog.h:29-57</code>.
+- <strong>What shows:</strong> <code>World.log</code> only.
+- <strong>Agents:</strong> A1, A3.</p>
+<p><strong>G-077 — The seed and the tick rate.</strong>
+- <strong>The rule:</strong> 20 Hz (<code>Tuning.json:3</code>). A match's seed goes to the debugger output, and a world's is printed once by <code>--new-world</code> (<code>OutpostServer/Main.cpp:171-174</code>).
+- <strong>What shows:</strong> neither, in the client.
+- <strong>Agents:</strong> A1, A3.</p>
+<p><strong>G-078 — AI difficulty settings and the counter table.</strong>
+- <strong>The rule:</strong> <code>Opponent*.json</code>.
+- <strong>What shows:</strong> only the menu's three names.
+- <strong>Agents:</strong> A3.</p>
+<p><strong>G-079 — Events that raise no alert.</strong>
+- <strong>The rule:</strong> <code>ShipBuilt</code>, <code>StructureBuilt</code>, <code>ShipLost</code>, <code>StructureLost</code> of anything but a rig, <code>SectorGained</code> and <code>SectorLost</code> (A3 §3.3).
+- <strong>What shows:</strong> they are only counted or named in the Away report.
+- <strong>Agents:</strong> A3.</p>
+<hr />
+<h3>Counts</h3>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Entries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A. Not specified, or open</td>
+<td>58 (G-001 to G-058)</td>
+</tr>
+<tr>
+<td>B. On screen, rule unexplained</td>
+<td>2 (G-059, G-060)</td>
+</tr>
+<tr>
+<td>C. Rule with no surface</td>
+<td>19 (G-061 to G-079)</td>
+</tr>
+<tr>
+<td><strong>All</strong></td>
+<td><strong>79</strong></td>
+</tr>
+</tbody>
+</table></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 7229}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

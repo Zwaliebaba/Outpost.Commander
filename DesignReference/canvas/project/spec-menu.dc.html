@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Main menu and startup</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Main menu</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> The game opens on the menu. The player starts a skirmish against the AI at a difficulty, joins a world on a dedicated server, or quits (ADR-020 d10, ADR-065 d4, ADR-078 d9). After a lost connection or a failed join, the menu also says why (ADR-078 d10).</p>
+<p><strong>Geometry.</strong> The menu is one panel, 440 units wide (<code>MENU_WIDTH</code>, Hud.cpp:161), centred on the screen (Hud.cpp:2342-2343). Its height is 2·12 + 30 + 22 + 22·(notice lines) + 6 + n·34 + (n−1)·6, where n is the number of buttons (Hud.cpp:2340-2341):</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Panel</th>
+<th>Buttons start at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Default, 4 buttons</td>
+<td><code>740, 422, 440, 236</code></td>
+<td>y 492</td>
+</tr>
+<tr>
+<td>Join world, 5 buttons</td>
+<td><code>740, 402, 440, 276</code></td>
+<td>y 472</td>
+</tr>
+<tr>
+<td>Notice of ≈2 lines, with Join world</td>
+<td>≈<code>740, 380, 440, 320</code> (the notice wraps at 416 units, Hud.cpp:2336-2337)</td>
+<td>≈y 514</td>
+</tr>
+</tbody>
+</table>
+<p>The menu has no hover lighting: <code>LayMenu</code> takes no hovered action (Hud.h:833-839), and ADR-088's Consequences say "the menu's buttons are as they were".</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label (verbatim)</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect (default)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>menu.frame</td>
+<td>panel</td>
+<td>—</td>
+<td>—</td>
+<td><code>WINDOW_COLOR</code></td>
+<td>740, 422, 440, 236</td>
+<td>Hud.cpp:2344</td>
+</tr>
+<tr>
+<td>menu.title</td>
+<td>text, Title</td>
+<td><code>Outpost Commander</code></td>
+<td>—</td>
+<td><code>GOLD_COLOR</code></td>
+<td>752, 434, ≈171, ≈27</td>
+<td>Hud.cpp:2346</td>
+</tr>
+<tr>
+<td>menu.subtitle</td>
+<td>text, Name</td>
+<td><code>A skirmish against the AI</code></td>
+<td>—</td>
+<td><code>DIM_TEXT_COLOR</code></td>
+<td>752, 464, ≈, ≈19</td>
+<td>Hud.cpp:2347</td>
+</tr>
+<tr>
+<td>menu.notice</td>
+<td>text, Name, one line each, wrapped to 416</td>
+<td><code>{notice}</code>: <code>The connection to the server was lost: {reason}</code> or <code>Could not join the world: {error}</code></td>
+<td><code>Hud::MenuState::notice</code> (Hud.h:823-827) ← <code>GameClient::ShowMenu</code> (GameClient.cpp:480-485) ← WinMain.cpp:460 / 363; reasons from WireFormat.cpp:81-89 and QuicTransport.cpp:15, 34, 41</td>
+<td><code>WARNING_COLOR</code>, plain text and not a chip (ADR-085 d1)</td>
+<td>752, 486 + 22·i</td>
+<td>Hud.cpp:2336-2338, 2349-2353</td>
+</tr>
+<tr>
+<td>menu.easyskirmish</td>
+<td>button</td>
+<td><code>Easy skirmish</code></td>
+<td><code>StartSkirmish</code>, <code>Difficulty::Easy</code></td>
+<td>face <code>CARD_COLOR</code>, edge <code>EDGE_COLOR</code>, label <code>TEXT_COLOR</code></td>
+<td>752, 492, 416, 34</td>
+<td>Hud.cpp:2329, 2355-2359</td>
+</tr>
+<tr>
+<td>menu.normalskirmish</td>
+<td>button</td>
+<td><code>Normal skirmish</code></td>
+<td><code>StartSkirmish</code>, <code>Normal</code></td>
+<td>as above</td>
+<td>752, 532, 416, 34</td>
+<td>Hud.cpp:2330</td>
+</tr>
+<tr>
+<td>menu.hardskirmish</td>
+<td>button</td>
+<td><code>Hard skirmish</code></td>
+<td><code>StartSkirmish</code>, <code>Hard</code></td>
+<td>as above</td>
+<td>752, 572, 416, 34</td>
+<td>Hud.cpp:2331</td>
+</tr>
+<tr>
+<td>menu.joinworld</td>
+<td>button, only when a join file is present</td>
+<td><code>Join world</code></td>
+<td><code>JoinWorld</code>; <code>MenuState::joinWorld</code> ← <code>OfferWorld</code> (GameClient.h:75-78; WinMain.cpp:348)</td>
+<td>as above</td>
+<td>752, 612, 416, 34</td>
+<td>Hud.cpp:2332-2333</td>
+</tr>
+<tr>
+<td>menu.quit</td>
+<td>button</td>
+<td><code>Quit</code></td>
+<td><code>Quit</code></td>
+<td>as above</td>
+<td>752, 612, 416, 34 (y 652 with Join world)</td>
+<td>Hud.cpp:2334</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Inside a menu button</strong> (<code>AddButton</code>, Hud.cpp:1264-1323): the face fills the button; the edge is a 1-unit outline (Hud.cpp:1176-1182); the label is in the Name face at (+12, +6) and cut short at 392 units (Hud.cpp:1290, 1316).</p>
+<p><strong>Interactions.</strong>
+- A left press on a button raises a request (GameClient.cpp:587-594, 883-895), which the shell acts on (WinMain.cpp:483-513).
+- No key does anything on the menu, except Ctrl+= and Ctrl+-, which scale the interface (GameClient.cpp:574, 779-799).</p>
+<p><strong>What surrounds it.</strong>
+- The menu is drawn over the empty grid and the sky (GameClient.cpp:1138-1158).
+- There is no "where the match runs" tag on the menu; ADR-086 forecloses one.
+- Owner, 2026-10-05: no Controls line on the menu (ADR-068 Context and d4).</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Startup</div><div style="padding:20px 24px 24px 24px"><div class="md"><ul>
+<li><strong>Not specified: a loading screen.</strong> None exists. The window is created hidden, and shown once four things are ready (WinMain.cpp:273-316; ADR-049 decisions 2-3):</li>
+<li>the first server and the AI settings, made in parallel;</li>
+<li>the client's assets;</li>
+<li>the interface atlas;</li>
+<li>the GPU uploads.</li>
+</ul>
+<p>ADR-049's Consequences "forecloses a window that shows anything before the game has loaded", and leave a loading screen open.
+- <strong>A failure while loading</strong> shows a Windows message box captioned <code>Outpost Commander</code>, with the error, and the game exits (WinMain.cpp:22, 95-101, 559-572). This is not a game screen.
+- <strong>Switches that skip the menu.</strong>
+  - <code>--measure</code>, <code>--load</code> and <code>--stress</code> start a match at once (WinMain.cpp:251-252, 369-370).
+  - <code>--join &lt;file&gt;</code> joins at once (WinMain.cpp:226-235, 367-368).
+- <strong>A match before its first snapshot</strong> (<code>match-awaiting-first-snapshot.json</code>, no elements).
+  - <code>StartMatch</code> clears the layout (GameClient.cpp:472-478, 517).
+  - <code>Update</code> lays the HUD out only once the view holds a snapshot (GameClient.cpp:689-775), and <code>DrawHud</code> draws nothing while <code>fontPixels</code> is 0 (GameClient.cpp:1291-1293).
+  - So the screen shows the sky and the grid only (GameClient.cpp:1138-1158).
+  - The camera centres on the player's ships with the first snapshot (GameClient.cpp:548-567).
+- <strong>Joining a world is synchronous.</strong>
+  - <code>JoinWorld</code> builds the <code>QuicTransport</code> inside the frame loop (WinMain.cpp:505-508 → 349-358).
+  - Its constructor waits up to <code>WELCOME_TIMEOUT</code>, 10,000 ms, for the server's welcome (QuicTransport.cpp:9, 26-35).
+  - No frame is drawn meanwhile, so the last menu frame stays on screen. <strong>Not specified: a "connecting" indicator.</strong></p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 1950}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

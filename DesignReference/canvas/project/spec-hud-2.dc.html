@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HUD: selection, commands, minimap, bars, banner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Selection panel</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> What is selected: its name, its state and its hit points, as figures and bars (ADR-043 d5, ADR-046 d6, ADR-066 d4, ADR-088 d4).</p>
+<p><strong>Geometry</strong> (Hud.cpp:3357-3426).
+- <strong>Width.</strong> w = clamp(the widest line + 24, 280, 560). Line 0 is measured in the Title face and the others in the Name face; the width is <strong>≈</strong> wherever it falls between the bounds.
+- <strong>Height.</strong> h = 24 + 30 + 22·(lines − 1) + bars. Bars add 8 + rows·10 + (rows − 1)·4 for per-ship bars, or 8 + 6 for the one bar.
+- <strong>Position.</strong> <code>pairLeft = (1920 − w − buttonsPanelWidth)/2</code>, and at least 324 when there is a minimap (Hud.cpp:3369-3371); y = 1064 − h.
+- <strong>Line 0</strong> is in the Title face, <code>TEXT_COLOR</code>, at (12, 12). <strong>Lines 1 and on</strong> are in the Name face, <code>NUMBERS_COLOR</code>, at (12, 42 + 22·(i − 1)). Every line is cut short at w − 24.
+- <strong>Per-ship bars</strong> (2 to 24 ships, Hud.h:566): each 17×10, in rows of 12, 4 apart, starting 8 below the lines.
+  - Track <code>BAR_TRACK_COLOR</code>. The fill runs from the left by the ship's share of its hit points: <code>HEALTH_GOOD_COLOR</code> above 0.5, <code>HEALTH_FAIR_COLOR</code> above 0.25, otherwise <code>HEALTH_POOR_COLOR</code> (Hud.cpp:1026-1029).
+  - A 1-unit outline round a bar: <code>TEXT_COLOR</code> for a retreating ship, <code>HOVER_EDGE_COLOR</code> under the pointer.
+  - A click on a bar selects that ship alone and centres the camera on it (<code>Select</code>, Hud.cpp:3399-3417; GameClient.cpp:957-963).
+- <strong>One bar</strong> otherwise: <code>12, top, w − 24, 6</code>, in the same colors (Hud.cpp:3418-3425).</p>
+<p><strong>Line content</strong> (<code>Hud::Describe</code>, Hud.cpp:2559-2790, and <code>PendingOrderLine</code> added by GameClient.cpp:769-771).</p>
+<table>
+<thead>
+<tr>
+<th>Selection</th>
+<th>Lines (verbatim formats, in order)</th>
+<th>Bar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>One structure</strong></td>
+<td>Line 0: <code>{type name}</code>, then <code>{n:02}</code> for a Shipyard and <code>· L{level}</code> for a kind that grows. A remembered structure adds <code>Last seen {m:ss} ago</code> or <code>Last seen earlier</code>. Then, when they apply: <code>Under construction, {p}%</code> (or <code>{p}% built when seen</code>); <code>Upgrading to L{n}, {p}%</code> (+ <code>when seen</code>); <code>Hit points {hp:,} / {max:,}</code> (+ <code>when seen</code>). A Mining Rig adds <code>Ore left {n:,}</code> or <code>Ore run out: it earns a trickle</code>. The player's Relay or rig adds its sector: <code>{sector}: not held, it earns nothing</code>, <code>{sector}: suppressed, it earns nothing</code>, <code>{sector}: cut off, it earns half</code> or <code>{sector}: held</code>. The player's finished Command Station or Shipyard adds <code>Idle</code>, <code>Building {name} · {p}%</code>, <code>Building {name} · {p}% · +{n} queued</code>, or <code>Building {name} · waiting for Ore</code> (or <code>… waiting for the fleet cap</code>). Its Lab adds <code>Researching {topic} · {p}%</code> (or <code>Idle</code>). Its next level adds <code>L{n}: {gives}{hp:,} hit points</code>, where gives is any of <code>{n} nodes,</code>, <code>{n} Defence guns,</code>, <code>fleet {n},</code>, <code>tier {n},</code>, <code>a second research slot,</code> and <code>{Hull}[ and {Hull}] hulls,</code>, followed by <code>L{n} needs {topic}[ and {topic}]</code>; at the top level, <code>Top level</code>.</td>
+<td>One bar, <code>selectionHealth</code> (Hud.cpp:2589)</td>
+</tr>
+<tr>
+<td><strong>One ship</strong></td>
+<td><code>{design name}</code> (<code>Constructor</code> for a Constructor, Hud.cpp:164; <code>Unknown design</code>, Hud.cpp:191); <code>Hit points {hp:,} / {max:,}</code>; then the standing-order lines below</td>
+<td>One bar</td>
+</tr>
+<tr>
+<td><strong>Ships of one design</strong></td>
+<td><code>{n} × {design}</code>, then <code>Hit points …</code></td>
+<td>Per-ship bars for 2-24 ships, else one bar</td>
+</tr>
+<tr>
+<td><strong>Ships of several designs</strong></td>
+<td><code>{n} ships</code>; up to 5 lines of <code>{n} × {design}</code>, most numerous first; <code>and {n} more designs</code>; <code>Hit points …</code></td>
+<td>Per-ship bars for 2-24 ships, else one bar</td>
+</tr>
+<tr>
+<td>Standing orders and retreat (any ships)</td>
+<td><code>Holding a sector</code>, <code>On patrol</code>, <code>Retreating to be repaired</code> (one ship) or <code>{n} retreating to be repaired</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Scheduled order (any ships)</td>
+<td><code>Scheduled: {order}</code> (e.g. <code>Scheduled: at 02:00, attack-move to C3</code>), <code>Scheduled: {n} orders</code>, or <code>Scheduled: an order</code> (OrderForm.cpp:317-334)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Data sources.</strong>
+- <code>EntityView</code> (Snapshot.h:72-148): <code>structure</code>, <code>shipyardNumber</code>, <code>level</code>, <code>builtPermille</code>, <code>upgradePermille</code>, <code>hitPointsHundredths</code> and <code>maxHitPointsHundredths</code>, <code>oreReserveHundredths</code>, <code>queue</code>, <code>research</code>, <code>jobPermille</code>, <code>remembered</code>, <code>lastSeenTick</code>, <code>standing</code>, <code>retreat</code>, <code>retreating</code> and <code>scheduledOrder</code>.
+- <code>StructureTypeView</code> and its <code>levels</code> (Snapshot.h:253-282).
+- <code>DesignView::nameUtf8</code>.</p>
+<p><strong>Example rects</strong> (all ≈ through the width):</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Selection panel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Two Constructors</td>
+<td><code>630, 970, 280, 94</code></td>
+</tr>
+<tr>
+<td>One ship</td>
+<td><code>630, 952, 280, 112</code></td>
+</tr>
+<tr>
+<td>Shipyard</td>
+<td><code>630, 930, 280, 134</code></td>
+</tr>
+<tr>
+<td>Twelve ships</td>
+<td><code>623.5, 838, ≈293, 226</code></td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Commands beside</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong>
+- A structure's window buttons and its upgrade.
+- A warship selection's orders, each with its key.
+- A Constructor selection's build buttons.
+- The retreat, as three choices.</p>
+<p>Sources: ADR-088 d2-d3, ADR-046 d7, Phase 1 design §12.</p>
+<p><strong>Geometry</strong> (Hud.cpp:3427-3453).
+- <strong>Panel.</strong> w = 380, standing against the selection panel's right edge, bottom-aligned at y 1064.
+- <strong>Height.</strong> h = 24 + n·34 + (n − 1)·6. With a retreat row: (12 + buttons + 6) + 20 + 34 + 12.
+- <strong>Buttons.</strong> Each is 356×34, at (12, 12 + 40·i).
+- <strong>Retreat row.</strong> <code>RETREAT</code> in the Label face, tracking 2, <code>ROW_LABEL_COLOR</code>, at (12, retreatTop). While the ships differ, <code>MIXED</code> stands at the right edge 368, in <code>NUMBERS_COLOR</code>, tracking 2.
+- <strong>Retreat cells.</strong> Three cells of 116×34, 4 apart, at (12 | 132 | 252, retreatTop + 20), reading <code>25%</code>, <code>50%</code> and <code>Never</code> in the Name face (Hud.cpp:463-477, 1328-1346).
+  - The face is <code>PICKED_COLOR</code> for the setting and <code>CARD_COLOR</code> otherwise; the edge is <code>PICKED_EDGE_COLOR</code>, <code>HOVER_EDGE_COLOR</code> or <code>EDGE_COLOR</code>.
+  - While the ships differ, no cell is lit.
+  - A press sets that retreat for every selected ship (<code>SetRetreat</code>, GameClient.cpp:936-938).
+- <strong>Pair position.</strong> The pair is centred, and moves right only where it would meet the minimap (ADR-088 d2).</p>
+<p><strong>Which buttons, in order</strong> (Hud.cpp:2614-2697, 2794-2828).</p>
+<table>
+<thead>
+<tr>
+<th>Selection</th>
+<th>Buttons (label verbatim; <code>\|cost</code> shown as gem + figure)</th>
+<th>Key cap</th>
+<th>Disabled, and its note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The player's finished Command Station</td>
+<td><code>Production</code>; <code>Upgrade to L{n} · {m:ss}\|{cost}</code></td>
+<td><code>P</code> (KeyBindings.h:28)</td>
+<td>Upgrade: <code>UPGRADING · {p}%</code> with a progress bar while it builds; <code>NEEDS RESEARCH</code> when a prerequisite is missing; dim with its cost when Ore is short</td>
+</tr>
+<tr>
+<td>The player's finished Shipyard</td>
+<td><code>Production</code>; <code>Ship designer</code>; <code>Upgrade to L{n} · {m:ss}\|{cost}</code></td>
+<td><code>P</code>; <code>D</code> (KeyBindings.h:27)</td>
+<td>as above</td>
+</tr>
+<tr>
+<td>The player's finished Research Lab</td>
+<td><code>Research</code>; <code>Upgrade to L{n} · {m:ss}\|{cost}</code></td>
+<td><code>R</code> (KeyBindings.h:29)</td>
+<td>as above</td>
+</tr>
+<tr>
+<td>Ships, with any warship</td>
+<td><code>Attack-move</code>; <code>Hold sector</code> (only on a map with sectors); <code>Patrol</code>; <code>Stop</code></td>
+<td><code>A</code>, <code>H</code>, <code>T</code> and <code>S</code> (KeyBindings.h:10-13)</td>
+<td>The armed order is drawn as a pick until it is given or cancelled (<code>selected</code>, Hud.cpp:2796-2797)</td>
+</tr>
+<tr>
+<td>Ships, with any Constructor</td>
+<td><code>{structure name}\|{cost}</code> for each buildable type, in the snapshot's order. With Tuning.json that is <code>Shipyard\|300</code>, <code>Research Lab\|200</code>, <code>Mining Rig\|50</code>, <code>Defence Platform\|450</code>, <code>Relay\|200</code> and <code>Repair Bay\|300</code>; the Relay is left out on a map without sectors</td>
+<td>—</td>
+<td><code>ONE PER PLAYER</code> (a second Lab), <code>NODE CAP</code> (Relay at the cap), or dim with its cost when Ore is short (Hud.cpp:2818-2826)</td>
+</tr>
+<tr>
+<td>Any ships</td>
+<td>Retreat row</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Inside a button</strong> (<code>AddButton</code>, Hud.cpp:1264-1323).
+- <strong>Face:</strong> <code>PICKED_COLOR</code> when selected, <code>CARD_COLOR</code> when enabled, <code>FIELD_COLOR</code> when disabled. Only an enabled button takes a press.
+- <strong>Edge:</strong> a 1-unit outline: <code>PICKED_EDGE_COLOR</code>, <code>HOVER_EDGE_COLOR</code> (hovered and enabled), or <code>EDGE_COLOR</code>.
+- <strong>Label:</strong> Name face, <code>TEXT_COLOR</code> (or <code>LOCKED_TEXT_COLOR</code> when disabled), at (+12, +6), cut short only where it would meet the cost, the note or the key cap.
+- <strong>Cost:</strong> the gem and the figure in the Figure face, <code>GOLD_COLOR</code> (or <code>LOCKED_TEXT_COLOR</code>), right edge at w − 12, top at +8.5. The gem is 8×8, with 5 units between it and the figure.
+- <strong>Key cap:</strong> a 20×20 <code>FIELD_COLOR</code> square at (w − 32, +7), outlined in <code>ROW_LABEL_COLOR</code>, with the letter in the Label face in <code>ROW_LABEL_COLOR</code>, centred, at +2.
+- <strong>Note:</strong> Label face, <code>LABEL_COLOR</code>, right edge at w − 12, at +8.5.
+- <strong>Progress bar:</strong> <code>2, h − 5, w − 4, 3</code>, in <code>BAR_TRACK_COLOR</code> and <code>BAR_FILL_COLOR</code>.</p>
+<p><strong>Example rects.</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Buttons panel</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Constructors</td>
+<td><code>910, 746, 380, 318</code></td>
+<td>Shipyard button <code>922, 758, 356, 34</code>; retreat cells at y 1018</td>
+</tr>
+<tr>
+<td>Twelve warships</td>
+<td>≈<code>916.5, 826, 380, 238</code></td>
+<td>Attack-move <code>928.5, 838</code>; its key cap ≈<code>1252.5, 845, 20, 20</code></td>
+</tr>
+<tr>
+<td>Station upgrading</td>
+<td><code>910, 966, 380, 98</code></td>
+<td>Upgrade <code>922, 1018, 356, 34</code>; its progress bar <code>924, 1047, 352, 3</code></td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Minimap</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> The whole map: whose sectors are whose, the marks, the fog, the alerts, and the camera's view (ADR-015 d4, ADR-043 d7, ADR-068 d2, ADR-081).</p>
+<p><strong>Geometry</strong> (Hud.cpp:3456-3465).
+- The frame is <code>16, 764, 300, 300</code>; the map area, <code>MAP_COLOR</code>, is <code>24, 772, 284, 284</code>.
+- <strong>Scale.</strong> 284 units for <code>Snapshot::mapSizeMeters</code>, 10,000 m with Map.json <code>sizeMeters</code>: 0.0284 units a metre, or 35.2 m a unit.
+- <strong>Orientation.</strong> +x runs right and +z up (Hud.cpp:2432-2451).</p>
+<p><strong>Draw order and looks</strong> (all in layer 0's panels; the view's segments are lines).
+1. <strong>Sector wash.</strong> Every held or pirate-guarded sector, filled in <code>OWN_COLOR</code>, <code>ENEMY_COLOR</code> or <code>PIRATE_COLOR</code> at alpha 0.12 (Hud.cpp:3481-3485, 42). A sector is 56.8 units square on Map.json's 5×5 grid of 2,000 m sectors.
+2. <strong>Marks.</strong> The neutral ones are drawn first, then the sided ones (Hud.cpp:3486-3528). A mark is a square of side max(least, 2·radius·0.0284). The least sides are: a ship 3, an ore asteroid 8, anything else 6 (Hud.cpp:118-120).</p>
+<table>
+<thead>
+<tr>
+<th>Mark</th>
+<th>Color</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The player's</td>
+<td><code>OWN_COLOR</code></td>
+</tr>
+<tr>
+<td>The enemy's</td>
+<td><code>ENEMY_COLOR</code></td>
+</tr>
+<tr>
+<td>The pirates'</td>
+<td><code>PIRATE_COLOR</code></td>
+</tr>
+<tr>
+<td>A derelict</td>
+<td><code>DERELICT_COLOR</code></td>
+</tr>
+<tr>
+<td>An asteroid field (≈10.2 units for a 180 m field)</td>
+<td><code>ASTEROID_FIELD_COLOR</code></td>
+</tr>
+<tr>
+<td>An ore asteroid: an outline 2 units wide, not filled</td>
+<td><code>ORE_ASTEROID_COLOR</code></td>
+</tr>
+<tr>
+<td>A dry ore asteroid</td>
+<td><code>DRY_COLOR</code></td>
+</tr>
+<tr>
+<td>Anything else</td>
+<td><code>NEUTRAL_COLOR</code></td>
+</tr>
+</tbody>
+</table>
+<ol start="3">
+<li><strong>Fog.</strong> A panel over the whole map area, <code>Fill::Fog</code>: black, as opaque as the fog texture's shade at each point (Hud.cpp:3531-3535; drawn GameClient.cpp:1310-1316; ADR-052). Only under fog of war.</li>
+<li><strong>Lattice.</strong> Every sector's border, a 1-unit outline in <code>LATTICE_COLOR</code> (Hud.cpp:3567-3568).</li>
+<li><strong>Held and guarded outlines.</strong> A 1-unit outline in the side's color at alpha 0.55. It is dashed (6 on, 4 off) while the sector is cut off; while it is suppressed, a hatched fill at alpha 0.35 covers the sector (Hud.cpp:3569-3580).</li>
+<li><strong>Claimable sectors.</strong> While a Relay is placed, each sector the player could claim now is outlined in <code>OWN_COLOR</code>, 3 units inside its border (Hud.cpp:3584-3592).</li>
+<li><strong>Remembered structures and derelicts.</strong> A cross 8 units across, with arms 2 thick, in the side's color, or <code>DERELICT_COLOR</code> for a neutral one (Hud.cpp:3595-3605).</li>
+<li><strong>Alerts.</strong> A 14-unit square outlined 1 unit in <code>WARNING_COLOR</code> (Hud.cpp:3608-3617).</li>
+<li><strong>The camera's view.</strong> The four ground corners of the screen, joined by segments 1.5 units wide in <code>VIEW_COLOR</code>, cut at the minimap's edge (Hud.cpp:3621-3629; GameClient.cpp:1040-1054). It is empty when a corner sees past the horizon.
+   - At the default 500 m view, unturned, the derived trapezoid is ≈25 units across its far edge, ≈10 across its near edge and ≈14 deep (from Camera.cpp:160-236 and Camera.json).</li>
+</ol>
+<p><strong>Interactions.</strong>
+- A left press on the map area moves the camera there, and dragging keeps moving it (GameClient.cpp:1011-1015, 1026-1031).
+- A right press sends the selected ships there (GameClient.cpp:1017-1022).
+- The minimap draws only when <code>mapSizeMeters &gt; 0</code> (Hud.h:611-612).</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Bars over entities</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>ADR-047 d4 and ADR-088 d5.</p>
+<p><strong>Geometry</strong> (Hud.cpp:3095-3126, 98-101).
+- <strong>Size.</strong> Each bar is 32×5 at the back buffer's scale, <strong>not</strong> the player's factor. Position and size are whole pixels.
+- <strong>Stacking.</strong> The health bar stands over the build bar, 2 apart, and the pair stands 4 above the "foot". The foot is the top of the model on the screen, in the entity's column (<code>Camera::PixelAbove</code>, GameClient.cpp:731-737).
+- <strong>Back:</strong> the side's color × 0.3 (<code>HEALTH_BACK_SHADE</code>, GameClient.cpp:93-98, 727), or <code>HEALTH_BACK_COLOR</code> for a side the data does not name.
+- <strong>Health fill:</strong> <code>HEALTH_GOOD_COLOR</code>, <code>HEALTH_FAIR_COLOR</code> or <code>HEALTH_POOR_COLOR</code>.
+- <strong>Build fill:</strong> <code>BUILD_BAR_COLOR</code>.</p>
+<p><strong>When a bar shows</strong> (<code>Hud::BarOver</code>, Hud.cpp:2170-2183).
+- The health bar shows while the entity is hurt, or for every entity while Alt is held (KeyBindings.h:38; GameClient.cpp:598).
+- The build bar shows while the structure is unfinished.
+- Nothing shows for what is only remembered.
+- A pair wholly off the screen is left out.</p>
+<p>The bars take no click. Example pairs are in <code>hud-busy-warships.json</code>.</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">End-of-match banner</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> How the match ended. The world runs on behind the banner, and the HUD still works (ADR-020, ADR-037, ADR-057, ADR-083, ADR-084 d7).</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>outcome.frame</td>
+<td>panel</td>
+<td>—</td>
+<td>—</td>
+<td><code>WINDOW_COLOR</code></td>
+<td>700, 68, 520, 116</td>
+<td>Hud.cpp:3342-3343</td>
+</tr>
+<tr>
+<td>outcome.title</td>
+<td>text, Title</td>
+<td><code>Victory</code>, <code>Defeat</code>, <code>Draw</code> or <code>Empire fallen</code></td>
+<td><code>Snapshot::matchOver</code>, <code>winner</code> and <code>player</code>; <code>restartTick</code> (Snapshot.h:570-590)</td>
+<td><code>GOLD_COLOR</code></td>
+<td>712, 80</td>
+<td>Hud.cpp:3345, 2193, 2199</td>
+</tr>
+<tr>
+<td>outcome.detail</td>
+<td>text, Name</td>
+<td><code>{how}Match length {m:ss}</code>, where how is <code>By domination.</code>, <code>A fleet destroyed.</code>, <code>Out of time.</code> or nothing (a lost production). In a world: <code>It restarts at your start in {m:ss}</code>, or <code>It restarts once your start is clear of the enemy</code></td>
+<td><code>Snapshot::ending</code>, <code>matchEndedTick</code>, <code>restartTick</code></td>
+<td><code>TEXT_COLOR</code></td>
+<td>712, 110</td>
+<td>Hud.cpp:3346, 2194-2195, 2203-2218</td>
+</tr>
+<tr>
+<td>outcome.backToMenu</td>
+<td>button</td>
+<td><code>Back to menu</code></td>
+<td><code>BackToMenu</code></td>
+<td>as a HUD button; lit under the pointer</td>
+<td>712, 138, 496, 34</td>
+<td>Hud.cpp:3347-3349</td>
+</tr>
+</tbody>
+</table></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4737}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

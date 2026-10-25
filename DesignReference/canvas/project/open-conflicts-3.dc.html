@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Conflicts, part 3 of 3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Conflicts · part 3 of 3</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>C-043 — The map's size, sectors and asteroids</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:135</code>: about 2,000 × 2,000 m and about 12 asteroids. <code>Phase1.md:212-221</code>: 5 km and 24 asteroids, 285,000 Ore. <code>Phase2.md:65</code>: nine sectors. <code>Phase4.md:248</code> and <code>ADR-036</code> decision 4: 10 km and 25 sectors.</li>
+<li><strong>Reference shows:</strong> <code>Map.json</code>: 10,000 m, 25 sectors, 40 ore asteroids, 459,000 Ore (derived). <strong>Reported by:</strong> A1 (C6). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-044 — Derelict Ore range</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase4.md:307, 402</code> (gate L8) and <code>ADR-074:10</code> (Context): 300 to 900. <code>Phase4.md:311</code> (as built) and ADR-074 (owner, 2026-10-07): 300 / 450 / 600 / 750.</li>
+<li><strong>Reference shows:</strong> <code>Map.json:165-168</code>: 300 / 450 / 600 / 750. Outpost wrecks give 600 and 1,200 (<code>Tuning.json:124, 127</code>). <strong>Reported by:</strong> A1 (C7). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-045 — Where a cleared outpost's derelict lies</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase4.md:289</code>: "where its largest structure stood". <code>Phase4.md:296</code> and <code>ADR-074:48</code> (decision 6): where its last Defence Platform fell, the first in identifier order if the last fall together.</li>
+<li><strong>Reference shows:</strong> <code>Simulation.cpp:1738-1764</code>, which matches ADR-074: the first destroyed pirate structure of the sector in the tick its last structure fell. <strong>Reported by:</strong> A1 (C8). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+<li><strong>R checked:</strong> <code>Simulation.cpp:1738-1764</code> and its comment.</li>
+</ul>
+<h4>C-046 — Deep Core Survey</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>Phase1.md:142</code> ("Every asteroid's ore reserve +30%") and <code>Phase1.md:204</code> ("adds 30% to every reserve … including what is left").</li>
+<li><code>ADR-035:13</code> (decision 3): the reserve is not raised. The researcher's rigs draw a 1.3rd less for the same Ore. <code>ADR-035:7</code> (Context) restates the design.</li>
+<li>On screen, the research card's effect reads "Asteroid ore reserves +30%" (<code>GameLogic/Research.cpp:167-168</code>).</li>
+<li><strong>Reference shows:</strong> the reserve figure is not raised, and the draw is divided by 1.3 (<code>Simulation.cpp:3023-3024</code>). A player's "Ore left" does not jump by 30%; it drains more slowly. The effect text is shown verbatim.</li>
+<li><strong>Reported by:</strong> A1 (C9). <strong>Class:</strong> superseded (the ADR chose the mechanism) · <strong>OWNER?</strong> no</li>
+<li><strong>R checked:</strong> <code>ADR-035:7, 13</code>, <code>Simulation.cpp:3015-3027</code>, <code>Research.cpp:164-170</code>.</li>
+</ul>
+<h4>C-047 — The MVP's win condition</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:159, 498</code>: losing the Command Station loses. <code>Phase1.md:70</code> and <code>ADR-037</code> decision 1: neither a Command Station nor a finished Shipyard.</li>
+<li><strong>Reference shows:</strong> <code>Simulation.cpp:3683-3710</code>. <strong>Reported by:</strong> A1 (C11). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-048 — Depletion in the MVP</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:146, 439</code>: no depletion. <code>Phase1.md:202-206</code>: reserves.</li>
+<li><strong>Reference shows:</strong> <code>Map.json</code> reserves and <code>Simulation.cpp:3015-3027</code>. <strong>Reported by:</strong> A1 (C12). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-049 — Ore a home-only player earns</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase4.md:15</code> ("Three home rigs pay 15 Ore/s") describes the game before Phase 4's change. <code>Phase4.md:216</code> gives home 3.5.</li>
+<li><strong>Reference shows:</strong> 3 × 3.5 = 10.5 Ore/s before research (derived). <strong>Reported by:</strong> A1 (C13). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-050 — Does the designer show shots to kill?</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:224</code> lists "damage per second after armour, shots to kill, range and cost". <code>Phase1.md:272-281</code> lists the window's contents without shots to kill. <code>Hud.cpp:585-807</code> has no such figure.</li>
+<li><strong>Reference shows:</strong> no shots-to-kill figure. <strong>Reported by:</strong> A2 (Conflict 5). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-051 — Component costs</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>MVP.md:346-355, 337</code>: Small 32, Medium 110, Mass Driver 35, Lance 85, Missile Rack 130; Large 300.</li>
+<li><code>Phase1.md:89, 90, 107</code>: Flak Battery 60, Rail Cannon 150, Pulse Drive 40.</li>
+<li><code>Phase2.md:132</code>: Sensor Array 40.</li>
+<li>Phase 4 §4 tripled them, and <code>ADR-058:37</code> says "three times Phase 2's 40".</li>
+<li><strong>Reference shows:</strong> <code>Tuning.json:16-33</code>: hulls 96 / 330 / 900; drives 60 / 240 / 120; weapons 105 / 255 / 390 / 180 / 450; Sensor Array 120. <strong>Reported by:</strong> A2 (Conflicts 7, 8, 9). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-052 — The research tree's size and totals</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase1.md:119, 139, 148, 157</code>: 25 topics with gateways 9 and 18, 2,590 s. <code>Phase1.md:51, 319</code>: the AI researches about 25 topics. <code>MVP.md:246</code>: the whole tree takes 11½ min (690 s). Against them: <code>Phase3.md:153</code>, <code>ADR-033:12</code>, <code>ADR-082</code> Consequences ("all 23 topics") and <code>Opponent.json:16</code> (23 topics).</li>
+<li><strong>Reference shows:</strong> <code>Tuning.json:65-112</code>: 23 topics, 2,260 s, 6,800 Ore. <strong>Reported by:</strong> A2 (Conflicts 10, 11), A3 (Conflict 8). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-053 — Armor on unarmed structures</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:170</code>: "Every other structure has no armour". <code>Tuning.json:62-63</code>: Relay 10, Repair Bay 5.</li>
+<li><strong>Reference shows:</strong> 10 and 5. The Shipyard, Research Lab and Mining Rig have 0. <strong>Reported by:</strong> A2 (Conflict 12). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-054 — How later structure levels are fitted</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase3.md:65</code>: each level's mesh "is fitted to the kind's length as level 1's is". <code>ADR-064:28</code> (decision 8): <code>FitMeshAcross</code> to level 1's widest. <code>ModelCatalog.cpp:382-385</code>.</li>
+<li><strong>Reference shows:</strong> <code>FitMeshAcross</code>. <strong>Reported by:</strong> A2 (Conflict 14), A6 (Size row). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-055 — When the AI's first scout sets out</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase2.md:151</code>: "in the first two minutes". <code>ADR-020:49</code>: "in the first three minutes, at about 2:30" (a measured outcome).</li>
+<li><strong>Reference shows:</strong> no time rule in code. The scout is queued ahead of warships and of a structure waiting for Ore (<code>AiPlayer.cpp:1071-1101</code>). <strong>Reported by:</strong> A3 (Conflict 3). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-056 — The AI's attack group, fall-back and regroup</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:300</code> (gate G9): 12 ships. <code>Phase1.md:324-325</code>: 20 ships, a 30% fall-back, 120 s. <code>ADR-041</code> decisions 1–2.</li>
+<li><strong>Reference shows:</strong> <code>Opponent.json:2-5</code>: 25 + 12 per tier, 0.15, 240 s (Normal). <strong>Reported by:</strong> A3 (Conflicts 4, 5). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-057 — AI difficulty out of scope, and the menu's contents</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:304, 403</code>: no difficulty setting. <code>MVP.md:289</code>: "Menu: Start skirmish, Quit. Nothing else." Against them: <code>ADR-065</code> decision 4, <code>ADR-078</code> decision 9, and <code>Hud.cpp:2329-2334</code>.</li>
+<li><strong>Reference shows:</strong> "Easy skirmish", "Normal skirmish", "Hard skirmish", "Join world" (with a join file) and "Quit". <strong>Reported by:</strong> A3 (Conflicts 6, 7), A4 (C9). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-058 — The AI's salvage crew</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase4.md:353</code>: "its first Constructors on salvage trips" (plural). <code>ADR-076:12, 30</code>: one Constructor at a time.</li>
+<li><strong>Reference shows:</strong> one at a time (<code>AiPlayer.cpp:1835-1891</code>). <strong>Reported by:</strong> A3 (Conflict 10). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-059 — Number of actions in the Controls window</h4>
+<ul>
+<li><strong>Sides:</strong> <code>PlanUI1.md:240</code>: "26 actions under three headings". <code>KeyBindings.h:93-125</code>: 28 actions (12 + 8 + 8). O and Ctrl+= / Ctrl+- came later.</li>
+<li><strong>Reference shows:</strong> 28 actions, 3 headings, 762 units tall. <strong>Reported by:</strong> A3 (Conflict 12), A4 (C14). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-060 — Interface details superseded by later ADRs and plans</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><strong>Designer size.</strong> <code>Phase1.md:310</code>: about 38% × 65% of the screen. <code>ADR-062:39</code>: 818 × 913 (43% × 85%).</li>
+<li><strong>Designer header.</strong> <code>Phase1.md:268</code> and the mockup: "SHIPYARD 01 · DESIGNER" and "QUEUE · 0 BUILT". <code>ADR-068</code> decision 1 and <code>Hud.cpp:1365-1373</code>: "&lt; SHIPYARD 01 &gt; · DESIGNER", "QUEUE · 0 / 5", "BUILT · 0".</li>
+<li><strong>Damage heading.</strong> The mockup: "DAMAGE / S AFTER ARMOR · VS HULL". <code>Hud.cpp:1510</code>: "… · VS A FORMATION".</li>
+<li><strong>Income of nothing.</strong> <code>Phase1.md:307</code>: in the warning's color. <code>ADR-085</code> decision 1 and <code>Hud.cpp:3152-3156</code>: a chip.</li>
+<li><strong>Idle status line.</strong> <code>PlanUI1.md:134</code>: in the warning's color. <code>PlanUI2.md</code> UI2.1 and <code>Hud.cpp:3277-3280</code>: a chip.</li>
+<li><strong>Health bar size.</strong> <code>Phase1.md:307</code>: "a bar keeps a least size". <code>ADR-088</code> decision 5 and <code>Hud.cpp:3096-3100</code>: a fixed 32 × 5 at the back buffer's scale.</li>
+<li><strong>Status line and window top.</strong> <code>PlanUI1.md:143</code> (task 15.1): "Shipyards: 2 building, 1 waiting for Ore, 1 IDLE", windows at 148. <code>ADR-066</code> decisions 1 and 3 and <code>Hud.cpp:403-410, 1635</code>: "Shipyards · BUILDING 2 · WAITING 1 · IDLE 1", windows at 178.</li>
+<li><strong>Reference shows:</strong> the code's in every case. <strong>Reported by:</strong> A4 (C6, C7, C8, C10, C11, C15), A5 (C9, Mockup row 12). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-061 — The MVP's camera and sky</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>MVP.md:139, 510</code>: widest view 1,600 m. <code>Camera.json:4</code> gives 3,000 m, and <code>Phase4.md:400</code> (gate L6) set it.</li>
+<li><code>MVP.md:324</code>: "the brightest few have the spikes of a starburst". <code>ADR-028:14-15</code>, <code>GameClient.cpp:466</code> (<code>Shape::Cross</code>) and <code>StarCrossPS.hlsl</code>: one-pixel crosses. <code>starburst.dds</code> is not drawn.</li>
+<li><code>MVP.md:324</code>: "a barely visible gray grid". <code>GameClient.cpp:32</code> (0.012, 0.013, 0.019), and ADR-028 calls it "dim blue-gray".</li>
+<li><strong>Reference shows:</strong> 3,000 m; crosses; (0.012, 0.013, 0.019). <strong>Reported by:</strong> A7 (Conflicts 2, 3, 8). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-062 — Ore's gold against the mockup</h4>
+<ul>
+<li><strong>Sides:</strong> The mockup (<code>GameDesign/Mockups/ShipDesigner.png</code>, sampled by A5) has gold <code>#F7D364</code>, linear (0.93, 0.651, 0.127). <code>Hud.cpp:986</code> has <code>GOLD_COLOR</code> (0.93, 0.50, 0.045) <code>#F7BC3C</code>, under the comment at <code>Hud.cpp:976</code> ("The mockup's colors … sampled from it"). <code>ImplementationPlan-Phase1.md:210</code>: "Ore stays the HUD's gold outside the windows". <code>ADR-062</code> decision 3: "The gold stays the gold of every other cost."</li>
+<li><strong>Reference shows:</strong> <code>#F7BC3C</code>. The mockup is evidence, not ground truth. <strong>Reported by:</strong> A5 (C10, Mockup row 2). <strong>Class:</strong> superseded (the code comment is stale) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-063 — Other mockup differences with no recorded decision</h4>
+<ul>
+<li><strong>Sides:</strong> The mockup shows a title-bar ground <code>#222A3C</code> with stripes <code>#2A3243</code>, gradient fills on the picked card and stat bars, and "SAVED" in about <code>#74D580</code>. The code has <code>WINDOW_COLOR</code> with <code>TITLE_HATCH_COLOR</code> stripes, solid fills only (<code>Hud.h:630-637</code>), and <code>QUEUE_EDGE_COLOR</code> <code>#559361</code>.</li>
+<li><strong>Reference shows:</strong> the code's. <strong>Reported by:</strong> A5 (Mockup rows 5, 10, 11, 14). <strong>Class:</strong> superseded (the mockup is evidence) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-064 — Scope of difficulty in the Phase 3 design</h4>
+<ul>
+<li><strong>Sides:</strong> The Phase 3 design does not mention difficulty. It came from plan task 26.1 (<code>ImplementationPlan-Phase3.md:255-262</code>) and is recorded in <code>ADR-065</code>.</li>
+<li><strong>Reference shows:</strong> three difficulties (<code>OpponentEasy.json</code>, <code>Opponent.json</code>, <code>OpponentHard.json</code>). <strong>Reported by:</strong> A3 (Conflict 6, note). <strong>Class:</strong> superseded (informational) · <strong>OWNER?</strong> no</li>
+</ul>
+<hr />
+<h3>agent-disagreement</h3>
+<h4>C-065 — "Defence Platform" against "Defense Platform" in the agents' prose</h4>
+<ul>
+<li><strong>Sides:</strong> A1, A2 and A4 write <strong>Defence Platform</strong> and <strong>Defence gun</strong>, as the data does (<code>Tuning.json:37, 61</code>). A6 (<code>A6.md:54, 260</code>) and A7 (<code>A7.md:291, 455</code>) write "Defense Platform". The code kind is <code>DefensePlatform</code> (AGENTS.md R11), and the brief writes "Defense Platform".</li>
+<li><strong>Which is right:</strong> the screen shows <strong>Defence Platform</strong> (build button <code>Hud.cpp:2821</code> with the type's <code>nameUtf8</code> from <code>Tuning.json:61</code>). The reference spells it so, and uses <code>DefensePlatform</code> only for the code identifier.</li>
+<li><strong>Reported by:</strong> A4 (C16). R found it in A6 and A7. <strong>Class:</strong> agent-disagreement · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-066 — How a research topic card looks when its tier is not open</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><strong>A2</strong> (Research tree, rules): "A topic not yet open is dim, and its first need reads 'RESEARCH LAB L2' … Each card reads 'TIER n · s'".</li>
+<li><strong>A4</strong> (§4.3): a blocked topic is drawn on <code>LOCKED_COLOR</code> with <code>LOCKED_HATCH_COLOR</code> stripes. Its needs read <code>NEEDS · RESEARCH LAB L2</code>, then <code>+ {Y}</code>. The <code>TIER {t} · {s} s</code> line shows only when nothing is needed.</li>
+<li><strong>Which is right:</strong> <strong>A4.</strong> <code>Hud.cpp:1849-1855</code> gives a blocked card the hatched face. <code>Hud.cpp:1872-1881</code> writes "NEEDS·" and draws the time line only <code>if (!blocked)</code>. <code>Hud.cpp:2971-2972</code> inserts <code>RESEARCH LAB L{n}</code> first among the needs.</li>
+<li><strong>Reported by:</strong> R (cross-check). <strong>Class:</strong> agent-disagreement · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-067 — Do derelicts carry bars?</h4>
+<ul>
+<li><strong>Sides:</strong> A7 (Open 5): "whether derelicts carry hit points in the snapshot is Not specified in the sources read". A1 and A2: a derelict has no hit points (<code>ADR-074:27</code>, decision 1).</li>
+<li><strong>Which is right:</strong> <strong>A1 and A2.</strong> <code>Hud::BarOver</code> (<code>Hud.cpp:2176</code>) shows a health bar only when <code>maxHitPointsHundredths &gt; 0</code>. <code>EntityView::builtPermille</code> defaults to <code>PERMILLE</code> (<code>Snapshot.h:102</code>), so no build bar either. A derelict shows no bar.</li>
+<li><strong>Reported by:</strong> R (cross-check). <strong>Class:</strong> agent-disagreement · <strong>OWNER?</strong> no</li>
+</ul>
+<hr />
+<h3>Counts</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Entries</th>
+<th>OWNER? = yes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>code-vs-intent</td>
+<td>5 (C-001 to C-005)</td>
+<td>5</td>
+</tr>
+<tr>
+<td>stale-doc</td>
+<td>32 (C-006 to C-036a)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>superseded</td>
+<td>28 (C-037 to C-064)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>agent-disagreement</td>
+<td>3 (C-065 to C-067)</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>All</strong></td>
+<td><strong>68</strong></td>
+<td><strong>5</strong></td>
+</tr>
+</tbody>
+</table></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4825}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

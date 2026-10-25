@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Structures</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 05</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Structures</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">Every structure with its levels, costs and effects as the data gives them. Only the Command Station reaches L5; the Shipyard stops at L3 and the Research Lab at L4.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>Tuning.json: structures</code> <code>A2 Structures</code> <code>ADR-016</code> <code>ADR-064</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Structures</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Common rules:</p>
+<ul>
+<li><strong>The base numbers</strong> come from <code>Tuning.json: structures</code>, lines 40–63.</li>
+<li><strong>Hit points at level L</strong> are base × (research factor + 20% × (L − 1)), with <code>levelHitPointsPercent</code> 20 (<code>Tuning.json:11</code>; <code>Simulation.cpp:3153-3157</code>; <code>ADR-064 §Decision 4</code>). The table also gives each level with Reinforced Structures (+25%, <code>Tuning.json:90-91</code>).</li>
+<li><strong>Levels.</strong> Only the Command Station, the Shipyard and the Research Lab have levels, up to <code>MAXIMUM_STRUCTURE_LEVEL</code> 5 (<code>Tuning.h:155-156</code>; <code>Tuning.cpp:315-325</code>). A kind's top level is 1 + the length of its <code>levels</code> list (<code>Tuning.h:185-188</code>).</li>
+<li><strong>An upgrade</strong> is paid when it is ordered and builds itself over the level's <code>buildSeconds</code>. No Constructor and no research shortens it, and the structure keeps working (<code>Simulation.cpp:2253-2282,2650-2668</code>; <code>ADR-064 §Decision 2-3</code>).</li>
+<li><strong>A level lands whole.</strong> The structure keeps its share of its hit points (<code>ADR-064 §Decision 4</code>).</li>
+<li><strong>A destroyed structure</strong> is rebuilt at L1 (<code>ADR-064 §Decision 5</code>).</li>
+<li><strong>Building.</strong> A Constructor builds a structure, which is paid in full when the order is given. The site starts at 1/10 of its hit points and rises with the work (<code>Simulation.cpp:2145-2185,2449-2465</code>; <code>ADR-016 §Decision 4-5</code>).</li>
+<li><strong>Build time with n Constructors</strong> is <code>buildConstructorSeconds ÷ (1 + 0.5 × (n − 1)) ÷ constructor-rate factor</code> (<code>Simulation.cpp:2436-2437</code>).</li>
+<li><strong>Obstacles.</strong> Every structure but the Mining Rig blocks movement (<code>ADR-016 §Decision 8</code>).</li>
+<li><strong>Sight.</strong> An unarmed structure sees 200 m and an armed one 300 m (<code>Simulation.cpp:252-262</code>).</li>
+<li><strong>The panel's next-level line</strong> reads "L{n}: {gives}{hit points} hit points" (<code>Hud.cpp:2645-2699</code>).</li>
+</ul>
+<h4>Command Station (<code>CommandStation</code>)</h4>
+<p>The Command Station is not buildable: it has no <code>cost</code> or <code>buildConstructorSeconds</code> (<code>Tuning.json:40</code>; <code>Tuning.h:167-169</code>; <code>Simulation.cpp:2150-2151</code>). Each player's is placed built and armed on its start (<code>Simulation.cpp:729-747</code>; <code>ADR-016 §Decision 3</code>). Its footprint is 45 m and its armor 10 at every level, and it carries the Defence gun (structureWeapon 1).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>L1</th>
+<th>L2</th>
+<th>L3</th>
+<th>L4</th>
+<th>L5</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Upgrade cost (Ore)</td>
+<td>— (placed at start)</td>
+<td>300</td>
+<td>500</td>
+<td>700</td>
+<td>900</td>
+<td><code>Tuning.json:43-46</code></td>
+</tr>
+<tr>
+<td>Upgrade time (s)</td>
+<td>—</td>
+<td>45</td>
+<td>60</td>
+<td>75</td>
+<td>90</td>
+<td><code>Tuning.json:43-46</code></td>
+</tr>
+<tr>
+<td>Hit points (no research)</td>
+<td>5,000</td>
+<td>6,000</td>
+<td>7,000</td>
+<td>8,000</td>
+<td>9,000</td>
+<td><code>Tuning.json:40</code> × <code>Simulation.cpp:3153-3157</code></td>
+</tr>
+<tr>
+<td>Hit points (+25% research)</td>
+<td>6,250</td>
+<td>7,250</td>
+<td>8,250</td>
+<td>9,250</td>
+<td>10,250</td>
+<td>same, with <code>Tuning.json:90-91</code></td>
+</tr>
+<tr>
+<td>Armor</td>
+<td>10</td>
+<td>10</td>
+<td>10</td>
+<td>10</td>
+<td>10</td>
+<td><code>Tuning.json:40</code>; Phase 3 §4 (levels never add armor)</td>
+</tr>
+<tr>
+<td>Nodes held, home included</td>
+<td>4</td>
+<td>7</td>
+<td>10</td>
+<td>13</td>
+<td>16</td>
+<td><code>Tuning.json:41,43-46</code>; <code>Tuning.cpp:732-741</code></td>
+</tr>
+<tr>
+<td>Defence guns</td>
+<td>1</td>
+<td>1 (kept from L1)</td>
+<td>2</td>
+<td>2 (kept)</td>
+<td>3</td>
+<td><code>Tuning.json:41,44,46</code>; <code>Tuning.cpp:754-763</code></td>
+</tr>
+<tr>
+<td>Fleet cap (command points)</td>
+<td>12</td>
+<td>20</td>
+<td>30</td>
+<td>40</td>
+<td>50</td>
+<td><code>Tuning.json:41,43-46</code>; <code>Tuning.cpp:743-752</code>; <code>ADR-071 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Panel line for this level</td>
+<td>—</td>
+<td>"L2: 7 nodes, fleet 20, 6,000 hit points"</td>
+<td>"L3: 10 nodes, 2 Defence guns, fleet 30, 7,000 hit points"</td>
+<td>"L4: 13 nodes, fleet 40, 8,000 hit points"</td>
+<td>"L5: 16 nodes, 3 Defence guns, fleet 50, 9,000 hit points"</td>
+<td><code>Hud.cpp:2655-2677</code>, from the snapshot's raw level values (<code>Simulation.cpp:1072-1084</code>). L2 and L4 name no <code>guns</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>It also does three things at every level:</p>
+<ul>
+<li><strong>Builds Constructors</strong>: 60 Ore and 15 s each, up to 5 queued (<code>Simulation.cpp:2231-2247</code>; <code>Snapshot.h:42</code>).</li>
+<li><strong>Repairs ships</strong> near it, as a Repair Bay does (<code>Simulation.cpp:2537-2543</code>; <code>ADR-075 §Decision 3</code>).</li>
+<li><strong>Holds its home sector</strong> (<code>ADR-056 §Decision 3</code>).</li>
+</ul>
+<p>The meshes are <code>CommandStation_L1..L5</code> (<code>Models.json:11</code>).</p>
+<h4>Shipyard (<code>Shipyard</code>)</h4>
+<p>A Constructor builds the Shipyard for 300 Ore in 40 s of one Constructor's work (<code>Tuning.json:48</code>). It may stand only in a sector its player holds (<code>Simulation.cpp:2116-2123</code>). Its footprint is 40 m and its armor 0, and it is unarmed.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>L1</th>
+<th>L2</th>
+<th>L3</th>
+<th>L4</th>
+<th>L5</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost (Ore)</td>
+<td>300 (build)</td>
+<td>150</td>
+<td>300</td>
+<td><strong>Not specified</strong> (no level in the data)</td>
+<td><strong>Not specified</strong></td>
+<td><code>Tuning.json:48,51-52</code></td>
+</tr>
+<tr>
+<td>Time (s)</td>
+<td>40 (Constructor work)</td>
+<td>30</td>
+<td>60</td>
+<td>—</td>
+<td>—</td>
+<td>same</td>
+</tr>
+<tr>
+<td>Hit points (no research / +25%)</td>
+<td>2,500 / 3,125</td>
+<td>3,000 / 3,625</td>
+<td>3,500 / 4,125</td>
+<td>—</td>
+<td>—</td>
+<td><code>Simulation.cpp:3153-3157</code></td>
+</tr>
+<tr>
+<td>Hulls it builds</td>
+<td>Small</td>
+<td>+ Medium</td>
+<td>+ Large</td>
+<td>—</td>
+<td>—</td>
+<td><code>Tuning.json:49,51,52</code>; <code>Tuning.cpp:765-776</code></td>
+</tr>
+<tr>
+<td>Panel line</td>
+<td>—</td>
+<td>"L2: Medium hulls, 3,000 hit points"</td>
+<td>"L3: Large hulls, 3,500 hit points"</td>
+<td>—</td>
+<td>—</td>
+<td><code>Hud.cpp:2666-2677</code>; <code>ADR-064 §Decision 9</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Its queue</strong> holds up to 5 warship jobs of the player's saved designs (<code>Simulation.cpp:2235-2247</code>).</li>
+<li><strong>Research speeds it.</strong> Automated Shipyards and Fleet Automation (+25% each) speed every job, the one under way included, at 1,250 and then 1,500 milliticks a tick (<code>Simulation.cpp:2737-2741</code>; <code>ADR-017 §Decision 2</code>).</li>
+<li><strong>It repairs ships</strong> near it (<code>ADR-075 §Decision 3</code>).</li>
+<li><strong>It is numbered</strong> 01, 02 and on, in the order its player's Shipyards were finished (<code>Simulation.cpp:2676-2683</code>).</li>
+<li><strong>It stops at L3</strong> (Phase 3 §5, gate K3), though its art has 5 levels (<code>Models.json:12</code>).</li>
+</ul>
+<h4>Research Lab (<code>ResearchLab</code>)</h4>
+<p>A Constructor builds the Research Lab for 200 Ore in 30 s (<code>Tuning.json:54</code>). A player may have <strong>one</strong>, a site counting (<code>Simulation.cpp:2154-2158</code>). Its footprint is 30 m and its armor 0, and it is unarmed.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>L1</th>
+<th>L2</th>
+<th>L3</th>
+<th>L4</th>
+<th>L5</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost (Ore)</td>
+<td>200 (build)</td>
+<td>400</td>
+<td>600</td>
+<td>800</td>
+<td><strong>Not specified</strong> (no level in the data)</td>
+<td><code>Tuning.json:54,56-58</code></td>
+</tr>
+<tr>
+<td>Time (s)</td>
+<td>30 (Constructor work)</td>
+<td>60</td>
+<td>90</td>
+<td>120</td>
+<td>—</td>
+<td>same</td>
+</tr>
+<tr>
+<td>Topics required before ordering</td>
+<td>—</td>
+<td>1 Improved Extraction, 2 Hull Plating</td>
+<td>6 Large Hull</td>
+<td>none</td>
+<td>—</td>
+<td><code>Tuning.json:56-57</code>; <code>Simulation.cpp:2268-2272</code></td>
+</tr>
+<tr>
+<td>Hit points (no research / +25%)</td>
+<td>1,500 / 1,875</td>
+<td>1,800 / 2,175</td>
+<td>2,100 / 2,475</td>
+<td>2,400 / 2,775</td>
+<td>—</td>
+<td><code>Simulation.cpp:3153-3157</code></td>
+</tr>
+<tr>
+<td>Opens tier</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>(3)</td>
+<td>—</td>
+<td><code>Tuning.json:56-57</code>; <code>Tuning.cpp:703-721</code></td>
+</tr>
+<tr>
+<td>Topics researched at once</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>—</td>
+<td><code>Tuning.json:58</code>; <code>Tuning.cpp:723-730</code></td>
+</tr>
+<tr>
+<td>Panel line</td>
+<td>—</td>
+<td>"L2: tier 2, 1,800 hit points"</td>
+<td>"L3: tier 3, 2,100 hit points"</td>
+<td>"L4: a second research slot, 2,400 hit points"</td>
+<td>—</td>
+<td><code>Hud.cpp:2662-2677</code>; <code>ADR-064 §Decision 10</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Its queue</strong> holds up to 5 topics, each paid when it starts. The second slot starts only once the first has started and the second's prerequisites are researched (<code>Simulation.cpp:3044-3080</code>; <code>ADR-017 §Decision 1</code>).</li>
+<li><strong>A lost Lab</strong> closes its tiers until a rebuilt one is upgraded again (<code>ADR-033 §Consequences</code>).</li>
+<li><strong>It stops at L4</strong> (Phase 3 §6, gate K3), though its art has 5 levels (<code>Models.json:13</code>).</li>
+</ul>
+<h4>Mining Rig (<code>MiningRig</code>)</h4>
+<table>
+<thead>
+<tr>
+<th>Stat</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost / build</td>
+<td>50 Ore, 10 s</td>
+<td><code>Tuning.json:60</code></td>
+</tr>
+<tr>
+<td>Hit points / armor</td>
+<td>800 (1,000 with +25%) / 0</td>
+<td><code>Tuning.json:60</code></td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td>25 m, or the asteroid's radius if that is larger</td>
+<td><code>Tuning.json:60</code>; <code>Simulation.cpp:664-678</code></td>
+</tr>
+<tr>
+<td>Levels</td>
+<td>None</td>
+<td><code>Tuning.cpp:319-322</code></td>
+</tr>
+<tr>
+<td>Placement</td>
+<td>Snaps to an ore asteroid whose edge is within 40 m. One rig to an asteroid, in a sector its player holds. Not an obstacle.</td>
+<td><code>StructureKind.h:21</code>; <code>Simulation.cpp:2081-2108</code>; <code>ADR-016 §Decision 4, 8</code></td>
+</tr>
+<tr>
+<td>Income</td>
+<td>3.5 / 4 / 5.5 / 6.5 Ore a second by the asteroid's ring (home, near, contested, rich), and 20% once its asteroid is exhausted. These are economy rules; see A1.</td>
+<td><code>Tuning.json:6-10</code></td>
+</tr>
+<tr>
+<td>Weapon</td>
+<td>None</td>
+<td><code>Tuning.json:60</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Defence Platform (<code>DefensePlatform</code>, shown as "Defence Platform")</h4>
+<table>
+<thead>
+<tr>
+<th>Stat</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost / build</td>
+<td>450 Ore, 20 s</td>
+<td><code>Tuning.json:61</code>; Phase 4 §4 (tripled from 150)</td>
+</tr>
+<tr>
+<td>Hit points / armor</td>
+<td>1,500 (1,875 with +25%) / 10</td>
+<td><code>Tuning.json:61</code></td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td>20 m</td>
+<td><code>Tuning.json:61</code></td>
+</tr>
+<tr>
+<td>Weapon</td>
+<td>One Defence gun: 30 every 1.0 s at 250 m</td>
+<td><code>Tuning.json:37,61</code>; <code>Tuning.cpp:754-763</code></td>
+</tr>
+<tr>
+<td>Levels</td>
+<td>None</td>
+<td><code>Tuning.cpp:319-322</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Relay (<code>Relay</code>)</h4>
+<table>
+<thead>
+<tr>
+<th>Stat</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost / build</td>
+<td>200 Ore, 40 s</td>
+<td><code>Tuning.json:62</code>; <code>ADR-056 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Hit points / armor</td>
+<td>3,000 (3,750 with +25%) / 10</td>
+<td><code>Tuning.json:62</code></td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td>30 m</td>
+<td><code>Tuning.json:62</code></td>
+</tr>
+<tr>
+<td>Weapon / levels</td>
+<td>None / none</td>
+<td><code>Tuning.json:62</code></td>
+</tr>
+<tr>
+<td>Placement</td>
+<td>Snaps to the node of the sector it is ordered in, which must be adjacent to a held sector and under the node cap. The rules are territory's; see A1.</td>
+<td><code>Simulation.cpp:2072-2080,2131-2139,2168-2171</code></td>
+</tr>
+<tr>
+<td>Model</td>
+<td>ResearchLab model, tint 1.6</td>
+<td><code>Models.json:70</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Repair Bay (<code>RepairBay</code>)</h4>
+<table>
+<thead>
+<tr>
+<th>Stat</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost / build</td>
+<td>300 Ore, 40 s</td>
+<td><code>Tuning.json:63</code>; <code>ADR-075 §Context</code></td>
+</tr>
+<tr>
+<td>Hit points / armor</td>
+<td>2,000 (2,500 with +25%) / 5</td>
+<td><code>Tuning.json:63</code></td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td>30 m</td>
+<td><code>Tuning.json:63</code></td>
+</tr>
+<tr>
+<td>Weapon / levels</td>
+<td>None / none</td>
+<td><code>ADR-075 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Repair</td>
+<td>Up to 4 of its player's ships whose footprint is within 150 m of its own, the most damaged first, at 3% of each ship's full hit points a second, for nothing. Research does not raise it. The Command Station and every Shipyard repair the same way.</td>
+<td><code>Tuning.json: shipRepair</code> l.131; <code>Simulation.cpp:2604-2648</code>; <code>ADR-075 §Decision 2-3</code></td>
+</tr>
+<tr>
+<td>Placement</td>
+<td>In a sector its player holds</td>
+<td><code>Simulation.cpp:2116-2123</code></td>
+</tr>
+<tr>
+<td>Model</td>
+<td>Shipyard model, tint 0.6</td>
+<td><code>Models.json:71</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Retreat (all ships)</h4>
+<ul>
+<li><strong>The trigger.</strong> A hit that leaves a ship below its threshold, Half (50%) or Quarter (25%), sends it to its repairer. The repairer is the nearest Repair Bay, else the Command Station, else the nearest Shipyard. With none, the ship fights on (<code>Simulation.cpp:2554-2589</code>; <code>ADR-075 §Decision 5</code>).</li>
+<li><strong>Where it stops.</strong> 40 m beyond the repairer's footprint (<code>Simulation.cpp:86</code>).</li>
+<li><strong>The end.</strong> The retreat ends when the ship is whole, or when its player gives it an order (<code>ADR-075 §Decision 6</code>).</li>
+</ul>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4404}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

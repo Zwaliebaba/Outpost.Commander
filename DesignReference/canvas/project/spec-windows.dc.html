@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Windows: common rules</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Floating windows</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Kinds.</strong> <code>Designer</code>, <code>Research</code>, <code>Production</code>, <code>Controls</code>, <code>Orders</code> and <code>Away</code> (WindowManager.h:7-18; ADR-031; ADR-068 d4; ADR-080).</p>
+<p><strong>Frame.</strong> Every window is drawn by <code>OpenWindow</code> (Hud.cpp:871-899):</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Rect, in window units</th>
+<th>Color</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Body</td>
+<td><code>0, 0, w, 36 + body</code></td>
+<td><code>WINDOW_COLOR</code>, opaque (Hud.cpp:839-840)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Title bar</td>
+<td><code>0, 0, w − 36, 36</code></td>
+<td><code>TITLE_HATCH_COLOR</code>, hatched: stripes 2 units wide every 7, rising right (Hud.h:640-641; ADR-030 d6)</td>
+<td>The window is dragged by it</td>
+</tr>
+<tr>
+<td>Close box</td>
+<td><code>w − 36, 0, 36, 36</code></td>
+<td><code>CLOSE_BOX_COLOR</code></td>
+<td>Closes the window</td>
+</tr>
+<tr>
+<td>Close mark</td>
+<td><code>×</code> in the Title face at (w − 25, 5)</td>
+<td><code>TEXT_COLOR</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Corner brackets</td>
+<td>12×12 at each corner</td>
+<td><code>WINDOW_EDGE_COLOR</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Name in the title bar.</strong> Each window writes its name at (24, 11) in the Label face, tracking 2, <code>HEADER_LABEL_COLOR</code>. No window passes <code>OpenWindow</code> a title of its own.</li>
+<li><strong>Header band.</strong> The designer, production and research windows continue the hatching to y 72, with a 1-unit <code>EDGE_COLOR</code> line at y 71 (<code>HeaderBand</code>, Hud.cpp:1237-1241).</li>
+<li><strong>Ore box.</strong> The same three windows show the player's Ore in a box: <code>w − 24 − 116, 38, 116, 30</code>, <code>FIELD_COLOR</code> with an <code>EDGE_COLOR</code> outline, holding the gem and figure in the Title face, <code>GOLD_COLOR</code>, right edge at w − 34, y 39 (<code>OreBox</code>, Hud.cpp:1244-1249; data <code>Snapshot::ore</code>).</li>
+</ul>
+<p><strong>Default placement</strong> (Hud.cpp:3632-3687), in reference units at factor 1.0.</p>
+<table>
+<thead>
+<tr>
+<th>Window</th>
+<th>Default top-left corner</th>
+<th>Size</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Designer</td>
+<td>(1920 − 16 − 818, 16) = <strong>(1086, 16)</strong></td>
+<td>818 × H; H = 913 with Tuning.json's components</td>
+<td>Hud.cpp:3655-3659</td>
+</tr>
+<tr>
+<td>Production</td>
+<td>the first free slot under the Ore. Slot 0: (16, 178). Slot 1: (16 + 16 + 560, 178) = (592, 178)</td>
+<td>478 × H</td>
+<td>Hud.cpp:3643-3651, 3662-3663; <code>WINDOWS_TOP</code> = 16 + 44 + 8 + 94 + 16 = 178 (Hud.cpp:1635)</td>
+</tr>
+<tr>
+<td>Research</td>
+<td>slot 0: (16, 178); slot 1: (16 + 16 + 478, 178) = <strong>(510, 178)</strong></td>
+<td>560 × H</td>
+<td>Hud.cpp:3664-3665</td>
+</tr>
+<tr>
+<td>Controls</td>
+<td>centred: ((1920 − 700)/2, max(16, (1080 − 762)/2)) = <strong>(610, 159)</strong></td>
+<td>700 × 762</td>
+<td>Hud.cpp:3666-3672</td>
+</tr>
+<tr>
+<td>Orders</td>
+<td>(1920 − 16 − 640, 178) = <strong>(1264, 178)</strong></td>
+<td>640 × 560</td>
+<td>Hud.cpp:3673-3679</td>
+</tr>
+<tr>
+<td>Away</td>
+<td>centred: (660, (1080 − H)/2)</td>
+<td>600 × (90 + 22·lines), lines ≤ 20</td>
+<td>Hud.cpp:3680-3686</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Slots.</strong> A production or research window not yet moved takes the first of the two slots that no open window holds; moving it frees its slot (WindowManager.cpp:6-21, 67-75; task 15.4). At factor 1.0, production, research and the designer stand side by side with nothing to spare: 16 + 478 + 16 + 560 + 16 + 818 + 16 = 1920 (ADR-062 d6). <code>window-three-windows-default.json</code> lays out all three.</p>
+<p><strong>Layering</strong> (ADR-031 d4).
+- Windows are drawn back to front in <code>WindowManager</code> order (Hud.cpp:3636-3637). Without a manager, as in the tests, the order is Production, Research, Designer, Controls, Orders, Away (Hud.cpp:3634-3635).
+- A window covers the text of the windows behind it.
+- A left press anywhere on a window brings it to the front (GameClient.cpp:998; WindowManager.cpp:89-93).
+- Only the front layer under the pointer takes a click.</p>
+<p><strong>Drag</strong> (ADR-031 d2, d5).
+- A left press on the title bar, where no button sits, grabs the window (GameClient.cpp:993-996). It follows the pointer until the button is released (GameClient.cpp:978-982, 1024-1025; WindowManager.cpp:67-87).
+- <strong>Kept on screen</strong> by <code>Hud::KeepOnScreen</code> (Hud.cpp:2420-2426): x is held between 120 − w and screenWidth − 120 (<code>WINDOW_KEPT_ON_SCREEN_UNITS</code>, Hud.h:646), and y between 0 and screenHeight − 36.
+- <code>GameClient</code> settles the manager on the clamped place every frame (GameClient.cpp:773-774; WindowManager.cpp:56-60).</p>
+<p><strong>Close.</strong>
+- The close box (GameClient.cpp:987-991).
+- <strong>Esc</strong> closes the front window and goes no further (GameClient.cpp:659-660; WindowManager.cpp:41-47). While the designer's name takes typing, Esc is the designer's first: it drops what was typed (GameClient.cpp:641, 819-835; Designer.cpp:246-250).
+- The window's own key toggles it (GameClient.cpp:645-674), but only once the match has a snapshot (GameClient.cpp:667).</p>
+<p><strong>Keys</strong> (KeyBindings.h:27-32).</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Window</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D</td>
+<td>Designer</td>
+</tr>
+<tr>
+<td>P</td>
+<td>Production</td>
+</tr>
+<tr>
+<td>R</td>
+<td>Research</td>
+</tr>
+<tr>
+<td>F1</td>
+<td>Controls</td>
+</tr>
+<tr>
+<td>O</td>
+<td>Orders</td>
+</tr>
+</tbody>
+</table>
+<p>The Away window has no key: it opens itself.</p>
+<p><strong>What a window aims at.</strong>
+- Opening the designer or production while one structure is selected aims it at that structure (<code>ToggleWindow</code>, GameClient.cpp:801-817).
+- The selection panel's buttons aim them too (GameClient.cpp:896-899, 917-923).
+- Selecting a Shipyard while the designer is open re-aims it, and selecting a producer while production is open re-aims that (GameClient.cpp:698-706).</p>
+<p><strong>Lifetime</strong> (owner, 2026-10-02; ADR-031 d1).
+- Positions last until the game closes, and are never written to disk.
+- Leaving a match closes every window but keeps their places (WindowManager.cpp:49-54; GameClient.cpp:508).
+- The match runs on while any window is open.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 1847}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

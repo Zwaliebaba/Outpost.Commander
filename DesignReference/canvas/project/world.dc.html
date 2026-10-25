@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The persistent world</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 11</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">The persistent world</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">A world on a dedicated server: seats taken with a token, saves every minute and a log of every command, a deputy while the player is away, and no end.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>Phase5.md</code> <code>A3</code> <code>A1</code> <code>ADR-077/078/079/082/084/086</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The dedicated server</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Executable</td>
+<td><code>OutpostServer</code>: console, not packaged. Links NeuronCore, NeuronServer, GameProtocol, GameLogic and Opponent. Reads <code>Assets\Tuning.json</code>, <code>Map.json</code> and the AI's files beside itself.</td>
+<td><code>ADR-078 §Decision 1</code>, <code>ADR-002 §Layer shape</code></td>
+</tr>
+<tr>
+<td>Where it runs</td>
+<td>The owner's PC, or a Windows Server 2022 VM chosen at the run (H1)</td>
+<td><code>Phase5.md:46</code></td>
+</tr>
+<tr>
+<td>Make a world</td>
+<td><code>OutpostServer --new-world &lt;folder&gt; [--host &lt;name&gt;] [--address &lt;ip&gt;] [--port &lt;n&gt;] [--seed &lt;n&gt;] [--ai &lt;player&gt;[:Easy\|Normal\|Hard]]</code></td>
+<td><code>OutpostServer/Main.cpp:28-35</code></td>
+</tr>
+<tr>
+<td>Defaults</td>
+<td>host <code>localhost</code>; address <code>0.0.0.0</code>; UDP port <code>45000</code> (<code>DEFAULT_WORLD_PORT</code>); seed from the system clock unless <code>--seed</code></td>
+<td><code>WorldSettings.h:6, 29-32</code>, <code>Main.cpp:144-145</code></td>
+</tr>
+<tr>
+<td>Seats</td>
+<td>One per map start: 2 on the repository's map, players 1 and 2. Each gets a 128-bit token from <code>std::random_device</code>, unless <code>--ai</code> gives it to an AI empire.</td>
+<td><code>Main.cpp:138-145</code>, <code>Map.json: starts</code>, <code>SeatToken.h:73-79</code>, <code>ADR-078 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Refusals</td>
+<td>"{folder} holds a world already."; "The map has no seat for player {n}."; "--ai takes a difficulty of Easy, Normal or Hard, not '{x}'."; "{option} needs a value."; "{option} is not an option of --new-world."</td>
+<td><code>Main.cpp:127-130, 150, 163, 167-168</code></td>
+</tr>
+<tr>
+<td>On success</td>
+<td>"Made a world of {n} seats in {folder}, seed {seed}. Players reach it at {host}, port {port}.\nRun it with: OutpostServer \"{folder}\""</td>
+<td><code>Main.cpp:171-174</code></td>
+</tr>
+<tr>
+<td>Run a world</td>
+<td><code>OutpostServer &lt;folder&gt;</code>: reads <code>World.json</code>, comes back from the newest save, hosts an AI empire per AI seat and a deputy per player's seat, writes <code>Join-Player&lt;n&gt;.json</code> per player's seat each run, and starts</td>
+<td><code>Main.cpp:179-206</code></td>
+</tr>
+<tr>
+<td>Console lines</td>
+<td>"Player {n} is an AI empire, {difficulty}."; "Player {n}'s join file: {path}"; "The world in {folder} runs, listening on {address} port {port}. Ctrl+C saves and stops it."</td>
+<td><code>Main.cpp:195, 202, 205-206</code></td>
+</tr>
+<tr>
+<td>Stop</td>
+<td>Ctrl+C, Ctrl+Break, closing the console, signing out, shutting down. It writes "Stopping: the world's last save is written as the server goes." and then "Stopped." A close, sign-out or shutdown waits up to 5 s.</td>
+<td><code>ServerConsole.cpp:12, 20-29</code>, <code>Main.cpp:210-215</code>, <code>ADR-078 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Failure</td>
+<td>Checked once a second; the message goes to standard error and the process ends</td>
+<td><code>Main.cpp:51-52, 210-211, 386-397</code></td>
+</tr>
+<tr>
+<td><code>World.json</code></td>
+<td><code>address</code>, <code>port</code>, <code>host</code>, <code>seed</code> (a string of decimal digits), <code>seats[]</code>: each <code>{player, token}</code> (32 hex digits) or <code>{player, ai}</code> (Easy/Normal/Hard). The owner makes it once; the server only reads it.</td>
+<td><code>WorldSettings.cpp:36-100</code>, <code>ADR-078 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Join file</td>
+<td><code>host</code>, <code>port</code>, <code>certificate</code> (SHA-256, hex), <code>player</code>, <code>token</code> (hex)</td>
+<td><code>JoinTicket.cpp:37-42</code>, <code>ADR-078 §Decision 8</code></td>
+</tr>
+<tr>
+<td>Certificate</td>
+<td>Kept in the folder as <code>Certificate.der</code>, with the key's name in <code>Certificate.key</code>, valid 5 years. It is made anew only if the key is lost or the certificate expires, so a player pins it once.</td>
+<td><code>ServerCertificate.cpp:24-28</code>, <code>ADR-078 §Decision 7</code></td>
+</tr>
+<tr>
+<td>Taking a seat</td>
+<td>With its token, at any time while the world runs. The newest connection holds the seat; the old one is closed with <code>SeatTaken</code>.</td>
+<td><code>InProcessServer.cpp:305-329</code>, <code>ADR-078 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Trust</td>
+<td>Tokens are plain text in <code>World.json</code> and the join files: "the trust of a circle of friends, not of a public server"</td>
+<td><code>ADR-078 §Consequences</code></td>
+</tr>
+<tr>
+<td>Network</td>
+<td>A non-loopback port is reached through the owner's router and firewall; "Neither is the game's to do"</td>
+<td><code>ADR-078 §Consequences</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Join world, --join, lost connection</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value (verbatim strings)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Menu button</td>
+<td>"Join world" shows when <code>Documents\Outpost Commander\Join.json</code> exists (<code>SHGetKnownFolderPath(FOLDERID_Documents)</code>). It is checked at startup and each time the menu is shown again.</td>
+<td><code>WinMain.cpp:56-57, 111-123, 347-348, 366, 459, 495</code>, <code>Hud.cpp:2332-2333</code></td>
+</tr>
+<tr>
+<td>Switch</td>
+<td><code>--join &lt;file&gt;</code>, e.g. <code>OutpostCommander.exe --join "C:\path\Join-Player1.json"</code>. Without a file: "--join needs the join file a dedicated server wrote." (a startup error, shown in a message box).</td>
+<td><code>WinMain.cpp:50-52, 226-235</code></td>
+</tr>
+<tr>
+<td>A join</td>
+<td>Connects to the file's host and port, pins its certificate, sends its token, and waits up to 10 s to be seated. A joined world is the player's connection alone: no server or AI in the game.</td>
+<td><code>QuicTransport.cpp:9, 19-44</code>, <code>ADR-078 §Decision 9</code></td>
+</tr>
+<tr>
+<td>Tag</td>
+<td>"Server {host}:{port}"; an IPv6 host in brackets, "[2001:db8::5]:4433"</td>
+<td><code>Hud.cpp:3323</code>, <code>Hud.cpp:2221-2224</code>, <code>ADR-086 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Join fails</td>
+<td>Back to the menu with the notice "Could not join the world: {reason}" in the warning color</td>
+<td><code>WinMain.cpp:359-364</code>, <code>Hud.cpp:2349-2353</code></td>
+</tr>
+<tr>
+<td>Lost connection</td>
+<td>Back to the menu with "The connection to the server was lost: {reason}". Skirmish and world alike.</td>
+<td><code>WinMain.cpp:408-416, 454-466</code></td>
+</tr>
+</tbody>
+</table>
+<p>Reasons that can follow those prefixes:</p>
+<table>
+<thead>
+<tr>
+<th>Reason (verbatim)</th>
+<th>When</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"The server ended the game."</td>
+<td>Server close <code>Finished</code></td>
+<td><code>WireFormat.cpp:80-81</code></td>
+</tr>
+<tr>
+<td>"The server runs another build of the game."</td>
+<td><code>WrongVersion</code>: another protocol version or another message layout hash</td>
+<td><code>WireFormat.cpp:82-83</code>, <code>InProcessServer.cpp:250-256, 284-288</code></td>
+</tr>
+<tr>
+<td>"The server refused the seat: it is not open there, or the join file's token is not the seat's."</td>
+<td><code>SeatRefused</code></td>
+<td><code>WireFormat.cpp:84-85</code></td>
+</tr>
+<tr>
+<td>"The server could not read what the game sent it."</td>
+<td><code>MalformedMessage</code></td>
+<td><code>WireFormat.cpp:86-87</code></td>
+</tr>
+<tr>
+<td>"The seat was taken by another connection with its token."</td>
+<td><code>SeatTaken</code></td>
+<td><code>WireFormat.cpp:88-89</code></td>
+</tr>
+<tr>
+<td>"The server did not seat player {n} within 10000 ms."</td>
+<td>No welcome within 10 s</td>
+<td><code>QuicTransport.cpp:33-34</code></td>
+</tr>
+<tr>
+<td>"The server did not welcome player {n} to its seat."</td>
+<td>A wrong first message</td>
+<td><code>QuicTransport.cpp:40-41</code></td>
+</tr>
+<tr>
+<td>"Could not connect to {host}:{port} over QUIC within 10000 ms."</td>
+<td>Handshake timeout, 10 s</td>
+<td><code>QuicChannel.cpp:364-366</code>, <code>QuicChannel.h:31</code></td>
+</tr>
+<tr>
+<td>"The QUIC connection failed with status {0x…}."</td>
+<td>Transport failure, such as the idle timeout</td>
+<td><code>QuicChannel.cpp:267</code></td>
+</tr>
+<tr>
+<td>"The join file {path} cannot be read." / "The join file is not one: {detail}"</td>
+<td>Bad join file</td>
+<td><code>WinMain.cpp:126-131</code>, <code>JoinTicket.cpp:64-67</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>"Gone quiet" (ADR-086):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>When it warns</td>
+<td>Once no snapshot has come for 2 s (<code>SILENT_SECONDS</code>): 40 snapshots missed at 20 a second</td>
+<td><code>Hud.h:469</code>, <code>ADR-086 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Text</td>
+<td>A warning chip under the address: "No word from the server · {n} s", n in whole seconds, capped at 999</td>
+<td><code>Hud.cpp:3324-3336</code></td>
+</tr>
+<tr>
+<td>Width</td>
+<td>While it warns, the tag is as wide as "No word from the server · 999 s"</td>
+<td><code>Hud.cpp:159, 3325-3327</code></td>
+</tr>
+<tr>
+<td>Skirmish too</td>
+<td>Yes, under "Local skirmish"</td>
+<td><code>ADR-086 §Decision 2</code></td>
+</tr>
+<tr>
+<td>How the client measures it</td>
+<td>Seconds since <code>Receive</code> last took a snapshot, by the frames' elapsed time</td>
+<td><code>GameClient.cpp:529-531, 600</code></td>
+</tr>
+<tr>
+<td>Ends</td>
+<td>With the next snapshot. The match goes back to the menu only when the connection is reported lost (MsQuic's idle timeout, 30 s by default).</td>
+<td><code>ADR-086 §Consequences</code>, <code>ADR-086 §Context</code></td>
+</tr>
+<tr>
+<td>Covered by</td>
+<td>The ship designer, which opens in the top-right corner</td>
+<td><code>ADR-086 §Decision 3</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Join → play → lost connection</div><div style="padding:20px 24px 24px 24px"><div style="display:grid;grid-template-columns:repeat(4,1fr);column-gap:28px;row-gap:30px"><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">1</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The owner runs</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The owner runs <code>OutpostServer --new-world &lt;folder&gt; --host &lt;name&gt;</code>, then <code>OutpostServer &lt;folder&gt;</code>. The server writes <code>Join-Player&lt;n&gt;.json</code> (<code>OutpostServer/Main.cpp:136-206</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">2</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The owner hands the player the</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The owner hands the player the file. The player puts it at <code>Documents\Outpost Commander\Join.json</code>, or runs <code>--join &lt;file&gt;</code> (<code>ADR-078 §Decision 9</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">3</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The menu shows &quot;Join world&quot; ().</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The menu shows "Join world" (<code>Hud.cpp:2332-2333</code>). The player presses it.</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">4</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The client connects (10 s handshake)</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The client connects (10 s handshake), sends the token, and is seated (10 s for the welcome).<br />
+– On failure the menu shows "Could not join the world: …" (<code>WinMain.cpp:349-364</code>, <code>QuicTransport.cpp:19-44</code>).</div><div aria-hidden="true" style="position:absolute;left:50%;bottom:-22px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #89AFE2;transform:translateX(-50%)"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">5</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The HUD tag reads &quot;Server {host}:{port}&quot;</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The HUD tag reads "Server {host}:{port}" (<code>Hud.cpp:3323</code>). If the player was away, the away window opens (§5).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">6</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">Snapshots stop.</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">Snapshots stop.<br />
+– After 2 s: "No word from the server · n s" (<code>Hud.cpp:3324-3336</code>).<br />
+– A snapshot ends the warning.</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">7</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The connection closes</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The connection closes, or MsQuic's idle timeout ends it (30 s by default). The client goes back to the menu with "The connection to the server was lost: {reason}" (<code>WinMain.cpp:408-416, 454-466</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">8</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The player joins again with the</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The player joins again with the same file, and the newest connection holds the seat (<code>InProcessServer.cpp:305-329</code>).</div></div></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3075}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

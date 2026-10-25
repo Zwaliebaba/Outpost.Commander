@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Selection, commands, standing orders, alerts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 09</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Orders &amp; automation</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">Selection and commands, the two standing orders, alerts, scheduled orders, the deputy and the Away report, as the player meets them.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>A3</code> <code>Phase5.md</code> <code>ADR-059/079/080/088</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Selection and commands</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>1.1 What can be selected</h4>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>How</th>
+<th>Rule</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One of the player's own ships</td>
+<td>Left-click</td>
+<td>A click picks only ships whose owner is the player. Pick tolerance: 12 px.</td>
+<td><code>PlayerControls.cpp:251-253</code>, <code>Picking.h:26</code></td>
+</tr>
+<tr>
+<td>One of the player's own structures</td>
+<td>Left-click where no own ship is picked</td>
+<td>It is selected on its own and replaces the selection.</td>
+<td><code>PlayerControls.cpp:254-266</code></td>
+</tr>
+<tr>
+<td>The player's ships in a box</td>
+<td>Left-drag past 6 px</td>
+<td>Ships only, own only; structures are never boxed.</td>
+<td><code>PlayerControls.h:22</code>, <code>PlayerControls.cpp:242-249</code>, <code>Picking.cpp:59-72</code></td>
+</tr>
+<tr>
+<td>Every own ship on screen of that design and hull</td>
+<td>Double-click within 400 ms</td>
+<td>A third click starts the count again.</td>
+<td><code>PlayerControls.h:20</code>, <code>PlayerControls.cpp:271-279</code>, <code>Picking.cpp:74-87</code></td>
+</tr>
+<tr>
+<td>Add to the selection, or remove from it</td>
+<td>Shift+click / Shift+drag</td>
+<td>Shift+click on a ship that is already selected takes it out. A ship clicked with Shift joins ships, not a structure.</td>
+<td><code>PlayerControls.cpp:267-286</code></td>
+</tr>
+<tr>
+<td>A control group</td>
+<td>Ctrl+0–9 assigns; 0–9 recalls</td>
+<td>A second tap within 400 ms centers the camera on the group.</td>
+<td><code>PlayerControls.cpp:385-414</code>, <code>KeyBindings.h:103-104</code></td>
+</tr>
+<tr>
+<td>One ship out of a selection of 2–24</td>
+<td>Click its bar on the selection panel</td>
+<td>Selects that ship alone and centers the camera on it.</td>
+<td><code>ADR-088 §Decision 4</code>, <code>GameClient.cpp:957-962</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Enemy entities are never selected. Hovering an enemy structure or a derelict gives only a hint (<code>GameClient.cpp:693-696, 740-748</code>).</li>
+<li>A ship or structure that is gone, or no longer the player's, is pruned from the selection and from every group (<code>PlayerControls.cpp:441-454</code>).</li>
+<li>The Controls window's wording, "Click — Select a ship, or a structure of yours" (<code>KeyBindings.h:94</code>), is ambiguous about enemy ships; see §15.</li>
+</ul>
+<h4>1.2 Keys and mouse for orders (Controls window, "SELECTING AND ORDERS")</h4>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Does (verbatim)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Click</td>
+<td>"Select a ship, or a structure of yours"</td>
+<td><code>KeyBindings.h:94</code></td>
+</tr>
+<tr>
+<td>Drag</td>
+<td>"Select your ships in the box"</td>
+<td><code>KeyBindings.h:95</code></td>
+</tr>
+<tr>
+<td>Shift+click</td>
+<td>"Add to the selection"</td>
+<td><code>KeyBindings.h:96</code></td>
+</tr>
+<tr>
+<td>Double-click</td>
+<td>"Select every ship of that design in view"</td>
+<td><code>KeyBindings.h:97</code></td>
+</tr>
+<tr>
+<td>Right-click</td>
+<td>"Move, attack, or build and repair with Constructors"</td>
+<td><code>KeyBindings.h:98</code></td>
+</tr>
+<tr>
+<td>A, then click</td>
+<td>"Attack-move"</td>
+<td><code>KeyBindings.h:10,99</code></td>
+</tr>
+<tr>
+<td>H, then click</td>
+<td>"Hold the sector clicked in"</td>
+<td><code>KeyBindings.h:12,100</code></td>
+</tr>
+<tr>
+<td>T, then click</td>
+<td>"Patrol to the point clicked"</td>
+<td><code>KeyBindings.h:13,101</code></td>
+</tr>
+<tr>
+<td>S</td>
+<td>"Stop"</td>
+<td><code>KeyBindings.h:11,102</code></td>
+</tr>
+<tr>
+<td>Ctrl+0-9</td>
+<td>"Make a control group"</td>
+<td><code>KeyBindings.h:103</code></td>
+</tr>
+<tr>
+<td>0-9</td>
+<td>"Select a group; twice, look at it"</td>
+<td><code>KeyBindings.h:104</code></td>
+</tr>
+<tr>
+<td>Shift+click</td>
+<td>"Place a structure and keep placing"</td>
+<td><code>KeyBindings.h:105</code></td>
+</tr>
+<tr>
+<td>Minimap right-click</td>
+<td>"Send the selection there"</td>
+<td><code>KeyBindings.h:114</code></td>
+</tr>
+<tr>
+<td>Space</td>
+<td>"Look at the newest alert"</td>
+<td><code>KeyBindings.h:36,115</code></td>
+</tr>
+<tr>
+<td>O</td>
+<td>"Scheduled orders" (opens or closes the orders window)</td>
+<td><code>KeyBindings.h:32,120</code>, <code>GameClient.cpp:657-658</code></td>
+</tr>
+<tr>
+<td>Esc</td>
+<td>"Close the front window, or cancel an order"</td>
+<td><code>KeyBindings.h:34,122</code>, <code>GameClient.cpp:659-661</code>, <code>PlayerControls.cpp:362-367</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>P is taken by the production window, so patrol is T</strong> (<code>ADR-059 §Decision 7</code>, <code>KeyBindings.h:28</code>).</li>
+<li><strong>What arms the next click.</strong> A, H and T each arm the next left-click and replace whatever was armed before. A press on the ground then gives the order. Right-click or Escape cancels it (<code>PlayerControls.cpp:107-121, 180-206, 291-292, 362-367</code>).</li>
+<li><strong>Ctrl blocks the order keys.</strong> A, H, T and S act only without Ctrl (<code>PlayerControls.cpp:369-383</code>).</li>
+</ul>
+<h4>1.3 What each command does</h4>
+<p>Every command goes to the server, which validates it and applies it at the start of its next tick, or rejects it (<code>Command.h:5-6</code>, <code>ADR-002 §Decision 2</code>). The player is not told of a refusal: "A rejected command changes nothing. The protocol cannot tell the client yet" (<code>InProcessServer.cpp:482</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What the player does</th>
+<th>What the server does</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Move</td>
+<td>Right-click on the ground, or right-click on the minimap</td>
+<td>"Ships head for a point, pathing around obstacles, in formation at the slowest ship's pace"</td>
+<td><code>Command.h:8-13</code>, <code>PlayerControls.cpp:352-357</code>, <code>PlayerControls.cpp:135-140</code></td>
+</tr>
+<tr>
+<td>Attack</td>
+<td>Right-click on an enemy ship, or else an enemy structure</td>
+<td>"Ships close on one enemy ship or structure and fire at it until it dies"</td>
+<td><code>Command.h:15-20</code>, <code>PlayerControls.cpp:339-350</code></td>
+</tr>
+<tr>
+<td>Attack-move</td>
+<td>A, then left-click; or the Attack-move button</td>
+<td>"a ship that meets an enemy stops at its own weapon range and fires"</td>
+<td><code>Command.h:22-27</code>, <code>PlayerControls.cpp:180-190</code></td>
+</tr>
+<tr>
+<td>Stop</td>
+<td>S, or the Stop button</td>
+<td>"Ships drop their orders and hold where they are"</td>
+<td><code>Command.h:29-33</code>, <code>PlayerControls.cpp:123-127</code></td>
+</tr>
+<tr>
+<td>Hold sector</td>
+<td>H, then left-click; or the Hold sector button</td>
+<td>Standing order (§2)</td>
+<td><code>Command.h:102-108</code>, <code>PlayerControls.cpp:191-206</code></td>
+</tr>
+<tr>
+<td>Patrol</td>
+<td>T, then left-click; or the Patrol button</td>
+<td>Standing order (§2)</td>
+<td><code>Command.h:110-116</code></td>
+</tr>
+<tr>
+<td>Build structure</td>
+<td>Constructors' build button, then left-click on the ground. Shift keeps it armed.</td>
+<td>A Mining Rig snaps to an ore asteroid within 40 m. A rig click with no known asteroid in reach leaves the placement armed.</td>
+<td><code>Command.h:35-41</code>, <code>PlayerControls.cpp:207-227</code>, <code>StructureKind.h:21</code></td>
+</tr>
+<tr>
+<td>Repair / finish</td>
+<td>Selected Constructors right-click an own ship or structure that is damaged or unfinished</td>
+<td>"Repair costs nothing." The rest of the selection moves there.</td>
+<td><code>Command.h:43-49</code>, <code>PlayerControls.cpp:306-324</code></td>
+</tr>
+<tr>
+<td>Salvage</td>
+<td>Constructors right-click a derelict</td>
+<td>Its Ore and part of a topic's time go to the player whose Constructors finish it.</td>
+<td><code>Command.h:126-132</code>, <code>PlayerControls.cpp:326-336</code></td>
+</tr>
+<tr>
+<td>Set retreat</td>
+<td>RETREAT row on the selection panel: "25%", "50%", "Never"</td>
+<td>Gives no order: "a ship retreating goes on, unless it is set never to retreat". Default is 25% (<code>DEFAULT_RETREAT = Quarter</code>).</td>
+<td><code>Command.h:134-140</code>, <code>RetreatThreshold.h:15</code>, <code>ADR-088 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Schedule order</td>
+<td>Orders window, "Give to N ships"</td>
+<td>§4</td>
+<td><code>Command.h:191-202</code></td>
+</tr>
+</tbody>
+</table>
+<p>How orders interact:</p>
+<ul>
+<li><strong>Any order ends a retreat.</strong> Any order the player gives a ship, other than setting its retreat, ends the ship's retreat and takes it out of the scheduled order it waits on (<code>Simulation.cpp:3240-3258</code>).</li>
+<li><strong>Move, attack-move, attack and stop end a standing order</strong> (<code>Simulation.cpp:3259-3268</code>, <code>ADR-059 §Decision 5</code>).</li>
+<li><strong>A scheduled order does neither when it is given.</strong> It does not end a standing order, and it gives its ships nothing to do until it fires (<code>Simulation.cpp:3224-3226</code>).</li>
+</ul>
+<h4>1.4 The orders beside the selection (ADR-088)</h4>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A selection with a warship offers, in this order: "Attack-move" (A), "Hold sector" (H), "Patrol" (T), "Stop" (S). Each button shows its key's cap.</td>
+<td><code>Hud.cpp:2795-2803</code>, <code>ADR-088 §Decision 2</code></td>
+</tr>
+<tr>
+<td>"Hold sector" is offered only on a map with sectors.</td>
+<td><code>Hud.cpp:2799-2800</code></td>
+</tr>
+<tr>
+<td>A selection of Constructors alone offers no orders. Its build buttons and retreat row follow.</td>
+<td><code>ADR-088 §Decision 2</code>, <code>Hud.cpp:2804-2830</code></td>
+</tr>
+<tr>
+<td>A button does what its key does, to every selected ship. Attack-move, Hold sector and Patrol arm the next left-click; Stop orders at once.</td>
+<td><code>ADR-088 §Decision 2</code>, <code>GameClient.cpp:939-950</code></td>
+</tr>
+<tr>
+<td>The armed order's button is lit as a pick until the order is given or canceled.</td>
+<td><code>ADR-088 §Decision 2</code>, <code>Hud.cpp:2796-2797</code></td>
+</tr>
+<tr>
+<td>The buttons' panel stands against the selection panel's right edge, bottom-aligned, and the pair is centered at the bottom. It moves right only where it would meet the minimap.</td>
+<td><code>ADR-088 §Decision 2</code></td>
+</tr>
+<tr>
+<td>A button under the pointer has its edge lit in (0.25, 0.43, 0.76).</td>
+<td><code>ADR-088 §Decision 1</code></td>
+</tr>
+</tbody>
+</table>
+<h4>1.5 Order lines on the selection panel</h4>
+<table>
+<thead>
+<tr>
+<th>Line (verbatim)</th>
+<th>When</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"Holding a sector"</td>
+<td>Any selected ship holds a sector</td>
+<td><code>Hud.cpp:2784-2785</code>, <code>ADR-059 §Decision 6</code></td>
+</tr>
+<tr>
+<td>"On patrol"</td>
+<td>Any selected ship patrols</td>
+<td><code>Hud.cpp:2786-2787</code></td>
+</tr>
+<tr>
+<td>"Retreating to be repaired" / "{n} retreating to be repaired"</td>
+<td>One ship, or n of several, going back to be repaired</td>
+<td><code>Hud.cpp:2788-2790</code></td>
+</tr>
+<tr>
+<td>"Scheduled: {order in words}"</td>
+<td>The selection's ships wait on one scheduled order</td>
+<td><code>OrderForm.cpp:331-333</code>, <code>GameClient.cpp:769-771</code></td>
+</tr>
+<tr>
+<td>"Scheduled: {n} orders"</td>
+<td>They wait on more than one</td>
+<td><code>OrderForm.cpp:329-330</code></td>
+</tr>
+<tr>
+<td>"Scheduled: an order"</td>
+<td>The order is not in the snapshot's list</td>
+<td><code>OrderForm.cpp:333</code></td>
+</tr>
+</tbody>
+</table>
+<p>Only the owner sees a ship's standing order and its scheduled order (<code>Snapshot.h:128-138</code>).</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Standing orders</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Hold a sector</th>
+<th>Patrol</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>How it is given</td>
+<td>H, then left-click: holds the sector clicked in. Or the Hold sector button.</td>
+<td>T, then left-click: patrols to the point clicked. Or the Patrol button.</td>
+<td><code>ADR-059 §Decision 7</code>, <code>PlayerControls.cpp:191-206</code></td>
+</tr>
+<tr>
+<td>Who takes part</td>
+<td>Warships only. Constructors take no part; a selection of Constructors alone is refused as <code>NoShips</code>.</td>
+<td>Same</td>
+<td><code>Simulation.cpp:3444-3446, 3470-3472</code>, <code>ADR-059 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Refused when</td>
+<td>No sector holds the point, or the map has no territory (<code>NoSector</code>)</td>
+<td>—</td>
+<td><code>Simulation.cpp:3447-3449</code></td>
+</tr>
+<tr>
+<td>First move</td>
+<td>Attack-moves to the sector's node</td>
+<td>Attack-moves to the destination. The other end is the middle of the warships when ordered.</td>
+<td><code>Simulation.cpp:3450-3461, 3473-3491</code></td>
+</tr>
+<tr>
+<td>Kept by</td>
+<td>The server, once a second, each group in the order it was given. A group still planning its paths waits.</td>
+<td>Same</td>
+<td><code>Simulation.cpp:3494-3521</code></td>
+</tr>
+<tr>
+<td>Behavior</td>
+<td>Attack-moves on the nearest enemy ship the player sees in the sector, unless a ship of the group is firing or the group is already headed within 150 m of it. Once none is left and it stands idle more than 200 m from the node, it attack-moves back to the node.</td>
+<td>Each time the whole group stands idle at one end, it attack-moves to the other.</td>
+<td><code>Simulation.cpp:65-66, 3534-3567</code></td>
+</tr>
+<tr>
+<td>Ends when</td>
+<td>The player gives one of its ships a move, attack-move, attack or stop</td>
+<td>Same</td>
+<td><code>ADR-059 §Decision 5</code>, <code>Simulation.cpp:3259-3268</code></td>
+</tr>
+<tr>
+<td>Retreat</td>
+<td>A retreating ship keeps its standing order; its group goes on without it until it is whole.</td>
+<td>Same</td>
+<td><code>ADR-059 §Decision 5</code>, <code>Simulation.cpp:3498-3503</code></td>
+</tr>
+<tr>
+<td>Shown</td>
+<td>"Holding a sector"</td>
+<td>"On patrol"</td>
+<td><code>Hud.cpp:2784-2787</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>A standing order is state, so it replays and is saved.</strong> Its group number counts in <code>m_lastStandingGroup</code> (<code>ADR-059 §Decision 4</code>, <code>ADR-077 §Decision 3</code>).</li>
+<li><strong>The AI uses holds too.</strong> Its reserve holds its front sector with a standing order (<code>AiPlayer.cpp:1656-1675</code>).</li>
+</ul>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Alerts</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>3.1 The rules</h4>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Where alerts come from</td>
+<td>The server's events in each snapshot (ADR-080); the client no longer compares snapshots</td>
+<td><code>Alerts.h:5-11</code>, <code>ADR-059 §Decision 1</code></td>
+</tr>
+<tr>
+<td>How long one shows</td>
+<td>8 s (<code>SHOWN_SECONDS</code>)</td>
+<td><code>Alerts.h:15</code></td>
+</tr>
+<tr>
+<td>Repeats</td>
+<td>One kind in one sector is not raised again within 20 s (<code>REPEAT_SECONDS</code>). "Order fired" is told every time.</td>
+<td><code>Alerts.h:16</code>, <code>Alerts.cpp:55-62</code></td>
+</tr>
+<tr>
+<td>How many are listed</td>
+<td>At most 4 (<code>SHOWN_ALERTS</code>), newest first, under the territory panel. The newest is a warning chip.</td>
+<td><code>Alerts.h:18</code>, <code>Hud.cpp:3215-3238</code>, <code>ADR-059 §Decision 2</code></td>
+</tr>
+<tr>
+<td>How many are kept</td>
+<td>The last 16 (for Space)</td>
+<td><code>Alerts.cpp:9</code></td>
+</tr>
+<tr>
+<td>Minimap mark</td>
+<td>An outlined 14-unit square in the warning color at each listed alert's place, drawn over the fog</td>
+<td><code>Hud.cpp:151, 3607-3617</code></td>
+</tr>
+<tr>
+<td>Space</td>
+<td>Moves the camera to the newest alert kept, even one no longer listed</td>
+<td><code>GameClient.cpp:662-666</code>, <code>Alerts.h:50-54</code></td>
+</tr>
+<tr>
+<td>How one clears</td>
+<td>It ages out of the list after 8 s. There is no click to dismiss it. A new match resets the alerts.</td>
+<td><code>Alerts.cpp:114-124</code>, <code>GameClient.cpp:504</code></td>
+</tr>
+<tr>
+<td>Sector name</td>
+<td>The sector's name from the map (A1–E5 on the repository's map), or "the field" when the event names no sector</td>
+<td><code>Alerts.cpp:72-73</code>, <code>Map.json: sectors[].name</code></td>
+</tr>
+</tbody>
+</table>
+<h4>3.2 Every alert kind (7)</h4>
+<table>
+<thead>
+<tr>
+<th>Alert kind</th>
+<th>Fires when (server event)</th>
+<th>Text (verbatim)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RelaySuppressed</code></td>
+<td><code>EventKind::RelaySuppressed</code>: the player's Relay's sector, held by the same player, is suppressed where it was not</td>
+<td>"Relay suppressed: {sector}"</td>
+<td><code>Alerts.cpp:78-80</code>, <code>Simulation.cpp:2902-2903</code></td>
+</tr>
+<tr>
+<td><code>RelayAttacked</code></td>
+<td><code>EventKind::RelayAttacked</code>: an enemy's shot hits one of the player's Relays; raised once a tick per Relay</td>
+<td>"Relay under attack: {sector}"</td>
+<td><code>Alerts.cpp:81-83</code>, <code>Simulation.cpp:1660-1665</code></td>
+</tr>
+<tr>
+<td><code>RigLost</code></td>
+<td><code>EventKind::StructureLost</code> of a Mining Rig</td>
+<td>"Mining Rig lost: {sector}"</td>
+<td><code>Alerts.cpp:84-87</code></td>
+</tr>
+<tr>
+<td><code>EnemyEntered</code></td>
+<td><code>EventKind::EnemyEntered</code>: an enemy or pirate warship the player sees in a sector it holds, where it saw none at the end of the tick before</td>
+<td>"Enemy ships in {sector}" or "Pirate ships in {sector}"</td>
+<td><code>Alerts.cpp:88-90</code>, <code>Simulation.cpp:379-407</code></td>
+</tr>
+<tr>
+<td><code>ShipRetreating</code></td>
+<td><code>EventKind::ShipRetreating</code>: a ship of the player's starts going back to be repaired</td>
+<td>"Ship retreating: {sector}"</td>
+<td><code>Alerts.cpp:91-93</code>, <code>Simulation.cpp:2580</code></td>
+</tr>
+<tr>
+<td><code>PiratesCleared</code></td>
+<td><code>EventKind::PiratesCleared</code>: a sector the pirates guarded no longer is; every player is told</td>
+<td>"Pirates cleared: {sector}"</td>
+<td><code>Alerts.cpp:94-96</code>, <code>Simulation.cpp:2904-2908</code></td>
+</tr>
+<tr>
+<td><code>OrderFired</code></td>
+<td><code>EventKind::OrderFired</code>: a scheduled order fired</td>
+<td>"Order fired: {action}", "Order held back: {action}" or "Order refused: {action}"</td>
+<td><code>Alerts.cpp:32-45, 97-99</code></td>
+</tr>
+</tbody>
+</table>
+<p>Action words in the "Order …" texts (<code>Alerts.cpp:12-30</code>):</p>
+<ul>
+<li>"move to {sector}"</li>
+<li>"attack-move to {sector}"</li>
+<li>"attack in {sector}"</li>
+<li>"hold {sector}"</li>
+<li>"patrol to {sector}"</li>
+<li>"Mining Rig in {sector}"</li>
+</ul>
+<h4>3.3 Server events (14 kinds) and where each goes</h4>
+<table>
+<thead>
+<tr>
+<th><code>EventKind</code></th>
+<th>Raised</th>
+<th>Alert?</th>
+<th>Away report?</th>
+<th>Trigger?</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RelaySuppressed</code></td>
+<td>End of tick, when territory is worked out</td>
+<td>yes</td>
+<td>no</td>
+<td>RelayThreatened</td>
+<td><code>Snapshot.h:379-384</code>, <code>Simulation.cpp:2902-2903</code></td>
+</tr>
+<tr>
+<td><code>RelayAttacked</code></td>
+<td>While the fight is settled, once a tick per Relay</td>
+<td>yes</td>
+<td>no</td>
+<td>RelayThreatened</td>
+<td><code>Simulation.cpp:1660-1665</code></td>
+</tr>
+<tr>
+<td><code>EnemyEntered</code></td>
+<td>Once the tick's vision is known</td>
+<td>yes</td>
+<td>no</td>
+<td>EnemyInSector</td>
+<td><code>Simulation.cpp:379-407</code></td>
+</tr>
+<tr>
+<td><code>ShipRetreating</code></td>
+<td>When a retreat starts</td>
+<td>yes</td>
+<td>no</td>
+<td>—</td>
+<td><code>Simulation.cpp:2580</code></td>
+</tr>
+<tr>
+<td><code>PiratesCleared</code></td>
+<td>End of tick, to every player</td>
+<td>yes</td>
+<td>no</td>
+<td>—</td>
+<td><code>Simulation.cpp:2904-2908</code></td>
+</tr>
+<tr>
+<td><code>ShipBuilt</code></td>
+<td>A producer delivers a ship, Constructors included</td>
+<td>no</td>
+<td>counted</td>
+<td>—</td>
+<td><code>Simulation.cpp:2762</code></td>
+</tr>
+<tr>
+<td><code>StructureBuilt</code></td>
+<td>A site is finished</td>
+<td>no</td>
+<td>counted</td>
+<td>—</td>
+<td><code>Simulation.cpp:2459-2460</code></td>
+</tr>
+<tr>
+<td><code>ShipLost</code></td>
+<td>A ship is destroyed</td>
+<td>no</td>
+<td>counted</td>
+<td>—</td>
+<td><code>Simulation.cpp:1708</code></td>
+</tr>
+<tr>
+<td><code>StructureLost</code></td>
+<td>A structure is destroyed</td>
+<td>only for a Mining Rig</td>
+<td>counted</td>
+<td>RigLost (Mining Rig only)</td>
+<td><code>Simulation.cpp:1708</code>, <code>Alerts.cpp:84-87</code></td>
+</tr>
+<tr>
+<td><code>SectorGained</code></td>
+<td>End of tick</td>
+<td>no</td>
+<td>named</td>
+<td>—</td>
+<td><code>Simulation.cpp:2899-2900</code></td>
+</tr>
+<tr>
+<td><code>SectorLost</code></td>
+<td>End of tick</td>
+<td>no</td>
+<td>named</td>
+<td>—</td>
+<td><code>Simulation.cpp:2899-2900</code></td>
+</tr>
+<tr>
+<td><code>OrderFired</code></td>
+<td>When a scheduled order fires</td>
+<td>yes</td>
+<td>the last 16</td>
+<td>—</td>
+<td><code>Simulation.cpp:3426-3434</code></td>
+</tr>
+<tr>
+<td><code>EmpireLost</code></td>
+<td>World only, in the tick the player loses</td>
+<td>no (the banner says it)</td>
+<td>no</td>
+<td>—</td>
+<td><code>Simulation.cpp:3731-3737</code>, <code>ADR-084 §Decision 8</code></td>
+</tr>
+<tr>
+<td><code>EmpireRestarted</code></td>
+<td>World only, when the seat restarts</td>
+<td>no (the banner says it)</td>
+<td>no</td>
+<td>—</td>
+<td><code>Simulation.cpp:3744-3746</code></td>
+</tr>
+</tbody>
+</table>
+<p>An event with no sector of its own takes the sector its position is in, if any (<code>Simulation.cpp:367-377</code>). Events are not state: a save holds none, and each tick begins with none (<code>ADR-080 §Decision 1</code>).</p>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5701}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

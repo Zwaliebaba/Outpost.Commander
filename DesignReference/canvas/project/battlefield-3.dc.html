@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fog, territory and marks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Fog of war</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: the client shades a 20 m grid: clear where the player's own entities see now or in a held unsuppressed sector, dim where seen before, dark where never seen; on the ground it is drawn black over the scene, darker for "seen before" than the minimap's (ADR-024, ADR-052, ADR-081).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What the player sees</td>
+<td>own entities; enemies within sight + their footprint radius, or that hit it within 3 s; asteroids and fields always; all of each held, unsuppressed sector</td>
+<td>ADR-024 §Decision 3; ADR-056 §Decision 9</td>
+</tr>
+<tr>
+<td>Sight</td>
+<td>armed: weapon range + 50 m; unarmed: 200 m; shooter revealed 3 s after a hit</td>
+<td><code>Tuning.json: sight</code> (line 13)</td>
+</tr>
+<tr>
+<td>Enemy structures</td>
+<td>remembered as last seen (memory), forgotten once their place is in sight and they are not there</td>
+<td>ADR-024 §Decision 5</td>
+</tr>
+<tr>
+<td>Enemy ships</td>
+<td>only while in sight</td>
+<td>ADR-024 §Context</td>
+</tr>
+<tr>
+<td>Cell</td>
+<td>20 m (<code>CELL_METERS</code>); 500 per side on the 10 km map</td>
+<td><code>FogOfWar.h:11</code>; <code>FogOfWar.cpp:10</code></td>
+</tr>
+<tr>
+<td>In sight</td>
+<td>shade 0 (<code>SEEN_SHADE</code>)</td>
+<td><code>FogOfWar.h:13</code></td>
+</tr>
+<tr>
+<td>Seen before</td>
+<td>shade 0.55 (<code>SEEN_BEFORE_SHADE</code>); minimap keeps it</td>
+<td><code>FogOfWar.h:14</code></td>
+</tr>
+<tr>
+<td>Seen before, on the ground</td>
+<td>0.8 (<code>GROUND_SEEN_BEFORE_SHADE</code>), via the knee</td>
+<td><code>FogOfWar.h:19</code>; <code>GameClient.cpp:1276-1277</code>; <code>GroundMaskPS.hlsl:30-34</code></td>
+</tr>
+<tr>
+<td>Never seen</td>
+<td>0.9 (<code>NEVER_SEEN_SHADE</code>)</td>
+<td><code>FogOfWar.h:15</code></td>
+</tr>
+<tr>
+<td>Knee</td>
+<td>shade ≤ 0.55 covers proportionally up to 0.8; above, max(0.8, shade)</td>
+<td><code>GroundMaskPS.hlsl:27-34</code>; ADR-081 §Decision 6</td>
+</tr>
+<tr>
+<td>Look</td>
+<td>black at opacity = shade, bilinear between cell centers (no cell edges)</td>
+<td><code>GroundMaskPS.hlsl:36-43</code></td>
+</tr>
+<tr>
+<td>Depth</td>
+<td>none: what stands in the fog is darkened with it</td>
+<td><code>GroundMaskPipeline.cpp:79</code>; ADR-024 §Decision 9</td>
+</tr>
+<tr>
+<td>Texture</td>
+<td><code>R8_UNORM</code> 512×512, written only when shades change</td>
+<td><code>GroundMaskPipeline.h:33</code>; ADR-052 §Decision 2</td>
+</tr>
+<tr>
+<td>Update</td>
+<td>once a snapshot, only changed cells</td>
+<td><code>GameClient.cpp:603-612</code>; ADR-052 §Decision 1</td>
+</tr>
+<tr>
+<td>Outside the map</td>
+<td>no fog: sky</td>
+<td>ADR-024 §Decision 9</td>
+</tr>
+<tr>
+<td>Effect on screen</td>
+<td>grid and stars out of sight fall to ~7/255 (computed in ADR)</td>
+<td>ADR-081 §Decision 6</td>
+</tr>
+<tr>
+<td>Minimap</td>
+<td>same texture, no knee</td>
+<td>ADR-052 §Decision 4; <code>GameClient.cpp:1309-1315</code></td>
+</tr>
+<tr>
+<td>Rigs on unseen ore</td>
+<td>client refuses (ghost red) on an asteroid never seen</td>
+<td><code>GameClient.cpp:615-621</code>; ADR-046 §Decision 8</td>
+</tr>
+</tbody>
+</table>
+<p>Color: black (<code>GroundMaskPS.hlsl:42</code>), opacity from the shades above.</p>
+<p>Example: bright, starry ground around the player's fleet; explored space beyond is a dark veil where the grid vanishes; unexplored space is almost black.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Memories over the fog</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: a structure or derelict the player only remembers is drawn after the fog as its lines alone — no faces, bar or ring — in its side's color halfway to gray at 0.6 (ADR-081 §Decision 4).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Color</td>
+<td><code>Shaded(TowardGray(side, 0.5), 0.6)</code> (<code>MEMORY_GRAY_SHARE</code>, <code>MEMORY_SHADE</code>)</td>
+<td><code>GameClient.cpp:119-120,1195</code></td>
+</tr>
+<tr>
+<td>Lines</td>
+<td>crease lines, pulled 0.2%</td>
+<td><code>GameClient.cpp:1198-1200</code></td>
+</tr>
+<tr>
+<td>Faces / bars / ring</td>
+<td>none</td>
+<td><code>GameClient.cpp:1163-1165,1370</code>; <code>Hud.cpp:2173-2174</code></td>
+</tr>
+<tr>
+<td>Drawn</td>
+<td>after fog and territory</td>
+<td><code>GameClient.cpp:1182</code></td>
+</tr>
+<tr>
+<td>Hover</td>
+<td>"Shipyard · last seen 4:12 ago, 34% built"</td>
+<td>ADR-081 §Decision 4</td>
+</tr>
+<tr>
+<td>Minimap</td>
+<td>a cross in the side's color, 8 units across, over the fog</td>
+<td>ADR-081 §Decision 4</td>
+</tr>
+</tbody>
+</table>
+<p>Derived <em>(computed from <code>GameClient.cpp:1195</code>)</em>: Human (0.176, 0.248, 0.407); Tarkan (0.384, 0.189, 0.150); Pirate (0.292, 0.172, 0.376); Wreck (0.240, 0.240, 0.246).</p>
+<p>Color constants: <code>MEMORY_GRAY_SHARE</code> 0.5, <code>MEMORY_SHADE</code> 0.6.</p>
+<p>Example: in the dark fog, a faded, grayish-red wireframe of an enemy Shipyard with no solid faces.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Territory marks</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: over the fog, every player sees every sector border (a faint lattice), an outline inset inside each held or pirate-guarded sector in its holder's color at half strength, solid / dashed (suppressed) / dotted (cut off), and — only while placing a Relay — two rings on each node the player could claim now (ADR-056 §Decision 11, ADR-081 §Decision 3).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sectors</td>
+<td>25, 2,000 m squares on the 10 km map</td>
+<td><code>Map.json: sectors</code></td>
+</tr>
+<tr>
+<td>Lattice</td>
+<td>every sector side once, 1 px</td>
+<td><code>TerritoryMarks.cpp:14-37</code></td>
+</tr>
+<tr>
+<td>Lattice color</td>
+<td><code>TERRITORY_LATTICE_COLOR</code> (0.04, 0.043, 0.063): brighter than the grid, never wider</td>
+<td><code>GameClient.cpp:109</code></td>
+</tr>
+<tr>
+<td>Outline inset</td>
+<td>4 m inside the border (<code>TERRITORY_INSET_METERS</code>); two holders' outlines sit either side of the lattice line</td>
+<td><code>TerritoryMarks.h:55</code>; <code>TerritoryMarks.cpp:50-53</code></td>
+</tr>
+<tr>
+<td>Outline color</td>
+<td>holder's set color × 0.5 (<code>TERRITORY_OUTLINE_SHADE</code>); pirates' for guarded</td>
+<td><code>GameClient.cpp:110,1220-1227</code></td>
+</tr>
+<tr>
+<td>Guarded</td>
+<td>outlined in the Pirate color only when the sector has no holder</td>
+<td><code>TerritoryMarks.cpp:42-49</code></td>
+</tr>
+<tr>
+<td>Suppressed</td>
+<td>dashed: 40 dashes per side, each half its piece (25 m on a 2,000 m side)</td>
+<td><code>GameClient.cpp:112-113</code>; <code>TerritoryMarks.cpp:45-47</code></td>
+</tr>
+<tr>
+<td>Cut off</td>
+<td>dotted: 100 dots per side, each 0.2 of its piece (4 m)</td>
+<td><code>GameClient.cpp:114-115</code></td>
+</tr>
+<tr>
+<td>Suppressed and cut off</td>
+<td>dashed</td>
+<td><code>TerritoryMarks.cpp:45-47</code>; ADR-081 §Decision 3</td>
+</tr>
+<tr>
+<td>Lift</td>
+<td>0.3 m above ground (<code>OVERLAY_LIFT_METERS</code>), unpulled</td>
+<td><code>GameClient.cpp:87,1236</code></td>
+</tr>
+<tr>
+<td>Claimable-node rings</td>
+<td>only while placing a Relay; outer = Relay footprint × 1.3 (39 m), inner × 0.75 (<code>CLAIMABLE_INNER_SHARE</code>)</td>
+<td><code>GameClient.cpp:111,1239-1254</code>; <code>Tuning.json:62</code></td>
+</tr>
+<tr>
+<td>Claimable-ring color</td>
+<td>player's ship-line color, <code>EdgeColor(own, 2, 0.35)</code></td>
+<td><code>GameClient.cpp:1246</code></td>
+</tr>
+<tr>
+<td>Claim rule</td>
+<td><code>CanClaim</code>, shared with the Relay ghost and minimap</td>
+<td>ADR-081 §Decision 2</td>
+</tr>
+<tr>
+<td>Other nodes</td>
+<td>no mark; a held node has its structure's own footprint ring</td>
+<td>ADR-081 §Decision 3</td>
+</tr>
+<tr>
+<td>Recomputed</td>
+<td>once a snapshot</td>
+<td><code>GameClient.cpp:1212-1216</code></td>
+</tr>
+<tr>
+<td>Sector plates / names on the ground</td>
+<td>not built (Look plan "Not in this plan")</td>
+<td><code>ImplementationPlan-Look.md:207</code></td>
+</tr>
+</tbody>
+</table>
+<p>Derived outline colors <em>(computed, <code>GameClient.cpp:1226</code>)</em>: Human (0.090, 0.210, 0.475); Tarkan (0.450, 0.125, 0.060); Pirate (0.310, 0.110, 0.450).</p>
+<p>Color constants: <code>TERRITORY_LATTICE_COLOR</code>, <code>TERRITORY_OUTLINE_SHADE</code>, <code>CLAIMABLE_INNER_SHARE</code>.</p>
+<p>Example: a faint 2 km checkerboard over the map; the player's home sectors traced just inside in mid-blue, one of them in blue dashes where an enemy warship sits at its Relay; a violet square around a pirate stronghold.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Footprint rings</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: every structure stands on a faint one-pixel ring at 1.3 × its footprint, faded out as the camera comes in; full strength in its side's line color under the pointer and under every structure while one is placed; a Mining Rig's ring is its own 25 m footprint's, draped over its rock, shown only then (ADR-042, ADR-046).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Radius</td>
+<td>1.3 × footprint (<code>RING_SIZE_PER_FOOTPRINT</code>)</td>
+<td><code>GameClient.cpp:86,1385</code></td>
+</tr>
+<tr>
+<td>Width</td>
+<td>1 px, 96 segments (<code>RING_LINE_SEGMENTS</code>)</td>
+<td><code>GameClient.cpp:62,210-224</code></td>
+</tr>
+<tr>
+<td>Resting color</td>
+<td>side color × 0.35 × strength (<code>FOOTPRINT_RING_SHADE</code>)</td>
+<td><code>GameClient.cpp:61,1394</code></td>
+</tr>
+<tr>
+<td>Fade with zoom</td>
+<td>full while ring radius ≤ 3% of view width (<code>RING_FULL_VIEW_SHARE</code>); gone from 6.5% (<code>RING_GONE_VIEW_SHARE</code>); linear between</td>
+<td><code>GameClient.cpp:63-64,1386-1390</code></td>
+</tr>
+<tr>
+<td>At default 500 m</td>
+<td>Command Station, Shipyard, Research Lab gone; Defense Platform ~0.37 <em>(computed; ADR-046 says "a third")</em></td>
+<td>ADR-046 §Decision 2</td>
+</tr>
+<tr>
+<td>At widest 3,000 m</td>
+<td>every ring full <em>(computed from 1.3 × 45 m / 3000 = 0.0195)</em></td>
+<td><code>Camera.json:4</code></td>
+</tr>
+<tr>
+<td>Lit (pointer on it, or any placement armed)</td>
+<td>full strength at any zoom, <code>EdgeColor(side, 2, 0.35)</code></td>
+<td><code>GameClient.cpp:1365-1376,1394</code></td>
+</tr>
+<tr>
+<td>Selected</td>
+<td>the selection ring replaces it</td>
+<td><code>GameClient.cpp:1370</code></td>
+</tr>
+<tr>
+<td>Remembered</td>
+<td>no ring</td>
+<td><code>GameClient.cpp:1369-1370</code></td>
+</tr>
+<tr>
+<td>Rig ring radius</td>
+<td>1.3 × 25 m = 32.5 m</td>
+<td><code>GameClient.cpp:1409</code>; <code>Tuning.json:60</code></td>
+</tr>
+<tr>
+<td>Rig ring height</td>
+<td>0.3 m above rock surface under each of 96 points, or above ground past the rock</td>
+<td><code>GameClient.cpp:1416-1428</code></td>
+</tr>
+<tr>
+<td>Rig ring pull</td>
+<td>0.2% toward eye</td>
+<td><code>GameClient.cpp:1382</code></td>
+</tr>
+<tr>
+<td>Rig ring shows</td>
+<td>only lit (pointer or placement)</td>
+<td><code>GameClient.cpp:1379-1384</code></td>
+</tr>
+</tbody>
+</table>
+<p>Derived resting ring at full strength <em>(computed)</em>: Human (0.063, 0.147, 0.332); Tarkan (0.315, 0.087, 0.042); Pirate (0.217, 0.077, 0.315).</p>
+<p>Color constants: <code>FOOTPRINT_RING_SHADE</code>, <code>RING_FULL_VIEW_SHARE</code>, <code>RING_GONE_VIEW_SHARE</code>.</p>
+<p>Example: zoomed out, each base building sits in a thin dark-blue circle; hover one and its circle lights up light-blue.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Selection ring</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: each selected ship or structure has a ring at 1.3 × its footprint, 3 reference units wide at any zoom, drawn as that many one-pixel lines a pixel apart; green, amber while an order waits for its click (ADR-067).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Radius</td>
+<td>1.3 × footprint; a rig's is its asteroid's radius × 1.3</td>
+<td><code>GameClient.cpp:1455</code>; ADR-042 §Decision 4</td>
+</tr>
+<tr>
+<td>Width</td>
+<td>3 HUD reference units × <code>Hud::Scale</code> (player factor excluded), rounded, ≥ 1 px: 3 px at 1080p, 2 at 720p, 6 at 2160p</td>
+<td><code>GameClient.cpp:82,1442-1443</code>; ADR-067 §Decision 1</td>
+</tr>
+<tr>
+<td>Line spacing</td>
+<td>one pixel on the ground at the entity's center (<code>Camera::MetersPerPixelAt</code>)</td>
+<td><code>GameClient.cpp:1451-1460</code>; <code>Camera.cpp:240-253</code></td>
+</tr>
+<tr>
+<td>Foreshortening</td>
+<td>near/far sides ~0.64 of width at 40°, 0.94 at 70° (computed in ADR)</td>
+<td>ADR-067 §Consequences</td>
+</tr>
+<tr>
+<td>Green</td>
+<td><code>SELECTION_COLOR</code> (0.25, 0.95, 0.35)</td>
+<td><code>GameClient.cpp:89</code></td>
+</tr>
+<tr>
+<td>Amber</td>
+<td><code>ATTACK_MOVE_COLOR</code> (1.0, 0.65, 0.1) while attack-move, Hold sector or Patrol is armed</td>
+<td><code>GameClient.cpp:90,1440-1441</code></td>
+</tr>
+<tr>
+<td>Lift</td>
+<td>0.3 m</td>
+<td><code>GameClient.cpp:87,1454</code></td>
+</tr>
+<tr>
+<td>Depth</td>
+<td>tested, no write: hidden under hulls and rocks</td>
+<td>ADR-067 §Consequences</td>
+</tr>
+<tr>
+<td>Drag box</td>
+<td>outline of the screen rectangle projected to the ground, 1.5 m-wide flat strips (<code>DRAG_LINE_WIDTH_METERS</code>)</td>
+<td><code>GameClient.cpp:88,1465-1480</code></td>
+</tr>
+<tr>
+<td>Drag box color</td>
+<td><code>DRAG_BOX_COLOR</code> (0.25, 0.95, 0.35)</td>
+<td><code>GameClient.cpp:91</code></td>
+</tr>
+</tbody>
+</table>
+<p>Color constants: <code>SELECTION_COLOR</code>, <code>ATTACK_MOVE_COLOR</code>, <code>DRAG_BOX_COLOR</code>.</p>
+<p>Example: a crisp 3-px bright green circle around each selected ship, turning amber after pressing A.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Placement ghost</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: while placing, the structure's level-1 model and a flat band ring follow the cursor in green where <code>PlaceGhost</code> allows it and red where not; a Mining Rig snaps to a seen asteroid, a Relay to its sector's node (ADR-013, ADR-046, ADR-056).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Band ring</td>
+<td>1.0–1.15 × ghost radius (<code>RING_INNER_RADIUS</code>, <code>RING_OUTER_RADIUS</code>), 48 segments</td>
+<td><code>GameClient.cpp:83-85,186-207,1822</code></td>
+</tr>
+<tr>
+<td>Ghost radius</td>
+<td>the kind's footprint; a rig's = max(rig, asteroid) radius at the asteroid's center</td>
+<td><code>Placement.cpp:24-78</code></td>
+</tr>
+<tr>
+<td>Model</td>
+<td>level 1, faces only, opaque, lit, spins</td>
+<td><code>GameClient.cpp:1824-1834</code></td>
+</tr>
+<tr>
+<td>Valid</td>
+<td><code>GHOST_VALID_COLOR</code> (0.2, 0.75, 0.3)</td>
+<td><code>GameClient.cpp:122</code></td>
+</tr>
+<tr>
+<td>Invalid</td>
+<td><code>GHOST_INVALID_COLOR</code> (0.85, 0.2, 0.15)</td>
+<td><code>GameClient.cpp:123</code></td>
+</tr>
+<tr>
+<td>Lift</td>
+<td>ring 0.3 m; model at ground</td>
+<td><code>GameClient.cpp:1821,1829</code></td>
+</tr>
+<tr>
+<td>Other rings</td>
+<td>every structure's footprint ring at full strength while placing</td>
+<td><code>GameClient.cpp:1364-1365</code></td>
+</tr>
+</tbody>
+</table>
+<p>Example: a solid green silhouette of a Shipyard with a green band around it under the cursor, turning red over an asteroid field.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Health and build bars</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: bars are HUD quads on the screen, 32 × 5 reference units at every zoom, centered 4 units above the highest projected corner of the entity's model bounds; a hurt entity shows its health bar, every entity while Alt is held, an unfinished structure its build bar; a memory shows none (ADR-047 §Decision 4, ADR-088 §Decision 5, Interface2 UI4.1).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Size</td>
+<td>32 × 5 units (<code>ENTITY_BAR_WIDTH_UNITS</code>, <code>ENTITY_BAR_HEIGHT_UNITS</code>), back-buffer scale, player factor excluded, whole pixels</td>
+<td><code>Hud.cpp:98-99,3096-3098</code></td>
+</tr>
+<tr>
+<td>Gap health↔build</td>
+<td>2 units (<code>ENTITY_BAR_GAP_UNITS</code>); health above build</td>
+<td><code>Hud.cpp:100,3118-3124</code></td>
+</tr>
+<tr>
+<td>Lift</td>
+<td>4 units above the foot (<code>ENTITY_BAR_LIFT_UNITS</code>)</td>
+<td><code>Hud.cpp:101,3100,3104</code></td>
+</tr>
+<tr>
+<td>Foot</td>
+<td>entity's column, level with the highest on-screen corner of its model's 8 bound corners (pose, bank, stance included)</td>
+<td><code>Camera.cpp:270-285</code>; <code>GameClient.cpp:1676-1700,731-732</code></td>
+</tr>
+<tr>
+<td>When shown</td>
+<td>health: hurt, or any while Alt (<code>KEY_EVERY_HEALTH_BAR</code> = VK_MENU) held; build: built &lt; 100%; none for remembered</td>
+<td><code>Hud.cpp:2170-2183</code>; <code>KeyBindings.h:38</code>; <code>GameClient.cpp:598</code></td>
+</tr>
+<tr>
+<td>Back</td>
+<td>side color × 0.3 (<code>HEALTH_BACK_SHADE</code>); <code>HEALTH_BACK_COLOR</code> (0.08, 0.08, 0.08) for a side the data does not name</td>
+<td><code>GameClient.cpp:97-98,727</code></td>
+</tr>
+<tr>
+<td>Health fill</td>
+<td>from the left: green &gt; 50%, amber &gt; 25%, red otherwise</td>
+<td><code>Hud.cpp:83-84,1026-1029</code></td>
+</tr>
+<tr>
+<td>Green</td>
+<td><code>HEALTH_GOOD_COLOR</code> (0.2, 0.85, 0.3)</td>
+<td><code>Hud.cpp:1022</code></td>
+</tr>
+<tr>
+<td>Amber</td>
+<td><code>HEALTH_FAIR_COLOR</code> (1.0, 0.7, 0.1)</td>
+<td><code>Hud.cpp:1023</code></td>
+</tr>
+<tr>
+<td>Red</td>
+<td><code>HEALTH_POOR_COLOR</code> (0.95, 0.2, 0.15)</td>
+<td><code>Hud.cpp:1024</code></td>
+</tr>
+<tr>
+<td>Build fill</td>
+<td><code>BUILD_BAR_COLOR</code> (0.5, 0.52, 0.55), neutral gray on every side</td>
+<td><code>Hud.cpp:1016</code>; ADR-085 §Decision 2</td>
+</tr>
+<tr>
+<td>Layer</td>
+<td>drawn first, under every panel and window; takes no click</td>
+<td><code>GameClient.cpp:1296-1298</code>; ADR-088 §Decision 5</td>
+</tr>
+<tr>
+<td>Off screen</td>
+<td>a pair wholly off screen is left out</td>
+<td><code>Hud.cpp:3107-3108</code></td>
+</tr>
+<tr>
+<td>Glow</td>
+<td>none (interface is after the resolve)</td>
+<td>ADR-091 §Decision 1</td>
+</tr>
+</tbody>
+</table>
+<p>Derived backs <em>(computed)</em>: Human (0.054, 0.126, 0.285); Tarkan (0.270, 0.075, 0.036); Pirate (0.186, 0.066, 0.270).</p>
+<p>Color constants: <code>HEALTH_BACK_COLOR</code>, <code>HEALTH_BACK_SHADE</code>, <code>HEALTH_GOOD_COLOR</code>, <code>HEALTH_FAIR_COLOR</code>, <code>HEALTH_POOR_COLOR</code>, <code>BUILD_BAR_COLOR</code>.</p>
+<p>Example: a small 32×5 px bar floating just above a damaged Tarkan cruiser: dark red-brown track, amber fill to 40%.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Move and order markers</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: <strong>Not specified.</strong> No move, attack or waypoint marker is drawn in the world at HEAD: <code>GameClient::Render</code> (<code>GameClient.cpp:1125-1183</code>) issues no such draw, and <code>ImplementationPlan-Interface2.md:520</code> refers to the place "where a move marker would stand" without one being built. The only order feedback in the world is the selection ring's amber while an order is armed (above).</p>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5579}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

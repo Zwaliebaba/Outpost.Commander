@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Per-model table, part 3 of 3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Per-model table · part 3 of 3</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Model</th>
+<th>Look</th>
+<th>Mesh (<code>OutpostCommander/Assets/Models/…</code>)</th>
+<th>Kind</th>
+<th>Length m (key)</th>
+<th>Tris</th>
+<th>Verts</th>
+<th>Bounds, mesh units min → max</th>
+<th>Fitted, m (x × y × z)</th>
+<th>Drawn in game, m (x × y × z)</th>
+<th>Hardpoints</th>
+<th>Spinning parts</th>
+<th>Crease lines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pirate</td>
+<td>CommandStation_L1</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/CommandStation_L1.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>218</td>
+<td>654</td>
+<td>(-41.62, -12.00, -44.60) → (41.62, 26.00, 44.60)</td>
+<td>60.00 × 27.39 × 64.29</td>
+<td>90.0 × 41.1 × 96.4 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×3</td>
+<td>0</td>
+<td>210</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>CommandStation_L2</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/CommandStation_L2.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>218</td>
+<td>654</td>
+<td>(-41.62, -12.00, -44.60) → (41.62, 26.00, 44.60)</td>
+<td>60.00 × 27.39 × 64.29, across L1's widest 64.29 m</td>
+<td>90.0 × 41.1 × 96.4 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×3</td>
+<td>0</td>
+<td>210</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>CommandStation_L3</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/CommandStation_L3.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>218</td>
+<td>654</td>
+<td>(-41.62, -12.00, -44.60) → (41.62, 26.00, 44.60)</td>
+<td>60.00 × 27.39 × 64.29, across L1's widest 64.29 m</td>
+<td>90.0 × 41.1 × 96.4 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×3</td>
+<td>0</td>
+<td>210</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>CommandStation_L4</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/CommandStation_L4.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>236</td>
+<td>708</td>
+<td>(-41.62, -12.00, -44.60) → (41.62, 26.00, 44.60)</td>
+<td>60.00 × 27.39 × 64.29, across L1's widest 64.29 m</td>
+<td>90.0 × 41.1 × 96.4 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×6</td>
+<td>0</td>
+<td>234</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>CommandStation_L5</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/CommandStation_L5.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[4].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>236</td>
+<td>708</td>
+<td>(-43.40, -12.00, -44.60) → (43.40, 26.00, 44.60)</td>
+<td>62.56 × 27.39 × 64.29, across L1's widest 64.29 m</td>
+<td>93.8 × 41.1 × 96.4 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×6</td>
+<td>0</td>
+<td>234</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>Shipyard_L1</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/Shipyard_L1.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>188</td>
+<td>564</td>
+<td>(-40.00, -12.50, -13.00) → (40.00, 10.50, 13.00)</td>
+<td>60.00 × 17.25 × 19.50</td>
+<td>80.0 × 23.0 × 26.0 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>182</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>Shipyard_L2</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/Shipyard_L2.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>204</td>
+<td>612</td>
+<td>(-40.00, -12.50, -13.20) → (40.00, 10.50, 13.20)</td>
+<td>60.00 × 17.25 × 19.80, across L1's widest 60.00 m</td>
+<td>80.0 × 23.0 × 26.4 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>200</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>Shipyard_L3</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/Shipyard_L3.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>336</td>
+<td>1008</td>
+<td>(-40.00, -12.50, -13.20) → (40.00, 10.50, 32.90)</td>
+<td>60.00 × 17.25 × 34.58, across L1's widest 60.00 m</td>
+<td>80.0 × 23.0 × 46.1 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>324</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>Shipyard_L4</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/Shipyard_L4.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>468</td>
+<td>1404</td>
+<td>(-40.00, -12.50, -32.90) → (40.00, 10.50, 32.90)</td>
+<td>60.00 × 17.25 × 49.35, across L1's widest 60.00 m</td>
+<td>80.0 × 23.0 × 65.8 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>448</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>Shipyard_L5</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/Shipyard_L5.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[1].models[5].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>468</td>
+<td>1404</td>
+<td>(-40.00, -12.50, -32.90) → (40.00, 10.50, 32.90)</td>
+<td>60.00 × 17.25 × 49.35, across L1's widest 60.00 m</td>
+<td>80.0 × 23.0 × 65.8 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>448</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>ResearchLab_L1</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/ResearchLab_L1.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>240</td>
+<td>720</td>
+<td>(-30.00, -15.25, -30.00) → (30.00, 14.00, 30.00)</td>
+<td>12.00 × 5.85 × 12.00</td>
+<td>60.0 × 29.2 × 60.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>1: 96 tris, 12 s about (-0, 1, -0)</td>
+<td>198</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>ResearchLab_L2</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/ResearchLab_L2.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>240</td>
+<td>720</td>
+<td>(-30.00, -15.25, -30.00) → (30.00, 14.00, 30.00)</td>
+<td>12.00 × 5.85 × 12.00, across L1's widest 12.00 m</td>
+<td>60.0 × 29.2 × 60.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>1: 96 tris, 12 s about (-0, 1, -0)</td>
+<td>198</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>ResearchLab_L3</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/ResearchLab_L3.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>336</td>
+<td>1008</td>
+<td>(-30.00, -15.25, -30.00) → (30.00, 14.00, 30.00)</td>
+<td>12.00 × 5.85 × 12.00, across L1's widest 12.00 m</td>
+<td>60.0 × 29.2 × 60.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>2: 96 tris, 9 s about (-0, -1, -0); 96 tris, 12 s about (-0, 1, -0)</td>
+<td>270</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>ResearchLab_L4</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/ResearchLab_L4.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>336</td>
+<td>1008</td>
+<td>(-30.00, -15.25, -30.00) → (30.00, 14.00, 30.00)</td>
+<td>12.00 × 5.85 × 12.00, across L1's widest 12.00 m</td>
+<td>60.0 × 29.2 × 60.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>2: 96 tris, 9 s about (-0, -1, -0); 96 tris, 12 s about (-0, 1, -0)</td>
+<td>270</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>ResearchLab_L5</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/ResearchLab_L5.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[1].models[6].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>380</td>
+<td>1140</td>
+<td>(-30.00, -15.25, -30.00) → (30.00, 14.00, 30.00)</td>
+<td>12.00 × 5.85 × 12.00, across L1's widest 12.00 m</td>
+<td>60.0 × 29.2 × 60.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>2: 96 tris, 9 s about (-0, -1, -0); 96 tris, 12 s about (-0, 1, -0)</td>
+<td>306</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>MiningRig</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/MiningRig.nmf</code></td>
+<td>structure</td>
+<td>4 (<code>sets[1].models[7].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>166</td>
+<td>498</td>
+<td>(-26.67, -17.00, -20.64) → (19.00, 10.50, 20.64)</td>
+<td>4.00 × 2.41 × 3.62</td>
+<td>50.0 × 30.1 × 45.2 (×12.5; <code>Tuning.json: structures[3].footprintRadiusMeters</code> = 25)</td>
+<td><code>gun</code> ×1</td>
+<td>0</td>
+<td>162</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>DefensePlatform</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/DefensePlatform.nmf</code></td>
+<td>structure</td>
+<td>4 (<code>sets[1].models[8].lengthMeters (borrowed via sets[2].meshes = "Tarkan")</code>)</td>
+<td>84</td>
+<td>252</td>
+<td>(-17.32, -8.00, -20.00) → (17.32, 8.00, 20.00)</td>
+<td>4.00 × 1.85 × 4.62</td>
+<td>40.0 × 18.5 × 46.2 (×10; <code>Tuning.json: structures[4].footprintRadiusMeters</code> = 20)</td>
+<td><code>gun</code> ×6</td>
+<td>0</td>
+<td>108</td>
+</tr>
+<tr>
+<td>Wreck</td>
+<td>Small</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Small.nmf</code></td>
+<td>ship, derelict</td>
+<td>20 (<code>sets[0].models[0].lengthMeters (borrowed via sets[3].meshes = "Human")</code>)</td>
+<td>70</td>
+<td>210</td>
+<td>(-17.00, -2.50, -22.00) → (24.00, 5.00, 22.00)</td>
+<td>20.00 × 3.66 × 21.46</td>
+<td>× 2·radius/length of each derelict</td>
+<td><code>exhaust</code> ×1, <code>gun</code> ×2</td>
+<td>0</td>
+<td>74</td>
+</tr>
+<tr>
+<td>Wreck</td>
+<td>Medium</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Medium.nmf</code></td>
+<td>ship, derelict</td>
+<td>35 (<code>sets[0].models[1].lengthMeters (borrowed via sets[3].meshes = "Human")</code>)</td>
+<td>160</td>
+<td>480</td>
+<td>(-56.35, -8.00, -24.00) → (56.00, 16.00, 24.00)</td>
+<td>35.00 × 7.48 × 14.95</td>
+<td>× 2·radius/length of each derelict</td>
+<td><code>exhaust</code> ×1, <code>gun</code> ×2</td>
+<td>0</td>
+<td>161</td>
+</tr>
+<tr>
+<td>Wreck</td>
+<td>Large</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Large.nmf</code></td>
+<td>ship, derelict</td>
+<td>60 (<code>sets[0].models[2].lengthMeters (borrowed via sets[3].meshes = "Human")</code>)</td>
+<td>256</td>
+<td>768</td>
+<td>(-150.50, -70.00, -66.00) → (180.00, 61.00, 66.00)</td>
+<td>60.00 × 23.78 × 23.96</td>
+<td>× 2·radius/length of each derelict</td>
+<td><code>exhaust</code> ×2, <code>gun</code> ×3</td>
+<td>0</td>
+<td>259</td>
+</tr>
+<tr>
+<td>Asteroids</td>
+<td>Small</td>
+<td>approximation of the in-game look</td>
+<td><code>Asteroids/Small.nmf</code></td>
+<td>rock</td>
+<td>2 (<code>sets[4].models[0].lengthMeters</code>)</td>
+<td>32</td>
+<td>96</td>
+<td>(-1.06, -0.61, -0.69) → (1.07, 0.64, 0.70)</td>
+<td>2.00 × 1.18 × 1.31</td>
+<td>× the rock's radius</td>
+<td>none</td>
+<td>0</td>
+<td>43</td>
+</tr>
+<tr>
+<td>Asteroids</td>
+<td>Medium</td>
+<td>approximation of the in-game look</td>
+<td><code>Asteroids/Medium.nmf</code></td>
+<td>rock</td>
+<td>2 (<code>sets[4].models[1].lengthMeters</code>)</td>
+<td>54</td>
+<td>162</td>
+<td>(-1.09, -0.68, -0.79) → (0.99, 0.68, 0.89)</td>
+<td>2.00 × 1.31 × 1.61</td>
+<td>× the rock's radius</td>
+<td>none</td>
+<td>0</td>
+<td>67</td>
+</tr>
+<tr>
+<td>Asteroids</td>
+<td>Large</td>
+<td>approximation of the in-game look</td>
+<td><code>Asteroids/Large.nmf</code></td>
+<td>rock</td>
+<td>2 (<code>sets[4].models[2].lengthMeters</code>)</td>
+<td>78</td>
+<td>234</td>
+<td>(-1.05, -0.74, -0.83) → (1.25, 0.73, 0.85)</td>
+<td>2.00 × 1.27 × 1.46</td>
+<td>× the rock's radius</td>
+<td>none</td>
+<td>0</td>
+<td>81</td>
+</tr>
+</tbody>
+</table>
+<p>Hardpoint tags: <code>gun</code> is where a shot leaves, <code>exhaust</code> where an engine's exhaust leaves (<code>GameApp/Hardpoints.cpp:9-10, 45-52</code>); the game refuses a mesh with any other tag (<code>ModelCatalog.cpp:376-380</code>). Every spinning part turns about the vertical axis; a negative y axis turns the other way (Tarkan's counter ring). Periods match ADR-045's Context: Human radar 8 s, L5 relays 5 s; Tarkan tilted ring 12 s, L3–L5 counter ring 9 s.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3387}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

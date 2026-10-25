@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Component anatomy, part 2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Anatomy and sources · part 2 of 2</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>Small arrow button (<code>SmallButton</code>, Hud.cpp:1190-1197)</h4>
+<ul>
+<li>24 × 24 (<code>SMALL_BUTTON_UNITS</code>). The mark "&lt;" or "&gt;" is in Label, centered, at y 4.</li>
+<li>Enabled: <code>CARD_COLOR</code> face and a <code>TEXT_COLOR</code> mark.</li>
+<li>Disabled: <code>DISABLED_BUTTON_COLOR</code> face (α 0.85) and a <code>DIM_TEXT_COLOR</code> mark; it takes no click.</li>
+<li>It has no outline.</li>
+</ul>
+<h4>Designer footer controls (Hud.cpp:1543-1601)</h4>
+<p><strong>Rename/Update</strong> is 90 × 48 at x 24.</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Label (Label, tracked, at (14, 16))</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enabled</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>TEXT_COLOR</code></td>
+</tr>
+<tr>
+<td>Disabled</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>DIM_TEXT_COLOR</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retreat row:</strong></p>
+<ul>
+<li>It sits at x 126, 206 wide. "RETREAT" is in Label, <code>ROW_LABEL_COLOR</code>, tracked.</li>
+<li>Below it are three cells 30 tall from y +18, 4 apart (<code>RetreatRow</code>, :1328-1346).</li>
+<li>Lit cell: <code>PICKED_COLOR</code> and <code>PICKED_EDGE_COLOR</code>. The others: <code>CARD_COLOR</code> and <code>EDGE_COLOR</code>.</li>
+<li>The words are in <code>TEXT_COLOR</code>, centered on a line of <code>round(face × 1.25)</code>.</li>
+</ul>
+<p><strong>Stepper</strong> at x 346: "−" 36 × 48, the count box 42 × 48, "+" 36 × 48.</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Mark</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Steps, enabled</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td>Name at (13, 13), <code>TEXT_COLOR</code></td>
+</tr>
+<tr>
+<td>Steps, disabled</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td>Name, <code>DIM_TEXT_COLOR</code></td>
+</tr>
+<tr>
+<td>Count box</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td>"×N" in Name, <code>TEXT_COLOR</code>, at +10</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Queue button:</strong> from x 468 to 794 (326 wide), 48 tall.</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>"QUEUE" (Title, tracked, at (18, 2))</th>
+<th>Detail (Detail, at (18, 31))</th>
+<th>Cost (Title, right 16 in, y 10)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enabled</td>
+<td><code>QUEUE_COLOR</code> + hatched <code>QUEUE_HATCH_COLOR</code></td>
+<td><code>QUEUE_EDGE_COLOR</code></td>
+<td><code>QUEUE_TEXT_COLOR</code></td>
+<td><code>QUEUE_TEXT_COLOR</code></td>
+<td><code>GOLD_COLOR</code></td>
+</tr>
+<tr>
+<td>Disabled</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>DIM_TEXT_COLOR</code></td>
+<td><code>DIM_TEXT_COLOR</code></td>
+<td><code>DIM_TEXT_COLOR</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Save/Saved</strong> is 68 × 38 at the right of the name row (:1395-1405).</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Face</th>
+<th>Edge</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SAVE, enabled</td>
+<td><code>CARD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>TEXT_COLOR</code></td>
+</tr>
+<tr>
+<td>SAVED</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>QUEUE_EDGE_COLOR</code></td>
+<td><code>QUEUE_EDGE_COLOR</code></td>
+</tr>
+<tr>
+<td>Disabled</td>
+<td><code>FIELD_COLOR</code></td>
+<td><code>EDGE_COLOR</code></td>
+<td><code>DIM_TEXT_COLOR</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Name field</strong> (:1385-1393):</p>
+<ul>
+<li>38 tall, with a <code>FIELD_COLOR</code> face. The edge is <code>EDGE_COLOR</code>, or <code>PICKED_EDGE_COLOR</code> while typing.</li>
+<li>"NAME" is in Label, <code>LABEL_COLOR</code>, tracked, at (12, 13).</li>
+<li>The name is in Name at (66, 9): <code>TEXT_COLOR</code>, or <code>WARNING_COLOR</code> when the server would refuse it. While typing, a "_" follows it.</li>
+<li>The count "21/32" is in Figure, <code>LABEL_COLOR</code>, right-aligned.</li>
+</ul>
+<h4>HUD retreat row (Hud.cpp:3441-3452)</h4>
+<ul>
+<li>"RETREAT" is in Label, <code>ROW_LABEL_COLOR</code>, tracked. "MIXED" is in Label, <code>NUMBERS_COLOR</code>, at the right while the ships differ.</li>
+<li>Below are three cells, <code>BUTTON_HEIGHT</code> 34 tall, with their words in Name.</li>
+<li>A lit cell is the same as a lit cell in the designer. A cell under the pointer takes <code>HOVER_EDGE_COLOR</code>.</li>
+</ul>
+<h4>Queue row (<code>QueueRows</code>, Hud.cpp:1675-1706)</h4>
+<ul>
+<li><code>CARD_COLOR</code> with an <code>EDGE_COLOR</code> outline, 30 tall, 4 apart.</li>
+<li>The index is in Figure, <code>LABEL_COLOR</code>, at (10, 7). The name is in Name, <code>TEXT_COLOR</code>, at x 32, y 5.</li>
+<li>The front job, while it runs: a bar 120 × 6 at y 12 (<code>BAR_TRACK_COLOR</code> filled with <code>BAR_FILL_COLOR</code>), and the percent in Figure, <code>TEXT_COLOR</code>, right-aligned.</li>
+<li>While waiting: "WAITING FOR ORE" or "WAITING FOR FLEET CAP" in Label, <code>AMBER_COLOR</code>, right-aligned.</li>
+</ul>
+<h4>Bars</h4>
+<p><strong>Health thresholds:</strong> above 0.5 is good, above 0.25 is fair, otherwise poor (Hud.cpp:83-84, <code>HealthColor</code> :1026-1029). Every health bar uses <code>HEALTH_GOOD_</code>, <code>HEALTH_FAIR_</code> and <code>HEALTH_POOR_COLOR</code> (ADR-088 d5).</p>
+<table>
+<thead>
+<tr>
+<th>Bar</th>
+<th>Size (units)</th>
+<th>Track or back</th>
+<th>Fill</th>
+<th>Notes</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Health over an entity</td>
+<td>32 × 5 at the screen's scale</td>
+<td>the side's color ×0.3, or <code>HEALTH_BACK_COLOR</code></td>
+<td><code>HealthColor</code></td>
+<td>Whole pixels. Stands 4 above the model's top on the screen. Fills from the left. Drawn under every panel and takes no click.</td>
+<td>Hud.cpp:3093-3126; ADR-088 d5</td>
+</tr>
+<tr>
+<td>Build over an entity (no side's)</td>
+<td>32 × 5, under the health bar, 2 apart</td>
+<td>the side's back</td>
+<td><code>BUILD_BAR_COLOR</code></td>
+<td>While unfinished. Not drawn for what the player only remembers.</td>
+<td>Hud.cpp:3119, 2170-2183; ADR-085 d2</td>
+</tr>
+<tr>
+<td>Selection's health (one bar)</td>
+<td>panel width − 24 × 6, 8 under the lines</td>
+<td><code>BAR_TRACK_COLOR</code></td>
+<td><code>HealthColor</code></td>
+<td>When there is one entity or more than 24 ships</td>
+<td>Hud.cpp:3419-3425</td>
+</tr>
+<tr>
+<td>Ship bars (2 to 24 ships)</td>
+<td>17 × 10, 4 apart, 12 a row</td>
+<td><code>BAR_TRACK_COLOR</code></td>
+<td><code>HealthColor</code></td>
+<td>A 1-unit outline outside it: <code>TEXT_COLOR</code> while the ship is retreating, <code>HOVER_EDGE_COLOR</code> under the pointer. A click selects that ship.</td>
+<td>Hud.cpp:3397-3418</td>
+</tr>
+<tr>
+<td>Button progress</td>
+<td>width − 4 × 3, at the foot</td>
+<td><code>BAR_TRACK_COLOR</code></td>
+<td><code>BAR_FILL_COLOR</code></td>
+<td></td>
+<td>Hud.cpp:1277-1287</td>
+</tr>
+<tr>
+<td>Queue row progress</td>
+<td>120 × 6</td>
+<td><code>BAR_TRACK_COLOR</code></td>
+<td><code>BAR_FILL_COLOR</code></td>
+<td></td>
+<td>Hud.cpp:1697-1702</td>
+</tr>
+<tr>
+<td>Status bar</td>
+<td>under the words: 4 thick in an 8 row; beside them: 6 thick, 8 clear</td>
+<td><code>BAR_TRACK_COLOR</code></td>
+<td><code>BAR_FILL_COLOR</code></td>
+<td></td>
+<td>Hud.cpp:3290-3305</td>
+</tr>
+<tr>
+<td>Designer stat bar</td>
+<td>90 × 7 at x 104</td>
+<td><code>BAR_TRACK_COLOR</code></td>
+<td><code>BAR_FILL_COLOR</code></td>
+<td>While a part is hovered, what it adds or removes shows in <code>GOOD_COLOR</code> or <code>POOR_COLOR</code> under the shared part</td>
+<td>Hud.cpp:1489-1506</td>
+</tr>
+<tr>
+<td>Damage rating bar</td>
+<td>(w − 20) × 4</td>
+<td><code>BAR_TRACK_COLOR</code></td>
+<td><code>GOOD_</code>, <code>FAIR_</code> or <code>POOR_COLOR</code> (Good from 2/3, Fair from 1/3)</td>
+<td></td>
+<td>Hud.cpp:1536-1537, 417-418, 535-538</td>
+</tr>
+<tr>
+<td>Strength segments</td>
+<td>3 × (6 × 8)</td>
+<td><code>BAR_TRACK_COLOR</code> (unlit)</td>
+<td>the rating's color</td>
+<td></td>
+<td>Hud.cpp:1757-1777</td>
+</tr>
+</tbody>
+</table>
+<h4>Ore gem (ADR-085 d3; ADR-043 d3)</h4>
+<ul>
+<li><strong>Shape:</strong> a cut gem with the corners (0.28, 0.14), (0.72, 0.14), (0.97, 0.40), (0.50, 0.94) and (0.03, 0.40) of its square, y down. Edges are smoothed over a pixel (<code>GlyphAtlas.cpp:27, 53-56</code>).</li>
+<li><strong>Raster size:</strong> 12 units in the atlas (Hud.cpp:3022).</li>
+<li><strong>Drawn size:</strong> <code>round(face × 0.6)</code> square, which is 13 units beside the Title face and 8 beside the Figure face.</li>
+<li>It stands 5 units before the figure (<code>ORE_MARK_GAP_UNITS</code>).</li>
+<li>It is centered vertically on <code>face × 1.25</code>.</li>
+<li>Its place comes from <code>GemAndFigure</code> (Hud.cpp:1216-1235).</li>
+<li><strong>Color:</strong> <code>GOLD_COLOR</code>. A disabled card's or button's gem takes the dim color of its figure: <code>LOCKED_TEXT_COLOR</code> or <code>DIM_TEXT_COLOR</code>.</li>
+<li><strong>The figure</strong> is grouped in thousands (<code>WithThousands</code>, Hud.cpp:2114).</li>
+</ul>
+<h4>Checkbox (Hud.cpp:3023; GlyphAtlas.cpp:329-334)</h4>
+<ul>
+<li>The outline of a square, 10 units, with a stroke of 1/12 of its size (at least 1 px).</li>
+<li>It is drawn in <code>AMBER_COLOR</code> before a lock line or a need line.</li>
+</ul>
+<h4>Fills (<code>Hud::Fill</code>, Hud.h:630-637)</h4>
+<table>
+<thead>
+<tr>
+<th>Fill</th>
+<th>What it draws</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Solid</code></td>
+<td>The rectangle</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Hatched</code></td>
+<td>Only the stripes (§Hatching)</td>
+<td>UiPS.hlsl:23-27</td>
+</tr>
+<tr>
+<td><code>Fog</code></td>
+<td>The fog texture's shade as coverage, in black</td>
+<td>UiPS.hlsl:28-32; GameClient.cpp:1310-1316</td>
+</tr>
+</tbody>
+</table>
+<h4>Minimap (Hud.cpp:3455-3630)</h4>
+<p><strong>Frame:</strong> a HUD panel 300 square. The map square inside it is 284, 8 in, in <code>MAP_COLOR</code>.</p>
+<p><strong>Draw order:</strong></p>
+<ol>
+<li>The sector washes.</li>
+<li>The marks: neutral first, then sided.</li>
+<li>The fog.</li>
+<li>Every sector border, in <code>LATTICE_COLOR</code>.</li>
+<li>The outlines of held and guarded sectors: dashed while cut off, hatched at α 0.35 while suppressed.</li>
+<li>The claimable outlines, 3 in, in <code>OWN_COLOR</code>.</li>
+<li>The memory crosses.</li>
+<li>The alert squares, in <code>WARNING_COLOR</code>.</li>
+<li>The view, in <code>VIEW_COLOR</code>, 1.5 wide.</li>
+</ol>
+<p><strong>Marks</strong> (:3498-3527):</p>
+<ul>
+<li>A ship is a square of at least 3 units, a structure at least 6, and an ore asteroid at least 8.</li>
+<li>An ore asteroid, dry or not, is a square outlined 2 units wide. Every other mark is filled.</li>
+</ul></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3507}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

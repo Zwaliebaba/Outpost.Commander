@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A match started, before its first snapshot</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="display:flex;align-items:flex-start;width:2440px;background:#10141B"><div style="position:relative;flex:0 0 1920px;height:1080px"><div aria-label="A match started, before its first snapshot" role="img" style="position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;background:#000"></div><div aria-hidden="true" style="position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none"></div></div><aside style="flex:0 0 520px;min-height:1080px;box-sizing:border-box;padding:28px 28px 28px 32px;background:#10141B;border-left:1px solid #2D364B;font-family:'Segoe UI','Noto Sans',sans-serif;color:#EAF1FA"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#8193AD">match · awaiting-first-snapshot · factor 1</div><h2 style="margin:6px 0 12px 0;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:22px;line-height:1.25;color:#EAF1FA">A match started, before its first snapshot</h2><ol style="list-style:none;margin:0 0 16px 0;padding:0"></ol><div style="font-size:12.5px;line-height:1.5;color:#8193AD"><p style="margin:0 0 8px 0">Geometry derived from Hud.cpp by A4's derive_layouts.py, not dumped from the game: 0 of 0 elements depend on DirectWrite text measurement and are estimated. Content values are samples built from Tuning.json and Map.json. Dashed boxes and numbered discs in #FF2D95 are this reference's annotations, not the game.</p><ul style="margin:0;padding-left:18px"><li style="margin:0 0 6px 0">GameClient::StartMatch clears the layout (GameClient.cpp:472-478, 517); Update lays the HUD out only once the view holds a snapshot (GameClient.cpp:689-775); DrawHud draws nothing while fontPixels is 0 (GameClient.cpp:1291-1293). The screen shows the sky and the grid only (GameClient.cpp:1138-1158).</li><li style="margin:0 0 6px 0">No HUD is laid out until the view holds a snapshot (GameClient.cpp:689-775), and DrawHud draws nothing while fontPixels is 0 (GameClient.cpp:1291-1293): the screen shows the sky and the grid only. The camera centres on the player&#x27;s ships with the first snapshot (GameClient.cpp:548-567).</li></ul><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11.5px">DesignReference/_work/A4/layouts/match-awaiting-first-snapshot.json</p></div></aside></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 2440, "height": 1137}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

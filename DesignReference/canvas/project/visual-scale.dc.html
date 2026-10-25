@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Interface scale and the mockup</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Interface scale</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>The steps.</strong> <code>Hud::INTERFACE_STEPS</code> are <strong>100, 110, 125, 150, 175 and 200 %</strong> (Hud.h:861; ADR-070 d2). The brief's "100/110/125%" matches what a 16:9 screen reaches (see below), not the list of steps. Ctrl+= takes the next step and Ctrl+- the one before (KeyBindings.h:41-42; GameClient.cpp:779-799). The factor starts at 100% (GameClient.h:347), lasts until the game closes, and is never written to disk (ADR-070 d5).</p>
+<p><strong>What scales.</strong> <code>Hud::Scale</code> = factor × min(width/1920, height/1080) (Hud.cpp:3029-3033). Everything the HUD lays out scales with it, and each anchor is computed in the smaller reference screen (width/scale, height/scale):
+- the menu, every HUD panel and every window;
+- text, which is rasterized again at the new size (ADR-070 d6, <code>UiPipeline::UseScale</code> GameClient.cpp:577-579);
+- hit-testing and window positions (<code>ToUnits</code>, GameClient.cpp:1034-1038).</p>
+<p><strong>What does not scale.</strong>
+- The bars over entities (Hud.cpp:3096; ADR-088 d5).
+- The selection ring (ADR-067).
+- The stars (GameClient.cpp:1140). ADR-070 d7.</p>
+<p><strong>What limits it</strong> (<code>Hud::WindowsFit</code>, Hud.cpp:3035-3054; <code>StepInterface</code>, 3056-3073).
+- <strong>A step up</strong> is taken only while these fit the screen less 2 × 16 margins:
+  - the Controls window (700 × 762), always;
+  - in a match, also the Orders window (640 × 560), the Away window at 20 lines (600 × 530), and the designer laid out for the match's components (818 × 913 with Tuning.json).
+- <strong>A step down</strong> is always taken.
+- <strong>Re-fit.</strong> A new screen size, or a match starting or ending, takes the factor down to the largest step that fits (GameClient.cpp:792-798).</p>
+<p><strong>Computed reach.</strong> These figures come from the arithmetic, not from a screen.</p>
+<table>
+<thead>
+<tr>
+<th>Screen</th>
+<th>Where</th>
+<th>Reaches</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16:9</td>
+<td>Menu</td>
+<td><strong>125%</strong></td>
+<td>Controls: 762 + 32 = 794 fits 1080/1.25 = 864, but not 1080/1.5 = 720</td>
+</tr>
+<tr>
+<td>16:9</td>
+<td>Match</td>
+<td><strong>110%</strong></td>
+<td>The designer: 913 + 32 = 945 fits 981.8, but not 864</td>
+</tr>
+<tr>
+<td>2880×1920</td>
+<td>Match</td>
+<td><strong>125%</strong></td>
+<td>ADR-070 says so too</td>
+</tr>
+<tr>
+<td>4:3, e.g. 1600×1200</td>
+<td>Match</td>
+<td>≈<strong>150%</strong></td>
+<td>Not stated in any document</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effects of scaling.</strong>
+- At 110%, the windows overlap at their default places (ADR-070 Consequences). Research's slot 1 ends at 1070 units, past the designer's default x of 911.
+- Layout files: <code>menu-scale-125.json</code> and <code>hud-scale-110.json</code>. In the latter, the selection panel is ≈<code>589.3, 813.8, 323.4, 248.6</code> and the minimap <code>17.6, 732.4, 330, 330</code>.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The designer mockup</div><div style="padding:20px 24px 24px 24px"><figure style="margin:0 0 18px 0"><img src="/_blob/cc2aa2f51f17ff6ec9bce92620de249a" alt="The owner&#x27;s designer mockup" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">GameDesign/Mockups/ShipDesigner.png: evidence, not ground truth; the code differs as below.</figcaption></figure><div class="md"><p>The mockup is 727 × 702 px, drawn at the reference scale (Hud.cpp:910-911). Code wins every difference.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Mockup shows</th>
+<th>Code at HEAD</th>
+<th>Why (source)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Ore as a ◆ diamond</td>
+<td>A cut gem</td>
+<td>ADR-085 d3</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Gold sampled at <code>#F7D364</code>, linear (0.93, 0.651, 0.127) (the "2582" box, the Queue "87")</td>
+<td><code>GOLD_COLOR</code> <code>#F7BC3C</code>, (0.93, 0.50, 0.045)</td>
+<td><strong>No document records the change.</strong> Hud.cpp:976 lists the block as "sampled from it". See Conflicts C10.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>White text sampled at <code>#DEE6F2</code></td>
+<td><code>TEXT_COLOR</code> <code>#EAF1FA</code></td>
+<td><code>TEXT_COLOR</code> is the HUD's own (Hud.cpp:14-16), not from the mockup block</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Title-bar labels in the label blue <code>#8293AE</code></td>
+<td><code>HEADER_LABEL_COLOR</code> <code>#ACBACD</code></td>
+<td>ADR-062 d3, raised to 5.8:1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Title bar: a ground of <code>#222A3C</code> with stripes of <code>#2A3243</code></td>
+<td><code>WINDOW_COLOR</code> <code>#181E2B</code> with <code>TITLE_HATCH_COLOR</code> stripes <code>#303A50</code>, 2 of every 7 units</td>
+<td>Not documented</td>
+</tr>
+<tr>
+<td>6</td>
+<td>727 wide; cards about 190</td>
+<td>818 wide; cards 220</td>
+<td>ADR-062 d4</td>
+</tr>
+<tr>
+<td>7</td>
+<td>"SHIPYARD 01 · DESIGNER"; "QUEUE · 0 BUILT"</td>
+<td>"&lt; SHIPYARD 01 &gt; · DESIGNER"; "QUEUE · 0 / 5" over the slots, with "BUILT · 0" beside</td>
+<td>ADR-068 d1</td>
+</tr>
+<tr>
+<td>8</td>
+<td>No close box</td>
+<td>A 36 × 36 close box with "×"</td>
+<td>ADR-031 d3</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Three slot rows</td>
+<td>Four: the module row</td>
+<td>Phase 2 design §10</td>
+</tr>
+<tr>
+<td>10</td>
+<td>A picked card with a lighter top (<code>#3C5377</code> to <code>#334767</code>)</td>
+<td>Solid <code>PICKED_COLOR</code> <code>#334767</code></td>
+<td>Not documented; the code draws solid fills only (Hud.h:630-637)</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Stat bars with gradient fills</td>
+<td>Solid <code>BAR_FILL_COLOR</code></td>
+<td>Not documented (same reason)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>"DAMAGE / S AFTER ARMOR · VS HULL"</td>
+<td>"· VS A FORMATION", plus "×N ships" reach</td>
+<td>Hud.cpp:1510, 1527-1529</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Footer: Rename, stepper, Queue</td>
+<td>Rename, a RETREAT row of three, stepper, Queue</td>
+<td>Phase 4 design §10; interface plan 2 UI4.3</td>
+</tr>
+<tr>
+<td>14</td>
+<td>"SAVED" green sampled near <code>#74D580</code></td>
+<td><code>QUEUE_EDGE_COLOR</code> <code>#559361</code></td>
+<td>Not documented</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Queue face sampled at (0.033–0.038, 0.114–0.13, 0.045–0.05)</td>
+<td><code>QUEUE_COLOR</code> and its hatch, 0.65 of the mockup's</td>
+<td>ADR-062 d3</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Locked text (0.15, 0.19, 0.26); worse red (0.75, 0.08, 0.044)</td>
+<td>(0.20, 0.26, 0.35); (0.80, 0.09, 0.05)</td>
+<td>ADR-062 d3</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What matches the mockup to within rounding:</strong></p>
+<ul>
+<li><code>WINDOW_EDGE_COLOR</code>, sampled at <code>#8AB0E2</code></li>
+<li><code>QUEUE_TEXT_COLOR</code>, <code>#EDFFEF</code></li>
+<li><code>FIELD_</code>, <code>CARD_</code>, <code>LOCKED_</code>, <code>BAR_TRACK_</code> and <code>PICKED_COLOR</code> (the lower part of the picked card)</li>
+<li><code>LABEL_</code>, <code>SOFT_</code>, <code>AMBER_</code>, <code>GOOD_</code> and <code>FAIR_COLOR</code></li>
+<li><code>ACCENT_COLOR</code>, close to the mockup</li>
+<li>the hint "Hover any part to preview its effect."</li>
+</ul>
+<p><strong>Method:</strong> Pillow pixel counts in regions of the PNG, decoded from sRGB to linear.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3383}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

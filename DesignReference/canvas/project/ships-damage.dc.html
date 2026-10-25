@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Damage after armor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Damage after armor</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>The formula, and how the Designer shows it</h4>
+<ul>
+<li><strong>One hit, after armor, in hundredths</strong> (<code>DesignStats.h:18-21</code>): <code>HitHundredths(d, a) = max(d / 4, d − a)</code>.</li>
+<li><strong>Damage a second against one ship</strong> (<code>DesignStats.h:98-103</code>): <code>DamagePerSecond = HitHundredths ÷ 100 ÷ fireIntervalSeconds</code>. The interval is the player's, after research.</li>
+<li><strong>Ships one hit reaches</strong> (<code>DesignStats.h:105-129</code>): <code>ShipsReached(splash, r)</code>. A formation stands its ships <code>FORMATION_SPACING_RADII = 3</code> footprint radii apart (<code>DesignStats.h:107</code>; <code>ADR-010 §Decision 4</code>). The function counts the target and every point of a square grid at that spacing whose center lies within the splash. For Small hulls the spacing is 24 m, so the Missile Rack's 30 m and the Flak Battery's 26 m reach <strong>5</strong> ships. For Medium (42 m) and Large (72 m) they reach <strong>1</strong> (<code>ADR-014 §Decision 12</code>).</li>
+<li><strong>What the card shows</strong> (<code>DesignStats.h:131-136</code>): <code>FormationDamagePerSecond = DamagePerSecond × ShipsReached</code>.</li>
+</ul>
+<p><strong>The Designer's damage section</strong> is headed "DAMAGE / S AFTER ARMOR · VS A FORMATION" (<code>Hud.cpp:1510</code>). It has one card per hull, in the snapshot's order (<code>Hud.cpp:781-806</code>, drawn at <code>Hud.cpp:1508-1537</code>). Each card shows:</p>
+<ul>
+<li>the hull's name and "ARM n";</li>
+<li>the figure per ship, as <code>"{:.1f}"</code>. The figure is the formation figure. 8.75 is written "8.8" (<code>HudTests.cpp:1718</code>);</li>
+<li>"×5 ships" when a splash reaches more than one;</li>
+<li>"{x.x} / 100 ore", which is the per-ship figure × 100 ÷ the design's cost, module included;</li>
+<li>a bar for the figure's share of the best any design does to that hull. The best is taken over every hull × drive × weapon, locked ones included, at the player's research (<code>Hud.cpp:479-527</code>).</li>
+</ul>
+<p>The bar's color gives the rating (<code>Hud.cpp:416-418,534-538</code>; colors <code>Hud.cpp:1001-1004</code>; Phase 1 §11 item 5):</p>
+<ul>
+<li><strong>Good</strong> (green) from ⅔ of the best;</li>
+<li><strong>Fair</strong> (amber) from ⅓;</li>
+<li><strong>Poor</strong> (red) below that.</li>
+</ul>
+<p>A hovered part previews the change per ship, e.g. "+4.4" (<code>Hud.cpp:793-800</code>). The production window gives each design three S/M/L marks with the same ratings (<code>Hud.cpp:2884-2891</code>).</p>
+<p>The drive and the hull of the firing design do not change the per-ship figure. Only the weapon and the player's fire-rate research do. The design's cost changes the per-Ore figure.</p>
+<h4>Matrix 1: the weapon against each hull, no research</h4>
+<p>These are computed from <code>Tuning.json</code> lines 16–18 and 26–30 by <code>derive.py</code>.</p>
+<ul>
+<li><strong>Hit</strong> is the damage after armor.</li>
+<li><strong>/s</strong> is DamagePerSecond.</li>
+<li><strong>Card</strong> is FormationDamagePerSecond, the figure the card writes.</li>
+<li><strong>Rating</strong> is the card's share of the best against that hull: 180.0 against Small (Flak Battery), 52.0 against Medium (Rail Cannon) and 51.0 against Large (Rail Cannon).</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Weapon</th>
+<th>vs Small (armor 2, r 8 m): hit, /s, ×reach = card, rating</th>
+<th>vs Medium (armor 8, r 14 m)</th>
+<th>vs Large (armor 14, r 24 m)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mass Driver (14 / 0.4 s)</td>
+<td>12, 30.0, ×1 = <strong>30.0</strong>, Poor (0.167)</td>
+<td>6, 15.0, ×1 = <strong>15.0</strong>, Poor (0.288)</td>
+<td>3.5, 8.75, ×1 = <strong>8.8</strong>, Poor (0.172)</td>
+</tr>
+<tr>
+<td>Lance (95 / 2.7 s)</td>
+<td>93, 34.44, ×1 = <strong>34.4</strong>, Poor (0.191)</td>
+<td>87, 32.22, ×1 = <strong>32.2</strong>, Fair (0.620)</td>
+<td>81, 30.0, ×1 = <strong>30.0</strong>, Fair (0.588)</td>
+</tr>
+<tr>
+<td>Missile Rack (30 / 2.0 s, splash 30)</td>
+<td>28, 14.0, ×5 = <strong>70.0</strong>, Fair (0.389)</td>
+<td>22, 11.0, ×1 = <strong>11.0</strong>, Poor (0.212)</td>
+<td>16, 8.0, ×1 = <strong>8.0</strong>, Poor (0.157)</td>
+</tr>
+<tr>
+<td>Flak Battery (20 / 0.5 s, splash 26)</td>
+<td>18, 36.0, ×5 = <strong>180.0</strong>, Good (1.000)</td>
+<td>12, 24.0, ×1 = <strong>24.0</strong>, Fair (0.462)</td>
+<td>6, 12.0, ×1 = <strong>12.0</strong>, Poor (0.235)</td>
+</tr>
+<tr>
+<td>Rail Cannon (320 / 6.0 s)</td>
+<td>318, 53.0, ×1 = <strong>53.0</strong>, Poor (0.294)</td>
+<td>312, 52.0, ×1 = <strong>52.0</strong>, Good (1.000)</td>
+<td>306, 51.0, ×1 = <strong>51.0</strong>, Good (1.000)</td>
+</tr>
+</tbody>
+</table>
+<h4>Matrix 2: the same with every fire-rate topic researched</h4>
+<p>The intervals are those of the table above (<code>derive_upgraded.py</code>). The best is 207.0 against Small, 52.0 against Medium and 51.0 against Large.</p>
+<table>
+<thead>
+<tr>
+<th>Weapon</th>
+<th>vs Small: card, rating</th>
+<th>vs Medium</th>
+<th>vs Large</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mass Driver (+20%)</td>
+<td>36.0, Poor</td>
+<td>18.0, Fair</td>
+<td>10.5, Poor</td>
+</tr>
+<tr>
+<td>Lance (+25%)</td>
+<td>43.1, Poor</td>
+<td>40.3, Good</td>
+<td>37.5, Good</td>
+</tr>
+<tr>
+<td>Missile Rack (+15%)</td>
+<td>80.5, Fair</td>
+<td>12.7, Poor</td>
+<td>9.2, Poor</td>
+</tr>
+<tr>
+<td>Flak Battery (+15%)</td>
+<td>207.0, Good</td>
+<td>27.6, Fair</td>
+<td>13.8, Poor</td>
+</tr>
+<tr>
+<td>Rail Cannon (no topic)</td>
+<td>53.0, Poor</td>
+<td>52.0, Good</td>
+<td>51.0, Good</td>
+</tr>
+</tbody>
+</table>
+<h4>Per 100 Ore for every design without a module, no research</h4>
+<p>The card writes per ship × 100 ÷ cost (<code>Hud.cpp:802</code>), computed by <code>designer_cards.py</code>. A Sensor Array adds 120 Ore to the cost and nothing to the damage, so it lowers each figure by cost ÷ (cost + 120).</p>
+<table>
+<thead>
+<tr>
+<th>Design</th>
+<th>Cost (Ore)</th>
+<th>vs Small</th>
+<th>vs Medium</th>
+<th>vs Large</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Small+Ion+Mass Driver (Swarm)</td>
+<td>261</td>
+<td>11.5</td>
+<td>5.7</td>
+<td>3.4</td>
+</tr>
+<tr>
+<td>Small+Ion+Lance (Picket)</td>
+<td>411</td>
+<td>8.4</td>
+<td>7.8</td>
+<td>7.3</td>
+</tr>
+<tr>
+<td>Small+Ion+Missile Rack</td>
+<td>546</td>
+<td>12.8</td>
+<td>2.0</td>
+<td>1.5</td>
+</tr>
+<tr>
+<td>Small+Ion+Flak Battery</td>
+<td>336</td>
+<td>53.6</td>
+<td>7.1</td>
+<td>3.6</td>
+</tr>
+<tr>
+<td>Small+Ion+Rail Cannon</td>
+<td>606</td>
+<td>8.7</td>
+<td>8.6</td>
+<td>8.4</td>
+</tr>
+<tr>
+<td>Small+Fusion+Mass Driver</td>
+<td>441</td>
+<td>6.8</td>
+<td>3.4</td>
+<td>2.0</td>
+</tr>
+<tr>
+<td>Small+Fusion+Lance</td>
+<td>591</td>
+<td>5.8</td>
+<td>5.5</td>
+<td>5.1</td>
+</tr>
+<tr>
+<td>Small+Fusion+Missile Rack</td>
+<td>726</td>
+<td>9.6</td>
+<td>1.5</td>
+<td>1.1</td>
+</tr>
+<tr>
+<td>Small+Fusion+Flak Battery</td>
+<td>516</td>
+<td>34.9</td>
+<td>4.7</td>
+<td>2.3</td>
+</tr>
+<tr>
+<td>Small+Fusion+Rail Cannon</td>
+<td>786</td>
+<td>6.7</td>
+<td>6.6</td>
+<td>6.5</td>
+</tr>
+<tr>
+<td>Small+Pulse+Mass Driver</td>
+<td>321</td>
+<td>9.3</td>
+<td>4.7</td>
+<td>2.7</td>
+</tr>
+<tr>
+<td>Small+Pulse+Lance</td>
+<td>471</td>
+<td>7.3</td>
+<td>6.8</td>
+<td>6.4</td>
+</tr>
+<tr>
+<td>Small+Pulse+Missile Rack</td>
+<td>606</td>
+<td>11.6</td>
+<td>1.8</td>
+<td>1.3</td>
+</tr>
+<tr>
+<td>Small+Pulse+Flak Battery</td>
+<td>396</td>
+<td>45.5</td>
+<td>6.1</td>
+<td>3.0</td>
+</tr>
+<tr>
+<td>Small+Pulse+Rail Cannon</td>
+<td>666</td>
+<td>8.0</td>
+<td>7.8</td>
+<td>7.7</td>
+</tr>
+<tr>
+<td>Medium+Ion+Mass Driver (Brawler)</td>
+<td>495</td>
+<td>6.1</td>
+<td>3.0</td>
+<td>1.8</td>
+</tr>
+<tr>
+<td>Medium+Ion+Lance (Lancer)</td>
+<td>645</td>
+<td>5.3</td>
+<td>5.0</td>
+<td>4.7</td>
+</tr>
+<tr>
+<td>Medium+Ion+Missile Rack</td>
+<td>780</td>
+<td>9.0</td>
+<td>1.4</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Medium+Ion+Flak Battery</td>
+<td>570</td>
+<td>31.6</td>
+<td>4.2</td>
+<td>2.1</td>
+</tr>
+<tr>
+<td>Medium+Ion+Rail Cannon</td>
+<td>840</td>
+<td>6.3</td>
+<td>6.2</td>
+<td>6.1</td>
+</tr>
+<tr>
+<td>Medium+Fusion+Mass Driver</td>
+<td>675</td>
+<td>4.4</td>
+<td>2.2</td>
+<td>1.3</td>
+</tr>
+<tr>
+<td>Medium+Fusion+Lance</td>
+<td>825</td>
+<td>4.2</td>
+<td>3.9</td>
+<td>3.6</td>
+</tr>
+<tr>
+<td>Medium+Fusion+Missile Rack</td>
+<td>960</td>
+<td>7.3</td>
+<td>1.1</td>
+<td>0.8</td>
+</tr>
+<tr>
+<td>Medium+Fusion+Flak Battery</td>
+<td>750</td>
+<td>24.0</td>
+<td>3.2</td>
+<td>1.6</td>
+</tr>
+<tr>
+<td>Medium+Fusion+Rail Cannon</td>
+<td>1020</td>
+<td>5.2</td>
+<td>5.1</td>
+<td>5.0</td>
+</tr>
+<tr>
+<td>Medium+Pulse+Mass Driver</td>
+<td>555</td>
+<td>5.4</td>
+<td>2.7</td>
+<td>1.6</td>
+</tr>
+<tr>
+<td>Medium+Pulse+Lance</td>
+<td>705</td>
+<td>4.9</td>
+<td>4.6</td>
+<td>4.3</td>
+</tr>
+<tr>
+<td>Medium+Pulse+Missile Rack</td>
+<td>840</td>
+<td>8.3</td>
+<td>1.3</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Medium+Pulse+Flak Battery</td>
+<td>630</td>
+<td>28.6</td>
+<td>3.8</td>
+<td>1.9</td>
+</tr>
+<tr>
+<td>Medium+Pulse+Rail Cannon</td>
+<td>900</td>
+<td>5.9</td>
+<td>5.8</td>
+<td>5.7</td>
+</tr>
+<tr>
+<td>Large+Ion+Mass Driver</td>
+<td>1065</td>
+<td>2.8</td>
+<td>1.4</td>
+<td>0.8</td>
+</tr>
+<tr>
+<td>Large+Ion+Lance</td>
+<td>1215</td>
+<td>2.8</td>
+<td>2.7</td>
+<td>2.5</td>
+</tr>
+<tr>
+<td>Large+Ion+Missile Rack</td>
+<td>1350</td>
+<td>5.2</td>
+<td>0.8</td>
+<td>0.6</td>
+</tr>
+<tr>
+<td>Large+Ion+Flak Battery</td>
+<td>1140</td>
+<td>15.8</td>
+<td>2.1</td>
+<td>1.1</td>
+</tr>
+<tr>
+<td>Large+Ion+Rail Cannon</td>
+<td>1410</td>
+<td>3.8</td>
+<td>3.7</td>
+<td>3.6</td>
+</tr>
+<tr>
+<td>Large+Fusion+Mass Driver</td>
+<td>1245</td>
+<td>2.4</td>
+<td>1.2</td>
+<td>0.7</td>
+</tr>
+<tr>
+<td>Large+Fusion+Lance</td>
+<td>1395</td>
+<td>2.5</td>
+<td>2.3</td>
+<td>2.2</td>
+</tr>
+<tr>
+<td>Large+Fusion+Missile Rack</td>
+<td>1530</td>
+<td>4.6</td>
+<td>0.7</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>Large+Fusion+Flak Battery</td>
+<td>1320</td>
+<td>13.6</td>
+<td>1.8</td>
+<td>0.9</td>
+</tr>
+<tr>
+<td>Large+Fusion+Rail Cannon</td>
+<td>1590</td>
+<td>3.3</td>
+<td>3.3</td>
+<td>3.2</td>
+</tr>
+<tr>
+<td>Large+Pulse+Mass Driver</td>
+<td>1125</td>
+<td>2.7</td>
+<td>1.3</td>
+<td>0.8</td>
+</tr>
+<tr>
+<td>Large+Pulse+Lance</td>
+<td>1275</td>
+<td>2.7</td>
+<td>2.5</td>
+<td>2.4</td>
+</tr>
+<tr>
+<td>Large+Pulse+Missile Rack</td>
+<td>1410</td>
+<td>5.0</td>
+<td>0.8</td>
+<td>0.6</td>
+</tr>
+<tr>
+<td>Large+Pulse+Flak Battery</td>
+<td>1200</td>
+<td>15.0</td>
+<td>2.0</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Large+Pulse+Rail Cannon</td>
+<td>1470</td>
+<td>3.6</td>
+<td>3.5</td>
+<td>3.5</td>
+</tr>
+</tbody>
+</table>
+<h4>Hits on targets the Designer does not show</h4>
+<p>These come from the same formula (<code>DesignStats.h:18-21</code>), computed by <code>derive.py</code>. <strong>The game displays none of these figures</strong>; the Designer's cards cover hulls only (<code>Hud.cpp:782-806</code>). Each cell is the hit after armor and, in brackets, damage a second against one target.</p>
+<table>
+<thead>
+<tr>
+<th>Weapon</th>
+<th>Constructor (armor 2)</th>
+<th>Shipyard, Research Lab, Mining Rig (0)</th>
+<th>Repair Bay (5)</th>
+<th>Command Station, Defence Platform, Relay (10)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mass Driver</td>
+<td>12 (30.0)</td>
+<td>14 (35.0)</td>
+<td>9 (22.5)</td>
+<td>4 (10.0)</td>
+</tr>
+<tr>
+<td>Lance</td>
+<td>93 (34.4)</td>
+<td>95 (35.2)</td>
+<td>90 (33.3)</td>
+<td>85 (31.5)</td>
+</tr>
+<tr>
+<td>Missile Rack</td>
+<td>28 (14.0)</td>
+<td>30 (15.0)</td>
+<td>25 (12.5)</td>
+<td>20 (10.0)</td>
+</tr>
+<tr>
+<td>Flak Battery</td>
+<td>18 (36.0)</td>
+<td>20 (40.0)</td>
+<td>15 (30.0)</td>
+<td>10 (20.0)</td>
+</tr>
+<tr>
+<td>Rail Cannon</td>
+<td>318 (53.0)</td>
+<td>320 (53.3)</td>
+<td>315 (52.5)</td>
+<td>310 (51.7)</td>
+</tr>
+<tr>
+<td><strong>Defence gun</strong> (30 / 1.0 s) on Small 28, Medium 22, Large 16, Constructor 28</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3685}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

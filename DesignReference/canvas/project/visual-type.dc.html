@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Faces</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th><code>Hud::Typeface</code></th>
+<th>Family list (the first installed one is used)</th>
+<th>Weight</th>
+<th>Stretch</th>
+<th>Size (reference units = px at 1080p)</th>
+<th>Line pitch the layout uses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Body</td>
+<td>Segoe UI</td>
+<td>600</td>
+<td>Normal</td>
+<td>20 (<code>FONT_UNITS</code>, Hud.h:26)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Title</td>
+<td>Bahnschrift</td>
+<td>700</td>
+<td>SemiCondensed</td>
+<td>22</td>
+<td><code>TITLE_LINE_UNITS</code> 30 (Hud.cpp:65)</td>
+</tr>
+<tr>
+<td>Label</td>
+<td>Bahnschrift</td>
+<td>600</td>
+<td>Normal</td>
+<td>13</td>
+<td>— (placed per use)</td>
+</tr>
+<tr>
+<td>Name</td>
+<td>Bahnschrift</td>
+<td>600</td>
+<td>Normal</td>
+<td>16</td>
+<td><code>NAME_LINE_UNITS</code> 22 (Hud.cpp:66)</td>
+</tr>
+<tr>
+<td>Figure</td>
+<td>Cascadia Mono → Consolas</td>
+<td>600 (Consolas meets it with its bold, Hud.cpp:3005)</td>
+<td>Normal</td>
+<td>14</td>
+<td><code>FIGURE_LINE_UNITS</code> 17 (Hud.cpp:67)</td>
+</tr>
+<tr>
+<td>LargeFigure</td>
+<td>Cascadia Mono → Consolas</td>
+<td>700</td>
+<td>Normal</td>
+<td>28</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Detail</td>
+<td>Cascadia Mono → Consolas</td>
+<td>400</td>
+<td>Normal</td>
+<td>13</td>
+<td><code>TOPIC_LINE_UNITS</code> 18 on topic cards (Hud.cpp:1628)</td>
+</tr>
+</tbody>
+</table>
+<p>How the faces are made:</p>
+<ul>
+<li><strong>None installed:</strong> a face none of whose families is installed throws, and the game stops (<code>GlyphAtlas.cpp:229-246</code>; ADR-030 d2).</li>
+<li><strong>Rasterizing:</strong> DirectWrite draws grayscale coverage, <code>NATURAL_SYMMETRIC</code> (<code>GlyphAtlas.cpp:288-290</code>), at <code>max(1, round(units × scale))</code> px (<code>UiPipeline.cpp:28-31</code>). The atlas is drawn again when the scale moves any face by a whole pixel (ADR-015 d3).</li>
+<li><strong>Characters:</strong> printable ASCII plus U+00B7 <code>·</code> and U+00D7 <code>×</code>. Anything else shows <code>?</code> (<code>GlyphAtlas.h:62-67</code>).</li>
+<li><strong>Whole pixels:</strong> advances, the pen, the top and the tracking are whole pixels (<code>GlyphAtlas.cpp:276</code>; <code>UiPipeline.cpp:270-272</code>).</li>
+<li><strong>Line box:</strong> the line box is <code>ceil(ascent + descent + lineGap)</code> from the font's metrics (<code>GlyphAtlas.cpp:258-259</code>). Its value per face is <strong>Not specified</strong>: it depends on the installed font.</li>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Type scale · reference units, 1920×1080 at factor 1.0</div><div style="padding:20px 24px 24px 24px"><div class="md"><table><thead><tr><th>Face</th><th>Size</th><th>Specimen and role</th><th>Source</th></tr></thead><tbody><tr><td style="width:150px"><code>Body</code></td><td style="width:90px">20 units · 600</td><td><span style="font-family:'Segoe UI','Noto Sans',sans-serif;font-weight:600;font-size:20px;letter-spacing:0px;color:#EAF1FA">Rasterized, drawn by no text</span><div style="margin-top:4px;font-size:12.5px;color:#D3E3F7">Body (default face of Hud::Text)</div></td><td style="width:240px"><code>Hud.h:26,46; Hud.cpp:3010</code> ADR-030 decision 1; ADR-062 decision 1 (stays 20)</td></tr><tr><td style="width:150px"><code>Title</code></td><td style="width:90px">22 units · 700</td><td><span style="font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:22px;letter-spacing:0px;color:#EAF1FA">Outpost Commander 1,240</span><div style="margin-top:4px;font-size:12.5px;color:#D3E3F7">Title: window subject, panel first line, Ore stockpile, Ore box, Queue label and cost, close mark, menu title, outcome title, away &quot;since&quot;</div></td><td style="width:240px"><code>Hud.h:46; Hud.cpp:3011</code> ADR-062 decision 1 (stays 22); ADR-043 decision 2</td></tr><tr><td style="width:150px"><code>Label</code></td><td style="width:90px">13 units · 600</td><td><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#EAF1FA">PERFORMANCE · QUEUE · 0 / 5</span><div style="margin-top:4px;font-size:12.5px;color:#D3E3F7">Label: small spaced capitals (section labels, title-bar labels, NAME, SAVED, RETREAT, row labels, units) with tracking; untracked for arrow marks, key caps, chip names, armor/reach, notes, lock and need lines, strength initials, WAITING FOR ORE</div></td><td style="width:240px"><code>Hud.h:46; Hud.cpp:3012</code> ADR-062 decision 1 (12 -&gt; 13)</td></tr><tr><td style="width:150px"><code>Name</code></td><td style="width:90px">16 units · 600</td><td><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;letter-spacing:0px;color:#EAF1FA">Shipyards · BUILDING 2 · WAITING 0</span><div style="margin-top:4px;font-size:12.5px;color:#D3E3F7">Name: button labels, card and design names, HUD panel lines (status, territory, alerts, hint, connection), selection lines after the first, queue rows, Controls, orders and away lines, menu subtitle and notice, HUD retreat cells, stepper</div></td><td style="width:240px"><code>Hud.h:46; Hud.cpp:3013</code> ADR-062 decision 1 (stays 16); ADR-043 decision 2</td></tr><tr><td style="width:150px"><code>Figure</code></td><td style="width:90px">14 units · 600</td><td><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:600;font-size:14px;letter-spacing:0px;color:#EAF1FA">+14.5/s  29 / 30</span><div style="margin-top:4px;font-size:12.5px;color:#D3E3F7">Figure: costs (with the gem), income, territory and status figures, stat values, queue percent and index, name count, damage change</div></td><td style="width:240px"><code>Hud.h:46; Hud.cpp:3014</code> ADR-062 decision 1 (13 -&gt; 14 at 600)</td></tr><tr><td style="width:150px"><code>LargeFigure</code></td><td style="width:90px">28 units · 700</td><td><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:28px;letter-spacing:0px;color:#EAF1FA">34.4</span><div style="margin-top:4px;font-size:12.5px;color:#D3E3F7">LargeFigure: a damage card&#x27;s per-ship damage per second</div></td><td style="width:240px"><code>Hud.h:46; Hud.cpp:1526,3015</code> ADR-062 decision 1 (stays 28)</td></tr><tr><td style="width:150px"><code>Detail</code></td><td style="width:90px">13 units · 400</td><td><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:13px;letter-spacing:0px;color:#EAF1FA">220 HP · ARM 2 · 60m/s</span><div style="margin-top:4px;font-size:12.5px;color:#D3E3F7">Detail: a part card&#x27;s numbers and note, chip code, per-100-ore, designer hint, Queue detail, production code line and time, topic effect lines and time</div></td><td style="width:240px"><code>Hud.h:46; Hud.cpp:3016</code> ADR-062 decision 1 (11 -&gt; 13)</td></tr></tbody></table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Contrast: text on the panel it sits on</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Method</strong>, the same as ADR-062 d3 and <code>HudTests.cpp:318-360</code>:</p>
+<ul>
+<li>The ratio is WCAG's (L1 + 0.05) / (L2 + 0.05).</li>
+<li>L = 0.2126R + 0.7152G + 0.0722B, taken straight from the linear constants. They are already linear sRGB, so nothing is decoded.</li>
+<li>Each ground is composited over black at its alpha, in linear.</li>
+<li>A hatched ground is counted twice, once as stripe and once as gap.</li>
+<li>The pairs are those the code draws (use sites in tokens.json). The ratios are computed by A5.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Text</th>
+<th>Ground</th>
+<th>Ratio (gap / stripe)</th>
+<th>ADR figure</th>
+<th>Agrees</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TEXT_COLOR</code></td>
+<td>window / card / field / picked</td>
+<td>14.66 / 13.14 / 16.23 / 8.25</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>TEXT_COLOR</code></td>
+<td>hatched header band</td>
+<td>14.66 / 10.01</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>TEXT_COLOR</code></td>
+<td>close box</td>
+<td>13.14</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>DIM_TEXT_COLOR</code></td>
+<td>window / field</td>
+<td>7.90 / 8.74</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>DIM_TEXT_COLOR</code></td>
+<td>disabled arrow button over the window / over a stripe</td>
+<td>4.86 / 4.66</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>WARNING_COLOR</code> (plain)</td>
+<td>window / field</td>
+<td>10.25 / 11.35</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>WINDOW_COLOR</code> (chip words)</td>
+<td><code>WARNING_COLOR</code> tag</td>
+<td><strong>10.25</strong></td>
+<td>10.3 (ADR-085 d1)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>LABEL_COLOR</code></td>
+<td>window / field / card</td>
+<td>5.31 / <strong>5.88</strong> / 4.76</td>
+<td>4.8–5.9 for the labels; 5.9 for the name's count on the field (ADR-062 d3)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>ROW_LABEL_COLOR</code></td>
+<td>window / field / card</td>
+<td>8.45 / 9.35 / 7.57</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>hatched title bar</td>
+<td>8.45 / <strong>5.77</strong></td>
+<td>5.8 on stripes (ADR-062 d3)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>NUMBERS_COLOR</code></td>
+<td>window / card / picked</td>
+<td>12.81 / 11.48 / 7.20</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SOFT_COLOR</code></td>
+<td>field</td>
+<td>7.25</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CODE_COLOR</code></td>
+<td>card</td>
+<td>4.86</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ACCENT_COLOR</code></td>
+<td>picked / window</td>
+<td><strong>5.88</strong> / 10.45</td>
+<td>5.9 for the shown chip's code (ADR-062 d3)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>GOLD_COLOR</code></td>
+<td>window / field / card / picked</td>
+<td>9.67 / 10.70 / 8.66 / 5.44</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>GOLD_COLOR</code></td>
+<td>Queue face / stripes</td>
+<td>5.28 / <strong>4.64</strong></td>
+<td>4.6 (ADR-062 d3)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>LOCKED_TEXT_COLOR</code></td>
+<td>locked body / stripes</td>
+<td><strong>5.08 / 4.62</strong></td>
+<td>5.1 / 4.6 (ADR-062 d3)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>LOCKED_TEXT_COLOR</code></td>
+<td>field (dim card)</td>
+<td><strong>5.34</strong></td>
+<td>5.3 (ADR-062 d3)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>AMBER_COLOR</code></td>
+<td>locked body / stripes; card</td>
+<td>7.22 / 6.56; 6.14</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>GOOD_COLOR</code></td>
+<td>window / field</td>
+<td>11.61 / 12.86</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>POOR_COLOR</code></td>
+<td>window / field</td>
+<td><strong>4.58</strong> / 5.07</td>
+<td>4.6 on a window (ADR-062 d3)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>QUEUE_TEXT_COLOR</code></td>
+<td>Queue face / stripes</td>
+<td>8.74 / 7.68</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>QUEUE_EDGE_COLOR</code> ("SAVED")</td>
+<td>field</td>
+<td>5.02</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td><code>OWN_COLOR</code> / <code>ENEMY_COLOR</code></td>
+<td>window</td>
+<td>10.51 / 8.78</td>
+<td>—</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Checks on the ADRs' other figures:</strong></p>
+<ul>
+<li><strong>Locked text's luminance</strong> is 0.2537 / 0.873 = 29% of live text's. ADR-062 says 29%: yes.</li>
+<li><strong>Every pair is at 4.5:1 or more.</strong> The least is <code>POOR_COLOR</code> on the window, at 4.58.</li>
+</ul>
+<p><strong>Minimap marks</strong> against the map. The ground is <code>MAP_COLOR</code> at 0.95 over <code>WINDOW_COLOR</code> over black, L = 0.0367.</p>
+<table>
+<thead>
+<tr>
+<th>Mark</th>
+<th>Ratio</th>
+<th>ADR figure</th>
+<th>Agrees</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Own</td>
+<td>7.63</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Enemy</td>
+<td>6.37</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>7.04</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Derelict</td>
+<td>7.76</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Neutral</td>
+<td>5.48</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Ore</td>
+<td>3.52</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Dry</td>
+<td><strong>3.13</strong></td>
+<td>3.1 (ADR-068 d2)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Field</td>
+<td><strong>2.09</strong></td>
+<td>2.1 (ADR-068 d2)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Lattice</td>
+<td><strong>2.06</strong></td>
+<td>2.06 (interface plan 2, UI1.4)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>The view (composited)</td>
+<td>8.94</td>
+<td>—</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Health fills on a side's back</strong> (×0.3):</p>
+<table>
+<thead>
+<tr>
+<th>Back</th>
+<th>Health good</th>
+<th>Health fair</th>
+<th>Health poor</th>
+<th>Build bar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Human</td>
+<td>4.19</td>
+<td><strong>4.47</strong></td>
+<td><strong>2.36</strong></td>
+<td>3.30</td>
+</tr>
+<tr>
+<td>Tarkan</td>
+<td>4.41</td>
+<td>4.71</td>
+<td>2.48</td>
+<td>3.47</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>4.62</td>
+<td>4.93</td>
+<td>2.60</td>
+<td>3.63</td>
+</tr>
+<tr>
+<td>Gray fallback</td>
+<td>5.55</td>
+<td>5.93</td>
+<td>3.12</td>
+<td>4.37</td>
+</tr>
+</tbody>
+</table>
+<p>ADR-088 d5 gives the bars' red as 2.36 and their amber as 4.47 or more, and the figures' colors would stand at 1.67 and 3.32. Computed here: 1.67 and 3.32. That agrees.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3383}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

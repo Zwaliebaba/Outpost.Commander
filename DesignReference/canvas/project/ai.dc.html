@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI behavior</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 10</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">AI &amp; difficulty</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">What the AI does as the player meets it, and how Easy, Normal and Hard differ, field by field.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>Opponent.json</code> <code>OpponentEasy.json</code> <code>OpponentHard.json</code> <code>A3</code> <code>ADR-020/041/065/076</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">AI behavior</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>The AI is <code>AiPlayer</code> (<code>Opponent/AiPlayer.cpp</code>).</p>
+<ul>
+<li><strong>In a skirmish</strong> it plays player 2 as a client on the game's main thread (<code>WinMain.cpp:425-437</code>).</li>
+<li><strong>In a world</strong> it plays as an <code>AiEmpire</code>, on the server's thread (<code>ADR-079 §Decision 3</code>).</li>
+<li><strong>Cadence.</strong> It watches every snapshot for shots, and decides once a second (<code>AiPlayer.cpp:322-333</code>, <code>ADR-020 §Decision 1</code>).</li>
+<li><strong>No cheating.</strong> It reads only its own snapshot (<code>ADR-002 §Decision 7</code>).</li>
+</ul>
+<h4>7.1 Economy and build order</h4>
+<table>
+<thead>
+<tr>
+<th>Phase of play</th>
+<th>Rule</th>
+<th>Value (Normal)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plan laid</td>
+<td>At its first decision, round its Command Station; or, with none, round its oldest Shipyard, else its oldest structure. With no structure it waits.</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:365-378</code>, <code>ADR-020 §Decision 16</code></td>
+</tr>
+<tr>
+<td>Order of the plan</td>
+<td>Rigs on the home asteroids; then a Shipyard (side), a Research Lab (other side) and a Defence Platform (toward the center) beside the station; then rigs on the contested asteroids, each with a platform beside it; then home platforms</td>
+<td>home 3, contested 3</td>
+<td><code>AiPlayer.cpp:477-566</code>, <code>Opponent.json:9-10</code></td>
+</tr>
+<tr>
+<td>Contested asteroids</td>
+<td>The nearest after the home ones, leaving out those nearer the enemy's base</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:505-517</code>, <code>ADR-020 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Gaps</td>
+<td>Each place keeps clear of everything else; if taken, it is searched for in rings 20 m apart, 20 rings out</td>
+<td>50 m</td>
+<td><code>Opponent.json:14</code>, <code>AiPlayer.cpp:24-25</code></td>
+</tr>
+<tr>
+<td>Crews</td>
+<td>At most 2 Constructors to a site. An order not seen as a site after 3 s is taken as refused.</td>
+<td>2 / 3 s</td>
+<td><code>AiPlayer.cpp:15-18</code></td>
+</tr>
+<tr>
+<td>Constructors kept</td>
+<td>Queued at the Command Station until it holds this many</td>
+<td>4</td>
+<td><code>Opponent.json:7</code>, <code>AiPlayer.cpp:402-411</code></td>
+</tr>
+<tr>
+<td>More Shipyards</td>
+<td>The N-th once income reaches N × 10 Ore/s. They stand behind the station, then behind it to either side, each round of three farther out. Each brings its own home platforms.</td>
+<td>10 Ore/s</td>
+<td><code>Opponent.json:8</code>, <code>AiPlayer.cpp:743-787</code>, <code>ADR-020 §Decision 6</code></td>
+</tr>
+<tr>
+<td>Home platforms</td>
+<td>Per Shipyard, 260 m from the station toward the center, at turns of 0, ±0.5 and ±1 rad, then rings 70 m farther out; each waits for its Shipyard's income</td>
+<td>2 per Shipyard</td>
+<td><code>Opponent.json:11</code>, <code>AiPlayer.cpp:34-39, 789-820</code>, <code>ADR-041 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Ore waits</td>
+<td>Ships are not queued while the next structure waits for Ore. An upgrade it cannot pay for holds production back the same way.</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:436-450, 467</code>, <code>ADR-020 §Decision 14</code></td>
+</tr>
+<tr>
+<td>Follows the ore</td>
+<td>When a rig's asteroid runs dry, it plans a rig, with a platform, on the nearest asteroid it knows still holds ore, outside the enemy's home</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:704-741</code>, <code>ADR-020 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Repairs</td>
+<td>Constructors left over repair damaged structures, one each</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:452-466</code></td>
+</tr>
+<tr>
+<td>Research</td>
+<td>One topic at a time per free Lab slot, in <code>researchOrder</code>, each once its prerequisites are done and its tier is open</td>
+<td>§8.2</td>
+<td><code>AiPlayer.cpp:413-434</code></td>
+</tr>
+<tr>
+<td>Lab</td>
+<td>Upgraded when the next topic's tier is not open, and to level 4 (2 slots) once its open tier is 3</td>
+<td><code>secondSlotTier</code> 3</td>
+<td><code>ADR-020 §Decision 14</code>, <code>Tuning.json: structures ResearchLab levels</code></td>
+</tr>
+<tr>
+<td>Shipyards' levels</td>
+<td>Upgraded to the level its production design's hull needs: level 2 for Medium, 3 for Large</td>
+<td>—</td>
+<td><code>ADR-020 §Decision 14</code>, <code>AiPlayer.cpp:1136-1157</code></td>
+</tr>
+<tr>
+<td>Command Station</td>
+<td>Upgraded in place of a Relay that waits on the node cap, and when the fleet cap would hold back a round of its Shipyards</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:991-1015, 1196-1223</code>, <code>ADR-020 §Decision 15</code></td>
+</tr>
+</tbody>
+</table>
+<h4>7.2 Fleet: counters, reserve, attack groups, regroup</h4>
+<table>
+<thead>
+<tr>
+<th>Behavior</th>
+<th>Rule</th>
+<th>Value (Normal)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Review</td>
+<td>Every interval it takes the most common enemy design (by hull, drive and weapon) among the enemy warships seen since the last review, not the pirates'. It builds that design's first unlocked counter, else the default. With nothing seen it keeps its design. A tie goes to the lowest hull, then drive, then weapon.</td>
+<td>60 s</td>
+<td><code>Opponent.json:6</code>, <code>AiPlayer.cpp:286-311, 384-396</code></td>
+</tr>
+<tr>
+<td>Queue</td>
+<td>Keeps this many jobs in each built Shipyard of the needed level; saves a design it does not have first</td>
+<td>2</td>
+<td><code>Opponent.json:12</code>, <code>AiPlayer.cpp:1103-1133</code></td>
+</tr>
+<tr>
+<td>Reserve</td>
+<td>Its warships gather in a 40 m circle, 170 m from the Command Station toward the map's center. On a map with sectors they hold the front sector, or the rally's sector while it has no front.</td>
+<td>170 m</td>
+<td><code>Opponent.json:15</code>, <code>AiPlayer.cpp:27, 1653-1677, 1691-1713</code></td>
+</tr>
+<tr>
+<td>Defense of its base</td>
+<td>A shot on any of its structures, built or a site, sends the reserve there with an attack-move, until 10 s after the last shot</td>
+<td>10 s</td>
+<td><code>Opponent.json:13</code>, <code>AiPlayer.cpp:338-363, 1653-1655</code></td>
+</tr>
+<tr>
+<td>Attack group size</td>
+<td>25 + 12 per tier opened past the first. Under the fleet cap: <code>attackCapShare</code> × the room the cap leaves for its production hull (after scouts and raid), at least 1, if fewer.</td>
+<td>25 / 12 / 0.8</td>
+<td><code>Opponent.json:2-3,55</code>, <code>AiPlayer.cpp:1547-1565</code>, <code>ADR-041 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Main attack waits</td>
+<td>For the group's size and a lead of 1 node; or a reserve of 1.5 × the group's size (or the cap's room, if less); and the regroup time</td>
+<td>1 / 1.5</td>
+<td><code>Opponent.json:49-50</code>, <code>AiPlayer.cpp:1566-1589</code>, <code>ADR-041 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Target</td>
+<td>Production first: Shipyards, then the Command Station, then the rest. Within a rank, the nearest to the group's center, each level above 1 counting as 500 m nearer. It keeps a target until it is gone or a better rank comes to light. Knowing none, it attack-moves across the map's center. It never targets the pirates.</td>
+<td>500 m</td>
+<td><code>AiPlayer.cpp:123-128, 1591-1631</code>, <code>ADR-037 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Close in</td>
+<td>Group ships within 500 m (+ target radius) of the target are ordered to attack it, once each</td>
+<td>500 m</td>
+<td><code>AiPlayer.cpp:33, 1634-1651</code></td>
+</tr>
+<tr>
+<td>Fall back</td>
+<td>An attack that has lost 15% of the ships it had when it last grew moves (not attack-moves) to the rally and rejoins the reserve</td>
+<td>0.15</td>
+<td><code>Opponent.json:4</code>, <code>AiPlayer.cpp:1479-1496</code></td>
+</tr>
+<tr>
+<td>Regroup</td>
+<td>After a fall-back the reserve waits before it attacks again</td>
+<td>240 s</td>
+<td><code>Opponent.json:5</code>, <code>AiPlayer.cpp:1495</code></td>
+</tr>
+<tr>
+<td>Retreating ships</td>
+<td>Leave their group and get no order from the AI (any order would end the retreat)</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:232-271, 1415-1428</code>, <code>ADR-041 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Kiting</td>
+<td>Never</td>
+<td>—</td>
+<td><code>ADR-020 §Decision 8</code></td>
+</tr>
+</tbody>
+</table>
+<h4>7.3 Territory: claims, front, scout, raids</h4>
+<table>
+<thead>
+<tr>
+<th>Behavior</th>
+<th>Rule</th>
+<th>Value (Normal)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claims</td>
+<td>Once its first Shipyard stands, it claims the free, unguarded sector next to its territory nearest its base: a Relay and rigs on its asteroids. One claim at a time, up to this many beyond those its rigs take it to.</td>
+<td>2</td>
+<td><code>Opponent.json:52</code>, <code>AiPlayer.cpp:1250-1305</code></td>
+</tr>
+<tr>
+<td>Front</td>
+<td>A sector it holds next to an enemy's, not its home, gets platforms beside its Relay, once</td>
+<td>1</td>
+<td><code>Opponent.json:51</code>, <code>AiPlayer.cpp:1307-1329</code></td>
+</tr>
+<tr>
+<td>Scout</td>
+<td>Keeps this many Small+Ion+Mass Driver+Sensor Array, queued ahead of everything</td>
+<td>1</td>
+<td><code>Opponent.json:44-45</code>, <code>AiPlayer.cpp:1071-1101</code></td>
+</tr>
+<tr>
+<td>Scout, opening</td>
+<td>For the first 600 s of the world's ticks it moves (not attack-moves) through the sectors of its own half. It looks at a guarded sector from a lookout 650 m from its node, turned up to 0.7 rad, and goes on within 30 m of a lookout or 150 m of a node.</td>
+<td>600 s</td>
+<td><code>Opponent.json:57</code>, <code>AiPlayer.cpp:41-49, 1331-1410</code></td>
+</tr>
+<tr>
+<td>Scout, after</td>
+<td>Attack-moves from one sector next to the enemy's home to the next</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:1377-1384, 1404-1408</code></td>
+</tr>
+<tr>
+<td>Raids</td>
+<td>While the reserve holds at least 2 × this many, that many of its smallest hulls attack-move on the nearest enemy sector, not the enemy's home, where it sees no warship within 600 m of the node. Raiders near the Relay attack it.</td>
+<td>2 ships</td>
+<td><code>Opponent.json:46</code>, <code>AiPlayer.cpp:51, 1506-1544</code></td>
+</tr>
+<tr>
+<td>Raid ends</td>
+<td>When the sector is no longer the enemy's, or after losing 0.5 of its ships; the next waits 180 s</td>
+<td>0.5 / 180 s</td>
+<td><code>Opponent.json:47-48</code>, <code>AiPlayer.cpp:1434-1474</code></td>
+</tr>
+<tr>
+<td>Ties</td>
+<td>Two places as near are told apart by the side of the base-to-center line, so both seats mirror</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:1681-1689</code>, <code>ADR-020 §Decision 13</code></td>
+</tr>
+</tbody>
+</table>
+<h4>7.4 Pirates, salvage, Repair Bay (ADR-076)</h4>
+<table>
+<thead>
+<tr>
+<th>Behavior</th>
+<th>Rule</th>
+<th>Value (Normal)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it knows</td>
+<td>For each guarded sector, the most Ore it has seen there (ships at cost, platforms at cost) and the most platforms; more than 1 platform is a stronghold. It forgets a sector no longer guarded and never targets one it has not seen.</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:1715-1748</code>, <code>ADR-076 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Detachment</td>
+<td>Reserve ships nearest the outpost until their Ore reaches <code>pirateMargin</code> × the outpost's. Target: the nearest seen camp next to its territory; a stronghold only with no free sector left to claim and not at its node cap.</td>
+<td>1.5</td>
+<td><code>Opponent.json:56</code>, <code>AiPlayer.cpp:1750-1833</code></td>
+</tr>
+<tr>
+<td>Keeps at it</td>
+<td>Attack-move re-ordered every 10 s until the sector is no longer guarded</td>
+<td>10 s</td>
+<td><code>AiPlayer.cpp:54, 1764-1768</code></td>
+</tr>
+<tr>
+<td>Gives up</td>
+<td>After losing <code>raidLossShare</code> of its ships; moves to the rally; the next waits <code>raidIntervalSeconds</code></td>
+<td>0.5 / 180 s</td>
+<td><code>AiPlayer.cpp:1755-1763</code></td>
+</tr>
+<tr>
+<td>Order of groups</td>
+<td>One detachment at a time, chosen after the raid</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:1545</code>, <code>ADR-076 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Salvage</td>
+<td>Once it has as many rigs as <code>homeAsteroids</code>: one idle Constructor, the nearest, to the nearest known derelict in a held sector or a free sector next to one, never a guarded one. Sent ahead of the plan's contested rigs.</td>
+<td>—</td>
+<td><code>AiPlayer.cpp:1835-1891</code></td>
+</tr>
+<tr>
+<td>Salvage ends</td>
+<td>When the derelict is gone. Dropped after 300 s (that derelict is never chosen again), or when the Constructor is lost or turns for home.</td>
+<td>300 s</td>
+<td><code>AiPlayer.cpp:60, 1840-1849</code></td>
+</tr>
+<tr>
+<td>Repair Bay</td>
+<td>Once it has a built Shipyard: a Bay 220 m behind the front sector's node toward its base. One per sector; a new one when the front moves; the old ones stay.</td>
+<td>220 m</td>
+<td><code>AiPlayer.cpp:62, 1893-1917</code></td>
+</tr>
+<tr>
+<td>Otherwise</td>
+<td>It plans and claims nothing in a sector the pirates guard and does not count their warships as the enemy's fleet</td>
+<td>—</td>
+<td><code>ADR-020 §Decision 13</code>, <code>AiPlayer.cpp:347-351</code></td>
+</tr>
+</tbody>
+</table>
+<h4>7.5 From any state, and after a loss</h4>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A new AI takes into its plan the own structures that no slot holds, within 400 m of a slot's preferred place, rather than building another beside them. Rigs and Relays stand where they are. Held Relays beyond home count as claims.</td>
+<td><code>AiPlayer.cpp:57, 585-624</code>, <code>ADR-020 §Decision 16</code></td>
+</tr>
+<tr>
+<td>Its player's ships join its reserve</td>
+<td><code>ADR-020 §Decision 16</code></td>
+</tr>
+<tr>
+<td>An AI empire is made afresh when its seat restarts (<code>EmpireRestarted</code>) and lays its plan round the new Command Station</td>
+<td><code>AiEmpire.h:94-99</code>, <code>ADR-084 §Decision 6</code></td>
+</tr>
+<tr>
+<td>Without its station it plays on: queues, research, plan, repairs; no Constructors</td>
+<td><code>ADR-037 §Decision 5</code>, <code>AiPlayer.cpp:370-372, 406-411</code></td>
+</tr>
+<tr>
+<td>Its state is never saved</td>
+<td><code>ADR-079 §Decision 2</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3541}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

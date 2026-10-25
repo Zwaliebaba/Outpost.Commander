@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Conflicts, part 1 of 3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Conflicts · part 1 of 3</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>Conflicts</h2>
+<p>Agent <strong>R</strong> (reconciliation). HEAD <code>a053fe294d91dc885bbb061c2f34d76ca6897738</code> (2026-10-25T08:33:55+01:00). Built from <code>A1</code>–<code>A7</code> and checked against the repository. Every entry was deduplicated across agents: "Reported by" credits each agent that raised it, and "lead" marks the lead's notes.</p>
+<p><strong>How to read an entry.</strong>
+- <strong>Sides</strong> give file:line and the value each states.
+- <strong>Reference shows</strong> is the code's or the data's value. That is what the reference prints (ground rule 3).
+- <strong>Class</strong> is one of these:
+  - <code>code-vs-intent</code>: the code differs from the latest decision. It may be a defect or an undocumented decision.
+  - <code>stale-doc</code>: an ADR, a code comment or the brief should say what the code does.
+  - <code>superseded</code>: an earlier document that a later phase or ADR already overrides. Informational only.
+  - <code>agent-disagreement</code>: two agents describe the code differently.
+- <strong>OWNER?</strong> is yes when the entry changes what a screen shows or a core rule, and is plausibly a code defect rather than a stale doc.
+- <strong>R checked</strong> says what R verified itself in the repository.</p>
+<p><strong>Order:</strong> OWNER?=yes first (C-001 to C-005), then code-vs-intent (none without OWNER), then stale-doc (C-006 to C-036a), then superseded (C-037 to C-064), then agent-disagreement (C-065 to C-067).</p>
+<p>Short names: <code>Phase1.md</code> and the others stand for <code>GameDesign/Archive/OutpostCommander-PhaseN.md</code>, <code>MVP.md</code> for <code>GameDesign/Archive/OutpostCommander-MVP.md</code>, and <code>Phase5.md</code> for <code>GameDesign/OutpostCommander-Phase5.md</code>. <code>Plan5.md</code> is <code>GameDesign/ImplementationPlan-Phase5.md</code>, <code>PlanUI1.md</code> is <code>GameDesign/ImplementationPlan-Interface.md</code>, <code>PlanUI2.md</code> is <code>GameDesign/ImplementationPlan-Interface2.md</code>, and <code>PlanLook.md</code> is <code>GameDesign/ImplementationPlan-Look.md</code>. ADRs are <code>Design/ADR/ADR-NNN-*.md</code>.</p>
+<hr />
+<h3>OWNER? = yes</h3>
+<h4>C-001 — The HUD's side colors are code constants, not the data's side colors, and for seat 2 they contradict the world</h4>
+<ul>
+<li><strong>Claim:</strong> Ground rule 6 says colors come from data. ADR-011 decision 3 says the set's color is the team color. The minimap and the territory figures do not read <code>Models.json</code>.</li>
+<li><strong>Sides:</strong></li>
+<li><strong>Data</strong> (<code>OutpostCommander/Assets/Models.json:5, 20, 35, 40</code>; <code>players</code> at <code>:53-56</code>). The scene draws each side by player number (<code>GameApp/ModelCatalog.cpp:304-316</code>, <code>SetForPlayer</code>):<ul>
+<li>Human (0.18, 0.42, 0.95) <code>#76ADF9</code>, player 1</li>
+<li>Tarkan (0.9, 0.25, 0.12) <code>#F38961</code>, player 2</li>
+<li>Pirate (0.62, 0.22, 0.9) <code>#CE81F3</code></li>
+<li>Wreck (0.4, 0.4, 0.42) <code>#AAAAAD</code></li>
+</ul>
+</li>
+<li><strong>HUD constants</strong> (<code>GameApp/Hud.cpp:26-30</code>). They are relative to the viewer. The minimap marks use them at <code>Hud.cpp:3477, 3508-3511, 3602</code>, and the territory figures at <code>Hud.cpp:3191-3192</code>:<ul>
+<li><code>OWN_COLOR</code> (0.35, 0.65, 1.0) <code>#A0D3FF</code></li>
+<li><code>ENEMY_COLOR</code> (1.0, 0.38, 0.25) <code>#FFA689</code></li>
+<li><code>PIRATE_COLOR</code> (0.78, 0.45, 1.0) <code>#E5B3FF</code></li>
+<li><code>DERELICT_COLOR</code> (0.62, 0.62, 0.66) <code>#CECED4</code></li>
+</ul>
+</li>
+<li><strong>Decision.</strong> <code>ADR-043:36</code> (decision 7): "blue is the player's, red the enemy's". <code>ADR-011:15</code> (decision 3): "blue for the player's Human set, orange-red for the AI's Tarkan set". <code>GameApp/ModelCatalog.h:21</code> calls the color "provisional until team colors are decided".</li>
+<li><strong>Where they clash.</strong> In a world, seat 2 can be a human's: <code>OutpostServer --new-world</code> gives every map start a token unless <code>--ai</code> names it (<code>OutpostServer/Main.cpp:136-150</code>), and <code>Join-Player2.json</code> is written for it (A3 §10). That player sees its own ships and structures drawn Tarkan red-orange in the world, but blue (<code>OWN_COLOR</code>) on the minimap and in its node figure. Its enemy is drawn Human blue in the world but red (<code>ENEMY_COLOR</code>) on the minimap. In a skirmish the human is always player 1 (<code>OutpostCommander/WinMain.cpp:27-28</code>), so the hues agree there, but the values never match (<code>#A0D3FF</code> against <code>#76ADF9</code>).</li>
+<li><strong>Reference shows:</strong> the HUD's constants on the HUD and minimap, and <code>Models.json</code> in the world. Both are listed, with the hex of each.</li>
+<li><strong>Reported by:</strong> A5 (Open, "The HUD's side colors are not data"), A4 (minimap color names), A7 (side colors), lead.</li>
+<li><strong>Class:</strong> code-vs-intent · <strong>OWNER?</strong> yes</li>
+<li><strong>R checked:</strong> <code>Hud.cpp:19-30</code>, <code>ModelCatalog.cpp:304-316</code>, <code>Models.json:1-58</code>, <code>OutpostServer/Main.cpp:130-150</code>. Hex values recomputed (sRGB, IEC 61966-2-1).</li>
+</ul>
+<h4>C-002 — The Human Command Station is drawn about 181 m across its 90 m footprint</h4>
+<ul>
+<li><strong>Claim:</strong> ADR-064 means every structure level to stand within its footprint. The Human Command Station, at every level, is drawn about twice as deep as its footprint is wide.</li>
+<li><strong>Sides:</strong></li>
+<li><strong>Decision.</strong><ul>
+<li><code>ADR-064:28</code> (decision 8): "Every level is drawn within level 1's ground … Level 1 is fitted to the model's length along its front."</li>
+<li><code>ADR-064:49</code> (Consequences): "Fitted by its length alone … a level whose depth grows more than its length overhangs its footprint … where level 1 is square."</li>
+<li><code>GameApp/GameClient.cpp:1658-1664</code>: "Drawn across its kind's footprint", scale = 2 × footprint radius ÷ <code>lengthMeters</code>.</li>
+</ul>
+</li>
+<li><strong>Code and art.</strong><ul>
+<li>Level 1 is fitted by its x length alone (<code>GameApp/ModelCatalog.cpp:382-385</code> → <code>NeuronClient/MeshData.cpp:219-225</code>, <code>FitMesh</code>).</li>
+<li><code>Human/CommandStation_L1.nmf</code> measures x 451.82 by z 908.00 mesh units, z/x = 2.01 (R parsed the NMF).</li>
+<li>So L1 is 60 m along x and 120.6 m along z, drawn at ×1.5 (<code>Tuning.json:40</code>, footprint radius 45): <strong>90 m by 181 m against a 90 m footprint</strong>.</li>
+<li>L2 to L5 take L1's widest (120.6 m), so they stand 181 m deep too (A6 per-model table).</li>
+</ul>
+</li>
+<li><strong>Why.</strong> The owner replaced every mesh in commit <code>09638bc</code> ("New shaders added", 2026-10-04 16:55 +0200). That was after ADR-064's measurements of 2026-10-04 were written (commit <code>7d2b2fc</code>, 15:07 +0200). ADR-064's "level 1 is square" describes the replaced art.</li>
+<li><strong>Reference shows:</strong> the code's fit: 90 m by about 181 m for the Human station at every level. Tarkan is 90 by 96 m at L1–L4 and 94 by 96 m at L5.</li>
+<li><strong>Reported by:</strong> A6 (Open, "Some structures reach well past their footprint"), lead.</li>
+<li><strong>Class:</strong> code-vs-intent · <strong>OWNER?</strong> yes</li>
+<li><strong>R checked:</strong> the NMF extents of all ten Command Station levels (Human z/x 2.01, 1.82, 1.66, 1.11, 1.09; Tarkan 1.07 to 1.03); the fit code paths above; <code>git log</code> on the GLB and on the ADR. Smaller overhangs, within 15%, are gap G-052.</li>
+</ul>
+<h4>C-003 — The designer's seventh stat row (Build) runs into its footer</h4>
+<ul>
+<li><strong>Claim:</strong> A Sensors bar was added, and "the window still fits". The layout reserves room for six bars but draws seven.</li>
+<li><strong>Sides:</strong></li>
+<li><strong>Decision.</strong> <code>ADR-058:17</code> (decision 7): "A Sensors bar shows the module's sight … The window still fits a screen of 1,080 lines."</li>
+<li><strong>Reserved room.</strong> <code>GameApp/Hud.cpp:1087</code> (<code>ExtentOf</code>): bars = <code>SECTION_LABEL_HEIGHT + 6 × BAR_ROW_HEIGHT</code> = 26 + 150 = 176. The footer starts at sections + max(176, 146) + 12 = S + 188 (<code>Hud.cpp:63, 939-948, 1085-1090</code>).</li>
+<li><strong>Drawn rows.</strong> <code>Hud.cpp:763-779</code>: Hit points, Armor, Speed, Range, Sensors (whenever <code>best.sensor &gt; 0</code>), Cost, Build. <code>best</code> is taken over every design, so it includes the Sensor Array, whose sight is 700 m (<code>Tuning.json:33</code>). That makes seven rows in every match. Row <em>i</em> starts at S + 26 + 25<em>i</em> (<code>Hud.cpp:1491</code>), so Build runs from S + 176 to S + 201, past the footer's S + 188.</li>
+<li><strong>Reference shows:</strong> the code's layout, with the Build row overlapping the top of the RENAME / RETREAT footer by about 13 units. This is derived from the code. Nobody has seen it on a screen.</li>
+<li><strong>Reported by:</strong> A4 (Open 2).</li>
+<li><strong>Class:</strong> code-vs-intent · <strong>OWNER?</strong> yes</li>
+<li><strong>R checked:</strong> the constants and the arithmetic above.</li>
+</ul>
+<h4>C-004 — The color of a lit footprint ring</h4>
+<ul>
+<li><strong>Claim:</strong> A lit ring (under the pointer, or while placing) should be "in the color of a structure's own lines".</li>
+<li><strong>Sides:</strong></li>
+<li><strong>Decision.</strong> <code>ADR-042:24</code> (decision 2): "in the color of a structure's own lines (<code>EdgeColor</code>, ADR-040)".</li>
+<li><strong>Code.</strong> <code>GameApp/GameClient.cpp:1376</code> uses <code>EdgeColor(side-&gt;color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE)</code>, which is the side's ship-line color. A structure's own lines are <code>EdgeColor(TowardGray(side, STRUCTURE_GRAY_SHARE 0.35))</code> (<code>GameClient.cpp:1577</code> with <code>:1561</code>; <code>ADR-040:20</code>, decision 4).</li>
+<li><strong>Values (Human).</strong> The ring is (0.473, 0.637, 1.0) <code>#B7D1FF</code>. The structure line is (0.572, 0.705, 1.0) <code>#C7DBFF</code>.</li>
+<li><strong>Reference shows:</strong> the code's: the ship-line color.</li>
+<li><strong>Reported by:</strong> A7 (Conflict 4).</li>
+<li><strong>Class:</strong> code-vs-intent · <strong>OWNER?</strong> yes (minor: a shade of the same hue)</li>
+<li><strong>R checked:</strong> <code>GameClient.cpp:1361-1397</code>, <code>ADR-042:20-30</code>, <code>ADR-040:17-20</code>.</li>
+</ul>
+<h4>C-005 — The Large hull card's numbers line may be cut short at 1080p</h4>
+<ul>
+<li><strong>Claim:</strong> The part cards were widened "so a hull's numbers fit at the detail size".</li>
+<li><strong>Sides:</strong></li>
+<li><strong>Decision.</strong> <code>ADR-062:27</code> (decision 4): cards from 190 to 220 units "so a hull's numbers fit … like '1,400 HP · ARM 24 · 25m/s'".</li>
+<li><strong>Code.</strong><ul>
+<li>The numbers are fitted to <code>CARD_WIDTH − 24</code> = 196 units (<code>GameApp/Hud.cpp:1459, 1467-1468</code>), in the Detail face: Cascadia Mono 400 at 13 units (<code>Hud.cpp:3016</code>).</li>
+<li>Advances are rounded to whole pixels (<code>NeuronClient/GlyphAtlas.cpp:276</code>).</li>
+<li><code>1,200 HP · ARM 14 · 25m/s</code> is 25 characters. At an assumed Cascadia Mono advance of 1200/2048 em (7.6 px, rounded to 8), that is 200 px against 196, so <code>Fit</code> would cut it.</li>
+</ul>
+</li>
+<li><strong>Reference shows:</strong> the code's layout. Whether the line is cut is <strong>Not determinable here</strong>: the advance is quoted from memory, there is no font in the container, and no <code>HudTests</code> assertion covers this line (R grepped <code>GameAppTests/HudTests.cpp</code>). With Consolas, at 7 px, it fits.</li>
+<li><strong>Reported by:</strong> A4 (Open 3, C17).</li>
+<li><strong>Class:</strong> code-vs-intent (unproven) · <strong>OWNER?</strong> yes. This is a check on a Windows screen.</li>
+<li><strong>R checked:</strong> the code path and constants. The font metric is unverified.</li>
+</ul>
+<hr />
+<h3>code-vs-intent with OWNER? = no</h3>
+<p>None. Every code-vs-intent entry found is screen-visible, so all five are listed above.</p>
+<hr />
+<h3>stale-doc</h3>
+<h4>C-006 — The Command Station's gun hardpoints</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>Phase3.md:125</code> (gate K6): "the Human Command Station's 4 hardpoints at level 1 and 12 at level 5 and the Tarkan's 3 and 6".</li>
+<li><code>ADR-064:44</code> (decision 11): "the Human station's 4 to 12 and the Tarkan's 3 to 6".</li>
+<li>Meshes: <code>OutpostCommander/Assets/Models/{Human,Tarkan}/CommandStation_L1..L5.nmf</code> carry 3, 3, 3, 6, 6 <code>gun</code> hardpoints in both sets, and the GLB sources agree (A2 <code>count_hardpoints.py</code>).</li>
+<li><strong>Reference shows:</strong> 3, 3, 3, 6, 6 in both sets. The number of guns that fire, 1 / 1 / 2 / 2 / 3, is <code>Tuning.json:41, 44, 46</code> (<code>Tuning.cpp:754-763</code>).</li>
+<li><strong>Why stale:</strong> the owner's own art replacement, <code>09638bc</code> (2026-10-04 16:55 +0200), came after these texts were written (<code>7d2b2fc</code>, 15:07 +0200). Hardpoints only change where a shot leaves from (<code>Hardpoints.cpp:205-220</code>).</li>
+<li><strong>Reported by:</strong> A2 (Conflict 1), lead. <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+<li><strong>R checked:</strong> the NMF hardpoint counts, parsed. <code>git log</code> and <code>git show 7d2b2fc</code> on the ADR.</li>
+</ul>
+<h4>C-007 — "Level 1 is square" in ADR-064's measurement</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-064:49</code> gives the Human Command Station's depth at 1.57× its length at L2–L3 and 1.13–1.14× at L4–L5, "where level 1 is square". The shipped NMFs give z/x of 2.01, 1.82, 1.66, 1.11 and 1.09 (R parse).</li>
+<li><strong>Reference shows:</strong> the shipped meshes' extents (A6 table). The consequence is C-002.</li>
+<li><strong>Reported by:</strong> R (found while checking the lead's note on A6). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-008 — Protocol and world-state version numbers in ADRs</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>ADR-064:26</code>: "The protocol's version is 5".</li>
+<li><code>ADR-071:16</code>: "The protocol's version is 7".</li>
+<li><code>ADR-081:49</code>: "<code>WorldStateTests.TheLayoutIsTheVersions</code> holds version 5's hash".</li>
+<li><code>ADR-084:33</code>: "<code>WorldStateTests</code> record the layout of version 6".</li>
+<li>Against them: <code>AGENTS.md</code> R18 ("Until the game is live, the version stays 1", owner 2026-10-09); <code>ADR-060:17</code> and <code>ADR-077:24</code> (both stay 1); <code>Phase5.md:81</code>.</li>
+<li>Code: <code>GameLogic/WorldState.h:9</code> <code>WORLD_STATE_VERSION = 1</code>, <code>GameProtocol/WireFormat.h:7</code> <code>PROTOCOL_VERSION = 1</code>, and <code>GameLogicTests/WorldStateTests.cpp:160-170</code> ("under version 1 until the game is live").</li>
+<li><strong>Reference shows:</strong> 1 and 1.</li>
+<li><strong>Reported by:</strong> A3 (Conflict 2), lead. R added ADR-064, ADR-071 and ADR-081.</li>
+<li><strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no. AGENTS.md is authority 1, and the code follows it.</li>
+</ul>
+<h4>C-009 — Command Station next-level panel text in ADR-064</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-064:44</code> gives "L3: 10 nodes, 2 Defence guns, 7,000 hit points". <code>GameApp/Hud.cpp:2655-2677</code> adds the fleet cap (ADR-071): "L3: 10 nodes, 2 Defence guns, fleet 30, 7,000 hit points".</li>
+<li><strong>Reference shows:</strong> the code's text. <strong>Reported by:</strong> A2 (Conflict 4). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-010 — Who builds a structure's level (code comment)</h4>
+<ul>
+<li><strong>Sides:</strong> <code>GameProtocol/Snapshot.h:250-252</code> (comment on <code>StructureLevelView</code>): "how long one Constructor takes to build it". <code>ADR-064:23</code> (decision 3) and <code>GameLogic/Simulation.cpp:2650-2668</code>: a level builds itself, and no Constructor works on it.</li>
+<li><strong>Reference shows:</strong> the level builds itself over its <code>buildSeconds</code>. <strong>Reported by:</strong> A2 (Conflict 3). <strong>Class:</strong> stale-doc (code comment) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-011 — Flak Battery splash in ADR-034</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>ADR-034:7</code> (Context): "a ring as wide as its 20 m".</li>
+<li><code>Tuning.json:29</code>: <code>splashRadiusMeters</code> 26. <code>ADR-014:22</code> and <code>Phase1.md:89</code> agree (tuned from 20 to 26).</li>
+<li>The ring is drawn at the shot's splash (<code>CombatEffects.cpp:179-187</code>).</li>
+<li><strong>Reference shows:</strong> 26 m. <strong>Reported by:</strong> A2 (Conflict 2), A7 (Conflict 7). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4864}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

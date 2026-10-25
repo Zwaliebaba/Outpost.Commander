@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Models, light and motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Model faces and lines</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: every model's faces are dark and its creases are bright one-pixel lines in its own hue, pulled slightly toward the eye so they win the depth test (ADR-027, ADR-040).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Crease threshold</td>
+<td>edges folding &gt; 10°, plus open edges (<code>CREASE_DEGREES</code>)</td>
+<td><code>GameClient.cpp:49,380</code>; ADR-027 §Decision 2</td>
+</tr>
+<tr>
+<td>Line width</td>
+<td>1 px at any distance, MSAA-smoothed</td>
+<td>ADR-027 §Decision 3; <code>MeshPipeline.cpp:101</code></td>
+</tr>
+<tr>
+<td>Line pull</td>
+<td>0.2% of the way toward the eye (<code>LINE_LIFT_SHARE</code> 0.002)</td>
+<td><code>GameClient.cpp:53</code>; <code>MeshLineVS.hlsl:59</code></td>
+</tr>
+<tr>
+<td>Line depth</td>
+<td>test ≤, no write</td>
+<td><code>MeshPipeline.cpp:98-99</code></td>
+</tr>
+<tr>
+<td>Ship faces</td>
+<td>color × 0.3 (<code>FILL_SHADE</code>)</td>
+<td><code>SceneShading.h:48</code>; <code>GameClient.cpp:1509</code></td>
+</tr>
+<tr>
+<td>Ship/structure lines</td>
+<td>color ×up to 2 (<code>EDGE_BRIGHTNESS</code>) until brightest channel = 1, then 35% toward white (<code>EDGE_WHITE_SHARE</code>)</td>
+<td><code>SceneShading.h:45-46</code>; <code>SceneShading.cpp</code> <code>EdgeColor</code>; <code>GameClient.cpp:1561</code></td>
+</tr>
+<tr>
+<td>Structure color</td>
+<td>side color 35% toward a gray of equal luminance (<code>STRUCTURE_GRAY_SHARE</code>)</td>
+<td><code>SceneShading.h:56</code>; <code>GameClient.cpp:1577</code></td>
+</tr>
+<tr>
+<td>Structure faces</td>
+<td>that × 0.22 (<code>STRUCTURE_FILL_SHADE</code>)</td>
+<td><code>SceneShading.h:57</code>; <code>GameClient.cpp:1577</code></td>
+</tr>
+<tr>
+<td>Structure under construction</td>
+<td>color × tint × (0.35 + 0.65 × built share) (<code>UNBUILT_SHADE</code> 0.35), clamped at 1</td>
+<td><code>GameClient.cpp:101,343-349</code></td>
+</tr>
+<tr>
+<td>Rock faces</td>
+<td>color × 0.15 (<code>ROCK_FILL_SHADE</code>)</td>
+<td><code>SceneShading.h:51</code>; <code>GameClient.cpp:1516,1535</code></td>
+</tr>
+<tr>
+<td>Rock lines</td>
+<td>color × 1.35 (<code>ROCK_EDGE_BRIGHTNESS</code>), no white</td>
+<td><code>SceneShading.h:47</code>; <code>GameClient.cpp:1561</code></td>
+</tr>
+<tr>
+<td>Field rocks</td>
+<td>asteroid color × 0.7 (<code>FIELD_SHADE</code>) before the above</td>
+<td><code>SceneShading.h:53</code>; <code>GameClient.cpp:1522</code></td>
+</tr>
+<tr>
+<td>Lines vs faces contrast floor</td>
+<td>ships 2.7:1, structures 3.3:1, rocks 2.3:1 (test floors, computed)</td>
+<td>ADR-090 §Consequences</td>
+</tr>
+</tbody>
+</table>
+<p>Derived line and face colors <em>(computed from <code>SceneShading.cpp</code> formulas and <code>Models.json</code> colors)</em>:</p>
+<table>
+<thead>
+<tr>
+<th>Side</th>
+<th>Ship faces</th>
+<th>Ship lines</th>
+<th>Structure faces</th>
+<th>Structure lines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Human</td>
+<td>(0.054, 0.126, 0.285)</td>
+<td>(0.473, 0.637, 1.000)</td>
+<td>(0.057, 0.091, 0.167)</td>
+<td>(0.572, 0.705, 1.000)</td>
+</tr>
+<tr>
+<td>Tarkan</td>
+<td>(0.270, 0.075, 0.036)</td>
+<td>(1.000, 0.531, 0.437)</td>
+<td>(0.158, 0.065, 0.046)</td>
+<td>(1.000, 0.617, 0.541)</td>
+</tr>
+<tr>
+<td>Pirate</td>
+<td>(0.186, 0.066, 0.270)</td>
+<td>(0.798, 0.509, 1.000)</td>
+<td>(0.116, 0.059, 0.156)</td>
+<td>(0.833, 0.595, 1.000)</td>
+</tr>
+<tr>
+<td>Wreck (drawn as a ship)</td>
+<td>(0.120, 0.120, 0.126)</td>
+<td>(0.814, 0.814, 0.840)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Ore asteroid</td>
+<td>(0.052, 0.048, 0.045)</td>
+<td>(0.472, 0.432, 0.405)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Field rock</td>
+<td>(0.037, 0.034, 0.032)</td>
+<td>(0.331, 0.302, 0.284)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>ADR-040 §Decision 1 states Human line (0.47, 0.64, 1.0) and Tarkan line (1.0, 0.53, 0.44), matching.</p>
+<p>Color constants: <code>FILL_SHADE</code>, <code>EDGE_BRIGHTNESS</code>, <code>EDGE_WHITE_SHARE</code>, <code>STRUCTURE_GRAY_SHARE</code>, <code>STRUCTURE_FILL_SHADE</code>, <code>ROCK_FILL_SHADE</code>, <code>ROCK_EDGE_BRIGHTNESS</code>, <code>FIELD_SHADE</code>, <code>UNBUILT_SHADE</code> (all above).</p>
+<p>Example: a navy-dark hull silhouette traced in light-blue hairlines; a Tarkan hull dark brick-red traced in salmon lines; a rock nearly black with gray-brown ridges.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Lighting</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: a face is lit by a warm key from above-behind the default view's top-left (softened by a wrap) plus a fill blended from a cool sky above to a dimmer violet ground below; a line takes only that light's luminance, so it keeps its hue (ADR-090).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Key direction</td>
+<td><code>TOWARD_KEY</code> = (−0.4, 0.8, 0.45), normalized</td>
+<td><code>SceneShading.h:15</code>; <code>GameClient.cpp:1130</code></td>
+</tr>
+<tr>
+<td>Key color</td>
+<td><code>KEY_COLOR</code> = (0.627, 0.539, 0.427) warm</td>
+<td><code>SceneShading.h:16</code></td>
+</tr>
+<tr>
+<td>Wrap</td>
+<td><code>KEY_WRAP</code> = 0.3: key = saturate((n·l + 0.3)/1.3)</td>
+<td><code>SceneShading.h:17</code>; <code>MeshPS.hlsl:33-38</code></td>
+</tr>
+<tr>
+<td>Sky fill (face up)</td>
+<td><code>SKY_FILL</code> = (0.365, 0.421, 0.571) cool</td>
+<td><code>SceneShading.h:18</code></td>
+</tr>
+<tr>
+<td>Ground fill (face down)</td>
+<td><code>GROUND_FILL</code> = (0.314, 0.287, 0.389) dim violet</td>
+<td><code>SceneShading.h:19</code></td>
+</tr>
+<tr>
+<td>Fill blend</td>
+<td>lerp(ground, sky, n.y × 0.5 + 0.5)</td>
+<td><code>MeshPS.hlsl:35</code></td>
+</tr>
+<tr>
+<td>Face</td>
+<td>color × (fill + key) × occlusion term</td>
+<td><code>MeshPS.hlsl:40-44</code></td>
+</tr>
+<tr>
+<td>Line</td>
+<td>color × luminance(fill + key) (weights 0.2126, 0.7152, 0.0722)</td>
+<td><code>MeshLinePS.hlsl:30,40-43</code></td>
+</tr>
+<tr>
+<td>Least light the camera sees</td>
+<td>luminance 0.315 (old ambient 0.3); most 0.96</td>
+<td>ADR-090 §Decision 3 (computed there)</td>
+</tr>
+<tr>
+<td>Face looking straight up</td>
+<td>(0.895, 0.877, 0.932), within 7% of gray: flat marks keep their color</td>
+<td>ADR-090 §Decision 3</td>
+</tr>
+<tr>
+<td>Textures / specular</td>
+<td>none</td>
+<td><code>MeshPS.hlsl:1-3</code></td>
+</tr>
+</tbody>
+</table>
+<p>Color constants: <code>KEY_COLOR</code>, <code>SKY_FILL</code>, <code>GROUND_FILL</code> (<code>SceneShading.h:16-19</code>).</p>
+<p>Example: the face of a hull turned to the upper-left glows faintly warm; its underside reads cool blue-violet; its outline stays its side's pure line color.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Baked occlusion</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: the baker stores how open each vertex is (37 cosine-weighted rays within a quarter of the model's extent); a face's light is darkened by how shut in it is, a line's never (ADR-092).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rays</td>
+<td>37 over the hemisphere (7×7 grid inside the disk, Malley's method)</td>
+<td>ADR-092 §Decision 1</td>
+</tr>
+<tr>
+<td>Reach</td>
+<td>a quarter of the model's largest extent</td>
+<td>ADR-092 §Decision 1</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>one byte 0–255 per vertex, NMF version 3</td>
+<td>ADR-092 §Decision 2; all 45 <code>.nmf</code> parsed as v3</td>
+</tr>
+<tr>
+<td>Strength</td>
+<td><code>OCCLUSION_STRENGTH</code> = 1: wholly shut in is black, half shut in lit by half</td>
+<td><code>SceneShading.h:23</code>; <code>MeshPS.hlsl:42-43</code></td>
+</tr>
+<tr>
+<td>Lines</td>
+<td>not darkened</td>
+<td><code>MeshLinePS.hlsl:1-5</code>; ADR-092 §Decision 4</td>
+</tr>
+<tr>
+<td>CPU-made vertices (rings, grid, shards)</td>
+<td>open (1)</td>
+<td>ADR-092 §Decision 3</td>
+</tr>
+<tr>
+<td>Shipped models</td>
+<td>mean openness 0.65; 13% of vertices shut in wholly; rocks ≥ 0.97 open</td>
+<td>ADR-092 §Consequences (measured in container)</td>
+</tr>
+<tr>
+<td>Between entities</td>
+<td>none (a rig is not darkened by its rock)</td>
+<td>ADR-092 §Consequences</td>
+</tr>
+</tbody>
+</table>
+<p>Example: bays, docks and wing roots of a Shipyard sink into soft black while the outer plates keep their tint; the hairlines inside the bays stay bright.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Ships, banking</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: a ship is its hull's model in its side's set, centered on its position; it banks into turns in proportion to speed × turn rate, through a critically damped spring, drawn by the client only (ADR-029); it always turns in arcs, never on the spot (ADR-039).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hull lengths</td>
+<td>Small 20 m, Medium 35 m, Large 60 m, Constructor 24 m</td>
+<td><code>Models.json:7-10,22-25</code></td>
+</tr>
+<tr>
+<td>Hull footprints (server)</td>
+<td>Small 8 m, Medium 14 m, Large 24 m radius; Constructor 10 m</td>
+<td><code>Tuning.json:16-18,35</code></td>
+</tr>
+<tr>
+<td>Bank target</td>
+<td>clamp(speed × turnRate / fullAt, −1, 1) × maxBank; none flying straight</td>
+<td><code>ShipBanking.cpp:13-19</code></td>
+</tr>
+<tr>
+<td>Small</td>
+<td>50°, full at 60 m/s², settles 0.25 s</td>
+<td><code>Models.json:60</code></td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>45°, full at 26 m/s², settles 0.3 s</td>
+<td><code>Models.json:61</code></td>
+</tr>
+<tr>
+<td>Large</td>
+<td>35°, full at 8 m/s², settles 0.4 s</td>
+<td><code>Models.json:62</code></td>
+</tr>
+<tr>
+<td>Constructor</td>
+<td>30°, full at 55 m/s², settles 0.3 s</td>
+<td><code>Models.json:74</code></td>
+</tr>
+<tr>
+<td>Bank limit in data</td>
+<td>at most 60°</td>
+<td><code>ModelCatalog.cpp:86,96-98</code></td>
+</tr>
+<tr>
+<td>Spring rate</td>
+<td>4 / settle time (<code>SETTLE_RATE</code>); ~9/10 followed after one settle time</td>
+<td><code>ShipBanking.h:17</code>; <code>ShipBanking.cpp:33</code>; ADR-029 §Decision 3</td>
+</tr>
+<tr>
+<td>Bank sense</td>
+<td>positive (counterclockwise turn) lowers the left (+z) side</td>
+<td>ADR-029 §Decision 5</td>
+</tr>
+<tr>
+<td>What rolls with the hull</td>
+<td>guns, exhausts, crease lines, explosion shards</td>
+<td>ADR-029 §Decision 5</td>
+</tr>
+<tr>
+<td>What stays flat</td>
+<td>footprint, selection ring, bars, picking</td>
+<td>ADR-029 §Decision 5</td>
+</tr>
+<tr>
+<td>Turning</td>
+<td>forward while turning; speed × (½ + ½·cos bearing), never below half cruise on this count</td>
+<td>ADR-039 §Decision 2</td>
+</tr>
+<tr>
+<td>Coming about</td>
+<td>loop about 20 m across (Small+Ion), 24 m (Large+Fusion)</td>
+<td>ADR-039 §Decision 2</td>
+</tr>
+<tr>
+<td>Pitch / climb</td>
+<td>none: the battlefield is flat</td>
+<td>ADR-029 §What this forecloses</td>
+</tr>
+</tbody>
+</table>
+<p>Color: side color (see Side colors), faces <code>FILL_SHADE</code>.</p>
+<p>Example: a Small blue hull rolling 50° into a tight curve, its light-blue outline and cyan exhaust leaning with it, then rolling level in a quarter second.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Structures: levels</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: a structure is drawn across its kind's footprint; a model with levels draws the level the snapshot carries, each later level fitted within level 1's widest ground; a part baked as a steady spin turns on the view's clock (ADR-045).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fit</td>
+<td>scale = 2 × footprint radius / model length</td>
+<td><code>GameClient.cpp:1660-1664</code></td>
+</tr>
+<tr>
+<td>Levels</td>
+<td>Command Station, Shipyard, Research Lab: 5 levels each, both sets</td>
+<td><code>Models.json:11-13,26-28</code></td>
+</tr>
+<tr>
+<td>Later levels</td>
+<td>fitted across level 1's widest (x or z) extent</td>
+<td><code>GameClient.cpp:365-374</code>; <code>ModelCatalog.cpp:382-385</code></td>
+</tr>
+<tr>
+<td>Footprints</td>
+<td>Command Station 45 m, Shipyard 40 m, Research Lab 30 m, Mining Rig 25 m, Defense Platform 20 m, Relay 30 m, Repair Bay 30 m</td>
+<td><code>Tuning.json:40,48,54,60-63</code></td>
+</tr>
+<tr>
+<td>Human Research Lab spin</td>
+<td>one part, 8 s a turn, all levels; L5 adds two parts at 5 s</td>
+<td><code>.nmf</code> parts parsed; ADR-045 §Context</td>
+</tr>
+<tr>
+<td>Tarkan Research Lab spin</td>
+<td>12 s a turn, all levels; L3–L5 add a counter ring at 9 s turning the other way</td>
+<td><code>.nmf</code> parts parsed; ADR-045 §Context</td>
+</tr>
+<tr>
+<td>Clock</td>
+<td>view tick / ticks per second: all labs spin in step</td>
+<td><code>GameClient.cpp:1870-1876</code>; ADR-045 §Consequences</td>
+</tr>
+<tr>
+<td>Ghost and memory</td>
+<td>ghost spins (level 1); remembered lines spin too</td>
+<td><code>GameClient.cpp:1831-1832,1200</code></td>
+</tr>
+<tr>
+<td>No other part moves</td>
+<td>yes</td>
+<td>ADR-045 §Context</td>
+</tr>
+</tbody>
+</table>
+<p>Color: side color toward gray (<code>STRUCTURE_GRAY_SHARE</code>), faces <code>STRUCTURE_FILL_SHADE</code>.</p>
+<p>Example: a grayed-blue Human Research Lab whose radar dish sweeps once every 8 s.</p>
+<h4>Mining Rig stance</h4>
+<p>Rule: the rig is drawn at its kind's size (25 m footprint), tilted to fit its asteroid under its feet and lifted until no foot is in the rock; the drill goes in (ADR-044).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Feet</td>
+<td>lowest vertices past 0.5 of half length, within 0.05 of height of the lowest</td>
+<td><code>GameClient.cpp:70-71,322-342</code></td>
+</tr>
+<tr>
+<td>Fit passes</td>
+<td>3</td>
+<td><code>Hardpoints.cpp:36</code></td>
+</tr>
+<tr>
+<td>Max tilt</td>
+<td>0.5 rad (~29°) either way</td>
+<td><code>Hardpoints.h:51</code>; ADR-044 §Decision 2</td>
+</tr>
+<tr>
+<td>Without feet over rock</td>
+<td>lowest point stands on the rock's top</td>
+<td><code>GameClient.cpp:1724-1727</code></td>
+</tr>
+</tbody>
+</table>
+<p>Example: a small tripod rig perched tilted on a lumpy 45 m rock, legs on the surface.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Derelicts</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: a derelict is its hull's model from the Wreck set (Human meshes) across its radius, in Wreck gray, shaded like a ship (ADR-074 via ADR-011 §Decision 3).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td>by hull, from <code>derelicts</code> set</td>
+<td><code>Models.json:39-41,58</code>; <code>GameClient.cpp:1628-1638</code></td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>2 × radius / model length</td>
+<td><code>GameClient.cpp:1638</code></td>
+</tr>
+<tr>
+<td>Faces / lines</td>
+<td><code>FILL_SHADE</code>, <code>EdgeColor</code> (ship rules)</td>
+<td><code>GameClient.cpp:1546,1561</code></td>
+</tr>
+<tr>
+<td>Rings</td>
+<td>none (rings are for structures only)</td>
+<td><code>GameClient.cpp:1370</code></td>
+</tr>
+<tr>
+<td>Remembered</td>
+<td>drawn as a memory (lines only)</td>
+<td>ADR-081 §Decision 4</td>
+</tr>
+</tbody>
+</table>
+<p>Color key: <code>Models.json: sets[name=Wreck].color</code> (0.4, 0.4, 0.42).</p>
+<p>Example: a gray Human Large hull lying still, outlined in pale gray lines.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Asteroids and asteroid fields</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: an ore asteroid is one rock; a field is a cluster laid out from its identifier — a middle rock and a ring of 5–8, its gaps closed by smaller rocks so no gap is wider than the smallest hull (ADR-087); rocks are low-poly with ridges as lines (ADR-027).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rock meshes</td>
+<td>Small 32, Medium 54, Large 78 triangles; each 2 m long so scale = radius</td>
+<td><code>.nmf</code> parsed; <code>Models.json:47-49</code>; ADR-027 §Decision 1</td>
+</tr>
+<tr>
+<td>Mesh by radius</td>
+<td>Small ≤ 35 m; Large ≥ 55 m; Medium between</td>
+<td><code>GameClient.cpp:43-44,308-320</code></td>
+</tr>
+<tr>
+<td>Ore asteroid sizes</td>
+<td>45 m (home, near, contested); 60 m (rich)</td>
+<td><code>Map.json: oreAsteroids</code>, <code>sectorKinds</code> (line 157 for rich)</td>
+</tr>
+<tr>
+<td>Field sizes</td>
+<td>150 m and 180 m radius; 80 fields</td>
+<td><code>Map.json: asteroidFields</code></td>
+</tr>
+<tr>
+<td>Layout seed</td>
+<td><code>EffectRandom(FIELD_SEED_SALT ^ id)</code></td>
+<td><code>FieldLayout.cpp:12,37</code></td>
+</tr>
+<tr>
+<td>Middle rock</td>
+<td>radius 0.36–0.46 of field, up to 0.06 off center on each axis</td>
+<td><code>FieldLayout.cpp:16-18,39-42</code></td>
+</tr>
+<tr>
+<td>Ring</td>
+<td>5–8 rocks, evenly spaced from a random start, jitter ≤ 0.2 step, 0.56–0.68 of radius out, 0.20–0.32 of radius in size, never past the edge</td>
+<td><code>FieldLayout.cpp:21-27,44-58</code></td>
+</tr>
+<tr>
+<td>Fillers</td>
+<td>0.08–0.12 of field radius, evenly along the chord, as few as leave no gap &gt; the bound</td>
+<td><code>FieldLayout.cpp:29-30,60-85</code></td>
+</tr>
+<tr>
+<td>Gap bound</td>
+<td>smallest hull's footprint diameter from the snapshot: 16 m (Small, 2 × 8 m)</td>
+<td><code>GameClient.cpp:1524-1529</code>; <code>Tuning.json:16</code></td>
+</tr>
+<tr>
+<td>Reach used</td>
+<td>narrowest reach of the 3 rock meshes, 0.60 at HEAD (ADR's measurement)</td>
+<td><code>GameClient.cpp:454</code>; <code>FieldLayout.cpp:89-103</code>; ADR-087 §Decision 2</td>
+</tr>
+<tr>
+<td>Rocks a field</td>
+<td>14–18, mean 15.7; 1,254 on the map (ADR's measurement)</td>
+<td>ADR-087 §Consequences</td>
+</tr>
+<tr>
+<td>Turn</td>
+<td>every rock its own random angle</td>
+<td><code>FieldLayout.cpp:42,57,83</code></td>
+</tr>
+<tr>
+<td>Server</td>
+<td>blocks the whole circle; the layout is the client's alone</td>
+<td>ADR-087 §Decision 3</td>
+</tr>
+<tr>
+<td>Always seen</td>
+<td>asteroids and fields are never fogged out of the snapshot</td>
+<td>ADR-024 §Decision 3</td>
+</tr>
+</tbody>
+</table>
+<p>Color key: <code>Models.json: sets[name=Asteroids].color</code>; constants <code>ROCK_FILL_SHADE</code>, <code>ROCK_EDGE_BRIGHTNESS</code>, <code>FIELD_SHADE</code>.</p>
+<p>Example: a 180 m field: one large dark boulder in the middle, a closed polygon of six medium rocks and small filler rocks around it, all near-black with dim gray-brown ridges.</p>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5569}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

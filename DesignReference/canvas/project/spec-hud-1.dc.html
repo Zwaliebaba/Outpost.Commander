@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HUD: Ore, status, territory, alerts, hint, connection</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The match HUD</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> The HUD shows the player's state at a glance: Ore, what production and research are doing, the territory, alerts, where the match runs, the selection with its commands, and the minimap (ADR-015 d4, ADR-043, ADR-066, ADR-086, ADR-088). It is laid out afresh every frame by <code>Hud::Lay</code> (Hud.cpp:3075-3689) from <code>Hud::Describe</code>'s content (Hud.cpp:2453-2834) and from what <code>GameClient::Update</code> adds (GameClient.cpp:719-772).</p>
+<p><strong>Layers and clicks.</strong>
+- <strong>Entity bars.</strong> The bars over entities are drawn first, under every panel (layer −1, <code>Layout::bars</code>). They take no click and cover nothing (Hud.cpp:3095-3126; Hud.h:730-732).
+- <strong>The HUD is layer 0.</strong> Each window is a further layer, back to front (Hud.h:714-760).
+- <strong>Draw order.</strong> Within a layer: panels, then lines, then sprites, then texts (GameClient.cpp:1300-1336).
+- <strong>A press on any HUD panel is the HUD's.</strong> It never reaches the world, while releases always do (GameClient.cpp:681-688; <code>Layout::Covers</code> Hud.cpp:2363-2366; ADR-015 d5).
+- <strong>Clicks go to the front layer only.</strong> A HUD button under a window takes no click (<code>ActionAt</code> Hud.cpp:2368-2377).
+- <strong>Hover.</strong> The action under the pointer is found in the last frame's layout (GameClient.cpp:711-712). It lights the HUD's enabled button, the retreat cell, the ship bar, the status line and the banner button that take it (ADR-088 d1; Hud.cpp:3129-3131).</p>
+<p><strong>Anchors.</strong> These are at factor 1.0; at another factor, multiply every value by it (§ Interface scale).</p>
+<table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Anchor</th>
+<th>Rect (example state)</th>
+<th>Width rule</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ore</td>
+<td>top-left</td>
+<td>16, 16, ≈380, 44</td>
+<td>the column's width</td>
+<td>Hud.cpp:3143-3157</td>
+</tr>
+<tr>
+<td>Status (production column)</td>
+<td>under the Ore</td>
+<td>16, 68, ≈380, 20 + rows (94 kept)</td>
+<td>the column's width</td>
+<td>Hud.cpp:3159-3161, 3239-3308</td>
+</tr>
+<tr>
+<td>Territory</td>
+<td>under the status panel's kept place</td>
+<td>16, 170, ≈380, 20 + 22·rows</td>
+<td>the column's width</td>
+<td>Hud.cpp:3167-3213</td>
+</tr>
+<tr>
+<td>Alerts</td>
+<td>under the territory, 8 apart</td>
+<td>16, 170 + territory + 8, ≈380, 20 + 22·n</td>
+<td>the column's width</td>
+<td>Hud.cpp:3217-3238</td>
+</tr>
+<tr>
+<td>Hint</td>
+<td>top middle</td>
+<td>640, 16, 640, 44</td>
+<td>fixed 640</td>
+<td>Hud.cpp:3311-3316</td>
+</tr>
+<tr>
+<td>Where the match runs</td>
+<td>top-right</td>
+<td>1920 − 16 − w, 16, ≈w, 42 or 64</td>
+<td>its words</td>
+<td>Hud.cpp:3320-3337</td>
+</tr>
+<tr>
+<td>End banner</td>
+<td>top middle, under the Ore line</td>
+<td>700, 68, 520, 116</td>
+<td>fixed 520</td>
+<td>Hud.cpp:3340-3350</td>
+</tr>
+<tr>
+<td>Selection</td>
+<td>bottom middle; the pair is centred</td>
+<td>x = pairLeft, y = 1064 − h</td>
+<td>280-560 by its lines</td>
+<td>Hud.cpp:3357-3426</td>
+</tr>
+<tr>
+<td>Commands (buttons)</td>
+<td>against the selection's right edge, bottom-aligned</td>
+<td>x = pairLeft + selection width, w 380</td>
+<td>fixed 380</td>
+<td>Hud.cpp:3427-3453</td>
+</tr>
+<tr>
+<td>Minimap</td>
+<td>bottom-left</td>
+<td>16, 764, 300, 300</td>
+<td>fixed</td>
+<td>Hud.cpp:3456-3630</td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The column</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>The Ore, status, territory and alerts panels share one width, <code>columnUnits</code> (Hud.cpp:3134-3139; ADR-066 d3). It is the largest of three values:
+- 380 (<code>COLUMN_LEAST_UNITS</code>, Hud.cpp:132);
+- the longest research topic's name (<code>Snapshot::research[].nameUtf8</code>) in the Name face, plus the width of <code>+99</code> in the Figure face, plus 6, plus 24;
+- the widest of three fixed lines in the Name face, plus 8 and 24 (Hud.cpp:133-135): <code>Shipyards · BUILDING 99 · WAITING 99 · IDLE 99</code>, <code>Shipyards at the fleet cap · Station upgrading, 100%</code> and <code>Research: every open topic done</code>.</p>
+<p><strong>≈380 by estimate:</strong> the widest line comes to ≈364, under the floor. The real figure depends on Bahnschrift's metrics and is <strong>not stated anywhere</strong>; ADR-066 gives only the 380 floor.</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Ore panel</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> The stockpile, written one way everywhere (ADR-043 d3), and the income, which is a warning chip when it is nothing (ADR-047 d5, ADR-085 d1).</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ore.frame</td>
+<td>panel</td>
+<td>—</td>
+<td>—</td>
+<td><code>WINDOW_COLOR</code></td>
+<td>16, 16, ≈380, 44</td>
+<td>Hud.cpp:3144</td>
+</tr>
+<tr>
+<td>ore.stockpile.gem</td>
+<td>sprite <code>OreMark</code> (cut gem, ADR-085 d3; <code>Hud::Sprites</code> Hud.cpp:3020-3027)</td>
+<td>—</td>
+<td>—</td>
+<td><code>GOLD_COLOR</code></td>
+<td>28, 30.25, 13, 13 (side = round(22 × 0.6))</td>
+<td>Hud.cpp:3145, 1228-1232</td>
+</tr>
+<tr>
+<td>ore.stockpile.figure</td>
+<td>text, Title</td>
+<td><code>{WithThousands(ore)}</code>, e.g. <code>1,000</code></td>
+<td><code>Snapshot::ore</code> (Snapshot.h:539)</td>
+<td><code>GOLD_COLOR</code></td>
+<td>46, 23, ≈, ≈27</td>
+<td>Hud.cpp:3145, 1233, 2114-2125</td>
+</tr>
+<tr>
+<td>ore.income</td>
+<td>text, Figure, right edge at column − 12</td>
+<td><code>+{n}/s</code> when whole hundredths, else <code>+{n.n}/s</code></td>
+<td><code>Snapshot::oreIncomeHundredthsPerSecond</code> (Snapshot.h:540)</td>
+<td><code>NUMBERS_COLOR</code></td>
+<td>right edge ≈384, y 31.5, h ≈17</td>
+<td>Hud.cpp:3146-3151</td>
+</tr>
+<tr>
+<td>ore.income.chip</td>
+<td>chip: a tag, and the words on it</td>
+<td><code>+0/s</code></td>
+<td>income ≤ 0</td>
+<td>tag <code>WARNING_COLOR</code>, words <code>WINDOW_COLOR</code></td>
+<td>tag ≈344, 31.5, ≈40, 17; words at tag x + 4</td>
+<td>Hud.cpp:3152-3156, 1162-1168</td>
+</tr>
+</tbody>
+</table>
+<p><strong>States.</strong>
+- Income above 0: plain text in <code>NUMBERS_COLOR</code>.
+- Income of nothing: the chip.
+- The word "Ore" is not written (ADR-043 d3).
+- The gem stays put as the figure grows (ADR-046 d4).</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Status panel</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> What the Research Lab and the Shipyards are doing, and the fleet against its cap. Each line is a place to click (ADR-066).</p>
+<p><strong>Content</strong> (<code>StatusLinesOf</code>, Hud.cpp:281-414). Each line is a list of runs, each plain or a chip (<code>StatusRun</code>, Hud.h:473-479). A line may have a bar (<code>StatusBar</code>, Hud.h:483-490).</p>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>When</th>
+<th>Runs (verbatim)</th>
+<th>Bar</th>
+<th>Click</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Research, under way</td>
+<td>A finished Lab of the player's has a queue</td>
+<td><code>{topic name}</code>; then <code>· waiting for Ore</code> when the front job is at 0</td>
+<td>Under the words: share <code>jobPermille/1000</code>; figure <code>+{n}</code> when more topics are queued</td>
+<td><code>OpenResearch</code></td>
+<td>Hud.cpp:301-312</td>
+</tr>
+<tr>
+<td>Research, idle, a topic open</td>
+<td>The Lab's queue is empty, and some topic is open (<code>IsOpen</code>, Hud.cpp:258-266)</td>
+<td><code>Research Lab</code> then the chip <code>IDLE</code></td>
+<td>—</td>
+<td><code>OpenResearch</code></td>
+<td>Hud.cpp:296-297</td>
+</tr>
+<tr>
+<td>Research, all done</td>
+<td>The queue is empty and no topic is open</td>
+<td><code>Research: every open topic done</code></td>
+<td>—</td>
+<td><code>OpenResearch</code></td>
+<td>Hud.cpp:298-299</td>
+</tr>
+<tr>
+<td>Shipyards at the cap</td>
+<td><code>fleetCap &gt; 0</code>, and a Shipyard waits on the cap or no saved design fits</td>
+<td><code>Shipyards at the fleet cap</code>, plus <code>· Station upgrading, {p}%</code> or <code>· Station L{n}: +{cp}</code></td>
+<td>—</td>
+<td><code>Select</code> the Command Station, or else <code>OpenProduction</code> at the first Shipyard</td>
+<td>Hud.cpp:370-400</td>
+</tr>
+<tr>
+<td>Shipyards, counts</td>
+<td>A finished Shipyard exists and the cap does not hold them back</td>
+<td><code>Shipyards · BUILDING {b} · WAITING {w} ·</code> then <code>IDLE {i}</code>. <code>IDLE {i}</code> is a chip only when an idle Shipyard could start a ship now; otherwise it is plain</td>
+<td>—</td>
+<td><code>OpenProduction</code> at the first idle Shipyard by number, or at the first</td>
+<td>Hud.cpp:403-410, 336-346</td>
+</tr>
+<tr>
+<td>Fleet</td>
+<td><code>fleetCap &gt; 0</code>, under the Shipyards' line</td>
+<td><code>Fleet</code></td>
+<td>Beside the words: share <code>commandPoints/fleetCap</code>; figure <code>{cp} / {cap}</code></td>
+<td>Same as the Shipyards' line</td>
+<td>Hud.cpp:373-380, 399, 411-412</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Geometry</strong> (Hud.cpp:3241-3308).
+- <strong>Panel.</strong> At <code>16, 68</code>, the column's width wide, and 20 + Σ(22, plus 8 when the bar sits under the words) tall. Its place is always kept at 94 units (<code>STATUS_PANEL_KEPT_UNITS</code>, Hud.cpp:149), so the panels below do not move.
+- <strong>Words.</strong> In the Name face, <code>TEXT_COLOR</code>, from x 12, starting 10 down and following each other. A plain run is cut short to leave room for the runs after it; a chip never is.
+- <strong>Chips.</strong> A tag 4 units wider than the words on each side, and 22 tall, in <code>WARNING_COLOR</code>, with the words in <code>WINDOW_COLOR</code> (Hud.cpp:1162-1168).
+- <strong>Figure.</strong> In the Figure face, <code>NUMBERS_COLOR</code>, right edge at column − 12, top at the line + 4.5.
+- <strong>Bar under the words.</strong> <code>12, line + 24, column − 24, 4</code>.
+- <strong>Bar beside the words.</strong> From 8 after the words to 8 before the figure, 6 thick, at the line + 8. When the bar is under the words, the words stop 6 short of the figure instead (Hud.cpp:3270).
+- <strong>Bar colors.</strong> Track <code>BAR_TRACK_COLOR</code>, fill <code>BAR_FILL_COLOR</code>.
+- <strong>Press area.</strong> Each line's row spans the panel's width; the first row starts at the panel's top and the last ends at its bottom. Under the pointer the row is drawn in <code>CARD_COLOR</code>, and so is any other row whose click is the same (ADR-088 d1).</p>
+<p><strong>Example</strong> (<code>hud-busy-warships.json</code>, all sample values).</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Label</th>
+<th>Rect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>status.frame</td>
+<td>—</td>
+<td>16, 68, ≈380, 94</td>
+</tr>
+<tr>
+<td>row 0 words</td>
+<td><code>Large Hull</code></td>
+<td>28, 78</td>
+</tr>
+<tr>
+<td>row 0 figure</td>
+<td><code>+2</code></td>
+<td>right edge 384, y 82.5</td>
+</tr>
+<tr>
+<td>row 0 bar</td>
+<td>—</td>
+<td>28, 102, ≈356, 4</td>
+</tr>
+<tr>
+<td>row 1 words</td>
+<td><code>Shipyards · BUILDING 2 · WAITING 0 ·</code></td>
+<td>28, 108</td>
+</tr>
+<tr>
+<td>row 1 chip</td>
+<td><code>IDLE 1</code></td>
+<td>tag ≈286, 108, ≈55, 22</td>
+</tr>
+<tr>
+<td>row 2 words</td>
+<td><code>Fleet</code></td>
+<td>28, 130</td>
+</tr>
+<tr>
+<td>row 2 bar</td>
+<td>—</td>
+<td>≈71, 138, ≈249, 6</td>
+</tr>
+<tr>
+<td>row 2 figure</td>
+<td><code>29 / 30</code></td>
+<td>right edge 384, y 134.5</td>
+</tr>
+</tbody>
+</table>
+<p><strong>States.</strong>
+- No finished Lab and no finished Shipyard: no panel is drawn, but its place is kept.
+- With a finished Lab, each of the three Lab lines above.
+- With a Shipyard: the counts with or without the chip, or the line at the cap.
+- The fleet line appears when the match sets a cap.
+- The Command Station never has a status line (ADR-066 Consequences).</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Territory panel</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> The nodes each side holds against the map's, the player's cap, the domination tickets, and the drain (ADR-056, ADR-057, interface plan 2, task UI3.3). It shows only on a map with sectors (Hud.cpp:2476).</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect (match start)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>territory.frame</td>
+<td>panel</td>
+<td>—</td>
+<td>—</td>
+<td><code>WINDOW_COLOR</code></td>
+<td>16, 170, ≈380, 20 + 22·rows (86 with 3 rows)</td>
+<td>Hud.cpp:3176-3177</td>
+</tr>
+<tr>
+<td>territory.nodes.label</td>
+<td>text, Name</td>
+<td><code>Nodes</code></td>
+<td>—</td>
+<td><code>TEXT_COLOR</code></td>
+<td>28, 180</td>
+<td>Hud.cpp:3188, 3196</td>
+</tr>
+<tr>
+<td>territory.nodes.note</td>
+<td>text, Name</td>
+<td><code>cap {cap} of {nodes}</code>, or <code>of {nodes}</code> with no cap</td>
+<td><code>Snapshot::nodeCap</code> (Snapshot.h:562), <code>Snapshot::sectors.size()</code></td>
+<td><code>LABEL_COLOR</code></td>
+<td>after the label + 6</td>
+<td>Hud.cpp:3189-3190, 3194-3195</td>
+</tr>
+<tr>
+<td>territory.nodes.own</td>
+<td>text, Figure</td>
+<td><code>{own} :</code></td>
+<td>sectors whose <code>SectorView::holder</code> is the player (Hud.cpp:2483-2488)</td>
+<td><code>OWN_COLOR</code></td>
+<td>right edge at the enemy figure's left; y 184.5</td>
+<td>Hud.cpp:3183-3192</td>
+</tr>
+<tr>
+<td>territory.nodes.enemy</td>
+<td>text, Figure</td>
+<td><code>{enemy}</code></td>
+<td>sectors the enemy holds; a pirate-guarded sector counts for neither side (Hud.cpp:2486)</td>
+<td><code>ENEMY_COLOR</code></td>
+<td>right edge ≈384, y 184.5</td>
+<td>Hud.cpp:3191</td>
+</tr>
+<tr>
+<td>territory.tickets.*</td>
+<td>as Nodes</td>
+<td><code>Tickets</code>, <code>{own:,} :</code>, <code>{enemy:,}</code></td>
+<td><code>Snapshot::tickets</code> (Snapshot.h:581); only while both players have tickets, never in a world (ADR-084)</td>
+<td>as Nodes</td>
+<td>row at y 202</td>
+<td>Hud.cpp:3198-3202</td>
+</tr>
+<tr>
+<td>territory.drain</td>
+<td>text, Name; or a chip when it is the player's drain</td>
+<td><code>No drain</code>, or <code>{You\|Enemy} -{n} a minute · out in {m}:{ss}</code></td>
+<td><code>drainIntervalSeconds</code>, <code>drainTicketsPerNodeDifference</code> (Snapshot.h:586-587); Tuning.json <code>territory.drainIntervalSeconds</code> 3 and <code>drainTicketsPerNodeDifference</code> 1</td>
+<td>plain <code>TEXT_COLOR</code>; chip <code>WARNING_COLOR</code> + <code>WINDOW_COLOR</code></td>
+<td>row at y 224; a chip tag starts at x 24</td>
+<td>Hud.cpp:3203-3212, 2506-2526</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example.</strong> At the start of a skirmish (Tuning.json <code>territory.tickets</code> 1000, Command Station <code>nodes</code> 4): <code>Nodes</code> <code>cap 4 of 25</code> <code>1 : 1</code>, <code>Tickets</code> <code>1,000 : 1,000</code>, <code>No drain</code>.</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Alerts panel</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> What the player should know about fronts it is not looking at (ADR-059 d1-d2). The newest alert is a warning chip (ADR-085 d1).</p>
+<p><strong>What shows.</strong>
+- The alerts of the last 8 seconds (<code>Alerts::SHOWN_SECONDS</code>, Alerts.h:15), at most 4 (<code>SHOWN_ALERTS</code>, Alerts.h:18), newest first.
+- One kind of alert in one sector is not raised again within 20 s (<code>REPEAT_SECONDS</code>, Alerts.h:16), except a fired order (Alerts.cpp:57-60).</p>
+<p><strong>Geometry.</strong>
+- <strong>Panel:</strong> <code>16, 170 + territory height + 8, column, 20 + 22·n</code>. Without a territory panel it starts at y 170 (Hud.cpp:3219-3224).
+- <strong>Newest line:</strong> a chip whose tag starts at x 8, so its words line up with the others at x 12 (Hud.cpp:3228-3233).
+- <strong>Older lines:</strong> in the Name face, <code>TEXT_COLOR</code>, at x 12.
+- <strong>Lines take no click:</strong> the panel adds no press (Hud.cpp:3217-3238), but like any panel it covers clicks.
+- <strong>Space</strong> moves the camera to the newest alert (GameClient.cpp:661-666; KeyBindings.h:36).
+- <strong>On the minimap,</strong> each alert is a 14-unit square outlined in <code>WARNING_COLOR</code> (Hud.cpp:3608-3617).</p>
+<p><strong>Texts</strong> (Alerts.cpp:76-98; <code>{sector}</code> is <code>SectorView::nameUtf8</code>, or <code>the field</code>, Alerts.cpp:73):
+- <code>Relay suppressed: {sector}</code>
+- <code>Relay under attack: {sector}</code>
+- <code>Mining Rig lost: {sector}</code>
+- <code>Enemy ships in {sector}</code> or <code>Pirate ships in {sector}</code>
+- <code>Ship retreating: {sector}</code>
+- <code>Pirates cleared: {sector}</code>
+- <code>Order fired: {action}</code>, <code>Order held back: {action}</code> or <code>Order refused: {action}</code> (Alerts.cpp:32-45), where <code>{action}</code> is one of <code>move to {}</code>, <code>attack-move to {}</code>, <code>attack in {}</code>, <code>hold {}</code>, <code>patrol to {}</code> or <code>Mining Rig in {}</code> (Alerts.cpp:12-29).</p>
+<p><strong>Example</strong> (<code>hud-busy-warships.json</code>): panel <code>16, 264, ≈380, 86</code>; chip <code>Enemy ships in B2</code>, with its tag at <code>24, 274, ≈134, 22</code>.</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Hint</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> What a click on the ground will do, or what lies under the pointer.</p>
+<p><strong>Geometry</strong> (Hud.cpp:3311-3316): panel <code>640, 16, 640, 44</code>; the text is in the Name face, <code>TEXT_COLOR</code>, at <code>652, 27</code>, cut short at 616 units.</p>
+<p><strong>Texts, by priority.</strong> The placement text wins, because the hover texts are set only while the hint is empty (GameClient.cpp:742-743).</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Text (verbatim format)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A placement is armed</td>
+<td><code>Placing {structure name}: left-click to build, right-click to cancel</code> (<code>a structure</code> when the type is unknown)</td>
+<td>Hud.cpp:2551</td>
+</tr>
+<tr>
+<td>Placing a Relay at the node cap</td>
+<td><code>Relay: at the node cap; upgrade the Command Station to claim more</code></td>
+<td>Hud.cpp:2553-2554</td>
+</tr>
+<tr>
+<td>Pointer over a derelict</td>
+<td><code>Derelict: {ore:,} Ore</code>, then <code>, and part of {topic}'s research time</code> if any, <code>· salvaged {p}%</code> if begun, and <code>(last seen {m:ss} ago)</code> or <code>(last seen earlier)</code> when it is only remembered</td>
+<td>Hud.cpp:2135-2145, 455-460</td>
+</tr>
+<tr>
+<td>Pointer over a remembered structure</td>
+<td><code>{structure name} · last seen {m:ss} ago</code>, or <code>· last seen earlier</code>, then <code>, {p}% built</code> when unfinished</td>
+<td>Hud.cpp:2160-2168</td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Where the match runs</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>connection.frame</td>
+<td>panel</td>
+<td>—</td>
+<td>—</td>
+<td><code>WINDOW_COLOR</code></td>
+<td>right edge at 1904, y 16; w = min(text, 360) + 24; while silent, w is at least the width of <code>No word from the server · 999 s</code> + 8 + 24; h = 42, or 64 while silent. Skirmish ≈<code>1780, 16, 124, 42</code></td>
+<td>Hud.cpp:3325-3330, 158-159</td>
+</tr>
+<tr>
+<td>connection.where</td>
+<td>text, Name</td>
+<td><code>Local skirmish</code>, or <code>Server {host}:{port}</code> (an IPv6 host is written <code>[{host}]:{port}</code>)</td>
+<td><code>GameClient::m_server</code> ← <code>StartMatch(Hud::ServerName(...))</code> (WinMain.cpp:356; Hud.cpp:2221-2224)</td>
+<td><code>TEXT_COLOR</code></td>
+<td>x+12, y 26; cut at 360</td>
+<td>Hud.cpp:3323, 3331</td>
+</tr>
+<tr>
+<td>connection.silent</td>
+<td>chip</td>
+<td><code>No word from the server · {s} s</code> (s capped at 999)</td>
+<td><code>GameClient::m_silentSeconds</code>, reset by each snapshot and counted by frame time (GameClient.cpp:530-531, 600, 739); shown from 2 s (<code>SILENT_SECONDS</code>, Hud.h:469)</td>
+<td>tag <code>WARNING_COLOR</code>, words <code>WINDOW_COLOR</code></td>
+<td>tag at x+8, y 48, ≈, 22</td>
+<td>Hud.cpp:3332-3336</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Behavior.</strong>
+- The tag takes no click.
+- The designer, at its default place, covers it (ADR-086 d3).
+- The tag is never on the menu.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5207}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

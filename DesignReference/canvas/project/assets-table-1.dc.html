@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Per-model table, part 1 of 3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Per-model table · part 1 of 3</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Every row has two renders, <code>&lt;Set&gt;/&lt;Model&gt;_34.png</code> (3/4 view) and <code>&lt;Set&gt;/&lt;Model&gt;_top.png</code> (top view), 1024×1024 RGBA, and their web copies <code>_34_512.png</code> and <code>_top_512.png</code>, all under <code>DesignReference/_work/assets/models/</code>; <strong>every one is an approximation of the in-game look.</strong> Triangles are <code>indexCount / 3</code> of the <code>.nmf</code>; vertices its <code>vertexCount</code>. Bounds in mesh units are the raw <code>.nmf</code> min → max (x front, y up, z left: <code>Tools/BakeMeshes.py</code> docstring, <code>Hardpoints.h:20</code>); fitted bounds in meters are after <code>FitMesh</code>/<code>FitMeshAcross</code> (centered, so ± half the extent). <em>Drawn in game</em> is the size on the map: a ship at its fitted size (<code>ModelPose.scale</code> = 1, <code>Hardpoints.h:28</code>); a structure scaled by <code>2 × footprintRadiusMeters / lengthMeters</code> (<code>GameClient.cpp:1661-1664</code>, radius from <code>Tuning.json</code> via <code>Simulation.cpp:1069</code>); a derelict by <code>2 × radius / lengthMeters</code> of that derelict; a rock by its radius (2 m mesh). Crease lines are this tool's replay of <code>BuildCreaseLines</code> at 10°, summed over pieces.</p>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th>Model</th>
+<th>Look</th>
+<th>Mesh (<code>OutpostCommander/Assets/Models/…</code>)</th>
+<th>Kind</th>
+<th>Length m (key)</th>
+<th>Tris</th>
+<th>Verts</th>
+<th>Bounds, mesh units min → max</th>
+<th>Fitted, m (x × y × z)</th>
+<th>Drawn in game, m (x × y × z)</th>
+<th>Hardpoints</th>
+<th>Spinning parts</th>
+<th>Crease lines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Human</td>
+<td>Small</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Small.nmf</code></td>
+<td>ship</td>
+<td>20 (<code>sets[0].models[0].lengthMeters</code>)</td>
+<td>70</td>
+<td>210</td>
+<td>(-17.00, -2.50, -22.00) → (24.00, 5.00, 22.00)</td>
+<td>20.00 × 3.66 × 21.46</td>
+<td>20.0 × 3.7 × 21.5 (×1)</td>
+<td><code>exhaust</code> ×1, <code>gun</code> ×2</td>
+<td>0</td>
+<td>74</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Medium</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Medium.nmf</code></td>
+<td>ship</td>
+<td>35 (<code>sets[0].models[1].lengthMeters</code>)</td>
+<td>160</td>
+<td>480</td>
+<td>(-56.35, -8.00, -24.00) → (56.00, 16.00, 24.00)</td>
+<td>35.00 × 7.48 × 14.95</td>
+<td>35.0 × 7.5 × 15.0 (×1)</td>
+<td><code>exhaust</code> ×1, <code>gun</code> ×2</td>
+<td>0</td>
+<td>161</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Large</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Large.nmf</code></td>
+<td>ship</td>
+<td>60 (<code>sets[0].models[2].lengthMeters</code>)</td>
+<td>256</td>
+<td>768</td>
+<td>(-150.50, -70.00, -66.00) → (180.00, 61.00, 66.00)</td>
+<td>60.00 × 23.78 × 23.96</td>
+<td>60.0 × 23.8 × 24.0 (×1)</td>
+<td><code>exhaust</code> ×2, <code>gun</code> ×3</td>
+<td>0</td>
+<td>259</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Constructor</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Constructor.nmf</code></td>
+<td>ship</td>
+<td>24 (<code>sets[0].models[3].lengthMeters</code>)</td>
+<td>266</td>
+<td>798</td>
+<td>(-40.35, -11.41, -13.82) → (55.43, 12.80, 13.82)</td>
+<td>24.00 × 6.07 × 6.93</td>
+<td>24.0 × 6.1 × 6.9 (×1)</td>
+<td><code>exhaust</code> ×1</td>
+<td>0</td>
+<td>227</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>CommandStation_L1</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/CommandStation_L1.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[4].lengthMeters</code>)</td>
+<td>520</td>
+<td>1560</td>
+<td>(-237.00, -266.00, -454.00) → (214.82, 339.95, 454.00)</td>
+<td>60.00 × 80.47 × 120.58</td>
+<td>90.0 × 120.7 × 180.9 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×3</td>
+<td>0</td>
+<td>580</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>CommandStation_L2</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/CommandStation_L2.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[4].lengthMeters</code>)</td>
+<td>520</td>
+<td>1560</td>
+<td>(-262.00, -266.00, -454.00) → (237.92, 339.95, 454.00)</td>
+<td>66.39 × 80.47 × 120.58, across L1's widest 120.58 m</td>
+<td>99.6 × 120.7 × 180.9 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×3</td>
+<td>0</td>
+<td>580</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>CommandStation_L3</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/CommandStation_L3.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[4].lengthMeters</code>)</td>
+<td>520</td>
+<td>1560</td>
+<td>(-287.00, -266.00, -454.00) → (261.02, 339.95, 454.00)</td>
+<td>72.77 × 80.47 × 120.58, across L1's widest 120.58 m</td>
+<td>109.2 × 120.7 × 180.9 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×3</td>
+<td>0</td>
+<td>580</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>CommandStation_L4</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/CommandStation_L4.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[4].lengthMeters</code>)</td>
+<td>828</td>
+<td>2484</td>
+<td>(-400.00, -266.00, -454.00) → (420.00, 339.95, 454.00)</td>
+<td>108.89 × 80.47 × 120.58, across L1's widest 120.58 m</td>
+<td>163.3 × 120.7 × 180.9 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×6</td>
+<td>0</td>
+<td>916</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>CommandStation_L5</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/CommandStation_L5.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[4].lengthMeters</code>)</td>
+<td>1032</td>
+<td>3096</td>
+<td>(-411.93, -266.00, -454.00) → (420.00, 339.95, 454.00)</td>
+<td>110.48 × 80.47 × 120.58, across L1's widest 120.58 m</td>
+<td>165.7 × 120.7 × 180.9 (×1.5; <code>Tuning.json: structures[0].footprintRadiusMeters</code> = 45)</td>
+<td><code>gun</code> ×6</td>
+<td>0</td>
+<td>1108</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Shipyard_L1</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Shipyard_L1.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[5].lengthMeters</code>)</td>
+<td>392</td>
+<td>1176</td>
+<td>(-310.00, -60.00, -75.00) → (252.00, 70.00, 75.00)</td>
+<td>60.00 × 13.88 × 16.01</td>
+<td>80.0 × 18.5 × 21.4 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>382</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Shipyard_L2</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Shipyard_L2.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[5].lengthMeters</code>)</td>
+<td>456</td>
+<td>1368</td>
+<td>(-310.00, -60.00, -95.00) → (252.00, 70.00, 95.00)</td>
+<td>60.00 × 13.88 × 20.29, across L1's widest 60.00 m</td>
+<td>80.0 × 18.5 × 27.0 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>442</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Shipyard_L3</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Shipyard_L3.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[5].lengthMeters</code>)</td>
+<td>772</td>
+<td>2316</td>
+<td>(-310.00, -60.00, -95.00) → (252.00, 70.00, 245.00)</td>
+<td>60.00 × 13.88 × 36.30, across L1's widest 60.00 m</td>
+<td>80.0 × 18.5 × 48.4 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>754</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Shipyard_L4</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Shipyard_L4.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[5].lengthMeters</code>)</td>
+<td>920</td>
+<td>2760</td>
+<td>(-365.00, -60.00, -95.00) → (252.00, 70.00, 245.00)</td>
+<td>60.00 × 12.64 × 33.06, across L1's widest 60.00 m</td>
+<td>80.0 × 16.9 × 44.1 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>886</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Shipyard_L5</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Shipyard_L5.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[5].lengthMeters</code>)</td>
+<td>1236</td>
+<td>3708</td>
+<td>(-365.00, -60.00, -245.00) → (252.00, 70.00, 245.00)</td>
+<td>60.00 × 12.64 × 47.65, across L1's widest 60.00 m</td>
+<td>80.0 × 16.9 × 63.5 (×1.33; <code>Tuning.json: structures[1].footprintRadiusMeters</code> = 40)</td>
+<td>none</td>
+<td>0</td>
+<td>1198</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>ResearchLab_L1</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/ResearchLab_L1.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[0].models[6].lengthMeters</code>)</td>
+<td>288</td>
+<td>864</td>
+<td>(-116.00, -50.17, -118.00) → (116.00, 136.59, 118.00)</td>
+<td>12.00 × 9.66 × 12.21</td>
+<td>60.0 × 48.3 × 61.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>1: 40 tris, 8 s about (-0, 1, -0)</td>
+<td>250</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>ResearchLab_L2</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/ResearchLab_L2.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[0].models[6].lengthMeters</code>)</td>
+<td>344</td>
+<td>1032</td>
+<td>(-118.00, -50.17, -118.00) → (118.00, 136.59, 118.00)</td>
+<td>12.21 × 9.66 × 12.21, across L1's widest 12.21 m</td>
+<td>61.0 × 48.3 × 61.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>1: 40 tris, 8 s about (-0, 1, -0)</td>
+<td>298</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>ResearchLab_L3</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/ResearchLab_L3.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[0].models[6].lengthMeters</code>)</td>
+<td>480</td>
+<td>1440</td>
+<td>(-177.00, -50.17, -177.00) → (177.00, 136.59, 177.00)</td>
+<td>12.21 × 6.44 × 12.21, across L1's widest 12.21 m</td>
+<td>61.0 × 32.2 × 61.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>1: 40 tris, 8 s about (-0, 1, -0)</td>
+<td>418</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>ResearchLab_L4</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/ResearchLab_L4.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[0].models[6].lengthMeters</code>)</td>
+<td>576</td>
+<td>1728</td>
+<td>(-189.50, -50.17, -189.50) → (189.50, 136.59, 189.50)</td>
+<td>12.21 × 6.01 × 12.21, across L1's widest 12.21 m</td>
+<td>61.0 × 30.1 × 61.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>1: 40 tris, 8 s about (-0, 1, -0)</td>
+<td>514</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>ResearchLab_L5</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/ResearchLab_L5.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[0].models[6].lengthMeters</code>)</td>
+<td>704</td>
+<td>2112</td>
+<td>(-189.50, -50.17, -190.16) → (189.50, 136.59, 190.16)</td>
+<td>12.16 × 5.99 × 12.21, across L1's widest 12.21 m</td>
+<td>60.8 × 30.0 × 61.0 (×5; <code>Tuning.json: structures[2].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>3: 40 tris, 8 s about (-0, 1, -0); 24 tris, 5 s about (-0, 1, -0); 24 tris, 5 s about (-0, 1, -0)</td>
+<td>622</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>MiningRig</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/MiningRig.nmf</code></td>
+<td>structure</td>
+<td>4 (<code>sets[0].models[7].lengthMeters</code>)</td>
+<td>262</td>
+<td>786</td>
+<td>(-80.04, -80.00, -91.80) → (80.04, 57.55, 91.80)</td>
+<td>4.00 × 3.44 × 4.59</td>
+<td>50.0 × 43.0 × 57.4 (×12.5; <code>Tuning.json: structures[3].footprintRadiusMeters</code> = 25)</td>
+<td><code>gun</code> ×1</td>
+<td>0</td>
+<td>258</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>DefensePlatform</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/DefensePlatform.nmf</code></td>
+<td>structure</td>
+<td>4 (<code>sets[0].models[8].lengthMeters</code>)</td>
+<td>440</td>
+<td>1320</td>
+<td>(-102.00, -30.50, -102.00) → (102.00, 65.13, 102.00)</td>
+<td>4.00 × 1.88 × 4.00</td>
+<td>40.0 × 18.8 × 40.0 (×10; <code>Tuning.json: structures[4].footprintRadiusMeters</code> = 20)</td>
+<td><code>gun</code> ×6</td>
+<td>0</td>
+<td>418</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>Relay (ResearchLab_L1 mesh, tint 1.6, <code>structures[5].tint</code>)</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/ResearchLab_L1.nmf</code></td>
+<td>structure</td>
+<td>12 (<code>sets[0].models[6].lengthMeters</code>)</td>
+<td>288</td>
+<td>864</td>
+<td>(-116.00, -50.17, -118.00) → (116.00, 136.59, 118.00)</td>
+<td>12.00 × 9.66 × 12.21</td>
+<td>60.0 × 48.3 × 61.0 (×5; <code>Tuning.json: structures[5].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>1: 40 tris, 8 s about (-0, 1, -0)</td>
+<td>250</td>
+</tr>
+<tr>
+<td>Human</td>
+<td>RepairBay (Shipyard_L1 mesh, tint 0.6, <code>structures[6].tint</code>)</td>
+<td>approximation of the in-game look</td>
+<td><code>Human/Shipyard_L1.nmf</code></td>
+<td>structure</td>
+<td>60 (<code>sets[0].models[5].lengthMeters</code>)</td>
+<td>392</td>
+<td>1176</td>
+<td>(-310.00, -60.00, -75.00) → (252.00, 70.00, 75.00)</td>
+<td>60.00 × 13.88 × 16.01</td>
+<td>60.0 × 13.9 × 16.0 (×1; <code>Tuning.json: structures[6].footprintRadiusMeters</code> = 30)</td>
+<td>none</td>
+<td>0</td>
+<td>382</td>
+</tr>
+<tr>
+<td>Tarkan</td>
+<td>Small</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/Small.nmf</code></td>
+<td>ship</td>
+<td>20 (<code>sets[1].models[0].lengthMeters</code>)</td>
+<td>100</td>
+<td>300</td>
+<td>(-10.00, -2.10, -10.40) → (10.00, 2.40, 10.40)</td>
+<td>20.00 × 4.50 × 20.80</td>
+<td>20.0 × 4.5 × 20.8 (×1)</td>
+<td><code>exhaust</code> ×1, <code>gun</code> ×2</td>
+<td>0</td>
+<td>112</td>
+</tr>
+<tr>
+<td>Tarkan</td>
+<td>Medium</td>
+<td>approximation of the in-game look</td>
+<td><code>Tarkan/Medium.nmf</code></td>
+<td>ship</td>
+<td>35 (<code>sets[1].models[1].lengthMeters</code>)</td>
+<td>94</td>
+<td>282</td>
+<td>(-17.50, -3.40, -15.40) → (17.50, 4.60, 15.40)</td>
+<td>35.00 × 8.00 × 30.80</td>
+<td>35.0 × 8.0 × 30.8 (×1)</td>
+<td><code>exhaust</code> ×1, <code>gun</code> ×2</td>
+<td>0</td>
+<td>105</td>
+</tr>
+</tbody>
+</table></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3577}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

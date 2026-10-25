@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Derived stats and starting designs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">How a design&#x27;s stats are derived</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>A design is a hull, a drive and a weapon, with a module or none. Its stats are derived from those, never stored in the data (<code>ADR-014 §Decision 1</code>). The server and the designer call the same function, <code>DesignStatsOf</code>, on component views that the server sends with the player's research already applied (<code>ADR-017 §Decision 5</code>; <code>DesignStats.h:75-95</code>; <code>ShipDesign.cpp:38-84</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Stat</th>
+<th>Formula</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hull view hit points</td>
+<td><code>llround(hull.hitPoints × 100 × hullHitPointsFactor)</code> hundredths. Research applies before the drive.</td>
+<td><code>ShipDesign.cpp:42</code></td>
+</tr>
+<tr>
+<td>Design hit points</td>
+<td><code>llround(hullView.hp × drive.hitPointsFactor)</code> hundredths</td>
+<td><code>DesignStats.h:86</code></td>
+</tr>
+<tr>
+<td>Armor</td>
+<td><code>hull.armor × 100</code> hundredths. Nothing changes it.</td>
+<td><code>ShipDesign.cpp:43</code>; <code>DesignStats.h:87</code></td>
+</tr>
+<tr>
+<td>Speed</td>
+<td>hull speed × shipSpeedFactor (research) × drive.speedFactor × module.speedFactor (1.0 without a module)</td>
+<td><code>ShipDesign.cpp:44</code>; <code>DesignStats.h:81-82</code></td>
+</tr>
+<tr>
+<td>Turn rate</td>
+<td>hull turn rate × drive.turnRateFactor. Research never changes it.</td>
+<td><code>DesignStats.h:83-84</code>; <code>ADR-033 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td>the hull's</td>
+<td><code>DesignStats.h:85</code></td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>hull + drive + weapon + module, in whole Ore</td>
+<td><code>DesignStats.h:88</code></td>
+</tr>
+<tr>
+<td>Build time</td>
+<td>the hull's buildSeconds. A Shipyard's job advances by <code>shipyardBuildSpeedFactor</code> each tick.</td>
+<td><code>DesignStats.h:89</code>; <code>Simulation.cpp:2737-2741</code></td>
+</tr>
+<tr>
+<td>Damage, interval, range, splash</td>
+<td>the weapon's, with the interval divided by that weapon's fire-rate factor</td>
+<td><code>ShipDesign.cpp:64-74</code>; <code>DesignStats.h:90-93</code></td>
+</tr>
+<tr>
+<td>Module sight</td>
+<td>the module's sightMeters, or 0</td>
+<td><code>DesignStats.h:94</code></td>
+</tr>
+<tr>
+<td>Research factors</td>
+<td><code>1 + (sum of the percents on that rate) ÷ 100</code>. Percents on one rate add (+15% and +15% make +30%). Fire-rate percents are summed per weapon.</td>
+<td><code>Research.cpp:50-125</code> (factor at l.110); <code>ADR-033 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Research landing</td>
+<td>When a topic finishes, every design of the player's is re-derived. Each warship keeps its share of its hit points, rounded to the nearest hundredth and never below 1, and takes its design's speed.</td>
+<td><code>Simulation.cpp:3105-3151</code>; <code>ADR-017 §Decision 2</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Every hull × drive pair (no research)</h4>
+<p>Derived with the formulas above (<code>derive.py</code>). Two columns need a word:</p>
+<ul>
+<li><strong>Turn radius</strong> is speed ÷ turn rate in radians, at full speed. <code>ADR-039 §Context</code> quotes the same figures: 19.9 m for Small+Ion and 23.9 m for Large+Fusion.</li>
+<li><strong>Cost</strong> is the hull's and the drive's only; add the weapon's, and the module's if any.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Hull+Drive</th>
+<th>Hit points</th>
+<th>Armor</th>
+<th>Speed (m/s)</th>
+<th>with Sensor Array</th>
+<th>Turn (°/s)</th>
+<th>Turn radius (m)</th>
+<th>Hull+drive cost (Ore)</th>
+<th>Build (s)</th>
+<th>Command points</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Small+Ion</td>
+<td>198</td>
+<td>2</td>
+<td>78</td>
+<td>70.2</td>
+<td>225</td>
+<td>19.9</td>
+<td>156</td>
+<td>30</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Small+Fusion</td>
+<td>308</td>
+<td>2</td>
+<td>48</td>
+<td>43.2</td>
+<td>144</td>
+<td>19.1</td>
+<td>336</td>
+<td>30</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Small+Pulse</td>
+<td>165</td>
+<td>2</td>
+<td>96</td>
+<td>86.4</td>
+<td>270</td>
+<td>20.4</td>
+<td>216</td>
+<td>30</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Medium+Ion</td>
+<td>450</td>
+<td>8</td>
+<td>52</td>
+<td>46.8</td>
+<td>150</td>
+<td>19.9</td>
+<td>390</td>
+<td>60</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Medium+Fusion</td>
+<td>700</td>
+<td>8</td>
+<td>32</td>
+<td>28.8</td>
+<td>96</td>
+<td>19.1</td>
+<td>570</td>
+<td>60</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Medium+Pulse</td>
+<td>375</td>
+<td>8</td>
+<td>64</td>
+<td>57.6</td>
+<td>180</td>
+<td>20.4</td>
+<td>450</td>
+<td>60</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Large+Ion</td>
+<td>1,080</td>
+<td>14</td>
+<td>32.5</td>
+<td>29.25</td>
+<td>75</td>
+<td>24.8</td>
+<td>960</td>
+<td>120</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Large+Fusion</td>
+<td>1,680</td>
+<td>14</td>
+<td>20</td>
+<td>18</td>
+<td>48</td>
+<td>23.9</td>
+<td>1,140</td>
+<td>120</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Large+Pulse</td>
+<td>900</td>
+<td>14</td>
+<td>40</td>
+<td>36</td>
+<td>90</td>
+<td>25.5</td>
+<td>1,020</td>
+<td>120</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hit points with hull research</strong> (<code>derive_upgraded.py</code>; formula <code>ShipDesign.cpp:42</code> × <code>DesignStats.h:86</code>). Hull Plating gives +15% (<code>Tuning.json:68-69</code>), Composite Plating another +15% (l.88-89), and Ablative Armour another +5% (l.100-101).</p>
+<table>
+<thead>
+<tr>
+<th>Hull+Drive</th>
+<th>none</th>
+<th>+15%</th>
+<th>+30%</th>
+<th>+35%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Small+Ion</td>
+<td>198</td>
+<td>227.7</td>
+<td>257.4</td>
+<td>267.3</td>
+</tr>
+<tr>
+<td>Small+Fusion</td>
+<td>308</td>
+<td>354.2</td>
+<td>400.4</td>
+<td>415.8</td>
+</tr>
+<tr>
+<td>Small+Pulse</td>
+<td>165</td>
+<td>189.75</td>
+<td>214.5</td>
+<td>222.75</td>
+</tr>
+<tr>
+<td>Medium+Ion</td>
+<td>450</td>
+<td>517.5</td>
+<td>585</td>
+<td>607.5</td>
+</tr>
+<tr>
+<td>Medium+Fusion</td>
+<td>700</td>
+<td>805</td>
+<td>910</td>
+<td>945</td>
+</tr>
+<tr>
+<td>Medium+Pulse</td>
+<td>375</td>
+<td>431.25</td>
+<td>487.5</td>
+<td>506.25</td>
+</tr>
+<tr>
+<td>Large+Ion</td>
+<td>1,080</td>
+<td>1,242</td>
+<td>1,404</td>
+<td>1,458</td>
+</tr>
+<tr>
+<td>Large+Fusion</td>
+<td>1,680</td>
+<td>1,932</td>
+<td>2,184</td>
+<td>2,268</td>
+</tr>
+<tr>
+<td>Large+Pulse</td>
+<td>900</td>
+<td>1,035</td>
+<td>1,170</td>
+<td>1,215</td>
+</tr>
+</tbody>
+</table>
+<p>(The HUD writes each one rounded up to a whole point, <code>Hud.cpp:166-170</code>.)</p>
+<p><strong>Fire intervals with research</strong> (<code>derive_upgraded.py</code>). The simulation rounds each interval once to whole milliticks (<code>Simulation.cpp:1572-1573</code>); <code>ADR-017 §Consequences</code> says the same.</p>
+<table>
+<thead>
+<tr>
+<th>Weapon</th>
+<th>Topics (percent, tier)</th>
+<th>Interval with all its topics</th>
+<th>Milliticks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mass Driver</td>
+<td>Mass Driver Calibration +10% (T1), Coilgun Mass Drivers +10% (T3)</td>
+<td>0.4 → 0.3636 (first) → 0.3333 s (both)</td>
+<td>7,273 → 6,667</td>
+</tr>
+<tr>
+<td>Lance</td>
+<td>Lance Focusing +15% (T1), Lance Capacitors +10% (T2)</td>
+<td>2.7 → 2.3478 → 2.16 s</td>
+<td>46,957 → 43,200</td>
+</tr>
+<tr>
+<td>Missile Rack</td>
+<td>Missile Guidance +15% (T2)</td>
+<td>2.0 → 1.7391 s</td>
+<td>34,783</td>
+</tr>
+<tr>
+<td>Flak Battery</td>
+<td>Proximity Fuses +15% (T3)</td>
+<td>0.5 → 0.4348 s</td>
+<td>8,696</td>
+</tr>
+<tr>
+<td>Rail Cannon</td>
+<td>none</td>
+<td>6.0 s</td>
+<td>120,000</td>
+</tr>
+<tr>
+<td>Defence gun</td>
+<td>Defence Autoloader +20% (T2)</td>
+<td>1.0 → 0.8333 s</td>
+<td>16,667</td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Designs, starting designs and names</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Starting designs</td>
+<td>Every hull × drive × weapon of components no topic unlocks, in hull, then drive, then weapon order: Small and Medium × Ion × Mass Driver and Lance, <strong>four designs</strong></td>
+<td><code>ShipDesign.cpp:103-118</code>; <code>ADR-014 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Their short names (ADR-069)</td>
+<td><strong>Swarm</strong>: Small+Ion+Mass Driver, S·I·MD, 261 Ore, 30 s. <strong>Picket</strong>: Small+Ion+Lance, S·I·L, 411 Ore, 30 s. <strong>Brawler</strong>: Medium+Ion+Mass Driver, M·I·MD, 495 Ore, 60 s. <strong>Lancer</strong>: Medium+Ion+Lance, M·I·L, 645 Ore, 60 s.</td>
+<td><code>Tuning.json: startingDesigns</code> l.114-117; <code>ADR-069 §Decision 1</code>; costs and times derived from <code>DesignStats.h:88-89</code></td>
+</tr>
+<tr>
+<td>A starting design's name</td>
+<td>The short name the data gives it, or else its components' name</td>
+<td><code>ShipDesign.cpp:121-130</code>; <code>ADR-069 §Decision 3</code></td>
+</tr>
+<tr>
+<td>A design's full name</td>
+<td>"Hull+Drive+Weapon", then "+Module" when it has one, e.g. "Small+Ion+Mass Driver+Sensor Array". The designer uses the module's initials where the whole name would pass 32 characters.</td>
+<td><code>ShipDesign.cpp:132-140</code>; <code>Designer.cpp:122-150</code>; <code>ADR-058 §Decision 6</code></td>
+</tr>
+<tr>
+<td>A module on a starting design's components</td>
+<td>Takes the design's name and the module's initials, "Lancer+SA"</td>
+<td><code>Designer.cpp:134-145</code>; <code>ADR-069 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Abbreviation</td>
+<td>The capital initial of each word: hulls S, M, L; drives I, F, P; weapons MD, L, MR, FB, RC; module SA. A design's code is the initials joined by "·", e.g. "S·I·MD·SA".</td>
+<td><code>DesignStats.h:23-37</code>; <code>Hud.cpp:420-432</code>; Phase 1 §5 "What the designer shows for each"</td>
+</tr>
+<tr>
+<td>Name rule</td>
+<td>1–32 printable ASCII characters, not all spaces</td>
+<td><code>Command.h:68-84</code>; <code>ADR-017 §Decision 6</code></td>
+</tr>
+<tr>
+<td>A saved design's components</td>
+<td>Never change. Other components are a new design, and a rename keeps its components.</td>
+<td><code>ADR-017 §Decision 6</code></td>
+</tr>
+<tr>
+<td>Queue on unsaved picks</td>
+<td>Saves the design first, and the queue follows once the server has it. A save not back within 40 ticks (2 s) is dropped.</td>
+<td><code>Designer.h:112-121</code>; <code>ADR-023 §Decision 1-4</code></td>
+</tr>
+<tr>
+<td>A design's retreat</td>
+<td>Never, Half (50%) or Quarter (25%); Quarter by default. Every ship built to the design starts with it.</td>
+<td><code>RetreatThreshold.h:7-30</code>; <code>ADR-075 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Pirates' designs</td>
+<td>Base-level stats, with no research. Any component will do, since nothing unlocks a pirate's design.</td>
+<td><code>Tuning.h:257-258</code>; <code>Tuning.json: pirates</code> l.119-129</td>
+</tr>
+<tr>
+<td>Matchup designs</td>
+<td>A starting design where one matches, otherwise saved as "Matchup design N". A matchup's ships never retreat.</td>
+<td><code>Simulation.cpp:769-782</code>; <code>ADR-083 §Decision 2</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 2808}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

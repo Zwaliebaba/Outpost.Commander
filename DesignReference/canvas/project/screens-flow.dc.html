@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screens: inventory and flow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 13</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Screens</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">Every screen and window in each state, drawn at 1920×1080 from the layout Hud.cpp computes, with numbered callouts that cite the rule behind each element.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>Hud.cpp</code> <code>A4 layouts</code> <code>ADR-013/015/031/043/066/070/088</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Flow</div><div style="padding:20px 24px 24px 24px"><svg role="img" aria-label="Screen flow" width="1280" height="580" viewBox="0 0 1280 580" style="display:block"><defs><marker id="fa" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#89AFE2"/></marker></defs><line x1="280.0" y1="72.0" x2="360.0" y2="72.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="320.0" y="66.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">loaded (window shown)</text><line x1="280.0" y1="72.0" x2="680.0" y2="72.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="480.0" y="66.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">--join &lt;file&gt;, --measure</text><line x1="160.0" y1="104.0" x2="160.0" y2="260.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="160.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">load failure</text><line x1="600.0" y1="72.0" x2="680.0" y2="72.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="640.0" y="66.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">Easy / Normal / Hard skirmish, Join world</text><line x1="480.0" y1="104.0" x2="480.0" y2="260.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="480.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">join fails</text><line x1="433.5" y1="104.0" x2="206.5" y2="260.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="320.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">Quit</text><line x1="920.0" y1="72.0" x2="1000.0" y2="72.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="960.0" y="66.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">first snapshot</text><line x1="1114.0" y1="104.0" x2="1114.0" y2="260.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="1114.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">D P R F1 O, buttons</text><line x1="1126.0" y1="260.0" x2="1126.0" y2="104.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="1126.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">×, Esc, key</text><line x1="1120.0" y1="104.0" x2="1120.0" y2="480.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="1120.0" y="286.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">snapshot with a report</text><line x1="1073.5" y1="104.0" x2="846.5" y2="260.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="960.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">matchOver / restartTick</text><line x1="753.5" y1="260.0" x2="526.5" y2="104.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="640.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">Back to menu</text><line x1="1096.7" y1="104.0" x2="823.3" y2="480.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="960.0" y="286.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">no snapshot 2 s</text><line x1="753.5" y1="480.0" x2="526.5" y2="324.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="640.0" y="396.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">receive throws</text><line x1="1026.9" y1="104.0" x2="573.1" y2="260.0" stroke="#89AFE2" stroke-width="1.5" marker-end="url(#fa)"/><text x="800.0" y="176.0" text-anchor="middle" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:11px" fill="#D3E3F7">connection lost</text><rect x="40" y="40" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="160.0" y="77.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Launch</text><rect x="360" y="40" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="480.0" y="77.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Main menu</text><rect x="40" y="260" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="160.0" y="297.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Exit / message box</text><rect x="680" y="40" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="800.0" y="68.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Match, before its first</text><text x="800.0" y="86.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">snapshot</text><rect x="1000" y="40" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="1120.0" y="77.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Match HUD</text><rect x="1000" y="260" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="1120.0" y="288.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Windows: Designer, Production,</text><text x="1120.0" y="306.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Research, Controls, Orders</text><rect x="1000" y="480" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="1120.0" y="517.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Away window</text><rect x="680" y="260" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="800.0" y="288.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">End banner: Victory, Defeat,</text><text x="800.0" y="306.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Draw, Empire fallen</text><rect x="680" y="480" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="800.0" y="517.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">HUD: No word from the server</text><rect x="360" y="260" width="240" height="64" fill="#181E2B" stroke="#89AFE2" stroke-width="1"/><text x="480.0" y="297.0" text-anchor="middle" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:15px" fill="#EAF1FA">Main menu with a notice</text></svg><div class="md"><table>
+<thead>
+<tr>
+<th>From</th>
+<th>Trigger</th>
+<th>To</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Launch</td>
+<td>The window is hidden while the server, AI settings, assets and atlas load in parallel</td>
+<td>Main menu (default, or with Join world)</td>
+<td>WinMain.cpp:273-316, 348, 366; ADR-049</td>
+</tr>
+<tr>
+<td>Launch</td>
+<td><code>--join &lt;file&gt;</code></td>
+<td>Match, joined world</td>
+<td>WinMain.cpp:226-235, 367-368</td>
+</tr>
+<tr>
+<td>Launch</td>
+<td><code>--measure</code>, <code>--load</code>, <code>--stress</code></td>
+<td>Match (skirmish against the Normal AI)</td>
+<td>WinMain.cpp:251-252, 369-370; ADR-065 d4</td>
+</tr>
+<tr>
+<td>Launch, or anywhere</td>
+<td>A load failure, or a lost device</td>
+<td>Message box, then exit</td>
+<td>WinMain.cpp:95-101, 559-572</td>
+</tr>
+<tr>
+<td>Main menu</td>
+<td><code>Easy skirmish</code> / <code>Normal skirmish</code> / <code>Hard skirmish</code></td>
+<td>Match before its first snapshot, then the HUD with <code>Local skirmish</code></td>
+<td>GameClient.cpp:883-886; WinMain.cpp:487-490, 319-344</td>
+</tr>
+<tr>
+<td>Main menu</td>
+<td><code>Join world</code> (shown with a join file)</td>
+<td>Match on the dedicated server, tag <code>Server {address}</code>; the frame loop blocks up to 10 s for the welcome</td>
+<td>WinMain.cpp:505-508, 349-358; QuicTransport.cpp:9, 26-35</td>
+</tr>
+<tr>
+<td>Main menu</td>
+<td>Join fails</td>
+<td>Main menu with notice <code>Could not join the world: {error}</code></td>
+<td>WinMain.cpp:359-364</td>
+</tr>
+<tr>
+<td>Main menu</td>
+<td><code>Quit</code></td>
+<td>Exit</td>
+<td>WinMain.cpp:509-511</td>
+</tr>
+<tr>
+<td>Match, before its first snapshot</td>
+<td>First snapshot</td>
+<td>HUD; the camera centres on the player's ships</td>
+<td>GameClient.cpp:548-567, 689-775</td>
+</tr>
+<tr>
+<td>HUD</td>
+<td>D / P / R / F1 / O, a window button, a status line, a ship bar, the Shipyards' line at the cap</td>
+<td>Window opened or brought to the front; the Command Station selected</td>
+<td>GameClient.cpp:645-674, 896-923, 957-963</td>
+</tr>
+<tr>
+<td>HUD</td>
+<td>First snapshot with an away report</td>
+<td>Away window opens</td>
+<td>GameClient.cpp:539-544</td>
+</tr>
+<tr>
+<td>Window</td>
+<td>×, Esc (the front one), its key again</td>
+<td>Window closed</td>
+<td>GameClient.cpp:659-660, 801-807, 987-991</td>
+</tr>
+<tr>
+<td>HUD</td>
+<td>No snapshot for 2 s or more</td>
+<td>Tag shows the <code>No word from the server · {s} s</code> chip, until the next snapshot</td>
+<td>Hud.cpp:3324-3336</td>
+</tr>
+<tr>
+<td>HUD</td>
+<td>Receive throws: the connection closed, with the server's reason when it gave one</td>
+<td>Main menu with notice <code>The connection to the server was lost: {reason}</code></td>
+<td>WinMain.cpp:409-416, 454-467; QuicTransport.cpp:59-75; ADR-078 d10</td>
+</tr>
+<tr>
+<td>HUD</td>
+<td><code>Snapshot::matchOver</code></td>
+<td>Banner <code>Victory</code> / <code>Defeat</code> / <code>Draw</code> over the running world</td>
+<td>Hud.cpp:2197-2218</td>
+</tr>
+<tr>
+<td>HUD (world)</td>
+<td><code>Snapshot::restartTick</code></td>
+<td>Banner <code>Empire fallen</code>; the seat restarts</td>
+<td>Hud.cpp:2188-2196; ADR-084 d7</td>
+</tr>
+<tr>
+<td>Banner</td>
+<td><code>Back to menu</code></td>
+<td>Main menu; the next skirmish's server is made if needed</td>
+<td>GameClient.cpp:890-892; WinMain.cpp:491-504</td>
+</tr>
+<tr>
+<td>Any screen</td>
+<td>Ctrl+= / Ctrl+-</td>
+<td>Same screen at the next or previous interface step</td>
+<td>GameClient.cpp:779-799</td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">State inventory</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Screen</th>
+<th>State</th>
+<th>Layout JSON (<code>DesignReference/_work/A4/layouts/</code>)</th>
+<th>Trigger, with its source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Startup</td>
+<td>Loading: no screen</td>
+<td>none: the window is hidden</td>
+<td>Launch: the window is created hidden and shown once loaded (WinMain.cpp:273-316, ADR-049 d3)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Main menu</td>
+<td>Default</td>
+<td><code>menu-default.json</code></td>
+<td>After loading (WinMain.cpp:316, 366), or Back to menu (WinMain.cpp:491-496)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Main menu</td>
+<td>Join file present</td>
+<td><code>menu-join-world.json</code></td>
+<td><code>Documents\Outpost Commander\Join.json</code> exists (WinMain.cpp:114-123, 348)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Main menu</td>
+<td>Lost connection, with a notice</td>
+<td><code>menu-connection-lost.json</code></td>
+<td>Receive throws (WinMain.cpp:409-416, 454-460)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Main menu</td>
+<td>Failed join, with a notice</td>
+<td><code>menu-join-failed.json</code></td>
+<td>The join throws (WinMain.cpp:359-364)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Main menu</td>
+<td>Interface at 125%</td>
+<td><code>menu-scale-125.json</code></td>
+<td>Ctrl+= (GameClient.cpp:779-799)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Match</td>
+<td>Before the first snapshot</td>
+<td><code>match-awaiting-first-snapshot.json</code> (no elements)</td>
+<td><code>StartMatch</code> (GameClient.cpp:472-478); no HUD until a snapshot arrives (GameClient.cpp:689, 1291-1293)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Match HUD</td>
+<td>Start of a skirmish, nothing selected</td>
+<td><code>hud-match-start.json</code></td>
+<td>The first snapshot</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Match HUD</td>
+<td>Busy: 12 warships, attack-move armed, pointer over Stop</td>
+<td><code>hud-busy-warships.json</code></td>
+<td>Example of a whole HUD</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Match HUD</td>
+<td>Busy, at 110%</td>
+<td><code>hud-scale-110.json</code></td>
+<td>Ctrl+= in a match (ADR-070)</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Match HUD</td>
+<td>Constructors selected: build buttons</td>
+<td><code>hud-constructors.json</code></td>
+<td>Selection holds a Constructor (Hud.cpp:2805-2828)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Match HUD</td>
+<td>Placing a Relay: hint, claimable sectors</td>
+<td><code>hud-placing-relay.json</code></td>
+<td>A Build button (GameClient.cpp:841-843)</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Match HUD</td>
+<td>Relay at the node cap</td>
+<td><code>hud-relay-node-cap.json</code></td>
+<td><code>AtNodeCap</code> (Hud.cpp:2547, 2553-2554, 2820)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Match HUD</td>
+<td>One ship: one bar, Hold sector armed</td>
+<td><code>hud-one-ship.json</code></td>
+<td>A one-ship selection</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Match HUD</td>
+<td>Shipyard selected: work line, next level, key caps</td>
+<td><code>hud-shipyard-selected.json</code></td>
+<td>A structure selected on its own (Hud.cpp:2560-2702)</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Match HUD</td>
+<td>Command Station upgrading: note and progress bar</td>
+<td><code>hud-station-upgrading.json</code></td>
+<td><code>upgradePermille</code> set (Hud.cpp:2693, 2696)</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Match HUD</td>
+<td>Research Lab: NEEDS RESEARCH</td>
+<td><code>hud-lab-needs-research.json</code></td>
+<td>The next level's prerequisites are missing (Hud.cpp:2679-2695)</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Match HUD</td>
+<td>Hint over a derelict</td>
+<td><code>hud-derelict-hint.json</code></td>
+<td>Pointer over a derelict (GameClient.cpp:742-749)</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Match HUD</td>
+<td>Dedicated server silent 5 s</td>
+<td><code>hud-server-silent.json</code></td>
+<td>No snapshot for at least 2 s (Hud.cpp:3324, Hud.h:469)</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Match end</td>
+<td>Victory banner</td>
+<td><code>hud-end-victory.json</code></td>
+<td><code>Snapshot::matchOver</code> (Hud.cpp:2197-2218)</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Match end</td>
+<td>World: "Empire fallen" banner</td>
+<td><code>hud-end-empire-fallen.json</code></td>
+<td><code>Snapshot::restartTick</code> (Hud.cpp:2188-2196)</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Window</td>
+<td>Designer, saved design loaded</td>
+<td><code>window-designer-default.json</code></td>
+<td>D, or the Ship designer button</td>
+</tr>
+<tr>
+<td>23</td>
+<td>Window</td>
+<td>Designer, previewing a hovered part</td>
+<td><code>window-designer-preview.json</code></td>
+<td>Pointer over a part card (Hud.cpp:622-635)</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Window</td>
+<td>Designer, new picks: typing, invalid name, Needs Shipyard L2</td>
+<td><code>window-designer-unsaved-editing.json</code></td>
+<td>A press on the name field (<code>EditName</code>)</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Window</td>
+<td>Designer, no Shipyard</td>
+<td><code>window-designer-no-shipyard.json</code></td>
+<td>No finished Shipyard (Hud.cpp:591)</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Window</td>
+<td>Production on a Shipyard</td>
+<td><code>window-production-shipyard.json</code></td>
+<td>P, or the Production button</td>
+</tr>
+<tr>
+<td>27</td>
+<td>Window</td>
+<td>Production on the Command Station: waiting for Ore</td>
+<td><code>window-production-station.json</code></td>
+<td>The station is the target</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Window</td>
+<td>Production with no producer</td>
+<td><code>window-production-none.json</code></td>
+<td>No finished producer (Hud.cpp:2838-2841)</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Window</td>
+<td>Research, page 1</td>
+<td><code>window-research-page1.json</code></td>
+<td>R, the Research button, or the status line</td>
+</tr>
+<tr>
+<td>30</td>
+<td>Window</td>
+<td>Research with no Lab</td>
+<td><code>window-research-no-lab.json</code></td>
+<td>No Lab (Hud.cpp:2902)</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Window</td>
+<td>Controls</td>
+<td><code>window-controls.json</code></td>
+<td>F1</td>
+</tr>
+<tr>
+<td>32</td>
+<td>Window</td>
+<td>Orders: time of day, Give enabled</td>
+<td><code>window-orders-time-of-day.json</code></td>
+<td>O</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Window</td>
+<td>Orders: event trigger with a target, Give dim</td>
+<td><code>window-orders-event-disabled.json</code></td>
+<td>O</td>
+</tr>
+<tr>
+<td>34</td>
+<td>Window</td>
+<td>While you were away</td>
+<td><code>window-away.json</code></td>
+<td>A snapshot with <code>away</code> (GameClient.cpp:539-544)</td>
+</tr>
+<tr>
+<td>35</td>
+<td>Windows</td>
+<td>Production, research and designer together, at their defaults</td>
+<td><code>window-three-windows-default.json</code></td>
+<td>Opened in that order</td>
+</tr>
+</tbody>
+</table>
+<p>Some states differ from a drawn one only in text or color, so they have no file of their own. Each is described in its section below.</p>
+<ul>
+<li><strong>Selection panel:</strong> a remembered structure, a Mining Rig, more than 24 ships, and SAVE against RENAME against UPDATE.</li>
+<li><strong>Queues:</strong> a queue waiting for the fleet cap, and a full queue.</li>
+<li><strong>Status panel:</strong> a Lab with every open topic done, and the Shipyards at the fleet cap.</li>
+<li><strong>Banners:</strong> Defeat, Draw, "A fleet destroyed." and "Out of time.".</li>
+</ul>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3936}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

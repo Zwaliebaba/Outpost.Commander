@@ -74,6 +74,19 @@ def table_parts(text, parts):
   return out
 
 
+def split_at(text, parts, pattern=r"^#{2,3} "):
+  """Splits markdown into `parts` chunks of about equal length, each starting at a heading matching `pattern`."""
+  starts = [m.start() for m in re.finditer(pattern, text, flags=re.M)]
+  target = len(text) / parts
+  cuts, next_cut = [0], target
+  for st in starts:
+    if st >= next_cut and len(cuts) < parts:
+      cuts.append(st)
+      next_cut = st + target
+  cuts.append(len(text))
+  return [text[a:b] for a, b in zip(cuts, cuts[1:])]
+
+
 def card(title, inner, label=None):
   return panel(title, inner, label)
 
@@ -501,7 +514,8 @@ def build_all():
            f'Nothing was built or run: the container had no Windows, MSBuild or GPU. Screen geometry is derived from <code>Hud.cpp</code>\'s arithmetic, '
            f'and model images are approximations rendered from the shipped meshes.</p></div>'
            f'<div><h3>How to read a source</h3><table><tbody>{how_rows}</tbody></table><h3>Chapters</h3><ol>{chapters}</ol></div></div>')
-  board("Main", "p01", "Cover", W, doc(cover + "<div style='height:36px'></div>" + panel("Scope and sources", scope) + footer_note(), W))
+  board("Main", "p01", "Cover", W, doc(cover + "<div style='height:36px'></div>" + panel("In this reference", stats()) +
+                                       panel("Scope and sources", scope) + footer_note(), W))
 
   # 02 The game
   board("game-pitch", "p02", "The game: pitch and pillars", W, doc(
@@ -519,7 +533,8 @@ def build_all():
     card("World loop", flow(steps_of(world_loop), 4), label="a persistent world on a dedicated server") +
     card("Match flow (skirmish)", sec("A3/A3.md", "9. Match flow")) +
     card("Tick rate and wall time", sec("A1/A1.md", "Tick rate and wall time")) + footer_note(), W))
-  board("glossary", "p02", "Glossary", W, doc(card("Glossary", md(demote(read("glossary.md"), 1))) + footer_note(), W))
+  for k, part in enumerate(table_parts(demote(read("glossary.md"), 1), 2), 1):
+    board(f"glossary-{k}", "p02", f"Glossary, part {k} of 2", W, doc(card("Glossary", md(part), label=f"part {k} of 2") + footer_note(), W))
 
   # 03 Sides
   sides = []
@@ -764,10 +779,42 @@ def build_all():
                  ["conflicts.md", "gaps.md", "R/summary.md", "R/leak-check.md"]) +
     card("Summary", md(demote(read("R/summary.md"), 1))) +
     card("Horizon and self-play leak check", md(demote(read("R/leak-check.md"), 1))) + footer_note(), W))
-  conflicts = read("conflicts.md")
-  board("open-conflicts", "p17", "Conflicts", W, doc(card("Conflicts", md(demote(conflicts, 1))) + footer_note(), W))
+  parts = split_at(demote(read("conflicts.md"), 1), 3, pattern=r"^#{3,4} ")
+  for k, part in enumerate(parts, 1):
+    board(f"open-conflicts-{k}", "p17", f"Conflicts, part {k} of {len(parts)}", W,
+          doc(card("Conflicts", md(part), label=f"part {k} of {len(parts)}") + footer_note(), W))
   board("open-gaps", "p17", "Gaps", W, doc(card("Gaps", md(demote(read("gaps.md"), 1))) + footer_note(), W))
   return frames
+
+
+def stats():
+  """Counts read from the work files, not typed."""
+  srcpat = re.compile(r"`([^`]*(?:\.cpp|\.h|\.json|\.hlsl|\.md|\.py|ADR-\d{3})[^`]*)`")
+  files = [f"A{i}/A{i}.md" for i in range(1, 8)] + ["conflicts.md", "gaps.md", "glossary.md"]
+  citations = sum(len(srcpat.findall(read(f))) for f in files)
+  conflicts = len(re.findall(r"^#+ C-\d+", read("conflicts.md"), flags=re.M))
+  gaps = len(re.findall(r"G-\d{3}", read("gaps.md")))
+  gaps = len(set(re.findall(r"G-\d{3}", read("gaps.md"))))
+  terms = sum(1 for l in read("glossary.md").splitlines() if l.startswith("|")) - 2
+  idx = json.loads((WORK / "A4" / "layouts" / "_index.json").read_text())
+  renders = json.loads(read("A6/renders.json"))
+  models = sum(len(s.get("models", [])) for s in MODELS["sets"] if "models" in s)
+  cells = [
+    (f"{len(idx) + 1}", "screen states drawn", "every state in A4's inventory, at 1920×1080"),
+    ("6", "floating windows", "Designer, Production, Research, Controls, Orders, Away"),
+    (f"{models}", "models in Models.json", "Human and Tarkan, 3 asteroids; Pirate and Wreck reuse meshes"),
+    (f"{renders.get('count', {}).get('total', '') if isinstance(renders.get('count'), dict) else renders.get('count', '')}", "images rendered", "A6 renders.json"),
+    (f"{len(TUNING['research'])}", "research topics", "Tuning.json: research"),
+    (f"{citations:,}", "source citations", "in the agents' files this canvas is built from"),
+    (f"{conflicts}", "conflicts", "code's value shown; 5 for the owner"),
+    (f"{gaps}", "gaps", "Not specified, or a rule with no surface"),
+    (f"{terms}", "glossary terms", "as the game spells them"),
+  ]
+  return (f'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px">' + "".join(
+    f'<div style="padding:12px 16px;background:{C["FIELD_COLOR"]};border:1px solid {C["EDGE_COLOR"]}">'
+    f'<div style="font-family:{MONO};font-weight:700;font-size:34px;color:{C["TEXT_COLOR"]}">{esc(a)}</div>'
+    f'<div style="font-family:{LABEL};font-weight:600;font-size:16px;color:{C["ROW_LABEL_COLOR"]}">{esc(b)}</div>'
+    f'<div style="font-size:13px;color:{C["LABEL_COLOR"]};margin-top:2px">{esc(c)}</div></div>' for a, b, c in cells) + "</div>")
 
 
 def screen_flow():

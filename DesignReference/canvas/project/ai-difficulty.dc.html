@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Easy, Normal, Hard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Difficulty, field by field</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>8.1 The three files, field by field</h4>
+<p>There are three files: <code>OpponentEasy.json</code> (Easy), <code>Opponent.json</code> (Normal) and <code>OpponentHard.json</code> (Hard). All three use the same line numbers for every field (verified with <code>grep -n</code>). A field marked <strong>◆</strong> differs from Normal in that file. The Notes column gives the validation in <code>AiSettings.cpp</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Field</th>
+<th>Easy</th>
+<th>Normal</th>
+<th>Hard</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td><code>attackGroupShips</code></td>
+<td><strong>◆ 30</strong></td>
+<td>25</td>
+<td><strong>◆ 20</strong></td>
+<td>int ≥ 1 (<code>AiSettings.cpp:36</code>)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>attackGroupGrowthPerTier</code></td>
+<td>12</td>
+<td>12</td>
+<td>12</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>retreatLossShare</code></td>
+<td><strong>◆ 0.1</strong></td>
+<td>0.15</td>
+<td><strong>◆ 0.1</strong></td>
+<td>≥ 0 and &lt; 1 (<code>:38-40</code>)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>regroupSeconds</code></td>
+<td>240</td>
+<td>240</td>
+<td>240</td>
+<td>≥ 0</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>reviewIntervalSeconds</code></td>
+<td><strong>◆ 150</strong></td>
+<td>60</td>
+<td><strong>◆ 45</strong></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>constructors</code></td>
+<td><strong>◆ 3</strong></td>
+<td>4</td>
+<td><strong>◆ 5</strong></td>
+<td>int ≥ 1</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>incomePerShipyardOrePerSecond</code></td>
+<td><strong>◆ 15</strong></td>
+<td>10</td>
+<td>10</td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>homeAsteroids</code></td>
+<td>3</td>
+<td>3</td>
+<td>3</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>contestedAsteroids</code></td>
+<td><strong>◆ 1</strong></td>
+<td>3</td>
+<td>3</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>homePlatformsPerShipyard</code></td>
+<td>2</td>
+<td>2</td>
+<td>2</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>shipyardQueueJobs</code></td>
+<td><strong>◆ 1</strong></td>
+<td>2</td>
+<td>2</td>
+<td>1 to 5 (<code>QUEUE_LIMIT</code>) (<code>:48-50</code>)</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>defenseHoldSeconds</code></td>
+<td>10</td>
+<td>10</td>
+<td>10</td>
+<td>&gt; 0. The deputy uses Normal's.</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>structureGapMeters</code></td>
+<td>50</td>
+<td>50</td>
+<td>50</td>
+<td>≥ 0</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>rallyDistanceMeters</code></td>
+<td>170</td>
+<td>170</td>
+<td>170</td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>researchOrder</code></td>
+<td>same</td>
+<td>23 topics (§8.2)</td>
+<td>same</td>
+<td>no topic twice (<code>:55-64</code>)</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>defaultDesign</code></td>
+<td>same</td>
+<td>Medium+Ion+Mass Driver (Brawler)</td>
+<td>same</td>
+<td>—</td>
+</tr>
+<tr>
+<td>18–43</td>
+<td><code>counters</code></td>
+<td>same</td>
+<td>24 rules (§8.3)</td>
+<td>same</td>
+<td>no duplicate rule (<code>:88-98</code>)</td>
+</tr>
+<tr>
+<td>44</td>
+<td><code>scouts</code></td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>45</td>
+<td><code>scoutDesign</code></td>
+<td>same</td>
+<td>Small+Ion+Mass Driver+Sensor Array</td>
+<td>same</td>
+<td>—</td>
+</tr>
+<tr>
+<td>46</td>
+<td><code>raidShips</code></td>
+<td><strong>◆ 0</strong></td>
+<td>2</td>
+<td><strong>◆ 3</strong></td>
+<td>int ≥ 0; 0 sends no raids</td>
+</tr>
+<tr>
+<td>47</td>
+<td><code>raidLossShare</code></td>
+<td>0.5</td>
+<td>0.5</td>
+<td>0.5</td>
+<td>≥ 0 and &lt; 1; also the pirate detachment's</td>
+</tr>
+<tr>
+<td>48</td>
+<td><code>raidIntervalSeconds</code></td>
+<td>180</td>
+<td>180</td>
+<td>180</td>
+<td>≥ 0; also the pirate detachment's</td>
+</tr>
+<tr>
+<td>49</td>
+<td><code>attackNodeLead</code></td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>50</td>
+<td><code>attackWithoutLeadShare</code></td>
+<td><strong>◆ 2.0</strong></td>
+<td>1.5</td>
+<td>1.5</td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>51</td>
+<td><code>frontPlatforms</code></td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>52</td>
+<td><code>claimSectors</code></td>
+<td><strong>◆ 0</strong></td>
+<td>2</td>
+<td>2</td>
+<td>int ≥ 0</td>
+</tr>
+<tr>
+<td>53</td>
+<td><code>secondSlotTier</code></td>
+<td>3</td>
+<td>3</td>
+<td>3</td>
+<td>int ≥ 1</td>
+</tr>
+<tr>
+<td>54</td>
+<td><code>attackLevelMeters</code></td>
+<td>500</td>
+<td>500</td>
+<td>500</td>
+<td>≥ 0</td>
+</tr>
+<tr>
+<td>55</td>
+<td><code>attackCapShare</code></td>
+<td><strong>◆ 1.0</strong></td>
+<td>0.8</td>
+<td>0.8</td>
+<td>&gt; 0 and ≤ 1 (<code>:81-83</code>)</td>
+</tr>
+<tr>
+<td>56</td>
+<td><code>pirateMargin</code></td>
+<td><strong>◆ 2.0</strong></td>
+<td>1.5</td>
+<td><strong>◆ 1.2</strong></td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td>57</td>
+<td><code>scoutOwnHalfSeconds</code></td>
+<td>600</td>
+<td>600</td>
+<td>600</td>
+<td>≥ 0</td>
+</tr>
+</tbody>
+</table>
+<p>Counts:</p>
+<ul>
+<li>31 top-level fields in each file.</li>
+<li>12 fields differ in at least one file: <code>attackGroupShips</code>, <code>retreatLossShare</code>, <code>reviewIntervalSeconds</code>, <code>constructors</code>, <code>incomePerShipyardOrePerSecond</code>, <code>contestedAsteroids</code>, <code>shipyardQueueJobs</code>, <code>raidShips</code>, <code>attackWithoutLeadShare</code>, <code>claimSectors</code>, <code>attackCapShare</code>, <code>pirateMargin</code>.</li>
+<li>Easy differs from Normal in all 12; Hard differs in 6.</li>
+<li>The other 19 fields, including <code>researchOrder</code> and all 24 counters, are identical in all three (<code>diff -u</code>).</li>
+</ul>
+<p>What each difficulty means (<code>ADR-065</code>):</p>
+<ul>
+<li><strong>Easy:</strong> "the same rules with a smaller hand" (<code>ADR-065 §Decision 2</code>).</li>
+<li><strong>Hard:</strong> "fights harder for territory" (<code>ADR-065 §Decision 3</code>).</li>
+<li><strong>Neither cheats:</strong> "An AI that is helped by the rules … is a new decision" (<code>ADR-065 §What this forecloses</code>).</li>
+<li><strong>Where each is picked:</strong></li>
+<li>On the menu: "Easy skirmish", "Normal skirmish", "Hard skirmish" (<code>Hud.cpp:2329-2331</code>).</li>
+<li>For a world's AI empire: <code>--ai &lt;player&gt;:Easy|Normal|Hard</code> (<code>OutpostServer/Main.cpp:120-133</code>).</li>
+<li>The default is Normal, both on the client (<code>GameClient.h:271</code>) and for <code>--ai</code> without a difficulty (<code>Main.cpp:125</code>).</li>
+<li><strong>When they load.</strong> All three files are read with the first match's server, before the window shows (<code>WinMain.cpp:281-291</code>, <code>ADR-065 §Decision 4</code>).</li>
+</ul>
+<h4>8.2 Research order, the same in all three (<code>Opponent.json:16</code>)</h4>
+<p>Topic names are from <code>Tuning.json: research</code>.</p>
+<ol>
+<li>Improved Extraction (1)</li>
+<li>Hull Plating (2)</li>
+<li>Fusion Drive (5)</li>
+<li>Large Hull (6)</li>
+<li>Mass Driver Calibration (3)</li>
+<li>Lance Focusing (4)</li>
+<li>Automated Shipyards (8)</li>
+<li>Missile Rack (7)</li>
+<li>Flak Battery (11)</li>
+<li>Pulse Drive (10)</li>
+<li>Composite Plating (13)</li>
+<li>Lance Capacitors (16)</li>
+<li>Missile Guidance (17)</li>
+<li>Reinforced Structures (14)</li>
+<li>Defence Autoloader (15)</li>
+<li>Deep Core Survey (12)</li>
+<li>Rail Cannon (19)</li>
+<li>Ablative Armour (20)</li>
+<li>Coilgun Mass Drivers (21)</li>
+<li>Proximity Fuses (22)</li>
+<li>Fleet Automation (24)</li>
+<li>Drive Harmonics (23)</li>
+<li>Rapid Construction (25)</li>
+</ol>
+<p>That is 23 topics, which is every topic in <code>Tuning.json</code>.</p>
+<h4>8.3 Counters, the same in all three (<code>Opponent.json:19-42</code>)</h4>
+<ul>
+<li><strong>Order of preference:</strong> the first answer the AI has unlocked is the one it builds (<code>AiSettings.h:5-6</code>, <code>AiPlayer.cpp:308-310</code>).</li>
+<li><strong>The default</strong> is Medium+Ion+Mass Driver (<code>Opponent.json:17</code>).</li>
+<li><strong>Names.</strong> Component names are from <code>Tuning.json</code>; starting-design names (Swarm, Picket, Brawler, Lancer) are from <code>Tuning.json: startingDesigns</code>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Enemy's most common design</th>
+<th>Answer, in order of preference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>19–21</td>
+<td>Small+Ion+Mass Driver (Swarm)</td>
+<td>Medium+Ion+Flak Battery → Large+Fusion+Mass Driver → Medium+Ion+Mass Driver (Brawler)</td>
+</tr>
+<tr>
+<td>22–24</td>
+<td>Medium+Ion+Mass Driver (Brawler)</td>
+<td>Medium+Ion+Flak Battery → Large+Fusion+Lance → Medium+Ion+Lance (Lancer)</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Medium+Ion+Lance (Lancer)</td>
+<td>Small+Ion+Mass Driver (Swarm)</td>
+</tr>
+<tr>
+<td>26–27</td>
+<td>Small+Ion+Lance (Picket)</td>
+<td>Medium+Ion+Flak Battery → Small+Ion+Mass Driver (Swarm)</td>
+</tr>
+<tr>
+<td>28–29</td>
+<td>Large+Fusion+Mass Driver</td>
+<td>Medium+Ion+Rail Cannon → Small+Ion+Lance (Picket)</td>
+</tr>
+<tr>
+<td>30–31</td>
+<td>Large+Fusion+Lance</td>
+<td>Large+Fusion+Rail Cannon → Picket</td>
+</tr>
+<tr>
+<td>32</td>
+<td>Large+Fusion+Missile Rack</td>
+<td>Picket</td>
+</tr>
+<tr>
+<td>33–34</td>
+<td>Small+Ion+Flak Battery</td>
+<td>Medium+Ion+Missile Rack → Medium+Ion+Flak Battery</td>
+</tr>
+<tr>
+<td>35</td>
+<td>Medium+Ion+Flak Battery</td>
+<td>Large+Fusion+Lance</td>
+</tr>
+<tr>
+<td>36</td>
+<td>Large+Fusion+Flak Battery</td>
+<td>Large+Fusion+Lance</td>
+</tr>
+<tr>
+<td>37</td>
+<td>Medium+Ion+Rail Cannon</td>
+<td>Picket</td>
+</tr>
+<tr>
+<td>38</td>
+<td>Large+Fusion+Rail Cannon</td>
+<td>Picket</td>
+</tr>
+<tr>
+<td>39</td>
+<td>Small+Ion+Rail Cannon</td>
+<td>Medium+Ion+Flak Battery</td>
+</tr>
+<tr>
+<td>40</td>
+<td>Small+Pulse+Mass Driver</td>
+<td>Medium+Ion+Flak Battery</td>
+</tr>
+<tr>
+<td>41</td>
+<td>Small+Pulse+Lance</td>
+<td>Medium+Ion+Flak Battery</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Small+Pulse+Flak Battery</td>
+<td>Medium+Ion+Flak Battery</td>
+</tr>
+</tbody>
+</table>
+<h4>8.4 Measured outcomes (ADR-065, AI against AI only)</h4>
+<table>
+<thead>
+<tr>
+<th>Matchup</th>
+<th>Result</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal vs Easy (seeds 1–20, after task 25.2)</td>
+<td>Normal wins all 20; median 23:56; 18 by domination</td>
+<td><code>ADR-065 §Consequences</code></td>
+</tr>
+<tr>
+<td>Hard vs Normal (seeds 1–20, after task 25.2)</td>
+<td>Hard wins all 20; median 29:10; 12 by domination</td>
+<td><code>ADR-065 §Consequences</code></td>
+</tr>
+<tr>
+<td>Against a human</td>
+<td>The owner's run on 2026-10-04 found Easy beatable; nothing else is measured</td>
+<td><code>ADR-065 §Consequences</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3525}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

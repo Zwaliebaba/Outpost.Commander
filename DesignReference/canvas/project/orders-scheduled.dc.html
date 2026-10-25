@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scheduled orders, Away, the deputy</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Scheduled orders</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>4.1 What one is</h4>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shape</td>
+<td>One trigger, one action, at most one condition, given to a selection</td>
+<td><code>Phase5.md:107</code>, <code>ADR-080 §Decision 4</code>, <code>Command.h:194-202</code></td>
+</tr>
+<tr>
+<td>Kept by</td>
+<td>The server, as state, the way a standing order is kept. It fires once and is dropped.</td>
+<td><code>Phase5.md:107</code>, <code>ADR-080 §Decision 5</code></td>
+</tr>
+<tr>
+<td>When it fires</td>
+<td>At the end of the tick in which its trigger's event is raised, after vision and territory</td>
+<td><code>Simulation.cpp:985-986</code>, <code>Simulation.cpp:3323-3436</code></td>
+</tr>
+<tr>
+<td>Event triggers</td>
+<td>Fire only on an event raised after the order was given. Enemy ships already in the sector do not fire it until they come again.</td>
+<td><code>ADR-080 §Decision 4</code></td>
+</tr>
+<tr>
+<td>One order per ship</td>
+<td>A ship waits on one scheduled order at a time. A new scheduled order takes it out of the last.</td>
+<td><code>Simulation.cpp:3304-3305</code>, <code>ADR-080 §Decision 5</code></td>
+</tr>
+<tr>
+<td>What takes a ship out</td>
+<td>Any order the player gives it. Setting its retreat does not.</td>
+<td><code>Simulation.cpp:3240-3258</code>, <code>ADR-080 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Dropped</td>
+<td>An order no ship waits on any more, or one whose ships are all gone or no longer the player's</td>
+<td><code>Simulation.cpp:3316-3321, 3357-3368</code></td>
+</tr>
+<tr>
+<td>Who takes part</td>
+<td>Warships, or Constructors for a rig</td>
+<td><code>Simulation.cpp:3281-3289</code></td>
+</tr>
+<tr>
+<td>Who sees it</td>
+<td>Only its owner (<code>Snapshot::scheduled</code>, <code>EntityView::scheduledOrder</code>)</td>
+<td><code>ADR-080 §Decision 5</code>, <code>Snapshot.h:137-138, 527-528</code></td>
+</tr>
+<tr>
+<td>Who fires it</td>
+<td>The server, whoever plays the seat. A deputy leaves alone a ship that waits on one.</td>
+<td><code>ADR-079 §Decision 6</code>, <code>Deputy.cpp:53-59</code></td>
+</tr>
+<tr>
+<td>Fires more than once?</td>
+<td>Never. A time of day is a moment, not a recurring hour: "another night needs another order".</td>
+<td><code>ADR-080 §Consequences</code>, <code>ADR-080 §What this forecloses</code></td>
+</tr>
+<tr>
+<td>Limit on how many</td>
+<td>Not specified: no cap on the number of scheduled orders a seat may hold was found in <code>Simulation.cpp:3274-3313</code>. The window lists the first 6.</td>
+<td><code>Hud.h:526</code></td>
+</tr>
+</tbody>
+</table>
+<h4>4.2 Triggers (4)</h4>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Form name (verbatim)</th>
+<th>In words (verbatim)</th>
+<th>Fires on</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TimeOfDay</code></td>
+<td>"At a time of day"</td>
+<td>"at {HH:MM}"</td>
+<td>Its tick: <code>trigger.tick &lt;= tick</code></td>
+<td><code>OrderForm.cpp:237-238, 296-298, 3330-3331</code></td>
+</tr>
+<tr>
+<td><code>EnemyInSector</code></td>
+<td>"Enemies enter a sector"</td>
+<td>"when enemies enter {sector}"</td>
+<td><code>EnemyEntered</code> in the watched sector</td>
+<td><code>OrderForm.cpp:239-240, 299-301</code>, <code>Simulation.cpp:3338-3339</code></td>
+</tr>
+<tr>
+<td><code>RelayThreatened</code></td>
+<td>"A Relay is threatened"</td>
+<td>"when the Relay in {sector} is threatened"</td>
+<td><code>RelaySuppressed</code> or <code>RelayAttacked</code> in the watched sector</td>
+<td><code>OrderForm.cpp:241-242, 302-304</code>, <code>Simulation.cpp:3340-3341</code></td>
+</tr>
+<tr>
+<td><code>RigLost</code></td>
+<td>"A Mining Rig is lost"</td>
+<td>"when a Mining Rig in {sector} is lost"</td>
+<td><code>StructureLost</code> of a Mining Rig in the watched sector</td>
+<td><code>OrderForm.cpp:243-244, 305-307</code>, <code>Simulation.cpp:3342-3343</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>How a time of day becomes a tick:</strong></p>
+<ol>
+<li>The client turns the hour and minute into the next moment after now on the player's clock and sends it as seconds since 1970 UTC (<code>OrderForm.cpp:217-218</code>, <code>ADR-080 §Decision 6</code>).</li>
+<li>The host makes it a tick as the command arrives: the first tick at or after the moment, rounded up. A moment past is the current tick. One more than a week ahead is held to a week (<code>WEEK_SECONDS = 604800</code>). The tick a client writes is never trusted (<code>InProcessServer.cpp:338-351, 468-473</code>).</li>
+<li>An order that a pause has pushed past its time fires late, at its tick (<code>Phase5.md:117</code>).</li>
+</ol>
+<p><strong>The player's clock</strong> is the system's time zone, with summer time, from the standard library's database, or UTC where the database cannot say (<code>PlayerClock.cpp:45-55</code>). A reading the clock skips as summer time starts is the moment it skips at; a reading it shows twice as summer time ends is the first (<code>PlayerClock.h:27-29</code>, <code>PlayerClock.cpp:85-89</code>).</p>
+<p><strong>An event trigger watches one sector the player holds.</strong> An order whose sector is not the map's, or given on a map without territory, is refused as <code>NoSector</code> (<code>Simulation.cpp:3290-3291</code>).</p>
+<h4>4.3 Actions (6)</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Form name (verbatim)</th>
+<th>Given to the ships as</th>
+<th>Where</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Move</code></td>
+<td>"Move"</td>
+<td><code>MoveCommand</code></td>
+<td>The action sector's node</td>
+<td><code>OrderForm.cpp:253-254, 229</code>, <code>Simulation.cpp:3398-3400</code></td>
+</tr>
+<tr>
+<td><code>AttackMove</code></td>
+<td>"Attack-move"</td>
+<td><code>AttackMoveCommand</code></td>
+<td>The node</td>
+<td><code>Simulation.cpp:3401-3403</code></td>
+</tr>
+<tr>
+<td><code>Attack</code></td>
+<td>"Attack"</td>
+<td><code>AttackCommand</code> on the target fixed when the order was given</td>
+<td>The target, where it stands when the order fires</td>
+<td><code>Simulation.cpp:3376-3381, 3404-3406</code></td>
+</tr>
+<tr>
+<td><code>HoldSector</code></td>
+<td>"Hold the sector"</td>
+<td><code>HoldSectorCommand</code></td>
+<td>The node</td>
+<td><code>Simulation.cpp:3407-3409</code></td>
+</tr>
+<tr>
+<td><code>Patrol</code></td>
+<td>"Patrol"</td>
+<td><code>PatrolCommand</code></td>
+<td>The node, as the far end</td>
+<td><code>Simulation.cpp:3410-3412</code></td>
+</tr>
+<tr>
+<td><code>BuildRig</code></td>
+<td>"Build a Mining Rig"</td>
+<td><code>BuildStructureCommand</code> (Mining Rig), given to Constructors</td>
+<td>The asteroid picked</td>
+<td><code>Simulation.cpp:3413-3415</code>, <code>OrderForm.cpp:221-227</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>No click on the map.</strong> A move goes to a sector's node, not to a point the player clicks: "the form has no click on the map" (<code>ADR-080 §Consequences</code>).</li>
+<li><strong>The target is fixed when the order is given</strong> (owner, 2026-10-08) (<code>Phase5.md:114</code>).</li>
+</ul>
+<h4>4.4 The condition</h4>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Meaning</td>
+<td>"unless the enemy warships the player sees in the action's sector take more than a number of command points the player sets; then hold the sector the ships are in"</td>
+<td><code>Phase5.md:116</code></td>
+</tr>
+<tr>
+<td>What is counted</td>
+<td>The command points of enemy and pirate warships the player sees in the action's sector, by their hull: Small 1, Medium 2, Large 4</td>
+<td><code>Simulation.cpp:3382-3395</code>, <code>Tuning.json: hulls[].commandPoints</code></td>
+</tr>
+<tr>
+<td>Held back</td>
+<td>More points than the limit: the ships hold the sector they are in, at the middle of them, and the event's outcome is <code>HeldInstead</code></td>
+<td><code>Simulation.cpp:3393-3397</code></td>
+</tr>
+<tr>
+<td>Values in the form</td>
+<td>None ("Never"), or 0 to 60 command points in steps of 2</td>
+<td><code>OrderForm.h:27-29</code>, <code>OrderForm.cpp:116-121</code></td>
+</tr>
+<tr>
+<td>Refused when</td>
+<td>Fewer than 0 points (<code>InvalidCondition</code>)</td>
+<td><code>Simulation.cpp:3300-3301</code></td>
+</tr>
+<tr>
+<td>Outside every sector</td>
+<td>The count is 0, so the order is never held back</td>
+<td><code>Simulation.cpp:3385-3392</code></td>
+</tr>
+</tbody>
+</table>
+<h4>4.5 Refusals of a ScheduleOrderCommand</h4>
+<p>The server applies these at the command; the player is not told of them (§1.3).</p>
+<table>
+<thead>
+<tr>
+<th>Result</th>
+<th>When</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NoShips</code> / <code>NotOwned</code> / <code>UnknownEntity</code> / <code>NotAShip</code></td>
+<td>The ship checks (<code>ValidateShips</code>) fail, or no warship is left (no Constructor for a rig)</td>
+<td><code>Simulation.cpp:3276-3289</code></td>
+</tr>
+<tr>
+<td><code>NotAConstructor</code></td>
+<td>A rig order names a ship that is not a Constructor</td>
+<td><code>ADR-080 §Decision 4</code>, <code>Simulation.cpp:3277</code></td>
+</tr>
+<tr>
+<td><code>NoSector</code></td>
+<td>An event trigger's sector is not the map's; or a hold outside every sector</td>
+<td><code>Simulation.cpp:3290-3291, 3298-3299</code></td>
+</tr>
+<tr>
+<td><code>InvalidPosition</code></td>
+<td>The action's position is not finite</td>
+<td><code>Simulation.cpp:3292-3293</code></td>
+</tr>
+<tr>
+<td><code>UnknownTarget</code> / <code>NotAnEnemy</code></td>
+<td>An attack's target is gone, or is not an enemy's</td>
+<td><code>Simulation.cpp:3294-3297</code></td>
+</tr>
+<tr>
+<td><code>InvalidCondition</code></td>
+<td>A condition below 0</td>
+<td><code>Simulation.cpp:3300-3301</code></td>
+</tr>
+</tbody>
+</table>
+<p>A refusal when the order fires is told: "Order refused: …" (<code>Simulation.cpp:3417-3434</code>, <code>Alerts.cpp:39-40</code>).</p>
+<h4>4.6 Writing one in the Orders window (O)</h4>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Text (verbatim)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Window header</td>
+<td>"SCHEDULED ORDERS"</td>
+<td><code>Hud.cpp:1952</code></td>
+</tr>
+<tr>
+<td>List label</td>
+<td>"WAITING"</td>
+<td><code>Hud.cpp:1955</code></td>
+</tr>
+<tr>
+<td>Empty list</td>
+<td>"None"</td>
+<td><code>Hud.cpp:1957-1958</code></td>
+</tr>
+<tr>
+<td>List line</td>
+<td>"{Order in words, first letter capitalized} · {n} ship(s)". For example: "At 02:00, attack-move to C3, unless over 8 enemy CP · 3 ships". The first 6 are shown.</td>
+<td><code>Hud.cpp:2231-2241</code>, <code>OrderForm.cpp:291-315</code>, <code>Hud.h:526</code></td>
+</tr>
+<tr>
+<td>More</td>
+<td>"and {n} more"</td>
+<td><code>Hud.cpp:1964-1965</code></td>
+</tr>
+<tr>
+<td>Form label</td>
+<td>"NEW ORDER FOR THE SELECTION"</td>
+<td><code>Hud.cpp:1967</code></td>
+</tr>
+<tr>
+<td>WHEN</td>
+<td>Trigger name (§4.2)</td>
+<td><code>Hud.cpp:2248</code></td>
+</tr>
+<tr>
+<td>HOUR / MINUTE</td>
+<td>Time triggers only: "{HH}" 0–23, "{MM}" in steps of 5</td>
+<td><code>Hud.cpp:2250-2254</code>, <code>OrderForm.cpp:94-99</code></td>
+</tr>
+<tr>
+<td>WATCHING</td>
+<td>Event triggers only: a sector the player holds, or "None held"</td>
+<td><code>Hud.cpp:2255-2257</code>, <code>OrderForm.cpp:134-143</code></td>
+</tr>
+<tr>
+<td>DO</td>
+<td>Action name (§4.3)</td>
+<td><code>Hud.cpp:2258</code></td>
+</tr>
+<tr>
+<td>WHERE</td>
+<td>Maps with sectors only: any sector of the map, or "None"</td>
+<td><code>Hud.cpp:2259-2260</code>, <code>OrderForm.cpp:110-111</code></td>
+</tr>
+<tr>
+<td>TARGET</td>
+<td>Attack and rig only: "{name} ({i} of {n})" or "None there". An attack's targets are the enemy's and the pirates' structures and then their ships in that sector. A rig's are the asteroids with Ore left as the player knows them.</td>
+<td><code>Hud.cpp:2261-2270</code>, <code>OrderForm.cpp:145-172</code></td>
+</tr>
+<tr>
+<td>Target names</td>
+<td>"Pirate {name}" for the pirates'; "{Hull} ship"; a structure's name; "Asteroid, Ore {n}" or "Asteroid"</td>
+<td><code>OrderForm.cpp:269-289</code></td>
+</tr>
+<tr>
+<td>UNLESS</td>
+<td>"Over {n} enemy CP there", or "Never"</td>
+<td><code>Hud.cpp:2271-2274</code></td>
+</tr>
+<tr>
+<td>When it fires</td>
+<td>"Fires at {HH:MM} on your clock, in {m:ss or h:mm:ss}", or "Fires once, the first time it happens"</td>
+<td><code>Hud.cpp:2276-2283</code></td>
+</tr>
+<tr>
+<td>Button</td>
+<td>"Give to {n} ship(s)", or "Give the order"</td>
+<td><code>Hud.cpp:2284-2290</code></td>
+</tr>
+<tr>
+<td>Why the button is dim</td>
+<td>"SELECT CONSTRUCTORS", "SELECT WARSHIPS", "NO SECTOR HELD", "NO ASTEROID THERE", "NO ENEMY SEEN THERE", "NO SECTOR"</td>
+<td><code>OrderForm.cpp:188-205</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>How fields are edited.</strong> Each field steps with arrows both ways and wraps round its ends. The condition steps from none, through 0 to 60, and back to none (<code>OrderForm.cpp:83-125</code>).</li>
+<li><strong>What the form starts at:</strong> a time of day at 02:00, the action Attack-move, and no condition (<code>OrderForm.h:103-111</code>).</li>
+<li><strong>The form keeps its picks while the window is closed.</strong> It resets with each new match (<code>GameClient.cpp:512</code>).</li>
+<li><strong>Who receives the order.</strong> Only the selection's warships, or its Constructors for a rig (<code>OrderForm.cpp:174-186</code>).</li>
+</ul>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The Away report</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kept by</td>
+<td>The host (<code>AwayReports</code>), from the events of every snapshot while the seat's deputy plays, from the first such tick</td>
+<td><code>AwayReports.cpp:37-53</code>, <code>ADR-080 §Decision 7</code></td>
+</tr>
+<tr>
+<td>Survives a restart</td>
+<td>Yes. A save keeps the seats' reports beside the state (owner, 2026-10-08).</td>
+<td><code>ADR-077 §Decision 5</code>, <code>InProcessServer.cpp:597, 640</code>, <code>Phase5.md:155</code></td>
+</tr>
+<tr>
+<td>Handed over</td>
+<td>Once, with the player's first snapshot after it takes the seat again (<code>Snapshot::away</code>)</td>
+<td><code>AwayReports.cpp:40-47</code>, <code>Snapshot.h:529-531</code></td>
+</tr>
+<tr>
+<td>When it shows</td>
+<td>The away window opens itself when the report arrives, in the middle of the screen</td>
+<td><code>GameClient.cpp:537-544</code>, <code>Hud.cpp:3680-3685</code></td>
+</tr>
+<tr>
+<td>How it goes</td>
+<td>Closing the window drops the report</td>
+<td><code>GameClient.cpp:763-765</code></td>
+</tr>
+<tr>
+<td>Header</td>
+<td>"WHILE YOU WERE AWAY"</td>
+<td><code>Hud.cpp:1997</code></td>
+</tr>
+<tr>
+<td>First line (title face)</td>
+<td>"Away for {m:ss or h:mm:ss}": from the tick the deputy took the seat to the tick the report arrived</td>
+<td><code>Hud.cpp:2293-2297, 2127-2133</code></td>
+</tr>
+<tr>
+<td>Lines</td>
+<td>"Built {n ship(s) / no ships} and {n structure(s) / no structures}"; "Lost … and …"; "Sectors gained: {names}" if any; "Sectors lost: {names}" if any; then each fired order as its alert says it</td>
+<td><code>Hud.cpp:2298-2320</code></td>
+</tr>
+<tr>
+<td>Sectors</td>
+<td>One gained and lost again is in neither list</td>
+<td><code>Snapshot.h:466-484</code></td>
+</tr>
+<tr>
+<td>Orders listed</td>
+<td>At most the last 16 fired (<code>REPORTED_ORDERS</code>); the window holds 4 + 16 lines</td>
+<td><code>Snapshot.h:468, 499-502</code>, <code>Hud.h:539</code></td>
+</tr>
+<tr>
+<td>What it does not tell</td>
+<td>What the enemy did beyond the seat's own events</td>
+<td><code>ADR-080 §Consequences</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>First join of a world.</strong> A seat nobody has taken yet is the deputy's from the start (<code>SeatController.cpp:35-36</code>). So, by the same code, the player's first join of a world also carries a report from the deputy's first tick (<code>AwayReports.cpp:49-50</code>).</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The seat controller and the deputy</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>6.1 Who plays a seat</h4>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One controller at a time</td>
+<td>The player, or the deputy</td>
+<td><code>Phase5.md:95</code>, <code>SeatController.h:5-8</code></td>
+</tr>
+<tr>
+<td>A seat never taken</td>
+<td>The deputy's from the start</td>
+<td><code>SeatController.cpp:35-36</code></td>
+</tr>
+<tr>
+<td>While the player is connected</td>
+<td>The player's, while the newest connection is open</td>
+<td><code>SeatController.cpp:37-38</code></td>
+</tr>
+<tr>
+<td>Hand-over</td>
+<td>60 s of ticks (<code>DEPUTY_DELAY_SECONDS</code>) after the server sees the connection gone (<code>QuicChannel::HasGone</code>)</td>
+<td><code>Server.h:31-32</code>, <code>SeatController.cpp:39-45</code>, <code>InProcessServer.cpp:528-529</code></td>
+</tr>
+<tr>
+<td>When a connection is seen gone</td>
+<td>A connection that closes, at once. One whose client vanished, when MsQuic's idle timeout ends it: 30 s by MsQuic's default, which the code does not set.</td>
+<td><code>ADR-079 §Decision 4</code>, <code>QuicChannel.cpp:342-343, 557-558</code></td>
+</tr>
+<tr>
+<td>Hand-back</td>
+<td>At once, when the player takes the seat again with its token</td>
+<td><code>SeatController.cpp:37-38</code>, <code>ADR-079 §Decision 4</code></td>
+</tr>
+<tr>
+<td>A new connection that goes</td>
+<td>The delay starts again from when that newer connection was seen gone</td>
+<td><code>SeatController.cpp:39-44</code></td>
+</tr>
+<tr>
+<td>What the deputy ordered</td>
+<td>Stands until the player changes it</td>
+<td><code>Phase5.md:95</code></td>
+</tr>
+<tr>
+<td>Where it runs</td>
+<td>On the server's thread, after each tick, with that tick's snapshot. Its orders apply at the next tick and are logged as a player's.</td>
+<td><code>ADR-079 §Decision 2</code>, <code>InProcessServer.cpp:564-576</code></td>
+</tr>
+<tr>
+<td>Settings</td>
+<td>The Normal AI's settings (<code>Opponent.json</code>), for its research order and its defence hold</td>
+<td><code>OutpostServer/Main.cpp:185-188</code>, <code>ADR-079 §Decision 6</code></td>
+</tr>
+<tr>
+<td>Hosted for</td>
+<td>Every player's seat in <code>OutpostServer</code></td>
+<td><code>OutpostServer/Main.cpp:198-199</code></td>
+</tr>
+</tbody>
+</table>
+<p>While the player plays, the deputy watches and gives no order (<code>HostedPlayer.h:20-21</code>, <code>Deputy.cpp:128-138</code>).</p>
+<h4>6.2 What the deputy does (once a second)</h4>
+<table>
+<thead>
+<tr>
+<th>Keeper rule</th>
+<th>Detail</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Research</td>
+<td>A Lab with a slot free takes the next topic of the AI's research order, then the first topic of the tuning data's that it can take</td>
+<td><code>Deputy.cpp:236-264</code></td>
+</tr>
+<tr>
+<td>Production</td>
+<td>A finished Shipyard with an empty queue gets one job: the design it last queued, learned whether the deputy played or watched. A Shipyard it never saw build gets the design most of the player's warships are of, the oldest of a tie. Nothing if the Shipyard's level cannot build it.</td>
+<td><code>Deputy.cpp:191-206, 266-307</code></td>
+</tr>
+<tr>
+<td>Waiting jobs</td>
+<td>The job waits for the Ore and the fleet cap as any job does</td>
+<td><code>Deputy.cpp:288-289</code></td>
+</tr>
+<tr>
+<td>Command Station</td>
+<td>Upgraded once the Ore is there, when the cap holds a Shipyard's next ship back</td>
+<td><code>Deputy.cpp:229-230, 309-323</code></td>
+</tr>
+<tr>
+<td>Constructors</td>
+<td>Keeps as many as the player had when the deputy took the seat, counting those queued at the Command Station (owner, 2026-10-08)</td>
+<td><code>Deputy.cpp:143-149, 325-332</code>, <code>Phase5.md:96</code></td>
+</tr>
+<tr>
+<td>Rigs</td>
+<td>Rebuilds a Mining Rig it saw stand, with the 2 nearest idle Constructors, on an asteroid that still holds ore, in a sector the player holds and the pirates do not guard. It waits 3 s to see the site before ordering again.</td>
+<td><code>Deputy.cpp:14-18, 334-373</code></td>
+</tr>
+<tr>
+<td>Repairs</td>
+<td>Each damaged structure, and each site nobody builds, gets the nearest idle Constructor</td>
+<td><code>Deputy.cpp:375-398</code></td>
+</tr>
+<tr>
+<td>Defence</td>
+<td>Idle warships attack-move at enemy warships, the pirates' among them, in the held sector that has the most; or at whatever fired on a player structure in a held sector. "Idle" means no order, no standing order, not retreating and no scheduled order.</td>
+<td><code>Deputy.cpp:53-59, 400-477</code></td>
+</tr>
+<tr>
+<td>End of a defence</td>
+<td>10 s (<code>defenseHoldSeconds</code>) after the attack was last seen, or at once when the sector is lost. Each defender then moves back to where it stood (owner, 2026-10-08). A defender that stopped more than 150 m short is sent again.</td>
+<td><code>Deputy.cpp:20, 437-466</code>, <code>Opponent.json:13</code></td>
+</tr>
+<tr>
+<td>Never</td>
+<td>Attacks, raids, claims a sector, clears pirates or salvages, except by a scheduled order the player gave</td>
+<td><code>ADR-079 §Decision 6</code>, <code>Deputy.h:18-19</code></td>
+</tr>
+<tr>
+<td>Leaves alone</td>
+<td>A ship that retreats, or has an order, a standing order or a scheduled order</td>
+<td><code>Deputy.cpp:55-59</code></td>
+</tr>
+<tr>
+<td>Each turn starts afresh</td>
+<td>Its Constructor count, repairs and defenders belong to the turn. What it learned while watching (each Shipyard's last design, where the rigs stood) it keeps, but not across a server restart.</td>
+<td><code>Deputy.cpp:143-154</code>, <code>ADR-079 §Decision 6</code>, <code>ADR-079 §Consequences</code></td>
+</tr>
+</tbody>
+</table>
+<p>The deputy plays on when its player's seat restarts after a loss; it lays no plan (<code>ADR-084 §Decision 6</code>).</p>
+<h4>6.3 How the seat comes back</h4>
+<p>The player joins with its join file, from the menu's "Join world" or <code>--join</code> (§11). The newest connection holds the seat (<code>InProcessServer.cpp:318-321</code>). The deputy hands the seat back at once. The first snapshot carries the away report, and its window opens (§5).</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Away → deputy → return</div><div style="padding:20px 24px 24px 24px"><div style="display:grid;grid-template-columns:repeat(4,1fr);column-gap:28px;row-gap:30px"><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">1</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The player&#x27;s connection goes</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The player's connection goes; the server sees it gone (<code>QuicChannel::HasGone</code>) (<code>InProcessServer.cpp:528</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">2</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The player still holds the seat</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The player still holds the seat for 60 s of ticks (<code>SeatController.cpp:39-45</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">3</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">After 60 s the deputy plays.</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">After 60 s the deputy plays.<br />
+– Its turn begins: it counts the Constructors to keep, and clears last turn's defenders (<code>Deputy.cpp:143-154</code>).<br />
+– The host starts the away report at this tick (<code>AwayReports.cpp:49-50</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">4</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">While away:</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">While away:<br />
+– The deputy keeps research, production, Constructors, rigs and repairs, and defends held sectors, once a second (§6.2).<br />
+– Scheduled orders fire whoever plays (<code>ADR-079 §Decision 6</code>).<br />
+– Events go into the report.<br />
+– A save every 60 s keeps the report (<code>ADR-077 §Decision 5</code>).</div><div aria-hidden="true" style="position:absolute;left:50%;bottom:-22px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #89AFE2;transform:translateX(-50%)"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">5</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">If the player&#x27;s empire falls</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">If the player's empire falls, it is told (<code>EmpireLost</code>) and restarts an hour later once its start is free; the deputy plays on (§13.3).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">6</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The player takes the seat again</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The player takes the seat again (§14.2 step 8). The deputy hands back at once (<code>SeatController.cpp:37-38</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">7</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The first snapshot carries the report</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The first snapshot carries the report, and the window "WHILE YOU WERE AWAY" opens with "Away for h:mm:ss" and its lines (<code>GameClient.cpp:537-544</code>, <code>Hud.cpp:2293-2320</code>).</div><div aria-hidden="true" style="position:absolute;right:-19px;top:22px;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:10px solid #89AFE2"></div></div><div style="position:relative;box-sizing:border-box;padding:14px 16px 14px 16px;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;border:1px solid #2D364B"><div style="display:flex;gap:10px;align-items:baseline"><span style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#AAD0FF">8</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:16px;color:#EAF1FA">The player closes the window</span></div><div class="md" style="margin-top:6px;font-size:13.5px;line-height:1.5;color:#D3E3F7">The player closes the window, and the report is gone (<code>GameClient.cpp:763-765</code>). Whatever the deputy ordered stands until the player changes it (<code>Phase5.md:95</code>).</div></div></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 6284}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

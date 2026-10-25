@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contact sheets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 15</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Asset catalogue</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">Every shipped model of every set in the game's look, the level sheets, the textures and the app's logos, with lengths, triangles, bounds and hashes.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>Models.json</code> <code>OutpostCommander/Assets/Models/*.nmf</code> <code>Art/Models/*.glb</code> <code>A6</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Renderer</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Renderer:</strong> a software rasterizer in Python 3.13 and numpy 2.5 (<code>DesignReference/_work/A6/tool/nmfrender.py</code>, driven by <code>render_all.py</code>), not three.js: z-buffered triangles, then a depth-tested line pass, then the glow, all in linear color, encoded to sRGB at the end. No Blender, no GPU. It is the same arithmetic as the shaders, replayed per pixel.</p>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>In the game (source)</th>
+<th>Here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mesh read</td>
+<td>NMF v3: positions, normals, one <code>open</code> byte a vertex, u32 indices, hardpoints, parts (<code>Tools/BakeMeshes.py</code> docstring; <code>NeuronClient/MeshData.cpp</code> <code>ParseNmf</code>)</td>
+<td>Same layout, same checks (padding zero, version 3, no bytes left over).</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>L1 or a model without levels: <code>FitMesh</code> to <code>lengthMeters</code> along x; L2–L5: <code>FitMeshAcross</code> level 1's widest of x and z (<code>GameApp/ModelCatalog.cpp:382-385</code>, <code>GameApp/GameClient.cpp:367-372</code>, ADR-064)</td>
+<td>Same. Bounds centered on the origin (<code>FitMesh</code>, <code>FitMeshAcross</code>, <code>CenterAndScale</code>, <code>MeshData.cpp:219-254</code>).</td>
+</tr>
+<tr>
+<td>Face light</td>
+<td><code>MeshPS.hlsl:33-43</code>: fill = lerp(<code>GROUND_FILL</code>, <code>SKY_FILL</code>, n.y·0.5+0.5); key = saturate((n·l + <code>KEY_WRAP</code>)/(1+<code>KEY_WRAP</code>)); color × (fill + <code>KEY_COLOR</code>·key) × (1 − <code>OCCLUSION_STRENGTH</code>·(1 − openness))</td>
+<td>Same formula per pixel, openness interpolated across the face, normal per face (every source is flat-shaded, three vertices a triangle: ADR-092 Context).</td>
+</tr>
+<tr>
+<td>Light numbers</td>
+<td><code>GameApp/SceneShading.h:15-19, 23</code>: <code>TOWARD_KEY</code> (−0.4, 0.8, 0.45) normalized (<code>GameClient.cpp:1130</code>), <code>KEY_COLOR</code> (0.627, 0.539, 0.427), <code>KEY_WRAP</code> 0.3, <code>SKY_FILL</code> (0.365, 0.421, 0.571), <code>GROUND_FILL</code> (0.314, 0.287, 0.389), <code>OCCLUSION_STRENGTH</code> 1 (ADR-090 decision 1, ADR-092 decision 4)</td>
+<td>Same values. The light is fixed in the world, as in the game.</td>
+</tr>
+<tr>
+<td>Line light</td>
+<td><code>MeshLinePS.hlsl:42</code>: line color × luminance(LightAt(n)), weights (0.2126, 0.7152, 0.0722); never darkened by occlusion (ADR-092 decision 4)</td>
+<td>Same.</td>
+</tr>
+<tr>
+<td>Crease lines</td>
+<td><code>Neuron::BuildCreaseLines</code> (<code>NeuronClient/MeshData.cpp:289-397</code>) at <code>CREASE_DEGREES</code> = <strong>10°</strong> (<code>GameApp/GameClient.cpp:49</code>; ADR-027 decision 2): corners welded by exact position; a line on every edge whose two faces' normals differ by more than 10° (<code>cosine &gt;= cos 10°</code> is skipped, <code>MeshData.cpp:377</code>), on every edge with one face, and on every edge with more than two; zero-area triangles skipped; each line's normal is the normalized mean of its faces' normals. Built per piece: the fixed triangles, then each spinning part (<code>GameClient.cpp:374-389</code>, ADR-045 decision 4)</td>
+<td>Same rule, same per-piece split (numpy, float32 positions).</td>
+</tr>
+<tr>
+<td>Lines over faces</td>
+<td>Each line vertex pulled <code>LINE_LIFT_SHARE</code> = 0.002 of the way to the eye (<code>GameClient.cpp:53</code>, <code>MeshLineVS.hlsl:59</code>), "about 2.5 pixels of depth" at the default view (ADR-040 decision 2); depth test less-or-equal, no depth write (ADR-027 decision 3)</td>
+<td>A depth bias of 2.5 output pixels toward the eye, less-or-equal test against the faces, no depth write.</td>
+</tr>
+<tr>
+<td>Face and line colors</td>
+<td>Ship and Constructor: faces <code>Shaded(color, FILL_SHADE 0.3)</code>, lines <code>EdgeColor(color, EDGE_BRIGHTNESS 2, EDGE_WHITE_SHARE 0.35)</code> (<code>GameClient.cpp:1509, 1556-1569</code>). Structure: color = <code>TowardGray(ModelColor(set, tint, built), STRUCTURE_GRAY_SHARE 0.35)</code>, faces at <code>STRUCTURE_FILL_SHADE</code> 0.22 (<code>GameClient.cpp:1571-1579, 344-349</code>). Derelict: the Wreck set's color as a ship (<code>GameClient.cpp:1544-1546</code>). Asteroid: faces <code>ROCK_FILL_SHADE</code> 0.15, lines <code>EdgeColor(color, ROCK_EDGE_BRIGHTNESS 1.35, 0)</code> (<code>GameClient.cpp:1515-1516, 1560-1561</code>). Constants <code>SceneShading.h:45-57</code>, functions <code>SceneShading.cpp</code></td>
+<td>Same functions, ported. Structures fully built (<code>builtPermille</code> 1000). Asteroids as an ore asteroid; a field's rocks are 0.7 of that color first (<code>FIELD_SHADE</code>, <code>GameClient.cpp:1522</code>) and are not rendered separately.</td>
+</tr>
+<tr>
+<td>Culling</td>
+<td>Back faces culled, clockwise front (ADR-011 decision 7)</td>
+<td>A face is drawn when its normal faces the eye; every face's winding agrees with its normal (checked here on all 16,316 triangles, as <code>GameAppTests</code> holds).</td>
+</tr>
+<tr>
+<td>Antialiasing</td>
+<td>4× MSAA, averaged in linear color (ADR-040 decision 3, ADR-050)</td>
+<td>2×2 supersampling averaged in linear color, plus analytic coverage on the lines.</td>
+</tr>
+<tr>
+<td>Color encoding</td>
+<td>Linear colors into an <code>R8G8B8A8_UNORM_SRGB</code> target (ADR-040 decision 3)</td>
+<td>sRGB-encoded at the end.</td>
+</tr>
+<tr>
+<td>Glow (ADR-091)</td>
+<td><code>SCENE_BLOOM</code> threshold 0.35, knee 0.15, intensity 2, spread 0.6 (<code>GameClient.cpp:25</code>); five half-size levels: bright pass (<code>BloomBrightPS.hlsl</code>), 13-tap down (<code>BloomDownPS.hlsl</code>), 3×3 tent up weighted by the spread (<code>BloomUpPS.hlsl</code>), added in the resolve × intensity / Σspreadᵏ (<code>ResolvePS.hlsl</code>, <code>Bloom.cpp:86-98</code>)</td>
+<td><strong>Added, as a light phosphor glow:</strong> the same passes and numbers replayed with bilinear taps on the 1024-pixel image. In the transparent PNGs it is kept over the model only (an added light cannot be stored in a transparent pixel without a pale halo on a light page); on the sheets, over black, it is added whole.</td>
+</tr>
+<tr>
+<td>Camera</td>
+<td>Default yaw looks along +z, screen right +x, top +z (<code>GameApp/Camera.cpp:13-14</code>); pitch from 40° to 70° with zoom (<code>Camera.json</code>, <code>Camera.cpp:160-165</code>); 45° vertical field of view</td>
+<td><strong>3/4 view</strong>: the default yaw at the default zoom's pitch, 43.68° (view width 500 m of 150–3000 m, <code>Camera.json</code>), model heading 225° (nose toward the lower left). <strong>Top view</strong>: straight down, screen top +z, heading 90° (nose up). Orthographic: at the game's distance a model spans a few degrees, so this stands in for its perspective. Heading as <code>WorldMatrix</code>/<code>PoseMatrix</code> turn it (<code>XMMatrixRotationY(−heading)</code>, <code>GameClient.cpp:283-291</code>, <code>Hardpoints.cpp:54-64</code>).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Where this is not the game, on purpose or of necessity:</strong></p>
+<ul>
+<li><strong>Lines are 2 px wide at 1024 px</strong> (about 1 px in the <code>_512</code> copies). The game draws 1-pixel lines at any zoom (ADR-027 decision 3), but a model fills ~880 px here against ~80 px for a 20 m hull at the default zoom (500 m across 1920 px), so 1 px would read far thinner than the game does.</li>
+<li><strong>Each image is framed by its own projected extent</strong> (the model fills 84 % of the side), so images are <strong>not to scale</strong> with each other. The level sheets are the exception: one frame for all five levels.</li>
+<li><strong>Not drawn:</strong> the starfield and grid behind the model, banking, exhaust glows at <code>exhaust</code> hardpoints (ADR-019), footprint rings (ADR-042), selection, health bars, a structure under construction (darker by <code>UNBUILT_SHADE</code>), a Mining Rig standing on its rock (ADR-044), a remembered structure's lines-only look (<code>MEMORY_GRAY_SHARE</code>, <code>MEMORY_SHADE</code>, <code>GameClient.cpp:119-120</code>). Spinning parts are drawn at rest (angle 0), as the baker and the explosion take them (ADR-045 decisions 2 and 5).</li>
+<li><strong>Not built, so not drawn</strong> (<code>ImplementationPlan-Look.md</code> task board): paint slots, two-tone lines, beacons, fleet plates (LV2.2, LV2.3, LV3.1, LV4.1–4.3).</li>
+<li><strong>Transparent background</strong> (straight alpha, written so that it shows as rendered over black in an ordinary viewer): the sky is not there, and a model's dark faces read lighter on a white page than on the game's black.</li>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Sheets</div><div style="padding:20px 24px 24px 24px"><p class="md" style="color:#8193AD">Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.</p><figure style="margin:0 0 18px 0"><img src="/_blob/1ac85e225be5d2b41f9f0fe5d756249a" alt="Human sheet" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Human · every model, 3/4 and top</figcaption></figure><figure style="margin:0 0 18px 0"><img src="/_blob/02d4a772826522f21c8e5b0b10e5ad00" alt="Tarkan sheet" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Tarkan · every model, 3/4 and top</figcaption></figure><figure style="margin:0 0 18px 0"><img src="/_blob/087bf52940f052312a112d3e34e92d82" alt="Pirate sheet" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Pirate · every model, 3/4 and top</figcaption></figure><figure style="margin:0 0 18px 0"><img src="/_blob/2a64a0dc1eef4481ff0725d1aa8953b7" alt="Wreck sheet" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Wreck · every model, 3/4 and top</figcaption></figure><figure style="margin:0 0 18px 0"><img src="/_blob/783526f6a5a01159afde8469eeb070ff" alt="Asteroids sheet" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Asteroids · every model, 3/4 and top</figcaption></figure></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 6515}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

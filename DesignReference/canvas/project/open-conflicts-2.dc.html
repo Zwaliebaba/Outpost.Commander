@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Conflicts, part 2 of 3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Conflicts · part 2 of 3</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>C-012 — Unupgraded income a tick in ADR-017</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-017:35</code>: "25 and 40 hundredths every tick" (5 and 8 Ore/s). <code>Tuning.json:6-9</code>: 3.5 / 4 / 5.5 / 6.5 Ore/s, which is 17.5 / 20 / 27.5 / 32.5 hundredths a tick at 20 Hz.</li>
+<li><strong>Reference shows:</strong> <code>Tuning.json</code>. <strong>Reported by:</strong> A2 (Conflict 13). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-013 — How long a home reserve lasts, in ADR-035</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-035:19</code> (Consequences): "Matches change only after their first 25 minutes, when the home asteroids, 7,500 Ore at 5 a second, run dry; on the 5 km map". <code>Tuning.json:6</code> gives 3.5 Ore/s, and <code>Map.json:9-14</code> 7,500 Ore. <em>Derived:</em> 7,500 ÷ 3.5 ≈ 2,143 s (35:43), on the 10 km map (<code>Map.json:2</code>).</li>
+<li><strong>Reference shows:</strong> the derived 35:43. Near 37:30, contested ≈ 36:22, rich ≈ 61:32, with no research. <strong>Reported by:</strong> A1 (C3). <strong>Class:</strong> stale-doc (the ADR's figure; the Phase 1 half is C-040) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-014 — Whom a base repairer repairs</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>ADR-075:9</code> (Context): "repairs up to 4 friendly warships". <code>Phase4.md:324</code> says the same.</li>
+<li><code>ADR-075</code> decision 3: "its player's ships". <code>Phase4.md:333</code>: Constructors retreat and are repaired too.</li>
+<li><code>GameLogic/Simulation.cpp:2617-2621</code> repairs any damaged <code>EntityKind::Ship</code> of its player, Constructors included.</li>
+<li><strong>Reference shows:</strong> any of its player's ships. <strong>Reported by:</strong> A1 (C10), A2 (Conflict 15). <strong>Class:</strong> stale-doc (ADR-075 Context) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-015 — ADR cross-reference for a world's restart</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-037:28</code>: "a world's restart places one (ADR-081)". ADR-081 is territory and memory over the fog; the restart is <code>ADR-084</code> decision 4 (<code>Simulation.cpp:3715-3748</code>).</li>
+<li><strong>Reference shows:</strong> ADR-084. <strong>Reported by:</strong> A3 (Conflict 9). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-016 — Normal's attack group in ADR-065</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>ADR-065:12</code> (decision 2): Easy "gathers 30 warships before its main attack not 20", which reads as Normal = 20.</li>
+<li><code>ADR-065:13</code> (decision 3) itself says task 25.2 "has since given Normal … an attack group of 25", which Hard's file does not share.</li>
+<li>Data: <code>Opponent.json:2</code> 25, <code>OpponentEasy.json:2</code> 30, <code>OpponentHard.json:2</code> 20. <code>ADR-041:27</code> gives 25.</li>
+<li><strong>Reference shows:</strong> Easy 30, Normal 25, Hard 20. <strong>Reported by:</strong> A3 (Conflict 1). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+<li><strong>R checked:</strong> the three files and <code>ADR-065:10-14</code>.</li>
+</ul>
+<h4>C-017 — Example text of a scheduled order's condition (code comment)</h4>
+<ul>
+<li><strong>Sides:</strong> <code>GameApp/OrderForm.h:114-115</code> (comment): "… unless over 8 CP". <code>GameApp/OrderForm.cpp:313</code>: ", unless over {n} enemy CP".</li>
+<li><strong>Reference shows:</strong> ", unless over {n} enemy CP". <strong>Reported by:</strong> A3 (Conflict 11). <strong>Class:</strong> stale-doc (code comment) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-018 — The tick a recovered world comes back at</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase5.md:84</code>: "comes back at the last tick that applied a command". <code>ADR-077:32</code>: "the tick after the last command it logged". <code>GameLogic/InProcessServer.cpp:597-614</code> replays each logged tick, so the world stands at the tick after the last logged one.</li>
+<li><strong>Reference shows:</strong> the ADR's wording, which matches the code. This may be wording only. <strong>Reported by:</strong> A3 (Conflict 13). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-019 — Minimap metres per unit</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>ADR-068:37</code>: "about 18 m a unit on the 5 km map". <code>PlanUI1.md:215</code> says the same.</li>
+<li><code>GameApp/Hud.cpp:112-115</code> (comment): "about 36 m a unit on the 10 km map". <code>Map.json:2</code> <code>sizeMeters</code> 10000. The map area is 284 units (<code>Hud.cpp:3462</code>).</li>
+<li><strong>Reference shows:</strong> 284 units for 10,000 m = 35.2 m a unit. <strong>Reported by:</strong> A4 (C1), A5 (C4). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-020 — The asteroid field's minimap color</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-046:34</code> (decision 5): (0.06, 0.06, 0.065), "down from (0.13, 0.13, 0.14)". <code>ADR-068:35</code> (decision 2): (0.13, 0.13, 0.14), "where it was (0.06…)". ADR-046 was not rewritten in place (AGENTS.md §6). Code: <code>ASTEROID_FIELD_COLOR</code> (0.13, 0.13, 0.14) (<code>Hud.cpp:38</code>).</li>
+<li><strong>Reference shows:</strong> (0.13, 0.13, 0.14), <code>#656569</code>. <strong>Reported by:</strong> A4 (C2). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-021 — Window body opacity</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-062:41</code> (Consequences): "A window's body is 97% opaque". <code>ADR-068:32</code> (decision 1): "opaque". <code>Hud.cpp:839-840</code>: <code>WINDOW_COLOR</code> alpha 1.0.</li>
+<li><strong>Reference shows:</strong> opaque. <strong>Reported by:</strong> A4 (C3), A5 (C1). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-022 — What <code>WindowsFit</code> checks</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-070:15-19</code> (decision 3): the designer and the Controls window, and the Controls window alone on the menu. <code>Hud.h:863-866</code> and <code>Hud.cpp:3044-3053</code>: in a match also the Orders window (640 × 560) and the Away window at 20 lines (600 × 530).</li>
+<li><strong>Reference shows:</strong> in a match, Controls, Orders, Away and the designer; on the menu, Controls alone. <strong>Reported by:</strong> A4 (C4), A5 (C6). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-023 — Draw order within a layer</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-031:14</code> (decision 4): "panels, then its sprites, then its texts". <code>Hud.h:714-715</code>, <code>GameClient.cpp:1300-1336</code> and <code>ADR-015</code> decision 4: panels, <strong>lines</strong>, sprites, texts.</li>
+<li><strong>Reference shows:</strong> panels, lines, sprites, texts. <strong>Reported by:</strong> A4 (C5), A5 (C7). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-024 — When the hint shows</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-015:22</code> (decision 4): "A hint at the top middle while a placement is armed". <code>GameClient.cpp:742-749</code> and <code>Hud.cpp:2135-2168</code> also show it for a derelict, or a remembered structure, under the pointer.</li>
+<li><strong>Reference shows:</strong> the placement, derelict and memory hints. <strong>Reported by:</strong> A4 (C12). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-025 — Edge scroll</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-013:45</code> ("What this forecloses"): "Edge scroll or orders on W and D". Against it: <code>ADR-012</code> decisions 5–6; <code>Camera.cpp:111-125</code>; <code>Camera.json</code> <code>edgeScrollMarginPixels</code> 4; <code>KeyBindings.h:109</code> "Screen edge — Pan, while the pointer is held in the window".</li>
+<li><strong>Reference shows:</strong> edge scroll exists, while the cursor is held. <strong>Reported by:</strong> A4 (C13). <strong>Class:</strong> stale-doc (ambiguous wording) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-026 — Ore's sprite in ADR-030</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-030:15</code> names "Ore's diamond" in the list of <code>Hud::Sprites</code>, although the same paragraph says <code>DrawSprite</code> draws a cut gem. <code>Hud.cpp:3022</code> (<code>SpriteShape::Gem</code>) and <code>ADR-085</code> decision 3.</li>
+<li><strong>Reference shows:</strong> a cut gem. <strong>Reported by:</strong> A5 (C2). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-027 — Who owns the build bar</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-085:33</code> (Consequences): "The build bar is <code>GameClient</code>'s … so it has no test". <code>ADR-085:24</code> (decision 2) and <code>Hud.cpp:1016, 3119</code>: the HUD's <code>BUILD_BAR_COLOR</code>. <code>ADR-088:50</code> names <code>HudTests.LaysTheBarsOverTheEntities</code>.</li>
+<li><strong>Reference shows:</strong> the HUD's constant, laid out by <code>Hud::Lay</code>. <strong>Reported by:</strong> A5 (C3). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-028 — The vector grid's extent</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-028:13</code> (decision 1): "across the whole map, 5,000 m a side". <code>GameClient.cpp:27-30</code> (<code>GRID_HALF_EXTENT_METERS</code> 5000, "covers the 10,000 m map"), <code>Map.json:2</code> and <code>ADR-036:15</code>.</li>
+<li><strong>Reference shows:</strong> −5,000 to +5,000 m, 10,000 m a side. <strong>Reported by:</strong> A5 (C5), A7 (Conflict 1). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-029 — Where a health bar stands</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-028:19</code> (decision 7): "just above its footprint". <code>ADR-088:31-33</code> (decision 5), <code>Camera.cpp:270-285</code> and <code>GameClient.cpp:731-732</code>: 4 units above the highest on-screen corner of the model's bounds.</li>
+<li><strong>Reference shows:</strong> above the model's bounds. <strong>Reported by:</strong> A7 (Conflict 5). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-030 — The widest camera view in ADR-046</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-046:29</code>: "At the widest 1,600 m view". <code>Camera.json:4</code> <code>maximumViewWidthMeters</code> 3000; <code>ADR-012:13, 17</code>; <code>Phase4.md:400</code> (gate L6).</li>
+<li><strong>Reference shows:</strong> 3,000 m. (The MVP half is C-061.) <strong>Reported by:</strong> A7 (Conflict 2). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-031 — When the selection ring is amber</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-013:33</code> and <code>ADR-067:13</code>: amber "while attack-move waits". <code>GameClient.cpp:1440-1441</code>: amber while attack-move, Hold sector or Patrol is armed (the arming keys are ADR-059's).</li>
+<li><strong>Reference shows:</strong> amber for any of the three armed orders. <strong>Reported by:</strong> A7 (Conflict 6). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-032 — Bahnschrift's width for labels and names</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li><code>Phase1.md:290</code>: "Bahnschrift, condensed and semibold, for headings, labels and names". <code>GameApp/Hud.h:29-30</code> (comment): "condensed Bahnschrift for titles, labels and names".</li>
+<li><code>ADR-030:7</code> (Context) describes the mockup: titles condensed bold, names semibold.</li>
+<li><code>Hud.cpp:3011-3013</code>: Title is 700 SemiCondensed, while Label and Name are 600 at Normal width.</li>
+<li><strong>Reference shows:</strong> the code's faces. <strong>Reported by:</strong> A5 (C8). <strong>Class:</strong> stale-doc (design wording and code comment) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-033 — Look plan finding on materials</h4>
+<ul>
+<li><strong>Sides:</strong> <code>PlanLook.md:32</code> (finding 5): "Every source today has exactly one material, <code>team</code>". <code>Art/Models/Asteroids/{Small,Medium,Large}.glb</code> have no material. The other 42 have <code>team</code>.</li>
+<li><strong>Reference shows:</strong> the files. Materials are not baked, so no player sees this (<code>Tools/BakeMeshes.py</code> docstring). <strong>Reported by:</strong> A6 (C1). <strong>Class:</strong> stale-doc · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-034 — Crease counts in ADR-027</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-027:19</code>: "86 to 277 creases a ship and 249 to 736 a structure". A replay of <code>BuildCreaseLines</code> at 10° on HEAD's NMFs gives ships 74–259 and structures 108–1,198 (A6 per-model table).</li>
+<li><strong>Reference shows:</strong> A6's counts, marked as a replay. <strong>Reported by:</strong> A6 (C2). <strong>Class:</strong> stale-doc (a measurement of older meshes) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-035 — Tarkan Medium against Large length in ADR-011</h4>
+<ul>
+<li><strong>Sides:</strong> <code>ADR-011:9</code> (Context): "The Tarkan <code>Medium</code> is longer than the Tarkan <code>Large</code>." The NMF x extents are Medium 35.0 and Large 60.0 mesh units, and <code>Models.json:23-24</code> gives 35 m and 60 m.</li>
+<li><strong>Reference shows:</strong> 35 m and 60 m. <strong>Reported by:</strong> A6 (C3). <strong>Class:</strong> stale-doc (Context) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-036 — Look plan status of LV2.1</h4>
+<ul>
+<li><strong>Sides:</strong> <code>PlanLook.md:47</code>: LV2.1 "built; awaiting CI and the owner's run". <code>git log</code>: <code>ff8f4ba</code> "Merge pull request #108 … lit-vector-occlusion". <code>Tools/BakeMeshes.py:76</code> and <code>NeuronClient/MeshData.cpp:19</code> set NMF version 3, and <code>--check</code> passes (A6).</li>
+<li><strong>Reference shows:</strong> LV2.1 built (baked occlusion is in). <strong>Reported by:</strong> A6 (C4), A7 (Open 2), lead. <strong>Class:</strong> stale-doc (plan status only) · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-036a — The brief's vocabulary and interface steps</h4>
+<ul>
+<li><strong>Sides:</strong></li>
+<li>The brief's ground rule 5 spells "Defense Platform". The screen and the data spell <strong>Defence Platform</strong>, <strong>Defence gun</strong> and <strong>Defence Autoloader</strong> (<code>Tuning.json:37, 61, 92</code>; <code>Hud.cpp:2659</code> "{} Defence guns, "). Code identifiers spell <code>DefensePlatform</code> (AGENTS.md R11).</li>
+<li>The brief names interface steps of 100/110/125%. <code>Hud.h:861</code> and <code>ADR-070</code> decision 2 give 100, 110, 125, 150, 175 and 200%. A 16:9 screen reaches 110% in a match and 125% on the menu (A4 computed reach).</li>
+<li><strong>Reference shows:</strong> "Defence" on screen and in data, and six steps. <strong>Reported by:</strong> A4 (C16, Interface scale), A5 (Open). <strong>Class:</strong> stale-doc (brief) · <strong>OWNER?</strong> no</li>
+</ul>
+<hr />
+<h3>superseded</h3>
+<h4>C-037 — Protocol and world-state versions in the Phase 5 plan</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Plan5.md:239</code>: "The protocol is at version 15 and a world's state at version 6". <code>Plan5.md:97</code>: <code>PROTOCOL_VERSION</code> 11. <code>Plan5.md:147</code>: 12 and <code>WORLD_STATE_VERSION</code> 2. Superseded by the owner's 2026-10-09 decision in <code>AGENTS.md</code> R18, <code>ADR-060:17</code>, <code>ADR-077:24</code> and <code>Phase5.md:81</code>.</li>
+<li><strong>Reference shows:</strong> 1 and 1 (<code>WorldState.h:9</code>, <code>WireFormat.h:7</code>).</li>
+<li><strong>Reported by:</strong> A3 (Conflict 2), lead. <strong>Class:</strong> superseded. A plan is a work queue, and AGENTS.md is authority 1. · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-038 — Mining Rig income rates</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:147</code> gives home 5 and contested 8. <code>Phase1.md:216-219</code> gives 5, 6, 8, 10. <code>Phase2.md:15</code> gives 5, 6, 8, 10. <code>Phase4.md:216</code> gives 3.5, 4, 5.5, 6.5, and <code>ADR-036</code> decision 3 agrees.</li>
+<li><strong>Reference shows:</strong> <code>Tuning.json:6-9</code>: 3.5 / 4 / 5.5 / 6.5 Ore/s. <strong>Reported by:</strong> A1 (C1). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-039 — A rig's payback at home</h4>
+<ul>
+<li><strong>Sides:</strong> <code>MVP.md:149</code>: "pays for itself in 10 s at home". <em>Derived</em> from the code: 50 ÷ 3.5 ≈ 14.3 s (<code>Tuning.json:6, 60</code>).</li>
+<li><strong>Reference shows:</strong> ≈14.3 s (derived). <strong>Reported by:</strong> A1 (C2). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-040 — Reserve durations in Phase 1</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase1.md:216-219</code> gives home, near and contested 25 min and rich 40 min. <code>Phase1.md:206</code>: "home rigs run dry around minute 25–30". <code>Phase4.md:216</code> lowered the rates without restating these.</li>
+<li><strong>Reference shows:</strong> derived 35:43 / 37:30 / 36:22 / 61:32 (see C-013). <strong>Reported by:</strong> A1 (C3). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-041 — Domination's drain</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase2.md:110, 166</code> (gate J4) and <code>ImplementationPlan-Phase2.md:131</code>: every 10 s, 30 × the difference ÷ the map's nodes. <code>Phase4.md:259, 377</code> and <code>ADR-057</code> decisions 1–2: 3 s, 1 ticket a node.</li>
+<li><strong>Reference shows:</strong> <code>Tuning.json:14</code> <code>drainIntervalSeconds</code> 3, <code>drainTicketsPerNodeDifference</code> 1. <strong>Reported by:</strong> A1 (C4). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul>
+<h4>C-042 — Node caps by Command Station level</h4>
+<ul>
+<li><strong>Sides:</strong> <code>Phase3.md:114-118, 122, 173</code> (gate K4): 3, 4, 5, 6, 7, and 3 without a station. <code>Phase4.md:231-235, 259</code> (gate L4) and <code>ADR-064:41</code>: 4, 7, 10, 13, 16.</li>
+<li><strong>Reference shows:</strong> <code>Tuning.json:41-46</code>: 4 / 7 / 10 / 13 / 16, and 4 without a station (<code>Simulation.cpp:2912-2920</code>). <strong>Reported by:</strong> A1 (C5), A2 (Conflict 6). <strong>Class:</strong> superseded · <strong>OWNER?</strong> no</li>
+</ul></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5086}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Combat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 08</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Combat</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">How hits land, matchups, retreat and repair, salvage, Pirates and losing all production.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>A1</code> <code>A2</code> <code>Tuning.json</code> <code>Matchups.json</code> <code>ADR-014/073/074/075/083</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Combat rules</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Detail</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Damage per hit, after armor</td>
+<td><code>max(damage × 0.25, damage − armor)</code>, in hundredths: <code>max(d/4, d − a)</code>, the quarter rounded down to a hundredth</td>
+<td><code>DesignStats.h:16-21</code>; MVP §7 "Damage model"; <code>ADR-014 §Context</code>; secondary: <code>Tools/BattleModel.py:348-349</code></td>
+</tr>
+<tr>
+<td>Weapons are turrets, and hits are instant</td>
+<td>Ships fire in any direction and keep firing on the move. Nothing dodges a shot, and its look is presentation.</td>
+<td>MVP §7 "Combat rules" l.202,212; <code>ADR-014 §What this forecloses</code></td>
+</tr>
+<tr>
+<td>Targeting</td>
+<td>An attack order's target while it is in range. Otherwise the nearest enemy ship in range, or with none in range the nearest enemy structure, kept until it dies or leaves range.</td>
+<td><code>Simulation.cpp:1499-1534,1637-1647</code>; <code>ADR-014 §Decision 8</code></td>
+</tr>
+<tr>
+<td>What can be targeted</td>
+<td>Anything with hit points that an enemy owns, a pirate's included. Asteroids, fields and derelicts have no owner and are never targeted.</td>
+<td><code>Simulation.cpp:1503-1504</code>; <code>ADR-014 §Decision 10</code></td>
+</tr>
+<tr>
+<td>Range</td>
+<td>Measured between centers, so a big target is no easier to reach</td>
+<td><code>Simulation.cpp:121-126</code>; <code>ADR-014 §Decision 7</code></td>
+</tr>
+<tr>
+<td>A cold weapon</td>
+<td>A new ship, or one with no target for a whole interval past its reload, fires its first shot at a random moment within its interval. A ship that loses its target only for a moment keeps its rhythm.</td>
+<td><code>Simulation.cpp:607-608,1574-1589</code>; <code>ADR-014 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Hits land at the end of the tick</td>
+<td>Every shot is chosen from where everything stands at the start of the tick, and all the hits land together afterwards. Focus fire can overkill. Then the destroyed (hit points ≤ 0) leave the world, and every order on them ends.</td>
+<td><code>Simulation.cpp:1553-1556,1668-1736</code>; <code>ADR-014 §Decision 6</code></td>
+</tr>
+<tr>
+<td>The tick's order</td>
+<td>Fight first, then targets, the economy (work, repair, levels, production, research, mining), movement and separation. A ship that attack-moves stands still while an enemy is in range.</td>
+<td><code>Simulation.cpp:940-975</code>; <code>ADR-014 §Decision 9</code>; <code>Simulation.cpp:1873-1875</code></td>
+</tr>
+<tr>
+<td>Splash</td>
+<td>Every other enemy ship or structure whose center is within the splash radius of the target's center takes the same hit, after its own armor. There is no falloff, no friendly fire, and nothing without hit points is hit.</td>
+<td><code>Simulation.cpp:1609-1626</code>; <code>ADR-014 §Decision 12</code></td>
+</tr>
+<tr>
+<td>Retreat after hits</td>
+<td>Checked once the tick's hits have landed. A surviving ship whose hit points × 100 fall below max × threshold% turns back to its repairer, unless it is already going.</td>
+<td><code>Simulation.cpp:1675-1689</code>; <code>ADR-075 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Further station guns</td>
+<td>A Command Station's guns beyond the first fire at the target the station keeps, each on its own reload</td>
+<td><code>Simulation.cpp:1651-1658</code>; <code>ADR-064 §Decision 11</code></td>
+</tr>
+<tr>
+<td>Upgrades</td>
+<td>Change rates and never the size of a hit, armor or a range</td>
+<td><code>Tuning.cpp:364-376</code>; <code>ADR-033 §What this forecloses</code>; MVP §8 l.259</td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Movement as far as it changes play</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Detail</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ships turn in arcs, never on the spot</td>
+<td>Each tick a ship turns toward its next waypoint by at most turn rate × 1/20 s, and moves the way it faces</td>
+<td><code>Simulation.cpp:1883-1895,1924</code>; <code>ADR-039 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Slowing into a turn</td>
+<td>speed = cruise × (0.5 + 0.5 × max(0, cos bearing)), where <code>TURN_SPEED_SHARE = 0.5</code>. That is full speed on course and half speed with the waypoint abeam or behind.</td>
+<td><code>Simulation.cpp:20-22,1891</code>; <code>ADR-039 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Never circling a waypoint</td>
+<td>speed ≤ turn rate × distance ÷ (2·|sin bearing|)</td>
+<td><code>Simulation.cpp:1892-1893</code>; <code>ADR-039 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Loop size</td>
+<td>About twice the half-speed turn radius across: 20 m for Small+Ion, 24 m for Large+Fusion</td>
+<td><code>ADR-039 §Decision 2</code>; Phase 1 §9</td>
+</tr>
+<tr>
+<td>Stall</td>
+<td>A ship that has come no closer than 0.1 m for 1 s, heading within 45° of its waypoint, gives the waypoint up</td>
+<td><code>Simulation.cpp:15-24,1898-1909</code>; <code>ADR-039 §Decision 4</code>; <code>ADR-010 §Decision 6</code></td>
+</tr>
+<tr>
+<td>Stop and fire</td>
+<td>Ships stop dead at their destination and stand to fire on an attack-move. There is no momentum.</td>
+<td><code>ADR-039 §Decision 5</code>; <code>Simulation.cpp:1873-1875</code></td>
+</tr>
+<tr>
+<td>Groups</td>
+<td>A group keeps a formation with neighbors 3 footprint radii of its widest ship apart, and arrives together at its slowest ship's pace</td>
+<td><code>ADR-010 §Decision 4</code>; <code>DesignStats.h:105-107</code></td>
+</tr>
+<tr>
+<td>Ships do not overlap</td>
+<td>Overlapping ships part. A ship standing to fire gives way only sideways round its target (<code>SIDESTEP_SHARE</code> 0.2).</td>
+<td><code>Simulation.cpp:26-28,1928-1934</code>; <code>ADR-010 §Decision 7</code></td>
+</tr>
+<tr>
+<td>Attack-order chase</td>
+<td>A ship on an attack order paths again when its target has moved 40 m, at most once a second</td>
+<td><code>Simulation.cpp:62</code>; <code>ADR-014 §Decision 9</code></td>
+</tr>
+<tr>
+<td><strong>Banking: presentation only</strong></td>
+<td>It changes no rule: the simulation, the snapshot and replay are untouched. Small banks up to 50°, full at 60 m/s², settling in 0.25 s. Medium 45°, 26 m/s², 0.3 s. Large 35°, 8 m/s², 0.4 s. Constructor 30°, 55 m/s², 0.3 s.</td>
+<td><code>Models.json:60-62,74</code>; <code>ADR-029 §Context, §Decision 4</code></td>
+</tr>
+<tr>
+<td><strong>Shot looks: presentation only</strong></td>
+<td>Hits are instant whatever the look. The Lance's beam is in the side's color and narrows away in 0.25 s. The Rail Cannon's slug is white, 1.5 m wide, with 7 m flashes, fading over 0.4 s. Everything else fires tracers, the Defence gun's included. The looks let a player read the enemy's weapons on sight.</td>
+<td><code>Models.json:81-84</code>; <code>ADR-034 §Decision 1-2</code>; <code>ADR-016 §Decision 7</code>; MVP §7 l.202</td>
+</tr>
+</tbody>
+</table></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Repair and retreat</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>Who repairs, how fast</h4>
+<table>
+<thead>
+<tr>
+<th>Repairer</th>
+<th>Repairs what</th>
+<th>Rate</th>
+<th>Reach</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Constructor (on a <code>RepairCommand</code>)</td>
+<td>a damaged friendly ship or structure it is ordered to</td>
+<td>2% of the target's maximum hit points a second <strong>per Constructor</strong> (each adds a full 2%), × the crew's Rapid Construction factor; free</td>
+<td>footprint within 20 m of the target's</td>
+<td><code>Tuning.json: constructor.repairPercentPerSecond</code> 2 (line 35); <code>Simulation.cpp:2466-2468</code>; <code>ADR-016 §Decision 5</code>; <code>MVP.md:384</code></td>
+</tr>
+<tr>
+<td>Repair Bay</td>
+<td>up to 4 of its player's damaged ships, most damaged share first, then by identifier</td>
+<td>3% of each ship's full hit points a second; free; research does not raise it</td>
+<td>ship's footprint within 150 m of the repairer's footprint</td>
+<td><code>Tuning.json: shipRepair</code> (line 131); <code>Simulation.cpp:2606-2651</code>; <code>ADR-075 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Command Station</td>
+<td>as a Repair Bay</td>
+<td>as above</td>
+<td>as above</td>
+<td><code>Simulation.cpp:2537-2543</code>; <code>ADR-075 §Decision 3</code>; <code>Phase4.md:329</code></td>
+</tr>
+<tr>
+<td>Shipyard (built)</td>
+<td>as a Repair Bay</td>
+<td>as above</td>
+<td>as above</td>
+<td><code>Simulation.cpp:2537-2543</code>; <code>ADR-075 §Decision 3</code>; <code>Phase4.md:329</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>A ship one repairer took this tick is not taken by another, so two repairers side by side repair eight (<code>Simulation.cpp:2619-2630</code>; <code>ADR-075 §Decision 3</code>).</li>
+<li>A base repairer repairs any damaged ship of its player in reach, retreating or not, Constructors included (<code>Simulation.cpp:2619</code> filters <code>EntityKind::Ship</code>, not the warship role) (see Conflicts C10).</li>
+<li>A structure under construction or a pirate structure does not repair (<code>Simulation.cpp:2537-2543</code>).</li>
+<li>Structures are repaired only by Constructors; a Constructor repairs a structure while it is being upgraded (<code>ADR-064 §Decision 4</code>).</li>
+</ul>
+<h4>Repair Bay</h4>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost / build</td>
+<td>300 Ore, 40 s of a Constructor's work</td>
+<td><code>Tuning.json</code> line 63</td>
+</tr>
+<tr>
+<td>Hit points / armor / footprint</td>
+<td>2,000 / 5 / 30 m</td>
+<td><code>Tuning.json</code> line 63</td>
+</tr>
+<tr>
+<td>Where</td>
+<td>only in a sector its player holds; keeps working if the sector is lost</td>
+<td><code>Simulation.cpp:2118-2124</code>; <code>ADR-075 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Gun / levels</td>
+<td>none / none</td>
+<td><code>ADR-075 §Decision 1</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Retreat</h4>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Thresholds</td>
+<td><code>Never</code>, <code>Half</code> (50%), <code>Quarter</code> (25%)</td>
+<td><code>GameProtocol/RetreatThreshold.h:7-30</code></td>
+</tr>
+<tr>
+<td>Default</td>
+<td><code>Quarter</code>, for a design unless saved otherwise, and for a Constructor</td>
+<td><code>RetreatThreshold.h:15</code>; <code>Simulation.cpp:640</code> (Constructor); <code>ADR-075 §Decision 4</code>; <code>Phase4.md:327</code></td>
+</tr>
+<tr>
+<td>Trigger</td>
+<td>a hit that leaves a ship (warship or Constructor) still alive and <strong>strictly below</strong> its threshold sends it back, unless it is already going; checked once the tick's hits land, splash included</td>
+<td><code>Simulation.cpp:1675-1690</code>, <code>1735</code>; <code>ADR-075 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Where it goes</td>
+<td>the nearest Repair Bay (straight distance); without one, the Command Station; without that, the nearest Shipyard; ties to the lower identifier; with none at all, it fights on</td>
+<td><code>Simulation.cpp:2556-2577</code>; <code>ADR-075 §Decision 5</code>; <code>Phase4.md:331</code></td>
+</tr>
+<tr>
+<td>Stop point</td>
+<td>40 m beyond its repairer's footprint on the side it comes from</td>
+<td><code>Simulation.cpp:86</code> (<code>REPAIR_STANDOFF_METERS</code>), <code>Simulation.cpp:2584-2587</code>; <code>ADR-075 §Decision 5</code></td>
+</tr>
+<tr>
+<td>On the way</td>
+<td>its attack or work order ends; it is given a move order; it still fires on the move</td>
+<td><code>Simulation.cpp:2581-2587</code>; <code>ADR-075 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Repairer fell</td>
+<td>once a second it goes to the next by the same rule</td>
+<td><code>Simulation.cpp:2591-2602</code>; <code>ADR-075 §Decision 5</code></td>
+</tr>
+<tr>
+<td>A retreat ends</td>
+<td>when the ship is whole (it waits there, or its standing order takes it back), or when its player gives it any order naming it, or sets it to never retreat; the next hit below its threshold starts it again</td>
+<td><code>Simulation.cpp:2640-2647</code>, <code>2520-2535</code>; <code>ADR-075 §Decision 6</code>; <code>Phase4.md:325</code>, <code>Phase4.md:332</code></td>
+</tr>
+<tr>
+<td>Run by the simulation</td>
+<td>so it works while nobody is looking</td>
+<td><code>Phase4.md:326</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Salvage</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What a derelict is</td>
+<td>an entity of kind <code>Derelict</code>, no owner, no hit points; a wreck of the old fleet</td>
+<td><code>ADR-074 §Decision 1</code>; <code>Phase4.md:305</code></td>
+</tr>
+<tr>
+<td>Placed from the seed</td>
+<td>12 a map: 6 mirrored pairs (one flank pair at 300 Ore, two near pairs at 450, two contested pairs at 600, the between pair at 750); none in the rich corners or the center</td>
+<td><code>Map.json: derelicts</code> (lines 164-169); <code>ADR-074</code> Context; <code>Phase4.md:311</code></td>
+</tr>
+<tr>
+<td>Hull drawn / radius</td>
+<td>flank Small r 20; near Medium r 25; contested and between Large r 30</td>
+<td><code>Map.json: derelicts</code> (lines 165-168)</td>
+</tr>
+<tr>
+<td>Blocks movement?</td>
+<td>no; but no structure may stand on one (the server refuses, the ghost shows red)</td>
+<td><code>Simulation.cpp:2127-2130</code>; <code>ADR-074 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Who salvages</td>
+<td><strong>Constructors only</strong> (<code>NotAConstructor</code> for a warship), on a derelict the player sees or remembers (<code>NotVisible</code> otherwise); <code>NotSalvageable</code> for anything but a derelict</td>
+<td><code>Simulation.cpp:2204-2224</code>, <code>2049-2060</code>; <code>ADR-074 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Work</td>
+<td>30 s of one Constructor's work; each further Constructor adds 0.5; scaled by the crew's Rapid Construction rate</td>
+<td><code>Tuning.json: salvage.workSeconds</code> 30 (line 130); <code>Simulation.cpp:2435-2447</code>; <code>ADR-074 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Reach</td>
+<td>a Constructor works once its footprint is within 20 m of the target's</td>
+<td><code>Simulation.cpp:69</code> (<code>WORK_REACH_METERS</code>), <code>Simulation.cpp:2364-2367</code>; <code>ADR-016 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Two crews</td>
+<td>two players' crews work on the same salvage; the crew that finishes is paid</td>
+<td><code>ADR-074 §Decision 4</code></td>
+</tr>
+<tr>
+<td><strong>What the Constructor's player gets: Ore</strong></td>
+<td>the derelict's Ore, at once</td>
+<td><code>Simulation.cpp:2488-2491</code></td>
+</tr>
+<tr>
+<td><strong>What it gets: research</strong></td>
+<td>if the derelict names a topic: 50% of that topic's research time; taken off at once if a Lab is researching it, else kept as "recovered" and the topic starts that far along, whatever its tier; full Ore cost still paid; nothing for a topic already researched; a second recovery of a waiting topic adds nothing</td>
+<td><code>Tuning.json: salvage.recoveryPercent</code> 50 (line 130); <code>Simulation.cpp:2492-2518</code>, <code>3069-3075</code>; <code>ADR-074 §Decision 5</code>; <code>Phase4.md:308</code></td>
+</tr>
+<tr>
+<td>Topics named</td>
+<td>2 of the 6 seeded pairs (4 derelicts), any topic of the table; outpost wrecks name none</td>
+<td><code>Map.cpp:495-507</code>; <code>ADR-074 §Decision 2, 6</code></td>
+</tr>
+<tr>
+<td>Seen and remembered</td>
+<td>as an enemy's structure: seen within sight with what it holds, remembered out of sight, forgotten once its place is seen without it</td>
+<td><code>Simulation.cpp:243-250</code>, <code>289-365</code>; <code>ADR-074 §Decision 7</code>; <code>ADR-024 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Color source</td>
+<td><code>Models.json</code>'s <code>"Wreck"</code> set: grey <code>{0.4, 0.4, 0.42}</code>, borrowing the Human meshes; <code>"derelicts": "Wreck"</code></td>
+<td><code>Models.json:38-42</code>, <code>Models.json:58</code>; <code>ADR-074 §Decision 10</code></td>
+</tr>
+<tr>
+<td>Player structures leave nothing</td>
+<td>a destroyed Relay, rig or platform leaves no salvage</td>
+<td><code>Phase2.md:169</code> (gate J7)</td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Pirates</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What they are</td>
+<td>a neutral owner, <code>PIRATES</code> (<code>PlayerId</code> 0xFFFFFFFF), not a player: no Ore, production, research, vision or snapshot; they send no commands</td>
+<td><code>GameProtocol/Id.h:25</code>; <code>ADR-073 §Decision 1</code>; <code>Phase4.md:282</code></td>
+</tr>
+<tr>
+<td>Every player's enemy</td>
+<td>every rule that takes another valid owner as the enemy takes the pirates so; outposts share one owner and never fight each other</td>
+<td><code>ADR-073 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Outposts on the map</td>
+<td>7: a <strong>camp</strong> on 2 of the 4 contested pairs (4 camps) and a <strong>stronghold</strong> on the rich pair (E1, A5) and on the center (C3)</td>
+<td><code>Map.json: outposts</code> (lines 159-163); <code>ADR-072 §Decision 7</code>; <code>Phase4.md:292</code></td>
+</tr>
+<tr>
+<td>Camp</td>
+<td>1 Defence Platform (on the node) and 3 Small Ion Mass Driver ships</td>
+<td><code>Tuning.json: pirates.outposts[camp]</code> (lines 123-124); <code>ADR-073 §Decision 3-4</code></td>
+</tr>
+<tr>
+<td>Stronghold</td>
+<td>2 Defence Platforms (140 m apart, across the line to the center) and 3 Medium Ion Mass Driver ships + 1 Medium Ion Lance ship</td>
+<td><code>Tuning.json: pirates.outposts[stronghold]</code> (lines 125-127); <code>Simulation.cpp:82</code> (<code>PIRATE_PLATFORM_SPACING_METERS = 140</code>); <code>ADR-073 §Decision 3-4</code></td>
+</tr>
+<tr>
+<td>Ship ring</td>
+<td>120 m round the node, the first on the side facing the center</td>
+<td><code>Simulation.cpp:83</code> (<code>PIRATE_RING_METERS = 120</code>); <code>ADR-073 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Totals</td>
+<td><em>derived</em>: 10 pirate structures (4×1 + 3×2) and 24 ships (4×3 + 3×4); also stated in <code>Phase4.md:119</code></td>
+<td><code>Map.json</code> + <code>Tuning.json</code></td>
+</tr>
+<tr>
+<td>Level</td>
+<td>base level, no research; base hit points</td>
+<td><code>ADR-073 §Decision 1</code>; <code>Phase4.md:293</code></td>
+</tr>
+<tr>
+<td><strong>Guard rule</strong></td>
+<td>once a second the outpost's ships act as one: a quarry is the player's ship or structure nearest the node within <strong>600 m</strong> (to its center); they attack-move at it unless already engaged (one has a target, or is attack-moving to within 150 m of the quarry); the quarry is dropped once gone or more than <strong>900 m</strong> from the node; with none, they move back to the node once their center is more than 200 m from it</td>
+<td><code>Tuning.json: pirates.guardMeters</code> 600, <code>chaseMeters</code> 900 (lines 120-121); <code>Simulation.cpp:3580-3644</code>; <code>Simulation.cpp:65-66</code> (150 m, 200 m); <code>ADR-073 §Decision 5</code>; <code>Phase4.md:287</code></td>
+</tr>
+<tr>
+<td>Never leave their sector</td>
+<td>the 900 m chase is under a sector's 1,000 m half-width; placement throws if a chase would leave the sector</td>
+<td><code>Simulation.cpp:828-831</code>; <code>ADR-073 §Decision 4-5</code></td>
+</tr>
+<tr>
+<td>Sight</td>
+<td>they see through fog of war, as a Defence gun does</td>
+<td><code>ADR-073 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Never retreat</td>
+<td>their designs are saved with <code>RetreatThreshold::Never</code></td>
+<td><code>Simulation.cpp:859-862</code>; <code>ADR-075 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Never raid, never respawn</td>
+<td>a cleared outpost stays cleared</td>
+<td><code>Phase4.md:287-288</code>; <code>ADR-073</code> "What this forecloses"</td>
+</tr>
+<tr>
+<td>Guarded sector</td>
+<td>cannot be claimed while a pirate structure stands in it; its node counts for no one; every player sees which sectors are guarded (the pirates themselves stay under fog)</td>
+<td><code>ADR-073 §Decision 6-7</code>; <code>Phase4.md:283</code>, <code>Phase4.md:294</code></td>
+</tr>
+<tr>
+<td>Cleared outpost</td>
+<td>leaves a derelict where its last Defence Platform fell: 600 Ore for a camp, 1,200 for a stronghold, drawn as a Large hull (radius 30 m camp, 40 m stronghold), no topic; a camp's wreck covers its node until salvaged</td>
+<td><code>Tuning.json: pirates.outposts[].wreck</code> (lines 124, 127); <code>Simulation.cpp:1740-1765</code>; <code>ADR-074 §Decision 6</code>; <code>Phase4.md:296</code></td>
+</tr>
+<tr>
+<td>Clearing a camp</td>
+<td>three steps: fight it, salvage its wreck, then build the Relay</td>
+<td><code>ADR-074</code> Consequences</td>
+</tr>
+<tr>
+<td>Not placed in measurement or stress runs</td>
+<td>—</td>
+<td><code>InProcessServer.cpp:162-167</code>; <code>ADR-073 §Decision 8</code></td>
+</tr>
+<tr>
+<td><strong>Color source</strong></td>
+<td><code>Models.json</code>'s <code>"Pirate"</code> set: violet <code>{0.62, 0.22, 0.9}</code>, borrowing the Tarkan meshes (<code>"meshes": "Tarkan"</code>); <code>"pirates": "Pirate"</code> names it</td>
+<td><code>Models.json:33-37</code>, <code>Models.json:57</code>; <code>ADR-073 §Decision 10</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Losing all production</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The loss rule</td>
+<td>a player whose base was placed loses when it has <strong>neither a Command Station nor a finished Shipyard</strong>; checked every tick</td>
+<td><code>Simulation.cpp:3683-3710</code>; <code>ADR-037 §Decision 1</code>; <code>Phase1.md:70</code></td>
+</tr>
+<tr>
+<td>What does not keep a player in</td>
+<td>a Shipyard under construction, Constructors, Research Labs, rigs, platforms (and Relays, Repair Bays: not named in the rule)</td>
+<td><code>ADR-037 §Decision 1</code>; <code>Simulation.cpp:3693-3699</code></td>
+</tr>
+<tr>
+<td>A lost Command Station is lost for good in a match</td>
+<td>the Command Station has no cost in the tuning data, so a Constructor's order to build one is refused <code>NotBuildable</code>; only a Command Station queues Constructors</td>
+<td><code>Tuning.json</code> line 40 (no <code>cost</code>); <code>Simulation.cpp:2149-2151</code>; <code>ADR-037 §Decision 2</code>; <code>Phase1.md:71</code></td>
+</tr>
+<tr>
+<td>Without its station a player keeps</td>
+<td>its Constructors, Shipyards (which keep building), and the right to build Shipyards; level 1's node cap (4) and fleet cap (12); every held sector becomes cut off (half income)</td>
+<td><code>Phase1.md:71</code>; <code>Simulation.cpp:2912-2930</code>; <code>ADR-056 §Decision 7</code></td>
+</tr>
+<tr>
+<td>The last production is revealed</td>
+<td>while a player has no Command Station, each of its finished Shipyards is added to (or refreshed in) every opponent's remembered structures at the end of each tick, unless seen; a site is not revealed</td>
+<td><code>Simulation.cpp:316-330</code>, <code>409-421</code>; <code>ADR-037 §Decision 3</code>; <code>Phase1.md:72</code></td>
+</tr>
+<tr>
+<td>The match ends</td>
+<td>once, with a winner or a draw, <code>MatchEnding::LostProduction</code></td>
+<td><code>Simulation.cpp:3708-3709</code>; <code>ADR-037 §Decision 1</code></td>
+</tr>
+<tr>
+<td>In a world</td>
+<td>nothing ends; the player is told (<code>EmpireLost</code>) and its seat restarts an hour later (next section)</td>
+<td><code>Simulation.cpp:3706-3707</code>; <code>ADR-037 §Decision 1</code>; <code>ADR-084 §Decision 3</code></td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Battle matchups</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Name</th>
+<th>Distance (m)</th>
+<th>Side 1 (player 1)</th>
+<th>Side 2 (player 2)</th>
+<th>Side 1: Ore / command points / hit points</th>
+<th>Side 2: Ore / command points / hit points</th>
+<th>ADR-083 baseline, seeds 1–40 (side 1 / side 2 / drawn, median length)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Mirror: Small Mass Drivers</td>
+<td>700</td>
+<td>20 × Small+Ion+Mass Driver (Swarm)</td>
+<td>20 × Swarm</td>
+<td>5,220 / 20 / 3,960</td>
+<td>5,220 / 20 / 3,960</td>
+<td>25 / 15 / 0, 21 s</td>
+<td><code>Matchups.json:4-9</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Swarm against line: Small Mass Drivers and Medium Lances</td>
+<td>700</td>
+<td>25 × Swarm</td>
+<td>10 × Medium+Ion+Lance (Lancer)</td>
+<td>6,525 / 25 / 4,950</td>
+<td>6,450 / 20 / 4,500</td>
+<td>0 / 40 / 0, 31 s</td>
+<td><code>Matchups.json:12-17</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Flak against swarm: Medium Flak Batteries and Small Mass Drivers</td>
+<td>700</td>
+<td>11 × Medium+Ion+Flak Battery</td>
+<td>24 × Swarm</td>
+<td>6,270 / 22 / 4,950</td>
+<td>6,264 / 24 / 4,752</td>
+<td>40 / 0 / 0, 9 s</td>
+<td><code>Matchups.json:20-25</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Heavy against line: Large Rail Cannons and Medium Lances</td>
+<td>800</td>
+<td>5 × Large+Ion+Rail Cannon</td>
+<td>11 × Lancer</td>
+<td>7,050 / 20 / 5,400</td>
+<td>7,095 / 22 / 4,950</td>
+<td>19 / 21 / 0, 41 s</td>
+<td><code>Matchups.json:28-33</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Missiles against line: Medium Missile Racks and Medium Lances</td>
+<td>800</td>
+<td>8 × Medium+Ion+Missile Rack</td>
+<td>10 × Lancer</td>
+<td>6,240 / 16 / 3,600</td>
+<td>6,450 / 20 / 4,500</td>
+<td>0 / 40 / 0, 22 s</td>
+<td><code>Matchups.json:36-41</code></td>
+</tr>
+</tbody>
+</table>
+<p>The Ore, command points and hit points are derived from <code>Tuning.json</code> with <code>DesignStats.h:86,88</code>, by <code>derive.py</code>. The baseline is the ADR's measurement, not the game's, quoted from <code>ADR-083 §Consequences</code>.</p>
+<ul>
+<li><strong>The setup.</strong> No bases, pirates, derelicts or fog of war. Each fleet stands in rows of 5 ships, 60 m apart, its front row the matchup's distance from the other side's. They meet at a node the seed picks, along a line the seed picks (<code>Simulation.cpp:88-91,749-787</code>; <code>ADR-083 §Decision 2</code>).</li>
+<li><strong>No retreat.</strong> A matchup's ships never retreat (<code>Simulation.cpp:781-782</code>).</li>
+<li><strong>Research.</strong> Matchup designs take the player's research, which is none at the start (<code>Simulation.cpp:774</code>).</li>
+<li><strong>The fleet cap.</strong> Matchup ships are placed whole, so the cap does not stop them (<code>ADR-071 §Decision 2</code>).</li>
+<li><strong>The end.</strong> A matchup ends when one side has no warship left (<code>FleetDestroyed</code>), or as a draw after <code>MATCHUP_SECONDS</code> = 600 s (<code>TimeLimit</code>) (<code>Simulation.h:348-350</code>; <code>Simulation.cpp:789-804</code>; <code>ADR-083 §Decision 3</code>).</li>
+<li><strong>How it is started.</strong> Live it is the game's <code>--matchup &lt;n&gt;</code>, with the owner as player 1. Headless it is <code>OutpostServer --matchups</code>, where the AI's <code>MatchupPlayer</code> plays both sides (<code>ADR-083 §Decision 4-6</code>).</li>
+</ul>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 6480}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

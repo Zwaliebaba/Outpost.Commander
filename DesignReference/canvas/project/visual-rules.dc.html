@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rules, spacing and frame</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Rules</div><div style="padding:20px 24px 24px 24px"><div class="md"><h4>One meaning per color (ADR-085)</h4>
+<table>
+<thead>
+<tr>
+<th>Meaning</th>
+<th>Token(s)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The player's own side, on the HUD</td>
+<td><code>OWN_COLOR</code></td>
+<td>Hud.cpp:21-23</td>
+</tr>
+<tr>
+<td>The enemy, on the HUD (plain text, never a chip)</td>
+<td><code>ENEMY_COLOR</code></td>
+<td>ADR-085 d1</td>
+</tr>
+<tr>
+<td>Pirates, on the HUD</td>
+<td><code>PIRATE_COLOR</code></td>
+<td>ADR-073 d10</td>
+</tr>
+<tr>
+<td>Derelict</td>
+<td><code>DERELICT_COLOR</code> (minimap); Wreck set (world)</td>
+<td>ADR-074</td>
+</tr>
+<tr>
+<td>A side in the world</td>
+<td>Models.json set color (Human, Tarkan, Pirate, Wreck)</td>
+<td>Models.json:5-40</td>
+</tr>
+<tr>
+<td><strong>Ore</strong> (every amount, with the gem)</td>
+<td><code>GOLD_COLOR</code>; on the minimap <code>ORE_ASTEROID_COLOR</code> (darkened), <code>DRY_COLOR</code> (run out)</td>
+<td>ADR-043 d3, d7; ADR-085 d3</td>
+</tr>
+<tr>
+<td><strong>Warning</strong>, the player's own problem</td>
+<td><code>WARNING_COLOR</code>, as a chip's tag</td>
+<td>ADR-085 d1</td>
+</tr>
+<tr>
+<td><strong>Build progress (no side's)</strong></td>
+<td><code>BUILD_BAR_COLOR</code></td>
+<td>ADR-085 d2</td>
+</tr>
+<tr>
+<td>The player's own progress or measure</td>
+<td><code>BAR_FILL_COLOR</code></td>
+<td>ADR-085 d2</td>
+</tr>
+<tr>
+<td>Health</td>
+<td><code>HEALTH_GOOD_</code>, <code>HEALTH_FAIR_</code>, <code>HEALTH_POOR_COLOR</code></td>
+<td>ADR-088 d5</td>
+</tr>
+<tr>
+<td>Better / worse; Good / Fair / Poor rating</td>
+<td><code>GOOD_COLOR</code> / <code>POOR_COLOR</code>; <code>GOOD_</code>, <code>FAIR_</code>, <code>POOR_COLOR</code></td>
+<td>Hud.cpp:1031-1041</td>
+</tr>
+<tr>
+<td>Waits on something first (research, Ore, the fleet cap)</td>
+<td><code>AMBER_COLOR</code></td>
+<td>Phase 1 design "The look"; Hud.cpp:1477-1478, 1695, 1874-1876</td>
+</tr>
+<tr>
+<td>Current pick or lit choice</td>
+<td><code>PICKED_COLOR</code> + <code>PICKED_EDGE_COLOR</code>; <code>ACCENT_COLOR</code> for its name</td>
+<td>Hud.cpp:990-991, 1440</td>
+</tr>
+<tr>
+<td>What a click takes, under the pointer</td>
+<td><code>HOVER_EDGE_COLOR</code> (= <code>WINDOW_EDGE_COLOR</code>); <code>CARD_COLOR</code> row for a status line</td>
+<td>ADR-088 (UI4.4)</td>
+</tr>
+<tr>
+<td>Commit (Queue; a saved design)</td>
+<td><code>QUEUE_*</code> greens</td>
+<td>Hud.cpp:1007-1012</td>
+</tr>
+<tr>
+<td>Locked or unaffordable</td>
+<td><code>LOCKED_*</code>; <code>LOCKED_TEXT_COLOR</code></td>
+<td>ADR-062 d3</td>
+</tr>
+<tr>
+<td>Window chrome</td>
+<td><code>WINDOW_COLOR</code>, <code>TITLE_HATCH_COLOR</code>, <code>CLOSE_BOX_COLOR</code>, <code>WINDOW_EDGE_COLOR</code></td>
+<td>ADR-031 d3</td>
+</tr>
+<tr>
+<td>Selected in the world / armed order</td>
+<td><code>SELECTION_COLOR</code> / <code>ATTACK_MOVE_COLOR</code></td>
+<td>GameClient.cpp:77-90</td>
+</tr>
+<tr>
+<td>Placement valid / invalid</td>
+<td><code>GHOST_VALID_COLOR</code> / <code>GHOST_INVALID_COLOR</code></td>
+<td>GameClient.cpp:121-123</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What ADR-085 actually enforces</strong> is three things:</p>
+<ul>
+<li>a warning is a chip, which no other element draws;</li>
+<li>build progress is gray;</li>
+<li>Ore's glyph is a gem, which no other element shares.</li>
+</ul>
+<p>ADR-085 "What this forecloses": "A warning written as plain text in <code>WARNING_COLOR</code> beside an enemy figure. A chip in any other color, or behind anything but a warning."</p>
+<p>Two plain-text warnings remain by decision: a refused name (Hud.cpp:1392) and the menu notice (Hud.cpp:2351), both in ADR-085 d1. See Open for the hue families that more than one meaning shares.</p>
+<h4>The interface never glows (ADR-091 d1, "forecloses")</h4>
+<p>The code guarantees it by the frame's order:</p>
+<ol>
+<li><strong>The scene, then the interface.</strong> <code>WinMain.cpp:514-518</code> calls <code>BeginFrame</code>, then <code>client.Render</code> (the scene), then <code>renderer.BeginInterface()</code>, then <code>client.RenderInterface</code>, then <code>EndFrame</code>.</li>
+<li><strong>The glow is made before any interface exists.</strong> <code>Renderer::BeginInterface</code> (<code>Renderer.cpp:416-450</code>) makes the bloom from the scene target's shader view alone (<code>m_bloom-&gt;Draw(..., ShaderViewGpu(m_sceneView), ...)</code>, <code>Renderer.cpp:435</code>). It then resolves the scene with the glow added into the back buffer.</li>
+<li><strong>The UI draws onto the finished image.</strong> <code>UiPipeline</code>'s pipeline state renders straight into the back buffer at one sample with no depth (<code>UiPipeline.cpp:131-138</code>). Nothing reads the back buffer back into the bloom.</li>
+<li><strong>There is no other path.</strong> <code>EndFrame</code> calls <code>BeginInterface</code> if nothing did (<code>Renderer.cpp:464</code>), so the order holds on every frame.</li>
+</ol>
+<p>The entity bars are part of the UI layout, so they never glow either (GameClient.cpp:1297-1299). The selection ring, the footprint rings, the beams and the exhausts are scene, and they do glow (ADR-091 consequences).</p>
+<h4>Ore is written one way (ADR-043 d3)</h4>
+<ul>
+<li><strong>The form:</strong> the gem then the figure, grouped in thousands, in <code>GOLD_COLOR</code>, through <code>Painter::GemAndFigure</code> and <code>GemAndFigureFrom</code> (Hud.cpp:1216-1235).</li>
+<li><strong>Where:</strong> the stockpile (Hud.cpp:3145, the word "Ore" dropped), a window's Ore box (:1248), a HUD button's cost (:1322), a part card's cost (:1465), the Queue cost (:1597), a production option's cost (:1751) and a topic's cost (:1864).</li>
+<li><strong>Fixed gem place:</strong> the stockpile is written from the panel's left, so the gem stays put as the figure grows (ADR-046; Hud.cpp:3145).</li>
+<li><strong>Exceptions:</strong> see Open.</li>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Spacing and frame</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>The reference frame</strong> is 1920×1080 units (Hud.h:23-24; ADR-006 d5).</p>
+<ul>
+<li><strong>The scale</strong> is <code>factor × min(w/1920, h/1080)</code> (Hud.cpp:3029-3033).</li>
+<li><strong>On a non-16:9 screen</strong> the spare room goes between the anchors, because each anchor is placed in <code>width/scale</code> × <code>height/scale</code> units (Hud.cpp:3085-3086).</li>
+<li><strong>The interface factor</strong> (ADR-070) steps through <strong>1.0, 1.1, 1.25, 1.5, 1.75 and 2.0</strong> (Hud.h:861). It starts at 1.0, and Ctrl+= and Ctrl+- step it.</li>
+<li>It steps up only while the designer (laid out for every component), the Controls window, and the orders and away windows at their tallest all fit between the margins. On the menu, the Controls window alone must fit (Hud.h:863-866; Hud.cpp:3035-3054).</li>
+<li>It comes down to the largest step that fits when the screen size changes or a match starts or ends (Hud.cpp:3056-3073).</li>
+<li><strong>What the factor does not scale:</strong> the entity bars (<code>Scale</code> is called without the factor, Hud.cpp:3096), the selection ring (GameClient.cpp:1443) and the stars (ADR-070 d7).</li>
+<li><strong>Pixel snapping:</strong></li>
+<li>Snapped to whole pixels: text, sprites (<code>UiPipeline.cpp:270-272, 304</code>) and the entity bars (Hud.cpp:3098-3106).</li>
+<li>Not snapped: panels and 1-unit outlines (<code>UiPipeline.cpp:236-241</code>). See Open.</li>
+</ul>
+<p><strong>Spacing</strong> (reference units, Hud.cpp):</p>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Line</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MARGIN</code></td>
+<td>16</td>
+<td>62</td>
+<td>From the screen's edge to every anchored panel; between windows standing side by side</td>
+</tr>
+<tr>
+<td><code>PADDING</code></td>
+<td>12</td>
+<td>63</td>
+<td>From a panel's edge to its content</td>
+</tr>
+<tr>
+<td><code>PANEL_GAP</code></td>
+<td>8</td>
+<td>141</td>
+<td>Between stacked HUD panels; from the minimap to the selection</td>
+</tr>
+<tr>
+<td><code>TERRITORY_INSET_UNITS</code></td>
+<td>10</td>
+<td>142</td>
+<td>Room above and below the lines of the status, territory, alerts and connection panels</td>
+</tr>
+<tr>
+<td><code>ORE_PANEL_HEIGHT</code></td>
+<td>44</td>
+<td>72</td>
+<td></td>
+</tr>
+<tr>
+<td><code>COLUMN_LEAST_UNITS</code></td>
+<td>380</td>
+<td>132</td>
+<td>The least width of the column under the Ore; it grows to its widest line</td>
+</tr>
+<tr>
+<td><code>STATUS_PANEL_KEPT_UNITS</code></td>
+<td>94</td>
+<td>149</td>
+<td>The room kept for the status panel</td>
+</tr>
+<tr>
+<td>Selection panel width</td>
+<td>280 to 560</td>
+<td>75-76</td>
+<td></td>
+</tr>
+<tr>
+<td><code>BUTTON_PANEL_WIDTH</code></td>
+<td>380</td>
+<td>104</td>
+<td></td>
+</tr>
+<tr>
+<td><code>BUTTON_HEIGHT</code></td>
+<td>34</td>
+<td>105</td>
+<td></td>
+</tr>
+<tr>
+<td><code>BUTTON_GAP</code></td>
+<td>6</td>
+<td>106</td>
+<td></td>
+</tr>
+<tr>
+<td><code>BUTTON_INSET</code></td>
+<td>12</td>
+<td>107</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIMAP_SIZE</code></td>
+<td>300</td>
+<td>114</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIMAP_PADDING</code></td>
+<td>8</td>
+<td>115</td>
+<td></td>
+</tr>
+<tr>
+<td><code>HINT_PANEL_WIDTH</code></td>
+<td>640</td>
+<td>126</td>
+<td></td>
+</tr>
+<tr>
+<td><code>BANNER_WIDTH</code></td>
+<td>520</td>
+<td>154</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MENU_WIDTH</code></td>
+<td>440</td>
+<td>161</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONNECTION_MOST_UNITS</code></td>
+<td>360</td>
+<td>158</td>
+<td></td>
+</tr>
+<tr>
+<td><code>FIT_GAP_UNITS</code></td>
+<td>6</td>
+<td>959</td>
+<td>Room a line cut short keeps from what stands beside it</td>
+</tr>
+<tr>
+<td><code>CHIP_PAD_UNITS</code></td>
+<td>4</td>
+<td>962</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Window constants:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TITLE_BAR_UNITS</code></td>
+<td>36</td>
+<td>Hud.h:645</td>
+</tr>
+<tr>
+<td><code>WINDOW_KEPT_ON_SCREEN_UNITS</code></td>
+<td>120</td>
+<td>Hud.h:646</td>
+</tr>
+<tr>
+<td><code>WINDOW_INSET</code>, <code>DESIGNER_INSET</code></td>
+<td>24</td>
+<td>Hud.cpp:1608, 914</td>
+</tr>
+<tr>
+<td><code>DESIGNER_HEADER</code></td>
+<td>72</td>
+<td>Hud.cpp:916</td>
+</tr>
+<tr>
+<td><code>SECTION_TOP</code></td>
+<td>84</td>
+<td>Hud.cpp:1610</td>
+</tr>
+<tr>
+<td><code>SECTION_BODY_GAP</code>, <code>SECTION_GAP</code></td>
+<td>20</td>
+<td>Hud.cpp:1611, 938</td>
+</tr>
+<tr>
+<td><code>CARD_SPACING</code></td>
+<td>8</td>
+<td>Hud.cpp:1631</td>
+</tr>
+<tr>
+<td><code>CARD_INSET</code></td>
+<td>12</td>
+<td>Hud.cpp:1633</td>
+</tr>
+<tr>
+<td><code>WINDOWS_TOP</code></td>
+<td>154 (16 + 44 + 8 + 94 + 16)</td>
+<td>Hud.cpp:1635</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Window widths:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Window</th>
+<th>Width</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Designer</td>
+<td>818</td>
+<td>Hud.cpp:913</td>
+</tr>
+<tr>
+<td>Production</td>
+<td>478 (1920 − 4×16 − 818 − 560)</td>
+<td>Hud.cpp:1607</td>
+</tr>
+<tr>
+<td>Research</td>
+<td>560</td>
+<td>Hud.cpp:1606</td>
+</tr>
+<tr>
+<td>Controls</td>
+<td>700</td>
+<td>Hud.cpp:1888</td>
+</tr>
+<tr>
+<td>Orders</td>
+<td>640 (560 tall, computed from :1939-1944)</td>
+<td>Hud.cpp:1931</td>
+</tr>
+<tr>
+<td>Away</td>
+<td>600</td>
+<td>Hud.cpp:1983</td>
+</tr>
+</tbody>
+</table>
+<p>Every designer, production, research and orders constant is in tokens.json <code>space.windows</code>.</p>
+<p><strong>Anchors</strong> (Hud.cpp):</p>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Where</th>
+<th>Line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ore panel</td>
+<td>top-left (16, 16)</td>
+<td>3144</td>
+</tr>
+<tr>
+<td>Status panel</td>
+<td>under the Ore panel</td>
+<td>3250</td>
+</tr>
+<tr>
+<td>Territory panel</td>
+<td>under the status panel's kept place</td>
+<td>3177</td>
+</tr>
+<tr>
+<td>Alerts</td>
+<td>under territory</td>
+<td>3224</td>
+</tr>
+<tr>
+<td>Hint</td>
+<td>top-middle</td>
+<td>3313</td>
+</tr>
+<tr>
+<td>Connection tag</td>
+<td>top-right</td>
+<td>3330</td>
+</tr>
+<tr>
+<td>Match-end banner</td>
+<td>top-middle, under the Ore line</td>
+<td>3343</td>
+</tr>
+<tr>
+<td>Selection and buttons</td>
+<td>one pair at the bottom-middle, kept right of the minimap</td>
+<td>3369-3371</td>
+</tr>
+<tr>
+<td>Minimap</td>
+<td>bottom-left</td>
+<td>3458</td>
+</tr>
+<tr>
+<td>Designer</td>
+<td>top-right at first</td>
+<td>3658</td>
+</tr>
+<tr>
+<td>Production and research</td>
+<td>side by side at <code>WINDOWS_TOP</code></td>
+<td>3646-3650</td>
+</tr>
+<tr>
+<td>Orders</td>
+<td>right, at <code>WINDOWS_TOP</code></td>
+<td>3677</td>
+</tr>
+<tr>
+<td>Controls and away</td>
+<td>centered</td>
+<td>3669, 3683</td>
+</tr>
+<tr>
+<td>Menu</td>
+<td>centered</td>
+<td>2342</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Line widths</strong> (reference units):</p>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Width</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Outlines, dividers, header-band edge (<code>LINE_UNITS</code>)</td>
+<td>1</td>
+<td>Hud.cpp:952</td>
+</tr>
+<tr>
+<td>Minimap sector lines and alert squares (<code>SECTOR_LINE_UNITS</code>)</td>
+<td>1</td>
+<td>Hud.cpp:45</td>
+</tr>
+<tr>
+<td>The minimap's view (<code>VIEW_LINE_UNITS</code>)</td>
+<td>1.5</td>
+<td>Hud.cpp:121</td>
+</tr>
+<tr>
+<td>An ore asteroid's outline (<code>ORE_OUTLINE_UNITS</code>)</td>
+<td>2</td>
+<td>Hud.cpp:123</td>
+</tr>
+<tr>
+<td>A remembered structure's cross (<code>MEMORY_MARK_UNITS</code> × <code>MEMORY_ARM_UNITS</code>)</td>
+<td>8 across, arms 2</td>
+<td>Hud.cpp:58-59</td>
+</tr>
+<tr>
+<td>A cut-off sector's dashes (<code>CUT_OFF_DASH_UNITS</code> / <code>CUT_OFF_GAP_UNITS</code>)</td>
+<td>dash 6, gap 4</td>
+<td>Hud.cpp:53-54</td>
+</tr>
+<tr>
+<td>A claimable sector's inset (<code>CLAIMABLE_INSET_UNITS</code>)</td>
+<td>3</td>
+<td>Hud.cpp:55</td>
+</tr>
+<tr>
+<td>An alert's square (<code>ALERT_MARK_UNITS</code>)</td>
+<td>14</td>
+<td>Hud.cpp:151</td>
+</tr>
+<tr>
+<td>Least mark size: ship / structure / ore</td>
+<td>3 / 6 / 8</td>
+<td>Hud.cpp:118-120</td>
+</tr>
+<tr>
+<td>A sprite's stroke</td>
+<td>1/12 of its pixel size, at least 1 px</td>
+<td>GlyphAtlas.cpp:24, 315</td>
+</tr>
+</tbody>
+</table>
+<p>In the scene:</p>
+<ul>
+<li>The grid and the model lines are 1 px at any zoom (ADR-028 d1).</li>
+<li>The selection ring is <code>round(3 × screen scale)</code> one-pixel rings, a pixel apart (GameClient.cpp:82, 1443-1456; ADR-067).</li>
+<li>A drag box is made of bands 1.5 m wide (GameClient.cpp:88).</li>
+</ul>
+<p><strong>Corner bracket:</strong></p>
+<ul>
+<li>It is an L along the top and left edges (<code>GlyphAtlas.h:31-32</code>), mirrored for the other three corners (Hud.cpp:852-867).</li>
+<li>It is drawn <code>CORNER_UNITS</code> 12 square (Hud.cpp:844) and rasterized at 12 units (Hud.cpp:3024), in <code>WINDOW_EDGE_COLOR</code>. Its stroke is 1 px at 1080p.</li>
+</ul>
+<p><strong>Hatching:</strong></p>
+<ul>
+<li><code>HATCH_STRIPE_UNITS</code> is 2 and <code>HATCH_PERIOD_UNITS</code> is 7 (Hud.h:639-641), times the layout scale with the factor included (GameClient.cpp:1307-1309).</li>
+<li><code>UiPS.hlsl:23-27</code> stripes a pixel where <code>fmod(x + y, period) &lt; stripe</code>, in back-buffer pixels. The stripes are diagonal at 45° and rise to the right. They are laid on the screen, so neighboring hatched panels line up (ADR-030 d6).</li>
+<li>Along a row, 2 of every 7 units are striped. Across a stripe it is about 1.41 of every 4.95 units (computed by A5).</li>
+<li>Only the stripes are drawn, so the gaps show the panel underneath.</li>
+</ul></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4971}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

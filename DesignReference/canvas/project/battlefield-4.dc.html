@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glows and what is not built</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Exhaust glows</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: each <code>exhaust</code> hardpoint makes four additive camera-facing soft glows — a core and three puffs streaming behind — in its drive's color, longer and brighter as the ship's on-screen speed rises to 50 m/s (ADR-019, ADR-034 §Decision 3).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ion (drive 1)</td>
+<td>(0.3, 0.85, 1.0) cyan</td>
+<td><code>Models.json:76</code> (<code>exhausts[drive=1].color</code>); <code>Tuning.json</code> drive 1 = Ion</td>
+</tr>
+<tr>
+<td>Fusion (drive 2)</td>
+<td>(1.0, 0.35, 0.85) magenta</td>
+<td><code>Models.json:77</code></td>
+</tr>
+<tr>
+<td>Pulse (drive 3)</td>
+<td>(0.55, 1.0, 0.3) lime</td>
+<td><code>Models.json:78</code>; ADR-034 §Decision 3</td>
+</tr>
+<tr>
+<td>Constructor</td>
+<td>(0.8, 0.8, 0.75) pale gray</td>
+<td><code>Models.json:80</code> (<code>constructorExhaust</code>)</td>
+</tr>
+<tr>
+<td>Exhausts per model</td>
+<td>Small 1, Medium 1, Large 2, Constructor 1 (both sets)</td>
+<td><code>.nmf</code> hardpoints parsed</td>
+</tr>
+<tr>
+<td>Full speed</td>
+<td>50 m/s (<code>EXHAUST_FULL_SPEED_METERS_PER_SECOND</code>), from the view's frame-to-frame motion</td>
+<td><code>GameClient.cpp:127,1781-1788</code></td>
+</tr>
+<tr>
+<td>Core</td>
+<td>0.3 nozzle radii out; radius 1.4 + 0.6×speed radii; brightness 0.5 + 0.7×speed</td>
+<td><code>Hardpoints.cpp:16-20,237-239</code></td>
+</tr>
+<tr>
+<td>Puffs</td>
+<td>3, at (1.2 + 1.3 k) × length radii; radius 1.1 − 0.25 k; brightness 0.35 × (1 − k/3) × plume</td>
+<td><code>Hardpoints.cpp:23-31,242-249</code></td>
+</tr>
+<tr>
+<td>Plume length</td>
+<td>0.4 at rest → 1.6 at full speed</td>
+<td><code>Hardpoints.cpp:26-27,240</code></td>
+</tr>
+<tr>
+<td>Plume brightness</td>
+<td>0.3 at rest → 1 at full speed</td>
+<td><code>Hardpoints.cpp:31,241</code></td>
+</tr>
+<tr>
+<td>Falloff</td>
+<td>(1 − r²)², additive</td>
+<td><code>GlowPS.hlsl:13-14</code></td>
+</tr>
+<tr>
+<td>Depth</td>
+<td>tested ≤, no write (hulls hide what is behind)</td>
+<td><code>GlowPipeline.cpp:80-81</code></td>
+</tr>
+<tr>
+<td>Cap</td>
+<td>4,096 glows a frame (<code>MAX_GLOWS</code>); past it dropped</td>
+<td><code>GlowPipeline.h:39</code></td>
+</tr>
+<tr>
+<td>Rolls with bank</td>
+<td>yes</td>
+<td>ADR-029 §Decision 5</td>
+</tr>
+</tbody>
+</table>
+<p>Color keys: <code>Models.json: exhausts[].color</code>, <code>constructorExhaust</code>.</p>
+<p>Example: a fast Ion fighter trailing a short cyan comet of three fading puffs; a parked Fusion hull with a dim magenta stub.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Phosphor glow</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: what is bright in the scene (luminance above 0.35, eased over a 0.15 knee) is blurred over five half-resolution levels and added back in the resolve, as a vector screen's phosphor; the interface is drawn after and never glows (ADR-091).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Settings</td>
+<td><code>SCENE_BLOOM</code>: threshold 0.35, knee 0.15, intensity 2, spread 0.6</td>
+<td><code>GameClient.cpp:25,420</code></td>
+</tr>
+<tr>
+<td>Levels</td>
+<td>5 (<code>LEVEL_COUNT</code>), <code>R11G11B10_FLOAT</code>; first half the scene size, each half the last</td>
+<td><code>Bloom.h:27,30</code>; ADR-091 §Decision 1</td>
+</tr>
+<tr>
+<td>Bright pass</td>
+<td>2×2 scene pixels of 4 samples each, soft-knee threshold</td>
+<td><code>BloomBrightPS.hlsl:32-55</code></td>
+</tr>
+<tr>
+<td>Down</td>
+<td>13 bilinear taps in 5 boxes</td>
+<td>ADR-091 §Decision 1</td>
+</tr>
+<tr>
+<td>Up</td>
+<td>3×3 tent, weighted by spread, additive</td>
+<td>ADR-091 §Decision 1; <code>Bloom.cpp:240-243</code></td>
+</tr>
+<tr>
+<td>Composite</td>
+<td>resolve adds level 1 through a tent × intensity / Σ level weights</td>
+<td><code>ResolvePS.hlsl:42-48</code>; <code>Bloom.cpp:86-97</code></td>
+</tr>
+<tr>
+<td>What glows</td>
+<td>lit-side model lines, selection ring, exhaust, beams, blasts, brightest stars; rock lines ~15% of their light</td>
+<td>ADR-091 §Consequences (computed there)</td>
+</tr>
+<tr>
+<td>What stays under</td>
+<td>faces, grid, sector borders</td>
+<td>ADR-091 §Consequences</td>
+</tr>
+<tr>
+<td>Spread of a 1-px ship line</td>
+<td>+50% one px away, +38% two px, +15% four px, within 5% at eight <em>(ADR's numpy replay)</em></td>
+<td>ADR-091 §Consequences</td>
+</tr>
+<tr>
+<td>Tone map</td>
+<td>none; channels may clip toward white</td>
+<td>ADR-091 §Consequences</td>
+</tr>
+<tr>
+<td>Interface</td>
+<td>never glows</td>
+<td>ADR-091 §Decision 1</td>
+</tr>
+</tbody>
+</table>
+<p>Color constant: <code>SCENE_BLOOM</code> (a <code>Neuron::BloomDesc</code>, not a color).</p>
+<p>Example: every bright hairline carries a soft halo a few pixels wide; exhausts and blasts bloom; the HUD text stays razor-sharp.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Not built at HEAD</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Verified against <code>GameDesign/ImplementationPlan-Look.md:48-53</code> (status <code>todo</code>) and the code: <code>grep -rni beacon</code> over <code>*.cpp/*.h/*.hlsl/*.py/*.json</code> finds nothing outside <code>DesignReference/</code>; <code>HardpointKind</code> has only <code>Gun</code> and <code>Exhaust</code> (<code>Hardpoints.h:7-13</code>); no fleet, plate or paint code exists in <code>GameApp/</code> or <code>NeuronClient/</code>; the NMF's three bytes after openness must be zero (<code>MeshData.cpp:179</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>What it would be</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LV2.2</td>
+<td>Paint slots <code>team</code>, <code>trim</code>, <code>light</code> by material name, a byte per vertex</td>
+<td>todo (<code>ImplementationPlan-Look.md:48</code>)</td>
+</tr>
+<tr>
+<td>LV2.3</td>
+<td>Two-tone lines: a line takes its faces' paint</td>
+<td>todo (<code>ImplementationPlan-Look.md:49</code>)</td>
+</tr>
+<tr>
+<td>LV3.1</td>
+<td>Beacons: <code>hp_beacon</code> hardpoint blinking in its side's line color</td>
+<td>todo (<code>ImplementationPlan-Look.md:50</code>); <strong>confirmed absent in code</strong></td>
+</tr>
+<tr>
+<td>LV4.1</td>
+<td>Fleets on the screen: a side's ships grouped by screen nearness</td>
+<td>todo (<code>ImplementationPlan-Look.md:51</code>)</td>
+</tr>
+<tr>
+<td>LV4.2</td>
+<td>Plates over the fleets: count over a disc, hit-point arc, hull glyph</td>
+<td>todo (<code>ImplementationPlan-Look.md:52</code>); <strong>confirmed absent in code</strong>; gate A7 open (<code>ImplementationPlan-Look.md:78</code>)</td>
+</tr>
+<tr>
+<td>LV4.3</td>
+<td>Health bars only where plates are not</td>
+<td>todo (<code>ImplementationPlan-Look.md:53</code>); bars as built are described above</td>
+</tr>
+<tr>
+<td>Look plan "Not in this plan"</td>
+<td>Ground sector plates, glowing borders and names; tone map</td>
+<td>not built (<code>ImplementationPlan-Look.md:205-210</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 2128}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Controls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 16</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Controls</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">Every binding the Controls window lists (28 actions under 3 headings), grouped as the window groups them. The window is built from KeyBindings.h, so it cannot name a key the code does not read (ADR-068 d4).</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>KeyBindings.h:93-125</code> <code>Hud.cpp:1888-1926</code> <code>A4 §4.4</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">SELECTING AND ORDERS · 12 actions</div><div style="padding:20px 24px 24px 24px"><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Select a ship, or a structure of yours</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:94</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Drag</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Select your ships in the box</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:95</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Shift+click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Add to the selection</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:96</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Double-click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Select every ship of that design in view</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:97</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Right-click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Move, attack, or build and repair with Constructors</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:98</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">A, then click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Attack-move</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:99</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">H, then click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Hold the sector clicked in</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:100</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">T, then click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Patrol to the point clicked</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:101</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">S</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Stop</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:102</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Ctrl+0-9</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Make a control group</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:103</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">0-9</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Select a group; twice, look at it</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:104</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Shift+click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Place a structure and keep placing</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:105</code></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">CAMERA · 8 actions</div><div style="padding:20px 24px 24px 24px"><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Up Down Left Right</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Pan</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:107-108</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Screen edge</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Pan, while the pointer is held in the window</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:109</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Middle-drag</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Pan</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:110</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Wheel</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Zoom</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:111</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Q and E</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Turn</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:112</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Minimap click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Look there</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:113</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Minimap right-click</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Send the selection there</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:114</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Space</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Look at the newest alert</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:115</code></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">WINDOWS · 8 actions</div><div style="padding:20px 24px 24px 24px"><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">D</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Ship designer</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:117</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">P</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Production</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:118</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">R</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Research</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:119</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">O</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Scheduled orders</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:120</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">F1</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">These controls</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:121</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Esc</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Close the front window, or cancel an order</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:122</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Alt, held</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">Every health bar</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:123</code></div><div style="display:grid;grid-template-columns:300px 1fr 150px;gap:16px;padding:9px 0;border-bottom:1px solid #2D364B"><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#AAD0FF">Ctrl+= and Ctrl+-</span><span style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA">The interface larger and smaller</span><code style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">KeyBindings.h:124-125</code></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Keys and mouse for orders</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Does (verbatim)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Click</td>
+<td>"Select a ship, or a structure of yours"</td>
+<td><code>KeyBindings.h:94</code></td>
+</tr>
+<tr>
+<td>Drag</td>
+<td>"Select your ships in the box"</td>
+<td><code>KeyBindings.h:95</code></td>
+</tr>
+<tr>
+<td>Shift+click</td>
+<td>"Add to the selection"</td>
+<td><code>KeyBindings.h:96</code></td>
+</tr>
+<tr>
+<td>Double-click</td>
+<td>"Select every ship of that design in view"</td>
+<td><code>KeyBindings.h:97</code></td>
+</tr>
+<tr>
+<td>Right-click</td>
+<td>"Move, attack, or build and repair with Constructors"</td>
+<td><code>KeyBindings.h:98</code></td>
+</tr>
+<tr>
+<td>A, then click</td>
+<td>"Attack-move"</td>
+<td><code>KeyBindings.h:10,99</code></td>
+</tr>
+<tr>
+<td>H, then click</td>
+<td>"Hold the sector clicked in"</td>
+<td><code>KeyBindings.h:12,100</code></td>
+</tr>
+<tr>
+<td>T, then click</td>
+<td>"Patrol to the point clicked"</td>
+<td><code>KeyBindings.h:13,101</code></td>
+</tr>
+<tr>
+<td>S</td>
+<td>"Stop"</td>
+<td><code>KeyBindings.h:11,102</code></td>
+</tr>
+<tr>
+<td>Ctrl+0-9</td>
+<td>"Make a control group"</td>
+<td><code>KeyBindings.h:103</code></td>
+</tr>
+<tr>
+<td>0-9</td>
+<td>"Select a group; twice, look at it"</td>
+<td><code>KeyBindings.h:104</code></td>
+</tr>
+<tr>
+<td>Shift+click</td>
+<td>"Place a structure and keep placing"</td>
+<td><code>KeyBindings.h:105</code></td>
+</tr>
+<tr>
+<td>Minimap right-click</td>
+<td>"Send the selection there"</td>
+<td><code>KeyBindings.h:114</code></td>
+</tr>
+<tr>
+<td>Space</td>
+<td>"Look at the newest alert"</td>
+<td><code>KeyBindings.h:36,115</code></td>
+</tr>
+<tr>
+<td>O</td>
+<td>"Scheduled orders" (opens or closes the orders window)</td>
+<td><code>KeyBindings.h:32,120</code>, <code>GameClient.cpp:657-658</code></td>
+</tr>
+<tr>
+<td>Esc</td>
+<td>"Close the front window, or cancel an order"</td>
+<td><code>KeyBindings.h:34,122</code>, <code>GameClient.cpp:659-661</code>, <code>PlayerControls.cpp:362-367</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>P is taken by the production window, so patrol is T</strong> (<code>ADR-059 §Decision 7</code>, <code>KeyBindings.h:28</code>).</li>
+<li><strong>What arms the next click.</strong> A, H and T each arm the next left-click and replace whatever was armed before. A press on the ground then gives the order. Right-click or Escape cancels it (<code>PlayerControls.cpp:107-121, 180-206, 291-292, 362-367</code>).</li>
+<li><strong>Ctrl blocks the order keys.</strong> A, H, T and S act only without Ctrl (<code>PlayerControls.cpp:369-383</code>).</li>
+</ul></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 2615}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

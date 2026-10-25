@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Window: Designer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Designer</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> Design a ship, save or rename it, and queue it at a Shipyard, with live figures (Phase 1 design §11, ADR-017, ADR-023, ADR-062, ADR-068 d1, ADR-088 d3). It is drawn after the owner's mockup, <code>GameDesign/Mockups/ShipDesigner.png</code>. The mockup is evidence, and the code differs from it as § Conflicts records.</p>
+<p><strong>Height</strong> (<code>ExtentOf</code>, Hud.cpp:1075-1092).
+- <strong>Slot rows</strong> start at y 168.
+- <strong>Each row</strong> is lines × card height + (lines − 1) × 7, then 10 to the next row. There are 3 cards to a line, and a card is 80 tall, or 96 in a row where any card has a note.
+- <strong>The sections</strong> start 20 below the last row, and the footer starts at sections + max(26 + 6 × 25, 26 + 96 + 24) + 12.
+- <strong>The window ends</strong> 48 + 20 below the footer.</p>
+<p>With Tuning.json:</p>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hulls</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Drives</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Weapons</td>
+<td>5, two with splash notes</td>
+</tr>
+<tr>
+<td>Module row</td>
+<td>None, plus Sensor Array</td>
+</tr>
+</tbody>
+</table>
+<p>So the slot tops are hull 168, drive 258, weapon 348 (two lines of 96) and module 557. The sections start at <strong>S = 657</strong>, the footer at <strong>F = 845</strong>, and the window is <strong>H = 913</strong>: <code>1086, 16, 818, 913</code> at its default place (ADR-070 Consequences gives 913 too).</p>
+<p><strong>Elements, in window units</strong> (add (1086, 16) for the default place).</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label (verbatim)</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>designer.shipyard.previous / .next</td>
+<td>small button 24×24, mark Label face</td>
+<td><code>&lt;</code> and <code>&gt;</code></td>
+<td><code>PreviousShipyard</code> / <code>NextShipyard</code>; enabled while any Shipyard exists</td>
+<td>face <code>CARD_COLOR</code> (<code>DISABLED_BUTTON_COLOR</code> when off); mark <code>TEXT_COLOR</code> (<code>DIM_TEXT_COLOR</code>)</td>
+<td><code>&lt;</code> at 24, 6; <code>&gt;</code> at subject end + 8</td>
+<td>Hud.cpp:1365-1367, 1190-1213</td>
+</tr>
+<tr>
+<td>designer.shipyard.subject</td>
+<td>text, Label, tracking 2</td>
+<td><code>SHIPYARD {n:02}</code> or <code>NO SHIPYARD</code></td>
+<td><code>Designer::Target</code> → <code>EntityView::shipyardNumber</code></td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>56, 11 (cut at 294)</td>
+<td>Hud.cpp:591, 1365</td>
+</tr>
+<tr>
+<td>designer.titleLabel</td>
+<td>text, Label, tracking 2</td>
+<td><code>· DESIGNER</code></td>
+<td>—</td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>after <code>&gt;</code> + 8, y 11</td>
+<td>Hud.cpp:1368</td>
+</tr>
+<tr>
+<td>designer.title</td>
+<td>text, Title</td>
+<td><code>SHIP DESIGN</code></td>
+<td>—</td>
+<td><code>TEXT_COLOR</code></td>
+<td>24, 40</td>
+<td>Hud.cpp:1370</td>
+</tr>
+<tr>
+<td>designer.queueLabel</td>
+<td>text, Label, tracking 2</td>
+<td><code>QUEUE · {n} / 5</code></td>
+<td>target's <code>EntityView::queue.size()</code>, <code>QUEUE_LIMIT</code> 5 (Snapshot.h:42)</td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>502, 12</td>
+<td>Hud.cpp:1371, 1043-1046</td>
+</tr>
+<tr>
+<td>designer.built</td>
+<td>text, Label, right-aligned</td>
+<td><code>BUILT · {n}</code></td>
+<td><code>EntityView::shipsBuilt</code></td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>right edge 490, y 44</td>
+<td>Hud.cpp:1372-1373</td>
+</tr>
+<tr>
+<td>designer.queueSlot0..4</td>
+<td>panel</td>
+<td>—</td>
+<td>filled while i &lt; queue length</td>
+<td><code>SLOT_FILLED_COLOR</code> / <code>FIELD_COLOR</code></td>
+<td>502 + 33·i, 40, 30, 24</td>
+<td>Hud.cpp:1361-1364, 1374-1378</td>
+</tr>
+<tr>
+<td>header.oreBox</td>
+<td>panel, outlined</td>
+<td>gem + figure</td>
+<td><code>Snapshot::ore</code></td>
+<td><code>FIELD_COLOR</code>, <code>EDGE_COLOR</code>, <code>GOLD_COLOR</code></td>
+<td>678, 38, 116, 30</td>
+<td>Hud.cpp:1379, 1244-1249</td>
+</tr>
+<tr>
+<td>designer.name.field</td>
+<td>field: a press starts typing</td>
+<td>—</td>
+<td><code>EditName</code></td>
+<td><code>FIELD_COLOR</code>; edge <code>PICKED_EDGE_COLOR</code> while typing, else <code>EDGE_COLOR</code></td>
+<td>24, 84, 694, 38</td>
+<td>Hud.cpp:1385-1387</td>
+</tr>
+<tr>
+<td>designer.name.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>NAME</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>36, 97</td>
+<td>Hud.cpp:1388</td>
+</tr>
+<tr>
+<td>designer.name.value</td>
+<td>text, Name</td>
+<td><code>{name}</code>, with <code>_</code> after it while typing</td>
+<td><code>Designer::Name</code> (Designer.cpp:122-151): the typed name; else the matching saved design's; else <code>{Hull}+{Drive}+{Weapon}[+{Module}]</code>, or <code>{Design}+{module initials}</code> (ADR-069 d5)</td>
+<td><code>TEXT_COLOR</code>; <code>WARNING_COLOR</code> when <code>IsValidDesignName</code> fails (plain text, ADR-085 d1)</td>
+<td>90, 93</td>
+<td>Hud.cpp:1389-1392</td>
+</tr>
+<tr>
+<td>designer.name.count</td>
+<td>text, Figure, right-aligned</td>
+<td><code>{length}/32</code></td>
+<td><code>DESIGN_NAME_LIMIT</code> 32 (Command.h:68)</td>
+<td><code>LABEL_COLOR</code></td>
+<td>right edge 706, y 96</td>
+<td>Hud.cpp:1389, 1393</td>
+</tr>
+<tr>
+<td>designer.save</td>
+<td>button</td>
+<td><code>SAVE</code>, or <code>SAVED</code> when the picks and name are a saved design</td>
+<td><code>SaveDesign</code>; enabled only for a new design</td>
+<td>enabled: <code>CARD_COLOR</code> face, <code>TEXT_COLOR</code>. <code>SAVED</code>: <code>FIELD_COLOR</code> face, <code>QUEUE_EDGE_COLOR</code> edge and text. Disabled <code>SAVE</code>: <code>FIELD_COLOR</code>, <code>DIM_TEXT_COLOR</code></td>
+<td>726, 84, 68, 38; label at 738, 97, Label face, tracking 2</td>
+<td>Hud.cpp:600-605, 1394-1405</td>
+</tr>
+<tr>
+<td>designer.saved.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>SAVED</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, 139</td>
+<td>Hud.cpp:1408</td>
+</tr>
+<tr>
+<td>designer.chip0..2</td>
+<td>button (<code>LoadDesign</code>)</td>
+<td>name: Label face, cut to fit; code: Detail face, right-aligned</td>
+<td><code>DesignView::nameUtf8</code>; the code <code>{H}·{D}·{W}[·{M}]</code> (<code>DesignCodeOf</code>, Hud.cpp:422-435)</td>
+<td>face <code>PICKED_COLOR</code> for the design shown, else <code>CARD_COLOR</code>; edge <code>PICKED_EDGE_COLOR</code> / <code>EDGE_COLOR</code>; name <code>TEXT_COLOR</code>; code <code>ACCENT_COLOR</code> when shown, else <code>CODE_COLOR</code></td>
+<td>70 | 292 | 514, 132, 216, 26; name at +8, +6; code right edge at +208, +7</td>
+<td>Hud.cpp:1409-1420</td>
+</tr>
+<tr>
+<td>designer.chips.previous / .next</td>
+<td>small buttons</td>
+<td><code>&lt;</code> and <code>&gt;</code></td>
+<td>only when there are more than 3 saved designs; <code>PreviousDesigns</code> / <code>NextDesigns</code></td>
+<td>as the small buttons above</td>
+<td>742, 133 and 770, 133</td>
+<td>Hud.cpp:1421-1427</td>
+</tr>
+<tr>
+<td>designer.slot.{hull,drive,weapon,module}.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>HULL</code>, <code>DRIVE</code>, <code>WEAPON</code>, <code>MODULE</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, top + 21</td>
+<td>Hud.cpp:639, 658, 675, 695, 1438</td>
+</tr>
+<tr>
+<td>designer.slot.*.picked</td>
+<td>text, Name, cut at 78</td>
+<td>the pick's name, or <code>None</code> for no module</td>
+<td><code>HullView::nameUtf8</code> etc.</td>
+<td><code>ACCENT_COLOR</code></td>
+<td>24, top + 39</td>
+<td>Hud.cpp:1439-1440</td>
+</tr>
+<tr>
+<td>designer.slot.*.divider</td>
+<td>panel, 1 unit wide</td>
+<td>—</td>
+<td>—</td>
+<td><code>EDGE_COLOR</code></td>
+<td>108, top + 6, 1, (rows' height − 12)</td>
+<td>Hud.cpp:1441</td>
+</tr>
+<tr>
+<td>designer.card.{slot}.{i}</td>
+<td>button card (no press when locked)</td>
+<td>—</td>
+<td><code>Pick{Hull,Drive,Weapon,Module}</code></td>
+<td>face <code>PICKED_COLOR</code> / <code>LOCKED_COLOR</code> + <code>LOCKED_HATCH_COLOR</code> hatched / <code>CARD_COLOR</code>; edge <code>PICKED_EDGE_COLOR</code> / <code>EDGE_COLOR</code></td>
+<td>x 118 | 345 | 572, y top + line·(card height + 7), 220 × (80 or 96)</td>
+<td>Hud.cpp:1442-1458</td>
+</tr>
+<tr>
+<td>… .name</td>
+<td>text, Name</td>
+<td>component name, or <code>None</code></td>
+<td><code>HullView</code>, <code>DriveView</code>, <code>WeaponView</code>, <code>ModuleView</code> <code>nameUtf8</code> (Tuning.json)</td>
+<td><code>TEXT_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, +8</td>
+<td>Hud.cpp:1462-1463</td>
+</tr>
+<tr>
+<td>… .cost</td>
+<td>gem + figure, Figure face</td>
+<td><code>{cost}</code></td>
+<td><code>cost</code></td>
+<td><code>GOLD_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>right edge +208, +11</td>
+<td>Hud.cpp:1464-1465</td>
+</tr>
+<tr>
+<td>… .numbers</td>
+<td>text, Detail, cut at 196</td>
+<td>hull <code>{hp:,} HP · ARM {a} · {s}m/s</code>; drive <code>SPD ×{f} · HP ×{f}</code>; weapon <code>{d} dmg / {i}s · {r}m</code>; module <code>SIGHT {s}m · SPD ×{f}</code>; None <code>No module</code></td>
+<td>the views' numbers</td>
+<td><code>NUMBERS_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, +34</td>
+<td>Hud.cpp:651-652, 669, 686-687, 700, 714, 1467-1468</td>
+</tr>
+<tr>
+<td>… .note</td>
+<td>text, Detail</td>
+<td><code>splash {r}m</code></td>
+<td><code>WeaponView::splashRadiusMeters</code> &gt; 0</td>
+<td>as the numbers</td>
+<td>+12, +52</td>
+<td>Hud.cpp:688, 1469-1473</td>
+</tr>
+<tr>
+<td>… .lockBox / .lockedBy</td>
+<td><code>Checkbox</code> sprite 10, and text in the Label face</td>
+<td><code>RESEARCH · {TOPIC IN CAPITALS}</code>, or <code>RESEARCH</code></td>
+<td>the topic that unlocks it (<code>LockedBy</code>, Hud.cpp:576-580)</td>
+<td><code>AMBER_COLOR</code></td>
+<td>box at +12, foot − 18; text at +28, foot − 20</td>
+<td>Hud.cpp:1474-1480</td>
+</tr>
+<tr>
+<td>designer.sectionDivider</td>
+<td>panel</td>
+<td>—</td>
+<td>—</td>
+<td><code>EDGE_COLOR</code></td>
+<td>24, slots' end + 10, 770, 1</td>
+<td>Hud.cpp:1483</td>
+</tr>
+<tr>
+<td>designer.performance.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>PERFORMANCE</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, S</td>
+<td>Hud.cpp:1487</td>
+</tr>
+<tr>
+<td>designer.bar.{row}.label</td>
+<td>text, Label</td>
+<td><code>Hit points</code>, <code>Armor</code>, <code>Speed</code>, <code>Range</code>, <code>Sensors</code> (only when a module has sight), <code>Cost</code>, <code>Build</code></td>
+<td><code>DesignStats</code> (DesignStats.h:76-94); the scale is the best of every design (<code>BestOfAll</code>, Hud.cpp:494-527)</td>
+<td><code>ROW_LABEL_COLOR</code></td>
+<td>24, S + 26 + 25·i + 2</td>
+<td>Hud.cpp:763-779, 1492</td>
+</tr>
+<tr>
+<td>… .track / .fill</td>
+<td>bars</td>
+<td>—</td>
+<td>the share of the best</td>
+<td>track <code>BAR_TRACK_COLOR</code>; fill <code>BAR_FILL_COLOR</code>; while previewing, the part added or taken in <code>GOOD_COLOR</code> / <code>POOR_COLOR</code></td>
+<td>104, row + 6, 90 (× share), 7</td>
+<td>Hud.cpp:1493-1501</td>
+</tr>
+<tr>
+<td>… .value</td>
+<td>text, Figure, right-aligned</td>
+<td><code>{v}</code>, or while previewing <code>{v} ({+n\|-n})</code></td>
+<td>—</td>
+<td><code>TEXT_COLOR</code>; <code>GOOD_COLOR</code> / <code>POOR_COLOR</code> by the change</td>
+<td>right edge 316, row</td>
+<td>Hud.cpp:1503-1504, 740-754</td>
+</tr>
+<tr>
+<td>… .unit</td>
+<td>text, Label</td>
+<td>(none), (none), <code>m/s</code>, <code>m</code>, <code>m</code>, <code>ore</code>, <code>s</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>322, row + 2</td>
+<td>Hud.cpp:1505, 764-779</td>
+</tr>
+<tr>
+<td>designer.damage.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>DAMAGE / S AFTER ARMOR · VS A FORMATION</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>364, S</td>
+<td>Hud.cpp:1510-1511</td>
+</tr>
+<tr>
+<td>designer.damage.{hull}</td>
+<td>card</td>
+<td>—</td>
+<td>one per <code>Snapshot::hulls</code></td>
+<td><code>FIELD_COLOR</code>, <code>EDGE_COLOR</code></td>
+<td>w = (430 − 8·(n − 1))/n = 138 for 3 hulls, at x 364 | 510 | 656; y S + 26; h 96</td>
+<td>Hud.cpp:1512-1520</td>
+</tr>
+<tr>
+<td>… .hull / .armor</td>
+<td>Name / Label (right)</td>
+<td><code>{hull}</code> / <code>ARM {a}</code></td>
+<td><code>HullView</code></td>
+<td><code>TEXT_COLOR</code> / <code>LABEL_COLOR</code></td>
+<td>+10, +8 / right edge +130, +11</td>
+<td>Hud.cpp:1521-1524, 796</td>
+</tr>
+<tr>
+<td>… .perShip</td>
+<td>text, LargeFigure</td>
+<td><code>{dps:.1f}</code></td>
+<td><code>FormationDamagePerSecond</code> (DesignStats.h)</td>
+<td><code>TEXT_COLOR</code>, or the change's color</td>
+<td>+10, +30</td>
+<td>Hud.cpp:1526, 797</td>
+</tr>
+<tr>
+<td>… .reach</td>
+<td>text, Label, right-aligned</td>
+<td><code>×{n} ships</code>, for a splash that reaches more than one</td>
+<td><code>ShipsReached</code></td>
+<td><code>LABEL_COLOR</code></td>
+<td>right edge +130, +28</td>
+<td>Hud.cpp:1528-1529, 801</td>
+</tr>
+<tr>
+<td>… .change</td>
+<td>text, Figure, right-aligned</td>
+<td><code>+{n.n}</code> / <code>-{n.n}</code>, while previewing</td>
+<td>—</td>
+<td>the change's color</td>
+<td>right edge +130, +44</td>
+<td>Hud.cpp:1531-1535, 798-800</td>
+</tr>
+<tr>
+<td>… .rating</td>
+<td>bar</td>
+<td>—</td>
+<td>the share of the best against that hull: Good from 2/3, Fair from 1/3 (Hud.cpp:417-418)</td>
+<td><code>BAR_TRACK_COLOR</code> + <code>GOOD_COLOR</code> / <code>FAIR_COLOR</code> / <code>POOR_COLOR</code></td>
+<td>+10, +66, 118, 4</td>
+<td>Hud.cpp:1536-1537</td>
+</tr>
+<tr>
+<td>… .perOre</td>
+<td>text, Detail</td>
+<td><code>{n:.1f} / 100 ore</code></td>
+<td>—</td>
+<td><code>SOFT_COLOR</code></td>
+<td>+10, +76</td>
+<td>Hud.cpp:1538-1539, 802</td>
+</tr>
+<tr>
+<td>designer.hint</td>
+<td>text, Detail, cut at 430</td>
+<td><code>Hover any part to preview its effect.</code>, or <code>Preview: with {part} instead</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>364, S + 132</td>
+<td>Hud.cpp:731-732, 1541-1542</td>
+</tr>
+<tr>
+<td>designer.rename</td>
+<td>button</td>
+<td><code>RENAME</code>, or <code>UPDATE</code> (same name, retreat changed)</td>
+<td><code>SaveDesign</code>; enabled when a saved design would change</td>
+<td><code>CARD_COLOR</code> / <code>FIELD_COLOR</code>, edge <code>EDGE_COLOR</code>, label <code>TEXT_COLOR</code> / <code>DIM_TEXT_COLOR</code>, Label face, tracking 2</td>
+<td>24, F, 90, 48; label at 38, F + 16</td>
+<td>Hud.cpp:606-609, 1546-1554</td>
+</tr>
+<tr>
+<td>designer.retreat.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>RETREAT</code></td>
+<td>—</td>
+<td><code>ROW_LABEL_COLOR</code></td>
+<td>126, F</td>
+<td>Hud.cpp:1561</td>
+</tr>
+<tr>
+<td>designer.retreat.{quarter,half,never}</td>
+<td>three cells</td>
+<td><code>25%</code>, <code>50%</code>, <code>NEVER</code> (Label face, tracking 2)</td>
+<td><code>DesignRetreat</code>; <code>Designer::Retreat</code> (Designer.cpp:106-112)</td>
+<td><code>PICKED_COLOR</code> / <code>CARD_COLOR</code>, <code>PICKED_EDGE_COLOR</code> / <code>EDGE_COLOR</code>, words <code>TEXT_COLOR</code></td>
+<td>126 | 196 | 266, F + 18, 66, 30</td>
+<td>Hud.cpp:1557-1564, 1328-1346</td>
+</tr>
+<tr>
+<td>designer.fewer / .more</td>
+<td>buttons</td>
+<td><code>-</code> / <code>+</code> (Name face)</td>
+<td><code>FewerShips</code> / <code>MoreShips</code>; enabled while count &gt; 1 / count &lt; free queue slots</td>
+<td><code>CARD_COLOR</code> / <code>FIELD_COLOR</code>, <code>EDGE_COLOR</code>, <code>TEXT_COLOR</code> / <code>DIM_TEXT_COLOR</code></td>
+<td>346, F, 36, 48 / 424, F, 36, 48; mark at +13, +13</td>
+<td>Hud.cpp:1565-1580</td>
+</tr>
+<tr>
+<td>designer.count</td>
+<td>field and text</td>
+<td><code>×{n}</code></td>
+<td><code>Designer::Count</code> (Designer.cpp:75-80)</td>
+<td><code>FIELD_COLOR</code>, <code>EDGE_COLOR</code>, <code>TEXT_COLOR</code></td>
+<td>382, F, 42, 48; text at 392, F + 13</td>
+<td>Hud.cpp:1577-1579</td>
+</tr>
+<tr>
+<td>designer.queue</td>
+<td>button</td>
+<td><code>QUEUE</code> (Title face, tracking 2)</td>
+<td><code>Queue</code> for a saved design; <code>SaveAndQueue</code> for new picks (ADR-023)</td>
+<td>enabled: <code>QUEUE_COLOR</code> + <code>QUEUE_HATCH_COLOR</code> hatched, edge <code>QUEUE_EDGE_COLOR</code>, text <code>QUEUE_TEXT_COLOR</code>. Disabled: <code>FIELD_COLOR</code>, <code>EDGE_COLOR</code>, <code>DIM_TEXT_COLOR</code></td>
+<td>468, F, 326, 48; label at 486, F + 2</td>
+<td>Hud.cpp:826-833, 1581-1594</td>
+</tr>
+<tr>
+<td>designer.queue.detail</td>
+<td>text, Detail</td>
+<td><code>{t} s each</code>; <code>Needs Shipyard L{n}</code>; or nothing</td>
+<td>the build time ÷ <code>shipyardBuildSpeedFactor</code>; <code>HullView::shipyardLevel</code></td>
+<td>as the label</td>
+<td>486, F + 31</td>
+<td>Hud.cpp:818-824, 1595</td>
+</tr>
+<tr>
+<td>designer.queue.cost</td>
+<td>gem + figure, Title face</td>
+<td><code>{cost × count}</code></td>
+<td><code>DesignView::cost</code> or the stats' cost</td>
+<td><code>GOLD_COLOR</code> / <code>DIM_TEXT_COLOR</code></td>
+<td>right edge 778, F + 10</td>
+<td>Hud.cpp:817, 1596-1597</td>
+</tr>
+</tbody>
+</table>
+<p><strong>States.</strong>
+- <strong>A saved design shown.</strong> SAVE reads <code>SAVED</code> and is lit in the Queue green; the chip is lit; RENAME is dim.
+- <strong>New picks.</strong> SAVE is enabled; RENAME is dim; QUEUE saves and then queues (ADR-023).
+- <strong>A saved design renamed.</strong> SAVE is dim; <code>RENAME</code> is enabled. With the same name but a changed retreat, the button reads <code>UPDATE</code> (Hud.cpp:606-609).
+- <strong>Typing.</strong> The field's edge is lit, and an <code>_</code> follows the name. Printable ASCII only, up to 32 characters; Backspace deletes, Enter saves and stops, Esc drops what was typed (Designer.cpp:228-260). A press anywhere but the field stops typing, and so does closing the window (GameClient.cpp:1003-1005, 707-710). While the designer types, every key is its own (GameClient.cpp:819-835).
+- <strong>Invalid name.</strong> The name is in <code>WARNING_COLOR</code>, and SAVE and QUEUE are dim.
+- <strong>Hovering a part.</strong> Hovering an unpicked, unlocked card previews it (Hud.cpp:622-635): the bars show the change in green or red, the values read <code>v (±n)</code>, the damage cards show the previewed design with its change, and the hint names the part.
+- <strong>Locked card.</strong> It takes no press and previews nothing (interface plan 1, "Not in this plan").
+- <strong>No Shipyard.</strong> <code>NO SHIPYARD</code>; the arrows are dim; QUEUE is dim; <code>BUILT · 0</code>.
+- <strong>Hull above the target Shipyard's level.</strong> QUEUE is dim and its detail reads <code>Needs Shipyard L{n}</code>; the design can still be saved (Hud.cpp:819-824).
+- <strong>Queue full.</strong> No free slot, so <code>+</code> is dim and QUEUE is dim.
+- <strong>Ore short.</strong> QUEUE is dim.
+- <strong>More than 3 saved designs.</strong> The chip arrows show, each dim at its end.</p>
+<p>Layout files: <code>window-designer-default.json</code>, <code>-preview.json</code>, <code>-unsaved-editing.json</code>, <code>-no-shipyard.json</code>.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4394}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

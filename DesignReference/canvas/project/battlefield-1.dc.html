@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Frame, camera, sky and grid</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 14</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">The battlefield</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">What the world looks like and the rule behind each element: camera, sky, grid, the lit vector look, fog and memories, territory, rings, bars, exhaust and the phosphor glow.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>Camera.json</code> <code>GameClient.cpp</code> <code>NeuronClient/Shader</code> <code>A7</code> <code>ADR-012/019/022/024/026/028/040/081/090/091/092</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The vector look, in the game&#x27;s light</div><div style="padding:20px 24px 24px 24px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px"><figure style="margin:0 0 18px 0"><img src="/_blob/a370fcd668b12e05b4e64229f9be406e" alt="Human Medium hull" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Human Medium · Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.</figcaption></figure><figure style="margin:0 0 18px 0"><img src="/_blob/81da41260631b2e54978a606cc2d9c65" alt="Tarkan Medium hull" style="width:100%;height:auto;display:block;border:1px solid #2D364B"><figcaption style="margin-top:6px;font-size:12.5px;color:#8193AD">Tarkan Medium · Approximation of the in-game look: rendered from the shipped .nmf by A6's software rasterizer, replaying MeshPS/MeshLinePS, not captured from the game.</figcaption></figure></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Draw order</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>One frame, in the order the commands are recorded. Source: <code>OutpostCommander/WinMain.cpp:514-519</code>, <code>GameApp/GameClient.cpp:1125-1183</code>, <code>NeuronClient/Renderer.cpp:416-460</code>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>What</th>
+<th>Pass / pipeline</th>
+<th>Depth</th>
+<th>Blend</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Clear scene target to black, depth to 1</td>
+<td><code>Renderer::BeginFrame(CLEAR_COLOR)</code></td>
+<td>cleared</td>
+<td>—</td>
+<td><code>WinMain.cpp:21,514</code>; <code>Renderer.cpp:24-26,394-395</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>Sky: 49,975 Gaussian points</td>
+<td><code>StarPipeline</code> Spot</td>
+<td>off</td>
+<td>additive</td>
+<td><code>GameClient.cpp:1148</code>; <code>StarPipeline.cpp:75-84</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sky: 25 brightest stars as crosses</td>
+<td><code>StarPipeline</code> Cross</td>
+<td>off</td>
+<td>additive</td>
+<td><code>GameClient.cpp:1149,466</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Vector grid</td>
+<td><code>MeshPipeline::DrawLines</code>, unpulled</td>
+<td>test ≤, no write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1155</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td><em>Main menu stops here: the menu shows over the grid and the sky</em></td>
+<td></td>
+<td></td>
+<td></td>
+<td><code>GameClient.cpp:1156-1158</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Faces of every entity not remembered (ships, rocks, field rocks, derelicts, structures)</td>
+<td><code>MeshPipeline::DrawMeshes</code>, instanced</td>
+<td>test &lt;, write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1162-1168</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Explosion shards</td>
+<td><code>MeshPipeline::DrawTriangles</code></td>
+<td>test &lt;, write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1169,1618-1624</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Every model's crease lines</td>
+<td><code>MeshPipeline::DrawLines</code>, pulled 0.2%</td>
+<td>test ≤, no write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1171</code>; <code>MeshPipeline.cpp:98-107</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Structure footprint rings; a Mining Rig's draped ring</td>
+<td><code>DrawLines</code> / <code>DrawLineList</code></td>
+<td>test ≤, no write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1172,1361-1397</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Selection rings, then drag box</td>
+<td><code>DrawLines</code>; drag box as flat strips</td>
+<td>rings ≤ no write; strips &lt; write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1173,1438-1481</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Placement ghost: band ring, then model faces</td>
+<td><code>MeshPipeline::Draw</code></td>
+<td>test &lt;, write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1174,1807-1835</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Combat effects: flashes, sparks (discs), splash rings, tracer/beam/slug bands</td>
+<td><code>MeshPipeline::Draw</code></td>
+<td>test &lt;, write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1175,1340-1358</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>Glows: exhaust (soft spots), then particles (diamond sprites)</td>
+<td><code>GlowPipeline</code> ×2</td>
+<td>test ≤, no write</td>
+<td>additive</td>
+<td><code>GameClient.cpp:1176,1772-1805</code>; <code>GlowPipeline.cpp:72-81</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td>Fog of war over the ground</td>
+<td><code>GroundMaskPipeline</code></td>
+<td>off</td>
+<td>alpha (black)</td>
+<td><code>GameClient.cpp:1177,1263-1287</code>; <code>GroundMaskPipeline.cpp:70-80</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td>Territory: lattice, held/guarded outlines, claimable-node rings</td>
+<td><code>MeshPipeline::Resume</code> + <code>DrawLines</code></td>
+<td>test ≤, no write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1180-1181,1206-1256</code></td>
+</tr>
+<tr>
+<td>14</td>
+<td>Memories: remembered structures and derelicts as lines only</td>
+<td><code>DrawLines</code>, pulled 0.2%</td>
+<td>test ≤, no write</td>
+<td>opaque</td>
+<td><code>GameClient.cpp:1182,1185-1204</code></td>
+</tr>
+<tr>
+<td>15</td>
+<td>Phosphor glow (bloom) built from the scene</td>
+<td><code>Neuron::Bloom</code>, 9 passes</td>
+<td>—</td>
+<td>additive up-chain</td>
+<td><code>Renderer.cpp:431-433</code>; ADR-091 §Decision 1</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Resolve: 4× MSAA averaged + glow added → back buffer</td>
+<td><code>ResolvePS.hlsl</code></td>
+<td>—</td>
+<td>—</td>
+<td><code>Renderer.cpp:435-458</code>; <code>ResolvePS.hlsl:34-48</code></td>
+</tr>
+<tr>
+<td>17</td>
+<td>HUD: bars over entities first, then panels, lines, sprites, texts per layer</td>
+<td><code>UiPipeline</code>, 1 sample, never glows</td>
+<td>—</td>
+<td>—</td>
+<td><code>WinMain.cpp:517-518</code>; <code>GameClient.cpp:1289-1338</code></td>
+</tr>
+</tbody>
+</table>
+<p>Example: black space, stars, a faint blue-gray grid; dark-faced models outlined in bright side-colored lines; rings on the ground; shots and blasts; fog darkens the ground; sector lines and ghost outlines of remembered bases sit on top of the fog; then the HUD.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Frame and scene target</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: the scene is drawn at the display's native resolution into a 4-sample sRGB target, resolved by a shader into the back buffer, then the interface is drawn over it; there is no HDR.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Window</td>
+<td>Borderless full screen at start; Alt+Enter toggles a window (first 1280×720)</td>
+<td>ADR-006 §Decision 1</td>
+</tr>
+<tr>
+<td>Back buffer</td>
+<td>Native resolution; <code>R8G8B8A8_UNORM</code>, RTV <code>_SRGB</code>; no HDR</td>
+<td>ADR-006 §Decision 4</td>
+</tr>
+<tr>
+<td>Scene multisampling</td>
+<td>4 samples a pixel (<code>Renderer::SAMPLE_COUNT</code>)</td>
+<td><code>Renderer.h:29</code>; ADR-040 §Decision 3</td>
+</tr>
+<tr>
+<td>Depth</td>
+<td>32-bit float, cleared to 1, less-than; back faces culled</td>
+<td>ADR-011 §Decision 7; <code>Renderer.cpp:25-26</code></td>
+</tr>
+<tr>
+<td>Interface frame</td>
+<td>1920×1080 reference units, scale <code>min(w/1920, h/1080)</code> × player factor</td>
+<td>ADR-006 §Decision 5; <code>Hud.cpp:3029-3033</code></td>
+</tr>
+<tr>
+<td>Clear color</td>
+<td><code>CLEAR_COLOR</code> = (0, 0, 0, 1); <code>SCENE_CLEAR</code> = (0, 0, 0, 1)</td>
+<td><code>WinMain.cpp:21</code>; <code>Renderer.cpp:24</code></td>
+</tr>
+</tbody>
+</table>
+<p>Example: a crisp, antialiased image filling the monitor, pure black behind everything.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Camera</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: the zoom is a view width at the focus; the pitch follows the zoom in a straight line; the camera has no inertia; all numbers are <code>Camera.json</code>'s (ADR-012).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Default view width</td>
+<td>500 m</td>
+<td><code>Camera.json: defaultViewWidthMeters</code> (line 2)</td>
+</tr>
+<tr>
+<td>Narrowest view</td>
+<td>150 m</td>
+<td><code>Camera.json: minimumViewWidthMeters</code> (line 3)</td>
+</tr>
+<tr>
+<td>Widest view</td>
+<td>3,000 m</td>
+<td><code>Camera.json: maximumViewWidthMeters</code> (line 4); Phase 4 gate L6 (<code>OutpostCommander-Phase4.md:400</code>)</td>
+</tr>
+<tr>
+<td>Pitch, fully zoomed in</td>
+<td>40° below horizontal</td>
+<td><code>Camera.json: pitchAtMinimumDegrees</code> (line 5)</td>
+</tr>
+<tr>
+<td>Pitch, fully zoomed out</td>
+<td>70°</td>
+<td><code>Camera.json: pitchAtMaximumDegrees</code> (line 6)</td>
+</tr>
+<tr>
+<td>Pitch between</td>
+<td>linear in view width: <code>lerp(40, 70, (w − 150)/(3000 − 150))</code></td>
+<td><code>Camera.cpp:160-165</code>; ADR-012 §Decision 2</td>
+</tr>
+<tr>
+<td>Pitch at default 500 m</td>
+<td>43.7° <em>(computed from <code>Camera.cpp:160-165</code>)</em></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Vertical field of view</td>
+<td>45°</td>
+<td><code>Camera.json: verticalFieldOfViewDegrees</code> (line 7)</td>
+</tr>
+<tr>
+<td>Distance to focus</td>
+<td><code>width / (2·tan(hfov/2))</code>, hfov from vfov × aspect</td>
+<td><code>Camera.cpp:298-305</code>; ADR-012 §Decision 1</td>
+</tr>
+<tr>
+<td>Focus limit</td>
+<td>±5,000 m on x and z (the map's edge)</td>
+<td><code>Camera.json: focusLimitMeters</code> (line 8); <code>Camera.cpp:133-147</code></td>
+</tr>
+<tr>
+<td>Pan speed</td>
+<td>0.8 view widths per second</td>
+<td><code>Camera.json: panViewWidthsPerSecond</code> (line 9); <code>Camera.cpp:126-127</code></td>
+</tr>
+<tr>
+<td>Pan inputs</td>
+<td>Arrow keys; middle-drag (holds the ground under the cursor); edge scroll</td>
+<td><code>KeyBindings.h:18-21</code>; <code>Camera.cpp:94-127</code></td>
+</tr>
+<tr>
+<td>Edge-scroll margin</td>
+<td>4 px from any screen edge</td>
+<td><code>Camera.json: edgeScrollMarginPixels</code> (line 10); <code>Camera.cpp:112-125</code></td>
+</tr>
+<tr>
+<td>Edge scroll only while cursor held</td>
+<td>yes; in a window there is no edge scroll</td>
+<td><code>Camera.cpp:111-112</code>; ADR-012 §Decision 6</td>
+</tr>
+<tr>
+<td>Cursor held</td>
+<td><code>ClipCursor</code> to the client area every frame while full screen and in the foreground; released on Alt+Tab, windowed or closed</td>
+<td><code>Window.cpp:241-256</code>; ADR-012 §Decision 5</td>
+</tr>
+<tr>
+<td>Zoom per wheel notch</td>
+<td>factor 1.15</td>
+<td><code>Camera.json: zoomFactorPerNotch</code> (line 11); <code>Camera.cpp:149-153</code></td>
+</tr>
+<tr>
+<td>Turn</td>
+<td>Q counterclockwise, E clockwise, 90°/s about the focus</td>
+<td><code>Camera.json: rotateDegreesPerSecond</code> (line 12); <code>KeyBindings.h:22-23</code>; <code>Camera.cpp:129</code></td>
+</tr>
+<tr>
+<td>Starting orientation</td>
+<td>looks along +z: screen right = +x, screen top = +z</td>
+<td><code>Camera.cpp:13-14</code>; ADR-012 §Decision 4</td>
+</tr>
+<tr>
+<td>Near / far plane</td>
+<td>near = max(1 m, 1% of distance); far = distance + 8,000 m</td>
+<td><code>Camera.cpp:17-19,198-200</code></td>
+</tr>
+<tr>
+<td>Smoothing</td>
+<td>none; moves exactly with input</td>
+<td>ADR-012 §Consequences</td>
+</tr>
+<tr>
+<td>Jump to alert</td>
+<td>Space centers the camera on the newest alert</td>
+<td><code>KeyBindings.h:36</code>; <code>GameClient.cpp:661-666</code></td>
+</tr>
+</tbody>
+</table>
+<p>Color constants: none.</p>
+<p>Example: a tilted view looking down at about 44° over a 500 m-wide patch of black space; zoomed fully out it looks down steeply at 70° over 3 km.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Starfield</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: one fixed-seed sky of 50,000 stars at infinity, spread evenly over the sphere with a natural brightness distribution; the 25 brightest are crosses, the rest Gaussian points; it never moves when the view pans, only when it turns (ADR-022, ADR-028).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stars in all</td>
+<td>50,000 (<code>STAR_COUNT</code>), of which 25 crosses (<code>BURST_COUNT</code>) and 49,975 points</td>
+<td><code>Starfield.cpp:20-21,146-165</code></td>
+</tr>
+<tr>
+<td>Seed</td>
+<td><code>SKY_SEED</code> = 0x5EED5EED0F5E7A25, SplitMix64</td>
+<td><code>Starfield.cpp:16,61-93</code></td>
+</tr>
+<tr>
+<td>Distribution</td>
+<td>even over the whole sphere</td>
+<td><code>Starfield.cpp:103-111</code>; ADR-022 §Decision 1</td>
+</tr>
+<tr>
+<td>Brightness law</td>
+<td>count brighter than a light ∝ light^−3/2 (<code>COUNT_POWER</code> −1.5)</td>
+<td><code>Starfield.cpp:29-32</code></td>
+</tr>
+<tr>
+<td>Faintest star's flux</td>
+<td><code>MIN_FLUX</code> = 0.018 × 0.7²</td>
+<td><code>Starfield.cpp:31</code></td>
+</tr>
+<tr>
+<td>Point spread</td>
+<td>0.7–1.6 px standard deviation (<code>MIN_SPREAD_PIXELS</code>, <code>MAX_SPREAD_PIXELS</code>)</td>
+<td><code>Starfield.cpp:25-26</code></td>
+</tr>
+<tr>
+<td>Point peak</td>
+<td>at most 0.75 (<code>MAX_PEAK</code>); brighter points drawn wider, not brighter</td>
+<td><code>Starfield.cpp:27,162-164</code></td>
+</tr>
+<tr>
+<td>Point quad reach</td>
+<td>3 standard deviations (<code>REACH</code>); Gaussian lowered by its rim value</td>
+<td><code>Starfield.cpp:28</code>; <code>StarPS.hlsl:12-19</code></td>
+</tr>
+<tr>
+<td>Tints</td>
+<td>7 blackbody tints, 3,000 K–10,000 K, weights 0.10/0.20/0.22/0.18/0.14/0.10/0.06</td>
+<td><code>Starfield.cpp:51-59</code> (<code>TINTS</code>)</td>
+</tr>
+<tr>
+<td>Tint share</td>
+<td>65% tint, rest white (<code>TINT_SHARE</code> 0.65)</td>
+<td><code>Starfield.cpp:44,124</code></td>
+</tr>
+<tr>
+<td>Cross radius</td>
+<td>6–16 px on the 1920×1080 reference, by log of light</td>
+<td><code>Starfield.cpp:38-39,151-154</code>; ADR-028 §Decision 3</td>
+</tr>
+<tr>
+<td>Cross peak</td>
+<td>0.6 (<code>BURST_PEAK</code>)</td>
+<td><code>Starfield.cpp:40</code></td>
+</tr>
+<tr>
+<td>Cross color</td>
+<td>its tint if blue ≥ red, else white: never warm</td>
+<td><code>Starfield.cpp:152</code>; ADR-046 §Decision 3</td>
+</tr>
+<tr>
+<td>Cross shape</td>
+<td>two 1-px screen-axis lines fading linearly to the tips, plus a 1-px-radius dot</td>
+<td><code>StarCrossPS.hlsl:15-29</code>; ADR-028 §Decision 2</td>
+</tr>
+<tr>
+<td>Size scaling</td>
+<td>in reference pixels × HUD scale (same on every monitor)</td>
+<td><code>GameClient.cpp:1140-1147</code>; ADR-022 §Decision 5</td>
+</tr>
+<tr>
+<td>Depth</td>
+<td>at infinity (w = 0), z = w/2, no depth test or write; drawn first</td>
+<td><code>StarVS.hlsl:34-39</code>; <code>StarPipeline.cpp:83-84</code></td>
+</tr>
+<tr>
+<td>Unused textures</td>
+<td><code>starburst.dds</code> (128×128) packaged, not drawn; <code>glow.dds</code> not used</td>
+<td>ADR-022 §Decision 4; ADR-028 §Consequences</td>
+</tr>
+<tr>
+<td>Twinkle / parallax / galaxy</td>
+<td>none</td>
+<td>ADR-022 §What this forecloses</td>
+</tr>
+</tbody>
+</table>
+<p>Color constants: <code>TINTS</code> (7 entries, <code>Starfield.cpp:51-59</code>), e.g. 3,000 K (1.0, 0.46, 0.15) … 10,000 K (0.60, 0.71, 1.0); final color = <code>lerp(1, tint, 0.65) × peak</code>.</p>
+<p>Example: a black sky dusted with thousands of faint warm-white and blue-white specks, a handful of thin white four-armed crosses 12–32 px across.</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Vector grid</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>Rule: a uniform one-pixel line every 100 m along x and z across the whole 10 km map, a dim blue-gray, unpulled and writing no depth (ADR-028 §Decision 1).</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Extent</td>
+<td>−5,000 m to +5,000 m on both axes (10,000 m a side)</td>
+<td><code>GameClient.cpp:27-30</code> (<code>GRID_HALF_EXTENT_METERS</code> 5000); <code>Map.json: sizeMeters</code> 10000</td>
+</tr>
+<tr>
+<td>Spacing</td>
+<td>100 m (<code>GRID_SPACING_METERS</code>); 101 lines each way</td>
+<td><code>GameClient.cpp:31,173-179</code></td>
+</tr>
+<tr>
+<td>Width</td>
+<td>1 px at any zoom, multisampled</td>
+<td>ADR-027 §Decision 3; ADR-040 §Decision 3</td>
+</tr>
+<tr>
+<td>Major lines</td>
+<td>none (nothing marks 500 m)</td>
+<td>ADR-028 §Consequences</td>
+</tr>
+<tr>
+<td>Pull toward eye</td>
+<td>0</td>
+<td><code>GameClient.cpp:1154-1155</code>; ADR-040 §Decision 2</td>
+</tr>
+<tr>
+<td>Lighting</td>
+<td>as a line facing up: takes the light's luminance only</td>
+<td><code>MeshLinePS.hlsl:40-43</code>; ADR-090 §Decision 2</td>
+</tr>
+<tr>
+<td>On screen</td>
+<td>about (26, 27, 34) sRGB lit from above (ADR's figure, not measured)</td>
+<td>ADR-028 §Decision 1</td>
+</tr>
+<tr>
+<td>Fade</td>
+<td>under fog: out of sight the grid falls to ~7/255 <em>(ADR's computation)</em></td>
+<td>ADR-081 §Decision 6</td>
+</tr>
+</tbody>
+</table>
+<p>Color constant: <code>GRID_COLOR</code> = (0.012, 0.013, 0.019, 1.0) — <code>GameClient.cpp:32</code>.</p>
+<p>Example: barely visible hairlines in a 100 m square lattice that slides as the camera pans and ends at the map's edge.</p>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 5297}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

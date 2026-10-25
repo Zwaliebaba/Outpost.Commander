@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">The map · Map.json</div><div style="padding:20px 24px 24px 24px"><div style="display:flex;gap:36px;align-items:flex-start"><svg role="img" aria-label="Map.json: 25 sectors, nodes, adjacency, starts, home ore and asteroid fields" width="760" height="760" viewBox="0 0 760 760" style="display:block;background:#10141B"><rect x="0.0" y="608.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="6.0" y="624.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">A1<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">home</tspan></text><rect x="152.0" y="608.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="158.0" y="624.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">B1<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">flank</tspan></text><rect x="304.0" y="608.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="310.0" y="624.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">C1<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">near</tspan></text><rect x="456.0" y="608.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="462.0" y="624.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">D1<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="608.0" y="608.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="614.0" y="624.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">E1<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">rich</tspan></text><rect x="0.0" y="456.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="6.0" y="472.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">A2<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">flank</tspan></text><rect x="152.0" y="456.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="158.0" y="472.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">B2<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">near</tspan></text><rect x="304.0" y="456.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="310.0" y="472.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">C2<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="456.0" y="456.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="462.0" y="472.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">D2<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">between</tspan></text><rect x="608.0" y="456.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="614.0" y="472.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">E2<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="0.0" y="304.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="6.0" y="320.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">A3<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">near</tspan></text><rect x="152.0" y="304.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="158.0" y="320.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">B3<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="304.0" y="304.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="310.0" y="320.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">C3<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">center</tspan></text><rect x="456.0" y="304.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="462.0" y="320.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">D3<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="608.0" y="304.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="614.0" y="320.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">E3<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">near</tspan></text><rect x="0.0" y="152.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="6.0" y="168.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">A4<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="152.0" y="152.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="158.0" y="168.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">B4<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">between</tspan></text><rect x="304.0" y="152.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="310.0" y="168.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">C4<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="456.0" y="152.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="462.0" y="168.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">D4<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">near</tspan></text><rect x="608.0" y="152.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="614.0" y="168.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">E4<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">flank</tspan></text><rect x="0.0" y="0.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="6.0" y="16.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">A5<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">rich</tspan></text><rect x="152.0" y="0.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="158.0" y="16.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">B5<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">contested</tspan></text><rect x="304.0" y="0.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="310.0" y="16.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">C5<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">near</tspan></text><rect x="456.0" y="0.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="462.0" y="16.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">D5<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">flank</tspan></text><rect x="608.0" y="0.0" width="152.0" height="152.0" fill="#27384B" stroke="#5D6573" stroke-width="1"/><text x="614.0" y="16.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px" fill="#ACBACD">E5<tspan dx="6" style="font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-weight:400;font-size:10.5px" fill="#8193AD">home</tspan></text><line x1="76.0" y1="684.0" x2="228.0" y2="684.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="684.0" x2="76.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="684.0" x2="380.0" y2="684.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="684.0" x2="228.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="684.0" x2="532.0" y2="684.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="684.0" x2="380.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="684.0" x2="684.0" y2="684.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="684.0" x2="532.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="684.0" y1="684.0" x2="684.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="532.0" x2="228.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="532.0" x2="76.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="532.0" x2="380.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="532.0" x2="228.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="532.0" x2="532.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="532.0" x2="380.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="532.0" x2="684.0" y2="532.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="532.0" x2="532.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="684.0" y1="532.0" x2="684.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="380.0" x2="228.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="380.0" x2="76.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="380.0" x2="380.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="380.0" x2="228.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="380.0" x2="532.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="380.0" x2="380.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="380.0" x2="684.0" y2="380.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="380.0" x2="532.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="684.0" y1="380.0" x2="684.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="228.0" x2="228.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="228.0" x2="76.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="228.0" x2="380.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="228.0" x2="228.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="228.0" x2="532.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="228.0" x2="380.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="228.0" x2="684.0" y2="228.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="228.0" x2="532.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="684.0" y1="228.0" x2="684.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="76.0" y1="76.0" x2="228.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="228.0" y1="76.0" x2="380.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="380.0" y1="76.0" x2="532.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><line x1="532.0" y1="76.0" x2="684.0" y2="76.0" stroke="#8193AD" stroke-width="1" stroke-dasharray="3 4"/><circle cx="152.0" cy="724.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="643.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="35.7" cy="608.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="116.3" cy="608.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="572.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="491.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="187.7" cy="608.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="268.3" cy="608.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="420.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="339.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="339.7" cy="608.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="420.3" cy="608.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="268.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="187.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="491.7" cy="608.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="572.3" cy="608.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="116.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="152.0" cy="35.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="643.7" cy="608.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="724.3" cy="608.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="724.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="643.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="35.7" cy="456.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="116.3" cy="456.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="572.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="491.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="187.7" cy="456.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="268.3" cy="456.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="420.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="339.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="339.7" cy="456.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="420.3" cy="456.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="268.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="187.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="491.7" cy="456.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="572.3" cy="456.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="116.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="304.0" cy="35.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="643.7" cy="456.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="724.3" cy="456.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="724.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="643.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="35.7" cy="304.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="116.3" cy="304.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="572.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="491.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="187.7" cy="304.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="268.3" cy="304.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="420.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="339.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="339.7" cy="304.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="420.3" cy="304.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="268.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="187.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="491.7" cy="304.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="572.3" cy="304.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="116.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="456.0" cy="35.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="643.7" cy="304.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="724.3" cy="304.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="724.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="643.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="35.7" cy="152.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="116.3" cy="152.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="572.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="491.7" r="11.4" fill="#656569" opacity="0.9"/><circle cx="187.7" cy="152.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="268.3" cy="152.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="420.3" r="13.7" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="339.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="339.7" cy="152.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="420.3" cy="152.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="268.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="187.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="491.7" cy="152.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="572.3" cy="152.0" r="11.4" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="116.3" r="11.4" fill="#656569" opacity="0.9"/><circle cx="608.0" cy="35.7" r="13.7" fill="#656569" opacity="0.9"/><circle cx="643.7" cy="152.0" r="13.7" fill="#656569" opacity="0.9"/><circle cx="724.3" cy="152.0" r="11.4" fill="#656569" opacity="0.9"/><rect x="72.0" y="660.2" width="8.0" height="8.0" fill="none" stroke="#AD8427" stroke-width="2"/><rect x="680.0" y="91.8" width="8.0" height="8.0" fill="none" stroke="#AD8427" stroke-width="2"/><rect x="91.8" y="680.0" width="8.0" height="8.0" fill="none" stroke="#AD8427" stroke-width="2"/><rect x="660.2" y="72.0" width="8.0" height="8.0" fill="none" stroke="#AD8427" stroke-width="2"/><rect x="86.4" y="665.6" width="8.0" height="8.0" fill="none" stroke="#AD8427" stroke-width="2"/><rect x="665.6" y="86.4" width="8.0" height="8.0" fill="none" stroke="#AD8427" stroke-width="2"/><circle cx="76.0" cy="684.0" r="4" fill="#EAF1FA"/><circle cx="228.0" cy="684.0" r="4" fill="#EAF1FA"/><circle cx="380.0" cy="684.0" r="4" fill="#EAF1FA"/><circle cx="532.0" cy="684.0" r="4" fill="#EAF1FA"/><circle cx="684.0" cy="684.0" r="4" fill="#EAF1FA"/><circle cx="76.0" cy="532.0" r="4" fill="#EAF1FA"/><circle cx="228.0" cy="532.0" r="4" fill="#EAF1FA"/><circle cx="380.0" cy="532.0" r="4" fill="#EAF1FA"/><circle cx="532.0" cy="532.0" r="4" fill="#EAF1FA"/><circle cx="684.0" cy="532.0" r="4" fill="#EAF1FA"/><circle cx="76.0" cy="380.0" r="4" fill="#EAF1FA"/><circle cx="228.0" cy="380.0" r="4" fill="#EAF1FA"/><circle cx="380.0" cy="380.0" r="4" fill="#EAF1FA"/><circle cx="532.0" cy="380.0" r="4" fill="#EAF1FA"/><circle cx="684.0" cy="380.0" r="4" fill="#EAF1FA"/><circle cx="76.0" cy="228.0" r="4" fill="#EAF1FA"/><circle cx="228.0" cy="228.0" r="4" fill="#EAF1FA"/><circle cx="380.0" cy="228.0" r="4" fill="#EAF1FA"/><circle cx="532.0" cy="228.0" r="4" fill="#EAF1FA"/><circle cx="684.0" cy="228.0" r="4" fill="#EAF1FA"/><circle cx="76.0" cy="76.0" r="4" fill="#EAF1FA"/><circle cx="228.0" cy="76.0" r="4" fill="#EAF1FA"/><circle cx="380.0" cy="76.0" r="4" fill="#EAF1FA"/><circle cx="532.0" cy="76.0" r="4" fill="#EAF1FA"/><circle cx="684.0" cy="76.0" r="4" fill="#EAF1FA"/><circle cx="76.0" cy="684.0" r="11" fill="none" stroke="#A0D3FF" stroke-width="2.5"/><text x="91.0" y="674.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px" fill="#A0D3FF">start 1</text><circle cx="684.0" cy="76.0" r="11" fill="none" stroke="#FFA689" stroke-width="2.5"/><text x="699.0" y="66.0" style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px" fill="#FFA689">start 2</text></svg><div class="md" style="flex:1"><p>Drawn from <code>Map.json</code> at HEAD: 10,000 m square, 25 sectors (2 between, 1 center, 8 contested, 4 flank, 2 home, 6 near, 2 rich), 80 asteroid fields and 6 home ore asteroids. +x runs right and +z up, as the minimap draws it (<code>Hud.cpp:2432-2451</code>). The other ore asteroids, the pirate outposts and the derelicts are placed by the match's seed by each sector's kind, mirrored through the center (<code>ADR-072</code>, <code>Map.json: sectorKinds, outposts, derelicts, placement</code>), so no map can show them: <strong>not drawn</strong>. Map colors are the minimap's tokens.</p><table><tbody><tr><td style="width:30px"><span style="display:inline-block;width:14px;height:14px;background:#27384B;border:1px solid #5D6573"></span></td><td>Sector, 2,000 m square, its name and kind</td><td><code>Map.json: sectors[]</code></td></tr><tr><td style="width:30px"><span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:#EAF1FA"></span></td><td>Node, where a Relay claims the sector</td><td><code>Map.json: sectors[].node; ADR-056</code></td></tr><tr><td style="width:30px"><span style="display:inline-block;width:22px;border-top:1px dashed #8193AD"></span></td><td>Adjacency: the lattice a claim grows along</td><td><code>Map.json: sectors[].adjacent; ADR-036</code></td></tr><tr><td style="width:30px"><span style="display:inline-block;width:12px;height:12px;border:2px solid #AD8427"></span></td><td>Home ore asteroid (the six Map.json places)</td><td><code>Map.json: oreAsteroids[]</code></td></tr><tr><td style="width:30px"><span style="display:inline-block;width:12px;height:12px;border-radius:6px;background:#656569"></span></td><td>Asteroid field, at its radius</td><td><code>Map.json: asteroidFields[] (80)</code></td></tr><tr><td style="width:30px"><span style="display:inline-block;width:14px;height:14px;border-radius:7px;border:2px solid #A0D3FF"></span></td><td>Start 1 and start 2</td><td><code>Map.json: starts[]</code></td></tr></tbody></table></div></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Sectors, nodes and adjacency</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Map name</td>
+<td>Not specified (<code>Map.json</code> has no name field)</td>
+<td><code>Map.json</code></td>
+</tr>
+<tr>
+<td>Size</td>
+<td>10,000 m a side, centered on the origin (edges at ±5,000 m)</td>
+<td><code>Map.json: sizeMeters</code> (line 2); <code>ADR-036 §Decision 4</code>; <code>Phase4.md:248</code></td>
+</tr>
+<tr>
+<td>Minimum gap (narrowest passage)</td>
+<td>60 m; no hull footprint may be wider (checked at server start)</td>
+<td><code>Map.json: minimumGapMeters</code> (line 3); <code>InProcessServer.cpp:142-149</code></td>
+</tr>
+<tr>
+<td>Starts</td>
+<td>(−4,000, −4,000) for player 1 and (4,000, 4,000) for player 2; start to start about 11.3 km</td>
+<td><code>Map.json: starts</code> (lines 4-7); <code>Phase4.md:248-249</code></td>
+</tr>
+<tr>
+<td>Sectors</td>
+<td>25, on a 5×5 grid of 2 km; columns A–E west to east, rows 1–5 south to north; ids row by row, A1 = 1 … E5 = 25</td>
+<td><code>Map.json: sectors</code> (lines 98-149); <code>ADR-036 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Node</td>
+<td>one per sector, at its center; a home's node is its start</td>
+<td><code>Map.json: sectors[].node</code>; <code>ADR-036 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Adjacency</td>
+<td>two sectors are adjacent when they share a border (no diagonals); every adjacency is mutual (checked at load)</td>
+<td><code>ADR-036 §Decision 2</code>; <code>Phase2.md:66</code>; checked by script over <code>Map.json</code></td>
+</tr>
+<tr>
+<td>Asteroid fields (obstacles)</td>
+<td>80, radius 150 m or 180 m; two on every border between two sectors, 470 m in from each end, leaving a passage at the middle and one at each corner</td>
+<td><code>Map.json: asteroidFields</code> (lines 16-97); <code>ADR-036 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Ore asteroids</td>
+<td>40 in all: 6 home (listed), 34 placed from the seed (14 near, 16 contested, 4 rich); 20 a player-half: 3 home, 7 near, 8 contested, 2 rich</td>
+<td>counted from <code>Map.json</code> lines 9-14, 150-157 by script; <code>ADR-036 §Decision 4</code>; <code>ADR-072 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Ore on the map</td>
+<td>459,000</td>
+<td><em>derived</em> from <code>Map.json</code> (6×7,500 + 14×9,000 + 16×12,000 + 4×24,000); stated in <code>ADR-036 §Decision 4</code>, <code>ADR-072 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Home asteroids' places</td>
+<td>(∓4,000, ∓3,740), (∓3,740, ∓4,000), (∓3,810, ∓3,810): about 260–269 m from the start</td>
+<td><code>Map.json</code> lines 9-14</td>
+</tr>
+<tr>
+<td>Symmetry</td>
+<td>point-symmetric about the center; the mirror of a sector is the one holding its node turned half a turn</td>
+<td><code>ADR-072 §Decision 2</code>; <code>Map.cpp:216-222</code> (<code>MirrorOf</code>)</td>
+</tr>
+</tbody>
+</table>
+<h4>Sector kinds</h4>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Ore it gets (from the seed)</th>
+<th>Sectors</th>
+<th>Pirates</th>
+<th>Derelicts</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>home</td>
+<td>none drawn (its 3 listed home asteroids)</td>
+<td>A1, E5</td>
+<td>—</td>
+<td>—</td>
+<td><code>Map.json</code> lines 151, 9-14</td>
+</tr>
+<tr>
+<td>flank</td>
+<td>2 near (r 45, 9,000)</td>
+<td>B1, A2, E4, D5</td>
+<td>—</td>
+<td>1 pair of the 2 pairs, 300 Ore, Small hull, r 20</td>
+<td><code>Map.json</code> lines 152, 165</td>
+</tr>
+<tr>
+<td>near</td>
+<td>1 near (r 45, 9,000)</td>
+<td>C1, B2, A3, E3, D4, C5</td>
+<td>—</td>
+<td>2 pairs of the 3, 450 Ore, Medium hull, r 25</td>
+<td><code>Map.json</code> lines 153, 166</td>
+</tr>
+<tr>
+<td>contested</td>
+<td>1 contested (r 45, 12,000)</td>
+<td>D1, C2, E2, B3, D3, A4, C4, B5</td>
+<td>camp on 2 pairs of the 4</td>
+<td>2 pairs of the 4, 600 Ore, Large hull, r 30</td>
+<td><code>Map.json</code> lines 154, 160, 167</td>
+</tr>
+<tr>
+<td>between</td>
+<td>2 contested (r 45, 12,000)</td>
+<td>D2, B4</td>
+<td>—</td>
+<td>1 pair (the only pair), 750 Ore, Large hull, r 30</td>
+<td><code>Map.json</code> lines 155, 168</td>
+</tr>
+<tr>
+<td>center</td>
+<td>4 contested (r 45, 12,000)</td>
+<td>C3</td>
+<td>stronghold</td>
+<td>—</td>
+<td><code>Map.json</code> lines 156, 162</td>
+</tr>
+<tr>
+<td>rich</td>
+<td>2 rich (r 60, 24,000)</td>
+<td>E1, A5</td>
+<td>stronghold on the pair</td>
+<td>—</td>
+<td><code>Map.json</code> lines 157, 161</td>
+</tr>
+</tbody>
+</table>
+<h4>Full sector table</h4>
+<p>Bounds are x min…max, z min…max in metres. Mirror = the sector across the center. All from <code>Map.json: sectors</code> (lines 99-148); mirrors by <code>Map.cpp:216-222</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Id</th>
+<th>Name</th>
+<th>Kind</th>
+<th>x</th>
+<th>z</th>
+<th>Node</th>
+<th>Adjacent</th>
+<th>Mirror</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>A1</td>
+<td>home (player 1)</td>
+<td>−5000…−3000</td>
+<td>−5000…−3000</td>
+<td>(−4000, −4000)</td>
+<td>B1, A2</td>
+<td>E5</td>
+</tr>
+<tr>
+<td>2</td>
+<td>B1</td>
+<td>flank</td>
+<td>−3000…−1000</td>
+<td>−5000…−3000</td>
+<td>(−2000, −4000)</td>
+<td>A1, C1, B2</td>
+<td>D5</td>
+</tr>
+<tr>
+<td>3</td>
+<td>C1</td>
+<td>near</td>
+<td>−1000…1000</td>
+<td>−5000…−3000</td>
+<td>(0, −4000)</td>
+<td>B1, D1, C2</td>
+<td>C5</td>
+</tr>
+<tr>
+<td>4</td>
+<td>D1</td>
+<td>contested</td>
+<td>1000…3000</td>
+<td>−5000…−3000</td>
+<td>(2000, −4000)</td>
+<td>C1, E1, D2</td>
+<td>B5</td>
+</tr>
+<tr>
+<td>5</td>
+<td>E1</td>
+<td>rich</td>
+<td>3000…5000</td>
+<td>−5000…−3000</td>
+<td>(4000, −4000)</td>
+<td>D1, E2</td>
+<td>A5</td>
+</tr>
+<tr>
+<td>6</td>
+<td>A2</td>
+<td>flank</td>
+<td>−5000…−3000</td>
+<td>−3000…−1000</td>
+<td>(−4000, −2000)</td>
+<td>A1, B2, A3</td>
+<td>E4</td>
+</tr>
+<tr>
+<td>7</td>
+<td>B2</td>
+<td>near</td>
+<td>−3000…−1000</td>
+<td>−3000…−1000</td>
+<td>(−2000, −2000)</td>
+<td>B1, A2, C2, B3</td>
+<td>D4</td>
+</tr>
+<tr>
+<td>8</td>
+<td>C2</td>
+<td>contested</td>
+<td>−1000…1000</td>
+<td>−3000…−1000</td>
+<td>(0, −2000)</td>
+<td>C1, B2, D2, C3</td>
+<td>C4</td>
+</tr>
+<tr>
+<td>9</td>
+<td>D2</td>
+<td>between</td>
+<td>1000…3000</td>
+<td>−3000…−1000</td>
+<td>(2000, −2000)</td>
+<td>D1, C2, E2, D3</td>
+<td>B4</td>
+</tr>
+<tr>
+<td>10</td>
+<td>E2</td>
+<td>contested</td>
+<td>3000…5000</td>
+<td>−3000…−1000</td>
+<td>(4000, −2000)</td>
+<td>E1, D2, E3</td>
+<td>A4</td>
+</tr>
+<tr>
+<td>11</td>
+<td>A3</td>
+<td>near</td>
+<td>−5000…−3000</td>
+<td>−1000…1000</td>
+<td>(−4000, 0)</td>
+<td>A2, B3, A4</td>
+<td>E3</td>
+</tr>
+<tr>
+<td>12</td>
+<td>B3</td>
+<td>contested</td>
+<td>−3000…−1000</td>
+<td>−1000…1000</td>
+<td>(−2000, 0)</td>
+<td>B2, A3, C3, B4</td>
+<td>D3</td>
+</tr>
+<tr>
+<td>13</td>
+<td>C3</td>
+<td>center</td>
+<td>−1000…1000</td>
+<td>−1000…1000</td>
+<td>(0, 0)</td>
+<td>C2, B3, D3, C4</td>
+<td>C3 (itself)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>D3</td>
+<td>contested</td>
+<td>1000…3000</td>
+<td>−1000…1000</td>
+<td>(2000, 0)</td>
+<td>D2, C3, E3, D4</td>
+<td>B3</td>
+</tr>
+<tr>
+<td>15</td>
+<td>E3</td>
+<td>near</td>
+<td>3000…5000</td>
+<td>−1000…1000</td>
+<td>(4000, 0)</td>
+<td>E2, D3, E4</td>
+<td>A3</td>
+</tr>
+<tr>
+<td>16</td>
+<td>A4</td>
+<td>contested</td>
+<td>−5000…−3000</td>
+<td>1000…3000</td>
+<td>(−4000, 2000)</td>
+<td>A3, B4, A5</td>
+<td>E2</td>
+</tr>
+<tr>
+<td>17</td>
+<td>B4</td>
+<td>between</td>
+<td>−3000…−1000</td>
+<td>1000…3000</td>
+<td>(−2000, 2000)</td>
+<td>B3, A4, C4, B5</td>
+<td>D2</td>
+</tr>
+<tr>
+<td>18</td>
+<td>C4</td>
+<td>contested</td>
+<td>−1000…1000</td>
+<td>1000…3000</td>
+<td>(0, 2000)</td>
+<td>C3, B4, D4, C5</td>
+<td>C2</td>
+</tr>
+<tr>
+<td>19</td>
+<td>D4</td>
+<td>near</td>
+<td>1000…3000</td>
+<td>1000…3000</td>
+<td>(2000, 2000)</td>
+<td>D3, C4, E4, D5</td>
+<td>B2</td>
+</tr>
+<tr>
+<td>20</td>
+<td>E4</td>
+<td>flank</td>
+<td>3000…5000</td>
+<td>1000…3000</td>
+<td>(4000, 2000)</td>
+<td>E3, D4, E5</td>
+<td>A2</td>
+</tr>
+<tr>
+<td>21</td>
+<td>A5</td>
+<td>rich</td>
+<td>−5000…−3000</td>
+<td>3000…5000</td>
+<td>(−4000, 4000)</td>
+<td>A4, B5</td>
+<td>E1</td>
+</tr>
+<tr>
+<td>22</td>
+<td>B5</td>
+<td>contested</td>
+<td>−3000…−1000</td>
+<td>3000…5000</td>
+<td>(−2000, 4000)</td>
+<td>B4, A5, C5</td>
+<td>D1</td>
+</tr>
+<tr>
+<td>23</td>
+<td>C5</td>
+<td>near</td>
+<td>−1000…1000</td>
+<td>3000…5000</td>
+<td>(0, 4000)</td>
+<td>C4, B5, D5</td>
+<td>C1</td>
+</tr>
+<tr>
+<td>24</td>
+<td>D5</td>
+<td>flank</td>
+<td>1000…3000</td>
+<td>3000…5000</td>
+<td>(2000, 4000)</td>
+<td>D4, C5, E5</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>25</td>
+<td>E5</td>
+<td>home (player 2)</td>
+<td>3000…5000</td>
+<td>3000…5000</td>
+<td>(4000, 4000)</td>
+<td>E4, D5</td>
+<td>A1</td>
+</tr>
+</tbody>
+</table>
+<p>Player 1's flanks are B1 and A2; player 2's are D5 and E4 (<code>ADR-036 §Decision 4</code>; <code>Map.json</code>).</p>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Seeded placement and mirroring</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fixed in <code>Map.json</code></td>
+<td>the size, the sector grid, the asteroid fields and their passages, the starts, and each home's three asteroids</td>
+<td><code>Phase4.md:269</code>; <code>ADR-072</code> Context</td>
+</tr>
+<tr>
+<td>Placed from the seed</td>
+<td>every other ore asteroid, every pirate outpost, every derelict, and which derelicts name a research topic</td>
+<td><code>Phase4.md:270</code>; <code>ADR-072 §Decision 3, 7, 8</code></td>
+</tr>
+<tr>
+<td>When</td>
+<td>once, before the match (<code>PlaceContent(map, seed)</code>), never during it</td>
+<td><code>ADR-072 §Decision 3</code>; <code>InProcessServer.cpp:133-135</code> (<code>m_map(PlaceContent(...))</code>); <code>ADR-072</code> "What this forecloses"</td>
+</tr>
+<tr>
+<td>Generator</td>
+<td><code>Neuron::Random</code> seeded with the match's seed XOR a constant, so its draws are not the simulation's own</td>
+<td><code>Map.cpp:17</code> (<code>PLACEMENT_SEED_SALT = 0x9e3779b97f4a7c15</code>), <code>Map.cpp:358</code>; <code>ADR-072 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Mirroring</td>
+<td>of each pair of mirrored sectors the one with the lower identifier draws, and each thing it draws is added with its mirror through the center (x, z) → (−x, −z); the center, its own mirror, draws half its count and their mirrors</td>
+<td><code>Map.cpp:381-419</code> (asteroids: lower id draws, center draws half at line 396, both added at 410-412), <code>Map.cpp:437-438</code> (outposts); <code>ADR-072 §Decision 4</code>; <code>Phase4.md:271</code></td>
+</tr>
+<tr>
+<td>Order of draws</td>
+<td>asteroids, then outposts, then derelicts, then the derelicts' topics (so adding later content changes nothing earlier)</td>
+<td><code>Map.cpp:381-507</code>; <code>ADR-072 §Decision 7-8</code>; <code>ADR-074 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Asteroid inset</td>
+<td>drawn uniformly inside its sector, <code>borderMeters</code> 250 + its radius in from each edge</td>
+<td><code>Map.json: placement.borderMeters</code> (line 171); <code>Map.cpp:393-403</code>; <code>ADR-072 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Node clearance</td>
+<td>at least 350 m from its sector's node</td>
+<td><code>Map.json: placement.nodeClearanceMeters</code> (line 171); <code>Map.cpp:405</code>; <code>ADR-072 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Ore spacing</td>
+<td>at least 500 m center to center from every ore asteroid ("so that a rig has room for a Defence Platform beside it")</td>
+<td><code>Map.json: placement.oreSpacingMeters</code> (line 171); <code>Map.cpp:367-372</code>, <code>Map.cpp:408</code>; <code>ADR-072 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Gap</td>
+<td>the map's 60 m minimum gap from every obstacle, the edge and every start, for it and its mirror</td>
+<td><code>Map.cpp:363-379</code>, <code>Map.cpp:407-408</code>; <code>ADR-072 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Attempts</td>
+<td>up to 10,000 draws per asteroid or derelict; a sector with no room throws, naming the sector</td>
+<td><code>Map.cpp:19</code> (<code>PLACEMENT_ATTEMPTS</code>), <code>Map.cpp:415-416</code>; <code>ADR-072 §Decision 5</code></td>
+</tr>
+<tr>
+<td>Outposts</td>
+<td>per rule, pairs drawn from the free pairs of its kind not taken by an earlier outpost rule; a camp on 2 of the 4 contested pairs; a stronghold on the rich pair and on the center</td>
+<td><code>Map.json: outposts</code> (lines 159-163); <code>Map.cpp:420-440</code>; <code>ADR-072 §Decision 7</code></td>
+</tr>
+<tr>
+<td>Derelicts</td>
+<td>per rule, pairs of its kind not taken by an earlier derelict rule (a derelict may share a sector with an outpost); one derelict a sector; placed as an asteroid is but with gap checks only (no ore spacing)</td>
+<td><code>Map.json: derelicts</code> (lines 164-169); <code>Map.cpp:442-494</code>; <code>ADR-072 §Decision 8</code>; <code>ADR-074</code> "What this forecloses"</td>
+</tr>
+<tr>
+<td>Derelicts naming a topic</td>
+<td><code>round(pairs × 33 / 100)</code> pairs, so 2 of the 6 pairs (4 of the 12 derelicts); each pair names one topic drawn from the whole research table</td>
+<td><code>Map.json: derelictResearchPercent</code> 33 (line 170); <code>Map.cpp:495-507</code>; <code>ADR-074 §Decision 2</code>; <code>Phase4.md:312</code></td>
+</tr>
+<tr>
+<td>What varies by seed</td>
+<td>where each sector's asteroids lie; which start a contested asteroid of B4, D2 or the center lies nearer; which contested pairs hold a camp; which sectors hold a derelict and which topics they name. The counts by sector do not vary</td>
+<td><code>ADR-072</code> Consequences</td>
+</tr>
+<tr>
+<td>Fairness</td>
+<td>both seats get the same map, turned half a turn</td>
+<td><code>Phase4.md:271</code>; <code>ADR-073 §Decision 4</code> (the one asymmetry: the center stronghold's Lance ship stands about 170 m nearer player 1's start)</td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4043}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Windows: Production and Research</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Production</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> One producer's queue, and the cards that add to it: a Constructor at the Command Station, or each saved design at a Shipyard. Arrows step through the player's finished producers (Phase 1 design §12; owner, 2026-10-03; ADR-043 d6; ADR-068 d3).</p>
+<p><strong>Geometry</strong> (Hud.cpp:1606-1636, 1708-1784).
+- The window is 478 wide (<code>PRODUCTION_WINDOW_WIDTH</code> = 1920 − 64 − 818 − 560).
+- Cards are 211 × 74, two to a line, at x 24 or 243, y 104 + 82·line.
+- The cards stay where they are as the queue grows; the window grows at its foot.
+- <strong>Height:</strong> CardsBottom + 20 + 20 + jobs·34 + 20, where CardsBottom = 104 + max(lines, 1)·82 − 8.</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Height</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Four cards and three jobs</td>
+<td>422</td>
+</tr>
+<tr>
+<td>One card and two jobs</td>
+<td>306</td>
+</tr>
+<tr>
+<td>No cards</td>
+<td>238</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect (window units; default corner (16, 178))</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>production.titleLabel</td>
+<td>text, Label, tracking 2</td>
+<td><code>PRODUCTION</code></td>
+<td>—</td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>24, 11</td>
+<td>Hud.cpp:1725</td>
+</tr>
+<tr>
+<td>header.subject</td>
+<td>stepped title: <code>&lt;</code> 24×24, the subject in the Title face, <code>&gt;</code></td>
+<td><code>COMMAND STATION</code>, <code>SHIPYARD {n:02}</code> or <code>NO PRODUCER</code></td>
+<td><code>ProductionTarget</code> (ProductionTarget.cpp:12-60); the arrows are enabled while there is more than one producer</td>
+<td>small buttons as in the designer; subject <code>TEXT_COLOR</code></td>
+<td><code>&lt;</code> 24, 43; subject at 56, 40 (cut at 244); <code>&gt;</code> after it</td>
+<td>Hud.cpp:1658-1671, 2838-2845</td>
+</tr>
+<tr>
+<td>header.oreBox</td>
+<td>panel</td>
+<td>gem + figure</td>
+<td><code>Snapshot::ore</code></td>
+<td><code>FIELD_COLOR</code>, <code>GOLD_COLOR</code></td>
+<td>338, 38, 116, 30</td>
+<td>Hud.cpp:1670</td>
+</tr>
+<tr>
+<td>production.build.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>BUILD</code></td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, 84</td>
+<td>Hud.cpp:1730</td>
+</tr>
+<tr>
+<td>production.option{i}</td>
+<td>button card (<code>Queue</code>)</td>
+<td>—</td>
+<td>a Constructor at the station; each <code>DesignView</code> at a Shipyard. Enabled when its level allows, the queue has room, and the Ore is there</td>
+<td><code>CARD_COLOR</code> / <code>FIELD_COLOR</code>; edge <code>EDGE_COLOR</code></td>
+<td>24 | 243, 104 + 82·line, 211, 74</td>
+<td>Hud.cpp:1733-1743, 2855-2894</td>
+</tr>
+<tr>
+<td>… .name</td>
+<td>text, Name, cut at 187</td>
+<td><code>Constructor</code>, or the design's name</td>
+<td>—</td>
+<td><code>TEXT_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, +6</td>
+<td>Hud.cpp:1745-1746</td>
+</tr>
+<tr>
+<td>… .detail</td>
+<td>text, Detail</td>
+<td><code>{H·D·W[·M]}</code>, or <code>{code} · NEEDS L{n}</code></td>
+<td><code>DesignCodeOf</code>; <code>HullView::shipyardLevel</code></td>
+<td><code>CODE_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, +28</td>
+<td>Hud.cpp:1747-1749, 2878</td>
+</tr>
+<tr>
+<td>… .cost</td>
+<td>gem + figure, Figure</td>
+<td><code>{cost}</code></td>
+<td><code>constructorCost</code> (Snapshot.h:547) or <code>DesignView::cost</code></td>
+<td><code>GOLD_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>right edge +199, +28</td>
+<td>Hud.cpp:1750-1751</td>
+</tr>
+<tr>
+<td>… .time</td>
+<td>text, Detail</td>
+<td><code>{t} s</code></td>
+<td><code>constructorBuildSeconds</code> (Snapshot.h:548), or the build time ÷ <code>shipyardBuildSpeedFactor</code></td>
+<td><code>LABEL_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, +50</td>
+<td>Hud.cpp:1755, 2863, 2884</td>
+</tr>
+<tr>
+<td>… .strength.{S,M,L}</td>
+<td>the hull's initial (Label face) and 3 segments of 6×8, 2 apart; groups 10 apart, ending at +199</td>
+<td><code>S</code>, <code>M</code>, <code>L</code> (<code>Abbreviation</code> of each hull's name)</td>
+<td>rated as the designer rates (ADR-068 d3): 3 segments lit for Good, 2 for Fair, 1 for Poor</td>
+<td>letter <code>ROW_LABEL_COLOR</code>; lit segments <code>GOOD_COLOR</code> / <code>FAIR_COLOR</code> / <code>POOR_COLOR</code>, unlit <code>BAR_TRACK_COLOR</code>; all <code>LOCKED_TEXT_COLOR</code> when dim</td>
+<td>segments at +55</td>
+<td>Hud.cpp:1756-1777</td>
+</tr>
+<tr>
+<td>production.hint</td>
+<td>text, Detail</td>
+<td><code>Build a Shipyard to make warships.</code> (no producer) or <code>Save a design in the ship designer to build it here.</code> (a Shipyard, no designs)</td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, 120</td>
+<td>Hud.cpp:1778-1782, 2838, 2896</td>
+</tr>
+<tr>
+<td>queue.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>QUEUE · {n} / 5</code></td>
+<td>the producer's <code>EntityView::queue</code></td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, CardsBottom + 20</td>
+<td>Hud.cpp:1677</td>
+</tr>
+<tr>
+<td>queue.row{i}</td>
+<td>card</td>
+<td>—</td>
+<td>—</td>
+<td><code>CARD_COLOR</code>, <code>EDGE_COLOR</code></td>
+<td>24, top + 20 + 34·i, 430, 30</td>
+<td>Hud.cpp:1679-1683</td>
+</tr>
+<tr>
+<td>… .number / .name</td>
+<td>Figure / Name</td>
+<td><code>{i+1}</code> / <code>{job name}</code></td>
+<td><code>JobView</code> (Snapshot.h:32-36)</td>
+<td><code>LABEL_COLOR</code> / <code>TEXT_COLOR</code></td>
+<td>+10, +7 / +32, +5</td>
+<td>Hud.cpp:1684-1693</td>
+</tr>
+<tr>
+<td>… front job's bar and percent</td>
+<td>bar 120×6, and Figure text</td>
+<td><code>{p}%</code></td>
+<td><code>EntityView::jobPermille</code></td>
+<td><code>BAR_TRACK_COLOR</code>, <code>BAR_FILL_COLOR</code>, <code>TEXT_COLOR</code></td>
+<td>bar at 280, +12; % right edge 444, +7</td>
+<td>Hud.cpp:1696-1704</td>
+</tr>
+<tr>
+<td>… front job waiting</td>
+<td>text, Label, right-aligned</td>
+<td><code>WAITING FOR ORE</code>, or <code>WAITING FOR FLEET CAP</code></td>
+<td>front job at 0 ‰; <code>WaitsOnFleetCap</code> (Hud.cpp:229-239)</td>
+<td><code>AMBER_COLOR</code></td>
+<td>right edge 444, +9</td>
+<td>Hud.cpp:1689, 1694-1695, 2852-2853</td>
+</tr>
+</tbody>
+</table>
+<p><strong>States.</strong>
+- <strong>Command Station.</strong> One Constructor card; no strengths.
+- <strong>Shipyard.</strong> A card for each saved design. A design whose hull is above the Shipyard's level is dim and says <code>NEEDS L{n}</code>.
+- <strong>No producer.</strong> <code>NO PRODUCER</code> and its hint.
+- <strong>Shipyard with no designs.</strong> Its hint.
+- <strong>Queue full (5 / 5).</strong> Every card is dim.
+- <strong>Front job.</strong> It shows progress, <code>WAITING FOR ORE</code>, or <code>WAITING FOR FLEET CAP</code>.</p>
+<p>Layout files: <code>window-production-shipyard.json</code>, <code>-station.json</code>, <code>-none.json</code>.</p></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Research</div><div style="padding:20px 24px 24px 24px"><div class="md"><p><strong>Purpose.</strong> The player's Research Lab, its queue, and each topic not yet researched or queued, tier by tier. A topic that needs something is hatched and says what it needs (Phase 1 design §12, Phase 3 design §6, ADR-061 d4, ADR-068 d1).</p>
+<p><strong>Geometry</strong> (Hud.cpp:1786-1884).
+- The window is 560 wide. Topic cards are 252 wide, two to a line, at x 24 or 284, y 104 + line·(TH + 8). It shows 10 topics, scrolling by a row (<code>TOPIC_COLUMNS</code>, <code>TOPICS_SHOWN</code>, Hud.h:400-401; <code>StepTopics</code>, Hud.cpp:2991-2999).
+- <strong>Card height.</strong> TH = 28 + lines·18 + 4, where lines is the most any topic needs: its effect's wrapped lines plus max(1, its needs). It is at least 2.
+- <strong>With Tuning.json, TH = 86.</strong> "Constructor build and repair rate +25%" wraps to 2 lines in the Detail face, and with its need, "RESEARCH LAB L3", that makes 3.
+- <strong>Height.</strong> CardsBottom + 20 + 20 + jobs·34 + 20. For page 1 with two jobs: <code>510, 178, 560, 694</code>.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>Kind</th>
+<th>Label</th>
+<th>Data</th>
+<th>Color</th>
+<th>Rect (window units)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>research.titleLabel</td>
+<td>text, Label, tracking 2</td>
+<td><code>RESEARCH</code></td>
+<td>—</td>
+<td><code>HEADER_LABEL_COLOR</code></td>
+<td>24, 11</td>
+<td>Hud.cpp:1825</td>
+</tr>
+<tr>
+<td>header.subject</td>
+<td>text, Title, cut at 390</td>
+<td><code>RESEARCH LAB</code>, <code>RESEARCH LAB · {p}% BUILT</code> or <code>NO RESEARCH LAB</code></td>
+<td>the player's Lab, <code>builtPermille</code></td>
+<td><code>TEXT_COLOR</code></td>
+<td>24, 40</td>
+<td>Hud.cpp:1826, 2902-2916</td>
+</tr>
+<tr>
+<td>header.oreBox</td>
+<td>panel</td>
+<td>gem + figure</td>
+<td><code>Snapshot::ore</code></td>
+<td><code>FIELD_COLOR</code>, <code>GOLD_COLOR</code></td>
+<td>420, 38, 116, 30</td>
+<td>Hud.cpp:1670</td>
+</tr>
+<tr>
+<td>research.topics.label</td>
+<td>text, Label, tracking 2</td>
+<td><code>TOPICS · {a}-{b} OF {n}</code>, or <code>TOPICS</code> when there are none</td>
+<td>—</td>
+<td><code>LABEL_COLOR</code></td>
+<td>24, 84</td>
+<td>Hud.cpp:1828-1832</td>
+</tr>
+<tr>
+<td>research.topics.previous / .next</td>
+<td>small buttons</td>
+<td><code>&lt;</code> and <code>&gt;</code></td>
+<td>only when there are more than 10 topics; <code>PreviousTopics</code> / <code>NextTopics</code></td>
+<td>as above</td>
+<td>484, 78 and 512, 78</td>
+<td>Hud.cpp:1833-1840</td>
+</tr>
+<tr>
+<td>research.topic{k}</td>
+<td>card (<code>Research</code>)</td>
+<td>—</td>
+<td>a <code>ResearchTopicView</code> not researched or queued. Enabled when the Lab is built, its queue has room, nothing is needed, and the Ore is there</td>
+<td>blocked: <code>LOCKED_COLOR</code> + <code>LOCKED_HATCH_COLOR</code> hatched; enabled: <code>CARD_COLOR</code>; otherwise <code>FIELD_COLOR</code>. Edge <code>EDGE_COLOR</code></td>
+<td>24 | 284, 104 + line·94, 252, 86</td>
+<td>Hud.cpp:1842-1858, 2950-2984</td>
+</tr>
+<tr>
+<td>… .name / .cost</td>
+<td>Name / gem + figure in Figure</td>
+<td><code>{topic}</code> / <code>{cost}</code></td>
+<td><code>nameUtf8</code>, <code>cost</code> (Tuning.json research[])</td>
+<td><code>TEXT_COLOR</code> / <code>LOCKED_TEXT_COLOR</code>; <code>GOLD_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, +6 / right edge +240, +9</td>
+<td>Hud.cpp:1859-1864</td>
+</tr>
+<tr>
+<td>… .effect</td>
+<td>text, Detail, wrapped at 228</td>
+<td>e.g. <code>Unlocks the Large hull</code>, <code>Hull hit points +15%</code></td>
+<td><code>effectUtf8</code> ← <code>EffectText</code> (GameLogic/Research.cpp:142-181)</td>
+<td><code>NUMBERS_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, +28 + 18·k</td>
+<td>Hud.cpp:1865-1870, 1800-1803</td>
+</tr>
+<tr>
+<td>… .needs</td>
+<td><code>Checkbox</code> 10 and Label text</td>
+<td><code>NEEDS · {X}</code>, then <code>+ {Y}</code>; X and Y may be <code>RESEARCH LAB L{n}</code> or a prerequisite in capitals</td>
+<td>the tier against <code>researchTier</code>; <code>prerequisites</code></td>
+<td><code>AMBER_COLOR</code></td>
+<td>box at +12, line + 2; text at +28, line</td>
+<td>Hud.cpp:1871-1879, 2963-2972</td>
+</tr>
+<tr>
+<td>… .time</td>
+<td>text, Detail (only when nothing is needed)</td>
+<td><code>TIER {t} · {s} s</code>, and <code>· SALVAGED</code> once recovered</td>
+<td><code>tier</code>, <code>researchSeconds</code>, <code>recovered</code> (Snapshot.h:219-230)</td>
+<td><code>LABEL_COLOR</code> / <code>LOCKED_TEXT_COLOR</code></td>
+<td>+12, after the effect lines</td>
+<td>Hud.cpp:1880-1881, 2978-2979</td>
+</tr>
+<tr>
+<td>queue rows</td>
+<td>as production, rows 512 wide</td>
+<td><code>QUEUE · {n} / 5</code>, names, <code>{p}%</code>, <code>WAITING FOR ORE</code></td>
+<td><code>EntityView::research</code>, <code>jobPermille</code>; <code>secondJobPermille</code> lights a second front row (Hud.cpp:2933-2935)</td>
+<td>as production</td>
+<td>bar at 362; right edge 526</td>
+<td>Hud.cpp:1883, 1675-1706</td>
+</tr>
+</tbody>
+</table>
+<p><strong>States.</strong>
+- A Lab, under construction, or none.
+- The page position, with arrows when there are more than 10 topics.
+- Topics blocked, enabled, or dim (Ore short, queue full, or Lab unbuilt).
+- A second research slot (Lab L4: <code>researchSlots</code> 2 in Tuning.json) shows two rows in progress.</p>
+<p>Layout files: <code>window-research-page1.json</code> (21 topics: <code>TOPICS · 1-10 OF 21</code>), <code>window-research-no-lab.json</code>.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3010}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

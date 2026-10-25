@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Territory, domination and the fleet cap</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Territory</div><div style="padding:20px 24px 24px 24px"><div class="md"><p>The code's names: a <strong>sector</strong> is held through its <strong>node</strong>; a <strong>Relay</strong> (<code>StructureKind::Relay</code>) claims a node; a held sector can be <strong>suppressed</strong>, <strong>cut off</strong>, or <strong>guarded</strong> by pirates (<code>Simulation.cpp:2807-2910</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Territory is on</td>
+<td>when the map has sectors and the simulation has the tuning data; the repository map has 25, so every match plays it</td>
+<td><code>ADR-056 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Who holds a sector</td>
+<td>the owner of the <strong>finished</strong> Relay or the Command Station within 1 m of its node; a site under construction holds nothing yet but takes the node</td>
+<td><code>Simulation.cpp:2826-2838</code>; <code>Simulation.cpp:76</code> (<code>NODE_REACH_METERS = 1</code>); <code>ADR-056 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Home sector</td>
+<td>a sector held by a Command Station; held from the first tick; <strong>never suppressed</strong></td>
+<td><code>Simulation.cpp:2838-2840</code>; <code>ADR-056 §Decision 3, 6</code>; <code>Phase2.md:67</code></td>
+</tr>
+<tr>
+<td>Relay</td>
+<td>200 Ore, 40 s of a Constructor's work, 3,000 hit points, armor 10, 30 m footprint, unarmed; no levels</td>
+<td><code>Tuning.json: structures[Relay]</code> (line 62); <code>ADR-056 §Decision 2</code>; <code>Phase2.md:77</code></td>
+</tr>
+<tr>
+<td>Where a Relay stands</td>
+<td>it snaps to the node of the sector it is ordered in</td>
+<td><code>Simulation.cpp:2072-2077</code>; <code>ADR-056 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Refusals when claiming</td>
+<td><code>InvalidPlacement</code> (something on the node); <code>Guarded</code> (a pirate structure stands in the sector); <code>NotAdjacent</code> (no adjacent sector held by the player); <code>CapReached</code> (at the node cap, Relay sites counting); <code>NotBuildable</code> on a map without sectors; <code>NotEnoughOre</code></td>
+<td><code>Simulation.cpp:2072-2080</code>, <code>2125-2140</code>, <code>2161-2171</code>; <code>ADR-056 §Decision 4</code>; <code>ADR-073 §Decision 6</code></td>
+</tr>
+<tr>
+<td>The lattice</td>
+<td>a Relay can be built only on a node adjacent to a sector the player holds; a suppressed Relay counts</td>
+<td><code>Simulation.cpp:2134-2140</code>; <code>Phase2.md:88</code>; <code>ADR-056 §Decision 4</code></td>
+</tr>
+<tr>
+<td>A Relay can be attacked anywhere</td>
+<td>—</td>
+<td><code>Phase2.md:89</code></td>
+</tr>
+<tr>
+<td><strong>Suppression</strong></td>
+<td>a Relay is suppressed while an enemy warship (a ship of the warship role with hit points) is within <strong>400 m</strong> of it, center to center, and none of its owner's is. Constructors never suppress</td>
+<td><code>Tuning.json: territory.suppressionRadiusMeters</code> 400 (line 14); <code>Simulation.cpp:2841-2850</code>; <code>Simulation.cpp:122-126</code> (<code>IsInRange</code>, center to center); <code>ADR-056 §Decision 6</code></td>
+</tr>
+<tr>
+<td>What suppression does</td>
+<td>the sector earns nothing and is not in its holder's sector-wide sight (the Relay sees 200 m as an unarmed structure); ownership, adjacency and domination are unchanged</td>
+<td><code>Simulation.cpp:2975-2976</code>, <code>2981-2987</code>; <code>ADR-056 §Decision 9</code>; <code>Phase2.md:54</code>, <code>Phase2.md:79</code></td>
+</tr>
+<tr>
+<td>Pirates suppress too</td>
+<td>an outpost's remaining ships suppress a Relay as any enemy warship does</td>
+<td><code>ADR-073 §Decision 6</code></td>
+</tr>
+<tr>
+<td><strong>Cut off</strong></td>
+<td>a held sector is cut off when its holder has no path of adjacent held sectors to one of its home sectors; suppressed sectors keep the path; a cut-off sector earns <strong>50%</strong></td>
+<td><code>Simulation.cpp:2864-2891</code>; <code>Tuning.json: territory.cutOffIncomePercent</code> 50 (line 14); <code>ADR-056 §Decision 7</code>; <code>Phase2.md:90</code></td>
+</tr>
+<tr>
+<td>No Command Station</td>
+<td>no home sector, so every sector the player still holds is cut off</td>
+<td><code>ADR-056 §Decision 7</code></td>
+</tr>
+<tr>
+<td><strong>Guarded</strong></td>
+<td>a sector is guarded while a pirate structure stands in it; it cannot be claimed and its node counts for no one</td>
+<td><code>Simulation.cpp:2853-2860</code>; <code>ADR-073 §Decision 6</code></td>
+</tr>
+<tr>
+<td>Sight</td>
+<td>a held sector that is not suppressed is in its holder's sight, all of it</td>
+<td><code>Simulation.cpp:2981-2987</code>; <code>ADR-056 §Decision 9</code></td>
+</tr>
+<tr>
+<td>Who sees territory</td>
+<td>every snapshot carries every sector with its holder and whether it is suppressed, cut off or guarded; both players see all of it, fog or not</td>
+<td><code>ADR-056 §Decision 10</code>; <code>ADR-073 §Decision 7</code></td>
+</tr>
+<tr>
+<td>When it is worked out</td>
+<td>at the end of every tick, after every ship has moved and before vision</td>
+<td><code>Simulation.cpp:977-980</code>; <code>ADR-056 §Decision 8</code></td>
+</tr>
+<tr>
+<td>A destroyed Relay</td>
+<td>frees its node; the sector's rigs stop earning; it leaves no salvage</td>
+<td><code>Phase2.md:80</code>; <code>Phase2.md:169</code> (gate J7)</td>
+</tr>
+<tr>
+<td>A lost sector's Shipyard / Repair Bay</td>
+<td>keeps working</td>
+<td><code>ADR-056 §Decision 5</code>; <code>ADR-075 §Decision 1</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Production follows territory</h4>
+<table>
+<thead>
+<tr>
+<th>Structure</th>
+<th>Needs a held sector?</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mining Rig</td>
+<td>yes, its asteroid's sector</td>
+<td><code>Simulation.cpp:2103-2108</code></td>
+</tr>
+<tr>
+<td>Relay</td>
+<td>no (a free node adjacent to a held sector)</td>
+<td><code>Simulation.cpp:2134-2140</code></td>
+</tr>
+<tr>
+<td>Shipyard</td>
+<td>yes</td>
+<td><code>Simulation.cpp:2118-2124</code>; <code>Phase4.md:260</code> (gate L5)</td>
+</tr>
+<tr>
+<td>Repair Bay</td>
+<td>yes</td>
+<td><code>Simulation.cpp:2118-2124</code>; <code>ADR-075 §Decision 1</code></td>
+</tr>
+<tr>
+<td>Research Lab, Defence Platform</td>
+<td>no held-sector rule (Not specified in the docs as needing one; the code checks none)</td>
+<td><code>Simulation.cpp:2113-2133</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Node cap (Command Station level)</h4>
+<table>
+<thead>
+<tr>
+<th>Command Station level</th>
+<th>Nodes held, home included</th>
+<th>Upgrade cost</th>
+<th>Upgrade time</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>4</td>
+<td>—</td>
+<td>—</td>
+<td><code>Tuning.json: structures[CommandStation].nodes</code> (line 41)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>7</td>
+<td>300 Ore</td>
+<td>45 s</td>
+<td><code>Tuning.json</code> line 43</td>
+</tr>
+<tr>
+<td>3</td>
+<td>10</td>
+<td>500 Ore</td>
+<td>60 s</td>
+<td><code>Tuning.json</code> line 44</td>
+</tr>
+<tr>
+<td>4</td>
+<td>13</td>
+<td>700 Ore</td>
+<td>75 s</td>
+<td><code>Tuning.json</code> line 45</td>
+</tr>
+<tr>
+<td>5</td>
+<td>16</td>
+<td>900 Ore</td>
+<td>90 s</td>
+<td><code>Tuning.json</code> line 46</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>A Relay site counts toward the cap; the cap refuses new claims and never takes a node away (<code>Simulation.cpp:2959-2969</code>; <code>ADR-056 §Decision 4</code>; <code>Phase3.md:120-121</code>).</li>
+<li>A player without a Command Station has level 1's cap (<code>Simulation.cpp:2912-2920</code>; <code>ADR-064 §Decision 11</code>).</li>
+<li>From level 4, two players' caps add up to more than the map's 25 nodes (<code>Phase4.md:259</code>).</li>
+</ul>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Domination</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tickets each player starts with</td>
+<td>1,000, given when the bases are placed, on a map with territory, and not in a world</td>
+<td><code>Tuning.json: territory.tickets</code> (line 14); <code>Simulation.cpp:719-726</code>; <code>ADR-057 §Decision 1, 4</code></td>
+</tr>
+<tr>
+<td>Drain interval</td>
+<td>every 3 s (60 ticks); the first drain falls at the end of the 60th tick</td>
+<td><code>Tuning.json: territory.drainIntervalSeconds</code> 3 (line 14); <code>Simulation.cpp:3782-3785</code>; <code>ADR-057 §Decision 3</code></td>
+</tr>
+<tr>
+<td>Drain</td>
+<td>each player loses 1 ticket for each node it is behind the player holding the most, whatever the map's number of nodes</td>
+<td><code>Tuning.json: territory.drainTicketsPerNodeDifference</code> 1 (line 14); <code>Simulation.cpp:3786-3800</code>; <code>ADR-057 §Decision 2-3</code>; <code>Phase4.md:259</code></td>
+</tr>
+<tr>
+<td>What counts as a node held</td>
+<td>a sector whose holder is the player; a suppressed Relay counts for its owner; a free node and a pirate-guarded node count for no one; the home sector always counts</td>
+<td><code>Simulation.cpp:3789-3790</code>; <code>ADR-057 §Decision 3</code>; <code>Phase2.md:110-112</code></td>
+</tr>
+<tr>
+<td>How long a lead takes</td>
+<td>a lead of one node: exactly 1,000 drains of 3 s, 50 minutes, on any map; a lead of three: about 17 minutes</td>
+<td><code>ADR-057 §Decision 2</code></td>
+</tr>
+<tr>
+<td>Domination ends the match</td>
+<td>a player whose tickets reach zero loses; <code>MatchEnding::Domination</code></td>
+<td><code>Simulation.cpp:3801-3804</code>; <code>ADR-057 §Decision 5-6</code></td>
+</tr>
+<tr>
+<td>Ordering in one tick</td>
+<td>loss of production is decided mid-tick after the fight (<code>DecideMatch</code>), domination at the tick's end (<code>Dominate</code>), so a player who loses both in one tick loses by production</td>
+<td><code>Simulation.cpp:946-951</code>, <code>979</code>; <code>ADR-057 §Decision 5</code></td>
+</tr>
+<tr>
+<td>After the match</td>
+<td>tickets stop; the world runs on; the outcome stands</td>
+<td><code>ADR-057 §Decision 4-5</code>; <code>Simulation.cpp:3780</code></td>
+</tr>
+<tr>
+<td>In a world</td>
+<td>off: no tickets, no drain, no match ends</td>
+<td><code>Simulation.cpp:3780</code>; <code>ADR-084 §Decision 2</code>; <code>Phase5.md:127</code></td>
+</tr>
+<tr>
+<td>Both players see both players' tickets and the drain's two numbers</td>
+<td>—</td>
+<td><code>ADR-057 §Decision 7</code>; <code>Simulation.cpp:1123-1130</code></td>
+</tr>
+</tbody>
+</table>
+<h4>How a match ends and is recorded</h4>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Two endings in a match</td>
+<td><code>MatchEnding::LostProduction</code> (neither a Command Station nor a finished Shipyard) and <code>MatchEnding::Domination</code> (out of tickets). (<code>FleetDestroyed</code> and <code>TimeLimit</code> are battle-matchup endings, ADR-083, not a match's.)</td>
+<td><code>Snapshot.h:327-336</code>; <code>ADR-057 §Decision 6</code></td>
+</tr>
+<tr>
+<td>The match ends once</td>
+<td><code>Simulation::EndMatch</code> sets <code>matchOver</code>, the winner (the one player standing, or none), the tick it ended, and the ending</td>
+<td><code>Simulation.cpp:3807-3813</code>; <code>ADR-020 §Decision 9</code></td>
+</tr>
+<tr>
+<td>Draw</td>
+<td>no winner when both players are beaten in the same tick</td>
+<td><code>ADR-020 §Decision 9</code>; <code>Snapshot.h:567-569</code></td>
+</tr>
+<tr>
+<td>Every snapshot carries it</td>
+<td><code>matchOver</code>, <code>winner</code>, <code>matchEndedTick</code>, <code>ending</code></td>
+<td><code>Snapshot.h:570-574</code></td>
+</tr>
+<tr>
+<td>Banner</td>
+<td>"Victory", "Defeat" or "Draw" with the match's length; "By domination." before the length for a domination</td>
+<td><code>Hud.cpp:2199-2207</code>; <code>ADR-057 §Decision 8</code></td>
+</tr>
+<tr>
+<td>The world runs on after the match</td>
+<td>until the player goes back to the menu</td>
+<td><code>ADR-020 §Decision 9</code>; <code>MVP.md:498</code></td>
+</tr>
+<tr>
+<td>Match log</td>
+<td>a tooling log (ADR-038) records each match's events; its contents are outside A1</td>
+<td><code>ADR-057 §Decision 6</code>; index (ADR-038 engine-only)</td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Fleet cap</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Command points per hull</td>
+<td>Small 1, Medium 2, Large 4</td>
+<td><code>Tuning.json: hulls[].commandPoints</code> (lines 16-18); <code>Phase4.md:226</code></td>
+</tr>
+<tr>
+<td>Constructor</td>
+<td>takes none</td>
+<td><code>Phase4.md:226</code>; <code>Simulation.cpp:2932-2949</code> (only <code>ShipRole::Warship</code> counts)</td>
+</tr>
+<tr>
+<td>What counts</td>
+<td>the player's warships, and each warship job one of its producers has <strong>started and paid for</strong></td>
+<td><code>Simulation.cpp:2932-2949</code>; <code>ADR-071 §Decision 2</code></td>
+</tr>
+<tr>
+<td>A job that would go over the cap</td>
+<td>waits at the front of its queue, unpaid and unstarted, and the jobs behind it wait; checked before the Ore; never refused when queued</td>
+<td><code>Simulation.cpp:2726-2728</code>; <code>ADR-071 §Decision 3</code>; <code>Phase4.md:238</code></td>
+</tr>
+<tr>
+<td>The cap never removes a ship</td>
+<td>—</td>
+<td><code>Phase4.md:239</code>; <code>ADR-071</code> Context</td>
+</tr>
+<tr>
+<td>Without a Command Station</td>
+<td>level 1's cap, 12</td>
+<td><code>Simulation.cpp:2922-2930</code>; <code>Phase4.md:239</code></td>
+</tr>
+<tr>
+<td>Pirates</td>
+<td>no cap (no player state)</td>
+<td><code>ADR-073 §Decision 1</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Command Station level</th>
+<th>Command points</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>12</td>
+<td><code>Tuning.json: structures[CommandStation].commandPoints</code> (line 41)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>20</td>
+<td><code>Tuning.json</code> line 43</td>
+</tr>
+<tr>
+<td>3</td>
+<td>30</td>
+<td><code>Tuning.json</code> line 44</td>
+</tr>
+<tr>
+<td>4</td>
+<td>40</td>
+<td><code>Tuning.json</code> line 45</td>
+</tr>
+<tr>
+<td>5</td>
+<td>50</td>
+<td><code>Tuning.json</code> line 46</td>
+</tr>
+</tbody>
+</table>
+<p>Why the Command Station and not nodes: a cap tied to nodes would make a lead in nodes a lead in fleet too (<code>Phase4.md:240</code>; <code>ADR-071</code> "What this forecloses").</p>
+<h4>The Command Station's levels (economy side, with the other two growing structures)</h4>
+<table>
+<thead>
+<tr>
+<th>Structure</th>
+<th>Level</th>
+<th>Cost</th>
+<th>Time (builds itself)</th>
+<th>Gives</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Command Station</td>
+<td>1</td>
+<td>not buildable (no cost)</td>
+<td>—</td>
+<td>4 nodes, 12 points, 1 Defence gun</td>
+<td><code>Tuning.json</code> lines 40-41; <code>ADR-037 §Decision 2</code></td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>300</td>
+<td>45 s</td>
+<td>7 nodes, 20 points</td>
+<td><code>Tuning.json</code> line 43</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>500</td>
+<td>60 s</td>
+<td>10 nodes, 30 points, 2 guns</td>
+<td><code>Tuning.json</code> line 44</td>
+</tr>
+<tr>
+<td></td>
+<td>4</td>
+<td>700</td>
+<td>75 s</td>
+<td>13 nodes, 40 points</td>
+<td><code>Tuning.json</code> line 45</td>
+</tr>
+<tr>
+<td></td>
+<td>5</td>
+<td>900</td>
+<td>90 s</td>
+<td>16 nodes, 50 points, 3 guns</td>
+<td><code>Tuning.json</code> line 46</td>
+</tr>
+<tr>
+<td>Shipyard</td>
+<td>1</td>
+<td>300 (Constructor, 40 s)</td>
+<td>—</td>
+<td>Small hulls</td>
+<td><code>Tuning.json</code> lines 48-49</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>150</td>
+<td>30 s</td>
+<td>+ Medium</td>
+<td><code>Tuning.json</code> line 51</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>300</td>
+<td>60 s</td>
+<td>+ Large</td>
+<td><code>Tuning.json</code> line 52</td>
+</tr>
+<tr>
+<td>Research Lab</td>
+<td>1</td>
+<td>200 (Constructor, 30 s)</td>
+<td>—</td>
+<td>tier 1</td>
+<td><code>Tuning.json</code> line 54</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>400</td>
+<td>60 s</td>
+<td>tier 2; requires Improved Extraction and Hull Plating</td>
+<td><code>Tuning.json</code> line 56</td>
+</tr>
+<tr>
+<td></td>
+<td>3</td>
+<td>600</td>
+<td>90 s</td>
+<td>tier 3; requires Large Hull</td>
+<td><code>Tuning.json</code> line 57</td>
+</tr>
+<tr>
+<td></td>
+<td>4</td>
+<td>800</td>
+<td>120 s</td>
+<td>a second research slot</td>
+<td><code>Tuning.json</code> line 58</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Ore is paid when the upgrade is ordered; nothing is refunded; the structure keeps working; no Constructor or research shortens a level (<code>Simulation.cpp:2253-2282</code>, <code>2653-2670</code>; <code>ADR-064 §Decision 2-3</code>).</li>
+<li>Each level adds 20% of the kind's base hit points, added to research's percent (<code>Tuning.json: rules.levelHitPointsPercent</code> 20, line 11; <code>Simulation.cpp:3153-3157</code>; <code>ADR-064 §Decision 4</code>).</li>
+<li>A destroyed structure takes its levels and the upgrade's Ore with it; rebuilt, it is level 1 (<code>ADR-064 §Decision 5</code>).</li>
+<li>Refusals: <code>UnknownEntity</code>, <code>NotUpgradable</code>, <code>UnderConstruction</code>, <code>AlreadyUpgrading</code>, <code>TopLevel</code>, <code>PrerequisiteMissing</code> (before the Ore), <code>NotEnoughOre</code> (<code>Simulation.cpp:2253-2282</code>; <code>ADR-064 §Decision 2, 10</code>).</li>
+</ul>
+<h4>Other base costs (economy reference)</h4>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Ore</th>
+<th>Build time</th>
+<th>Built by</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Constructor</td>
+<td>60</td>
+<td>15 s</td>
+<td>Command Station queue</td>
+<td><code>Tuning.json: constructor</code> (line 35)</td>
+</tr>
+<tr>
+<td>Defence Platform</td>
+<td>450</td>
+<td>20 s</td>
+<td>Constructor</td>
+<td><code>Tuning.json</code> line 61; <code>Phase4.md:215</code></td>
+</tr>
+<tr>
+<td>Repair Bay</td>
+<td>300</td>
+<td>40 s</td>
+<td>Constructor</td>
+<td><code>Tuning.json</code> line 63</td>
+</tr>
+<tr>
+<td>A warship</td>
+<td>hull + drive + weapon + module cost; build time is the hull's</td>
+<td>—</td>
+<td>Shipyard</td>
+<td><code>GameProtocol/DesignStats.h:88-89</code>; component numbers are A2's</td>
+</tr>
+<tr>
+<td>Queue length</td>
+<td>5 jobs per producer, 5 topics per Lab</td>
+<td>—</td>
+<td>—</td>
+<td><code>Snapshot.h:42</code> (<code>QUEUE_LIMIT = 5</code>); <code>ADR-016 §Decision 6</code></td>
+</tr>
+<tr>
+<td>Research Lab limit</td>
+<td>one per player, counting one under construction (<code>LimitReached</code>)</td>
+<td>—</td>
+<td>—</td>
+<td><code>Simulation.cpp:2154-2158</code>; <code>ADR-016 §Decision 4</code></td>
+</tr>
+<tr>
+<td>Automated Shipyards / Fleet Automation</td>
+<td>+25% each to a Shipyard's build speed (not the Command Station's)</td>
+<td>—</td>
+<td>—</td>
+<td><code>Simulation.cpp:2738-2741</code>; <code>Tuning.json</code> research ids 8, 24</td>
+</tr>
+</tbody>
+</table>
+<hr /></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4889}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

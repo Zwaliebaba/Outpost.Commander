@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glossary, part 1 of 2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Glossary · part 1 of 2</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>Glossary</h2>
+<p>Agent <strong>R</strong> (reconciliation). HEAD <code>a053fe294d91dc885bbb061c2f34d76ca6897738</code> (2026-10-25T08:33:55+01:00).</p>
+<p><strong>How terms are spelled.</strong> Each term is written exactly as the game writes it on screen or in its data, with capitals as shown. A term that never appears on screen is in <em>italics</em> and gives its code or document name. "Variants" lists other spellings in the design documents, the code or the brief.</p>
+<p><strong>Sources.</strong> <code>Tuning.json</code>, <code>Map.json</code>, <code>Models.json</code> and <code>Opponent*.json</code> are under <code>OutpostCommander/Assets/</code>. Code paths are from the repository root. <code>MVP.md</code>, <code>Phase1.md</code> to <code>Phase4.md</code> are in <code>GameDesign/Archive/</code>, and <code>Phase5.md</code> is <code>GameDesign/OutpostCommander-Phase5.md</code>.</p>
+<p><strong>Spelling rule.</strong> The game's own nouns keep British spelling in data and on screen: <strong>Defence</strong>, <strong>Armour</strong>. Identifiers use the SDK's American spelling: <code>DefensePlatform</code>, <code>armor</code> (AGENTS.md R11). Where a screen label is an identifier-style word, it is American: the Designer's "Armor" bar (<code>Hud.cpp:767</code>).</p>
+<hr />
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+<th>Source</th>
+<th>Variants</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>25%</strong>, <strong>50%</strong>, <strong>Never</strong></td>
+<td>The three retreat settings on the selection panel: retreat below a quarter or half of full hit points, or never. 25% is the default. In the Designer they read <code>25%</code>, <code>50%</code>, <code>NEVER</code>.</td>
+<td><code>Hud.cpp:470-476, 1557-1564</code>; <code>GameProtocol/RetreatThreshold.h:7-30</code></td>
+<td>code <code>Quarter</code>, <code>Half</code>, <code>Never</code></td>
+</tr>
+<tr>
+<td><strong>A Mining Rig is lost</strong></td>
+<td>A scheduled order's trigger: a Mining Rig in the watched sector is destroyed.</td>
+<td><code>OrderForm.cpp:244</code>; <code>Simulation.cpp:3342-3343</code></td>
+<td>in words "when a Mining Rig in {sector} is lost"</td>
+</tr>
+<tr>
+<td><strong>A Relay is threatened</strong></td>
+<td>A scheduled order's trigger: the watched sector's Relay is suppressed or hit.</td>
+<td><code>OrderForm.cpp:242</code>; <code>Simulation.cpp:3340-3341</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>A1</strong> … <strong>E5</strong></td>
+<td>The 25 sectors' names: columns A–E west to east, rows 1–5 south to north. A1 is player 1's home and E5 player 2's.</td>
+<td><code>Map.json: sectors[].name</code> (lines 98-149)</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Ablative Armour</strong></td>
+<td>Tier 3 research topic 20: hull hit points +5%. Requires Composite Plating.</td>
+<td><code>Tuning.json:100-101</code></td>
+<td>code <code>armor</code></td>
+</tr>
+<tr>
+<td><em>AI empire</em></td>
+<td>An AI that plays a world's seat on the server's thread, at Easy, Normal or Hard.</td>
+<td><code>OutpostServer/Main.cpp:195</code> ("Player {n} is an AI empire"); <code>ADR-079</code> decision 3</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Alerts</strong></td>
+<td>The HUD's list of up to 4 events of the last 8 s, newest first; the newest is a warning chip. <strong>Space</strong> looks at the newest.</td>
+<td><code>Alerts.h:15-18</code>; <code>Hud.cpp:3215-3238</code>; <code>KeyBindings.h:115</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Alt, held</strong></td>
+<td>Shows every health bar.</td>
+<td><code>KeyBindings.h:123</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>ARM</strong></td>
+<td>Armor, as the Designer's cards write it ("ARM 14").</td>
+<td><code>Hud.cpp:651, 796</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Armor</strong></td>
+<td>Flat damage taken off each hit, down to a quarter of the hit. Integer hundredths in the simulation.</td>
+<td><code>DesignStats.h:16-21</code>; Designer bar <code>Hud.cpp:767</code></td>
+<td>design docs "armour"; code <code>armor</code></td>
+</tr>
+<tr>
+<td><strong>Asteroid</strong></td>
+<td>An ore asteroid in the Orders window's target list ("Asteroid, Ore {n}").</td>
+<td><code>OrderForm.cpp:274-275</code></td>
+<td><em>ore asteroid</em></td>
+</tr>
+<tr>
+<td><em>asteroid field</em></td>
+<td>A cluster of rocks that blocks movement, radius 150 m or 180 m; 80 on the map.</td>
+<td><code>Map.json: asteroidFields</code> (lines 16-97); <code>ADR-087</code></td>
+<td>"field"</td>
+</tr>
+<tr>
+<td><strong>At a time of day</strong></td>
+<td>A scheduled order's trigger: fires at an hour and minute on the player's clock, once.</td>
+<td><code>OrderForm.cpp:238</code>; <code>InProcessServer.cpp:338-351</code></td>
+<td>in words "at {HH:MM}"</td>
+</tr>
+<tr>
+<td><strong>Attack</strong></td>
+<td>Order: close on one enemy ship or structure and fire until it dies. Right-click on an enemy. Also a scheduled-order action.</td>
+<td><code>Command.h:15-20</code>; <code>OrderForm.cpp:258</code></td>
+<td>"attack in {sector}"</td>
+</tr>
+<tr>
+<td><strong>Attack-move</strong></td>
+<td>Order: move, stopping at weapon range to fire at any enemy met. <strong>A</strong>, then click.</td>
+<td><code>KeyBindings.h:99</code>; <code>Hud.cpp:2798</code>; <code>Command.h:22-27</code></td>
+<td>"attack-move to {sector}"</td>
+</tr>
+<tr>
+<td><strong>Automated Shipyards</strong></td>
+<td>Tier 1 topic 8: Shipyard build speed +25%. Requires Improved Extraction.</td>
+<td><code>Tuning.json:80-81</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Away for</strong></td>
+<td>The Away window's first line: how long the deputy held the seat.</td>
+<td><code>Hud.cpp:2297</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>away report</em></td>
+<td>What happened while the deputy played the seat, handed over once on return: built, lost, sectors gained and lost, fired orders.</td>
+<td><code>GameLogic/AwayReports.cpp</code>; <code>Snapshot.h:454-502</code>; <code>ADR-080</code> decision 7</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Back to menu</strong></td>
+<td>The end banner's button. It ends the match's server and shows the menu.</td>
+<td><code>Hud.cpp:3349</code>; <code>WinMain.cpp:491-504</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>banner</em></td>
+<td>The end-of-match panel: Victory, Defeat, Draw or Empire fallen.</td>
+<td><code>Hud.cpp:2185-2219, 3340-3350</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>battle matchup</em></td>
+<td>A developer setup: two fixed fleets with no bases (<code>--matchup</code>, <code>--matchups</code>). Not part of play.</td>
+<td><code>Matchups.json</code>; <code>ADR-083</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>battle</em> (world log)</td>
+<td>Two seats firing at each other in one sector within 10 s, ended by 30 s without such a shot. A <code>World.log</code> record.</td>
+<td><code>WorldLog.h:55-57</code>; <code>ADR-082</code> decision 2</td>
+<td></td>
+</tr>
+<tr>
+<td><em>between</em></td>
+<td>Sector kind with 2 contested asteroids: D2 and B4.</td>
+<td><code>Map.json:155</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Brawler</strong></td>
+<td>Starting design: Medium + Ion + Mass Driver. It is also the AI's default design.</td>
+<td><code>Tuning.json:116</code>; <code>Opponent.json:17</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>BUILD</strong></td>
+<td>The production window's label over its cards.</td>
+<td><code>Hud.cpp:1730</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Build</strong></td>
+<td>The Designer's build-time bar, in s.</td>
+<td><code>Hud.cpp:779</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Build a Mining Rig</strong></td>
+<td>Scheduled-order action given to Constructors: a rig on the picked asteroid.</td>
+<td><code>OrderForm.cpp:264</code></td>
+<td>"Mining Rig in {sector}"</td>
+</tr>
+<tr>
+<td><strong>BUILT</strong></td>
+<td>The Designer header's count of ships the targeted Shipyard has built ("BUILT · n").</td>
+<td><code>Hud.cpp:1372</code>; <code>Snapshot.h:109-112</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>By domination.</strong></td>
+<td>Banner detail when the match ended by domination.</td>
+<td><code>Hud.cpp:2207</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>camp</em></td>
+<td>A pirate outpost of 1 Defence Platform and 3 Small Ion Mass Driver ships, on 2 of the 4 contested pairs. Its wreck pays 600 Ore.</td>
+<td><code>Tuning.json:123-124</code>; <code>Map.json:160</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>cap</strong></td>
+<td>The node cap in the territory panel ("cap 4 of 25").</td>
+<td><code>Hud.cpp:3195</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>center</em></td>
+<td>Sector kind of C3: 4 contested asteroids and a pirate stronghold.</td>
+<td><code>Map.json:156, 162</code></td>
+<td>"centre" not used</td>
+</tr>
+<tr>
+<td><strong>Coilgun Mass Drivers</strong></td>
+<td>Tier 3 topic 21: Mass Driver fire rate +10%. Requires Mass Driver Calibration.</td>
+<td><code>Tuning.json:102-103</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>command log</em></td>
+<td>A world's per-save log of every tick's commands, <code>Commands-&lt;tick&gt;.log</code>.</td>
+<td><code>WorldFolder.cpp:12-23</code>; <code>ADR-077</code> decision 7</td>
+<td></td>
+</tr>
+<tr>
+<td><em>command points</em></td>
+<td>A warship's weight under the fleet cap: Small 1, Medium 2, Large 4. Written <strong>CP</strong> on screen.</td>
+<td><code>Tuning.json:16-18</code>; <code>ADR-071</code></td>
+<td><strong>CP</strong></td>
+</tr>
+<tr>
+<td><strong>Command Station</strong></td>
+<td>A player's starting base on its start. It cannot be built. It holds the home sector, builds Constructors, repairs ships and carries Defence guns. Five levels: node cap 4/7/10/13/16 and fleet cap 12/20/30/40/50.</td>
+<td><code>Tuning.json:40-46</code>; <code>ADR-064</code>; <code>ADR-071</code></td>
+<td>code <code>CommandStation</code>; "COMMAND STATION" (production subject, <code>Hud.cpp:2845</code>)</td>
+</tr>
+<tr>
+<td><strong>Composite Plating</strong></td>
+<td>Tier 2 topic 13: hull hit points +15%. Requires Hull Plating.</td>
+<td><code>Tuning.json:88-89</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>condition</em></td>
+<td>A scheduled order's optional "unless": hold instead when the enemy command points seen in the action's sector exceed a number.</td>
+<td><code>Simulation.cpp:3382-3397</code>; <code>Phase5.md:116</code></td>
+<td><strong>UNLESS</strong></td>
+</tr>
+<tr>
+<td><strong>Constructor</strong></td>
+<td>The one fixed unarmed design. It builds, repairs and salvages. 60 Ore and 15 s at the Command Station; 2 at start.</td>
+<td><code>Tuning.json:35</code>; <code>Hud.cpp:164</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>contested</em></td>
+<td>Sector kind with 1 contested asteroid (5.5 Ore/s, 12,000 Ore). Also that yield's name.</td>
+<td><code>Map.json:154</code>; <code>Tuning.json:8</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>control group</em></td>
+<td>Ctrl+0–9 assigns a selection; 0–9 recalls it, and a second tap looks at it.</td>
+<td><code>KeyBindings.h:103-104</code></td>
+<td>"Make a control group"</td>
+</tr>
+<tr>
+<td><strong>Controls</strong></td>
+<td>The window listing every key and mouse action (<strong>F1</strong>), titled "CONTROLS".</td>
+<td><code>KeyBindings.h:93-125</code>; <code>Hud.cpp:1906</code></td>
+<td>"These controls"</td>
+</tr>
+<tr>
+<td><strong>Cost</strong></td>
+<td>The Designer's cost bar ("ore" unit). Elsewhere costs are the gem and a gold figure.</td>
+<td><code>Hud.cpp:778</code>; <code>ADR-043</code> decision 3</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>CP</strong></td>
+<td>Command points, in the Orders window ("Over {n} enemy CP there").</td>
+<td><code>Hud.cpp:2273</code>; <code>OrderForm.cpp:313</code></td>
+<td><em>command points</em></td>
+</tr>
+<tr>
+<td><strong>cut off</strong></td>
+<td>A held sector with no path of held sectors to its holder's home. Its rigs earn half.</td>
+<td><code>Hud.cpp:2608</code>; <code>Simulation.cpp:2864-2891</code>; <code>Tuning.json:14</code></td>
+<td>code <code>cutOff</code></td>
+</tr>
+<tr>
+<td><strong>DAMAGE / S AFTER ARMOR · VS A FORMATION</strong></td>
+<td>The Designer's damage section: one card per hull.</td>
+<td><code>Hud.cpp:1510</code></td>
+<td>mockup "VS HULL"</td>
+</tr>
+<tr>
+<td><em>dedicated server</em></td>
+<td><code>OutpostServer</code>, the console program that runs a world from its folder.</td>
+<td><code>ADR-078</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Deep Core Survey</strong></td>
+<td>Tier 2 topic 12, shown as "Asteroid ore reserves +30%". The researcher's rigs draw a 1.3rd less from a reserve.</td>
+<td><code>Tuning.json:86-87</code>; <code>Research.cpp:167-168</code>; <code>ADR-035</code> decision 3</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Defeat</strong></td>
+<td>Banner title for the loser.</td>
+<td><code>Hud.cpp:2199</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Defence Autoloader</strong></td>
+<td>Tier 2 topic 15: Defence gun fire rate +20%.</td>
+<td><code>Tuning.json:92-93</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Defence gun</strong></td>
+<td>The structure weapon: 30 damage every 1.0 s at 250 m. The Command Station carries 1–3 and the Defence Platform 1.</td>
+<td><code>Tuning.json:37</code>; <code>Hud.cpp:2659</code> ("{n} Defence guns")</td>
+<td>code <code>DefenseGun</code>; brief "Defense"</td>
+</tr>
+<tr>
+<td><strong>Defence Platform</strong></td>
+<td>A structure with one Defence gun: 450 Ore, 20 s, 1,500 hit points, armor 10.</td>
+<td><code>Tuning.json:61</code></td>
+<td>code <code>DefensePlatform</code>; brief and A6/A7 prose "Defense Platform" (C-065)</td>
+</tr>
+<tr>
+<td><em>deputy</em></td>
+<td>The keeper that plays a player's seat 60 s after the connection is lost, until the player returns.</td>
+<td><code>GameProtocol/Server.h:32</code>; <code>Opponent/Deputy.cpp</code>; <code>ADR-079</code>; <code>World.log</code> "deputy"</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Derelict</strong></td>
+<td>A wreck of the old fleet with no owner or hit points. Constructors salvage it for Ore, and some for research time.</td>
+<td><code>Hud.cpp:2137</code>; <code>ADR-074</code></td>
+<td>set <strong>Wreck</strong></td>
+</tr>
+<tr>
+<td><em>design</em></td>
+<td>A saved hull + drive + weapon (+ module), named. Its stats are derived.</td>
+<td><code>ADR-014</code>; <code>ADR-017</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>DESIGNER</strong></td>
+<td>The ship designer window's title-bar label ("SHIPYARD 01 · DESIGNER").</td>
+<td><code>Hud.cpp:1368</code></td>
+<td><strong>Ship designer</strong>, <strong>SHIP DESIGN</strong></td>
+</tr>
+<tr>
+<td><strong>DO</strong></td>
+<td>The Orders window's action row.</td>
+<td><code>Hud.cpp:2258</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>domination</em></td>
+<td>A match's ticket race: each player loses 1 ticket every 3 s per node it is behind; at 0 it loses. Off in a world.</td>
+<td><code>Tuning.json:14</code>; <code>ADR-057</code>; <code>ADR-084</code> decision 2</td>
+<td><strong>By domination.</strong></td>
+</tr>
+<tr>
+<td><strong>Draw</strong></td>
+<td>Banner title when both players lose in one tick.</td>
+<td><code>Hud.cpp:2199</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>DRIVE</strong></td>
+<td>The Designer's drive slot: Ion, Fusion or Pulse.</td>
+<td><code>Hud.cpp:658</code>; <code>Tuning.json:21-23</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Drive Harmonics</strong></td>
+<td>Tier 3 topic 23: ship speed +10%.</td>
+<td><code>Tuning.json:106-107</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>dry</em></td>
+<td>An ore asteroid whose reserve is gone. Its rig earns a 20% trickle. Drawn in rust on the minimap.</td>
+<td><code>Tuning.json:10</code>; <code>Hud.cpp:34</code></td>
+<td>"Ore run out: it earns a trickle"</td>
+</tr>
+<tr>
+<td><strong>Easy skirmish</strong>, <strong>Normal skirmish</strong>, <strong>Hard skirmish</strong></td>
+<td>The menu's three matches against the AI at each difficulty.</td>
+<td><code>Hud.cpp:2329-2331</code>; <code>ADR-065</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Empire fallen</strong></td>
+<td>A world's banner when the player has lost its production; the seat restarts an hour later.</td>
+<td><code>Hud.cpp:2193-2195</code>; <code>ADR-084</code> decision 7</td>
+<td>code <code>EmpireLost</code></td>
+</tr>
+<tr>
+<td><strong>Enemies enter a sector</strong></td>
+<td>A scheduled order's trigger.</td>
+<td><code>OrderForm.cpp:240</code></td>
+<td>"when enemies enter {sector}"</td>
+</tr>
+<tr>
+<td><strong>Enemy ships in</strong> {sector}</td>
+<td>Alert: an enemy warship entered a sector the player holds.</td>
+<td><code>Alerts.cpp:89</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>exhaust</em></td>
+<td>A drive's glow at each <code>exhaust</code> hardpoint: Ion cyan, Fusion magenta, Pulse lime.</td>
+<td><code>Models.json:75-80</code>; <code>ADR-019</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>field</strong> ("the field")</td>
+<td>The place an alert names when its event is in no sector.</td>
+<td><code>Alerts.cpp:73</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Flak Battery</strong></td>
+<td>Weapon: 20 every 0.5 s, 200 m, splash 26 m. Unlocked by tier 2 topic 11 of the same name.</td>
+<td><code>Tuning.json:29, 84-85</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>flank</em></td>
+<td>Sector kind beside a home, with 2 near asteroids: B1, A2, D5, E4.</td>
+<td><code>Map.json:152</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Fleet</strong></td>
+<td>The status column's line of command points against the fleet cap ("29 / 30").</td>
+<td><code>Hud.cpp:376-379</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Fleet Automation</strong></td>
+<td>Tier 3 topic 24: Shipyard build speed +25%. Requires Automated Shipyards.</td>
+<td><code>Tuning.json:108-109</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>fleet cap</em></td>
+<td>The most command points a player's warships, and their started jobs, may take: set by the Command Station's level.</td>
+<td><code>ADR-071</code>; <code>Hud.cpp:383, 2620</code></td>
+<td>"the fleet cap", "fleet {n}"</td>
+</tr>
+<tr>
+<td><em>fog of war</em></td>
+<td>What a player cannot see is hidden. Enemy structures are remembered as last seen.</td>
+<td><code>ADR-024</code>; <code>GameApp/FogOfWar.h</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>footprint</em></td>
+<td>The circle a ship or structure keeps clear; structures are drawn across it.</td>
+<td><code>Tuning.json</code> <code>footprintRadiusMeters</code>; <code>GameClient.cpp:1658-1664</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Fusion</strong></td>
+<td>Drive: speed ×0.8, hit points ×1.4, turn ×0.8. Unlocked by tier 1 topic 5, <strong>Fusion Drive</strong>.</td>
+<td><code>Tuning.json:22, 74-75</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Give to</strong> {n} <strong>ship(s)</strong></td>
+<td>The Orders window's button that gives the form's order to the selection.</td>
+<td><code>Hud.cpp:2286</code></td>
+<td>"Give the order"</td>
+</tr>
+<tr>
+<td><em>guarded</em></td>
+<td>A sector with a pirate structure in it: it cannot be claimed and its node counts for no one.</td>
+<td><code>Simulation.cpp:2853-2860</code>; <code>ADR-073</code> decision 6</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>held</strong></td>
+<td>A sector whose node a player's finished Relay or Command Station holds.</td>
+<td><code>Hud.cpp:2604-2610</code></td>
+<td>"not held"</td>
+</tr>
+<tr>
+<td><strong>Hit points</strong></td>
+<td>Health; integer hundredths in the simulation, shown whole and rounded up.</td>
+<td><code>Hud.cpp:166-170, 764, 2587</code></td>
+<td><strong>HP</strong> on cards</td>
+</tr>
+<tr>
+<td><strong>Hold sector</strong></td>
+<td>Standing order: hold the sector clicked in, attacking enemies seen there and returning to its node. <strong>H</strong>, then click.</td>
+<td><code>Hud.cpp:2800</code>; <code>KeyBindings.h:100</code></td>
+<td>"Hold the sector" (form), "Holding a sector" (panel), "hold {sector}"</td>
+</tr>
+<tr>
+<td><em>home</em></td>
+<td>Sector kind of each start, with 3 fixed asteroids (3.5 Ore/s, 7,500 Ore). Never suppressed.</td>
+<td><code>Map.json:9-14, 151</code>; <code>ADR-056</code> decision 6</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>HP</strong></td>
+<td>Hit points on a hull card ("1,200 HP").</td>
+<td><code>Hud.cpp:651</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>HULL</strong></td>
+<td>The Designer's hull slot: Small, Medium or Large.</td>
+<td><code>Hud.cpp:639</code>; <code>Tuning.json:16-18</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Hull Plating</strong></td>
+<td>Tier 1 topic 2: hull hit points +15%.</td>
+<td><code>Tuning.json:68-69</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>Human</em></td>
+<td>Model set and side of player 1: blue (0.18, 0.42, 0.95), own meshes.</td>
+<td><code>Models.json:4-17, 54</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>IDLE</strong></td>
+<td>A warning chip: the Research Lab, or a Shipyard that could start a ship now, is doing nothing.</td>
+<td><code>Hud.cpp:297, 404</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Improved Extraction</strong></td>
+<td>Tier 1 topic 1: Mining Rig income +25%.</td>
+<td><code>Tuning.json:66-67</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>income</em></td>
+<td>Ore a second from the player's rigs, shown "+{n}/s"; a warning chip at nothing.</td>
+<td><code>Hud.cpp:3146-3156</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Ion</strong></td>
+<td>The starting drive: speed ×1.3, hit points ×0.9, turn ×1.25.</td>
+<td><code>Tuning.json:21</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>join file</em></td>
+<td><code>Join-Player&lt;n&gt;.json</code>, written by the server: host, port, certificate, player, token.</td>
+<td><code>JoinTicket.cpp:37-42</code>; <code>ADR-078</code> decision 8</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Join world</strong></td>
+<td>Menu button, shown when <code>Documents\Outpost Commander\Join.json</code> exists. It joins a dedicated server's world.</td>
+<td><code>Hud.cpp:2333</code>; <code>WinMain.cpp:56-57, 111-123</code></td>
+<td><code>--join</code></td>
+</tr>
+<tr>
+<td><strong>L1</strong> … <strong>L5</strong></td>
+<td>Structure levels ("· L2", "Upgrade to L3"). The Command Station goes to L5, the Shipyard to L3, the Research Lab to L4.</td>
+<td><code>Hud.cpp:2572, 2689</code>; <code>Tuning.json:41-59</code></td>
+<td><em>level</em></td>
+</tr>
+<tr>
+<td><strong>Lance</strong></td>
+<td>Weapon: 95 every 2.7 s, 220 m. It fires a beam in the side's color.</td>
+<td><code>Tuning.json:27</code>; <code>Models.json:82</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Lance Capacitors</strong></td>
+<td>Tier 2 topic 16: Lance fire rate +10%. Requires Lance Focusing.</td>
+<td><code>Tuning.json:94-95</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Lance Focusing</strong></td>
+<td>Tier 1 topic 4: Lance fire rate +15%.</td>
+<td><code>Tuning.json:72-73</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Lancer</strong></td>
+<td>Starting design: Medium + Ion + Lance.</td>
+<td><code>Tuning.json:117</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Large</strong></td>
+<td>Hull 3: 1,200 hit points, armor 14, 4 command points. Built at a Shipyard L3. Unlocked by tier 1 topic 6, <strong>Large Hull</strong>.</td>
+<td><code>Tuning.json:18, 76-77</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>last seen</strong></td>
+<td>How long ago a remembered structure or derelict was seen ("last seen 4:12 ago", "last seen earlier").</td>
+<td><code>Hud.cpp:452-460</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Local skirmish</strong></td>
+<td>The "where the match runs" tag in a match on the game's own server.</td>
+<td><code>Hud.cpp:3323</code>; <code>ADR-086</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Mass Driver</strong></td>
+<td>The starting gun weapon: 14 every 0.4 s, 120 m.</td>
+<td><code>Tuning.json:26</code></td>
+<td></td>
+</tr>
+</tbody>
+</table></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4852}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

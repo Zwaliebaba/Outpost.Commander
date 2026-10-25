@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glossary, part 2 of 2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Glossary · part 2 of 2</div><div style="padding:20px 24px 24px 24px"><div class="md"><table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+<th>Source</th>
+<th>Variants</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Mass Driver Calibration</strong></td>
+<td>Tier 1 topic 3: Mass Driver fire rate +10%.</td>
+<td><code>Tuning.json:70-71</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>match</em></td>
+<td>A skirmish against the AI. It ends by lost production or domination; the world runs on behind the banner.</td>
+<td><code>ADR-020</code> decision 9; <code>ADR-057</code></td>
+<td><strong>Match length</strong></td>
+</tr>
+<tr>
+<td><strong>Medium</strong></td>
+<td>Hull 2: 500 hit points, armor 8, 2 command points. Built at a Shipyard L2.</td>
+<td><code>Tuning.json:17, 51</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>memory</em></td>
+<td>A structure or derelict the player saw and no longer sees, drawn as lines only over the fog.</td>
+<td><code>ADR-024</code> decision 5; <code>ADR-081</code> decision 4</td>
+<td>"when seen"</td>
+</tr>
+<tr>
+<td><em>minimap</em></td>
+<td>The HUD's 300-unit map at the bottom left.</td>
+<td><code>Hud.cpp:3456-3630</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Mining Rig</strong></td>
+<td>A structure on an ore asteroid in a held sector that pays its Ore income: 50 Ore, 10 s.</td>
+<td><code>Tuning.json:60</code></td>
+<td>code <code>MiningRig</code>; docs "rig"</td>
+</tr>
+<tr>
+<td><strong>Mining Rig lost</strong></td>
+<td>Alert: one of the player's rigs was destroyed.</td>
+<td><code>Alerts.cpp:86</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Missile Guidance</strong></td>
+<td>Tier 2 topic 17: Missile Rack fire rate +15%. Requires Missile Rack.</td>
+<td><code>Tuning.json:96-97</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Missile Rack</strong></td>
+<td>Weapon: 30 every 2.0 s, 280 m, splash 30 m. Unlocked by tier 1 topic 7 of the same name.</td>
+<td><code>Tuning.json:28, 78-79</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>MIXED</strong></td>
+<td>The retreat row when selected ships differ.</td>
+<td><code>Hud.cpp:3449</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>MODULE</strong></td>
+<td>The Designer's optional fourth slot: None or Sensor Array.</td>
+<td><code>Hud.cpp:695</code>; <code>ADR-058</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Move</strong></td>
+<td>Order: head for a point in formation. Right-click the ground. Also a scheduled-order action.</td>
+<td><code>Command.h:8-13</code>; <code>OrderForm.cpp:254</code></td>
+<td>"move to {sector}"</td>
+</tr>
+<tr>
+<td><em>near</em></td>
+<td>Sector kind with 1 near asteroid (4 Ore/s, 9,000 Ore). Also that yield's name.</td>
+<td><code>Map.json:153</code>; <code>Tuning.json:7</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>NEEDS</strong></td>
+<td>What a research topic lacks first ("NEEDS · RESEARCH LAB L2", "+ HULL PLATING").</td>
+<td><code>Hud.cpp:1875, 2972</code></td>
+<td>"NEEDS RESEARCH" (upgrade), "Needs Shipyard L{n}" (Designer), "NEEDS L{n}" (production)</td>
+</tr>
+<tr>
+<td><strong>No drain</strong></td>
+<td>The territory panel when both sides hold as many nodes.</td>
+<td><code>Hud.cpp:2513</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>No word from the server</strong></td>
+<td>Warning chip after 2 s without a snapshot ("· {n} s").</td>
+<td><code>Hud.cpp:3334</code>; <code>ADR-086</code> decision 2</td>
+<td></td>
+</tr>
+<tr>
+<td><em>node</em></td>
+<td>The point at a sector's center that a Relay, or a Command Station, holds.</td>
+<td><code>Map.json: sectors[].node</code>; <code>ADR-036</code> decision 4</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>NODE CAP</strong></td>
+<td>A dim Relay button's note at the node cap.</td>
+<td><code>Hud.cpp:2825</code></td>
+<td>"node cap"</td>
+</tr>
+<tr>
+<td><strong>Nodes</strong></td>
+<td>The territory panel's row of nodes held, own against enemy.</td>
+<td><code>Hud.cpp:3196</code></td>
+<td><em>node</em></td>
+</tr>
+<tr>
+<td><strong>On patrol</strong></td>
+<td>Selection line for ships on a patrol.</td>
+<td><code>Hud.cpp:2787</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>ONE PER PLAYER</strong></td>
+<td>The Research Lab button's note: a player may have one.</td>
+<td><code>Hud.cpp:2824</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Order fired</strong> / <strong>Order held back</strong> / <strong>Order refused</strong></td>
+<td>Alerts when a scheduled order fires, holds instead under its condition, or is refused.</td>
+<td><code>Alerts.cpp:38-44</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Ore</strong></td>
+<td>The one resource, mined by rigs and paid when a job starts. Written as a gold gem and figure.</td>
+<td><code>MVP.md:146</code>; <code>ADR-043</code> decision 3; <code>Hud.cpp:3145</code></td>
+<td>"ore" (Cost bar unit, <code>Hud.cpp:778</code>)</td>
+</tr>
+<tr>
+<td><em>Ore box</em></td>
+<td>The Ore figure in the designer, production and research windows' headers.</td>
+<td><code>Hud.cpp:1244-1249</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Ore left</strong></td>
+<td>A Mining Rig's remaining reserve as the player knows it.</td>
+<td><code>Hud.cpp:2594</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>outpost</em></td>
+<td>A pirate camp or stronghold on a node; 7 on the map.</td>
+<td><code>Map.json:159-163</code>; <code>ADR-073</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Outpost Commander</strong></td>
+<td>The game's title on the menu. In the lore, the player's role.</td>
+<td><code>Hud.cpp:2346</code>; <code>MVP.md:19</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>OutpostServer</em></td>
+<td>The dedicated server program: <code>--new-world &lt;folder&gt;</code>, then <code>&lt;folder&gt;</code>.</td>
+<td><code>OutpostServer/Main.cpp:28-35</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Patrol</strong></td>
+<td>Standing order: go between the ships' middle and the point clicked. <strong>T</strong>, then click.</td>
+<td><code>Hud.cpp:2801</code>; <code>KeyBindings.h:101</code></td>
+<td>"On patrol", "patrol to {sector}"</td>
+</tr>
+<tr>
+<td><strong>PERFORMANCE</strong></td>
+<td>The Designer's stat-bar section.</td>
+<td><code>Hud.cpp:1487</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Picket</strong></td>
+<td>Starting design: Small + Ion + Lance.</td>
+<td><code>Tuning.json:115</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Pirate</strong></td>
+<td>Neutral owner of outposts, every player's enemy. Model set violet (0.62, 0.22, 0.9) on Tarkan meshes. On screen: "Pirate ships in", "Pirates cleared", "Pirate {name}".</td>
+<td><code>Id.h:25</code>; <code>Models.json:33-37, 57</code>; <code>Alerts.cpp:89, 95</code>; <code>OrderForm.cpp:288</code></td>
+<td>code <code>PIRATES</code></td>
+</tr>
+<tr>
+<td><em>placement ghost</em></td>
+<td>The structure's level-1 model and band ring under the cursor, green where it may stand and red where not.</td>
+<td><code>GameClient.cpp:122-123, 1807-1835</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Placing</strong></td>
+<td>Hint while a structure placement is armed ("Placing {structure}: left-click to build, right-click to cancel").</td>
+<td><code>Hud.cpp:2551</code></td>
+<td><em>placement ghost</em></td>
+</tr>
+<tr>
+<td><strong>PRODUCTION</strong></td>
+<td>The production window (<strong>P</strong>): one producer's queue and the cards to add to it.</td>
+<td><code>Hud.cpp:1725</code>; <code>KeyBindings.h:118</code></td>
+<td><strong>Production</strong> button</td>
+</tr>
+<tr>
+<td><strong>Proximity Fuses</strong></td>
+<td>Tier 3 topic 22: Flak Battery fire rate +15%. Requires Flak Battery.</td>
+<td><code>Tuning.json:104-105</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Pulse</strong></td>
+<td>Drive: speed ×1.6, hit points ×0.75, turn ×1.5. Unlocked by tier 2 topic 10, <strong>Pulse Drive</strong>.</td>
+<td><code>Tuning.json:23, 82-83</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>QUEUE</strong></td>
+<td>A producer's or Lab's queue, 5 jobs ("QUEUE · 3 / 5"). Also the Designer's commit button.</td>
+<td><code>Hud.cpp:827, 1045, 1677</code>; <code>Snapshot.h:42</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Quit</strong></td>
+<td>Menu button: closes the game.</td>
+<td><code>Hud.cpp:2334</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Rail Cannon</strong></td>
+<td>Weapon: 320 every 6.0 s, 240 m. It fires a white slug. Unlocked by tier 3 topic 19 of the same name.</td>
+<td><code>Tuning.json:30, 98-99</code>; <code>Models.json:83</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Range</strong></td>
+<td>The Designer's weapon-range bar. Range is measured center to center.</td>
+<td><code>Hud.cpp:770</code>; <code>ADR-014</code> decision 7</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Rapid Construction</strong></td>
+<td>Tier 3 topic 25: Constructor build and repair rate +25%.</td>
+<td><code>Tuning.json:110-111</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Reinforced Structures</strong></td>
+<td>Tier 2 topic 14: structure hit points +25%.</td>
+<td><code>Tuning.json:90-91</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Relay</strong></td>
+<td>A structure that claims its sector's node: 200 Ore, 40 s, 3,000 hit points. It is drawn with the Research Lab's model at tint 1.6.</td>
+<td><code>Tuning.json:62</code>; <code>Models.json:70</code>; <code>ADR-056</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>Relay Archives</em>, <em>Precursor Vault</em></td>
+<td>Phase 1's gateway topics 9 and 18, removed; their IDs are not reused.</td>
+<td><code>ADR-033</code> decision 2</td>
+<td>not in the game</td>
+</tr>
+<tr>
+<td><strong>Relay suppressed</strong> / <strong>Relay under attack</strong></td>
+<td>Alerts about the player's Relay.</td>
+<td><code>Alerts.cpp:79, 82</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>RENAME</strong> / <strong>UPDATE</strong> / <strong>SAVE</strong> / <strong>SAVED</strong></td>
+<td>The Designer's buttons: save new picks, rename or update a saved design; SAVED when the picks are one.</td>
+<td><code>Hud.cpp:600-609</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Repair</strong></td>
+<td>A Constructor's right-click on a damaged or unfinished own ship or structure. It costs nothing.</td>
+<td><code>KeyBindings.h:98</code>; <code>Command.h:43-49</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Repair Bay</strong></td>
+<td>A structure that repairs up to 4 of its player's ships within 150 m at 3% a second: 300 Ore, 40 s. Drawn with the Shipyard model at tint 0.6.</td>
+<td><code>Tuning.json:63, 131</code>; <code>Models.json:71</code>; <code>ADR-075</code></td>
+<td>code <code>RepairBay</code></td>
+</tr>
+<tr>
+<td><strong>RESEARCH</strong></td>
+<td>The research window (<strong>R</strong>): the Lab, its queue, and every open topic by tier.</td>
+<td><code>Hud.cpp:1825</code>; <code>KeyBindings.h:119</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Research Lab</strong></td>
+<td>A structure that researches topics, one per player: 200 Ore, 30 s. Its levels open tiers 2 and 3 and, at L4, a second slot.</td>
+<td><code>Tuning.json:54-58</code></td>
+<td>code <code>ResearchLab</code>; "RESEARCH LAB"</td>
+</tr>
+<tr>
+<td><em>reserve</em></td>
+<td>The Ore an ore asteroid holds; a rig draws on it. It never refills.</td>
+<td><code>Map.json</code>; <code>ADR-035</code></td>
+<td><strong>Ore left</strong></td>
+</tr>
+<tr>
+<td><em>restart</em></td>
+<td>In a world, a lost seat's new Command Station and 2 Constructors on its start, an hour after the loss.</td>
+<td><code>Simulation.h:343</code>; <code>ADR-084</code> decision 4</td>
+<td>"It restarts at your start in …"</td>
+</tr>
+<tr>
+<td><strong>RETREAT</strong></td>
+<td>The retreat row: 25%, 50%, Never.</td>
+<td><code>Hud.cpp:1561, 3447</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Retreating to be repaired</strong></td>
+<td>Selection line for a ship going back to its repairer.</td>
+<td><code>Hud.cpp:2789-2790</code></td>
+<td><strong>Ship retreating</strong> (alert)</td>
+</tr>
+<tr>
+<td><em>rich</em></td>
+<td>Sector kind of E1 and A5: 2 rich asteroids (6.5 Ore/s, 24,000 Ore, r 60 m) and a stronghold.</td>
+<td><code>Map.json:157, 161</code>; <code>Tuning.json:9</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>salvage</em></td>
+<td>A Constructor's 30 s work on a derelict: its Ore at once, and 50% of a named topic's time.</td>
+<td><code>Tuning.json:130</code>; <code>ADR-074</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>SALVAGED</strong></td>
+<td>A research card's tag when part of its time was recovered from a derelict.</td>
+<td><code>Hud.cpp:2979</code></td>
+<td>"salvaged {p}%" (hint)</td>
+</tr>
+<tr>
+<td><em>save</em></td>
+<td>A world's state, written every 60 s; the newest 3 are kept.</td>
+<td><code>WorldFolder.h:15, 23</code>; <code>ADR-077</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>scheduled order</em></td>
+<td>An order given now that fires once on a trigger, with at most one condition.</td>
+<td><code>ADR-080</code>; <code>Phase5.md:107</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Scheduled orders</strong></td>
+<td>The Orders window (<strong>O</strong>), titled "SCHEDULED ORDERS".</td>
+<td><code>KeyBindings.h:120</code>; <code>Hud.cpp:1952</code></td>
+<td><strong>Scheduled:</strong> {order} (selection line)</td>
+</tr>
+<tr>
+<td><em>scout</em></td>
+<td>The AI's Small + Ion + Mass Driver + Sensor Array explorer.</td>
+<td><code>Opponent.json:44-45</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>seat</em></td>
+<td>One of a world's player places. Taken with a token; played by the player or its deputy.</td>
+<td><code>ADR-078</code> decision 3; <code>SeatController.h</code></td>
+<td>"The server refused the seat"</td>
+</tr>
+<tr>
+<td><em>sector</em></td>
+<td>One of 25 squares of 2 km, held through its node. Kinds: home, flank, near, contested, between, center, rich.</td>
+<td><code>Map.json:98-157</code>; <code>ADR-036</code></td>
+<td><strong>Sectors gained</strong>, <strong>Sectors lost</strong></td>
+</tr>
+<tr>
+<td><em>selection ring</em></td>
+<td>The 3-px ring round each selected ship or structure: green, amber while an order is armed.</td>
+<td><code>GameClient.cpp:89-90</code>; <code>ADR-067</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Sensor Array</strong></td>
+<td>The one module: sight 700 m, speed ×0.9, 120 Ore. Shown as the <strong>Sensors</strong> bar.</td>
+<td><code>Tuning.json:33</code>; <code>Hud.cpp:775</code></td>
+<td>"SA", "SIGHT"</td>
+</tr>
+<tr>
+<td><strong>Server</strong> {host}:{port}</td>
+<td>The tag when joined to a dedicated server's world.</td>
+<td><code>Hud.cpp:3323</code>; <code>ADR-086</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Ship designer</strong></td>
+<td>Button and Controls name of the Designer (<strong>D</strong>).</td>
+<td><code>Hud.cpp:2636</code>; <code>KeyBindings.h:117</code></td>
+<td><strong>DESIGNER</strong>, <strong>SHIP DESIGN</strong></td>
+</tr>
+<tr>
+<td><strong>Ship retreating</strong></td>
+<td>Alert: a ship of the player's started back to be repaired.</td>
+<td><code>Alerts.cpp:92</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Shipyard</strong></td>
+<td>A structure that builds warships, in a held sector: 300 Ore, 40 s. L1 builds Small, L2 adds Medium, L3 adds Large. Numbered 01, 02 …</td>
+<td><code>Tuning.json:48-52</code>; <code>Hud.cpp:591, 2845</code></td>
+<td>"SHIPYARD 01"</td>
+</tr>
+<tr>
+<td><strong>Shipyards</strong></td>
+<td>The status column's line ("Shipyards · BUILDING b · WAITING w · IDLE i").</td>
+<td><code>Hud.cpp:403-404</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>skirmish</em></td>
+<td>A match against the AI on the game's own server.</td>
+<td><code>Hud.cpp:2329-2331, 2347</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Small</strong></td>
+<td>Hull 1: 220 hit points, armor 2, 1 command point. Built at a Shipyard L1.</td>
+<td><code>Tuning.json:16</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Speed</strong></td>
+<td>The Designer's speed bar, in m/s.</td>
+<td><code>Hud.cpp:769</code></td>
+<td><strong>SPD</strong> (drive card)</td>
+</tr>
+<tr>
+<td><strong>splash</strong></td>
+<td>A weapon's area: every other enemy within the radius of the target takes the hit. Shown as "splash {r}m".</td>
+<td><code>Hud.cpp:688</code>; <code>ADR-014</code> decision 12</td>
+<td></td>
+</tr>
+<tr>
+<td><em>standing order</em></td>
+<td>Hold sector or Patrol, kept by the server until the player gives a move, attack-move, attack or stop.</td>
+<td><code>ADR-059</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Stop</strong></td>
+<td>Order: drop orders and hold. <strong>S</strong>.</td>
+<td><code>Hud.cpp:2802</code>; <code>KeyBindings.h:102</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>stronghold</em></td>
+<td>A pirate outpost of 2 Defence Platforms and 4 Medium ships, on the rich pair and the center. Its wreck pays 1,200 Ore.</td>
+<td><code>Tuning.json:125-127</code>; <code>Map.json:161-162</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>suppressed</strong></td>
+<td>A Relay with an enemy warship within 400 m and none of its owner's. Its sector earns nothing.</td>
+<td><code>Hud.cpp:2606</code>; <code>Tuning.json:14</code>; <code>ADR-056</code> decision 6</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Swarm</strong></td>
+<td>Starting design: Small + Ion + Mass Driver.</td>
+<td><code>Tuning.json:114</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>TARGET</strong></td>
+<td>The Orders window's row for an attack's target or a rig's asteroid.</td>
+<td><code>Hud.cpp:2265</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>Tarkan</em></td>
+<td>Model set and side of player 2: orange-red (0.9, 0.25, 0.12), own meshes. In the lore, the Tarkan High Command.</td>
+<td><code>Models.json:19-31, 55</code>; <code>MVP.md:23</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>Terrakin</em></td>
+<td>In the lore, the colonies on the far side of the dark jump relays. The premise is a proposal.</td>
+<td><code>MVP.md:15-17</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>territory</em></td>
+<td>Sectors held through their nodes; it drives income and domination.</td>
+<td><code>ADR-056</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Tickets</strong></td>
+<td>The territory panel's domination tickets, 1,000 each at the start of a match.</td>
+<td><code>Hud.cpp:3200</code>; <code>Tuning.json:14</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>TIER</strong></td>
+<td>A research topic's tier 1–3, opened by the Lab's level ("TIER 2 · 90 s").</td>
+<td><code>Hud.cpp:2978</code></td>
+<td>"tier {n}"</td>
+</tr>
+<tr>
+<td><strong>Top level</strong></td>
+<td>A structure at its kind's last level.</td>
+<td><code>Hud.cpp:2699</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>trickle</em></td>
+<td>An exhausted asteroid's rig earns 20% of its rate.</td>
+<td><code>Tuning.json:10</code></td>
+<td>"it earns a trickle"</td>
+</tr>
+<tr>
+<td><strong>UNLESS</strong></td>
+<td>The Orders window's condition row ("Over {n} enemy CP there", or "Never").</td>
+<td><code>Hud.cpp:2272-2273</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Upgrade to L</strong>{n}</td>
+<td>A structure's button: order its next level, paid at once and built by itself.</td>
+<td><code>Hud.cpp:2689</code>; <code>ADR-064</code></td>
+<td><strong>UPGRADING</strong> · {p}%</td>
+</tr>
+<tr>
+<td><strong>Victory</strong></td>
+<td>Banner title for the winner.</td>
+<td><code>Hud.cpp:2199</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>WAITING FOR ORE</strong> / <strong>WAITING FOR FLEET CAP</strong></td>
+<td>A queue's front job that cannot start.</td>
+<td><code>Hud.cpp:1689</code></td>
+<td>"waiting for Ore", "waiting for the fleet cap"</td>
+</tr>
+<tr>
+<td><em>warship</em></td>
+<td>Any ship but a Constructor.</td>
+<td><code>Simulation.cpp:2932-2949</code>; <code>OrderForm.cpp:192</code> ("SELECT WARSHIPS")</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>WATCHING</strong></td>
+<td>The Orders window's row for an event trigger's sector.</td>
+<td><code>Hud.cpp:2257</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>WEAPON</strong></td>
+<td>The Designer's weapon slot.</td>
+<td><code>Hud.cpp:675</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>WHEN</strong> / <strong>WHERE</strong></td>
+<td>The Orders window's trigger and action-sector rows.</td>
+<td><code>Hud.cpp:2248, 2260</code></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>WHILE YOU WERE AWAY</strong></td>
+<td>The Away window: the report on return.</td>
+<td><code>Hud.cpp:1997</code></td>
+<td><em>away report</em></td>
+</tr>
+<tr>
+<td><em>world</em></td>
+<td>A match that does not end, run by a dedicated server from a folder, with saves, deputies and restarts.</td>
+<td><code>Phase5.md:13</code>; <code>ADR-077</code>; <code>ADR-084</code></td>
+<td>"Join world"</td>
+</tr>
+<tr>
+<td><em>World.json</em> / <em>World.log</em></td>
+<td>A world's settings (seed, seats, tokens) and its log of records.</td>
+<td><code>WorldSettings.cpp:36-100</code>; <code>WorldLog.h:6, 29-51</code></td>
+<td></td>
+</tr>
+<tr>
+<td><em>Wreck</em></td>
+<td>The derelicts' model set: gray (0.4, 0.4, 0.42) on Human meshes, by hull.</td>
+<td><code>Models.json:38-42, 58</code></td>
+<td>ground rule 6 "grey"; <code>Phase4.md:305</code> "grey"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>Count:</strong> 201 rows in the table above. Rows that pair related labels (for example <strong>25%</strong>, <strong>50%</strong>, <strong>Never</strong>) count once.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 4348}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

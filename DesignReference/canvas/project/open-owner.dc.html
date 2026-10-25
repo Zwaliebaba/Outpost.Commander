@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Open items: for the owner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&amp;family=Barlow:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;600;700&amp;family=Noto+Sans:wght@400;600&amp;display=swap">
+<style>
+
+body{margin:0;background:#10141B}
+a{color:#AAD0FF}a:hover{color:#EAF1FA}
+.md{font-family:'Segoe UI','Noto Sans',sans-serif;font-size:15px;line-height:1.55;color:#EAF1FA}
+.md p{margin:0 0 10px 0;max-width:980px}
+.md ul,.md ol{margin:0 0 12px 0;padding-left:22px;max-width:1040px}
+.md li{margin:0 0 4px 0}
+.md strong{color:#EAF1FA;font-weight:700}
+.md h1,.md h2{font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;color:#EAF1FA;margin:22px 0 10px 0}
+.md h3{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD;margin:22px 0 10px 0}
+.md h4{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:17px;color:#EAF1FA;margin:20px 0 8px 0}
+.md code{font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12.5px;color:#ACBACD;background:#10141B;border:1px solid #2D364B;padding:0 4px;border-radius:2px;white-space:normal;overflow-wrap:anywhere}
+.md blockquote{margin:0 0 12px 0;padding:8px 16px;border-left:2px solid #F7BC3C;background:#10141B;color:#D3E3F7;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:16px}
+.md table{border-collapse:collapse;width:100%;margin:6px 0 16px 0;font-size:13px;line-height:1.45}
+.md th{font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8193AD;text-align:left;padding:6px 8px;border-bottom:1px solid #2D364B;vertical-align:bottom;background:#10141B}
+.md td{padding:5px 8px;border-bottom:1px solid #2D364B;vertical-align:top;color:#D3E3F7;overflow-wrap:anywhere}
+.md td code{font-size:11.5px}
+.md pre{margin:6px 0 14px 0;padding:12px 14px;background:#10141B;border:1px solid #2D364B;overflow:hidden;white-space:pre-wrap}
+.md pre code{border:0;padding:0;background:none;font-size:12.5px;line-height:1.5;color:#D3E3F7;white-space:pre-wrap}
+.md hr{border:0;border-top:1px solid #2D364B;margin:18px 0}
+.md .good{color:#6CF34D}.md .fair{color:#F3B52D}.md .poor{color:#E7553F}
+
+</style>
+</helmet>
+<div data-root="1" style="width:1440px;box-sizing:border-box;padding:56px 64px 64px 64px;background:#10141B;color:#EAF1FA;font-family:'Segoe UI','Noto Sans',sans-serif"><header style="margin:0 0 28px 0"><div style="font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;color:#8193AD;text-transform:uppercase">Outpost Commander · design reference · 17</div><h1 style="margin:6px 0 10px 0;font-family:Bahnschrift,'Barlow Semi Condensed',sans-serif;font-weight:700;font-stretch:87.5%;font-size:56px;line-height:1.05;color:#EAF1FA">Open items</h1><p style="margin:0 0 10px 0;max-width:1000px;font-family:'Segoe UI','Noto Sans',sans-serif;font-size:18px;line-height:1.5;color:#D3E3F7">Every conflict between code, ADRs and design documents, and every gap where nothing decides, for the owner. The reference shows the code's value in each case.</p><div class="md" style="font-size:13px;color:#8193AD">Sources: <code>conflicts.md</code> <code>gaps.md</code> <code>R/summary.md</code> <code>R/leak-check.md</code></div></header><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Summary</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>R — reconciliation summary</h2>
+<p>Written by the lead from R's report, because the harness refused R's own write of this file. The full entries are in <code>DesignReference/_work/conflicts.md</code>, <code>gaps.md</code> and <code>glossary.md</code>.</p>
+<h3>Counts</h3>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conflicts</td>
+<td>68</td>
+</tr>
+<tr>
+<td>— code-vs-intent (all OWNER?=yes)</td>
+<td>5</td>
+</tr>
+<tr>
+<td>— stale-doc</td>
+<td>32</td>
+</tr>
+<tr>
+<td>— superseded</td>
+<td>28</td>
+</tr>
+<tr>
+<td>— agent-disagreement</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Gaps</td>
+<td>79</td>
+</tr>
+<tr>
+<td>— not specified or open</td>
+<td>58</td>
+</tr>
+<tr>
+<td>— on screen, with no rule another agent explains</td>
+<td>2</td>
+</tr>
+<tr>
+<td>— a rule with nothing on any screen</td>
+<td>19</td>
+</tr>
+<tr>
+<td>Glossary terms</td>
+<td>201</td>
+</tr>
+<tr>
+<td>Horizon and self-play leak check</td>
+<td><strong>PASS</strong> (14 hits read, none a leak)</td>
+</tr>
+</tbody>
+</table>
+<h3>OWNER?=yes</h3>
+<p>Each changes what a screen shows and may be a code defect rather than a stale document. In every case the reference shows what the code draws.</p>
+<ul>
+<li><strong>C-001: HUD side colors.</strong></li>
+<li>The code draws the minimap marks, sector wash and node figures in fixed own and enemy colors, <code>OWN_COLOR</code> <code>#A0D3FF</code> and <code>ENEMY_COLOR</code> <code>#FFA689</code> (<code>Hud.cpp:26-27, 3477, 3508</code>).</li>
+<li>The world uses <code>Models.json</code>'s side colors by player number: Human <code>#76ADF9</code> and Tarkan <code>#F38961</code> (<code>Models.json:53-56</code>).</li>
+<li>So a player in seat 2 sees its own forces red-orange in the world but blue on the minimap.</li>
+<li>Question: is the HUD meant to be relative (own and enemy), or should it follow the side colors?</li>
+<li><strong>C-002: Human Command Station size.</strong></li>
+<li>The mesh is drawn about 181 m deep on its 90 m footprint at every level (A6).</li>
+<li>ADR-064 says "level 1 is square", which predates the owner's mesh replacement (commit <code>09638bc</code>).</li>
+<li>Question: is the overhang intended, or is the mesh or its footprint wrong?</li>
+<li><strong>C-003: Designer Build row.</strong></li>
+<li>The row runs about 13 units into the footer: <code>ExtentOf</code> reserves 6 stat rows, but a Sensor Array design always draws 7 (<code>Hud.cpp:1087, 772-777</code>).</li>
+<li>This is derived from the code; nobody has seen it on screen.</li>
+<li>Question: a layout defect to fix?</li>
+<li><strong>C-004: Lit footprint ring color.</strong></li>
+<li>The code draws a lit ring in the side's ship-line color (<code>GameClient.cpp:1246, 1376</code>).</li>
+<li>ADR-042 says the structure's own line color.</li>
+<li>Question: is the code intended (so ADR-042 is stale), or a defect?</li>
+<li><strong>C-005: Large hull card numbers.</strong></li>
+<li>"1,200 HP · ARM 14 · 25m/s" may be cut short at 1080p in Cascadia Mono: about 200 px against 196 units (A4 open item 3).</li>
+<li>This is unproven and needs a look on a Windows screen.</li>
+</ul>
+<h3>Lead's notes, as R settled them</h3>
+<ul>
+<li><strong>Structure levels: a gap (G-014), not a conflict.</strong> The data gives 5 levels to the Command Station, 3 to the Shipyard and 4 to the Research Lab, against L1–L5 meshes for all three. Phase 3 gate K3 stops the Shipyard at L3 and the Lab at L4 on purpose.</li>
+<li><strong>Command Station gun hardpoints: stale-doc (C-006).</strong> The meshes have 3, 3, 3, 6, 6; the docs say 4 rising to 12. The owner's own art came after the docs.</li>
+<li><strong>State versions.</strong> Protocol 15 and world-state 6 are superseded in the Phase 5 plan (C-037) and stale in ADR-064, -071, -081 and -084 (C-008). The code has 1 and 1, as AGENTS.md R18 requires.</li>
+<li><strong>Look plan LV2.1.</strong> Its "awaiting CI" is stale-doc (C-036): PR #108 merged it.</li>
+<li><strong>Leak check note.</strong> <code>--quiet</code> and <code>--ai-matches</code> are named only as developer switches; the code's comments tie them to ADR-063, the self-play probe.</li>
+</ul>
+<h3>The owner's answer (2026-10-25)</h3>
+<p>Asked in the session, as the brief's phase 2 requires, the owner answered:</p>
+<ul>
+<li><strong>C-001, C-002 and C-004:</strong> left open. Each stays an open owner decision, and the reference draws what the code does.</li>
+<li><strong>C-003 and C-005:</strong> drawn and flagged. The designer frames show the Build row's overlap and the cut-short Large hull numbers as the code derives them, marked "derived, not seen".</li>
+</ul></div></div></section><section style="box-sizing:border-box;background:linear-gradient(#89AFE2,#89AFE2) left top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right top / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) left bottom / 1px 12px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 12px 1px no-repeat,linear-gradient(#89AFE2,#89AFE2) right bottom / 1px 12px no-repeat,#181E2B;margin:0 0 24px 0;"><div style="height:36px;display:flex;align-items:center;padding:0 24px;background:repeating-linear-gradient(135deg,#303A50 0 1.414px,transparent 1.414px 4.950px),#181E2B;font-family:Bahnschrift,'Barlow',sans-serif;font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#ACBACD">Horizon and self-play leak check</div><div style="padding:20px 24px 24px 24px"><div class="md"><h2>Leak check: Horizon and self-play material in A1–A7</h2>
+<p>Agent <strong>R</strong>. HEAD <code>a053fe294d91dc885bbb061c2f34d76ca6897738</code>.</p>
+<h3>Verdict: <strong>PASS</strong></h3>
+<p>Nothing from the Horizon (<code>OutpostCommander-Horizon.md</code>, <code>ImplementationPlan-Horizon.md</code>) or from self-play (<code>ImplementationPlan-SelfPlay.md</code>, <code>Design/SelfPlayNetwork.md</code>, ADR-063) is described as part of the game as built. The same holds for anything a plan lists as not built (Look plan LV2.2, LV2.3, LV3.1, LV4.1–4.3, and its "Not in this plan" list).</p>
+<p>One note for the writer, at hit 4: two developer switches whose comments cite ADR-063.</p>
+<h3>Method</h3>
+<p><strong>First pass.</strong> <code>grep -n -i -E</code> over <code>A1/A1.md</code> … <code>A7/A7.md</code> for:
+- <code>horizon</code>, <code>self-play</code>, <code>selfplay</code>, <code>self play</code>, <code>galaxy</code>, <code>season</code>, <code>--ai-matches</code>, <code>ADR-063</code>;
+- <code>phase 6</code>, <code>phase 7</code>, <code>phase 8</code>;
+- <code>LV2.2</code>, <code>LV2.3</code>, <code>LV3.1</code>, <code>LV4</code>, <code>beacon</code>, <code>fleet plate</code>, <code>plates over</code>, <code>paint slot</code>, <code>two-tone</code>;
+- <code>SelfPlayNetwork</code>, <code>probe</code>.</p>
+<p><strong>Second pass.</strong> For <code>relay jump</code>, <code>forward shipyard</code>, <code>pathing by sector</code>, <code>upgrade steps</code>, <code>third seat</code>, <code>more seats</code>, <code>Tools/SelfPlay</code>, <code>AiMatchesOptions</code>, <code>network</code>, <code>neural</code> and <code>tone map</code>.</p>
+<p><strong>Checking.</strong> Every hit was read in context. Where the source said something specific, it was checked against the source: <code>OutpostCommander/WinMain.cpp:44-55</code>, <code>Design/ADR/ADR-038-phase-one-match-log.md:48</code>, <code>GameDesign/OutpostCommander-Phase5.md:55, 137, 145</code>, <code>Tools/BattleModel.py:1-10</code>.</p>
+<h3>Hits</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>File:line</th>
+<th>Text (abridged)</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>A1/A1.md:90</code></td>
+<td>"Ore sink / bound in a world: Not decided: '… decided in Phase 6'" (<code>Phase5.md:137</code>)</td>
+<td><strong>Legit mention.</strong> It quotes the in-scope Phase 5 design's deferral, and the cell is marked "Not decided". Nothing of Phase 6 is described.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>A1/A1.md:582</code></td>
+<td>Open 4, the same deferral</td>
+<td><strong>Legit mention</strong>, as hit 1 (gap G-003).</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>A2/A2.md:630</code></td>
+<td>"<code>GameLogic/Matchup.h:5</code> cites 'horizon §9', which is excluded; the in-scope source is ADR-083"</td>
+<td><strong>Legit mention.</strong> It flags a code comment and points to the in-scope ADR. Battle matchups are in scope: Phase 5 adopts Horizon §9's measurement by name (<code>Phase5.md:33, 145</code>; index.md).</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>A3/A3.md:593</code></td>
+<td>"Developer switches, not part of play: <code>--measure</code>, <code>--load</code>, <code>--stress</code>, <code>--ai-matches</code>, <code>--quiet</code> and <code>--matchup</code> …"</td>
+<td><strong>Legit mention, with a note.</strong> The switches exist at HEAD (<code>WinMain.cpp:30-55</code>), and A3 lists them only as not part of play. <code>--ai-matches</code> is Phase 1's tool (<code>ADR-038:48</code>); its options and <code>--quiet</code> are commented as ADR-063's, the self-play probe (<code>WinMain.cpp:44-48</code>). <strong>Writer's note:</strong> keep both as bare developer-switch names. Do not describe what <code>--quiet</code> or <code>--ai-matches</code>' options are for, since that is self-play.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>A3/A3.md:718</code></td>
+<td>"H10, 'A galaxy or friends next', is decided from W6 and the week's log (<code>Phase5.md:55, 189</code>)"</td>
+<td><strong>Legit mention.</strong> An open gate of the in-scope Phase 5 design. Nothing is described as built.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>A4/A4.md:439</code></td>
+<td>"It is empty when a corner sees past the horizon."</td>
+<td><strong>False positive</strong>: the camera's geometric horizon.</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>A5/A5.md:15</code></td>
+<td>"Excluded, as the brief says: Horizon, self-play, ADR-063, and Look plan LV2.2 and later."</td>
+<td><strong>Legit</strong>: a statement of the exclusion.</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>A6/A6.md:34</code></td>
+<td>"Not built, so not drawn: paint slots, two-tone lines, beacons, fleet plates (LV2.2, LV2.3, LV3.1, LV4.1–4.3)."</td>
+<td><strong>Legit</strong>: stated as absent.</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>A7/A7.md:16</code></td>
+<td>"Excluded, not read for content: Horizon, self-play, ADR-063."</td>
+<td><strong>Legit</strong>: a statement of the exclusion.</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>A7/A7.md:76</code>, <code>A7/A7.md:645</code></td>
+<td>"40° below horizontal"; "half the horizontal"</td>
+<td><strong>False positives.</strong></td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>A7/A7.md:124</code></td>
+<td>"Twinkle / parallax / galaxy: none (<code>ADR-022 §What this forecloses</code>)"</td>
+<td><strong>Legit</strong>: a starfield galaxy band that ADR-022 forecloses, not the Horizon's galaxy of systems.</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>A7/A7.md:673</code></td>
+<td>"Tone map: none" (ADR-091 Consequences)</td>
+<td><strong>Legit</strong>: stated as absent.</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>A7/A7.md:684-694</code></td>
+<td>"Not built at HEAD": LV2.2, LV2.3, LV3.1, LV4.1–LV4.3 and the Look plan's "Not in this plan", each <code>todo</code> or not built; beacons and plates "confirmed absent in code"</td>
+<td><strong>Legit</strong>: every row is stated as not built. R checked <code>GameDesign/ImplementationPlan-Look.md:42-53</code>.</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>A3/A3.md:617</code></td>
+<td>"Network: … router and firewall" (<code>ADR-078</code> Consequences)</td>
+<td><strong>False positive</strong>: the dedicated server's network, not the self-play network.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>No hits</strong> for <code>self-play</code>, <code>SelfPlay</code>, <code>season</code>, <code>phase 7</code>, <code>phase 8</code>, <code>relay jump</code>, <code>forward shipyard</code>, <code>pathing by sector</code>, <code>upgrade steps</code>, <code>third seat</code>, <code>more seats</code>, <code>Tools/SelfPlay</code>, <code>AiMatchesOptions</code> or <code>neural</code>. The only <code>ADR-063</code> hits are the exclusion statements (hits 7 and 9).</p>
+<h3>Related item outside A1–A7</h3>
+<p><code>Tools/BattleModel.py</code>, which A2 cites as a secondary source for the damage formula, is the MVP's Q2 balance model (<code>Tools/BattleModel.py:1-10</code>, "for the balance check of the MVP design"). It is not Horizon or self-play material.</p></div></div></section><p style="margin:8px 0 0 0;font-family:'Cascadia Mono',Consolas,'JetBrains Mono',monospace;font-size:12px;color:#8193AD">As built at a053fe2 (2026-10-25). Code and data are ground truth; disagreements are in Open items, never resolved silently.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 3833}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
