@@ -275,6 +275,7 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
   while (away.lines.size() < Outpost::Hud::AWAY_LINES)
     away.lines.push_back("Order held back: attack-move to " + LongestName('A') + " and " + LongestName('B'));
   content.away = away;
+  content.leave = true;
   return content;
 }
 
@@ -3076,6 +3077,30 @@ public:
     Assert::IsTrue(layout.windows[0].kind == Outpost::WindowKind::Away);
     for (const std::string& line : panel.lines)
       Assert::IsTrue(std::ranges::find(layout.texts, line, &Outpost::Hud::Text::text) != layout.texts.end());
+  }
+
+  // ADR-078 decision 11: in a universe the leave window asks whether to go back to the menu, in the middle of the screen,
+  // its words whole, with Leave universe, which goes, and Stay, which closes it, side by side.
+  TEST_METHOD(OffersToLeaveAUniverse)
+  {
+    Outpost::Hud::Content content;
+    Assert::IsTrue(Lay(content, 1920, 1080).windows.empty(), L"no window until Esc opens it");
+    content.leave = true;
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    Assert::AreEqual(std::size_t{1}, layout.windows.size());
+    const Outpost::Hud::Window& window = layout.windows[0];
+    Assert::IsTrue(window.kind == Outpost::WindowKind::Leave);
+    Assert::AreEqual(960.0f, window.frame.left + (window.frame.width / 2.0f), 1.0f, L"in the middle");
+    for (const std::string_view line :
+         {"Leave for the menu?", "Your deputy keeps your empire going while you are away.", "Leave universe", "Stay"})
+      (void)TextOf(layout, line);
+    const auto actionOf = [&layout](Outpost::Hud::ActionKind _kind)
+    { return std::ranges::find(layout.actions, _kind, [](const auto& _action) { return _action.second.kind; }); };
+    const auto leave = actionOf(Outpost::Hud::ActionKind::BackToMenu);
+    const auto stay = actionOf(Outpost::Hud::ActionKind::Stay);
+    Assert::IsTrue(leave != layout.actions.end() && stay != layout.actions.end());
+    Assert::IsTrue(leave->first.left < stay->first.left && leave->first.top == stay->first.top, L"Leave universe, then Stay");
+    Assert::AreEqual(size_t{1}, layout.LayerAt(stay->first.left + 1.0f, stay->first.top + 1.0f), L"the window's own layer");
   }
 
   // ADR-057 decision 8: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs; under the

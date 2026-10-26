@@ -118,6 +118,8 @@ public:
     Quit,
     BackToMenu,
     JoinUniverse,
+    // The leave window's Stay, which closes it; its Leave universe is BackToMenu (ADR-078 decision 11).
+    Stay,
     // The designer's window (ADR-017 decision 7): open it aimed at a Shipyard, step its target Shipyard, ask for fewer or
     // more ships, load a saved design, and scroll the saved designs.
     OpenDesigner,
@@ -634,6 +636,8 @@ public:
     // The orders window's content and the away window's, while they are open (ADR-080 decision 9); GameClient fills them.
     std::optional<OrdersPanel> orders;
     std::optional<AwayPanel> away;
+    // Whether the leave window is open, in a universe (ADR-078 decision 11).
+    bool leave = false;
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;

@@ -2036,6 +2036,39 @@ void LayAway(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::
   }
 }
 
+// The leave window (ADR-078 decision 11): in a universe, whether to go back to the menu, the deputy keeping the empire going
+// meanwhile. Leave universe goes, and Stay closes the window, side by side under the question.
+constexpr float LEAVE_WINDOW_WIDTH = 560.0f;
+constexpr std::string_view LEAVE_QUESTION = "Leave for the menu?";
+constexpr std::string_view LEAVE_DEPUTY = "Your deputy keeps your empire going while you are away.";
+
+float LeaveHeight() noexcept
+{
+  return Hud::TITLE_BAR_UNITS + PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT + PADDING;
+}
+
+void LayLeave(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, Outpost::WindowManager::Point _corner, float _scale,
+              const std::optional<Hud::Action>& _hovered)
+{
+  (void)OpenWindow(_layout, Outpost::WindowKind::Leave, std::string(), _corner, LEAVE_WINDOW_WIDTH, LeaveHeight() - Hud::TITLE_BAR_UNITS,
+                   _scale);
+  Painter paint(_layout, _metrics, _corner, _scale);
+  paint.Text("LEAVE UNIVERSE", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  const float room = LEAVE_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
+  float top = Hud::TITLE_BAR_UNITS + PADDING;
+  paint.Text(paint.Fit(std::string(LEAVE_QUESTION), Hud::Typeface::Title, room), WINDOW_INSET, top, TEXT_COLOR, Hud::Typeface::Title);
+  top += TITLE_LINE_UNITS;
+  paint.Text(paint.Fit(std::string(LEAVE_DEPUTY), Hud::Typeface::Name, room), WINDOW_INSET, top, NUMBERS_COLOR, Hud::Typeface::Name);
+  top += NAME_LINE_UNITS + BUTTON_GAP;
+  const float buttonWidth = (room - BUTTON_GAP) / 2.0f;
+  const Hud::Button leave{.label = "Leave universe", .action = {.kind = Hud::ActionKind::BackToMenu}};
+  const Hud::Button stay{.label = "Stay", .action = {.kind = Hud::ActionKind::Stay}};
+  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET, top, buttonWidth, BUTTON_HEIGHT, CARD_COLOR), leave,
+            _hovered == leave.action);
+  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET + buttonWidth + BUTTON_GAP, top, buttonWidth, BUTTON_HEIGHT, CARD_COLOR),
+            stay, _hovered == stay.action);
+}
+
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
 // The part of the line from _from to _to that lies inside _rect, by Liang and Barsky's clipping; none when none of it does.
 std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> ClipToRect(DirectX::XMFLOAT2 _from, DirectX::XMFLOAT2 _to,
@@ -3686,8 +3719,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
 
   // The floating windows (ADR-031), over everything else, back to front: those the manager has open, where it left them,
   // or, without a manager, every window the content has at its default place.
-  std::vector<WindowKind> backToFront{WindowKind::Production, WindowKind::Research, WindowKind::Designer,
-                                      WindowKind::Controls,   WindowKind::Orders,   WindowKind::Away};
+  std::vector<WindowKind> backToFront{WindowKind::Production, WindowKind::Research, WindowKind::Designer, WindowKind::Controls,
+                                      WindowKind::Orders,     WindowKind::Away,     WindowKind::Leave};
   if (_windows != nullptr)
     backToFront.assign(_windows->FrontToBack().rbegin(), _windows->FrontToBack().rend());
   const auto place = [&](WindowKind _kind, WindowManager::Point _default, float _widthUnits)
@@ -3738,6 +3771,13 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       const WindowManager::Point middle{.xUnits = (screenWidthUnits - AWAY_WINDOW_WIDTH) / 2.0f,
                                         .yUnits = std::max(MARGIN, (screenHeightUnits - heightUnits) / 2.0f)};
       LayAway(layout, _metrics, *_content.away, place(kind, middle, AWAY_WINDOW_WIDTH), scale);
+    }
+    // The leave window, at first in the middle (ADR-078 decision 11).
+    else if (kind == WindowKind::Leave && _content.leave)
+    {
+      const WindowManager::Point middle{.xUnits = (screenWidthUnits - LEAVE_WINDOW_WIDTH) / 2.0f,
+                                        .yUnits = std::max(MARGIN, (screenHeightUnits - LeaveHeight()) / 2.0f)};
+      LayLeave(layout, _metrics, place(kind, middle, LEAVE_WINDOW_WIDTH), scale, _hovered);
     }
   }
   return layout;
