@@ -56,7 +56,7 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW1.2 | A connection is held to its hello | — | — | merged, [#130](https://github.com/Zwaliebaba/Outpost.Commander/pull/130) |
 | NW1.3 | A seat's commands are bounded | — | M9 | merged, [#130](https://github.com/Zwaliebaba/Outpost.Commander/pull/130) |
 | NW2.1 | The connection's figures | — | — | in review |
-| NW2.2 | The impaired link | NW2.1 | M1 | todo |
+| NW2.2 | The impaired link | NW2.1 | M1 | in review; its measurement an owner run |
 | NW2.3 | The connection's figures over a real network | NW2.1 | M1 | todo; an owner run |
 | NW3.1 | What does not change crosses once | NW2.2 | M2, M3 | todo |
 | NW3.2 | A command carries its number | NW3.1 | M7 | todo |
@@ -159,8 +159,9 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
   - The tests CI runs ask only what holds by a wide margin on any runner: through the relay with no impairment every snapshot of a match arrives, and under each profile a seat is taken, an order reaches the simulation, and a deputy takes the seat and hands it back. They time nothing tightly, since a runner's timing is not the relay's.
   - `ImpairedLinkTests.MeasuresTheProfiles`, run only with `OUTPOST_NETWORK_MEASURE` set, as `UniverseFolderTests.MeasuresALateSave` is run only with its variable, plays two minutes of the measurement load (`ServerDesc::measurementLoad`), ordered across the map as `--load` orders it, through each profile. It reports how late each state arrives, at the median and the 95th and 99th percentiles; the longest gap between two arrivals; the share of 60 Hz samples at which the newest state the client holds is more than two ticks behind the server; the seat's largest backlog, from NW2.1; and an order's response, from its send to the first snapshot in which an ordered ship has moved.
 - **ADR:** none of its own, since it is a test project's helper; [ADR-060](../ADR/ADR-060-quic-in-process.md)'s Consequences name the tests.
-- **Acceptance:** the tests CI runs pass. The measuring test's figures for the transport as it stands are recorded in [the balance log](../Records/BalanceLog.md); they are the baseline that gate M1's targets are set against, and they decide whether NW3 and NW4 go ahead.
+- **Acceptance:** the tests CI runs pass. The measuring test's figures for the transport as it stands are recorded in [the balance log](../Records/BalanceLog.md), and the latest in their rows of [the budgets](../Budgets.md): they are the baseline that NW4.1's figures are held against, gate M1's targets having been set ahead of them (owner, 2026-10-26).
 - **Verify:** the checkers; CI; `OUTPOST_NETWORK_MEASURE` on the development machine.
+- **As built:** each way keeps its datagrams in order, so a late one holds back those behind it, and a limited way's queue holds 200 ms (`ImpairedLink::QUEUE_LIMIT`), the relay's choice rather than the gate's. An order's response is timed on a probe, one of Blue's ships away from where the fleets cross, since the load's own ships never rest. The relay's own two tests ran in the container under Wine; the QUIC tests through it run first in CI, and the measurement on the development machine.
 
 ### NW2.3 — The connection's figures over a real network
 

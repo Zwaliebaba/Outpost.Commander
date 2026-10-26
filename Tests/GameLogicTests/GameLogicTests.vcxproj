@@ -91,6 +91,7 @@
     <ClInclude Include="MatchArena.h" />
     <ClInclude Include="TerritoryMatch.h" />
     <ClInclude Include="UniverseMatch.h" />
+    <ClInclude Include="ImpairedLink.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MatchArena.cpp" />
@@ -128,6 +129,8 @@
     <ClCompile Include="StandingOrderTests.cpp" />
     <ClCompile Include="EventTests.cpp" />
     <ClCompile Include="UniverseMatch.cpp" />
+    <ClCompile Include="ImpairedLink.cpp" />
+    <ClCompile Include="ImpairedLinkTests.cpp" />
     <ClCompile Include="UniverseRulesTests.cpp" />
     <ClCompile Include="UniverseLogTests.cpp" />
     <ClCompile Include="UniverseRunTests.cpp" />
