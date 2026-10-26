@@ -2,7 +2,7 @@
 
 Status: **open** · gates J1–J7 decided by the owner on 2026-10-25 · From the owner's two questions of 2026-10-25: the dedicated server talks about a world, but the game is set in space; and the game should try its server before it offers a local skirmish.
 
-The dedicated server runs a world, a match that does not end, for a circle of friends (Game §universe). The word reads as a planet, and the game is set in space. This plan renames it to a universe, in the code, the server's switches and files, the menu and the documents. It also makes the game join its universe at launch when the player has a join file, so that the universe comes first and a local skirmish is what the player falls back to. A player who can join at launch also needs a way back out, and today there is none until the player's empire falls.
+The dedicated server runs a world, a match that does not end, for a circle of friends (Game §universe). The word reads as a planet, and the game is set in space. This plan renames it to a universe, in the code, the server's switches and files, the menu and the documents. It also makes the game join its universe at launch when the player has a join file, so that the universe comes first and a local skirmish is what the player falls back to. A player who can join at launch also needs a way back out before the player's empire falls, which the banner alone gave.
 
 This plan is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -24,8 +24,8 @@ Task numbers carry the prefix UN, and gates are lettered J.
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | UN1.1 | A world becomes a universe, and the game's state the simulation | — | J1, J2, J3, J6, J7 | merged, [#126](https://github.com/Zwaliebaba/Outpost.Commander/pull/126); awaiting a universe made, run and joined |
-| UN2.1 | Esc leaves a universe | UN1.1 | J5 | in review |
-| UN2.2 | The game joins its universe at launch | UN2.1 | J4 | in review |
+| UN2.1 | Esc leaves a universe | UN1.1 | J5 | merged, [#127](https://github.com/Zwaliebaba/Outpost.Commander/pull/127); awaiting a run against a dedicated server and the owner's run |
+| UN2.2 | The game joins its universe at launch | UN2.1 | J4 | merged, [#127](https://github.com/Zwaliebaba/Outpost.Commander/pull/127); awaiting the three runs with a join file and the owner's run |
 
 ### Milestone order
 
