@@ -478,5 +478,43 @@ public:
     const std::uint64_t code = CloseCodeOf(*red);
     Assert::AreEqual(Neuron::FRAMING_ERROR_CODE, code, Wide(std::format("closed with code {}", code)).c_str());
   }
+
+  // ADR-004 decision 6: the server takes a seat's connection once a second, after the tick: a round trip once a snapshot has
+  // crossed, the packets sent counting up, and a backlog that comes back to nothing once the client has every snapshot. A
+  // player on the loopback has none.
+  TEST_METHOD(ReportsItsConnection)
+  {
+    auto server = QuicServer();
+    Outpost::QuicTransport blue(server->OpenSeat(BLUE, Outpost::NewSeatToken()), BLUE);
+    const std::unique_ptr<Outpost::Transport> red = server->Connect(RED);
+    const std::uint32_t second = server->TicksPerSecond();
+    std::vector<Outpost::SeatFigures> figures;
+    // A second of ticks at a time, each snapshot read before the next tick, and a pause before the second's last, the one
+    // sampled, for the client to acknowledge what it has read; until a sample finds nothing waiting, or ten seconds of them.
+    for (int seconds = 0; seconds < 10 && (figures.size() < 2 || figures.back().connection.backlogBytes != 0); ++seconds)
+    {
+      for (std::uint32_t tick = 1; tick < second; ++tick)
+      {
+        server->Step();
+        Assert::IsFalse(SnapshotsOf(blue, 1).empty(), L"each tick's snapshot");
+      }
+      std::this_thread::sleep_for(200ms);
+      server->Step();
+      (void)SnapshotsOf(blue, 1);
+      for (const Outpost::SeatFigures& sample : server->TakeSeatFigures())
+        figures.push_back(sample);
+    }
+
+    Assert::IsTrue(figures.size() >= 2, L"a sample a second");
+    for (const Outpost::SeatFigures& sample : figures)
+    {
+      Assert::IsTrue(sample.player == BLUE, L"of the seat over QUIC alone");
+      Assert::AreEqual(std::uint64_t{0}, sample.tick % second, L"after a second's last tick");
+    }
+    Assert::IsTrue(figures.front().connection.roundTripMicroseconds > 0, L"a round trip, once a snapshot has crossed");
+    Assert::IsTrue(figures.back().connection.packetsSent > figures.front().connection.packetsSent, L"the packets sent count up");
+    Assert::AreEqual(std::uint64_t{0}, figures.back().connection.backlogBytes, L"and nothing waits once the client has every snapshot");
+    Assert::IsTrue(server->TakeSeatFigures().empty(), L"each sample is taken once");
+  }
 };
 } // namespace GameLogicTests

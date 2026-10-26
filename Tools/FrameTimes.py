@@ -12,6 +12,9 @@ The game writes OutpostCommander-measure.log to the temporary folder. Each line 
   tick_parts_ns <ns> ...                      the tick just logged, part by part; the parts nest (GameProtocol/Server.h)
   response_ns <ns> input_read_ns ... presented_ns ...   a move order to its first visible response
   startup_ns <stage> <ns>                     when a stage of startup was done, from the start of wWinMain (ADR-049)
+  seat_net <tick> player <p> rtt_us <us> least_rtt_us <us> sent <n> lost <n> cwnd <bytes> backlog <bytes>
+                                              a seat's connection as the server found it, once a second (ADR-004)
+  client_net player <p> rtt_us <us> ...       the game's own connection for that player, once a second, the same words
 
 Usage: python Tools/FrameTimes.py [log] [--skip-frames N]
 
@@ -49,6 +52,16 @@ def describe(name, values_ms, target_ms):
           f"worst {values[-1]:.2f}; {within / len(values):.1%} within {target_ms:.1f} ms")
 
 
+def describe_connection(name, samples):
+  """A connection's round trip, its loss over the run and its largest backlog, from its samples (ADR-004)."""
+  trips = sorted(sample["rtt_us"] / 1000 for sample in samples)
+  last = samples[-1]
+  loss = last["lost"] / last["sent"] if last["sent"] else 0.0
+  return (f"{name}: {len(samples)} samples; round trip median {percentile(trips, 0.5):.2f} ms, 95th percentile "
+          f"{percentile(trips, 0.95):.2f}, worst {trips[-1]:.2f}; {loss:.2%} of {last['sent']} packets lost; largest backlog "
+          f"{max(sample['backlog'] for sample in samples) / 1024:.1f} KiB")
+
+
 def describe_parts(names, ticks, title):
   """Each part's mean and worst over the given ticks, the heaviest mean first."""
   if not ticks:
@@ -81,6 +94,8 @@ def main():
   response_ms = []
   # Startup's stages in the order they were logged, each with its time from the start of wWinMain.
   startup = []
+  # Each connection's samples, by its end and its player: the server's seat or the game's own client.
+  connections = {}
   with open(arguments.log, encoding="utf-8") as log:
     for line in log:
       fields = line.split()
@@ -104,6 +119,10 @@ def main():
         response_ms.append(int(fields[1]) / 1e6)
       elif fields[0] == "startup_ns":
         startup.append((fields[1], int(fields[2]) / 1e6))
+      elif fields[0] in ("seat_net", "client_net"):
+        words = fields[1:] if fields[0] == "client_net" else fields[2:]
+        sample = {words[i]: int(words[i + 1]) for i in range(0, len(words) - 1, 2)}
+        connections.setdefault((fields[0], sample["player"]), []).append(sample)
 
   cpu_ms = cpu_ms[arguments.skip_frames:]
   gpu_ms = gpu_ms[arguments.skip_frames:]
@@ -118,6 +137,8 @@ def main():
   print(describe("Tick", tick_ms, TICK_TARGET_MS))
   if response_ms:
     print(describe("Order to response", response_ms, RESPONSE_TARGET_MS))
+  for (end, player), samples in sorted(connections.items()):
+    print(describe_connection(f"{'Seat' if end == 'seat_net' else 'Client'} {player}'s connection", samples))
   if part_names and tick_parts:
     # Where the time goes over the whole run, and in the ticks over the target, which are the ones to fix.
     every = [parts for _, parts in tick_parts]

@@ -57,6 +57,11 @@ std::vector<Outpost::Snapshot> Outpost::QuicTransport::Receive()
   return snapshots;
 }
 
+Neuron::QuicStatistics Outpost::QuicTransport::Statistics() const
+{
+  return m_channel->Statistics();
+}
+
 std::vector<std::vector<std::byte>> Outpost::QuicTransport::ReceiveFromChannel(std::chrono::milliseconds _wait)
 {
   try

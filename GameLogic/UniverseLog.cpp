@@ -108,9 +108,10 @@ void Outpost::UniverseLog::Record(std::uint64_t _tick, std::span<const SeatTick>
     const auto state = std::ranges::find(m_seats, seat.player, &SeatState::player);
     const auto nodes = std::ranges::count(snapshot.sectors, seat.player, &SectorView::holder);
     const auto researched = std::ranges::count_if(snapshot.research, [](const ResearchTopicView& _topic) { return _topic.researched; });
-    Write(std::format("hour {} player {} ore {} income {} fleet {} cap {} nodes {} researched {} present {} deputy {}", _tick,
+    Write(std::format("hour {} player {} ore {} income {} fleet {} cap {} nodes {} researched {} present {} deputy {}{}", _tick,
                       seat.player.value, snapshot.ore, snapshot.oreIncomeHundredthsPerSecond, snapshot.commandPoints, snapshot.fleetCap,
-                      nodes, researched, state->playerTicks / m_ticksPerSecond, state->deputyTicks / m_ticksPerSecond));
+                      nodes, researched, state->playerTicks / m_ticksPerSecond, state->deputyTicks / m_ticksPerSecond,
+                      ConnectionWords(*state)));
     state->playerTicks = 0;
     state->deputyTicks = 0;
   }
@@ -131,6 +132,8 @@ void Outpost::UniverseLog::RecordSeat(std::uint64_t _tick, const SeatTick& _seat
   }
   state->playerTicks += _seat.play == SeatPlay::Player ? 1 : 0;
   state->deputyTicks += _seat.play == SeatPlay::Deputy ? 1 : 0;
+  if (_seat.connection.has_value())
+    RecordConnection(*state, *_seat.connection);
 
   const Snapshot& snapshot = *_seat.snapshot;
   for (const EventView& event : snapshot.events)
@@ -156,6 +159,40 @@ void Outpost::UniverseLog::RecordSeat(std::uint64_t _tick, const SeatTick& _seat
   if (waiting && !state->waiting)
     Write(std::format("waiting {} player {}", _tick, _seat.player.value));
   state->waiting = waiting;
+}
+
+void Outpost::UniverseLog::RecordConnection(SeatState& _state, const Neuron::QuicStatistics& _connection)
+{
+  _state.roundTripsMicroseconds.push_back(_connection.roundTripMicroseconds);
+  // A connection that sent fewer packets than the last sample read is another, newer one, which counts from its own start.
+  // Its lost packets can fall too, when MsQuic finds a packet it had thought lost.
+  const bool newer = _connection.packetsSent < _state.lastPacketsSent;
+  _state.packetsSent += newer ? _connection.packetsSent : _connection.packetsSent - _state.lastPacketsSent;
+  if (newer)
+    _state.packetsLost += _connection.packetsLost;
+  else if (_connection.packetsLost > _state.lastPacketsLost)
+    _state.packetsLost += _connection.packetsLost - _state.lastPacketsLost;
+  _state.backlogMostBytes = std::max(_state.backlogMostBytes, _connection.backlogBytes);
+  _state.lastPacketsSent = _connection.packetsSent;
+  _state.lastPacketsLost = _connection.packetsLost;
+}
+
+std::string Outpost::UniverseLog::ConnectionWords(SeatState& _state)
+{
+  std::vector<std::uint32_t>& roundTrips = _state.roundTripsMicroseconds;
+  if (roundTrips.empty())
+    return {};
+  std::ranges::sort(roundTrips);
+  // The nearest rank, as Tools/FrameTimes.py takes a percentile.
+  const auto rank = [&roundTrips](std::size_t _percent)
+  { return roundTrips[std::max<std::size_t>(1, ((roundTrips.size() * _percent) + 99) / 100) - 1]; };
+  std::string words = std::format(" rtt_median_us {} rtt_p95_us {} sent {} lost {} backlog_most {}", rank(50), rank(95), _state.packetsSent,
+                                  _state.packetsLost, _state.backlogMostBytes);
+  roundTrips.clear();
+  _state.packetsSent = 0;
+  _state.packetsLost = 0;
+  _state.backlogMostBytes = 0;
+  return words;
 }
 
 void Outpost::UniverseLog::RecordShots(std::uint64_t _tick, std::span<const SeatTick> _seats)

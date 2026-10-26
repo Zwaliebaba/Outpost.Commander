@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <algorithm>
+#include <mutex>
 #include <thread>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -43,6 +44,19 @@ std::vector<Message> ReceiveMessages(Neuron::QuicChannel& _channel, size_t _coun
   }
   Assert::AreEqual(_count, received.size());
   return received;
+}
+
+// _channel's figures once its backlog has come back to nothing, or as they are when it has not within the patience.
+Neuron::QuicStatistics Settled(const Neuron::QuicChannel& _channel)
+{
+  const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
+  Neuron::QuicStatistics statistics = _channel.Statistics();
+  while (statistics.backlogBytes != 0 && std::chrono::steady_clock::now() < deadline)
+  {
+    std::this_thread::sleep_for(10ms);
+    statistics = _channel.Statistics();
+  }
+  return statistics;
 }
 
 // Why _channel's connection went, once it has; what arrived before then goes to _before.
@@ -271,6 +285,47 @@ public:
     Assert::AreEqual(size_t{1}, listener.ChannelCount(), L"only the one that spoke is kept");
     talker->Send(Bytes("still here"));
     Assert::IsTrue(Bytes("still here") == ReceiveMessages(*talker, 1).front(), L"and it plays on");
+  }
+
+  // ADR-004 decision 6: each end reports its connection's round trip, the packets it has sent and its congestion window, and
+  // a backlog that counts a message until the peer has acknowledged it and comes back to nothing once the peer has every one.
+  TEST_METHOD(ReportsItsConnection)
+  {
+    // Declared before the listener, so that the server's end is let go of after the listener has closed it.
+    std::mutex mutex;
+    std::shared_ptr<Neuron::QuicChannel> serverEnd;
+    const Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL)},
+                                        [&](const std::shared_ptr<Neuron::QuicChannel>& _accepted) -> Neuron::QuicChannel::Receiver
+                                        {
+                                          const std::scoped_lock lock(mutex);
+                                          serverEnd = _accepted;
+                                          return [](Neuron::QuicChannel& _channel, const Message& _message) { _channel.Send(_message); };
+                                        });
+    const std::unique_ptr<Neuron::QuicChannel> client = ConnectTo(listener);
+    Assert::AreEqual(std::uint64_t{0}, client->Statistics().backlogBytes, L"nothing sent, nothing waiting");
+
+    // Far more than a loopback carries in the moment between the send and the figures.
+    const Message large(2'000'000, std::byte{7});
+    client->Send(large);
+    Assert::IsTrue(client->Statistics().backlogBytes >= large.size(), L"a message counts until the peer has it");
+    Assert::IsTrue(large == ReceiveMessages(*client, 1).front(), L"and comes back");
+
+    const Neuron::QuicStatistics clientFigures = Settled(*client);
+    Assert::AreEqual(std::uint64_t{0}, clientFigures.backlogBytes, L"the server has the client's message");
+    Assert::IsTrue(clientFigures.roundTripMicroseconds > 0, L"a round trip, once a message has crossed");
+    Assert::IsTrue(clientFigures.leastRoundTripMicroseconds <= clientFigures.roundTripMicroseconds, L"the least no more than the smoothed");
+    Assert::IsTrue(clientFigures.packetsSent > 100, L"the packets a long message takes");
+    Assert::IsTrue(clientFigures.congestionWindowBytes > 0, L"a congestion window");
+
+    std::shared_ptr<Neuron::QuicChannel> server;
+    {
+      const std::scoped_lock lock(mutex);
+      server = serverEnd;
+    }
+    Assert::IsTrue(server != nullptr, L"the server's end");
+    const Neuron::QuicStatistics serverFigures = Settled(*server);
+    Assert::AreEqual(std::uint64_t{0}, serverFigures.backlogBytes, L"the client has the server's answer");
+    Assert::IsTrue(serverFigures.roundTripMicroseconds > 0 && serverFigures.packetsSent > 100, L"and its own figures");
   }
 };
 } // namespace NeuronCoreTests

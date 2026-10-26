@@ -55,7 +55,7 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW1.1 | The listener lets go of a connection that has gone | — | — | merged, [#130](https://github.com/Zwaliebaba/Outpost.Commander/pull/130) |
 | NW1.2 | A connection is held to its hello | — | — | merged, [#130](https://github.com/Zwaliebaba/Outpost.Commander/pull/130) |
 | NW1.3 | A seat's commands are bounded | — | M9 | merged, [#130](https://github.com/Zwaliebaba/Outpost.Commander/pull/130) |
-| NW2.1 | The connection's figures | — | — | todo |
+| NW2.1 | The connection's figures | — | — | in review |
 | NW2.2 | The impaired link | NW2.1 | M1 | todo |
 | NW2.3 | The connection's figures over a real network | NW2.1 | M1 | todo; an owner run |
 | NW3.1 | What does not change crosses once | NW2.2 | M2, M3 | todo |
@@ -149,6 +149,7 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 - **ADR:** [ADR-004](../ADR/ADR-004-quic-transport.md), a decision of its own for what the channel reports; [ADR-082](../ADR/ADR-082-universe-log-and-universe-run.md) decision 3, the hour's record. ADR-086's foreclosure of a round trip on the tag stands until gate M10.
 - **Acceptance:** `QuicTransportTests.ReportsItsConnection`: a round trip is reported once a snapshot has crossed, the packets sent count up, and a seat's backlog comes back to nothing once its client has read every snapshot. The universe log's tests read an hour's record with the figures, and `Tools/UniverseLog.py` still reads a log written before them.
 - **Verify:** the checkers; CI; a skirmish with `--measure` on the development machine, its loopback figures recorded.
+- **As built:** MsQuic 2.6.3's `docs/Streams.md` says that with buffering off it holds the application's buffer until the peer has acknowledged all of it, which is what the backlog needs, and that a sender should keep two sends pending so that the connection does not go idle between them, which binds a sender that waits for one send to complete before the next and not the channel, which never waits. What turning it off costs a snapshot's send is the development machine's skirmish with `--measure` to show: the container cannot run MsQuic (Wine has no CNG certificate), so CI's run is the first of the QUIC tests.
 
 ### NW2.2 — The impaired link
 

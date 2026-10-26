@@ -30,5 +30,5 @@ So the client shows a tag in the top-right corner that names the server's addres
 
 ## What this forecloses
 
-- **A ping or round-trip time on the tag,** without reading MsQuic's statistics through `QuicChannel`, which nothing does.
+- **A ping or round-trip time on the tag.** `QuicChannel` reads MsQuic's round trip ([ADR-004](ADR-004-quic-transport.md) decision 6), for measurement, and the tag shows none of it.
 - **A tag on the menu.** The menu has no match to place.

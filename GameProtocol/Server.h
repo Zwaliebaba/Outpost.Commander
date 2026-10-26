@@ -62,6 +62,19 @@ inline constexpr std::size_t TICK_PART_COUNT = 12;
   return NAMES[static_cast<std::size_t>(_part)];
 }
 
+// How often the server samples each seat's connection, and the most samples it keeps for TakeSeatFigures, an hour of one
+// seat's, so that a server whose figures nobody takes holds no more (ADR-004 decision 6).
+inline constexpr std::uint32_t SEAT_FIGURES_SECONDS = 1;
+inline constexpr std::size_t SEAT_FIGURES_KEPT = 3'600;
+
+// One seat's connection over QUIC, as the server found it after a tick (ADR-004 decision 6).
+struct SeatFigures
+{
+  std::uint64_t tick = 0;
+  PlayerId player;
+  Neuron::QuicStatistics connection;
+};
+
 // One tick on the server's own clock: all of it, and each part of it (TickPart).
 struct TickTiming
 {
@@ -116,6 +129,11 @@ public:
   // is how its time is measured. An exception the server's thread met is thrown again here, on the caller's thread, and
   // the server runs no more ticks.
   [[nodiscard]] virtual std::vector<TickTiming> TakeTickTimings() = 0;
+
+  // Each seat's connection, taken over QUIC, every SEAT_FIGURES_SECONDS of ticks since the last call, oldest first, and no
+  // more than the last SEAT_FIGURES_KEPT of them: for measurement (ADR-004 decision 6). None for a server that takes no
+  // player over QUIC.
+  [[nodiscard]] virtual std::vector<SeatFigures> TakeSeatFigures() = 0;
 };
 
 // Loads the tuning data and the map from the package (ADR-008) and starts a server with them. Throws Neuron::Exception when the data is

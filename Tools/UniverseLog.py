@@ -63,6 +63,17 @@ def summarize(records):
 
     rates(present, "its player's hours")
     rates(deputy, "its deputy's hours")
+    # The player's connection, over the hours it was sampled in (ADR-004).
+    sampled = [words for words in seat if "rtt_median_us" in words]
+    if sampled:
+      def field(words, name):
+        return int(words[words.index(name) + 1])
+      sent = sum(field(words, "sent") for words in sampled)
+      lost = sum(field(words, "lost") for words in sampled)
+      lines.append(f"  connection, {len(sampled)} hours: round trip median of the hours {statistics.median(field(words, 'rtt_median_us') for words in sampled) / 1000:.1f} ms, "
+                   f"the worst hour's 95th percentile {max(field(words, 'rtt_p95_us') for words in sampled) / 1000:.1f} ms; "
+                   f"{lost / sent if sent else 0:.2%} of {sent} packets lost; largest backlog "
+                   f"{max(field(words, 'backlog_most') for words in sampled) / 1024:.1f} KiB")
     battles = [words for words in records if words[0] == "battle" and player in words[6::3]]
     fought = {}
     for words in battles:

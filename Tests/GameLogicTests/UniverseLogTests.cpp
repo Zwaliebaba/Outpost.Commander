@@ -116,6 +116,40 @@ public:
     Assert::IsTrue(lines == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
   }
 
+  // ADR-082 decision 3: an hour whose seat's connection was sampled ends with its round trip at the median and the 95th
+  // percentile, the packets sent and lost in the hour, across a newer connection that counts from its own start, and its
+  // largest backlog; an hour without a sample ends as before.
+  TEST_METHOD(EndsAnHourWithItsConnection)
+  {
+    std::ostringstream out;
+    Outpost::UniverseLog log(out, TICKS_PER_SECOND);
+    const Outpost::Snapshot snapshot = SnapshotOf(ONE, 0);
+    // The third sample finds a packet MsQuic had thought lost, and the fourth is a newer connection's.
+    const std::array<Neuron::QuicStatistics, 5> samples{
+      {{.roundTripMicroseconds = 30'000, .packetsSent = 100, .packetsLost = 1, .backlogBytes = 500},
+       {.roundTripMicroseconds = 10'000, .packetsSent = 200, .packetsLost = 3, .backlogBytes = 2'000},
+       {.roundTripMicroseconds = 20'000, .packetsSent = 300, .packetsLost = 2},
+       {.roundTripMicroseconds = 40'000, .packetsSent = 50, .packetsLost = 1, .backlogBytes = 100},
+       {.roundTripMicroseconds = 50'000, .packetsSent = 120, .packetsLost = 1}}};
+    const std::uint64_t hour = 3600ull * TICKS_PER_SECOND;
+    for (std::uint64_t tick = 1; tick <= 2 * hour; ++tick)
+    {
+      Outpost::SeatTick seat{.player = ONE, .snapshot = &snapshot};
+      if (tick % TICKS_PER_SECOND == 0 && tick / TICKS_PER_SECOND <= samples.size())
+        seat.connection = samples[(tick / TICKS_PER_SECOND) - 1];
+      log.Record(tick, std::span(&seat, 1));
+    }
+
+    std::vector<std::string> hours;
+    std::ranges::copy_if(Lines(out.str()), std::back_inserter(hours), [](const std::string& _line) { return _line.starts_with("hour"); });
+    const std::vector<std::string> expected{
+      std::format("hour {} player 1 ore 0 income 0 fleet 0 cap 0 nodes 0 researched 0 present 3600 deputy 0 rtt_median_us 30000 "
+                  "rtt_p95_us 50000 sent 420 lost 4 backlog_most 2000",
+                  hour),
+      std::format("hour {} player 1 ore 0 income 0 fleet 0 cap 0 nodes 0 researched 0 present 3600 deputy 0", 2 * hour)};
+    Assert::IsTrue(hours == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
+  }
+
   // A battle is two seats' ships firing at each other in one sector within 10 seconds, until 30 seconds pass without a shot
   // there; each side present when its player played it at a shot of the battle, and otherwise its deputy or the AI. One
   // side's fire alone, or fire too far apart, is none.
