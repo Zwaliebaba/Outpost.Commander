@@ -2,7 +2,10 @@
 #include "QuicChannel.h"
 #include "ServerCertificate.h"
 
+#include <algorithm>
+#include <atomic>
 #include <condition_variable>
+#include <iterator>
 #include <mutex>
 #include <optional>
 #include <utility>
@@ -12,9 +15,6 @@
 
 namespace
 {
-// The longest message either end accepts. The stress scene's snapshot is far shorter, so a longer length is a broken
-// stream, not a message.
-constexpr std::uint32_t MESSAGE_LIMIT_BYTES = 64u * 1024u * 1024u;
 // Each message on the stream is preceded by its length in bytes, in four bytes, little-endian (ADR-060).
 constexpr std::size_t LENGTH_BYTES = 4;
 // How long a client's handshake with the listener may take.
@@ -95,12 +95,14 @@ private:
   return configuration;
 }
 
-// A message on its way. MsQuic reads the buffer until it reports the send complete, and the stream's callback deletes it
-// then.
+// A message on its way. MsQuic reads the buffer until it reports the send complete, which with its send buffering off is once
+// the peer has acknowledged it (ADR-004 decision 6), and the stream's callback deletes it then. Until then its bytes count in
+// the channel's backlog.
 struct PendingSend
 {
   std::vector<std::byte> bytes;
   QUIC_BUFFER buffer{};
+  std::atomic<std::uint64_t>* backlog = nullptr;
 };
 } // namespace
 
@@ -112,10 +114,17 @@ struct Neuron::QuicChannel::State
   Receiver receiver;
   // The client's end only: the server's certificate, which is the only one it accepts.
   std::optional<CertificateHash> pinned;
-  // The bytes of a message not yet whole, and whether the peer broke the framing, after which nothing more is read. Only
-  // the connection's MsQuic thread touches them, and it delivers one callback at a time.
+  // The bytes of a message not yet whole, whether the peer broke the framing, after which nothing more is read, and the
+  // longest message the peer may send. Only the connection's MsQuic thread touches them, and it delivers one callback at a
+  // time: the listener sets the limit before the connection's first, and a Receiver within its own (LimitMessages).
   std::vector<std::byte> partial;
   bool broken = false;
+  std::uint32_t messageLimit = MESSAGE_LIMIT_BYTES;
+  // Whether the peer has sent a whole message, which the listener's Sweep reads.
+  std::atomic<bool> spoke = false;
+  // The bytes handed to MsQuic that it has not reported sent and acknowledged: Send adds them and the stream's callback takes
+  // them away, without the lock, which a callback inside a send would otherwise wait for.
+  std::atomic<std::uint64_t> backlogBytes = 0;
 
   // Guards everything below. Nothing holds it while it calls a Receiver or waits for MsQuic.
   std::mutex mutex;
@@ -127,9 +136,27 @@ struct Neuron::QuicChannel::State
   std::vector<std::vector<std::byte>> messages;
   bool connected = false;
   bool closedHere = false;
+  // When the handshake completed, whether this end has started closing the connection, and whether MsQuic has finished with
+  // it, after which no callback of it is to come but the one that says so.
+  std::optional<std::chrono::steady_clock::time_point> connectedAt;
+  bool closing = false;
+  bool shutDown = false;
   // Why the connection went, once it has, and the code the peer closed it with, when it was the peer.
   std::string failure;
   std::optional<std::uint64_t> peerErrorCode;
+
+  [[nodiscard]] bool HasShutDown()
+  {
+    const std::scoped_lock lock(mutex);
+    return shutDown;
+  }
+
+  // Whether the handshake completed more than _silence before _now, and the peer has sent nothing since and is still there.
+  [[nodiscard]] bool IsSilent(std::chrono::steady_clock::time_point _now, std::chrono::milliseconds _silence)
+  {
+    const std::scoped_lock lock(mutex);
+    return connectedAt.has_value() && !spoke && !closing && failure.empty() && _now - *connectedAt > _silence;
+  }
 
   // Keeps the first reason the connection went, which is the one that explains the rest.
   void Fail(std::string _why)
@@ -145,6 +172,7 @@ struct Neuron::QuicChannel::State
   void ShutdownConnection(std::uint64_t _errorCode) noexcept
   {
     const std::scoped_lock lock(mutex);
+    closing = true;
     if (connection != nullptr)
       runtime->Api().ConnectionShutdown(connection, QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, _errorCode);
   }
@@ -193,7 +221,8 @@ struct Neuron::QuicChannel::State
     (void)api.StreamShutdown(peerStream, QUIC_STREAM_SHUTDOWN_FLAG_ABORT, FRAMING_ERROR_CODE);
   }
 
-  // Adds what arrived to the message being read, and passes on every message that is now whole.
+  // Adds what arrived to the message being read, and passes on every message that is now whole. A Receiver is handed each
+  // before the next one's length is read, so that a limit it sets holds from the next.
   void Unpack(const QUIC_STREAM_EVENT& _event)
   {
     if (broken)
@@ -212,22 +241,21 @@ struct Neuron::QuicChannel::State
       std::uint32_t length = 0;
       for (std::size_t i = 0; i < LENGTH_BYTES; ++i)
         length |= static_cast<std::uint32_t>(partial[offset + i]) << (8 * i);
-      if (length > MESSAGE_LIMIT_BYTES)
-        throw Exception(std::format("The peer sent a message of {} bytes, over the limit of {}.", length, MESSAGE_LIMIT_BYTES));
+      if (length > messageLimit)
+        throw Exception(std::format("The peer sent a message of {} bytes, over the limit of {}.", length, messageLimit));
       if (partial.size() - offset - LENGTH_BYTES < length)
         break;
       const auto first = partial.begin() + static_cast<std::ptrdiff_t>(offset + LENGTH_BYTES);
-      whole.emplace_back(first, first + length);
+      std::vector<std::byte> message(first, first + length);
       offset += LENGTH_BYTES + length;
+      spoke = true;
+      if (receiver)
+        receiver(*owner, std::move(message));
+      else
+        whole.push_back(std::move(message));
     }
     partial.erase(partial.begin(), partial.begin() + static_cast<std::ptrdiff_t>(offset));
 
-    if (receiver)
-    {
-      for (std::vector<std::byte>& message : whole)
-        receiver(*owner, std::move(message));
-      return;
-    }
     if (whole.empty())
       return;
     {
@@ -255,6 +283,7 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnConnection([[maybe_unused]] H
     {
       const std::scoped_lock lock(state.mutex);
       state.connected = true;
+      state.connectedAt = std::chrono::steady_clock::now();
     }
       state.changed.notify_all();
       break;
@@ -274,6 +303,10 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnConnection([[maybe_unused]] H
       state.Fail(std::format("The peer closed the QUIC connection with error code {}.", _event->SHUTDOWN_INITIATED_BY_PEER.ErrorCode));
       break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
+    {
+      const std::scoped_lock lock(state.mutex);
+      state.shutDown = true;
+    }
       state.Fail("The QUIC connection closed.");
       break;
     default:
@@ -306,8 +339,11 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnStream([[maybe_unused]] HQUIC
       }
       break;
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
-      delete static_cast<PendingSend*>(_event->SEND_COMPLETE.ClientContext);
-      break;
+    {
+      const std::unique_ptr<PendingSend> sent(static_cast<PendingSend*>(_event->SEND_COMPLETE.ClientContext));
+      *sent->backlog -= sent->bytes.size();
+    }
+    break;
     case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
     case QUIC_STREAM_EVENT_PEER_SEND_ABORTED:
       state.Fail("The peer closed its stream.");
@@ -341,6 +377,9 @@ std::unique_ptr<Neuron::QuicChannel> Neuron::QuicChannel::Connect(const Desc& _d
   QUIC_SETTINGS settings{};
   settings.HandshakeIdleTimeoutMs = static_cast<std::uint64_t>(_desc.connectTimeout.count());
   settings.IsSet.HandshakeIdleTimeoutMs = TRUE;
+  // A send completes once the peer has acknowledged it, so the backlog counts what has not reached it (ADR-004 decision 6).
+  settings.SendBufferingEnabled = FALSE;
+  settings.IsSet.SendBufferingEnabled = TRUE;
   // The server's certificate is self-signed, so it is pinned rather than validated against a root (ADR-060).
   QUIC_CREDENTIAL_CONFIG credential{};
   credential.Type = QUIC_CREDENTIAL_TYPE_NONE;
@@ -403,14 +442,19 @@ void Neuron::QuicChannel::Send(std::span<const std::byte> _message)
                      .Buffer = reinterpret_cast<std::uint8_t*>(pending->bytes.data())};
 
   State& state = *m_state;
+  pending->backlog = &state.backlogBytes;
   const std::scoped_lock lock(state.mutex);
   if (state.stream == nullptr)
     return;
   // MsQuic holds the send from here until it reports it complete, and the stream's callback deletes it then. A send it
   // refuses is never reported.
   PendingSend* sending = pending.release();
+  state.backlogBytes += sending->bytes.size();
   if (QUIC_FAILED(state.runtime->Api().StreamSend(state.stream, &sending->buffer, 1, QUIC_SEND_FLAG_NONE, sending)))
+  {
+    state.backlogBytes -= sending->bytes.size();
     delete sending;
+  }
 }
 
 std::vector<std::vector<std::byte>> Neuron::QuicChannel::Receive(std::chrono::milliseconds _wait)
@@ -433,6 +477,11 @@ void Neuron::QuicChannel::Shutdown(std::uint64_t _errorCode) noexcept
   m_state->ShutdownConnection(_errorCode);
 }
 
+void Neuron::QuicChannel::LimitMessages(std::uint32_t _bytes) noexcept
+{
+  m_state->messageLimit = _bytes;
+}
+
 std::optional<std::uint64_t> Neuron::QuicChannel::PeerErrorCode() const
 {
   const std::scoped_lock lock(m_state->mutex);
@@ -443,6 +492,30 @@ bool Neuron::QuicChannel::HasGone() const
 {
   const std::scoped_lock lock(m_state->mutex);
   return !m_state->failure.empty();
+}
+
+Neuron::QuicStatistics Neuron::QuicChannel::Statistics() const
+{
+  State& state = *m_state;
+  QuicStatistics statistics{.backlogBytes = state.backlogBytes};
+  HQUIC connection = nullptr;
+  {
+    const std::scoped_lock lock(state.mutex);
+    connection = state.connection;
+  }
+  if (connection == nullptr)
+    return statistics;
+  // Asked without the channel's lock, since MsQuic may wait for the connection's thread, whose callbacks take it.
+  QUIC_STATISTICS_V2 quic{};
+  auto bytes = static_cast<std::uint32_t>(sizeof(quic));
+  if (QUIC_FAILED(state.runtime->Api().GetParam(connection, QUIC_PARAM_CONN_STATISTICS_V2, &bytes, &quic)))
+    return statistics;
+  statistics.roundTripMicroseconds = quic.Rtt;
+  statistics.leastRoundTripMicroseconds = quic.MinRtt;
+  statistics.packetsSent = quic.SendTotalPackets;
+  statistics.packetsLost = quic.SendSuspectedLostPackets - std::min(quic.SendSpuriousLostPackets, quic.SendSuspectedLostPackets);
+  statistics.congestionWindowBytes = quic.SendCongestionWindow;
+  return statistics;
 }
 
 void Neuron::QuicChannel::Close() noexcept
@@ -486,6 +559,7 @@ struct Neuron::QuicListener::State
   HQUIC configuration = nullptr;
   HQUIC listener = nullptr;
   std::uint16_t port = 0;
+  std::uint32_t messageLimit = QuicChannel::MESSAGE_LIMIT_BYTES;
   Accept accept;
   // Guards the channels, which MsQuic's threads add to.
   std::mutex mutex;
@@ -520,6 +594,7 @@ QUIC_STATUS QUIC_API Neuron::QuicListener::State::OnListener([[maybe_unused]] HQ
   {
     auto channelState = std::make_unique<QuicChannel::State>();
     channelState->runtime = state.runtime;
+    channelState->messageLimit = state.messageLimit;
     QuicChannel::State& own = *channelState;
     auto channel = std::make_shared<QuicChannel>(std::move(channelState));
     own.receiver = state.accept(channel);
@@ -551,6 +626,7 @@ Neuron::QuicListener::QuicListener(const Desc& _desc, Accept _accept)
   State& state = *m_state;
   state.runtime = std::make_shared<QuicRuntime>();
   state.accept = std::move(_accept);
+  state.messageLimit = _desc.messageLimitBytes;
   const QUIC_API_TABLE& api = state.runtime->Api();
 
   QUIC_SETTINGS settings{};
@@ -559,6 +635,9 @@ Neuron::QuicListener::QuicListener(const Desc& _desc, Accept _accept)
   // A client opens the connection's one stream, and the server opens none (ADR-060).
   settings.PeerBidiStreamCount = 1;
   settings.IsSet.PeerBidiStreamCount = TRUE;
+  // As the client's: a send completes once the peer has acknowledged it (ADR-004 decision 6).
+  settings.SendBufferingEnabled = FALSE;
+  settings.IsSet.SendBufferingEnabled = TRUE;
   QUIC_CREDENTIAL_CONFIG credential{};
   credential.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_CONTEXT;
   credential.Flags = QUIC_CREDENTIAL_FLAG_NONE;
@@ -600,4 +679,35 @@ std::uint16_t Neuron::QuicListener::Port() const noexcept
 const Neuron::CertificateHash& Neuron::QuicListener::Certificate() const noexcept
 {
   return m_state->certificate.Hash();
+}
+
+void Neuron::QuicListener::Sweep(std::chrono::milliseconds _silence, std::uint64_t _errorCode)
+{
+  State& state = *m_state;
+  const auto now = std::chrono::steady_clock::now();
+  std::vector<std::shared_ptr<QuicChannel>> gone;
+  std::vector<std::shared_ptr<QuicChannel>> silent;
+  {
+    const std::scoped_lock lock(state.mutex);
+    // Nothing more arrives on a connection MsQuic has finished with, so no Receiver takes a new hold of its channel.
+    const auto kept = std::stable_partition(state.channels.begin(), state.channels.end(), [](const std::shared_ptr<QuicChannel>& _channel)
+                                            { return !_channel->m_state->HasShutDown() || _channel.use_count() > 1; });
+    gone.assign(std::make_move_iterator(kept), std::make_move_iterator(state.channels.end()));
+    state.channels.erase(kept, state.channels.end());
+    for (const std::shared_ptr<QuicChannel>& channel : state.channels)
+    {
+      if (channel->m_state->IsSilent(now, _silence))
+        silent.push_back(channel);
+    }
+  }
+  // Outside the listener's lock, which MsQuic's threads take for each new connection: a shutdown takes the channel's own
+  // lock, and the channels let go, as they are destroyed on the way out, wait for MsQuic's last callback for each.
+  for (const std::shared_ptr<QuicChannel>& channel : silent)
+    channel->Shutdown(_errorCode);
+}
+
+std::size_t Neuron::QuicListener::ChannelCount() const
+{
+  const std::scoped_lock lock(m_state->mutex);
+  return m_state->channels.size();
 }

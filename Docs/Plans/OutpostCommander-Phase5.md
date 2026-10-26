@@ -13,7 +13,7 @@ A universe is a match that does not stop, on the game's map, with two seats: the
 What could go wrong, and where it shows:
 
 - **A front that does not move.** A universe has no domination (Game §universe.overview), which ends the AI-against-AI matches on the game's map ([the BalanceLog](../Records/BalanceLog.md)), and nothing else ends a stalemate. W6 is where it shows.
-- **The Ore piles up.** The bank has no limit and nothing drains it (Game §economy.bank), and a universe runs for days. The universe log records each seat's bank every hour (Game §universe.log), and whether the bank needs a sink or a bound is decided with a galaxy ([the Horizon plan](ImplementationPlan-Horizon.md)).
+- **The Ore piles up.** The bank has no limit and nothing drains it (Game §economy.bank), and a universe runs for days. The universe log records each seat's bank every hour (Game §universe.log), and the bank is bounded with a galaxy, before fields that recover ([the Horizon plan](ImplementationPlan-Horizon.md), gate G3).
 - **A deputy that plays much worse, or much better, than its player** leaves presence deciding the universe, or makes absence the better strategy. W3 and W4 measure both.
 - **State that does not survive.** A save that misses a field restores a different universe, and nothing a player sees says so. ADR-077's tests compare a restored universe with one that never stopped, and W1 is the week's test of it.
 

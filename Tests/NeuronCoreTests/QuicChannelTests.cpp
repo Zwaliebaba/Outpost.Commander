@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include <algorithm>
+#include <mutex>
+#include <thread>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::chrono_literals;
@@ -42,6 +44,19 @@ std::vector<Message> ReceiveMessages(Neuron::QuicChannel& _channel, size_t _coun
   }
   Assert::AreEqual(_count, received.size());
   return received;
+}
+
+// _channel's figures once its backlog has come back to nothing, or as they are when it has not within the patience.
+Neuron::QuicStatistics Settled(const Neuron::QuicChannel& _channel)
+{
+  const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
+  Neuron::QuicStatistics statistics = _channel.Statistics();
+  while (statistics.backlogBytes != 0 && std::chrono::steady_clock::now() < deadline)
+  {
+    std::this_thread::sleep_for(10ms);
+    statistics = _channel.Statistics();
+  }
+  return statistics;
 }
 
 // Why _channel's connection went, once it has; what arrived before then goes to _before.
@@ -197,6 +212,120 @@ public:
     Assert::IsTrue(message.starts_with(std::format("Could not connect to 127.0.0.1:{} over QUIC", port)),
                    std::wstring(message.begin(), message.end()).c_str());
     Assert::IsTrue(std::chrono::steady_clock::now() - started < PATIENCE, L"it gave up in time");
+  }
+
+  // ADR-060 decision 2: a client is held to the listener's limit until its Receiver sets another, which holds from the
+  // very next message, though both came in one read.
+  TEST_METHOD(HoldsAPeerToTheLimitItsReceiverSets)
+  {
+    const Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL), .messageLimitBytes = 8},
+                                        [](const std::shared_ptr<Neuron::QuicChannel>&) -> Neuron::QuicChannel::Receiver
+                                        {
+                                          return [](Neuron::QuicChannel& _channel, const Message& _message)
+                                          {
+                                            _channel.LimitMessages(64);
+                                            _channel.Send(_message);
+                                          };
+                                        });
+    const std::unique_ptr<Neuron::QuicChannel> client = ConnectTo(listener);
+    const Message longer(40, std::byte{7});
+    client->Send(Bytes("hello"));
+    client->Send(longer);
+    const std::vector<Message> echoed = ReceiveMessages(*client, 2);
+    Assert::IsTrue(echoed[1] == longer, L"the second message under the limit the first one's Receiver set");
+    client->Send(Message(65));
+    std::vector<Message> after;
+    Assert::AreEqual(std::format("The peer closed the QUIC connection with error code {}.", Neuron::FRAMING_ERROR_CODE),
+                     FailureOf(*client, after), L"one over it breaks the framing");
+
+    const std::unique_ptr<Neuron::QuicChannel> early = ConnectTo(listener);
+    early->Send(Message(9));
+    Assert::AreEqual(std::format("The peer closed the QUIC connection with error code {}.", Neuron::FRAMING_ERROR_CODE),
+                     FailureOf(*early, after), L"a first message over the listener's limit");
+  }
+
+  // ADR-060 decision 7: a sweep lets go of the channels whose connections MsQuic has finished with and that nothing else
+  // holds, shuts down the ones that have said nothing for the time it is given, and keeps the rest. The connection that goes
+  // is one its server's end shuts down, as a server does a refused hello's or a seat's taken again: MsQuic may hold one its
+  // client closed until its idle timeout.
+  TEST_METHOD(SweepsAwayWhatHasGoneAndClosesWhatSaysNothing)
+  {
+    constexpr std::uint64_t SILENT_CODE = 42;
+    Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL)},
+                                  [](const std::shared_ptr<Neuron::QuicChannel>&) -> Neuron::QuicChannel::Receiver
+                                  {
+                                    return [](Neuron::QuicChannel& _channel, const Message& _message)
+                                    {
+                                      if (_message == Bytes("bye"))
+                                        _channel.Shutdown(0);
+                                      else
+                                        _channel.Send(_message);
+                                    };
+                                  });
+    const std::unique_ptr<Neuron::QuicChannel> talker = ConnectTo(listener);
+    talker->Send(Bytes("here"));
+    (void)ReceiveMessages(*talker, 1);
+    const std::unique_ptr<Neuron::QuicChannel> silent = ConnectTo(listener);
+    const std::unique_ptr<Neuron::QuicChannel> leaving = ConnectTo(listener);
+    leaving->Send(Bytes("bye"));
+    Assert::AreEqual(size_t{3}, listener.ChannelCount());
+
+    // Swept as a server's tick sweeps it, until the one shut down has been let go and the silent one has gone too.
+    std::vector<Message> after;
+    std::string why;
+    const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
+    while (std::chrono::steady_clock::now() < deadline && (why.empty() || listener.ChannelCount() != 1))
+    {
+      listener.Sweep(200ms, SILENT_CODE);
+      if (why.empty() && silent->HasGone())
+        why = FailureOf(*silent, after);
+      std::this_thread::sleep_for(10ms);
+    }
+    Assert::AreEqual(std::format("The peer closed the QUIC connection with error code {}.", SILENT_CODE), why, L"the silent one");
+    Assert::AreEqual(size_t{1}, listener.ChannelCount(), L"only the one that spoke is kept");
+    talker->Send(Bytes("still here"));
+    Assert::IsTrue(Bytes("still here") == ReceiveMessages(*talker, 1).front(), L"and it plays on");
+  }
+
+  // ADR-004 decision 6: each end reports its connection's round trip, the packets it has sent and its congestion window, and
+  // a backlog that counts a message until the peer has acknowledged it and comes back to nothing once the peer has every one.
+  TEST_METHOD(ReportsItsConnection)
+  {
+    // Declared before the listener, so that the server's end is let go of after the listener has closed it.
+    std::mutex mutex;
+    std::shared_ptr<Neuron::QuicChannel> serverEnd;
+    const Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL)},
+                                        [&](const std::shared_ptr<Neuron::QuicChannel>& _accepted) -> Neuron::QuicChannel::Receiver
+                                        {
+                                          const std::scoped_lock lock(mutex);
+                                          serverEnd = _accepted;
+                                          return [](Neuron::QuicChannel& _channel, const Message& _message) { _channel.Send(_message); };
+                                        });
+    const std::unique_ptr<Neuron::QuicChannel> client = ConnectTo(listener);
+    Assert::AreEqual(std::uint64_t{0}, client->Statistics().backlogBytes, L"nothing sent, nothing waiting");
+
+    // Far more than a loopback carries in the moment between the send and the figures.
+    const Message large(2'000'000, std::byte{7});
+    client->Send(large);
+    Assert::IsTrue(client->Statistics().backlogBytes >= large.size(), L"a message counts until the peer has it");
+    Assert::IsTrue(large == ReceiveMessages(*client, 1).front(), L"and comes back");
+
+    const Neuron::QuicStatistics clientFigures = Settled(*client);
+    Assert::AreEqual(std::uint64_t{0}, clientFigures.backlogBytes, L"the server has the client's message");
+    Assert::IsTrue(clientFigures.roundTripMicroseconds > 0, L"a round trip, once a message has crossed");
+    Assert::IsTrue(clientFigures.leastRoundTripMicroseconds <= clientFigures.roundTripMicroseconds, L"the least no more than the smoothed");
+    Assert::IsTrue(clientFigures.packetsSent > 100, L"the packets a long message takes");
+    Assert::IsTrue(clientFigures.congestionWindowBytes > 0, L"a congestion window");
+
+    std::shared_ptr<Neuron::QuicChannel> server;
+    {
+      const std::scoped_lock lock(mutex);
+      server = serverEnd;
+    }
+    Assert::IsTrue(server != nullptr, L"the server's end");
+    const Neuron::QuicStatistics serverFigures = Settled(*server);
+    Assert::AreEqual(std::uint64_t{0}, serverFigures.backlogBytes, L"the client has the server's answer");
+    Assert::IsTrue(serverFigures.roundTripMicroseconds > 0 && serverFigures.packetsSent > 100, L"and its own figures");
   }
 };
 } // namespace NeuronCoreTests

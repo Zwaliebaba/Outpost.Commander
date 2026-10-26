@@ -15,7 +15,7 @@ Two constraints hold the colors:
 ## Decision
 
 1. **A face's paint is its material's name** in its source: `team`, `trim` or `light`, with Blender's `.001` suffixes allowed, as a hardpoint's name has them ([ADR-018](ADR-018-nmf-and-hardpoints.md) decision 4). A primitive with no material is `team`. Any other name, or a material the file does not hold, fails the bake, naming the file. Each vertex takes its primitive's paint.
-2. **The paint is a byte of the vertex, in `.nmf` version 4:** 0 `team`, 1 `trim` and 2 `light`, after the openness, in one of the three zero bytes version 3 kept ([ADR-045](ADR-045-levels-and-spinning-parts.md) decision 3). `Neuron::ParseNmf` reads it into `MeshVertex::paint`, and refuses a paint of 3 or more.
+2. **The paint is a byte of the vertex, in `.nmf` version 4:** 0 `team`, 1 `trim` and 2 `light`, after the openness, as [ADR-045](ADR-045-levels-and-spinning-parts.md) decision 3 lays the vertex out. `Neuron::ParseNmf` reads it into `MeshVertex::paint`, and refuses a paint of 3 or more.
 3. **The engine draws a vertex in its copy's color for its paint, by number.** `MeshPipeline::Instance` carries three colors, `color`, `secondColor` and `thirdColor`, and `thirdGlows`. A paint of 2 on a copy whose third glows is drawn in its color as it is, which no light reaches and no occlusion darkens; otherwise each paint is lit as every face is. `Instance::InOneColor` gives every paint one color and lets none glow, and `Draw`, `DrawLines`, `DrawTriangles` and `DrawLineList` draw with it, so a ring, a border, the grid, a remembered structure and an explosion's shards look as they did. The vertex is 32 bytes and the instance 128.
 4. **The game's colors are `SceneShading.h`'s,** and `GameClient` draws each model with them (`PaintedInstance`):
    - `team` is the model's color, its faces and lines as ADR-040 has them.
@@ -26,7 +26,7 @@ Two constraints hold the colors:
 
 ## Consequences
 
-- **Nothing on the screen changes until the owner paints a model:** every source still has one material, `team`, so each of the 45 `.nmf` files baked again differs from its version 3 only in the version, byte for byte otherwise. A source takes `trim` and `light` from Blender's material names, with no step in the game.
+- **Nothing on the screen changes until the owner paints a model:** every source has one material, `team`, so every vertex of the 45 `.nmf` files has paint 0. A source takes `trim` and `light` from Blender's material names, with no step in the game.
 - **Trim keeps the contrast, and more:** a ship's trim lines stand 3.27–3.47:1 over its trim faces and a structure's 3.67–3.92:1, against the team color's 2.77–3.49:1 and 3.43–3.93:1, over every face the camera sees, wholly open, half and shut in. The figures are computed as `SceneShadingTests` computes them, from `Models.json`'s four colors, not measured on a screen; the test holds the trim to the ships' and the structures' floors.
 - **A lamp in a recess glows as one in the open,** since occlusion does not darken it; its line is lost against it, the same color.
 - **The tests.**

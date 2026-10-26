@@ -4,7 +4,7 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-5 gates are open, in 4 documents.
+6 gates are open, in 5 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
@@ -18,6 +18,12 @@ Every owner decision that is still open: each row of a gate table whose Status i
 |---|---|---|
 | F1 | **Seats:** how many, and how a friend joins a running season or leaves it (a deputy, then an AI empire, horizon §4). | Milestone 48, seats for N players |
 | F4 | **Reach** (horizon O7): the server posts to the friends' group chat through WinHTTP, in the Windows SDK, so R14 holds. Which service, and which events are worth a message. The dependency on a service is an ADR. | Milestone 50, notifications |
+
+## [`Docs/Plans/ImplementationPlan-Network.md`](../Plans/ImplementationPlan-Network.md)
+
+| Gate | Decision | Blocks |
+|---|---|---|
+| M11 | **Acknowledgement or prediction** (ADR-002 decision 5), from NW6.4's measurement over a real network. Proposed: neither, while the order's mark and the measured response hold gate M1's target; if the response misses it, which of the two is a plan of its own. | A later plan, if any |
 
 ## [`Docs/Plans/ImplementationPlan-SelfPlay.md`](../Plans/ImplementationPlan-SelfPlay.md)
 

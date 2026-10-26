@@ -32,6 +32,16 @@ public:
     return {};
   }
 };
+
+// A hosted player that gives one order more than may wait for the ticks.
+class Flood final : public Outpost::HostedPlayer
+{
+public:
+  [[nodiscard]] std::vector<Outpost::Command> Play([[maybe_unused]] const Outpost::Snapshot& _snapshot) override
+  {
+    return std::vector<Outpost::Command>(Outpost::COMMANDS_WAITING_LIMIT + 1, Outpost::Command{.order = Outpost::StopCommand{}});
+  }
+};
 } // namespace
 
 TEST_CLASS(InProcessServerTests)
@@ -335,6 +345,68 @@ public:
                                        std::chrono::duration<double, std::milli>(std::ranges::max(hosted)).count())
                              .c_str());
     }
+  }
+
+  // ADR-009 decision 6: a tick applies at most COMMANDS_PER_TICK of a connection's commands, and the rest wait for the ticks
+  // after, in the order given, each logged with the tick it was applied at, so that the log still replays.
+  TEST_METHOD(AppliesASeatsCommandsAtItsShare)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 3});
+    const Outpost::EntityId ship = server.SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    for (int order = 0; order < 100; ++order)
+      blue->Send({.order = Outpost::MoveCommand{.ships = {ship}, .destination = {.xMeters = static_cast<float>(order)}}});
+    for (int tick = 0; tick < 5; ++tick)
+      server.Step();
+
+    const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();
+    Assert::AreEqual(size_t{100}, log.size());
+    std::vector<size_t> perTick(5, 0);
+    for (size_t i = 0; i < log.size(); ++i)
+    {
+      ++perTick[log[i].tick - log.front().tick];
+      const auto* move = std::get_if<Outpost::MoveCommand>(&log[i].command.order);
+      Assert::IsTrue(move != nullptr && move->destination.xMeters == static_cast<float>(i), L"in the order given");
+    }
+    Assert::IsTrue(perTick == std::vector<size_t>{32, 32, 32, 4, 0}, L"32 a tick, and the rest the tick after");
+
+    // The same match setup as the server's, given the log.
+    Outpost::Simulation replay(3, 20);
+    replay.PlaceMap(server.MapData());
+    replay.UseTuning(server.TuningData());
+    replay.UseFog();
+    for (const Outpost::PlayerId player : {BLUE, RED})
+    {
+      replay.AddPlayer(player, server.TuningData().rules.startingOre);
+      replay.SaveStartingDesigns(player, server.TuningData());
+    }
+    replay.PlacePirates(server.MapData());
+    replay.PlaceDerelicts(server.MapData());
+    (void)replay.SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    size_t next = 0;
+    while (replay.CurrentTick() < server.SimulationState().CurrentTick())
+    {
+      std::vector<Outpost::Command> commands;
+      for (; next < log.size() && log[next].tick == replay.CurrentTick(); ++next)
+        commands.push_back(log[next].command);
+      (void)replay.Tick(commands);
+    }
+    Assert::IsTrue(replay == server.SimulationState(), L"the log replays");
+  }
+
+  // ADR-009 decision 6: a connection may have COMMANDS_WAITING_LIMIT commands waiting for the ticks and no more. A loopback
+  // client's next one throws, and a hosted player's fails the tick.
+  TEST_METHOD(RefusesAConnectionFarAheadOfItsTicks)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    for (size_t order = 0; order < Outpost::COMMANDS_WAITING_LIMIT; ++order)
+      blue->Send({.order = Outpost::StopCommand{}});
+    Assert::ExpectException<Neuron::Exception>([&blue] { blue->Send({.order = Outpost::StopCommand{}}); }, L"one more");
+
+    server.Host(RED, std::make_unique<Flood>());
+    Assert::ExpectException<Neuron::Exception>([&server] { server.Step(); },
+                                               L"a hosted player's orders, after the tick that hands it its snapshot");
   }
 
   TEST_METHOD(HostsAPlayerOnceAndBeforeItStarts)

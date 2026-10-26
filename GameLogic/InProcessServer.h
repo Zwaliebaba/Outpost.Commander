@@ -19,12 +19,24 @@ class LoopbackTransport final : public Transport
 public:
   explicit LoopbackTransport(std::shared_ptr<LoopbackChannel> _channel) noexcept;
 
+  // Throws Neuron::Exception when COMMANDS_WAITING_LIMIT commands are waiting for the server's ticks already.
   void Send(Command _command) override;
   [[nodiscard]] std::vector<Snapshot> Receive() override;
 
 private:
   std::shared_ptr<LoopbackChannel> m_channel;
 };
+
+// The longest message a client may send before its hello has taken a seat, and after (ADR-060 decision 2). A hello is 33
+// bytes, and a seated client's largest command, an order to every warship a fleet cap allows, is far shorter than its limit.
+inline constexpr std::uint32_t HELLO_LIMIT_BYTES = 256;
+inline constexpr std::uint32_t SEATED_MESSAGE_LIMIT_BYTES = 64u * 1024u;
+// How long after its handshake a client has to send its hello before the server closes it (ADR-060 decision 5).
+inline constexpr std::chrono::seconds HELLO_TIMEOUT{5};
+// The most of one connection's commands a tick applies; the rest wait for the next tick, in the order sent. A connection
+// with more than COMMANDS_WAITING_LIMIT waiting is broken (ADR-009 decision 6).
+inline constexpr std::size_t COMMANDS_PER_TICK = 32;
+inline constexpr std::size_t COMMANDS_WAITING_LIMIT = 1'200;
 
 // The tick at which _utcSeconds comes, a moment the player's clock picked for a scheduled order (ADR-080), when the wall
 // clock reads _now and the next tick to run is _tick: the first tick at or after it at _ticksPerSecond, _tick for a moment
@@ -55,6 +67,7 @@ public:
   void Step() override;
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept override;
   [[nodiscard]] std::vector<TickTiming> TakeTickTimings() override;
+  [[nodiscard]] std::vector<SeatFigures> TakeSeatFigures() override;
 
   // Steps a server that has not started, for tests: runs the ticks due after _elapsedWallTime more wall time, applying the
   // commands that have arrived and sending each connected player a snapshot per tick. This and the started server's
@@ -90,6 +103,12 @@ public:
     return m_commandLog;
   }
 
+  // For tests: how many QUIC connections the server's listener holds, or none when it takes no players over QUIC.
+  [[nodiscard]] std::size_t ListenerConnections() const
+  {
+    return m_listener ? m_listener->ChannelCount() : 0;
+  }
+
   // Match setup for a measurement run: places the stress scene and keeps it at full size before every tick.
   void StartStressLoad();
 
@@ -111,9 +130,11 @@ public:
   void ReplaceHosted(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted);
 
 private:
-  // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
-  // them, and then a snapshot for every connected player. A universe's tick logs its commands and saves when a save is due.
-  // The players the server hosts then answer their snapshots, with orders for the next tick (ADR-079).
+  // Runs one tick: the commands that arrived since the last, at most COMMANDS_PER_TICK of each connection's, in connection
+  // order and then in the order each client sent them, and then a snapshot for every connected player. A universe's tick
+  // logs its commands and saves when a save is due. The players the server hosts then answer their snapshots, with orders
+  // for the ticks after (ADR-079). Each tick first has the listener let go of the connections that have gone and close the
+  // ones that sent no hello in time (ADR-060).
   void RunTick();
 
   // Hands a save of the universe as it stands to its folder, which begins its log anew there (ADR-077).
@@ -173,9 +194,11 @@ private:
   // Times the parts of each tick on the thread that runs them: the simulation tells it where each begins and
   // ends, and the server times its snapshots.
   TickProfiler m_profiler;
-  // Guards the tick timings and the failure, which the started server's thread writes and TakeTickTimings reads.
+  // Guards the tick timings, the seats' figures and the failure, which the started server's thread writes and
+  // TakeTickTimings and TakeSeatFigures read.
   std::mutex m_reportMutex;
   std::vector<TickTiming> m_tickTimings;
+  std::deque<SeatFigures> m_seatFigures;
   std::exception_ptr m_failure;
   // Guards the connections while they can still change: until the server starts, MsQuic's threads seat players as the
   // shell's thread adds them. Each connection's QUIC channel stays guarded after it.

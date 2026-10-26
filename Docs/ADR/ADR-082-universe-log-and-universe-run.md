@@ -27,6 +27,8 @@ A universe needs two instruments: one that says how it went, and one that shows 
    - A side is present when its player played the seat at any of its shots in the battle, and is otherwise its deputy or the AI.
    - Shots at or by the pirates are not a battle.
 3. **The hour's record** is the seat's Ore, income in hundredths a second, command points against its fleet cap, nodes held and topics researched, as its snapshot of that tick shows them. With them come the seconds of the hour its player and its deputy played it.
+   - When the seat's player was connected over QUIC at any of the server's samples in the hour ([ADR-004](ADR-004-quic-transport.md) decision 6), the record ends with the connection's round trip at the median and the 95th percentile of those samples, by the nearest rank, the packets sent and lost in the hour, and its largest backlog. A sample whose connection sent fewer packets than the one before is a newer connection, counted from its own start.
+   - A record without them reads as before, so `Tools/UniverseLog.py` reads a log written before them, and reports a seat's connection over the hours that have it.
 4. **The universe run is `RunUniverses`**, in `GameLogic`, which the dedicated server's `--universe-run <folder> [--seed] [--hours] [--kills] [--ai]` drives with an AI empire in every seat. The default is 24 hours of a universe, 10 kills and the Normal AI.
    - **The killed universe runs first.** It is stepped on one thread. At each kill, its server is destroyed between two ticks and made afresh from its folder (`CreateUniverseServer`), with its AI empires made anew. The tick it comes back at is recorded.
    - **The straight universe runs after it,** in a folder of its own. Its AI empires are made anew at each tick the killed universe came back at, with the orders they had not sent dropped (`InProcessServer::ReplaceHosted`). The two universes differ only in what the folder kept.
@@ -39,7 +41,7 @@ A universe needs two instruments: one that says how it went, and one that shows 
 ## Consequences
 
 - **Tests.**
-  - `UniverseLogTests`: each seat record, in order, from a scripted hour, with the hour's figures. A battle led by the player and fought on by the deputy is present; one fought by the deputy alone is the deputy's; fire too far apart is no battle. A universe's server writes its start, a save a minute, its AI empires' seats, and, made afresh, where it came back from.
+  - `UniverseLogTests`: each seat record, in order, from a scripted hour, with the hour's figures, and an hour's connection, across a newer connection, from scripted samples. A battle led by the player and fought on by the deputy is present; one fought by the deputy alone is the deputy's; fire too far apart is no battle. A universe's server writes its start, a save a minute, its AI empires' seats, and, made afresh, where it came back from.
   - `UniverseRunTests`: three minutes of a universe, killed three times, ends equal to the universe run straight through, and a folder that holds a run already is refused.
   - Dropping the replaced players' waiting orders is not caught by a test, since none waits at those ticks (decision 4).
 - **A killed universe comes back at most a save's interval back.** A tick without a command writes nothing to the command log, so the folder comes back at the tick after its last logged command, or at its last save if that is later ([ADR-077](ADR-077-universe-state-on-disk.md) decision 8). The run records each tick it came back at.

@@ -67,29 +67,50 @@ std::wstring Wide(std::string_view _text)
   return {_text.begin(), _text.end()};
 }
 
-// The error code the server closes a connection to _seat with once it is sent _hello, or 0 when it has not closed it within
-// ten seconds.
-std::uint64_t CloseCodeFor(const Outpost::ServerAddress& _seat, std::span<const std::byte> _hello)
+// A channel of the engine's own to _seat's server, which says nothing until a test has it say something.
+std::unique_ptr<Neuron::QuicChannel> ChannelTo(const Outpost::ServerAddress& _seat)
 {
-  const std::unique_ptr<Neuron::QuicChannel> channel =
-    Neuron::QuicChannel::Connect({.host = _seat.host,
-                                  .port = _seat.port,
-                                  .applicationProtocol = std::string(Outpost::QUIC_APPLICATION_PROTOCOL),
-                                  .serverCertificate = _seat.certificate});
-  channel->Send(_hello);
-  const auto deadline = std::chrono::steady_clock::now() + 10s;
+  return Neuron::QuicChannel::Connect({.host = _seat.host,
+                                       .port = _seat.port,
+                                       .applicationProtocol = std::string(Outpost::QUIC_APPLICATION_PROTOCOL),
+                                       .serverCertificate = _seat.certificate});
+}
+
+// The error code the server closes _channel with, or 0 when it has not closed it within _wait.
+std::uint64_t CloseCodeOf(Neuron::QuicChannel& _channel, std::chrono::milliseconds _wait = 10s)
+{
+  const auto deadline = std::chrono::steady_clock::now() + _wait;
   while (std::chrono::steady_clock::now() < deadline)
   {
     try
     {
-      (void)channel->Receive(100ms);
+      (void)_channel.Receive(100ms);
     }
     catch (const Neuron::Exception&)
     {
-      return channel->PeerErrorCode().value_or(0);
+      return _channel.PeerErrorCode().value_or(0);
     }
   }
   return 0;
+}
+
+// The error code the server closes a connection to _seat with once it is sent _hello, or 0 when it has not closed it within
+// ten seconds.
+std::uint64_t CloseCodeFor(const Outpost::ServerAddress& _seat, std::span<const std::byte> _hello)
+{
+  const std::unique_ptr<Neuron::QuicChannel> channel = ChannelTo(_seat);
+  channel->Send(_hello);
+  return CloseCodeOf(*channel);
+}
+
+// Whether the server's listener comes to hold _count connections within ten seconds, letting go of the ones that have gone
+// as it ticks (ADR-060 decision 7).
+bool ConnectionsComeTo(const Outpost::InProcessServer& _server, std::size_t _count)
+{
+  const auto deadline = std::chrono::steady_clock::now() + 10s;
+  while (_server.ListenerConnections() != _count && std::chrono::steady_clock::now() < deadline)
+    std::this_thread::sleep_for(10ms);
+  return _server.ListenerConnections() == _count;
 }
 
 // A hosted player that counts how often it was given the seat to play, and to watch.
@@ -372,6 +393,128 @@ public:
     Assert::IsTrue(message.starts_with(std::format("Could not connect to {}:{} over QUIC", seat.host, seat.port)),
                    std::wstring(winrt::to_hstring(message)).c_str());
     Assert::IsTrue(std::chrono::steady_clock::now() - started < 5s, L"it gave up within its time");
+  }
+
+  // ADR-060 decision 7: the listener lets go of a connection once it has gone and no seat holds it, whether its client
+  // closed it, the server refused it or a newer connection took its seat, and keeps the ones that are still there.
+  TEST_METHOD(LetsGoOfConnectionsThatHaveGone)
+  {
+    const TemporaryFolder folder;
+    auto server = UniverseServer(folder.Path());
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    Outpost::ServerAddress guessed = seat;
+    guessed.token[0] ^= 0x01;
+    server->Start();
+
+    for (int attempt = 0; attempt < 50; ++attempt)
+      Assert::ExpectException<Neuron::Exception>([&guessed] { Outpost::QuicTransport refused(guessed, BLUE); });
+    for (int visit = 0; visit < 50; ++visit)
+    {
+      // Each takes the seat from the one before, and closes as it goes.
+      const Outpost::QuicTransport visitor(seat, BLUE);
+    }
+    Assert::IsTrue(ConnectionsComeTo(*server, 1), L"only the last visit's, which the seat still holds");
+
+    Outpost::QuicTransport first(seat, BLUE);
+    Outpost::QuicTransport second(seat, BLUE);
+    Assert::IsTrue(ConnectionsComeTo(*server, 1), L"only the newest, though the one it took the seat from has a client still");
+    Assert::IsFalse(SnapshotsOf(second, 3).empty(), L"which plays on");
+  }
+
+  // ADR-060 decision 2: a client may send no more than a hello's worth until its hello has taken a seat.
+  TEST_METHOD(RefusesAFirstMessageLongerThanAHello)
+  {
+    auto server = QuicServer();
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    Assert::IsTrue(Outpost::EncodeMessage(Outpost::HelloMessage{.player = BLUE, .token = seat.token}).size() <= Outpost::HELLO_LIMIT_BYTES);
+    const std::vector<std::byte> longer(Outpost::HELLO_LIMIT_BYTES + 1);
+    const std::uint64_t code = CloseCodeFor(seat, longer);
+    Assert::AreEqual(Neuron::FRAMING_ERROR_CODE, code, Wide(std::format("closed with code {}", code)).c_str());
+    Outpost::QuicTransport blue(seat, BLUE);
+  }
+
+  // ADR-060 decision 5: a client that has not said hello HELLO_TIMEOUT after its handshake is closed, and one that said it
+  // plays on.
+  TEST_METHOD(ClosesAConnectionThatSaysNoHello)
+  {
+    const TemporaryFolder folder;
+    auto server = UniverseServer(folder.Path());
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    server->Start();
+    const auto connected = std::chrono::steady_clock::now();
+    const std::unique_ptr<Neuron::QuicChannel> silent = ChannelTo(seat);
+    Outpost::QuicTransport blue(seat, BLUE);
+
+    const std::uint64_t code = CloseCodeOf(*silent, 15s);
+    Assert::AreEqual(static_cast<std::uint64_t>(Outpost::CloseReason::MalformedMessage), code,
+                     Wide(std::format("closed with code {}", code)).c_str());
+    Assert::IsTrue(std::chrono::steady_clock::now() - connected > Outpost::HELLO_TIMEOUT - 1s, L"not before its time");
+    Assert::IsFalse(SnapshotsOf(blue, 3).empty(), L"the client that said hello plays on");
+  }
+
+  // ADR-009 decision 6 and ADR-060 decision 2: a seated client with more commands waiting than COMMANDS_WAITING_LIMIT is
+  // closed, and so is one that sends a message longer than a seated client's limit.
+  TEST_METHOD(ClosesASeatThatFloodsIt)
+  {
+    auto server = QuicServer();
+    const Outpost::EntityId ship = server->SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    Outpost::QuicTransport blue(server->OpenSeat(BLUE, Outpost::NewSeatToken()), BLUE);
+    // A match's server starts once its seats are taken, so nothing takes these from the queue.
+    for (std::size_t order = 0; order <= Outpost::COMMANDS_WAITING_LIMIT; ++order)
+      blue.Send({.order = Outpost::StopCommand{.ships = {ship}}});
+    Assert::AreEqual(std::string(Outpost::DescribeClose(static_cast<std::uint64_t>(Outpost::CloseReason::MalformedMessage)).value_or("")),
+                     WhyItWent(blue), L"closed, and told why");
+
+    const Outpost::ServerAddress seat = server->OpenSeat(RED, Outpost::NewSeatToken());
+    const std::unique_ptr<Neuron::QuicChannel> red = ChannelTo(seat);
+    red->Send(Outpost::EncodeMessage(Outpost::HelloMessage{.player = RED, .token = seat.token}));
+    std::vector<std::vector<std::byte>> welcome;
+    const auto deadline = std::chrono::steady_clock::now() + 10s;
+    while (welcome.empty() && std::chrono::steady_clock::now() < deadline)
+      welcome = red->Receive(100ms);
+    Assert::IsFalse(welcome.empty(), L"seated");
+    const std::vector<Outpost::EntityId> ships(Outpost::SEATED_MESSAGE_LIMIT_BYTES / sizeof(std::uint32_t), ship);
+    red->Send(Outpost::EncodeMessage(Outpost::Command{.order = Outpost::StopCommand{.ships = ships}}));
+    const std::uint64_t code = CloseCodeOf(*red);
+    Assert::AreEqual(Neuron::FRAMING_ERROR_CODE, code, Wide(std::format("closed with code {}", code)).c_str());
+  }
+
+  // ADR-004 decision 6: the server takes a seat's connection once a second, after the tick: a round trip once a snapshot has
+  // crossed, the packets sent counting up, and a backlog that comes back to nothing once the client has every snapshot. A
+  // player on the loopback has none.
+  TEST_METHOD(ReportsItsConnection)
+  {
+    auto server = QuicServer();
+    Outpost::QuicTransport blue(server->OpenSeat(BLUE, Outpost::NewSeatToken()), BLUE);
+    const std::unique_ptr<Outpost::Transport> red = server->Connect(RED);
+    const std::uint32_t second = server->TicksPerSecond();
+    std::vector<Outpost::SeatFigures> figures;
+    // A second of ticks at a time, each snapshot read before the next tick, and a pause before the second's last, the one
+    // sampled, for the client to acknowledge what it has read; until a sample finds nothing waiting, or ten seconds of them.
+    for (int seconds = 0; seconds < 10 && (figures.size() < 2 || figures.back().connection.backlogBytes != 0); ++seconds)
+    {
+      for (std::uint32_t tick = 1; tick < second; ++tick)
+      {
+        server->Step();
+        Assert::IsFalse(SnapshotsOf(blue, 1).empty(), L"each tick's snapshot");
+      }
+      std::this_thread::sleep_for(200ms);
+      server->Step();
+      (void)SnapshotsOf(blue, 1);
+      for (const Outpost::SeatFigures& sample : server->TakeSeatFigures())
+        figures.push_back(sample);
+    }
+
+    Assert::IsTrue(figures.size() >= 2, L"a sample a second");
+    for (const Outpost::SeatFigures& sample : figures)
+    {
+      Assert::IsTrue(sample.player == BLUE, L"of the seat over QUIC alone");
+      Assert::AreEqual(std::uint64_t{0}, sample.tick % second, L"after a second's last tick");
+    }
+    Assert::IsTrue(figures.front().connection.roundTripMicroseconds > 0, L"a round trip, once a snapshot has crossed");
+    Assert::IsTrue(figures.back().connection.packetsSent > figures.front().connection.packetsSent, L"the packets sent count up");
+    Assert::AreEqual(std::uint64_t{0}, figures.back().connection.backlogBytes, L"and nothing waits once the client has every snapshot");
+    Assert::IsTrue(server->TakeSeatFigures().empty(), L"each sample is taken once");
   }
 };
 } // namespace GameLogicTests

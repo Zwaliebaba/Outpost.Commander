@@ -1489,6 +1489,38 @@ Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time
 - **Method:** The openness byte of every vertex of the baked `.nmf` files, counted.
 - **Source:** ADR-092, Consequences, and the Look plan, LV2.1's As built (commit `7aa6e4d`, #108).
 
+### 2026-10-26 · The baked meshes, counted again
+
+| Quantity | Value |
+|---|---|
+| The 45 `.nmf` files | 1,605,784 bytes in all, 34,088 more than LV2.1's bake: the Human Command Station on a square plan (RF-O1, #120) |
+| Vertices | 50,016, for 16,672 triangles: three a triangle |
+| Wholly open | 24% |
+| Less than half open | 29% |
+| Wholly shut in | 13% |
+| Mean openness | 0.65 |
+| The convex rocks | 0.97 open or more everywhere |
+
+- **Build:** The tree of #125, in the Linux container: the committed `.nmf` files, version 4
+- **Seeds:** not applicable
+- **Method:** The files' sizes, and each file's header and the openness byte of every vertex, read with CPython 3.13. The same count over LV2.1's files gives that entry's figures.
+- **Source:** Budgets.md, The baked meshes, and ADR-092, Context, in the document scan of 2026-10-26.
+
+### 2026-10-26 · The commands a seat gives in a tick (NW1.3)
+
+| Quantity | Value |
+|---|---|
+| The most commands one seat gave in a tick, AI against AI | 6, in one match; 5 in 11, 4 in 26 and 3 in 2; no tick over 32 |
+| The matches that ended within the limit | 31 of 40 |
+| The most a seat gave in a tick in a universe | Blue's deputy 25, in seed 2; 4 in every other universe and seat; no tick over 32 |
+| The same 43 runs with gate M9's limits | each ended at the same tick and in the same way, with the same hash of its snapshots |
+
+- **Build:** The tree of milestone NW1, with its limits and without them, built by MinGW-w64 g++ 13.2 at `-O2` in the Linux container against the Windows headers MinGW ships, MsQuic 2.6.3's own headers and stand-ins for C++/WinRT's base, and run under Wine 9.0
+- **Seeds:** seeds 1 to 40 for the matches, each to its end or 120 minutes, `--ai-matches`'s default limit; seeds 1 to 3 for the universes, an hour each; the Normal AI's packaged settings throughout
+- **Method:** A scratch driver, not in the repository. It plays each match as `AiMatches.cpp`'s `PlayOne` does and counts what each seat sends between two steps, which is what the next tick applies. It hosts each universe's players as `InProcessServerTests.MeasuresTheHostedPlayersTicks` does, an AI empire in Red's seat and in Blue's one whose seat a `Deputy` that watched it takes after 30 minutes, as `DeputyPlayTests` hands a seat over, and counts each hosted player's orders a tick. Each run's ending and the 64-bit FNV-1a of its snapshots' wire bytes, every 200th tick of a match and both players' last of a universe, were compared between the two builds.
+- **Source:** ADR-009 decision 6, and the network plan's NW1.3.
+- **Note:** Floats replay only on the same build (ADR-009 decision 1), so MSVC's build may play these seeds otherwise. A seat over the 32 has the rest of its commands applied the tick after, not dropped.
+
 ## Screen
 
 The figures of the reviews of the screen, and of the meshes as drawn: sizes, contrast, brightness and hues.
@@ -1761,6 +1793,21 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Seeds:** not applicable
 - **Method:** The designer laid out with the tuning data's three hulls unlocked, its card texts read from the layout. Cascadia Mono's advances read from the static fonts of Cascadia Code release 2407.24; Consolas's from its published metrics. Computed through the game's own layout code, not seen on a screen. Bahnschrift and Segoe UI were stood in for by Inter, which the hull card does not use.
 - **Source:** the findings plan, RF-O3.
+
+### 2026-10-26 · The part cards' numbers on cards 224 units wide (F15)
+
+| Quantity | Value |
+|---|---|
+| A part card's room for its numbers | 204 units: a card 224 units wide, its text 10 units in from either side, where it was 196 |
+| The Large hull card's line, "1,200 HP · ARM 14 · 25m/s", in Cascadia Mono | whole at 100% on 1920×1080 and on 2880×1920, at 200 units, and at 110% on 1920×1080, at 100% on 2560×1440 and 3840×2160 |
+| The same in Consolas | whole at every one of those sizes |
+| The other part cards | whole, in both faces, at every one of those sizes |
+| `HudTests.FitsTheLargeHullsNumbersInCascadiaMono` | passes on the wider cards, and on cards 220 units wide with their text 12 in fails at 1920×1080 |
+
+- **Build:** The tree of #128, in the Linux container: `Hud::Lay` built by clang 18 against stand-ins, with the stand-in `Neuron::RasterizeFont` of the 2026-10-25 entry
+- **Seeds:** not applicable
+- **Method:** As the 2026-10-25 entry: the designer laid out with the tuning data's three hulls unlocked, its card texts read from the layout, in Cascadia Mono's advances and with Cascadia Mono hidden so that Consolas's are used. The test was run against both widths.
+- **Source:** ADR-062 decision 4, and the findings plan, gate F15 and RF-O3.
 
 ## The code
 

@@ -940,7 +940,7 @@ Hud::Rect Frame(Hud::Layout& _layout, float _left, float _top, float _width, flo
 
 // The designer's window (ADR-017 decision 7), laid out as the owner's mockup, Docs/Mockups/ShipDesigner.png, which is
 // drawn at the reference scale: every place below is in reference units from the window's top-left corner.
-// Three part cards from CARDS_LEFT, and the mockup's room right of them (ADR-062).
+// Three part cards from CARDS_LEFT, a little wider than the mockup's, so 14 units of room right of them (ADR-062 decision 4).
 constexpr float DESIGNER_WIDTH = 818.0f;
 constexpr float DESIGNER_INSET = 24.0f;
 // The hatched header runs on below the title bar, which the window is dragged by, to hold the title and the Shipyard.
@@ -956,7 +956,10 @@ constexpr float SLOTS_TOP = 168.0f;
 constexpr float SLOT_GAP = 10.0f;
 constexpr float SLOT_DIVIDER_LEFT = 108.0f;
 constexpr float CARDS_LEFT = 118.0f;
-constexpr float CARD_WIDTH = 220.0f;
+// Wide enough, inside the designer's 818 units, for the Large hull's numbers in Cascadia Mono at 1080p (ADR-062 decision 4).
+constexpr float CARD_WIDTH = 224.0f;
+// A part card's text stands this far in from either side of the card.
+constexpr float CARD_TEXT_INSET = 10.0f;
 constexpr float CARD_HEIGHT = 80.0f;
 constexpr float CARD_GAP = 7.0f;
 constexpr std::size_t CARDS_PER_LINE = 3;
@@ -966,6 +969,8 @@ constexpr float CARD_NUMBERS_TOP = 34.0f;
 constexpr float CARD_NOTE_TOP = 52.0f;
 constexpr float CARD_NOTE_ROOM = 16.0f;
 constexpr float CARD_LOCK_FROM_FOOT = 20.0f;
+// The research's words at the card's foot, after its lock.
+constexpr float CARD_LOCK_TEXT_LEFT = CARD_TEXT_INSET + 16.0f;
 constexpr float SECTION_GAP = 20.0f;
 constexpr float SECTION_LABEL_HEIGHT = 26.0f;
 constexpr float BAR_ROW_HEIGHT = 25.0f;
@@ -1515,27 +1520,27 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
       else
         paint.Press(face, card.action);
       paint.Outline(left, cardTop, CARD_WIDTH, cardHeight, card.picked ? PICKED_EDGE_COLOR : EDGE_COLOR);
-      const float inner = CARD_WIDTH - 24.0f;
+      const float inner = CARD_WIDTH - (2.0f * CARD_TEXT_INSET);
       const float costWidth = paint.GemAndFigureWidth(card.cost, Hud::Typeface::Figure);
       const DirectX::XMFLOAT4& nameColor = locked ? LOCKED_TEXT_COLOR : TEXT_COLOR;
-      paint.Text(paint.Fit(card.name, Hud::Typeface::Name, inner - costWidth - FIT_GAP_UNITS), left + 12.0f, cardTop + 8.0f, nameColor,
-                 Hud::Typeface::Name);
-      paint.GemAndFigure(card.cost, left + CARD_WIDTH - 12.0f, cardTop + 11.0f, Hud::Typeface::Figure,
+      paint.Text(paint.Fit(card.name, Hud::Typeface::Name, inner - costWidth - FIT_GAP_UNITS), left + CARD_TEXT_INSET, cardTop + 8.0f,
+                 nameColor, Hud::Typeface::Name);
+      paint.GemAndFigure(card.cost, left + CARD_WIDTH - CARD_TEXT_INSET, cardTop + 11.0f, Hud::Typeface::Figure,
                          locked ? LOCKED_TEXT_COLOR : GOLD_COLOR);
       const DirectX::XMFLOAT4& numbersColor = locked ? LOCKED_TEXT_COLOR : NUMBERS_COLOR;
-      paint.Text(paint.Fit(card.numbers, Hud::Typeface::Detail, inner), left + 12.0f, cardTop + CARD_NUMBERS_TOP, numbersColor,
+      paint.Text(paint.Fit(card.numbers, Hud::Typeface::Detail, inner), left + CARD_TEXT_INSET, cardTop + CARD_NUMBERS_TOP, numbersColor,
                  Hud::Typeface::Detail);
       if (!card.note.empty())
       {
-        paint.Text(paint.Fit(card.note, Hud::Typeface::Detail, inner), left + 12.0f, cardTop + CARD_NOTE_TOP, numbersColor,
+        paint.Text(paint.Fit(card.note, Hud::Typeface::Detail, inner), left + CARD_TEXT_INSET, cardTop + CARD_NOTE_TOP, numbersColor,
                    Hud::Typeface::Detail);
       }
       if (locked)
       {
         const float lockTop = cardTop + cardHeight - CARD_LOCK_FROM_FOOT;
-        paint.Sprite(Hud::Sprite::Checkbox, left + 12.0f, lockTop + 2.0f, 10.0f, AMBER_COLOR);
-        paint.Text(paint.Fit(card.lockedBy, Hud::Typeface::Label, CARD_WIDTH - 28.0f - 12.0f), left + 28.0f, lockTop, AMBER_COLOR,
-                   Hud::Typeface::Label);
+        paint.Sprite(Hud::Sprite::Checkbox, left + CARD_TEXT_INSET, lockTop + 2.0f, 10.0f, AMBER_COLOR);
+        paint.Text(paint.Fit(card.lockedBy, Hud::Typeface::Label, CARD_WIDTH - CARD_LOCK_TEXT_LEFT - CARD_TEXT_INSET),
+                   left + CARD_LOCK_TEXT_LEFT, lockTop, AMBER_COLOR, Hud::Typeface::Label);
       }
     }
   }

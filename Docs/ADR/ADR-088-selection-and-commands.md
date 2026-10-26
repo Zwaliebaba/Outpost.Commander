@@ -50,7 +50,7 @@ The retreat is a choice of three, which the player should see whole and pick in 
 
 ## Consequences
 
-- **What lights is the HUD's own, and the orders window's Give,** which is drawn as a HUD button (owner, 2026-10-25). The windows' cards, whose numbers the designer previews under the pointer, and the menu's buttons do not light, and nothing has a pressed state.
+- **What lights is the HUD's own, the orders window's Give and the leave window's two buttons,** which are drawn as HUD buttons (owner, 2026-10-25). The windows' cards, whose numbers the designer previews under the pointer, and the menu's buttons do not light, and nothing has a pressed state.
 - **A press picks a retreat; nothing steps one.**
 - **The selection's panel and its buttons are one place to look.** A tall column of buttons, a Constructor's six with its retreat, stands beside a short selection panel.
 - **A bar costs two of the interface's quads, and a pair four,** of `UiPipeline::MAX_QUADS` a frame.

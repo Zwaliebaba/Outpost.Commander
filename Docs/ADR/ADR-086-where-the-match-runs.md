@@ -15,7 +15,7 @@ So the client shows a tag in the top-right corner that names the server's addres
 
 1. **A tag in the top-right corner says where the match runs**, "Local skirmish" for a match on the game's own server, and "Server 203.0.113.5:4433" for a universe on a dedicated server. `Hud::ServerName` writes the address as the join file names it: the host and the port, with an IPv6 host in brackets, "[2001:db8::5]:4433". The shell passes it to `GameClient::StartMatch`, and nothing for a skirmish, and to `GameClient::ShowConnecting` while a join connects, for the menu's "Connecting to" line ([ADR-078](ADR-078-dedicated-server.md) decision 9).
    - The tag is as wide as its words, its right edge 16 units from the screen's, and an address wider than 360 units is cut short. It takes no click.
-   - It shows with the rest of the HUD, from the match's first snapshot. A join whose server never welcomes the client goes back to the menu, saying why ([ADR-078](ADR-078-dedicated-server.md) decision 10).
+   - It shows with the rest of the HUD, from the match's first snapshot. A join whose server never welcomes the client goes back to the menu, saying why ([ADR-078](ADR-078-dedicated-server.md) decision 9).
 2. **The tag warns once no snapshot has come for `Hud::SILENT_SECONDS`, 2 s**: a warning chip under the address, "No word from the server · 5 s" ([ADR-085](ADR-085-one-meaning-per-color.md) decision 1), counting whole seconds up to 999. The server sends each player a snapshot every tick, at the tuning data's `tickHz` ([ADR-009](ADR-009-deterministic-core.md) decision 3, [ADR-013](ADR-013-client-view-and-controls.md)), so at the shipped rate of 20 a second 2 s is 40 missed in a row, which no ordinary hitch on a working connection makes. While it warns, the tag is as wide as "No word from the server · 999 s", so that its edge does not move as the seconds count.
    - `GameClient` counts the seconds since `Receive` last took a snapshot, by the frames' elapsed time.
    - A skirmish warns too. Its server is on a thread of the same process, and a stall there leaves the simulation as still as a lost connection does.
@@ -30,5 +30,5 @@ So the client shows a tag in the top-right corner that names the server's addres
 
 ## What this forecloses
 
-- **A ping or round-trip time on the tag,** without reading MsQuic's statistics through `QuicChannel`, which nothing does.
+- **A ping or round-trip time on the tag.** `QuicChannel` reads MsQuic's round trip ([ADR-004](ADR-004-quic-transport.md) decision 6), for measurement, and the tag shows none of it.
 - **A tag on the menu.** The menu has no match to place.
