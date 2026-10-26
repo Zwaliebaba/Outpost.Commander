@@ -170,9 +170,10 @@ private:
   // and every message after it a command (ADR-060). Called on MsQuic's thread.
   [[nodiscard]] Neuron::QuicChannel::Receiver Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel);
 
-  // Gives _player's seat to _channel, which showed _token, and returns where the seat's commands go; none when there is
-  // no such seat, the token is not the seat's, or a match has started. A connection that held the seat is closed with
-  // CloseReason::SeatTaken: the player's newest connection holds it (ADR-078). Called on MsQuic's thread.
+  // Gives _player's seat to _channel, which showed _token, after sending it its welcome, and returns where the seat's
+  // commands go; none when there is no such seat, the token is not the seat's, or a match has started. A connection that held
+  // the seat is closed with CloseReason::SeatTaken: the player's newest connection holds it (ADR-078). Called on MsQuic's
+  // thread.
   [[nodiscard]] std::shared_ptr<LoopbackChannel> TakeSeat(PlayerId _player, const SeatToken& _token,
                                                           std::shared_ptr<Neuron::QuicChannel> _channel);
 

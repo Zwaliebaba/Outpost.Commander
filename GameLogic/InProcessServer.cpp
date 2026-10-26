@@ -307,7 +307,6 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
       seated = hello->player;
       // A seated client sends commands, which may be longer than a hello (ADR-060).
       _peer.LimitMessages(SEATED_MESSAGE_LIMIT_BYTES);
-      _peer.Send(EncodeMessage(WelcomeMessage{.player = hello->player}));
     }
     catch (const Neuron::Exception&)
     {
@@ -330,6 +329,9 @@ std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::TakeSeat(Pla
       std::ranges::find_if(m_connections, [_player](const Connection& _connection) { return _connection.player == _player; });
     if (seat == m_connections.end() || !seat->seat || seat->token != _token)
       return nullptr;
+    // The welcome goes before the seat has the channel, so that it is the first the client hears, ahead of the snapshot a
+    // running universe's next tick sends (ADR-060 decision 5).
+    _channel->Send(EncodeMessage(WelcomeMessage{.player = _player}));
     // The player's newest connection holds the seat, so that one whose connection dropped without the server knowing yet
     // takes it back.
     replaced = std::exchange(seat->quic, std::move(_channel));
