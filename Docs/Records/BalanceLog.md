@@ -1519,6 +1519,21 @@ Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time
 - **Seeds:** seeds 1 to 40 for the matches, each to its end or 120 minutes, `--ai-matches`'s default limit; seeds 1 to 3 for the universes, an hour each; the Normal AI's packaged settings throughout
 - **Method:** A scratch driver, not in the repository. It plays each match as `AiMatches.cpp`'s `PlayOne` does and counts what each seat sends between two steps, which is what the next tick applies. It hosts each universe's players as `InProcessServerTests.MeasuresTheHostedPlayersTicks` does, an AI empire in Red's seat and in Blue's one whose seat a `Deputy` that watched it takes after 30 minutes, as `DeputyPlayTests` hands a seat over, and counts each hosted player's orders a tick. Each run's ending and the 64-bit FNV-1a of its snapshots' wire bytes, every 200th tick of a match and both players' last of a universe, were compared between the two builds.
 - **Source:** ADR-009 decision 6, and the network plan's NW1.3.
+
+### 2026-10-26 · A snapshot on the wire, its catalogue apart (NW3.1)
+
+| Player 1's snapshot | Whole | On the wire | Its catalogue |
+|---|---|---|---|
+| The 20th tick of a match | 19,995 bytes | 6,511 bytes | 14,596 bytes |
+| Minute 30 of a match of two Normal AIs | 27,882 bytes, 184 entities | 14,193 bytes | 14,801 bytes |
+| Minute 60 of a universe of two Normal AI empires | 31,598 bytes, 214 entities | 17,909 bytes | 14,801 bytes |
+| The 20th tick of the measurement load | 35,301 bytes | 21,817 bytes | 14,596 bytes |
+| A match with a minute's research, 2,400 ticks | every snapshot put back to the bytes the server built | | sent at tick 1, and at tick 1,200, when the research finished |
+
+- **Build:** The tree of NW3.1, built by MinGW-w64 g++ 13.2 at `-O2` in the Linux container against the Windows headers MinGW ships, MsQuic 2.6.3's own headers and stand-ins for C++/WinRT's base, and run under Wine 9.0
+- **Seeds:** 1 for the matches, the universe and the load; 5 for the match with research, as `QuicTransportTests.HandsOnTheSnapshotsTheServerBuilt` plays it; the Normal AI's packaged settings
+- **Method:** A scratch driver, not in the repository. It builds Player 1's snapshot (`Simulation::BuildSnapshot`) and encodes it whole (`EncodeMessage`) and in the two parts `TakeCatalog` makes of it, which are what a seat's connection carries (ADR-060 decision 9). The AIs play as hosted players, on a match's server and a universe's (`CreateUniverseServer`). In the match with research, a Research Lab beside Blue's start researches Hull Plating; each of its 2,400 snapshots is taken apart, decoded and put back, and compared with its bytes as built, and its catalogue with the one before.
+- **Source:** ADR-060 decision 9, and the network plan's NW3.1.
 - **Note:** Floats replay only on the same build (ADR-009 decision 1), so MSVC's build may play these seeds otherwise. A seat over the 32 has the rest of its commands applied the tick after, not dropped.
 
 ## Screen
