@@ -25,7 +25,7 @@ Task numbers carry the prefix UN, and gates are lettered J.
 |---|---|---|---|---|
 | UN1.1 | A world becomes a universe, and the game's state the simulation | — | J1, J2, J3, J6, J7 | merged, [#126](https://github.com/Zwaliebaba/Outpost.Commander/pull/126); awaiting a universe made, run and joined |
 | UN2.1 | Esc leaves a universe | UN1.1 | J5 | in review |
-| UN2.2 | The game joins its universe at launch | UN2.1 | J4 | todo |
+| UN2.2 | The game joins its universe at launch | UN2.1 | J4 | in review |
 
 ### Milestone order
 
@@ -87,9 +87,9 @@ UN1, UN2.
 - **Scope:**
   - At launch, with no `--measure`, `--load`, `--stress`, `--matchup` or `--ai-matches`, the game joins the universe of `Outpost Commander\Join.json` in the player's documents when it is there, as the menu's Join universe does; `--join <file>` still names another.
   - It joins once. The menu says "Connecting to" and the server, with only Quit live, as a join from the menu does (ADR-078 decision 9).
-  - The automatic join gives the handshake 3 s (`QuicChannel::Desc::connectTimeout`), and the join from the menu or `--join` keeps 10 s.
+  - The automatic join gives the handshake 3 s (`LAUNCH_JOIN_CONNECT_TIMEOUT`, as `QuicTransport`'s connect timeout), and the join from the menu or `--join` keeps `QuicChannel::CONNECT_TIMEOUT`, 10 s.
   - A join that fails shows the menu with "Could not join the universe:" and why. Nothing later tries again; the menu's Join universe does.
   - The skirmish's server is still made at launch, as it is now, for the menu to fall back to (ADR-049).
-- **ADR:** [ADR-078](../ADR/ADR-078-dedicated-server.md) decision 9; Game §session.launch, Game §session.menu and Game §session.join.
-- **Acceptance:** what can be tested without a window: the switches that skip the automatic join, and the timeout a join is given.
+- **ADR:** [ADR-078](../ADR/ADR-078-dedicated-server.md) decision 9; Game §session.launch and Game §session.join.
+- **Acceptance:** `QuicTransportTests.GivesUpAJoinInTheTimeItIsGiven`: a join given 1 s gives up on a server that has gone well inside the 10 s a join from the menu waits. Which switches skip the join at launch is the shell's, which has no test.
 - **Verify:** CI; run with a join file against a server that answers, one that is stopped, and an address where no machine answers; owner run.

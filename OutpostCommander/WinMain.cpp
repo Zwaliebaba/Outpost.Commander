@@ -55,6 +55,9 @@ constexpr std::wstring_view JOIN_SWITCH = L"--join";
 constexpr std::wstring_view MATCHUP_SWITCH = L"--matchup";
 constexpr auto JOIN_FOLDER = L"Outpost Commander";
 constexpr auto JOIN_FILE = L"Join.json";
+// What the join at launch gives the handshake, so that a player whose server is not there waits no longer for the menu's
+// skirmishes; the menu's Join universe and --join give it the channel's own (ADR-078 decision 9).
+constexpr std::chrono::milliseconds LAUNCH_JOIN_CONNECT_TIMEOUT{3'000};
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -346,7 +349,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // is made on a thread of its own while the menu says so, and the frame loop takes it once it is welcomed or has failed
     // (ADR-078 decision 9). A join that fails goes back to the menu, saying why.
     const std::filesystem::path documentsJoinFile = DocumentsJoinFile();
-    const auto offerUniverse = [&] { client.OfferUniverse(!documentsJoinFile.empty() && std::filesystem::exists(documentsJoinFile)); };
+    const auto joinFileFound = [&] { return !documentsJoinFile.empty() && std::filesystem::exists(documentsJoinFile); };
+    const auto offerUniverse = [&] { client.OfferUniverse(joinFileFound()); };
     struct Joining
     {
       std::string server;
@@ -359,7 +363,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       offerUniverse();
       client.ShowMenu(std::format("Could not join the universe: {}", _error.what()));
     };
-    const auto joinUniverse = [&](const std::filesystem::path& _joinFile)
+    const auto joinUniverse =
+      [&](const std::filesystem::path& _joinFile, std::chrono::milliseconds _connectTimeout = Neuron::QuicChannel::CONNECT_TIMEOUT)
     {
       try
       {
@@ -369,8 +374,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         // The ticket goes to the thread as an argument, which std::async copies, rather than in the lambda's captures.
         joining.emplace(Joining{.server = std::move(server),
                                 .transport = std::async(
-                                  std::launch::async, [](const Outpost::JoinTicket& _ticket)
-                                  { return std::make_unique<Outpost::QuicTransport>(_ticket.address, _ticket.player); }, ticket)});
+                                  std::launch::async, [](const Outpost::JoinTicket& _ticket, std::chrono::milliseconds _timeout)
+                                  { return std::make_unique<Outpost::QuicTransport>(_ticket.address, _ticket.player, _timeout); }, ticket,
+                                  _connectTimeout)});
       }
       catch (const std::exception& error)
       {
@@ -401,6 +407,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       joinUniverse(*joinOnStart);
     else if (skipMenu)
       startMatch();
+    // With a join file in the player's documents, the game joins its universe at launch, once, before it offers a skirmish;
+    // a join that fails leaves the menu saying why, and nothing tries again but the menu's Join universe (ADR-078 decision
+    // 9). A matchup run is for the menu's skirmishes, and joins nothing.
+    else if (!matchup.has_value() && joinFileFound())
+      joinUniverse(documentsJoinFile, LAUNCH_JOIN_CONNECT_TIMEOUT);
     UINT loggedWidthPixels = 0;
     UINT loggedHeightPixels = 0;
     bool firstFramePresented = false;

@@ -351,5 +351,27 @@ public:
     const std::unique_ptr<Outpost::Transport> loopback = listening->Connect(BLUE);
     Assert::ExpectException<Neuron::Exception>([&listening] { (void)listening->OpenSeat(BLUE, Outpost::NewSeatToken()); });
   }
+
+  // ADR-078 decision 9: a join gives the handshake the time it is given, as the game's join at launch gives it 3 s, and
+  // gives up on a server that has gone well before the 10 s a join from the menu waits.
+  TEST_METHOD(GivesUpAJoinInTheTimeItIsGiven)
+  {
+    auto gone = QuicServer();
+    const Outpost::ServerAddress seat = gone->OpenSeat(BLUE, Outpost::NewSeatToken());
+    gone.reset();
+    const auto started = std::chrono::steady_clock::now();
+    std::string message;
+    try
+    {
+      (void)Outpost::QuicTransport(seat, BLUE, 1'000ms);
+    }
+    catch (const Neuron::Exception& error)
+    {
+      message = error.what();
+    }
+    Assert::IsTrue(message.starts_with(std::format("Could not connect to {}:{} over QUIC", seat.host, seat.port)),
+                   std::wstring(winrt::to_hstring(message)).c_str());
+    Assert::IsTrue(std::chrono::steady_clock::now() - started < 5s, L"it gave up within its time");
+  }
 };
 } // namespace GameLogicTests
