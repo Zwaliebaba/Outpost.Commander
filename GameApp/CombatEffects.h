@@ -49,7 +49,7 @@ public:
   explicit CombatEffects(std::uint32_t _ticksPerSecond, std::vector<WeaponShot> _shots = {});
 
   // Takes the shots of a snapshot. Each plays from one tick before the snapshot's own: the shot was fired from where the
-  // ships stood at the start of that tick, and the view shows the snapshot's world a tick late (ADR-013).
+  // ships stood at the start of that tick, and the view shows the snapshot's simulation a tick late (ADR-013).
   void Receive(const Snapshot& _snapshot);
 
   // What to draw with the view at _viewTick. Effects that have played out are forgotten. A shot leaves from the

@@ -42,9 +42,9 @@ Outcome Raid(MatchArena& _arena, Outpost::EntityId _structure, size_t _raiders)
   {
     _arena.Run(1);
     const auto alive = static_cast<size_t>(
-      std::ranges::count_if(raid, [&_arena](Outpost::EntityId _id) { return _arena.World().FindEntity(_id) != nullptr; }));
+      std::ranges::count_if(raid, [&_arena](Outpost::EntityId _id) { return _arena.SimulationState().FindEntity(_id) != nullptr; }));
     const double seconds = static_cast<double>(tick) / MatchArena::TICKS_PER_SECOND;
-    if (_arena.World().FindEntity(_structure) == nullptr)
+    if (_arena.SimulationState().FindEntity(_structure) == nullptr)
     {
       outcome.structureFellSeconds = seconds;
       outcome.raidersLeft = alive;
@@ -101,8 +101,8 @@ public:
     MatchArena arena;
     const Outpost::StructureTuning& tuning = arena.StructureData(Outpost::StructureKind::CommandStation);
     const Outpost::EntityId station =
-      arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {0.0f, 0.0f}, static_cast<float>(tuning.footprintRadiusMeters),
-                                   tuning.hitPoints * Outpost::HUNDREDTHS, 0);
+      arena.SimulationState().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {0.0f, 0.0f},
+                                             static_cast<float>(tuning.footprintRadiusMeters), tuning.hitPoints * Outpost::HUNDREDTHS, 0);
     const Outcome outcome = Raid(arena, station, 7);
     Report("Unarmed Command Station against seven", outcome);
     Assert::IsTrue(outcome.structureFellSeconds > 0.0, L"the raid did not destroy the unarmed station");

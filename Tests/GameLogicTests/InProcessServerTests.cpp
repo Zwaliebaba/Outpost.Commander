@@ -70,25 +70,25 @@ public:
     const std::vector<Outpost::Snapshot> snapshots = blue->Receive();
     Assert::AreEqual(size_t{2}, snapshots.size());
     Assert::AreEqual(std::uint64_t{2}, snapshots[1].tick);
-    Assert::AreEqual(std::uint64_t{2}, server.World().CurrentTick());
+    Assert::AreEqual(std::uint64_t{2}, server.SimulationState().CurrentTick());
   }
 
   TEST_METHOD(AppliesACommandAtTheNextTickAsTheConnectionsPlayer)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
-    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
-    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, SMALL_ION, {});
+    const Outpost::EntityId blueShip = server.SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId redShip = server.SimulationState().SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
 
     // The client claims to be red, but it is on blue's connection, so it may move only blue's ships.
     blue->Send({.player = RED, .order = Outpost::MoveCommand{.ships = {redShip}, .destination = {.xMeters = 5.0f}}});
     blue->Send({.player = RED, .order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {.xMeters = 7.0f}}});
     server.Advance(49ms);
-    Assert::IsFalse(server.World().FindEntity(blueShip)->destination.has_value());
+    Assert::IsFalse(server.SimulationState().FindEntity(blueShip)->destination.has_value());
 
     server.Advance(1ms);
-    Assert::IsFalse(server.World().FindEntity(redShip)->destination.has_value());
-    Assert::IsTrue(server.World().FindEntity(blueShip)->destination == Outpost::PlanePosition{.xMeters = 7.0f});
+    Assert::IsFalse(server.SimulationState().FindEntity(redShip)->destination.has_value());
+    Assert::IsTrue(server.SimulationState().FindEntity(blueShip)->destination == Outpost::PlanePosition{.xMeters = 7.0f});
 
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();
     Assert::AreEqual(size_t{2}, log.size());
@@ -101,8 +101,8 @@ public:
   TEST_METHOD(TellsARefusalToItsPlayerAlone)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
-    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
-    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, SMALL_ION, {});
+    const Outpost::EntityId blueShip = server.SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId redShip = server.SimulationState().SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
     const auto refusals = [](const std::vector<Outpost::Snapshot>& _snapshots)
@@ -148,11 +148,11 @@ public:
   }
 
   // The host makes the tick of a scheduled order's time of day as the command arrives: the client's own tick is never
-  // trusted, and the log keeps the host's, from which the world replays (ADR-009, ADR-080).
+  // trusted, and the log keeps the host's, from which the simulation replays (ADR-009, ADR-080).
   TEST_METHOD(MakesTheTickOfAScheduledOrdersTimeOfDayAsItArrives)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
-    const Outpost::EntityId ship = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId ship = server.SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::int64_t sent =
       std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 6;
@@ -161,7 +161,7 @@ public:
                   .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = sent, .tick = 999'999},
                   .action = {.kind = Outpost::ScheduledActionKind::Move, .position = {.xMeters = 100.0f}}}});
     server.Step();
-    const std::vector<Outpost::ScheduledOrderView> scheduled = server.World().BuildSnapshot(BLUE).scheduled;
+    const std::vector<Outpost::ScheduledOrderView> scheduled = server.SimulationState().BuildSnapshot(BLUE).scheduled;
     Assert::AreEqual(std::size_t{1}, scheduled.size());
     // Between five and six seconds ahead of tick 0, at twenty ticks a second (100 to 120), whenever in its second the test began.
     const std::uint64_t tick = scheduled[0].trigger.tick;
@@ -177,7 +177,7 @@ public:
   TEST_METHOD(RunsItsTicksOnItsOwnThread)
   {
     auto server = std::make_unique<Outpost::InProcessServer>(RepositoryTuning(), RepositoryMap(), Outpost::ServerDesc{.seed = 5});
-    const Outpost::EntityId ship = server->World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId ship = server->SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server->Connect(BLUE);
     server->Start();
     Assert::ExpectException<Neuron::Exception>([&server] { (void)server->Connect(RED); });
@@ -218,8 +218,8 @@ public:
   TEST_METHOD(ReplaysFromItsCommandLog)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 77});
-    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
-    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, SMALL_ION, {});
+    const Outpost::EntityId blueShip = server.SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId redShip = server.SimulationState().SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
     for (int frame = 0; frame < 120; ++frame)
@@ -249,7 +249,7 @@ public:
     (void)replay.SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();
     size_t next = 0;
-    while (replay.CurrentTick() < server.World().CurrentTick())
+    while (replay.CurrentTick() < server.SimulationState().CurrentTick())
     {
       std::vector<Outpost::Command> commands;
       for (; next < log.size() && log[next].tick == replay.CurrentTick(); ++next)
@@ -257,15 +257,15 @@ public:
       (void)replay.Tick(commands);
     }
     Assert::AreEqual(log.size(), next);
-    Assert::IsTrue(replay == server.World());
+    Assert::IsTrue(replay == server.SimulationState());
   }
 
   // ADR-079: a player the server hosts plays on the server's own thread, and its orders are applied at the next tick and
-  // logged as a connection's are, so that a world of two AI empires replays from its seed and its log without them.
+  // logged as a connection's are, so that a universe of two AI empires replays from its seed and its log without them.
   TEST_METHOD(HostsAiEmpiresWhoseOrdersReplayFromTheLog)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 41});
-    server.World().PlaceStartingBases(server.MapData());
+    server.SimulationState().PlaceStartingBases(server.MapData());
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     server.Host(BLUE, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
     server.Host(RED, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
@@ -280,34 +280,34 @@ public:
     }
 
     Outpost::InProcessServer replay(RepositoryTuning(), RepositoryMap(), {.seed = 41});
-    replay.World().PlaceStartingBases(replay.MapData());
+    replay.SimulationState().PlaceStartingBases(replay.MapData());
     replay.PreparePathfinding();
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();
     size_t next = 0;
-    while (replay.World().CurrentTick() < server.World().CurrentTick())
+    while (replay.SimulationState().CurrentTick() < server.SimulationState().CurrentTick())
     {
       std::vector<Outpost::Command> commands;
-      for (; next < log.size() && log[next].tick == replay.World().CurrentTick(); ++next)
+      for (; next < log.size() && log[next].tick == replay.SimulationState().CurrentTick(); ++next)
         commands.push_back(log[next].command);
-      (void)replay.World().Tick(commands);
+      (void)replay.SimulationState().Tick(commands);
     }
-    Assert::IsTrue(replay.World() == server.World());
+    Assert::IsTrue(replay.SimulationState() == server.SimulationState());
   }
 
-  // What two AI empires cost the server's thread over an hour of world, as the tick's 99th
-  // percentile and its longest, and the hosted players' part of them. Run on its own, with OUTPOST_WORLD_MEASURE set.
+  // What two AI empires cost the server's thread over an hour of a universe, as the tick's 99th
+  // percentile and its longest, and the hosted players' part of them. Run on its own, with OUTPOST_UNIVERSE_MEASURE set.
   TEST_METHOD(MeasuresTheHostedPlayersTicks)
   {
-    if (GetEnvironmentVariableW(L"OUTPOST_WORLD_MEASURE", nullptr, 0) == 0)
+    if (GetEnvironmentVariableW(L"OUTPOST_UNIVERSE_MEASURE", nullptr, 0) == 0)
     {
-      Logger::WriteMessage("Not run here: OUTPOST_WORLD_MEASURE runs it.");
+      Logger::WriteMessage("Not run here: OUTPOST_UNIVERSE_MEASURE runs it.");
       return;
     }
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     for (const std::uint64_t seed : {1, 2, 3})
     {
       Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = seed});
-      server.World().PlaceStartingBases(server.MapData());
+      server.SimulationState().PlaceStartingBases(server.MapData());
       server.Host(BLUE, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
       server.Host(RED, std::make_unique<Outpost::AiEmpire>(settings, server.TicksPerSecond()));
       server.PreparePathfinding();
@@ -358,7 +358,7 @@ public:
     const Outpost::Tuning tuning = RepositoryTuning();
     const Outpost::Map map = RepositoryMap();
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    server.World().PlaceStartingBases(map);
+    server.SimulationState().PlaceStartingBases(map);
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
     server.Advance(50ms);
@@ -413,7 +413,7 @@ public:
     // Within the Command Station's footprint of a home asteroid.
     map.starts[0] = {map.oreAsteroids[0].position.xMeters, map.oreAsteroids[0].position.zMeters - 60.0f};
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    Assert::ExpectException<Neuron::Exception>([&] { server.World().PlaceStartingBases(map); });
+    Assert::ExpectException<Neuron::Exception>([&] { server.SimulationState().PlaceStartingBases(map); });
   }
 
   TEST_METHOD(RefusesADuplicateOrMissingPlayer)

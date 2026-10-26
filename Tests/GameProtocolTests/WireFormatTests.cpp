@@ -155,7 +155,7 @@ Outpost::Snapshot FullSnapshot()
   snapshot.startingTickets = 96;
   snapshot.drainIntervalSeconds = 3.25;
   snapshot.drainTicketsPerNodeDifference = 97;
-  // An order fired (ADR-080), with every field set; and the last kind of event, a world's restarted seat (ADR-084 decision 4),
+  // An order fired (ADR-080), with every field set; and the last kind of event, a universe's restarted seat (ADR-084 decision 4),
   // and the tick its seat restarts at.
   const Outpost::EventView fired{.kind = Outpost::EventKind::OrderFired,
                                  .sector = 98,
@@ -285,11 +285,11 @@ public:
     Assert::AreEqual(96, snapshot.startingTickets);
     Assert::IsTrue(snapshot.drainIntervalSeconds == 3.25 && snapshot.drainTicketsPerNodeDifference == 97, L"the drain (task UI3.3)");
     Assert::IsTrue(snapshot.events.size() == 3 && snapshot.events[1].kind == Outpost::EventKind::EmpireRestarted,
-                   L"a world's restarted seat");
+                   L"a universe's restarted seat");
     Assert::IsTrue(snapshot.events[2].kind == Outpost::EventKind::CommandRefused &&
                      snapshot.events[2].refusal == Outpost::CommandResult::NotYetSupported,
                    L"the last kind of event, with the last reason");
-    Assert::AreEqual(std::uint64_t{116}, snapshot.restartTick.value_or(0), L"when a world's lost seat restarts");
+    Assert::AreEqual(std::uint64_t{116}, snapshot.restartTick.value_or(0), L"when a universe's lost seat restarts");
     Assert::AreEqual(55.5, snapshot.constructorBuildSeconds, L"the Constructor's build time (ADR-068)");
     Assert::IsTrue(snapshot.entities[1].kind == Outpost::EntityKind::Derelict, L"the last kind of entity (ADR-074)");
     Assert::AreEqual(97u, snapshot.entities[0].salvageTopic.value);

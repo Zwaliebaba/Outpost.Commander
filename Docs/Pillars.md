@@ -24,7 +24,7 @@ It asks that something between the bases be worth fighting for, so that a match 
 
 Bears on: Game §territory, Game §economy, Game §map, Game §structures.building.
 
-**Where the game strains it.** Once a player's fleet fills its cap, income decides how fast it recovers from a lost battle, not how large its fleet grows, and the bank has no limit and nothing drains it (Game §economy.fleetcap; Game §economy.bank); [the horizon](Horizon.md) §6.2 follows this over a season. A world has no domination (Game §world.overview), so there holding more ground does not, by itself, win.
+**Where the game strains it.** Once a player's fleet fills its cap, income decides how fast it recovers from a lost battle, not how large its fleet grows, and the bank has no limit and nothing drains it (Game §economy.fleetcap; Game §economy.bank); [the horizon](Horizon.md) §6.2 follows this over a season. A universe has no domination (Game §universe.overview), so there holding more ground does not, by itself, win.
 
 ## 3. Research is recovery
 
@@ -34,7 +34,7 @@ It asks that research unlock components and upgrades, so that a player's choices
 
 Bears on: Game §research, Game §structures.lab, Game §neutrals.derelicts, Game §ships.
 
-**Where the game strains it.** Every action keeps a match's pace in a world too ([the horizon](Horizon.md) §2), so the whole tree is done on a world's first day (the horizon §6), and research paces a match but not a world. The horizon proposes tiers that the galaxy opens, in its §6.1.
+**Where the game strains it.** Every action keeps a match's pace in a universe too ([the horizon](Horizon.md) §2), so the whole tree is done on a universe's first day (the horizon §6), and research paces a match but not a universe. The horizon proposes tiers that the galaxy opens, in its §6.1.
 
 ## 4. Readable at a glance
 
@@ -44,17 +44,17 @@ It asks that what a player needs in order to decide be on the screen, in the wor
 
 Bears on: Game §interface, Game §sight, Game §territory.shown, Game §look, Game §map.plane.
 
-**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A world has no tickets, so there the territory alone says who is winning. Each side keeps its set's color everywhere, the HUD following the world (owner, 2026-10-25), so a player in a world's second seat sees its own side in the Tarkan set's orange-red.
+**Where the game strains it.** Under fog a player does not always see who is where: an enemy ship is seen only while it is in sight, and an enemy structure as it was last seen (Game §sight). What every player always sees is the territory and, in a match, both players' tickets (Game §territory.domination). A universe has no tickets, so there the territory alone says who is winning. Each side keeps its set's color everywhere, the HUD following the world (owner, 2026-10-25), so a player in a universe's second seat sees its own side in the Tarkan set's orange-red.
 
 ## 5. Being there buys decisions, not actions
 
-**A world keeps running while its players are away, at the pace of a match, and being present buys better decisions and live battles, not more actions.**
+**A universe keeps running while its players are away, at the pace of a match, and being present buys better decisions and live battles, not more actions.**
 
-It asks that nothing move to a slower clock to fit a world (owner, 2026-10-04), and that whatever keeps an empire running while its player is online have a form that runs while the player is away: a deputy's rule or an order given in advance (Game §ai.deputy; Game §orders.scheduled). The depth of planning comes from orders that meet a changed world, in a small fixed vocabulary rather than a language (owner, 2026-10-08).
+It asks that nothing move to a slower clock to fit a universe (owner, 2026-10-04), and that whatever keeps an empire running while its player is online have a form that runs while the player is away: a deputy's rule or an order given in advance (Game §ai.deputy; Game §orders.scheduled). The depth of planning comes from orders that meet a changed universe, in a small fixed vocabulary rather than a language (owner, 2026-10-08).
 
-Bears on: Game §world, Game §ai.deputy, Game §orders.standing, Game §orders.scheduled, Game §orders.retreat, Game §session.server.
+Bears on: Game §universe, Game §ai.deputy, Game §orders.standing, Game §orders.scheduled, Game §orders.retreat, Game §session.server.
 
-**Where the game strains it.** The deputy is a keeper: it defends what its player holds and gives its Shipyards again what they last queued, but it never attacks, claims a sector or clears pirates (Game §ai.deputy), so a present player gains ground that an absent one only holds. How much presence buys is what the battle matchups measure in battle (Game §session.matchup), and what a world's log records every hour, each seat's growth with how much of the hour its player and its deputy played it (Game §world.log).
+**Where the game strains it.** The deputy is a keeper: it defends what its player holds and gives its Shipyards again what they last queued, but it never attacks, claims a sector or clears pirates (Game §ai.deputy), so a present player gains ground that an absent one only holds. How much presence buys is what the battle matchups measure in battle (Game §session.matchup), and what a universe's log records every hour, each seat's growth with how much of the hour its player and its deputy played it (Game §universe.log).
 
 ---
 

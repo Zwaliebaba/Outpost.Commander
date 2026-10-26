@@ -87,7 +87,7 @@ public:
   TEST_METHOD(KeepsAnEmpireRunningAsTheAiKeepsItsOwn)
   {
     Outpost::InProcessServer server(Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), {.seed = 2});
-    server.World().PlaceStartingBases(server.MapData());
+    server.SimulationState().PlaceStartingBases(server.MapData());
     server.PreparePathfinding();
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
@@ -99,7 +99,7 @@ public:
     Idleness aiIdleness;
     const std::uint64_t handOver = std::uint64_t{10} * 60 * tps;
     const std::uint64_t end = 2 * handOver;
-    while (server.World().CurrentTick() < end)
+    while (server.SimulationState().CurrentTick() < end)
     {
       server.Step();
       for (const Outpost::Snapshot& snapshot : blue->Receive())

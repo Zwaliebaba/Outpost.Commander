@@ -1,6 +1,6 @@
 #pragma once
 
-// How the game writes its values as bytes: the wire format's messages (ADR-060) and a world's saves (ADR-077) alike.
+// How the game writes its values as bytes: the wire format's messages (ADR-060) and a universe's saves (ADR-077) alike.
 // Included where it is needed, not by GameProtocol.h. A record is a type whose fields a Fields function lists, found by
 // argument-dependent lookup: WireFields.h lists the protocol's, and the server lists those of its state.
 
@@ -298,7 +298,7 @@ private:
 
 // Describes how ByteWriter lays a type out, as text: what each value is and in what order, but not the values. Two types
 // laid out alike describe alike, and a field added, taken away, reordered or given another type changes the description.
-// A world's save pins its layout's hash to its state version with it (ADR-077, AGENTS.md R18).
+// A universe's save pins its layout's hash to its state version with it (ADR-077, AGENTS.md R18).
 class ByteLayout
 {
 public:

@@ -33,7 +33,7 @@ private:
                                          std::uint32_t _ticksPerSecond) noexcept;
 
 // The server inside the client (ADR-002), and the dedicated server's (ADR-078). Started, it runs its ticks on a thread of its
-// own (ADR-025); a test may instead step it by hand with Advance, on the test's thread. Match setup, World and the command
+// own (ADR-025); a test may instead step it by hand with Advance, on the test's thread. Match setup, SimulationState and the command
 // log belong to whichever thread steps it, so a started server is touched only through its connections and
 // TakeTickTimings. Made to, it also takes players over QUIC, each into a seat opened for it (ADR-060), and it plays the
 // players it is given to host on that same thread, after each tick (ADR-079).
@@ -62,7 +62,7 @@ public:
   void Advance(std::chrono::nanoseconds _elapsedWallTime);
 
   // For match setup and for tests: the state the server owns.
-  [[nodiscard]] Simulation& World() noexcept
+  [[nodiscard]] Simulation& SimulationState() noexcept
   {
     return m_simulation;
   }
@@ -78,13 +78,13 @@ public:
   }
 
   // What each seat's player missed while away, which the server keeps while the seat's deputy plays and saves with the
-  // world (ADR-080).
+  // universe (ADR-080).
   [[nodiscard]] const AwayReports& Away() const noexcept
   {
     return m_away;
   }
 
-  // The commands applied so far; for a world, since its last save, its folder keeping the rest.
+  // The commands applied so far; for a universe, since its last save, its folder keeping the rest.
   [[nodiscard]] const std::vector<LoggedCommand>& CommandLog() const noexcept
   {
     return m_commandLog;
@@ -97,27 +97,27 @@ public:
   // once every structure of the setup stands (ADR-032). Called once, after the bases and any load are placed.
   void PreparePathfinding();
 
-  // Match setup for a world (ADR-077 decision 7), before PreparePathfinding: from here the server logs every tick's
-  // commands to _folder and saves the world there every WORLD_SAVE_SECONDS of ticks. With _recovery, which
-  // WorldFolder::Recover made of _folder, the simulation becomes the world it saved, and the commands logged since are
-  // applied to it, tick by tick, so that it comes back at the tick after the last of them. The world is saved at once,
+  // Match setup for a universe (ADR-077 decision 7), before PreparePathfinding: from here the server logs every tick's
+  // commands to _folder and saves the universe there every UNIVERSE_SAVE_SECONDS of ticks. With _recovery, which
+  // UniverseFolder::Recover made of _folder, the simulation becomes the universe it saved, and the commands logged since are
+  // applied to it, tick by tick, so that it comes back at the tick after the last of them. The universe is saved at once,
   // and its log begins anew there. _dataHash is DataHash of the tuning data's and the map's files. Throws
-  // Neuron::Exception when the save is of another world, or once the server has started.
-  void UseWorld(const std::filesystem::path& _folder, std::uint64_t _dataHash, std::optional<WorldFolder::Recovery> _recovery);
+  // Neuron::Exception when the save is of another universe, or once the server has started.
+  void UseUniverse(const std::filesystem::path& _folder, std::uint64_t _dataHash, std::optional<UniverseFolder::Recovery> _recovery);
 
-  // For the world run's straight-through world (ADR-082): _player's hosted player is replaced by _hosted, and the orders
+  // For the universe run's straight-through universe (ADR-082): _player's hosted player is replaced by _hosted, and the orders
   // the old one sent for the next tick are dropped, as a server killed between two ticks and made afresh from its folder
   // has them. Throws Neuron::Exception once the server has started, or when the player is not hosted.
   void ReplaceHosted(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted);
 
 private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
-  // them, and then a snapshot for every connected player. A world's tick logs its commands and saves when a save is due.
+  // them, and then a snapshot for every connected player. A universe's tick logs its commands and saves when a save is due.
   // The players the server hosts then answer their snapshots, with orders for the next tick (ADR-079).
   void RunTick();
 
-  // Hands a save of the world as it stands to its folder, which begins its log anew there (ADR-077).
-  void SaveWorld();
+  // Hands a save of the universe as it stands to its folder, which begins its log anew there (ADR-077).
+  void SaveUniverse();
 
   // The started server's thread: it sleeps on a timer until the next tick is due (ADR-055), runs the ticks that are, and
   // stops when asked.
@@ -162,9 +162,9 @@ private:
   Tuning m_tuning;
   Map m_map;
   std::uint64_t m_seed = 0;
-  // Whether the server is a world's (ServerDesc::world), which its seats may be taken in while it runs. Set when it is
+  // Whether the server is a universe's (ServerDesc::universe), which its seats may be taken in while it runs. Set when it is
   // made, and only read after, by any thread.
-  bool m_isWorld = false;
+  bool m_isUniverse = false;
   Neuron::TickHost m_tickHost;
   Simulation m_simulation;
   std::vector<Connection> m_connections;
@@ -188,19 +188,19 @@ private:
   std::string m_listenHost;
   // Touched by the thread that steps the server only.
   AwayReports m_away;
-  // A world's folder and which world it is, once UseWorld has made the server a world's. Destroyed after the thread, so
+  // A universe's folder and which universe it is, once UseUniverse has made the server a universe's. Destroyed after the thread, so
   // that the saves it was handed are written before the server goes.
-  std::unique_ptr<WorldFolder> m_world;
-  WorldIdentity m_identity;
-  // The world's log, beside its saves (ADR-082), and the file it writes to.
+  std::unique_ptr<UniverseFolder> m_folder;
+  UniverseIdentity m_identity;
+  // The universe's log, beside its saves (ADR-082), and the file it writes to.
   std::ofstream m_logFile;
-  std::optional<WorldLog> m_log;
+  std::optional<UniverseLog> m_log;
   // Last, so that it is destroyed first: the thread stops and is joined before anything it uses goes.
   std::jthread m_thread;
 };
-// A server as CreateInProcessServer makes it, as its own type, for what needs more of it than Server shows: the world run
+// A server as CreateInProcessServer makes it, as its own type, for what needs more of it than Server shows: the universe run
 // (ADR-082).
-[[nodiscard]] std::unique_ptr<InProcessServer> CreateWorldServer(const ServerDesc& _desc);
+[[nodiscard]] std::unique_ptr<InProcessServer> CreateUniverseServer(const ServerDesc& _desc);
 
 // The battle matchups of the package's Matchups.json, as a server reads them (ADR-083).
 [[nodiscard]] std::vector<Matchup> ReadPackagedMatchups();

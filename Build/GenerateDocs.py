@@ -503,10 +503,10 @@ class Catalogue:
       if table_key not in tuning:
         fail(TUNING, f"has no \"{table_key}\"")
       self.add_names(table_key, tuning[table_key], f"{TUNING}, {table_key}")
-    world = read_json(self.root, MAP)
-    if not isinstance(world, dict) or "sectors" not in world:
+    map_data = read_json(self.root, MAP)
+    if not isinstance(map_data, dict) or "sectors" not in map_data:
       fail(MAP, "is not a JSON object with \"sectors\"")
-    self.add_names("sectors", world["sectors"], f"{MAP}, sectors")
+    self.add_names("sectors", map_data["sectors"], f"{MAP}, sectors")
 
     lines = [banner(f"the data in `{ASSETS}/`", "the data"), "", "# Catalogue", "",
              "The game's tuning data, as tables. The data files are each number's one home, and this shows them. Every "
@@ -518,7 +518,7 @@ class Catalogue:
     lines += self.file_part("Tuning", TUNING, tuning, TUNING_KEYS,
                             "The match's rules, every component, structure and research topic, the pirates and the "
                             f"neutral sites ([ADR-008]({adr_link(CATALOGUE, 'ADR-008-tuning-data.md')})).")
-    lines += self.file_part("Map", MAP, world, MAP_KEYS, "The map a match is played on.")
+    lines += self.file_part("Map", MAP, map_data, MAP_KEYS, "The map a match is played on.")
     lines += self.opponent_part()
     lines += self.file_part("Matchups", MATCHUPS, read_json(self.root, MATCHUPS), ("matchups",),
                             f"The battle matchups ([ADR-083]({adr_link(CATALOGUE, 'ADR-083-battle-matchups.md')})).")

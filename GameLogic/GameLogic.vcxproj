@@ -89,13 +89,13 @@
     <ClInclude Include="Simulation.h" />
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="StressLoad.h" />
-    <ClInclude Include="WorldState.h" />
-    <ClInclude Include="WorldFolder.h" />
+    <ClInclude Include="UniverseState.h" />
+    <ClInclude Include="UniverseFolder.h" />
     <ClInclude Include="SeatController.h" />
     <ClInclude Include="AwayReports.h" />
-    <ClInclude Include="WorldLog.h" />
-    <ClInclude Include="WorldRun.h" />
-    <ClInclude Include="WorldSettings.h" />
+    <ClInclude Include="UniverseLog.h" />
+    <ClInclude Include="UniverseRun.h" />
+    <ClInclude Include="UniverseSettings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -112,13 +112,13 @@
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Tuning.cpp" />
     <ClCompile Include="StressLoad.cpp" />
-    <ClCompile Include="WorldState.cpp" />
-    <ClCompile Include="WorldFolder.cpp" />
+    <ClCompile Include="UniverseState.cpp" />
+    <ClCompile Include="UniverseFolder.cpp" />
     <ClCompile Include="SeatController.cpp" />
     <ClCompile Include="AwayReports.cpp" />
-    <ClCompile Include="WorldLog.cpp" />
-    <ClCompile Include="WorldRun.cpp" />
-    <ClCompile Include="WorldSettings.cpp" />
+    <ClCompile Include="UniverseLog.cpp" />
+    <ClCompile Include="UniverseRun.cpp" />
+    <ClCompile Include="UniverseSettings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

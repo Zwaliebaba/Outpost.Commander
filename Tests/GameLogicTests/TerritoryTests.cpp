@@ -38,9 +38,9 @@ public:
   TEST_METHOD(EachStationHoldsItsHomeSector)
   {
     TerritoryMatch match;
-    Assert::IsTrue(match.World().HasTerritory());
+    Assert::IsTrue(match.SimulationState().HasTerritory());
     match.Run(1);
-    const Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot blue = match.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(size_t{25}, blue.sectors.size());
     for (const Outpost::SectorView& sector : blue.sectors)
     {
@@ -48,7 +48,7 @@ public:
       Assert::IsTrue(sector.holder == expected, Widen(sector.nameUtf8).c_str());
       Assert::IsFalse(sector.suppressed || sector.cutOff);
     }
-    Assert::IsTrue(blue.sectors == match.World().BuildSnapshot(RED).sectors, L"the territory is the same for both");
+    Assert::IsTrue(blue.sectors == match.SimulationState().BuildSnapshot(RED).sectors, L"the territory is the same for both");
     const Outpost::SectorView flank = match.Sector(BLUE, B1);
     Assert::AreEqual(std::string("B1"), flank.nameUtf8);
     Assert::IsTrue(flank.adjacent == std::vector<std::int32_t>{1, 3, 7});
@@ -61,17 +61,17 @@ public:
     TerritoryMatch match;
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, {.xMeters = -1700.0f, .zMeters = -4300.0f}) ==
                    Outpost::CommandResult::Applied);
-    const auto relay = std::ranges::find(match.World().Entities(), Outpost::StructureKind::Relay, &Outpost::Entity::structure);
-    Assert::IsTrue(relay != match.World().Entities().end());
+    const auto relay = std::ranges::find(match.SimulationState().Entities(), Outpost::StructureKind::Relay, &Outpost::Entity::structure);
+    Assert::IsTrue(relay != match.SimulationState().Entities().end());
     Assert::IsTrue(relay->position == match.Placement(B1).node, L"the Relay stands on the node");
     const Outpost::EntityId site = relay->id;
     match.Run(1);
     Assert::IsFalse(match.Sector(BLUE, B1).holder.IsValid(), L"a site holds nothing");
 
     const std::uint32_t ticksPerSecond = 20;
-    for (std::uint32_t second = 0; second < 240 && !match.World().FindEntity(site)->IsBuilt(); ++second)
+    for (std::uint32_t second = 0; second < 240 && !match.SimulationState().FindEntity(site)->IsBuilt(); ++second)
       match.Run(ticksPerSecond);
-    Assert::IsTrue(match.World().FindEntity(site)->IsBuilt());
+    Assert::IsTrue(match.SimulationState().FindEntity(site)->IsBuilt());
     match.Run(1);
     Assert::IsTrue(match.Sector(RED, B1).holder == BLUE);
   }
@@ -184,7 +184,7 @@ public:
     const Outpost::EntityId rig = match.Structure(BLUE, Outpost::StructureKind::MiningRig, match.AsteroidIn(B1));
     (void)match.Relay(RED, B1);
     const auto reserve = [&match, rig]
-    { return match.World().FindEntity(match.World().FindEntity(rig)->site)->oreReserveHundredths.value_or(-1); };
+    { return match.SimulationState().FindEntity(match.SimulationState().FindEntity(rig)->site)->oreReserveHundredths.value_or(-1); };
     const std::int64_t before = reserve();
     match.Run(100);
     Assert::AreEqual(0, match.Income(BLUE));
@@ -203,7 +203,7 @@ public:
     Assert::AreEqual(NEAR_INCOME, match.Income(BLUE));
 
     // A Constructor is no warship.
-    (void)match.World().SpawnConstructor(RED, {.xMeters = node.xMeters + 300.0f, .zMeters = node.zMeters});
+    (void)match.SimulationState().SpawnConstructor(RED, {.xMeters = node.xMeters + 300.0f, .zMeters = node.zMeters});
     match.Run(1);
     Assert::IsFalse(match.Sector(BLUE, B1).suppressed);
 
@@ -264,17 +264,17 @@ public:
     map.outpostRules.clear();
     map.derelictRules.clear();
     Outpost::InProcessServer server(Outpost::LoadTuning(ReadRepositoryTuning()), map, {.seed = 3});
-    server.World().PlaceStartingBases(map);
-    Assert::IsFalse(server.World().HasTerritory());
+    server.SimulationState().PlaceStartingBases(map);
+    Assert::IsFalse(server.SimulationState().HasTerritory());
     std::vector<Outpost::EntityId> constructors;
-    for (const Outpost::Entity& entity : server.World().Entities())
+    for (const Outpost::Entity& entity : server.SimulationState().Entities())
     {
       if (entity.owner == BLUE && entity.role == Outpost::ShipRole::Constructor && entity.kind == Outpost::EntityKind::Ship)
         constructors.push_back(entity.id);
     }
     const auto build = [&](Outpost::StructureKind _kind, Outpost::PlanePosition _position)
     {
-      return server.World()
+      return server.SimulationState()
         .Tick({{.player = BLUE,
                 .order = Outpost::BuildStructureCommand{.constructors = constructors, .structure = _kind, .position = _position}}})
         .front();
@@ -283,7 +283,7 @@ public:
                    Outpost::CommandResult::NotBuildable);
     // A home asteroid: with no sectors, the seed places none of the others (ADR-072).
     Assert::IsTrue(build(Outpost::StructureKind::MiningRig, server.MapData().oreAsteroids[0].position) == Outpost::CommandResult::Applied);
-    Assert::IsTrue(server.World().BuildSnapshot(BLUE).sectors.empty());
+    Assert::IsTrue(server.SimulationState().BuildSnapshot(BLUE).sectors.empty());
   }
 
   // ADR-064 decision 11: a Command Station at level 1 lets its player hold 4 nodes, home included, and level 2
@@ -293,7 +293,7 @@ public:
   {
     TerritoryMatch match;
     match.Run(1);
-    Assert::AreEqual(4, match.World().BuildSnapshot(BLUE).nodeCap);
+    Assert::AreEqual(4, match.SimulationState().BuildSnapshot(BLUE).nodeCap);
     (void)match.Relay(BLUE, B1);
     (void)match.Relay(BLUE, A2);
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(B2).node) == Outpost::CommandResult::Applied);
@@ -301,7 +301,7 @@ public:
                    L"the site in B2 takes the fourth node");
 
     // Level 2: seven nodes.
-    const Outpost::EntityId station = std::ranges::find_if(match.World().Entities(),
+    const Outpost::EntityId station = std::ranges::find_if(match.SimulationState().Entities(),
                                                            [](const Outpost::Entity& _entity)
                                                            {
                                                              return _entity.owner == BLUE &&
@@ -311,10 +311,10 @@ public:
                                         ->id;
     // The level builds itself, while the Constructor builds the Relay in B2.
     const Outpost::UpgradeStructureCommand upgrade{.structure = station};
-    Assert::IsTrue(match.World().Tick({{.player = BLUE, .order = upgrade}}).front() == Outpost::CommandResult::Applied);
-    for (int tick = 0; tick < 120 * 20 && match.World().FindEntity(station)->level < 2; ++tick)
+    Assert::IsTrue(match.SimulationState().Tick({{.player = BLUE, .order = upgrade}}).front() == Outpost::CommandResult::Applied);
+    for (int tick = 0; tick < 120 * 20 && match.SimulationState().FindEntity(station)->level < 2; ++tick)
       match.Run(1);
-    Assert::AreEqual(7, match.World().BuildSnapshot(BLUE).nodeCap);
+    Assert::AreEqual(7, match.SimulationState().BuildSnapshot(BLUE).nodeCap);
     for (int tick = 0; tick < 240 * 20 && match.Sector(BLUE, B2).holder != BLUE; ++tick)
       match.Run(1);
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(A3).node) == Outpost::CommandResult::Applied);
@@ -324,25 +324,27 @@ public:
 
     // Without its station, Blue has level 1's cap, 4, and keeps the four sectors its Relays hold.
     const Outpost::PlanePosition home = match.Placement(A1).node;
-    const Outpost::DesignId lance = match.World().FindDesign(RED, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{2}})->id;
+    const Outpost::DesignId lance =
+      match.SimulationState().FindDesign(RED, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{2}})->id;
     std::vector<Outpost::EntityId> lances;
     lances.reserve(30);
     for (int i = 0; i < 30; ++i)
     {
       const int column = i % 6;
       const int row = i / 6;
-      lances.push_back(match.World().SpawnShip(RED, lance,
-                                               {.xMeters = home.xMeters + 150.0f + (15.0f * static_cast<float>(column)),
-                                                .zMeters = home.zMeters + 150.0f + (15.0f * static_cast<float>(row))}));
+      lances.push_back(match.SimulationState().SpawnShip(RED, lance,
+                                                         {.xMeters = home.xMeters + 150.0f + (15.0f * static_cast<float>(column)),
+                                                          .zMeters = home.zMeters + 150.0f + (15.0f * static_cast<float>(row))}));
     }
     match.Run(1);
-    Assert::IsTrue(match.World().Tick({{.player = RED, .order = Outpost::AttackCommand{.ships = lances, .target = station}}}).front() ==
-                   Outpost::CommandResult::Applied);
-    for (int tick = 0; tick < 120 * 20 && match.World().FindEntity(station) != nullptr; ++tick)
+    Assert::IsTrue(
+      match.SimulationState().Tick({{.player = RED, .order = Outpost::AttackCommand{.ships = lances, .target = station}}}).front() ==
+      Outpost::CommandResult::Applied);
+    for (int tick = 0; tick < 120 * 20 && match.SimulationState().FindEntity(station) != nullptr; ++tick)
       match.Run(1);
-    Assert::IsNull(match.World().FindEntity(station), L"the lances destroyed the station");
+    Assert::IsNull(match.SimulationState().FindEntity(station), L"the lances destroyed the station");
     match.Run(1);
-    Assert::AreEqual(4, match.World().BuildSnapshot(BLUE).nodeCap);
+    Assert::AreEqual(4, match.SimulationState().BuildSnapshot(BLUE).nodeCap);
     for (const std::int32_t sector : {B1, A2, B2, A3})
       Assert::IsTrue(match.Sector(BLUE, sector).holder == BLUE, L"no node is taken away");
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(C1).node) == Outpost::CommandResult::CapReached);

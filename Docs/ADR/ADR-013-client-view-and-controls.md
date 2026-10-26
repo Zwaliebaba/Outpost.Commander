@@ -5,7 +5,7 @@ Owns: snapshot-interpolation, client-tick-rate, input-events, player-controls, c
 
 ## Context
 
-ADR-002 decision 5 has the client draw only snapshots, never server state, and ADR-002 decision 2 has every change to the world reach the server as a `Command`. The client therefore needs two things of its own: a view that moves smoothly between snapshots that arrive at the server's tick rate, and controls that turn the player's mouse and keys into selection and `Command`s.
+ADR-002 decision 5 has the client draw only snapshots, never server state, and ADR-002 decision 2 has every change to the simulation reach the server as a `Command`. The client therefore needs two things of its own: a view that moves smoothly between snapshots that arrive at the server's tick rate, and controls that turn the player's mouse and keys into selection and `Command`s.
 
 - **A snapshot has to say how to draw a ship.** The mesh depends on the ship's hull and its owner's set.
 - **Held state misses input.** A click that goes down and up between two frames never shows in the state a frame reads.
@@ -13,8 +13,8 @@ ADR-002 decision 5 has the client draw only snapshots, never server state, and A
 ## Decision
 
 1. **A ship's `EntityView` carries its `HullId`.** The client picks the mesh by hull, and by the owner's set, through `players` and `hulls` in `Models.json`. The ship's design is in the snapshot too, and the player's designs with their names (ADR-014).
-2. **The client takes the tick rate from its own build's tuning data.** The shell reads it once from its first skirmish server (`Server::TicksPerSecond()`) and gives it to `GameClient`, the AI and the match log, and uses the same rate for a world it joins on a dedicated server. Nothing on the wire carries the server's rate, and the hello checks the protocol's version and layout, not the server's data ([ADR-060](ADR-060-quic-in-process.md) decision 5). That holds while the game and `OutpostServer` package the same `Tuning.json` (owner, 2026-10-25). A server that may run another rate or other data needs the welcome to carry the rate, or the hello the data's hash, which is a wire change and a new decision.
-3. **`SnapshotInterpolator` shows the world one tick behind the newest snapshot**, interpolated between the two snapshots around that moment. Positions are interpolated linearly, and headings the short way round.
+2. **The client takes the tick rate from its own build's tuning data.** The shell reads it once from its first skirmish server (`Server::TicksPerSecond()`) and gives it to `GameClient`, the AI and the match log, and uses the same rate for a universe it joins on a dedicated server. Nothing on the wire carries the server's rate, and the hello checks the protocol's version and layout, not the server's data ([ADR-060](ADR-060-quic-in-process.md) decision 5). That holds while the game and `OutpostServer` package the same `Tuning.json` (owner, 2026-10-25). A server that may run another rate or other data needs the welcome to carry the rate, or the hello the data's hash, which is a wire change and a new decision.
+3. **`SnapshotInterpolator` shows the simulation one tick behind the newest snapshot**, interpolated between the two snapshots around that moment. Positions are interpolated linearly, and headings the short way round.
    - **The clock.** The view's clock runs at the tick rate. Each frame it is pulled 10% of the way toward "newest tick + time since it arrived − 1 tick". It jumps if it is more than 2 ticks off.
    - **No extrapolation.** It is clamped to the newest snapshot, so when snapshots stop the view holds still.
    - **History.** Eight snapshots are kept, the newest last. The view needs only the two around the moment it shows, and after a stall its clock jumps rather than replaying what arrived meanwhile.

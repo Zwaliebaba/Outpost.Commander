@@ -397,7 +397,7 @@ enum class EventKind : std::uint8_t
   SectorLost,
   // A scheduled order of the player's fired.
   OrderFired,
-  // In a world, the player lost its Command Station and its last finished Shipyard, and its seat restarted at its start an
+  // In a universe, the player lost its Command Station and its last finished Shipyard, and its seat restarted at its start an
   // hour later (ADR-084 decisions 3 and 4); each names the start's sector and the start.
   EmpireLost,
   EmpireRestarted,
@@ -522,7 +522,7 @@ struct AwayReport
   friend bool operator==(const AwayReport&, const AwayReport&) = default;
 };
 
-// The world as one player may see it after one tick (ADR-002 decision 4). Under fog of war it holds the player's own
+// The simulation as one player may see it after one tick (ADR-002 decision 4). Under fog of war it holds the player's own
 // entities, the asteroids and fields, the enemy entities the player sees and the enemy structures it remembers, and the
 // shots and destructions it sees (ADR-024).
 struct Snapshot
@@ -570,7 +570,7 @@ struct Snapshot
   std::int32_t commandPoints = 0;
   std::int32_t fleetCap = 0;
   // The match is over once a player has neither a Command Station nor a finished Shipyard (ADR-037 decision 1): the winner
-  // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
+  // is the player who still has one, and no player when both lost theirs in the same tick. The simulation runs on after it
   // (owner, 2026-10-01).
   bool matchOver = false;
   PlayerId winner;
@@ -590,7 +590,7 @@ struct Snapshot
   // (ADR-057 decision 8).
   double drainIntervalSeconds = 0.0;
   std::int32_t drainTicketsPerNodeDifference = 0;
-  // In a world, while the player has lost: the tick its seat restarts at its start, or has waited since for the start to
+  // In a universe, while the player has lost: the tick its seat restarts at its start, or has waited since for the start to
   // be free (ADR-084 decision 4); none while it stands, and none in a match.
   std::optional<std::uint64_t> restartTick;
 };

@@ -7,10 +7,10 @@ namespace Outpost
 using SeatToken = std::array<std::uint8_t, 16>;
 
 // A new token from the system's source of randomness. Never in the simulation, which draws only from its own PRNG
-// (ADR-009): a token is the server host's, not the world's.
+// (ADR-009): a token is the server host's, not the universe's.
 [[nodiscard]] SeatToken NewSeatToken();
 
-// _bytes as lowercase hexadecimal, two digits a byte, as the world's settings and a join file write a token or a
+// _bytes as lowercase hexadecimal, two digits a byte, as the universe's settings and a join file write a token or a
 // certificate's hash.
 [[nodiscard]] std::string ToHex(std::span<const std::uint8_t> _bytes);
 

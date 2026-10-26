@@ -48,8 +48,8 @@ public:
     std::get<Outpost::SaveDesignCommand>(save.order).module = SENSOR_ARRAY;
     Assert::IsTrue(Result(arena, save) == Outpost::CommandResult::Applied);
     Assert::IsTrue(Result(arena, save) == Outpost::CommandResult::DuplicateDesign);
-    const Outpost::ShipDesign* scout = arena.World().FindDesign(BLUE, {SMALL, ION, MASS_DRIVER, SENSOR_ARRAY});
-    const Outpost::ShipDesign* plain = arena.World().FindDesign(BLUE, {SMALL, ION, MASS_DRIVER});
+    const Outpost::ShipDesign* scout = arena.SimulationState().FindDesign(BLUE, {SMALL, ION, MASS_DRIVER, SENSOR_ARRAY});
+    const Outpost::ShipDesign* plain = arena.SimulationState().FindDesign(BLUE, {SMALL, ION, MASS_DRIVER});
     Assert::IsNotNull(scout);
     Assert::IsNotNull(plain);
     Assert::IsTrue(scout != plain);
@@ -57,7 +57,7 @@ public:
     Assert::AreEqual(plain->stats.movement.speedMetersPerSecond * 0.9f, scout->stats.movement.speedMetersPerSecond, 1e-4f);
     Assert::AreEqual(700.0f, scout->stats.moduleSightMeters);
 
-    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
     const Outpost::DesignView* view = ViewOf(snapshot, scout->id);
     Assert::IsNotNull(view);
     Assert::IsTrue(view->module == SENSOR_ARRAY);
@@ -66,10 +66,10 @@ public:
     Assert::IsTrue(snapshot.modules[0].available && snapshot.modules[0].nameUtf8 == "Sensor Array");
 
     // A ship of it sees 700 m, and the snapshot names its module.
-    arena.World().UseFog();
-    const Outpost::EntityId ship = arena.World().SpawnShip(BLUE, scout->id, {0.0f, -600.0f});
-    Assert::AreEqual(700.0f, arena.World().SightMetersOf(*arena.World().FindEntity(ship)));
-    const Outpost::Snapshot seen = arena.World().BuildSnapshot(BLUE);
+    arena.SimulationState().UseFog();
+    const Outpost::EntityId ship = arena.SimulationState().SpawnShip(BLUE, scout->id, {0.0f, -600.0f});
+    Assert::AreEqual(700.0f, arena.SimulationState().SightMetersOf(*arena.SimulationState().FindEntity(ship)));
+    const Outpost::Snapshot seen = arena.SimulationState().BuildSnapshot(BLUE);
     const auto entity = std::ranges::find(seen.entities, ship, &Outpost::EntityView::id);
     Assert::IsTrue(entity != seen.entities.end() && entity->module == SENSOR_ARRAY && entity->sightMeters == 700.0f);
 
@@ -88,19 +88,19 @@ public:
     for (const std::uint32_t topic : {2u, 5u})
       (void)arena.Tick({Order(BLUE, Outpost::StartResearchCommand{.lab = lab, .topic = Outpost::ResearchTopicId{topic}})});
     arena.Run(150 * MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(size_t{2}, arena.World().Researched(BLUE).size());
+    Assert::AreEqual(size_t{2}, arena.SimulationState().Researched(BLUE).size());
 
     Assert::IsTrue(Result(arena, Save(BLUE, SMALL, FUSION, LANCE, "Sentry")) == Outpost::CommandResult::Applied);
-    const Outpost::ShipDesign* sentry = arena.World().FindDesign(BLUE, {SMALL, FUSION, LANCE});
+    const Outpost::ShipDesign* sentry = arena.SimulationState().FindDesign(BLUE, {SMALL, FUSION, LANCE});
     Assert::IsNotNull(sentry);
     const Outpost::DesignId id = sentry->id;
     Assert::AreEqual(591, sentry->stats.cost);
-    Assert::IsNotNull(ViewOf(arena.World().BuildSnapshot(BLUE), id));
-    Assert::IsNull(ViewOf(arena.World().BuildSnapshot(RED), id), L"a design is its player's alone");
+    Assert::IsNotNull(ViewOf(arena.SimulationState().BuildSnapshot(BLUE), id));
+    Assert::IsNull(ViewOf(arena.SimulationState().BuildSnapshot(RED), id), L"a design is its player's alone");
 
     Assert::IsTrue(Result(arena, Save(BLUE, SMALL, FUSION, LANCE, "Watchman", id)) == Outpost::CommandResult::Applied);
-    Assert::AreEqual(std::string("Watchman"), ViewOf(arena.World().BuildSnapshot(BLUE), id)->nameUtf8);
-    Assert::AreEqual(size_t{5}, arena.World().BuildSnapshot(BLUE).designs.size());
+    Assert::AreEqual(std::string("Watchman"), ViewOf(arena.SimulationState().BuildSnapshot(BLUE), id)->nameUtf8);
+    Assert::AreEqual(size_t{5}, arena.SimulationState().BuildSnapshot(BLUE).designs.size());
   }
 
   // ADR-017: a saved design's components never change, so the ships built of it stay what they are; another player's
@@ -120,7 +120,7 @@ public:
          {std::string(), std::string("   "), std::string(33, 'x'), std::string("Tab\there"), std::string("Caf\xc3\xa9")})
       Assert::IsTrue(Result(arena, Save(BLUE, SMALL, ION, MASS_DRIVER, name, swarm)) == Outpost::CommandResult::InvalidName);
     Assert::IsTrue(Result(arena, Save(BLUE, SMALL, ION, MASS_DRIVER, std::string(32, 'x'), swarm)) == Outpost::CommandResult::Applied);
-    Assert::AreEqual(size_t{4}, arena.World().BuildSnapshot(BLUE).designs.size(), L"nothing was added");
+    Assert::AreEqual(size_t{4}, arena.SimulationState().BuildSnapshot(BLUE).designs.size(), L"nothing was added");
   }
 
   // ADR-017: the designer derives a design's stats from the snapshot's components with the function the server uses, so
@@ -130,7 +130,7 @@ public:
     MatchArena arena;
     const auto check = [&arena](const std::wstring& _when)
     {
-      const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+      const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
       Assert::AreEqual(size_t{3}, snapshot.hulls.size());
       for (const Outpost::HullView& hull : snapshot.hulls)
       {
@@ -140,9 +140,9 @@ public:
           {
             const Outpost::DesignStats shown = Outpost::DesignStatsOf(hull, drive, weapon);
             const Outpost::DesignStats fought =
-              Outpost::DesignStatsFor(arena.TuningData(), hull.id, drive.id, weapon.id, arena.World().UpgradesOf(BLUE));
+              Outpost::DesignStatsFor(arena.TuningData(), hull.id, drive.id, weapon.id, arena.SimulationState().UpgradesOf(BLUE));
             Assert::IsTrue(shown == fought, std::format(L"{}: {}+{}+{}", _when, hull.id.value, drive.id.value, weapon.id.value).c_str());
-            if (const Outpost::ShipDesign* saved = arena.World().FindDesign(BLUE, {hull.id, drive.id, weapon.id}))
+            if (const Outpost::ShipDesign* saved = arena.SimulationState().FindDesign(BLUE, {hull.id, drive.id, weapon.id}))
               Assert::IsTrue(shown == saved->stats, _when.c_str());
           }
         }
@@ -154,7 +154,7 @@ public:
     for (const std::uint32_t topic : {2u, 3u, 4u})
       (void)arena.Tick({Order(BLUE, Outpost::StartResearchCommand{.lab = lab, .topic = Outpost::ResearchTopicId{topic}})});
     arena.Run(220 * MatchArena::TICKS_PER_SECOND);
-    Assert::AreEqual(size_t{3}, arena.World().Researched(BLUE).size());
+    Assert::AreEqual(size_t{3}, arena.SimulationState().Researched(BLUE).size());
     check(L"after Hull Plating and both fire-rate topics");
   }
 };

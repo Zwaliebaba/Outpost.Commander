@@ -1,6 +1,6 @@
 # The Self-Play Network — Blueprint
 
-Status: **proposal** · 2026-10-04 · It still targets Phase 3's rules and Phase 3's map of 9 sectors. What the game has gained since is not in it: the 10 km map of 25 sectors (Game §map), the fleet cap (Game §economy.fleetcap), pirates, derelicts and repair (Game §neutrals), retreat (Game §orders.retreat), the Sensor Array (Game §ships.modules) and worlds with their deputies and AI empires (Game §world, Game §ai.deputy, Game §ai.empire). SP2.1's ADR is written against the rules as built · The blueprint of milestone SP2 of [the self-play plan](ImplementationPlan-SelfPlay.md). Nothing here is decided until SP2.1's ADR, and the owner's six questions are gates N1 to N6 (§15).
+Status: **proposal** · 2026-10-04 · It still targets Phase 3's rules and Phase 3's map of 9 sectors. What the game has gained since is not in it: the 10 km map of 25 sectors (Game §map), the fleet cap (Game §economy.fleetcap), pirates, derelicts and repair (Game §neutrals), retreat (Game §orders.retreat), the Sensor Array (Game §ships.modules) and universes with their deputies and AI empires (Game §universe, Game §ai.deputy, Game §ai.empire). SP2.1's ADR is written against the rules as built · The blueprint of milestone SP2 of [the self-play plan](ImplementationPlan-SelfPlay.md). Nothing here is decided until SP2.1's ADR, and the owner's six questions are gates N1 to N6 (§15).
 
 This document describes how the network that plays the AI's macro game would work: what it sees, what it decides, how it learns, where it sits in the code, what it costs, and what it tells the owner. [ADR-063](../ADR/ADR-063-self-play-probe.md) records the first milestone, the search over the AI's numbers, and why it comes first. The network targets Phase 3's rules, and §16 records what [the horizon](../Horizon.md) would change.
 
@@ -14,7 +14,7 @@ The first milestone answers what fixed numbers can do. The scripted AI applies t
 
 The network never plays in the game the players get. It plays only in the headless `--ai-matches` switch, and ADR-063 forecloses a learned AI in the shipped game without a design decision of the owner's and a new ADR.
 
-**A world gives the AI another job.** In a world that keeps running, the deputy commands an absent player's seat around the clock, and an AI empire is the same AI playing a seat of its own (Game §ai.deputy, Game §ai.empire; horizon §4). A deputy much weaker than its player lets presence decide a season. The network does not become the deputy here: it stays the probe, and it becomes the deputy's benchmark (§13). Whether a learned policy should ever command a seat is gate N6 (§15).
+**A universe gives the AI another job.** In a universe that keeps running, the deputy commands an absent player's seat around the clock, and an AI empire is the same AI playing a seat of its own (Game §ai.deputy, Game §ai.empire; horizon §4). A deputy much weaker than its player lets presence decide a season. The network does not become the deputy here: it stays the probe, and it becomes the deputy's benchmark (§13). Whether a learned policy should ever command a seat is gate N6 (§15).
 
 ## 2. The shape of it in one paragraph
 
@@ -148,7 +148,7 @@ The initialization and the activations follow the defaults that the large study 
 
 **In training and in the probe's report, each head's choice is drawn from its probabilities.** Each draw is computed from the match's seed, the seat, the tick and the head, not taken from a running generator. A fresh generator is seeded from the four, combined so that no two draws share a seed, and gives one number. The switch hands the seed to the AI, since the server does not; the AI learns nothing about the match from it.
 
-A match with a network so reproduces from its seed, the two settings files and the two weights files, on one binary. And any single decision reproduces from the snapshot and the command log alone, with no generator state to save, which a world that restarts needs (horizon §3).
+A match with a network so reproduces from its seed, the two settings files and the two weights files, on one binary. And any single decision reproduces from the snapshot and the command log alone, with no generator state to save, which a universe that restarts needs (horizon §3).
 
 `Neuron::Random`, the generator ADR-009 pins, lives in `NeuronServer`, which the AI may not include (ADR-002). Gate N4 asks whether it moves to `NeuronCore`, where both may use it, or the AI keeps a copy.
 
@@ -168,7 +168,7 @@ A match with a network so reproduces from its seed, the two settings files and t
 - **Today an episode is a whole match.**
 - **An episode that stops without an outcome is cut short, not lost.** The trainer adds the value it estimates for the last state to the returns, and does not treat the stop as an ending. The learning code so works unchanged on pieces of a longer game.
 - **In a season there is no match to finish** (§12). An episode is then a segment of an hour or two, started from a state of a long run.
-- **The cheapest start state needs no new code.** The same binary replays a recorded run from its seed and commands to any tick (ADR-009). The AIs replay with it, since their draws are seeded too (§8). A world's save, which the server writes from a copy of its state between ticks, would save the replay's time ([ADR-077](../ADR/ADR-077-world-state-on-disk.md)).
+- **The cheapest start state needs no new code.** The same binary replays a recorded run from its seed and commands to any tick (ADR-009). The AIs replay with it, since their draws are seeded too (§8). A universe's save, which the server writes from a copy of its state between ticks, would save the replay's time ([ADR-077](../ADR/ADR-077-universe-state-on-disk.md)).
 - **In a season the reward is position:** what the season's design makes winning, which the horizon leaves open (horizon §7). Until then the stand-in is the nodes held, and the capacity they allow once fleets are bounded (horizon §6.2), as a potential, as the tickets are today.
 
 ### Stage 1: the warm start
@@ -329,7 +329,7 @@ What waits for a phase design that takes the horizon up:
 
 - **A galaxy.** Systems become a second level of the same encoding, with travel between systems a new head and the commands that go with it.
 - **More than two players.** Prioritized fictitious self-play and Elo assume two players and one winner. A free-for-all among friends and AI empires has kingmaking and alliances (horizon O6), and needs a league of its own.
-- **Seasons of months.** The weights file then has to be read by later builds, as the world's save format must be (horizon §7). Today's file carries a version, and a build refuses one it does not know.
+- **Seasons of months.** The weights file then has to be read by later builds, as the universe's save format must be (horizon §7). Today's file carries a version, and a build refuses one it does not know.
 - **Directives, if gate N6 ever says yes.** A player's directives would fix the heads they cover: a research queue fixes the research head, and an order to hold fixes the posture. The network would decide the rest, so training would have to cover any directives a player could give. Its cost would be no obstacle: a decision is about 250,000 multiply-adds, so a server running dozens of seats would not notice them.
 - **A deputy that plays like its player.** The warm start could learn from a player's own recorded play instead of the scripted AI's (horizon O4), if such a deputy is ever wanted.
 

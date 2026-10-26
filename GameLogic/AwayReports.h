@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// What the host keeps of its seats beside the world's state, which a save holds (ADR-080 decision 7): each seat's report
+// What the host keeps of its seats beside the universe's state, which a save holds (ADR-080 decision 7): each seat's report
 // of what its player missed while away, by player, in the order they began; and the players who have held their seats, in
 // the order they first did.
 struct SeatReports
@@ -14,9 +14,9 @@ struct SeatReports
 };
 
 // What happened to each seat's empire while its player was away (ADR-080 decision 7). The server's thread keeps a
-// seat's report from the events of the snapshots its deputy plays, saves the reports with the world, and hands a seat's to
+// seat's report from the events of the snapshots its deputy plays, saves the reports with the universe, and hands a seat's to
 // its player with the first snapshot after the player takes the seat again. A seat its player has never held has no
-// report: the deputy plays it from the world's start, and its player missed nothing of an empire it never had (ADR-079
+// report: the deputy plays it from the universe's start, and its player missed nothing of an empire it never had (ADR-079
 // decision 4).
 class AwayReports
 {
@@ -32,7 +32,7 @@ public:
     return m_seats;
   }
 
-  // What a save held, for a world that comes back from it. A seat with a report counts as held.
+  // What a save held, for a universe that comes back from it. A seat with a report counts as held.
   void Restore(SeatReports _seats) noexcept
   {
     m_seats = std::move(_seats);

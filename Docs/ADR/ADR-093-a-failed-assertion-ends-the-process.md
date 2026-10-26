@@ -15,7 +15,7 @@ An assertion does not throw `Neuron::Exception`. That type means that a file, a 
 
 - `InProcessServer` refuses a peer whose handshake throws one, as a malformed message.
 - `WinMain.cpp` reports one from receiving snapshots as a lost connection.
-- The loaders of tuning, maps, matchups, settings and join tickets report one as a bad file, and `WorldFolder` skips a save that throws one as a save it refuses.
+- The loaders of tuning, maps, matchups, settings and join tickets report one as a bad file, and `UniverseFolder` skips a save that throws one as a save it refuses.
 
 A failed assertion is none of these. Any exception type has two further problems. The tree marks much of its code `noexcept`, and an exception that reaches one ends the process through `std::terminate`, without its message. And MsQuic's callbacks in `QuicChannel.cpp` catch everything and return `QUIC_STATUS_INTERNAL_ERROR`.
 

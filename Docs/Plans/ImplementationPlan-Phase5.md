@@ -15,7 +15,7 @@ Status: **open** · Started 2026-10-08, when the owner accepted [the Phase 5 des
 5. **The AI keeps playing at every milestone,** and `AiPlayerTests` keep passing.
 6. **The gates are H1 to H11,** in the gates table below. [The Phase 5 design](OutpostCommander-Phase5.md) sets out the two still open, H10 and H11; H11 came of milestone 39.
 
-Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan's outline put the dedicated server first; the owner chose to start with the world that survives a restart (2026-10-08), so it is milestone 35 and the server 36.
+Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan's outline put the dedicated server first; the owner chose to start with the universe that survives a restart (2026-10-08), so it is milestone 35 and the server 36.
 
 ---
 
@@ -23,26 +23,26 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 35.1 | A world's state saved and loaded | — | H8 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
-| 35.2 | The world's folder: saves, the command log and recovery | 35.1 | H7 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
-| 36.1 | `OutpostServer` and a world's settings | 35.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
+| 35.1 | A universe's state saved and loaded | — | H8 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
+| 35.2 | The universe's folder: saves, the command log and recovery | 35.1 | H7 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
+| 36.1 | `OutpostServer` and a universe's settings | 35.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
 | 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94) |
-| 36.3 | The client joins a world | 36.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
+| 36.3 | The client joins a universe | 36.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
 | 37.1 | The AI starts from any state | — | — | done, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95) |
 | 37.2 | Clients on the server's thread | 35.2 | — | done, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95) |
 | 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | merged, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95); awaiting the owner's run |
 | 38.1 | The server's events, and alerts read from them | — | H4 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
 | 38.3 | The client's orders window | 38.2 | H5 | merged, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97); awaiting the owner's run |
-| 39.1 | A world without an end | 37.3 | H6 | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
-| 39.2 | The world log and `--world-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
+| 39.1 | A universe without an end | 37.3 | H6 | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
+| 39.2 | The universe log and `--universe-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
 | 39.3 | The battle matchups | — | — | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
 | 39.4 | W1–W6 | all above | — | the container's part done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's week |
 | 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | todo |
 
 ### Milestone order
 
-35, 36, 37, 38, 39. Milestone 35 is the foundation the rest stands on and the part the container verifies end to end. Milestone 36 puts it on a server a client can reach. Milestone 37's AI start from any state (37.1) stands on its own and can move earlier if a milestone stalls. Milestone 38's events come before its orders, which fire on them. Milestone 39 ends the world's dependence on a match's ending, and measures.
+35, 36, 37, 38, 39. Milestone 35 is the foundation the rest stands on and the part the container verifies end to end. Milestone 36 puts it on a server a client can reach. Milestone 37's AI start from any state (37.1) stands on its own and can move earlier if a milestone stalls. Milestone 38's events come before its orders, which fire on them. Milestone 39 ends the universe's dependence on a match's ending, and measures.
 
 ---
 
@@ -58,7 +58,7 @@ Each is an owner decision, proposed where the table says.
 | H4 | **Triggers are evaluated on the server.** | [the horizon plan](ImplementationPlan-Horizon.md) | 38.1, 38.2 | decided 2026-10-08 |
 | H5 | **The order vocabulary is fixed and small:** one trigger, one action and at most one condition, as Game §orders.scheduled lists them. | [the horizon plan](ImplementationPlan-Horizon.md) | 38.2, 38.3 | decided 2026-10-08 |
 | H6 | **A player who loses** restarts at a free start after an hour, with starting Ore, keeping its research and designs. | [the horizon plan](ImplementationPlan-Horizon.md) | 39.1 | decided 2026-10-08 |
-| H7 | **Recovery:** a save every 60 s of ticks; the command log written as each tick applies it; and a world that pauses while its server is down. | [the horizon plan](ImplementationPlan-Horizon.md) | 35.2 | decided 2026-10-08 |
+| H7 | **Recovery:** a save every 60 s of ticks; the command log written as each tick applies it; and a universe that pauses while its server is down. | [the horizon plan](ImplementationPlan-Horizon.md) | 35.2 | decided 2026-10-08 |
 | H8 | **The pin:** a save is pinned to a state version, not to a build. | [the horizon plan](ImplementationPlan-Horizon.md) | 35.1 | decided 2026-10-08 |
 | H9 | **The economy:** Phase 4's is unchanged, and the bank is recorded. | [the horizon plan](ImplementationPlan-Horizon.md) | — | decided 2026-10-08 |
 
@@ -66,84 +66,84 @@ Gate H10 is open and H11 decided, and their one home is the gate table of [the P
 
 ---
 
-## Milestone 35 — A world that survives a restart
+## Milestone 35 — A universe that survives a restart
 
-### 35.1 — A world's state saved and loaded
+### 35.1 — A universe's state saved and loaded
 
 - **Gate:** H8, decided.
 - **Scope:**
   - The wire format's writer and reader become `GameProtocol`'s `ByteWriter` and `ByteReader`, and its field lists and enumerations' last values `WireFields.h`, so that a save writes `Simulation`'s state as a message is written (ADR-060 decision 4). The wire's bytes do not change.
-  - `Simulation::SaveState` and `Simulation::LoadState`: every member of `Simulation` named by one structured binding, so a member added and not considered does not compile; the state written from field lists; what follows from it worked out again on load (Game §world.persistence).
-  - A save's header: its kind, `WORLD_STATE_VERSION`, the seed, the tick rate and the hash of the tuning data's and the map's files. A checksum after the state.
+  - `Simulation::SaveState` and `Simulation::LoadState`: every member of `Simulation` named by one structured binding, so a member added and not considered does not compile; the state written from field lists; what follows from it worked out again on load (Game §universe.persistence).
+  - A save's header: its kind, `UNIVERSE_STATE_VERSION`, the seed, the tick rate and the hash of the tuning data's and the map's files. A checksum after the state.
   - A description of the saved state's layout, and its hash, which a test pins for each state version (AGENTS.md R18).
-- **ADR:** a new one, ADR-077: a world's state on disk. ADR-060 decision 4 edited in place for the shared field lists.
-- **Acceptance:** `WorldStateTests`: a world saved and loaded compares equal and builds the same snapshots; a world loaded and run on compares equal with one that never stopped, over AI-against-AI play on the 10 km map; a save of another version, other data, or cut short or altered is refused; the layout's hash is the one recorded for the version. `WireFormatTests` unchanged.
+- **ADR:** a new one, ADR-077: a universe's state on disk. ADR-060 decision 4 edited in place for the shared field lists.
+- **Acceptance:** `UniverseStateTests`: a universe saved and loaded compares equal and builds the same snapshots; a universe loaded and run on compares equal with one that never stopped, over AI-against-AI play on the 10 km map; a save of another version, other data, or cut short or altered is refused; the layout's hash is the one recorded for the version. `WireFormatTests` unchanged.
 - **Verify:** the container's run of `GameLogicTests`; CI.
-- **As built:** recorded in [ADR-077](../ADR/ADR-077-world-state-on-disk.md); AGENTS.md gains R18.
-  - Worlds saved at minutes 6, 12 and 18 of two AIs on the 10 km map, loaded and given the commands the running world applied, equal it at minute 24, to the bit: the path graphs built again are the graphs the world had kept up to date. Every test passed on its first run, so each was checked against a broken load: with the PRNG's state not restored, or the graphs built over the map's obstacles alone, they fail.
+- **As built:** recorded in [ADR-077](../ADR/ADR-077-universe-state-on-disk.md); AGENTS.md gains R18.
+  - Universes saved at minutes 6, 12 and 18 of two AIs on the 10 km map, loaded and given the commands the running universe applied, equal it at minute 24, to the bit: the path graphs built again are the graphs the universe had kept up to date. Every test passed on its first run, so each was checked against a broken load: with the PRNG's state not restored, or the graphs built over the map's obstacles alone, they fail.
   - The wire's bytes are unchanged: `WireFormatTests` and `InProcessServerTests` pass as they were.
   - The container has no `ExcludeHeaderFilterRegex` in its clang-tidy 18, so `RunClangTidy.py` did not run there; clang-tidy ran with the repository's checks over the changed files, against the stand-in, and its findings are fixed. CI's run is the first under MSVC.
 
-### 35.2 — The world's folder: saves, the command log and recovery
+### 35.2 — The universe's folder: saves, the command log and recovery
 
 - **Gate:** H7, decided.
 - **Scope:**
-  - `ServerDesc::world`, a folder. A server made with one saves its state every 60 s of ticks, encoded on the server's thread and written by a thread of its own to a new file renamed into place, and keeps the newest three.
+  - `ServerDesc::universe`, a folder. A server made with one saves its state every 60 s of ticks, encoded on the server's thread and written by a thread of its own to a new file renamed into place, and keeps the newest three.
   - The command log written to the folder as each tick applies it, a file for each save, handed to the system before the next tick.
   - A server made with a folder that holds a save loads the newest that reads whole, and applies the log since it, before its first tick.
 - **ADR:** ADR-077; ADR-009 and ADR-025 edited in place.
-- **Acceptance:** `WorldFolderTests`: a world stepped, dropped and opened again compares equal with one that never stopped; a cut-off log's last record is ignored; a save cut short falls back to the one before; the newest three are kept; a folder for other data is refused.
-- **Verify:** the container's run of `GameLogicTests`, including the save's time and size on a late 10 km world (W2); CI.
+- **Acceptance:** `UniverseFolderTests`: a universe stepped, dropped and opened again compares equal with one that never stopped; a cut-off log's last record is ignored; a save cut short falls back to the one before; the newest three are kept; a folder for other data is refused.
+- **Verify:** the container's run of `GameLogicTests`, including the save's time and size on a late 10 km universe (W2); CI.
 - **As built:** recorded in ADR-077; ADR-009 and ADR-025 edited in place, and ADR-060 for the field lists' new home.
-  - A world opened again comes back at the tick after the last command it logged, and saves there at once, so its log begins anew. A save of a tick the folder holds already is not written again.
+  - A universe opened again comes back at the tick after the last command it logged, and saves there at once, so its log begins anew. A save of a tick the folder holds already is not written again.
   - A cut log is passed over only at the end of the newest log; an older log cut short is refused, which matters only when the newest save is broken too.
-  - W2 in the container: a save at minute 60 holds 274–293 entities in 75–78 KB and encodes in 0.36–0.38 ms (`MeasuresALateSave`, with `OUTPOST_WORLD_MEASURE`). On the development machine in Release, with the deputies in, it is the owner's run at milestone 39.
+  - W2 in the container: a save at minute 60 holds 274–293 entities in 75–78 KB and encodes in 0.36–0.38 ms (`MeasuresALateSave`, with `OUTPOST_UNIVERSE_MEASURE`). On the development machine in Release, with the deputies in, it is the owner's run at milestone 39.
   - The folder's and the server's tests ran under ThreadSanitizer (g++ 13) with no report.
-  - The shell does not make a world yet: `ServerDesc::world` is empty for every match it starts. `OutpostServer` is milestone 36.
+  - The shell does not make a universe yet: `ServerDesc::universe` is empty for every match it starts. `OutpostServer` is milestone 36.
 
 ## Milestone 36 — The dedicated server
 
-### 36.1 — `OutpostServer` and a world's settings
+### 36.1 — `OutpostServer` and a universe's settings
 
 - **Gate:** H1, decided.
-- **Scope:** a console executable, `OutpostServer`, in the solution and ADR-002's table. `--new-world <folder>` writes a world's settings, `World.json`: the address and port it listens on, the host its players reach it at, the seed and a seat with a token for each of the map's starts. `OutpostServer <folder>` runs the world until Ctrl+C or a close of its console, and leaves it saved.
+- **Scope:** a console executable, `OutpostServer`, in the solution and ADR-002's table. `--new-universe <folder>` writes a universe's settings, `Universe.json`: the address and port it listens on, the host its players reach it at, the seed and a seat with a token for each of the map's starts. `OutpostServer <folder>` runs the universe until Ctrl+C or a close of its console, and leaves it saved.
 - **ADR:** a new one, ADR-078: the dedicated server and its seats. ADR-002 edited in place.
-- **Acceptance:** `WorldSettingsTests`: settings and join files read back as written, and are refused when they are not.
-- **Verify:** the container's run of `GameLogicTests`, and of `OutpostServer --new-world`; CI's build; **owner run**: a world made and run on the development machine, and stopped with Ctrl+C.
+- **Acceptance:** `UniverseSettingsTests`: settings and join files read back as written, and are refused when they are not.
+- **Verify:** the container's run of `GameLogicTests`, and of `OutpostServer --new-universe`; CI's build; **owner run**: a universe made and run on the development machine, and stopped with Ctrl+C.
 
 ### 36.2 — Seats with tokens, taken again, and a kept certificate
 
 - **Gate:** H1, decided.
 - **Scope:**
   - A seat's token in the hello and the address, with `PROTOCOL_VERSION` 11.
-  - A world's seats taken at any time, the newest connection holding a seat, and a replaced connection closed with `SeatTaken`.
+  - A universe's seats taken at any time, the newest connection holding a seat, and a replaced connection closed with `SeatTaken`.
   - A hello of another version refused as `WrongVersion` before it is decoded.
-  - The listener's address and port from the world's settings.
-  - A world's certificate kept in its folder.
+  - The listener's address and port from the universe's settings.
+  - A universe's certificate kept in its folder.
   - Join files written by the server.
 - **ADR:** ADR-078; ADR-060 edited in place.
-- **Acceptance:** `QuicTransportTests`: another token, an unopened seat and another certificate refused, saying why; a world's seat taken after it starts and taken again; a world's certificate the same when it runs again; the listen address; a hello of another version.
+- **Acceptance:** `QuicTransportTests`: another token, an unopened seat and another certificate refused, saying why; a universe's seat taken after it starts and taken again; a universe's certificate the same when it runs again; the listen address; a hello of another version.
 - **Verify:** CI, since QUIC does not run in the container.
 
-### 36.3 — The client joins a world
+### 36.3 — The client joins a universe
 
 - **Gate:** H1, decided.
-- **Scope:** `--join <file>`; the menu's "Join world" when the player's documents hold `Outpost Commander\Join.json`; a lost connection back to the menu with the reason in the warning's color.
+- **Scope:** `--join <file>`; the menu's "Join universe" when the player's documents hold `Outpost Commander\Join.json`; a lost connection back to the menu with the reason in the warning's color.
 - **ADR:** ADR-078.
-- **Acceptance:** `HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`.
-- **Verify:** CI; **owner run**: the game on a second machine joins the owner's world with its join file, plays, loses its connection when the server stops, and joins again when it runs.
+- **Acceptance:** `HudTests.OffersAUniverseAndSaysWhyTheLastGameEnded`.
+- **Verify:** CI; **owner run**: the game on a second machine joins the owner's universe with its join file, plays, loses its connection when the server stops, and joins again when it runs.
 
 ### As built
 
 Recorded in [ADR-078](../ADR/ADR-078-dedicated-server.md).
 
-- **Run in the container.** `GameLogicTests` and `OutpostServer` built there against stand-ins for the Windows headers and MsQuic's posix header. `GameLogicTests` passes apart from `QuicTransportTests`. `--new-world` and its refusals were run. Running a world needs QUIC, and MsQuic's Linux build opens IPv6 sockets, which the container's kernel lacks.
-- **Run in CI.** Debug|x64 on Windows passes all 582 tests, among them every `QuicTransportTests` case and `HudTests.OffersAWorldAndSaysWhyTheLastGameEnded`. That includes `AWorldKeepsItsCertificate`: the kept CNG key and certificate, written without Windows, are what Schannel uses when the world runs again.
-- **The owner's runs** remain: a world run end to end on the development machine (36.1), and joined from a second machine (36.3).
+- **Run in the container.** `GameLogicTests` and `OutpostServer` built there against stand-ins for the Windows headers and MsQuic's posix header. `GameLogicTests` passes apart from `QuicTransportTests`. `--new-universe` and its refusals were run. Running a universe needs QUIC, and MsQuic's Linux build opens IPv6 sockets, which the container's kernel lacks.
+- **Run in CI.** Debug|x64 on Windows passes all 582 tests, among them every `QuicTransportTests` case and `HudTests.OffersAUniverseAndSaysWhyTheLastGameEnded`. That includes `AUniverseKeepsItsCertificate`: the kept CNG key and certificate, written without Windows, are what Schannel uses when the universe runs again.
+- **The owner's runs** remain: a universe run end to end on the development machine (36.1), and joined from a second machine (36.3).
 
 ## Milestone 37 — Deputies
 
-Scoped from Game §ai.deputy and Game §world.handover. The owner decided two things the design left open (2026-10-08): a deputy keeps as many Constructors as its player had when it took the seat, and its defenders go back to where they stood once an attack is over.
+Scoped from Game §ai.deputy and Game §universe.handover. The owner decided two things the design left open (2026-10-08): a deputy keeps as many Constructors as its player had when it took the seat, and its defenders go back to where they stood once an attack is over.
 
 ### 37.1 — The AI starts from any state
 
@@ -156,7 +156,7 @@ Scoped from Game §ai.deputy and Game §world.handover. The owner decided two th
 
 - **Scope:** `HostedPlayer` in `GameProtocol` and `Server::Host`. After each tick the server hands each hosted player its snapshot, and applies and logs its orders at the next tick as a connection's. A hosted player without a seat is an AI empire (`AiEmpire`).
 - **ADR:** a new one, ADR-079; ADR-025 edited in place.
-- **Acceptance:** `InProcessServerTests`: a world of two AI empires on the server's thread replays from its log to an equal simulation; a player is hosted once, and only before the server starts.
+- **Acceptance:** `InProcessServerTests`: a universe of two AI empires on the server's thread replays from its log to an equal simulation; a player is hosted once, and only before the server starts.
 - **Verify:** the container's run of `GameLogicTests`, and W2's measurement with the hosted players; CI.
 
 ### 37.3 — The seat's controller and the keeper
@@ -165,50 +165,50 @@ Scoped from Game §ai.deputy and Game §world.handover. The owner decided two th
 - **Scope:**
   - `SeatController`: the deputy's until the player takes the seat, the player's while its connection is open and for 60 s of ticks after it has gone, then the deputy's until the player is back.
   - `QuicChannel::HasGone`.
-  - A ship's order in its owner's snapshot (`PROTOCOL_VERSION` 12, `WORLD_STATE_VERSION` 2).
+  - A ship's order in its owner's snapshot (`PROTOCOL_VERSION` 12, `UNIVERSE_STATE_VERSION` 2).
   - `Deputy`, the keeper of Game §ai.deputy.
-  - In `OutpostServer`: AI seats in `World.json` (`--ai <player>[:<difficulty>]`), and a deputy hosted for each player's seat.
+  - In `OutpostServer`: AI seats in `Universe.json` (`--ai <player>[:<difficulty>]`), and a deputy hosted for each player's seat.
 - **ADR:** ADR-079; ADR-002, ADR-077 and ADR-078 edited in place.
 - **Acceptance:**
   - `SeatControllerTests`.
   - `DeputyTests` (`OpponentTests`): each keeper rule and a turn beginning afresh. `DeputyPlayTests` (`GameLogicTests`): W3 over ten minutes of a real match.
   - `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`.
-  - `WorldSettingsTests` with AI seats.
-- **Verify:** the container's run of `GameLogicTests` and of `OutpostServer --new-world --ai`; CI for the hand-over over QUIC; **owner run**: a world with an AI empire, left for an hour, and the deputy's play judged on the player's return.
+  - `UniverseSettingsTests` with AI seats.
+- **Verify:** the container's run of `GameLogicTests` and of `OutpostServer --new-universe --ai`; CI for the hand-over over QUIC; **owner run**: a universe with an AI empire, left for an hour, and the deputy's play judged on the player's return.
 
 ### As built
 
 Recorded in [ADR-079](../ADR/ADR-079-seat-controller-and-deputy.md) and ADR-020 decision 16.
 
-- **Run in the container.** `GameLogicTests` passes, 331 tests, apart from `QuicTransportTests`, which need QUIC; `OutpostServer --new-world --ai` and its refusals were run. clang-tidy 18 with the repository's checks is clean over the changed files.
+- **Run in the container.** `GameLogicTests` passes, 331 tests, apart from `QuicTransportTests`, which need QUIC; `OutpostServer --new-universe --ai` and its refusals were run. clang-tidy 18 with the repository's checks is clean over the changed files.
 - **Each new test was checked against a broken build.** With adoption taken out, an AI made afresh ordered 4 base structures in its first minute, against 0 for the AI that never stopped.
 - **W3, headless.** Over minutes 10 to 20, a deputy's Shipyards stood idle with Ore to spend 0.8–1.4% of their time and its Lab 0.2%, against the AI's 0.0–5.4% and 0.0–0.2%, over seeds 1 to 4. Its first version waited for the Ore and the cap before queueing, and stood idle 50.6% of the time.
 - **W2 in the container,** with two AI empires on the server's thread over an hour: a tick's 99th percentile 0.25–0.40 ms; the hosted players' 0.08–0.09 ms, at most 3.20 ms.
 - **Run in CI.** Debug|x64 on Windows passes all 602 tests, among them `QuicTransportTests.ADeputyPlaysItsSeatWhileItsPlayerIsAway`, the hand-over over a real connection. Its W3 test measured the same there as in the container: the deputy's Shipyards idle 0.8% of the time, the AI's 0.0%.
-- **Not in this milestone.** The client's panel saying what happened while the player was away (Game §world.away) needs the server's events, so it comes with milestone 38. A hand-over is logged with the world log, at milestone 39.
+- **Not in this milestone.** The client's panel saying what happened while the player was away (Game §universe.away) needs the server's events, so it comes with milestone 38. A hand-over is logged with the universe log, at milestone 39.
 
 ## Milestone 38 — Orders that run while away
 
-Game §orders.scheduled and Game §world.away, gates H4 and H5. The owner decided on 2026-10-08 what the design left open:
+Game §orders.scheduled and Game §universe.away, gates H4 and H5. The owner decided on 2026-10-08 what the design left open:
 
 - **A time of day is the player's clock.** The client turns the hour and minute the player picks into the next such moment on the player's own clock, and sends it as UTC; the host turns that into a tick as the command arrives (Game §orders.scheduled.time).
 - **An event trigger watches one sector the player picks,** and the action's target is fixed when the order is given.
-- **The panel of what happened while away survives a restart:** the server keeps each seat's report and saves it with the world.
+- **The panel of what happened while away survives a restart:** the server keeps each seat's report and saves it with the universe.
 
 ### 38.1 — The server's events, and alerts read from them
 
 *Gate H4.* The simulation raises each player's events in the tick they happen, and the player's snapshot of that tick carries them: a Relay suppressed, a Relay under attack, enemy warships seen entering a sector the player holds, a ship of its going back to be repaired, a sector the pirates guarded cleared, a ship or structure of its built or lost, a sector gained or lost, and a scheduled order fired. The client's alerts read them instead of comparing snapshots, which overrules ADR-059 decision 1.
 
-- **Done when:** `EventTests` raise each event once, in its tick, for its player only; a world with events replays from its log; `AlertsTests` raise each alert from its event.
+- **Done when:** `EventTests` raise each event once, in its tick, for its player only; a universe with events replays from its log; `AlertsTests` raise each alert from its event.
 
 ### 38.2 — Scheduled orders
 
 *Gates H4, H5.* `ScheduleOrderCommand` gives a selection one trigger, one action and at most one condition (Game §orders.scheduled.parts). The server keeps it as a standing order is kept, fires it at the end of the tick its trigger's event is raised, and drops it. Any other order to one of its ships takes that ship out of it. A player's snapshot shows its scheduled orders, and which order each of its ships waits on.
 
-- The host turns a time of day into a tick as the command arrives, so the log holds the tick and the world replays.
+- The host turns a time of day into a tick as the command arrives, so the log holds the tick and the universe replays.
 - The deputy leaves alone a ship that waits on a scheduled order.
-- The host keeps each seat's report while its deputy plays, from the events of the deputy's snapshots, saves it with the world, and hands it to the player with the first snapshot after the player takes the seat again.
-- **Done when:** `ScheduledOrderTests` fire each trigger, action and condition on its tick and as written (W5); `InProcessServerTests` turn a time of day into its tick and hand over the report; `WorldStateTests` bring the report back from a save; `DeputyTests` leave a waiting ship alone.
+- The host keeps each seat's report while its deputy plays, from the events of the deputy's snapshots, saves it with the universe, and hands it to the player with the first snapshot after the player takes the seat again.
+- **Done when:** `ScheduledOrderTests` fire each trigger, action and condition on its tick and as written (W5); `InProcessServerTests` turn a time of day into its tick and hand over the report; `UniverseStateTests` bring the report back from a save; `DeputyTests` leave a waiting ship alone.
 
 ### 38.3 — The client's orders window
 
@@ -226,24 +226,24 @@ Recorded in [ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md); ADR-009, A
 - **A time of day is the system's zone,** with summer time, from the standard library's database; the tests read Amsterdam's from it. Where the database cannot say the zone, the clock is UTC.
 - **Awaiting the owner's run:** a 02:00 attack given from the orders window, in play (W5).
 
-## Milestone 39 — A world without an end, the world log and the week
+## Milestone 39 — A universe without an end, the universe log and the week
 
-Game §world.loss, Game §world.restart and Game §world.log, gate H6, and [the horizon](../Horizon.md)'s battle measurement (Game §session.matchup). The owner decided on 2026-10-08 what the design left open:
+Game §universe.loss, Game §universe.restart and Game §universe.log, gate H6, and [the horizon](../Horizon.md)'s battle measurement (Game §session.matchup). The owner decided on 2026-10-08 what the design left open:
 
-- **A player who loses keeps its bank,** raised to the starting Ore when it has less, as it keeps its research, its designs and what still stands of its own (Game §world.restart).
+- **A player who loses keeps its bank,** raised to the starting Ore when it has less, as it keeps its research, its designs and what still stands of its own (Game §universe.restart).
 - **The battle matchups are measured headless and played live:** a file of matchups, each run AI against AI over many seeds for the baseline, and a switch that starts one in the game against the AI for the owner to play (the horizon's battle measurement, W4).
 
-### 39.1 — A world without an end
+### 39.1 — A universe without an end
 
-*Gate H6.* In a world, domination is off and no match ends. A player who loses (ADR-037) is told so, and an hour of ticks later its seat restarts at its start once that is free: a Command Station and the starting Constructors, and its Ore raised to the starting Ore. A start is free while no other player holds its home sector or has a structure in it. An AI empire plans afresh round its new Command Station. The client's banner says when the seat restarts, or that it waits for its start.
+*Gate H6.* In a universe, domination is off and no match ends. A player who loses (ADR-037) is told so, and an hour of ticks later its seat restarts at its start once that is free: a Command Station and the starting Constructors, and its Ore raised to the starting Ore. A start is free while no other player holds its home sector or has a structure in it. An AI empire plans afresh round its new Command Station. The client's banner says when the seat restarts, or that it waits for its start.
 
-- **Done when:** `WorldRulesTests` keep a world with a lost player running without domination, restart the seat on the hour with its bank and research, hold it while its start is taken, and bring a saved lost seat back on the same tick; `HudTests` lay out the banner. *Owner run:* the banner, and an AI empire that plans afresh round its new station, in play.
+- **Done when:** `UniverseRulesTests` keep a universe with a lost player running without domination, restart the seat on the hour with its bank and research, hold it while its start is taken, and bring a saved lost seat back on the same tick; `HudTests` lay out the banner. *Owner run:* the banner, and an AI empire that plans afresh round its new station, in play.
 
-### 39.2 — The world log and `--world-run`
+### 39.2 — The universe log and `--universe-run`
 
-The server writes a world log beside its saves, as ADR-038's match log is written: each save and how long it took, each recovery, each hand-over between a player and its deputy, each scheduled order fired, each loss and restart, every hour each seat's bank, income, fleet against its cap, nodes and research, and each battle with whether its players were present. `OutpostServer --world-run` plays a world with an AI in every seat as fast as the processor allows, kills it and recovers it at random ticks, and compares it at the end with the same world run straight through.
+The server writes a universe log beside its saves, as ADR-038's match log is written: each save and how long it took, each recovery, each hand-over between a player and its deputy, each scheduled order fired, each loss and restart, every hour each seat's bank, income, fleet against its cap, nodes and research, and each battle with whether its players were present. `OutpostServer --universe-run` plays a universe with an AI in every seat as fast as the processor allows, kills it and recovers it at random ticks, and compares it at the end with the same universe run straight through.
 
-- **Done when:** `WorldLogTests` write each record from a scripted world; the container's `--world-run` of a day of world, killed at random, ends equal to the world run straight through.
+- **Done when:** `UniverseLogTests` write each record from a scripted universe; the container's `--universe-run` of a day of a universe, killed at random, ends equal to the universe run straight through.
 
 ### 39.3 — The battle matchups
 
@@ -253,25 +253,25 @@ The server writes a world log beside its saves, as ADR-038's match log is writte
 
 ### 39.4 — W1–W6
 
-The container measures W2 with the deputies in, W3 again and the length of a world run; the owner's week is W1, W4 and W6, and W2's tick in Release.
+The container measures W2 with the deputies in, W3 again and the length of a universe run; the owner's week is W1, W4 and W6, and W2's tick in Release.
 
 ### 39.5 — A start that enemy warships hold is not free
 
 *Gate H11* (owner, 2026-10-25). A start is free while no other player holds its home sector, has a structure in it, or has a warship in it. On a map without sectors, the ground that counts is the ground 39.1 already uses, twice as far round the start as its base reaches. Pirates do not count, nor does a Constructor. While the start is not free the seat waits as it does now, and restarts on the first tick it is free once the hour has passed.
 
-- **ADR:** [ADR-084](../ADR/ADR-084-world-without-an-end.md) decision 4, edited in place; Game §world.restart.
-- **Done when:** `WorldRulesTests` hold a lost seat while another player's warship is in its home sector, restart it on the tick that warship leaves or is destroyed, and do not hold it for a pirate or a Constructor; the container's `--world-run` of a day records how long each restart waited, in the world log and BalanceLog.md. *Owner run:* a restart in play, seen once the enemy's fleet has gone.
+- **ADR:** [ADR-084](../ADR/ADR-084-universe-without-an-end.md) decision 4, edited in place; Game §universe.restart.
+- **Done when:** `UniverseRulesTests` hold a lost seat while another player's warship is in its home sector, restart it on the tick that warship leaves or is destroyed, and do not hold it for a pirate or a Constructor; the container's `--universe-run` of a day records how long each restart waited, in the universe log and BalanceLog.md. *Owner run:* a restart in play, seen once the enemy's fleet has gone.
 
 ### As built
 
-Recorded in [ADR-084](../ADR/ADR-084-world-without-an-end.md), [ADR-082](../ADR/ADR-082-world-log-and-world-run.md) and [ADR-083](../ADR/ADR-083-battle-matchups.md); ADR-037, ADR-057, ADR-077, ADR-079 and ADR-080 edited in place. The protocol is at version 15 and a world's state at version 6.
+Recorded in [ADR-084](../ADR/ADR-084-universe-without-an-end.md), [ADR-082](../ADR/ADR-082-universe-log-and-universe-run.md) and [ADR-083](../ADR/ADR-083-battle-matchups.md); ADR-037, ADR-057, ADR-077, ADR-079 and ADR-080 edited in place. The protocol is at version 15 and a universe's state at version 6.
 
 - **Run in the container.** `GameLogicTests` passes, 332 tests, apart from the 8 `QuicTransportTests`, which need QUIC; `GameAppTests` 165, `OpponentTests` 32 and `GameProtocolTests` 19 pass. clang-tidy 18 with the repository's checks is clean over the changed files.
-- **Each new test was checked against a broken build,** as the three ADRs' consequences list. Two breaks are not caught: dropping a replaced AI's waiting orders in the world run, since none waits at the ticks it is replaced (ADR-082), and the same line through a matchup's field on every seed, since the seed still picks the sector (ADR-083).
-- **A day of world, killed 10 times,** ended equal to the world run straight through: 1,728,000 ticks twice in 615 s, the Normal AI in both seats (ADR-082). A week of world is about 50 minutes of the container's processor.
+- **Each new test was checked against a broken build,** as the three ADRs' consequences list. Two breaks are not caught: dropping a replaced AI's waiting orders in the universe run, since none waits at the ticks it is replaced (ADR-082), and the same line through a matchup's field on every seed, since the seed still picks the sector (ADR-083).
+- **A day of a universe, killed 10 times,** ended equal to the universe run straight through: 1,728,000 ticks twice in 615 s, the Normal AI in both seats (ADR-082). A week of a universe is about 50 minutes of the container's processor.
 - **W2 in the container.** The day's 1,451 saves were 46–81 KB and took a median 0.30 ms of the server's thread, the longest 6.03 ms, against the 50 ms W2 allows. With Blue's seat played by its deputy and Red's by the Normal AI for an hour (`InProcessServerTests.MeasuresTheHostedPlayersTicks`, run with a `Deputy` in Blue's seat), a tick's 99th percentile was 0.22–0.25 ms and the hosted players' 0.05–0.06 ms over seeds 1 to 3, against the 5 ms tick that [the budgets](../Budgets.md) set. The longest tick was 6.30–17.07 ms, of which the hosted players took at most 2.53 ms.
 - **W3 again,** with milestone 39's AI: over minutes 10 to 20 the deputy's Shipyards stood idle with Ore to spend 0.8% of their time and its Lab 0.2%, against the AI's 0.0% and 0.2%, as at milestone 37.
-- **The bank, as gate H9 asked it recorded.** In the day of world both seats had researched every topic by hour 1 and kept their fleets at the cap all day. Blue's bank reached 513,829 Ore at hour 23, on an income that fell from 40 Ore a second to 10. That is [the horizon plan](ImplementationPlan-Horizon.md)'s gate G3, for Phase 6.
+- **The bank, as gate H9 asked it recorded.** In the day of a universe both seats had researched every topic by hour 1 and kept their fleets at the cap all day. Blue's bank reached 513,829 Ore at hour 23, on an income that fell from 40 Ore a second to 10. That is [the horizon plan](ImplementationPlan-Horizon.md)'s gate G3, for Phase 6.
 - **A restarted seat is taken again at once.** In the same day Red lost its base 11 times and restarted 11 times, each on the hour, never waiting, because enemy warships on a start do not keep it from being free. Seven of those bases fell 12–14.5 s after their restart (ADR-084). Gate H11 has the seat wait while enemy warships hold its start (39.5).
 - **The matchups' baseline,** 40 seeds each, side 1 first (ADR-083): the mirror 25 to 15, the swarm against the line 0 to 40, Flak against the swarm 40 to 0, the heavy line 19 to 21 and the Missiles against the Lances 0 to 40, with medians of 9 to 41 s. Over 200 seeds the mirror went 114 to 86 for side 1, a p of about 0.06; and three of the five stayed one-sided.
 - **The client, in part.** The container builds the banner's and the endings' words in `Hud`, `MatchLog` and their tests over stand-in glyphs; it does not build `GameClient` or `WinMain`, where `--matchup` starts a battle. CI checks those.

@@ -9,8 +9,8 @@ One raid that reaches the Command Station should not settle a match, so a player
 
 ## Decision
 
-1. **A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard** (owner, 2026-10-02). The server checks it every tick, and the match ends once, with a winner or a draw, as [ADR-020](ADR-020-ai-and-match-flow.md) decision 9 has it. In a world nothing ends; what a loss does there is [ADR-084](ADR-084-world-without-an-end.md) decisions 3 and 4's. A Shipyard still under construction keeps nobody in the match, nor does anything else.
-2. **A lost Command Station stays lost in a match, and no code makes it so.** The tuning data gives the Command Station no cost, so a Constructor's order to build one is refused as `NotBuildable`, and only a Command Station queues Constructors. A world's restarted seat is given a new one ([ADR-084](ADR-084-world-without-an-end.md) decision 4).
+1. **A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard** (owner, 2026-10-02). The server checks it every tick, and the match ends once, with a winner or a draw, as [ADR-020](ADR-020-ai-and-match-flow.md) decision 9 has it. In a universe nothing ends; what a loss does there is [ADR-084](ADR-084-universe-without-an-end.md) decisions 3 and 4's. A Shipyard still under construction keeps nobody in the match, nor does anything else.
+2. **A lost Command Station stays lost in a match, and no code makes it so.** The tuning data gives the Command Station no cost, so a Constructor's order to build one is refused as `NotBuildable`, and only a Command Station queues Constructors. A universe's restarted seat is given a new one ([ADR-084](ADR-084-universe-without-an-end.md) decision 4).
 3. **A player without a Command Station has its finished Shipyards revealed.** At the end of each tick under fog of war, every finished Shipyard of such a player is added to each opponent's remembered structures, or refreshed there, unless the opponent sees it. A snapshot shows it marked `remembered`, and an attack order may name it (ADR-024 decision 7). A site is not revealed, since it keeps nobody in the match; a Shipyard is revealed from the tick it is finished.
 4. *(retired)*
 5. *(retired)*
@@ -24,6 +24,6 @@ One raid that reaches the Command Station should not settle a match, so a player
 
 ## What this forecloses
 
-- Building a Command Station again, without a new decision; a world's restart places one ([ADR-084](ADR-084-world-without-an-end.md) decision 4).
+- Building a Command Station again, without a new decision; a universe's restart places one ([ADR-084](ADR-084-universe-without-an-end.md) decision 4).
 - Anything other than a Command Station or a finished Shipyard keeping a player in the match.
 - Revealing more of a beaten player's base than its finished Shipyards.

@@ -2705,7 +2705,7 @@ public:
     Assert::AreEqual(std::string("Out of time. Match length 6:13"), outcome().detail);
   }
 
-  // ADR-084 decision 7: in a world no match ends, and a player who has lost is told when its seat restarts at its start, or
+  // ADR-084 decision 7: in a universe no match ends, and a player who has lost is told when its seat restarts at its start, or
   // that it waits for its start to be clear; the banner keeps the way back to the menu.
   TEST_METHOD(SaysWhenAFallenSeatRestarts)
   {
@@ -3124,7 +3124,7 @@ public:
     Assert::IsTrue(territoryOf().drain.empty());
   }
 
-  // The banner sits at the top, over the world that runs on, and its button takes the player back to the menu.
+  // The banner sits at the top, over the simulation that runs on, and its button takes the player back to the menu.
   TEST_METHOD(LaysOutTheBannerWithTheWayBack)
   {
     const Outpost::Hud::Content content{.ore = 0, .outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Match length 6:13"}};
@@ -3168,30 +3168,30 @@ public:
   }
 
   // ADR-078 decision 9: while a join connects, the menu says to which server under its subtitle, and only Quit can be
-  // pressed; the skirmishes and Join world stay, dim.
+  // pressed; the skirmishes and Join universe stay, dim.
   TEST_METHOD(SaysAJoinIsConnecting)
   {
-    const Outpost::Hud::Layout layout = LayMenu(1920, 1080, 1.0f, {.joinWorld = true, .connecting = "203.0.113.5:4433"});
+    const Outpost::Hud::Layout layout = LayMenu(1920, 1080, 1.0f, {.joinUniverse = true, .connecting = "203.0.113.5:4433"});
     const Outpost::Hud::Text& line = TextOf(layout, "Connecting to 203.0.113.5:4433...");
     Assert::IsTrue(line.top > TextOf(layout, "A skirmish against the AI").top, L"under the subtitle");
     Assert::AreEqual(size_t{1}, layout.actions.size(), L"one button can be pressed");
     Assert::IsTrue(layout.actions[0].second.kind == Outpost::Hud::ActionKind::Quit, L"Quit");
     Assert::IsTrue(line.top + 10.0f < layout.actions[0].first.top);
-    for (const std::string_view label : {"Easy skirmish", "Normal skirmish", "Hard skirmish", "Join world"})
+    for (const std::string_view label : {"Easy skirmish", "Normal skirmish", "Hard skirmish", "Join universe"})
     {
       const Outpost::Hud::Text& shown = TextOf(layout, label);
       Assert::IsTrue(shown.top > line.top, L"the others stay, under the line");
     }
   }
 
-  // ADR-078: with a join file, the menu offers to join its world, between the skirmishes and Quit; and it says, in the
+  // ADR-078: with a join file, the menu offers to join its universe, between the skirmishes and Quit; and it says, in the
   // warning's color, wrapped to its width, why the last game ended.
-  TEST_METHOD(OffersAWorldAndSaysWhyTheLastGameEnded)
+  TEST_METHOD(OffersAUniverseAndSaysWhyTheLastGameEnded)
   {
     const std::string notice = "The connection to the server was lost: The seat was taken by another connection with its token.";
-    const Outpost::Hud::Layout layout = LayMenu(1920, 1080, 1.0f, {.joinWorld = true, .notice = notice});
+    const Outpost::Hud::Layout layout = LayMenu(1920, 1080, 1.0f, {.joinUniverse = true, .notice = notice});
     Assert::AreEqual(size_t{5}, layout.actions.size());
-    Assert::IsTrue(layout.actions[3].second.kind == Outpost::Hud::ActionKind::JoinWorld, L"Join world after the skirmishes");
+    Assert::IsTrue(layout.actions[3].second.kind == Outpost::Hud::ActionKind::JoinUniverse, L"Join universe after the skirmishes");
     Assert::IsTrue(layout.actions[4].second.kind == Outpost::Hud::ActionKind::Quit, L"and Quit last");
     Assert::IsTrue(layout.actions[3].first.top > layout.actions[2].first.top && layout.actions[4].first.top > layout.actions[3].first.top);
 
@@ -3212,7 +3212,7 @@ public:
     Assert::AreEqual(notice, joined, L"every word of it");
 
     const Outpost::Hud::Layout plain = LayMenu(1920, 1080);
-    Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join world");
+    Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join universe");
   }
 
   // ADR-088 decision 2: a selection with a warship offers its orders first, each with its key's cap, Hold sector

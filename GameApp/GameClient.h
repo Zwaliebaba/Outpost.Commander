@@ -53,8 +53,8 @@ public:
     StartSkirmish,
     Quit,
     BackToMenu,
-    // Join the world the player's join file names (ADR-078).
-    JoinWorld
+    // Join the universe the player's join file names (ADR-078).
+    JoinUniverse
   };
 
   // Builds the pipelines and uploads _assets and _interface, which LoadClientAssets and RasterizeInterface made, in the
@@ -75,10 +75,10 @@ public:
   // StartMatch or ShowMenu (ADR-078 decision 9).
   void ShowConnecting(std::string _server);
 
-  // Whether the menu offers to join a world: whether the player has a join file (ADR-078).
-  void OfferWorld(bool _available) noexcept
+  // Whether the menu offers to join a universe: whether the player has a join file (ADR-078).
+  void OfferUniverse(bool _available) noexcept
   {
-    m_offerWorld = _available;
+    m_offerUniverse = _available;
   }
 
   // What the player asked for since the last call, if anything.
@@ -268,7 +268,7 @@ private:
   std::optional<Request> m_request;
   // What the menu says and offers besides its skirmishes (ADR-078).
   std::string m_menuNotice;
-  bool m_offerWorld = false;
+  bool m_offerUniverse = false;
   // The server a join connects to, while it does.
   std::string m_connecting;
   // Where the match runs, and how long since its last snapshot came, for the HUD's tag (ADR-086).

@@ -18,11 +18,11 @@ struct ServerDesc
   std::string quicAddress;
   // The port it listens on; zero lets the system choose one.
   std::uint16_t quicPort = 0;
-  // A world rather than a match (ADR-077 decision 7): the folder its saves and command log are kept in. A folder
-  // that holds a save of the world comes back as the world it saved, whatever the seed above; one that holds none starts a
-  // new world from the seed. Empty for a match. A world's server keeps its QUIC certificate in the folder too, so that a
+  // A universe rather than a match (ADR-077 decision 7): the folder its saves and command log are kept in. A folder
+  // that holds a save of the universe comes back as the universe it saved, whatever the seed above; one that holds none starts a
+  // new universe from the seed. Empty for a match. A universe's server keeps its QUIC certificate in the folder too, so that a
   // player pins it once (ADR-078).
-  std::filesystem::path world;
+  std::filesystem::path universe;
   // A battle matchup rather than a match (ADR-083 decision 2): the index of one of Matchups.json's, whose fleets fight
   // with no bases, no pirates and no fog of war. None for a match.
   std::optional<std::uint32_t> matchup;
@@ -85,13 +85,13 @@ public:
   [[nodiscard]] virtual std::unique_ptr<Transport> Connect(PlayerId _player) = 0;
 
   // A seat for one player, which a QuicTransport takes at the address returned, with _token, which the address carries
-  // (ADR-060, ADR-078). A match's seats are each taken before it starts; a world's may be taken at any time, and taken
+  // (ADR-060, ADR-078). A match's seats are each taken before it starts; a universe's may be taken at any time, and taken
   // again with the token by the player's newest connection. Throws Neuron::Exception when the server was not made to
   // listen over QUIC (ServerDesc::quic), once it has started, or when the player already has a connection or a seat.
   [[nodiscard]] virtual ServerAddress OpenSeat(PlayerId _player, const SeatToken& _token) = 0;
 
   // Has the server play _player itself, on its own thread (ADR-079). Without a seat opened for the player, _hosted is the
-  // player: a world's AI empire. With one, _hosted is the seat's deputy, which plays the seat until the player first takes
+  // player: a universe's AI empire. With one, _hosted is the seat's deputy, which plays the seat until the player first takes
   // it, and again from DEPUTY_DELAY_SECONDS after the player's connection has gone until the player takes it again. Throws
   // Neuron::Exception once the server has started, or when the player is hosted already or has a connection of its own.
   virtual void Host(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted) = 0;
@@ -99,7 +99,7 @@ public:
   // Starts the server's ticks on a thread of its own, at its fixed rate whatever the client's frame rate (ADR-025). Each
   // tick applies the commands that have arrived and sends each connected player a snapshot. Connect every player first.
   // The thread stops when the server is destroyed. Throws Neuron::Exception when a match's seat has not been taken; a
-  // world starts with its seats open.
+  // universe starts with its seats open.
   virtual void Start() = 0;
 
   // Runs one tick now, on the caller's thread, applying the commands that have arrived and sending each connected player

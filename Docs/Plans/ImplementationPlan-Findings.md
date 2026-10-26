@@ -32,8 +32,8 @@ Task numbers carry the prefix RF, and gates are lettered F.
 | RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | merged, [#118](https://github.com/Zwaliebaba/Outpost.Commander/pull/118); done, run by the owner on 2026-10-25 |
 | RF5.1 | A refused command is told to the player | — | F10 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a dedicated server |
 | RF5.2 | A waiting scheduled order can be cancelled from the Orders window | RF5.1 | F11 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run |
-| RF5.3 | No away report on a seat's first join | — | F12 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a new world joined, left and joined again |
-| RF5.4 | Joining a world says it is connecting | — | F14 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a server that answers and one that does not |
+| RF5.3 | No away report on a seat's first join | — | F12 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a new universe joined, left and joined again |
+| RF5.4 | Joining a universe says it is connecting | — | F14 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a server that answers and one that does not |
 
 The owner's track, beside the plan:
 
@@ -51,7 +51,7 @@ RF1, RF2, RF3, RF4, RF5.
 - **RF2 is four small interface fixes,** each a test and a few lines.
 - **RF3 changes what every minimap shows,** so it is a milestone of its own and an owner run.
 - **RF4 changes a rule the AI plays by.** The AI must place by it too.
-- **RF5 is the protocol and the world:** a refusal message, a cancel command, the first join and an asynchronous join. `PROTOCOL_VERSION` stays 1 until the game is live (AGENTS.md R18).
+- **RF5 is the protocol and the universe:** a refusal message, a cancel command, the first join and an asynchronous join. `PROTOCOL_VERSION` stays 1 until the game is live (AGENTS.md R18).
 
 ---
 
@@ -59,7 +59,7 @@ RF1, RF2, RF3, RF4, RF5.
 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
-| F1 | **The HUD's side colors.** The minimap's marks, washes and outlines, and the territory panel's figures, are drawn in fixed own and enemy colors (`Hud.cpp:26-30`). The world draws each side in its `Models.json` color by player number. In a world, seat 2 can be a human's, and that player sees its own ships red-orange in the world and blue on the minimap. **Decided on 2026-10-25:** the HUD follows the sides. Each side keeps its `Models.json` color everywhere. | C-001 | RF3.1 | decided 2026-10-25 |
+| F1 | **The HUD's side colors.** The minimap's marks, washes and outlines, and the territory panel's figures, are drawn in fixed own and enemy colors (`Hud.cpp:26-30`). The world draws each side in its `Models.json` color by player number. In a universe, seat 2 can be a human's, and that player sees its own ships red-orange in the world and blue on the minimap. **Decided on 2026-10-25:** the HUD follows the sides. Each side keeps its `Models.json` color everywhere. | C-001 | RF3.1 | decided 2026-10-25 |
 | F2 | **The Human Command Station's size.** Its art is about twice as deep as it is long. Level 1 is fitted by its length alone, so it is drawn about 90 m by 181 m on its 90 m footprint at every level. [ADR-064](../ADR/ADR-064-structure-upgrades.md) assumed a square level 1. **Decided on 2026-10-25:** the owner reworks the mesh. No code change. | C-002 | RF-O1 | decided 2026-10-25 |
 | F3 | **The designer's seventh bar.** `ExtentOf` reserves six bar rows (`Hud.cpp:1087`), but the designer draws seven whenever a module has sight, and the Sensor Array always has. So the Build row runs about 13 units into the footer. This is derived from the code; nobody has seen it on screen. **Decided on 2026-10-25:** reserve a row for each bar drawn. | C-003 | RF2.1 | decided 2026-10-25 |
 | F4 | **A lit footprint ring's color.** The code draws it in the side's ship-line color. [ADR-042](../ADR/ADR-042-faint-footprint-lines.md) decision 2 says the structure's own line color. **Decided on 2026-10-25:** the code wins, and ADR-042 is rewritten in place. | C-004 | RF1.1 | decided 2026-10-25 |
@@ -70,9 +70,9 @@ RF1, RF2, RF3, RF4, RF5.
 | F9 | **Selecting an enemy's ship.** The Controls window reads "Select a ship, or a structure of yours", but a click picks only the player's own ships. **Decided on 2026-10-25:** the player's own only, and the line is reworded. | G-023 | RF2.2 | decided 2026-10-25 |
 | F10 | **A refused command.** The server tells the player nothing when it refuses a command (`InProcessServer.cpp:482`). A scheduled order refused when given never appears. **Decided on 2026-10-25:** the server answers a refusal with its reason, and the HUD shows it. | G-025 | RF5.1 | decided 2026-10-25 |
 | F11 | **Cancelling a scheduled order.** A ship waits on at most one scheduled order, and any direct order takes it out of that order. An order with no ships left is deleted (`Simulation.cpp:3240-3253, 3305-3320`), so the orders are bounded by the ships. [ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md) decision 5 already says so, which the reference's gap G-024 missed. The Orders window has no way to cancel one. **Decided on 2026-10-25:** no new cap. The window gains a cancel and says that a direct order also leaves a scheduled one. | G-024 | RF5.2 | decided 2026-10-25 |
-| F12 | **An away report on the first join.** A seat nobody has taken is its deputy's from tick 0, so a player's first join of a new world opens a report of everything since the world began. **Decided on 2026-10-25:** no report on the first join. | G-028 | RF5.3 | decided 2026-10-25 |
+| F12 | **An away report on the first join.** A seat nobody has taken is its deputy's from tick 0, so a player's first join of a new universe opens a report of everything since the universe began. **Decided on 2026-10-25:** no report on the first join. | G-028 | RF5.3 | decided 2026-10-25 |
 | F13 | **Hover in the windows.** Only the HUD's own controls light under the pointer ([ADR-088](../ADR/ADR-088-selection-and-commands.md)). The Orders window's Give is drawn like a HUD button but never lights. Nothing has a pressed state. **Decided on 2026-10-25:** Give lights. The windows otherwise stay as ADR-088 says, with no pressed state. | G-036, G-039 | RF2.3 | decided 2026-10-25 |
-| F14 | **A loading screen and a connecting sign.** The window is hidden until the game has loaded, as [ADR-049](../ADR/ADR-049-startup-in-parallel.md) chose. Join world freezes the menu for up to 10 s with no sign. **Decided on 2026-10-25:** keep the hidden startup. The join becomes asynchronous, with a connecting line on the menu. | G-034 | RF5.4 | decided 2026-10-25 |
+| F14 | **A loading screen and a connecting sign.** The window is hidden until the game has loaded, as [ADR-049](../ADR/ADR-049-startup-in-parallel.md) chose. Join universe freezes the menu for up to 10 s with no sign. **Decided on 2026-10-25:** keep the hidden startup. The join becomes asynchronous, with a connecting line on the menu. | G-034 | RF5.4 | decided 2026-10-25 |
 | F15 | **The Large hull card's numbers.** "1,200 HP · ARM 14 · 25m/s" may be cut short at 1080p in Cascadia Mono 13, against [ADR-062](../ADR/ADR-062-type-scale-and-contrast.md) decision 4. It is unproven, because the metric could not be checked without the font. **Decided on 2026-10-25:** the owner checks it on Windows. A fix is a task only if the run shows it. | C-005 | RF-O3 | decided 2026-10-25 |
 | F16 | **Another player's structure, selected.** `Hud::Describe` lays out a remembered structure's panel, "Last seen 4:12 ago" and what was seen then, but `PlayerControls` picks only the player's own ships and structures (`PlayerControls.cpp:263-275`), so no click opens it ([ADR-081](../ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 4). Gate V3 of [the second interface plan](ImplementationPlan-Interface2.md) put the age on the panel. **Decided on 2026-10-25,** as the reconciliation's gate R7: the panel is made reachable. A click on another player's structure, seen or remembered, selects it alone, for a panel with no buttons that takes no orders. | the reconciliation, R7 | RF2.4 | decided 2026-10-25 |
 
@@ -144,7 +144,7 @@ RF1, RF2, RF3, RF4, RF5.
 - **Acceptance:** `HudTests`:
   - the marks of player 1 and player 2 are drawn in their sets' colors, whichever seat views them;
   - every figure's contrast is at least ADR-062's floor.
-- **Verify:** CI; run as seat 1 and as seat 2 of a world; owner run.
+- **Verify:** CI; run as seat 1 and as seat 2 of a universe; owner run.
 
 ---
 
@@ -166,7 +166,7 @@ RF1, RF2, RF3, RF4, RF5.
 
 ---
 
-## Milestone RF5 — The protocol and the world
+## Milestone RF5 — The protocol and the universe
 
 ### RF5.1 — A refused command is told to the player
 
@@ -195,13 +195,13 @@ RF1, RF2, RF3, RF4, RF5.
 - **Scope:** the away report starts only once a player has held the seat (`AwayReports.cpp`, `SeatController.cpp`).
 - **ADR:** [ADR-079](../ADR/ADR-079-seat-controller-and-deputy.md), edited in place.
 - **Acceptance:** `GameLogicTests`: a seat's first join carries no report, and a later return does.
-- **Verify:** CI; a new world joined, left and joined again.
+- **Verify:** CI; a new universe joined, left and joined again.
 
-### RF5.4 — Joining a world says it is connecting
+### RF5.4 — Joining a universe says it is connecting
 
 - **Gate:** F14.
 - **Scope:**
-  - Join world no longer blocks the frame loop (`WinMain.cpp:349-358`, `QuicTransport`).
+  - Join universe no longer blocks the frame loop (`WinMain.cpp:349-358`, `QuicTransport`).
   - The menu shows a line such as "Connecting to {server}…" until the welcome comes or the join fails, which keeps today's notice.
   - The hidden startup is unchanged.
 - **ADR:** [ADR-078](../ADR/ADR-078-dedicated-server.md) decision 9 and [ADR-086](../ADR/ADR-086-where-the-match-runs.md), edited in place.
@@ -213,5 +213,5 @@ RF1, RF2, RF3, RF4, RF5.
 ## Not in this plan
 
 - **The other conflicts.** Of the 68 conflicts, 32 are an ADR or a document that should say what the code does, and 28 are already superseded. Correcting the ADRs is documentation, not a decision; it can be its own PR.
-- **The other gaps.** Most of the 79 are facts no document states, which the reference states from the code. The world's bank sink (G-003) stays Phase 6's, as gate H9 left it.
+- **The other gaps.** Most of the 79 are facts no document states, which the reference states from the code. The universe's bank sink (G-003) stays Phase 6's, as gate H9 left it.
 - **The reference itself.** It is a snapshot of `a053fe2`, kept on its tag, and is not merged.

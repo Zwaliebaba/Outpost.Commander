@@ -22,9 +22,9 @@ Outpost::BuildStructureCommand Build(Outpost::EntityId _constructor, Outpost::St
 // The ore asteroid placed at _position.
 const Outpost::Entity& AsteroidAt(MatchArena& _arena, Outpost::PlanePosition _position)
 {
-  const auto found = std::ranges::find_if(_arena.World().Entities(), [_position](const Outpost::Entity& _entity)
+  const auto found = std::ranges::find_if(_arena.SimulationState().Entities(), [_position](const Outpost::Entity& _entity)
                                           { return _entity.kind == Outpost::EntityKind::Asteroid && _entity.position == _position; });
-  Assert::IsTrue(found != _arena.World().Entities().end());
+  Assert::IsTrue(found != _arena.SimulationState().Entities().end());
   return *found;
 }
 
@@ -41,18 +41,20 @@ void ResearchAll(MatchArena& _arena, Outpost::PlayerId _player, Outpost::EntityI
   {
     Assert::IsTrue(_arena.Tick({Order(_player, Outpost::StartResearchCommand{.lab = _lab, .topic = topic})})[0] ==
                    Outpost::CommandResult::Applied);
-    for (int tick = 0; tick < 600 * static_cast<int>(MatchArena::TICKS_PER_SECOND) &&
-                       std::ranges::find(_arena.World().Researched(_player), topic) == _arena.World().Researched(_player).end();
+    for (int tick = 0;
+         tick < 600 * static_cast<int>(MatchArena::TICKS_PER_SECOND) &&
+         std::ranges::find(_arena.SimulationState().Researched(_player), topic) == _arena.SimulationState().Researched(_player).end();
          ++tick)
       _arena.Run(1);
-    Assert::IsTrue(std::ranges::find(_arena.World().Researched(_player), topic) != _arena.World().Researched(_player).end());
+    Assert::IsTrue(std::ranges::find(_arena.SimulationState().Researched(_player), topic) !=
+                   _arena.SimulationState().Researched(_player).end());
   }
 }
 
 // The Ore left that _player's snapshot shows for the asteroid at _position, or -1 for none.
 std::int64_t ReserveSeenBy(MatchArena& _arena, Outpost::PlayerId _player, Outpost::PlanePosition _position)
 {
-  const Outpost::Snapshot snapshot = _arena.World().BuildSnapshot(_player);
+  const Outpost::Snapshot snapshot = _arena.SimulationState().BuildSnapshot(_player);
   const auto view = std::ranges::find(snapshot.entities, AsteroidAt(_arena, _position).id, &Outpost::EntityView::id);
   Assert::IsTrue(view != snapshot.entities.end());
   return view->oreReserveHundredths.value_or(-1);
@@ -67,18 +69,18 @@ public:
   TEST_METHOD(ARigEarnsItsAsteroidsRateEveryTick)
   {
     MatchArena arena;
-    const std::int64_t start = arena.World().OreHundredths(BLUE);
+    const std::int64_t start = arena.SimulationState().OreHundredths(BLUE);
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     arena.Run(2);
-    Assert::AreEqual(start + 35, arena.World().OreHundredths(BLUE), L"a tenth of 3.5 Ore");
+    Assert::AreEqual(start + 35, arena.SimulationState().OreHundredths(BLUE), L"a tenth of 3.5 Ore");
     arena.Run(18);
-    Assert::AreEqual(start + 350, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start + 350, arena.SimulationState().OreHundredths(BLUE));
 
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::CONTESTED_ASTEROID);
     arena.Run(20);
-    Assert::AreEqual(start + 350 + 900, arena.World().OreHundredths(BLUE), L"3.5 and 5.5 Ore a second");
-    Assert::AreEqual(900, arena.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
-    Assert::AreEqual(0, arena.World().BuildSnapshot(RED).oreIncomeHundredthsPerSecond);
+    Assert::AreEqual(start + 350 + 900, arena.SimulationState().OreHundredths(BLUE), L"3.5 and 5.5 Ore a second");
+    Assert::AreEqual(900, arena.SimulationState().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
+    Assert::AreEqual(0, arena.SimulationState().BuildSnapshot(RED).oreIncomeHundredthsPerSecond);
   }
 
   // ADR-035 decisions 2 and 3: a rig draws its asteroid's reserve down by what it earns, and once the reserve is gone
@@ -88,21 +90,21 @@ public:
   {
     // 35 Ore: ten seconds of a home rig.
     MatchArena arena(35);
-    const std::int64_t start = arena.World().OreHundredths(BLUE);
+    const std::int64_t start = arena.SimulationState().OreHundredths(BLUE);
     const Outpost::EntityId rig = arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     Assert::AreEqual(std::int64_t{3500}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
     arena.Run(100);
     Assert::AreEqual(std::int64_t{1750}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
     arena.Run(100);
     Assert::AreEqual(std::int64_t{0}, ReserveAt(arena, MatchArena::HOME_ASTEROID));
-    Assert::AreEqual(start + 3500, arena.World().OreHundredths(BLUE), L"all 35 Ore");
+    Assert::AreEqual(start + 3500, arena.SimulationState().OreHundredths(BLUE), L"all 35 Ore");
 
-    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(70, snapshot.oreIncomeHundredthsPerSecond, L"a fifth of 3.5 Ore a second");
     const auto rigView = std::ranges::find(snapshot.entities, rig, &Outpost::EntityView::id);
     Assert::AreEqual(std::int64_t{0}, rigView->oreReserveHundredths.value_or(-1));
     arena.Run(20);
-    Assert::AreEqual(start + 3570, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start + 3570, arena.SimulationState().OreHundredths(BLUE));
     Assert::AreEqual(std::int64_t{0}, ReserveAt(arena, MatchArena::HOME_ASTEROID), L"a trickle draws nothing");
 
     // An asteroid the map gave no reserve never runs out.
@@ -110,7 +112,7 @@ public:
     (void)endless.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     endless.Run(400);
     Assert::IsFalse(AsteroidAt(endless, MatchArena::HOME_ASTEROID).oreReserveHundredths.has_value());
-    Assert::AreEqual(350, endless.World().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
+    Assert::AreEqual(350, endless.SimulationState().BuildSnapshot(BLUE).oreIncomeHundredthsPerSecond);
   }
 
   // ADR-035 decision 3: Improved Extraction draws the reserve as fast as it earns, so the reserve lasts a fifth less, and
@@ -136,9 +138,9 @@ public:
     Assert::AreEqual(std::int64_t{550}, drain(MatchArena::CONTESTED_ASTEROID), L"Red's rig, without research");
 
     ResearchAll(arena, BLUE, lab, {HULL_PLATING, DEEP_CORE_SURVEY});
-    const std::int64_t ore = arena.World().OreHundredths(BLUE);
+    const std::int64_t ore = arena.SimulationState().OreHundredths(BLUE);
     Assert::AreEqual(std::int64_t{337}, drain(MatchArena::HOME_ASTEROID), L"4.38 Ore a second over 1.3");
-    Assert::AreEqual(ore + 438, arena.World().OreHundredths(BLUE), L"the income is the same");
+    Assert::AreEqual(ore + 438, arena.SimulationState().OreHundredths(BLUE), L"the income is the same");
     Assert::AreEqual(std::int64_t{550}, drain(MatchArena::CONTESTED_ASTEROID), L"only for the player who researched it");
   }
 
@@ -147,7 +149,7 @@ public:
   TEST_METHOD(RemembersTheReserveItLastSaw)
   {
     MatchArena arena(5000);
-    arena.World().UseFog();
+    arena.SimulationState().UseFog();
     (void)arena.Structure(RED, Outpost::StructureKind::MiningRig, MatchArena::CONTESTED_ASTEROID);
     const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {MatchArena::CONTESTED_ASTEROID.xMeters - 120.0f, 0.0f});
     arena.Run(20);
@@ -167,27 +169,27 @@ public:
   TEST_METHOD(PaysWhenTheJobStartsAndNeverRefunds)
   {
     MatchArena arena;
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, 0.0f});
-    const std::int64_t start = arena.World().OreHundredths(BLUE);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {0.0f, 0.0f});
+    const std::int64_t start = arena.SimulationState().OreHundredths(BLUE);
     const std::int32_t cost = arena.StructureData(Outpost::StructureKind::Shipyard).cost.value_or(0);
     const auto results = arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::Shipyard, {200.0f, 0.0f}))});
     Assert::IsTrue(results[0] == Outpost::CommandResult::Applied);
-    Assert::AreEqual(start - (std::int64_t{cost} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start - (std::int64_t{cost} * Outpost::HUNDREDTHS), arena.SimulationState().OreHundredths(BLUE));
 
     // An enemy destroys the site before it is built: the Ore stays spent.
     const Outpost::EntityId site = arena.Owned(BLUE, Outpost::EntityKind::Structure).back()->id;
     for (int i = 0; i < 6; ++i)
       (void)arena.Ship(RED, SMALL, MASS_DRIVER, {200.0f + (static_cast<float>(i) * 20.0f), 100.0f});
-    for (int tick = 0; tick < 60 * 20 && arena.World().FindEntity(site) != nullptr; ++tick)
+    for (int tick = 0; tick < 60 * 20 && arena.SimulationState().FindEntity(site) != nullptr; ++tick)
       arena.Run(1);
-    Assert::IsNull(arena.World().FindEntity(site), L"the site survived");
-    Assert::AreEqual(start - (std::int64_t{cost} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+    Assert::IsNull(arena.SimulationState().FindEntity(site), L"the site survived");
+    Assert::AreEqual(start - (std::int64_t{cost} * Outpost::HUNDREDTHS), arena.SimulationState().OreHundredths(BLUE));
   }
 
   TEST_METHOD(RefusesAJobThePlayerCannotAfford)
   {
     MatchArena arena;
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, 0.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {0.0f, 0.0f});
     // 1,000 Ore buys three Shipyards and leaves 100.
     for (int i = 0; i < 3; ++i)
     {
@@ -195,18 +197,18 @@ public:
       Assert::IsTrue(arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::Shipyard, at))})[0] ==
                      Outpost::CommandResult::Applied);
     }
-    const std::int64_t left = arena.World().OreHundredths(BLUE);
+    const std::int64_t left = arena.SimulationState().OreHundredths(BLUE);
     Assert::IsTrue(arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::Shipyard, {600.0f, -400.0f}))})[0] ==
                    Outpost::CommandResult::NotEnoughOre);
-    Assert::AreEqual(left, arena.World().OreHundredths(BLUE), L"a refused job costs nothing");
+    Assert::AreEqual(left, arena.SimulationState().OreHundredths(BLUE), L"a refused job costs nothing");
   }
 
   // Game §economy.rigs: an ore asteroid holds one rig, which snaps to it, and it is free again once the rig is destroyed.
   TEST_METHOD(OneRigPerAsteroid)
   {
     MatchArena arena;
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, 400.0f});
-    const Outpost::EntityId enemy = arena.World().SpawnConstructor(RED, {100.0f, 400.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {0.0f, 400.0f});
+    const Outpost::EntityId enemy = arena.SimulationState().SpawnConstructor(RED, {100.0f, 400.0f});
     // Ordered beside the asteroid's edge, the rig snaps to its center.
     const Outpost::PlanePosition beside{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 70.0f};
     Assert::IsTrue(arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::MiningRig, beside))})[0] ==
@@ -224,9 +226,9 @@ public:
     // Destroyed, the rig frees the asteroid.
     for (int i = 0; i < 6; ++i)
       (void)arena.Ship(RED, SMALL, MASS_DRIVER, {-100.0f + (static_cast<float>(i) * 40.0f), 700.0f});
-    for (int tick = 0; tick < 60 * 20 && arena.World().FindEntity(rigId) != nullptr; ++tick)
+    for (int tick = 0; tick < 60 * 20 && arena.SimulationState().FindEntity(rigId) != nullptr; ++tick)
       arena.Run(1);
-    Assert::IsNull(arena.World().FindEntity(rigId), L"the rig survived");
+    Assert::IsNull(arena.SimulationState().FindEntity(rigId), L"the rig survived");
     Assert::IsTrue(arena.Tick({Order(RED, Build(enemy, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))})[0] ==
                    Outpost::CommandResult::Applied);
   }
@@ -236,20 +238,20 @@ public:
   {
     MatchArena arena;
     const Outpost::PlanePosition nearAsteroid{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 80.0f};
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, nearAsteroid);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, nearAsteroid);
     (void)arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))});
-    const std::int64_t paid = arena.World().OreHundredths(BLUE);
+    const std::int64_t paid = arena.SimulationState().OreHundredths(BLUE);
     const Outpost::Entity& rig = *arena.Owned(BLUE, Outpost::EntityKind::Structure).back();
     Assert::IsFalse(rig.IsBuilt());
     const Outpost::EntityId rigId = rig.id;
     arena.Run(20);
-    Assert::AreEqual(paid, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(paid, arena.SimulationState().OreHundredths(BLUE));
 
     const auto buildTicks = static_cast<std::uint32_t>(
       arena.StructureData(Outpost::StructureKind::MiningRig).buildConstructorSeconds.value_or(0.0) * MatchArena::TICKS_PER_SECOND);
     arena.Run(buildTicks);
     Assert::IsTrue(arena.Get(rigId).IsBuilt());
-    Assert::IsTrue(arena.World().OreHundredths(BLUE) > paid);
+    Assert::IsTrue(arena.SimulationState().OreHundredths(BLUE) > paid);
   }
 };
 } // namespace GameLogicTests

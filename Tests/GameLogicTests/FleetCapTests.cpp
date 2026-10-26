@@ -60,21 +60,21 @@ public:
     const Outpost::PlanePosition lone{.xMeters = -1500.0f, .zMeters = -1500.0f};
     const Outpost::EntityId doomed = arena.Ship(BLUE, SMALL, MASS_DRIVER, lone);
     (void)arena.Tick({Queue(BLUE, yard, arena.Design(BLUE, SMALL, MASS_DRIVER))});
-    const std::int64_t ore = arena.World().OreHundredths(BLUE);
+    const std::int64_t ore = arena.SimulationState().OreHundredths(BLUE);
     arena.Run(2 * SmallBuildTicks(arena));
     Assert::AreEqual(size_t{12}, Warships(arena, BLUE));
-    Assert::AreEqual(ore, arena.World().OreHundredths(BLUE), L"a waiting job is not paid for");
+    Assert::AreEqual(ore, arena.SimulationState().OreHundredths(BLUE), L"a waiting job is not paid for");
     Assert::AreEqual(0, arena.Get(yard).jobWorkNeeded, L"nor started");
-    const Outpost::Snapshot view = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot view = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(12, view.commandPoints);
     Assert::AreEqual(CAPS[0], view.fleetCap);
 
     (void)arena.Structure(RED, Outpost::StructureKind::DefensePlatform, {.xMeters = lone.xMeters, .zMeters = lone.zMeters + 100.0f});
-    for (std::uint32_t tick = 0; tick < 60 * MatchArena::TICKS_PER_SECOND && arena.World().FindEntity(doomed) != nullptr; ++tick)
+    for (std::uint32_t tick = 0; tick < 60 * MatchArena::TICKS_PER_SECOND && arena.SimulationState().FindEntity(doomed) != nullptr; ++tick)
       arena.Run(1);
-    Assert::IsNull(arena.World().FindEntity(doomed), L"the platform did not destroy the lone ship");
+    Assert::IsNull(arena.SimulationState().FindEntity(doomed), L"the platform did not destroy the lone ship");
     arena.Run(1);
-    Assert::IsTrue(arena.World().OreHundredths(BLUE) < ore, L"paid once there is room");
+    Assert::IsTrue(arena.SimulationState().OreHundredths(BLUE) < ore, L"paid once there is room");
     arena.Run(SmallBuildTicks(arena));
     Assert::AreEqual(size_t{12}, Warships(arena, BLUE));
   }
@@ -91,7 +91,7 @@ public:
     arena.Run(1);
     const int started = (arena.Get(first).jobWorkNeeded > 0 ? 1 : 0) + (arena.Get(second).jobWorkNeeded > 0 ? 1 : 0);
     Assert::AreEqual(1, started);
-    Assert::AreEqual(CAPS[0], arena.World().BuildSnapshot(BLUE).commandPoints, L"the job under way is counted");
+    Assert::AreEqual(CAPS[0], arena.SimulationState().BuildSnapshot(BLUE).commandPoints, L"the job under way is counted");
 
     arena.Run(2 * SmallBuildTicks(arena));
     Assert::AreEqual(size_t{12}, Warships(arena, BLUE));
@@ -108,7 +108,7 @@ public:
     arena.Run(SmallBuildTicks(arena));
     Assert::AreEqual(0, arena.Get(yard).jobWorkNeeded, L"the Medium waits");
     Assert::AreEqual(size_t{11}, Warships(arena, BLUE));
-    const Outpost::Snapshot view = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot view = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(1, view.hulls[0].commandPoints);
     Assert::AreEqual(2, view.hulls[1].commandPoints);
     Assert::AreEqual(4, view.hulls[2].commandPoints);
@@ -125,7 +125,7 @@ public:
     const auto constructors = std::ranges::count_if(arena.Owned(BLUE, Outpost::EntityKind::Ship), [](const Outpost::Entity* _ship)
                                                     { return _ship->role == Outpost::ShipRole::Constructor; });
     Assert::AreEqual(std::ptrdiff_t{1}, constructors);
-    Assert::AreEqual(CAPS[0], arena.World().BuildSnapshot(BLUE).commandPoints);
+    Assert::AreEqual(CAPS[0], arena.SimulationState().BuildSnapshot(BLUE).commandPoints);
   }
 
   // The cap follows the Command Station's level, and is level 1's without a station. The station's levels say what each
@@ -134,16 +134,16 @@ public:
   {
     {
       MatchArena arena;
-      Assert::AreEqual(CAPS[0], arena.World().BuildSnapshot(BLUE).fleetCap, L"without a station");
+      Assert::AreEqual(CAPS[0], arena.SimulationState().BuildSnapshot(BLUE).fleetCap, L"without a station");
     }
     for (std::int32_t level = 1; level <= 5; ++level)
     {
       MatchArena arena;
       (void)arena.Structure(BLUE, Outpost::StructureKind::CommandStation, STATION, level);
-      Assert::AreEqual(CAPS[static_cast<size_t>(level - 1)], arena.World().BuildSnapshot(BLUE).fleetCap);
+      Assert::AreEqual(CAPS[static_cast<size_t>(level - 1)], arena.SimulationState().BuildSnapshot(BLUE).fleetCap);
     }
     MatchArena arena;
-    const Outpost::Snapshot view = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot view = arena.SimulationState().BuildSnapshot(BLUE);
     const auto station =
       std::ranges::find(view.structureTypes, Outpost::StructureKind::CommandStation, &Outpost::StructureTypeView::structure);
     Assert::IsTrue(station != view.structureTypes.end());
@@ -161,27 +161,27 @@ public:
       for (Outpost::StructureLevelTuning& level : structure.levels)
         level.commandPoints = 0;
     }
-    Outpost::Simulation world(11, MatchArena::TICKS_PER_SECOND);
-    world.PlaceMap({.sizeMeters = 4000.0f, .minimumGapMeters = 60.0f, .starts = {}, .oreAsteroids = {}, .asteroidFields = {}});
-    world.UseTuning(tuning);
-    world.AddPlayer(BLUE, tuning.rules.startingOre);
-    world.SaveStartingDesigns(BLUE, tuning);
+    Outpost::Simulation simulation(11, MatchArena::TICKS_PER_SECOND);
+    simulation.PlaceMap({.sizeMeters = 4000.0f, .minimumGapMeters = 60.0f, .starts = {}, .oreAsteroids = {}, .asteroidFields = {}});
+    simulation.UseTuning(tuning);
+    simulation.AddPlayer(BLUE, tuning.rules.startingOre);
+    simulation.SaveStartingDesigns(BLUE, tuning);
     const Outpost::StructureTuning& shipyard =
       *std::ranges::find(tuning.structures, Outpost::StructureKind::Shipyard, &Outpost::StructureTuning::kind);
     const Outpost::EntityId yard =
-      world.SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, YARD, static_cast<float>(shipyard.footprintRadiusMeters),
-                           shipyard.hitPoints * Outpost::HUNDREDTHS, shipyard.armor * Outpost::HUNDREDTHS);
-    const Outpost::DesignId swarm = world.FindDesign(BLUE, {SMALL, Outpost::DriveId{1}, MASS_DRIVER})->id;
+      simulation.SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, YARD, static_cast<float>(shipyard.footprintRadiusMeters),
+                                shipyard.hitPoints * Outpost::HUNDREDTHS, shipyard.armor * Outpost::HUNDREDTHS);
+    const Outpost::DesignId swarm = simulation.FindDesign(BLUE, {SMALL, Outpost::DriveId{1}, MASS_DRIVER})->id;
     for (int i = 0; i < 20; ++i)
-      (void)world.SpawnShip(BLUE, swarm, {.xMeters = PARK.xMeters + (30.0f * static_cast<float>(i)), .zMeters = PARK.zMeters});
-    (void)world.Tick({Queue(BLUE, yard, swarm)});
+      (void)simulation.SpawnShip(BLUE, swarm, {.xMeters = PARK.xMeters + (30.0f * static_cast<float>(i)), .zMeters = PARK.zMeters});
+    (void)simulation.Tick({Queue(BLUE, yard, swarm)});
     for (std::uint32_t tick = 0; tick <= static_cast<std::uint32_t>(tuning.hulls[0].buildSeconds * MatchArena::TICKS_PER_SECOND); ++tick)
-      (void)world.Tick({});
+      (void)simulation.Tick({});
     const auto warships =
-      std::ranges::count_if(world.Entities(), [](const Outpost::Entity& _entity)
+      std::ranges::count_if(simulation.Entities(), [](const Outpost::Entity& _entity)
                             { return _entity.kind == Outpost::EntityKind::Ship && _entity.role == Outpost::ShipRole::Warship; });
     Assert::AreEqual(std::ptrdiff_t{21}, warships);
-    Assert::AreEqual(0, world.BuildSnapshot(BLUE).fleetCap);
+    Assert::AreEqual(0, simulation.BuildSnapshot(BLUE).fleetCap);
   }
 };
 } // namespace GameLogicTests

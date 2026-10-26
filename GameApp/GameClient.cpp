@@ -589,7 +589,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     // The menu is all there is: a press on its buttons, and nothing for the camera or the controls.
     m_hudLayout = Hud::LayMenu(metrics, _viewportWidthPixels, _viewportHeightPixels, m_interfaceFactor,
-                               {.joinWorld = m_offerWorld, .notice = m_menuNotice, .connecting = m_connecting});
+                               {.joinUniverse = m_offerUniverse, .notice = m_menuNotice, .connecting = m_connecting});
     if (!_input.active)
       return;
     for (const Neuron::InputEvent& event : _input.events)
@@ -902,8 +902,8 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
   case Hud::ActionKind::BackToMenu:
     m_request = Request::BackToMenu;
     break;
-  case Hud::ActionKind::JoinWorld:
-    m_request = Request::JoinWorld;
+  case Hud::ActionKind::JoinUniverse:
+    m_request = Request::JoinUniverse;
     break;
   case Hud::ActionKind::OpenDesigner:
     m_designer.SetTarget(_action.producer, m_view.Newest());

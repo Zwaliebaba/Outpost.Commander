@@ -47,8 +47,8 @@ constexpr std::wstring_view AI_MATCHES_SWITCH = L"--ai-matches";
 // With --ai-matches, for a script such as Tools/SelfPlay.py: no message. The exit code says how the run went, and a
 // failure's message goes to standard error (ADR-063).
 constexpr std::wstring_view QUIET_SWITCH = L"--quiet";
-// The join switch: --join <file> joins the world a dedicated server's join file names, rather than showing the menu
-// (ADR-078). Without it, the menu offers to join the world of the join file in the player's documents, when there is one.
+// The join switch: --join <file> joins the universe a dedicated server's join file names, rather than showing the menu
+// (ADR-078). Without it, the menu offers to join the universe of the join file in the player's documents, when there is one.
 constexpr std::wstring_view JOIN_SWITCH = L"--join";
 // The matchup switch: --matchup <n> makes every skirmish battle matchup n of Matchups.json, from 1, against the AI's
 // battle behavior; it is the matchups' live half (ADR-083 decision 6), and the match log names the matchup (ADR-038 decision 1).
@@ -165,7 +165,7 @@ template <typename Fn> auto PrepareAsync(Fn _make)
                     });
 }
 
-// One match: its server, the human's connection, the other player's with whatever drives it, and its log. A world joined on
+// One match: its server, the human's connection, the other player's with whatever drives it, and its log. A universe joined on
 // a dedicated server has the human's connection alone (ADR-078).
 struct Match
 {
@@ -342,11 +342,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       client.StartMatch();
       lastFrame = std::chrono::steady_clock::now();
     };
-    // A world on a dedicated server: the player's connection alone, to the seat its join file names (ADR-078). The connection
+    // A universe on a dedicated server: the player's connection alone, to the seat its join file names (ADR-078). The connection
     // is made on a thread of its own while the menu says so, and the frame loop takes it once it is welcomed or has failed
     // (ADR-078 decision 9). A join that fails goes back to the menu, saying why.
     const std::filesystem::path documentsJoinFile = DocumentsJoinFile();
-    const auto offerWorld = [&] { client.OfferWorld(!documentsJoinFile.empty() && std::filesystem::exists(documentsJoinFile)); };
+    const auto offerUniverse = [&] { client.OfferUniverse(!documentsJoinFile.empty() && std::filesystem::exists(documentsJoinFile)); };
     struct Joining
     {
       std::string server;
@@ -356,10 +356,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     const auto failedJoin = [&](const std::exception& _error)
     {
       match.reset();
-      offerWorld();
-      client.ShowMenu(std::format("Could not join the world: {}", _error.what()));
+      offerUniverse();
+      client.ShowMenu(std::format("Could not join the universe: {}", _error.what()));
     };
-    const auto joinWorld = [&](const std::filesystem::path& _joinFile)
+    const auto joinUniverse = [&](const std::filesystem::path& _joinFile)
     {
       try
       {
@@ -396,9 +396,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       }
       joining.reset();
     };
-    offerWorld();
+    offerUniverse();
     if (joinOnStart)
-      joinWorld(*joinOnStart);
+      joinUniverse(*joinOnStart);
     else if (skipMenu)
       startMatch();
     UINT loggedWidthPixels = 0;
@@ -428,7 +428,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       if (match)
       {
         // Taken every frame, logged or not, so that they do not pile up. This is also where a failure on the server's thread
-        // reaches this one. A world on a dedicated server has no server here.
+        // reaches this one. A universe on a dedicated server has no server here.
         for (const Outpost::TickTiming& tick : match->server ? match->server->TakeTickTimings() : std::vector<Outpost::TickTiming>())
         {
           if (!measure)
@@ -490,7 +490,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         if (match->log)
           match->log->Finish();
         match.reset();
-        offerWorld();
+        offerUniverse();
         client.ShowMenu(std::format("The connection to the server was lost: {}", *connectionLost));
         if (!nextServer)
         {
@@ -526,9 +526,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           if (match && match->log)
             match->log->Finish();
           match.reset();
-          offerWorld();
+          offerUniverse();
           client.ShowMenu();
-          // A world joined on a dedicated server left the next skirmish's server unused.
+          // A universe joined on a dedicated server left the next skirmish's server unused.
           if (!nextServer)
           {
             seed = NewSeed();
@@ -536,9 +536,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
               {.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true, .matchup = matchup});
           }
           break;
-        case Outpost::GameClient::Request::JoinWorld:
+        case Outpost::GameClient::Request::JoinUniverse:
           if (!match && !joining)
-            joinWorld(documentsJoinFile);
+            joinUniverse(documentsJoinFile);
           break;
         case Outpost::GameClient::Request::Quit:
           PostQuitMessage(0);

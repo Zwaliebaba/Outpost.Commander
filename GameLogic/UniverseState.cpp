@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "WorldState.h"
+#include "UniverseState.h"
 
 #include <array>
 
@@ -137,12 +137,12 @@ constexpr TargetRule LastOf(TargetRule) noexcept
 
 namespace
 {
-// What a save starts with, so that no other file is taken for one: "OCWORLD" and a zero byte, read as a little-endian
+// What a save starts with, so that no other file is taken for one: "OCUNIV" and two zero bytes, read as a little-endian
 // number.
-constexpr std::uint64_t SAVE_KIND = 0x00444C524F57434Full;
+constexpr std::uint64_t SAVE_KIND = 0x000056494E55434Full;
 // A save ends with its checksum, which covers everything before it.
 constexpr std::size_t CHECKSUM_BYTES = sizeof(std::uint64_t);
-constexpr std::string_view SAVE_SOURCE = "A saved world";
+constexpr std::string_view SAVE_SOURCE = "A saved universe";
 
 constexpr std::uint64_t FNV_OFFSET = 0xCBF29CE484222325ull;
 constexpr std::uint64_t FNV_PRIME = 0x100000001B3ull;
@@ -173,13 +173,13 @@ Outpost::SaveHeader GetHeader(Outpost::ByteReader& _reader)
   std::uint64_t kind = 0;
   _reader.Get(kind);
   if (kind != SAVE_KIND)
-    _reader.Malformed("it is not a saved world");
+    _reader.Malformed("it is not a saved universe");
   std::uint32_t version = 0;
   _reader.Get(version);
-  if (version != Outpost::WORLD_STATE_VERSION)
+  if (version != Outpost::UNIVERSE_STATE_VERSION)
   {
-    throw Neuron::Exception(
-      std::format("{} holds state version {}, and this build reads version {} only.", SAVE_SOURCE, version, Outpost::WORLD_STATE_VERSION));
+    throw Neuron::Exception(std::format("{} holds state version {}, and this build reads version {} only.", SAVE_SOURCE, version,
+                                        Outpost::UNIVERSE_STATE_VERSION));
   }
   std::uint64_t layoutHash = 0;
   _reader.Get(layoutHash);
@@ -196,19 +196,19 @@ Outpost::SaveHeader GetHeader(Outpost::ByteReader& _reader)
 
 template <typename Self, typename Parts> auto Outpost::Simulation::SavedFields(Self& _simulation, Parts& _parts)
 {
-  // Not saved: the tick rate and what follows from it, which the world's identity names; the pathfinder, whose obstacles
+  // Not saved: the tick rate and what follows from it, which the universe's identity names; the pathfinder, whose obstacles
   // are saved in _parts and whose graphs follow from them; the observer, which is null between ticks; whether this tick
   // planned paths, which is false between ticks; the tuning data, which the save names by its hash, and what it gives a
-  // player who has researched nothing; a battle matchup's end, since a matchup is never a world (ADR-083); and the last
+  // player who has researched nothing; a battle matchup's end, since a matchup is never a universe (ADR-083); and the last
   // tick's shots, destructions and events, which only that tick's snapshots show.
   [[maybe_unused]] auto& [ticksPerSecond, secondsPerTick, stallLimitTicks, tick, entities, lastEntityId, designs, lastDesignId, players,
                           targetRule, random, pathfinder, observer, plannedOrders, plannedThisTick, lastStandingGroup, scheduledOrders,
                           lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, tuning, unresearched, basePlayers,
-                          matchOver, winner, matchEndedTick, ending, fog, worldRules, restartSeconds, starts, matchupEnd, shots, destroyed,
-                          events] = _simulation;
+                          matchOver, winner, matchEndedTick, ending, fog, universeRules, restartSeconds, starts, matchupEnd, shots,
+                          destroyed, events] = _simulation;
   return std::tie(tick, entities, lastEntityId, designs, lastDesignId, players, targetRule, _parts.random, _parts.obstacles, plannedOrders,
                   lastStandingGroup, scheduledOrders, lastScheduledOrder, mapObstacles, mapHalfSizeMeters, sectors, outposts, basePlayers,
-                  matchOver, winner, matchEndedTick, ending, fog, worldRules, restartSeconds, starts);
+                  matchOver, winner, matchEndedTick, ending, fog, universeRules, restartSeconds, starts);
 }
 
 void Outpost::Simulation::SaveState(ByteWriter& _writer) const
@@ -220,12 +220,12 @@ void Outpost::Simulation::SaveState(ByteWriter& _writer) const
 void Outpost::Simulation::LoadState(ByteReader& _reader)
 {
   if (!m_tuning)
-    throw Neuron::Exception("Simulation: a saved world loads only into a simulation given its tuning data");
+    throw Neuron::Exception("Simulation: a saved universe loads only into a simulation given its tuning data");
   SavedParts parts;
   std::apply([&_reader](auto&... _fields) { (_reader.Get(_fields), ...); }, SavedFields(*this, parts));
   m_random.SetState(parts.random);
   // A new pathfinder over the saved obstacles: each graph is built whole when it is next needed, which is the very graph
-  // the running world kept up to date (ADR-054 decision 7).
+  // the running universe kept up to date (ADR-054 decision 7).
   m_pathfinder = Pathfinder();
   m_pathfinder.SetObstacles(std::move(parts.obstacles), m_mapHalfSizeMeters);
   for (PlayerState& player : m_players)
@@ -260,11 +260,12 @@ std::uint64_t Outpost::DataHash(std::span<const std::string_view> _texts) noexce
   return hash;
 }
 
-std::vector<std::byte> Outpost::EncodeWorld(const Simulation& _simulation, const WorldIdentity& _identity, const SeatReports& _reports)
+std::vector<std::byte> Outpost::EncodeUniverse(const Simulation& _simulation, const UniverseIdentity& _identity,
+                                               const SeatReports& _reports)
 {
   ByteWriter writer;
   writer.Put(SAVE_KIND);
-  writer.Put(WORLD_STATE_VERSION);
+  writer.Put(UNIVERSE_STATE_VERSION);
   writer.Put(SaveLayoutHash());
   writer.Put(_identity.seed);
   writer.Put(_identity.ticksPerSecond);
@@ -285,16 +286,17 @@ Outpost::SaveHeader Outpost::ReadSaveHeader(std::span<const std::byte> _bytes)
   return GetHeader(reader);
 }
 
-Outpost::SeatReports Outpost::DecodeWorld(std::span<const std::byte> _bytes, const WorldIdentity& _identity, Simulation& _simulation)
+Outpost::SeatReports Outpost::DecodeUniverse(std::span<const std::byte> _bytes, const UniverseIdentity& _identity, Simulation& _simulation)
 {
   ByteReader reader(CheckedBody(_bytes), SAVE_SOURCE);
   const SaveHeader header = GetHeader(reader);
   if (header.identity != _identity)
   {
-    throw Neuron::Exception(std::format("{} is of another world: seed {}, {} ticks a second and data {:016x}, where this one has seed {}, "
-                                        "{} ticks a second and data {:016x}.",
-                                        SAVE_SOURCE, header.identity.seed, header.identity.ticksPerSecond, header.identity.dataHash,
-                                        _identity.seed, _identity.ticksPerSecond, _identity.dataHash));
+    throw Neuron::Exception(
+      std::format("{} is of another universe: seed {}, {} ticks a second and data {:016x}, where this one has seed {}, "
+                  "{} ticks a second and data {:016x}.",
+                  SAVE_SOURCE, header.identity.seed, header.identity.ticksPerSecond, header.identity.dataHash, _identity.seed,
+                  _identity.ticksPerSecond, _identity.dataHash));
   }
   _simulation.LoadState(reader);
   SeatReports reports;
