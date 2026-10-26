@@ -16,11 +16,12 @@ Outpost::Snapshot ToSnapshot(Outpost::Message _message)
 }
 } // namespace
 
-Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _player)
+Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _player, std::chrono::milliseconds _connectTimeout)
   : m_channel(Neuron::QuicChannel::Connect({.host = _address.host,
                                             .port = _address.port,
                                             .applicationProtocol = std::string(QUIC_APPLICATION_PROTOCOL),
-                                            .serverCertificate = _address.certificate}))
+                                            .serverCertificate = _address.certificate,
+                                            .connectTimeout = _connectTimeout}))
 {
   m_channel->Send(EncodeMessage(HelloMessage{.player = _player, .token = _address.token}));
 

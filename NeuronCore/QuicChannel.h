@@ -18,6 +18,9 @@ inline constexpr std::uint64_t FRAMING_ERROR_CODE = 0x100;
 class QuicChannel : NonCopyable
 {
 public:
+  // How long a client's handshake may take before it gives up, unless its Desc says otherwise.
+  static constexpr std::chrono::milliseconds CONNECT_TIMEOUT{10'000};
+
   struct Desc
   {
     // The server's address and port.
@@ -28,7 +31,7 @@ public:
     // The only certificate the client accepts from the server.
     CertificateHash serverCertificate{};
     // How long the handshake may take before the client gives up.
-    std::chrono::milliseconds connectTimeout{10'000};
+    std::chrono::milliseconds connectTimeout = CONNECT_TIMEOUT;
   };
 
   // What the server's end of a connection does with each message, on MsQuic's thread, in the order the client sent them:

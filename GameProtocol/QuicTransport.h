@@ -18,8 +18,10 @@ class QuicTransport final : public Transport
 {
 public:
   // Connects to the server at _address, takes _player's seat there with the address's token, and returns once the server
-  // has welcomed it. Throws Neuron::Exception when it cannot connect, or when the server refuses it, saying why.
-  QuicTransport(const ServerAddress& _address, PlayerId _player);
+  // has welcomed it, giving the handshake _connectTimeout (ADR-078 decision 9). Throws Neuron::Exception when it cannot
+  // connect, or when the server refuses it, saying why.
+  QuicTransport(const ServerAddress& _address, PlayerId _player,
+                std::chrono::milliseconds _connectTimeout = Neuron::QuicChannel::CONNECT_TIMEOUT);
 
   void Send(Command _command) override;
   // Throws Neuron::Exception once the connection has gone, saying why in the server's words when the server closed it

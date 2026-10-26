@@ -376,6 +376,30 @@ public:
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
   }
 
+  // ADR-078 decision 11: in a universe Esc opens the leave window only once nothing waits for a click, an attack-move, a
+  // standing order or a placement, each of which Esc cancels first.
+  TEST_METHOD(SaysWhetherAnythingWaitsForAClick)
+  {
+    Driver driver;
+    AddBase(driver.Entities());
+    Assert::IsFalse(driver.Controls().IsArmed(), L"nothing selected");
+    driver.Click(driver.Entities()[1]);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"a selection waits for nothing");
+    driver.Key('A');
+    Assert::IsTrue(driver.Controls().IsArmed(), L"an attack-move");
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"the attack-move canceled");
+    driver.Key('H');
+    Assert::IsTrue(driver.Controls().IsArmed(), L"a standing order");
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"the standing order canceled");
+    driver.Click(driver.Entities()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.Entities());
+    Assert::IsTrue(driver.Controls().IsArmed(), L"a placement");
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"the placement canceled");
+  }
+
   TEST_METHOD(ControlGroupsAssignRecallAndCenter)
   {
     Driver driver;

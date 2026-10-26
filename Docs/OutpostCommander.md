@@ -43,6 +43,7 @@ A session is everything between starting the game and closing it: the menu, a sk
 ### Starting the game [§session.launch]
 
 - **The game opens on its menu, full screen** (ADR-006 decision 1; Game §interface.screen).
+- **With a join file in the player's documents, the game joins its universe at launch,** once, before it offers a skirmish: the menu says it is connecting, and a server that does not answer within 3 s leaves the menu with its notice and the skirmishes to play (ADR-078 decision 9; Game §session.join). The runs without a player and `--matchup` join nothing (Game §session.instruments; Game §session.matchup).
 - **Everything a skirmish needs is loaded before the screen goes full screen.** The window stays hidden while the first skirmish's server, the AI's three settings files, the client's meshes and the interface's atlas are made on threads of their own, so that a bad tuning, map, AI or model file is reported before the game takes the screen (ADR-049 decisions 2 and 3; ADR-065 decision 4).
 - **A failure is never a silent exit.** A failure at startup, a lost graphics device, or a failure on the skirmish server's thread is shown in a message box, and the game closes (ADR-006 decisions 7 and 8; ADR-025 decision 5).
 - **The game needs Windows 11**, since every match goes over QUIC and QUIC needs TLS 1.3 (ADR-060 decision 8).
@@ -92,17 +93,17 @@ A session is everything between starting the game and closing it: the menu, a sk
 
 ### Joining a universe [§session.join]
 
-- **The game joins a universe from a join file:** `--join <file>`, or the menu's Join universe, which reads `Outpost Commander\Join.json` in the player's documents (ADR-078 decision 9).
+- **The game joins a universe from a join file:** `--join <file>`, or the menu's Join universe, which reads `Outpost Commander\Join.json` in the player's documents; and at launch, once, when the documents hold that file (ADR-078 decision 9; Game §session.launch).
 - **While a join connects, the menu says so,** "Connecting to 203.0.113.5:4433...", and only Quit can be pressed; the game keeps drawing, and the menu answers, until the server welcomes the player or the join fails (ADR-078 decision 9; ADR-086 decision 1). A join file holds the host, the port, the SHA-256 of the universe's certificate, the seat's token and the player (ADR-078 decision 8).
 - **The game accepts only the certificate the join file names** (ADR-060 decision 6).
 - **A joined universe is the player's connection alone:** no server, rival or AI runs in the game (ADR-078 decision 9). The player plays the seat as it plays a skirmish, under that universe's rules (Game §universe).
 - **A seat is taken with its token, at any time while the universe runs** (ADR-078 decisions 3 and 4). The first snapshot after the seat is taken shows everything the player sees and remembers; the shots and destructions of the ticks it missed are not shown (ADR-078 decision 4).
 - **The ground explored before is the game's own record and starts afresh:** everything out of sight is drawn as never seen until it is seen again (Game §sight.memory).
-- **A join that fails goes back to the menu, saying why,** after "Could not join the universe:": a join file that cannot be read, a server that cannot be reached or never seats the player, "The server refused the seat: it is not open there, or the join file's token is not the seat's." for a wrong token, and "The server runs another build of the game." for a game of another build (ADR-078 decisions 3 and 10; ADR-060 decision 5; ADR-086 decision 1).
+- **A join that fails goes back to the menu, saying why,** after "Could not join the universe:": a join file that cannot be read, a server that cannot be reached, within 3 s at launch and 10 s otherwise, or never seats the player, "The server refused the seat: it is not open there, or the join file's token is not the seat's." for a wrong token, and "The server runs another build of the game." for a game of another build (ADR-078 decisions 3 and 10; ADR-060 decision 5; ADR-086 decision 1).
 - **A connection lost in play takes the player back to the menu, saying why,** after "The connection to the server was lost:", in the server's own words when the server closed it (ADR-078 decision 10).
 - **The newest connection holds the seat.** A second game that joins with the same join file takes the seat, and the first goes back to the menu with "The seat was taken by another connection with its token." (ADR-078 decisions 4 and 10).
 - **A tag in the top-right corner names the server,** "Server" and its host and port as the join file names them, an IPv6 host in brackets. Once no snapshot has come for 2 s it warns, "No word from the server", counting the seconds (ADR-086 decisions 1 and 2).
-- **The way back to the menu from a universe is the banner's,** which a universe shows only once the player's empire has fallen (ADR-084 decision 7; Game §universe.restart). Closing the game leaves the seat to its deputy (Game §universe.handover).
+- **The way back to the menu from a universe is Esc, at any time:** with no window open and nothing armed, Esc opens the leave window, "Leave for the menu?", whose Leave universe goes back to the menu and whose Stay closes it. The connection closes at once, and the deputy takes the seat a minute later (ADR-078 decision 11; Game §universe.handover). Once the player's empire has fallen the banner offers the way back too (ADR-084 decision 7; Game §universe.restart). Closing the game leaves the seat to its deputy (Game §universe.handover).
 
 ### Runs without a player [§session.instruments]
 
@@ -1488,14 +1489,14 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 #### How a window behaves [§interface.windows.behavior]
 
-- **The designer, the production window, the research window, the Controls window, the orders window and the away window float over the HUD** (ADR-031 decision 6). The HUD stays put under them (ADR-043 decision 1).
-- **D, P, R, F1 and O open and close the designer, production, research, Controls and orders windows** in a match, and the buttons on a structure's panel open its windows. The away window opens by itself when the report of a time away arrives (ADR-031 decision 6; Game §universe.away).
+- **The designer, the production window, the research window, the Controls window, the orders window, the away window and the leave window float over the HUD** (ADR-031 decision 6). The HUD stays put under them (ADR-043 decision 1).
+- **D, P, R, F1 and O open and close the designer, production, research, Controls and orders windows** in a match, and the buttons on a structure's panel open its windows. The away window opens by itself when the report of a time away arrives, and Esc opens the leave window in a universe (ADR-031 decision 6; Game §universe.away; Game §interface.windows.leave).
 - **A window that shows a structure opens on the one selected.** Selecting another Shipyard while the designer is open makes it the designer's target, and selecting another producer while the production window is open shows it there (ADR-031 decision 6).
 - **A window is dragged by its title bar** and kept on the screen: its whole title bar, and 120 units of its width. A smaller screen moves it back as well (ADR-031 decision 2).
-- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further. With no window open, Esc reaches the controls; while the designer's name takes typing, the designer has Esc first (ADR-031 decision 5; ADR-017 decision 8).
+- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further. With no window open, Esc reaches the controls, and in a universe, with nothing armed, opens the leave window; while the designer's name takes typing, the designer has Esc first (ADR-031 decision 5; ADR-017 decision 8).
 - **Several windows can be open at once,** each drawn whole over the ones behind it (ADR-031 decision 4).
 - **A window opens where it was left,** until the game closes: closing and opening it, or starting another match, puts it back there. Leaving a match closes every window. Nothing is written to disk (ADR-031 decisions 1 and 2).
-- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls and away windows in the middle of the screen (ADR-031 decision 2; ADR-062 decision 6).
+- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls, away and leave windows in the middle of the screen (ADR-031 decision 2; ADR-062 decision 6).
 - **A window has the size its content gives it;** none is resized, docked or minimized (ADR-031).
 
 #### The production window [§interface.windows.production]
@@ -1532,6 +1533,11 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **O opens the orders window,** which lists the seat's scheduled orders and gives the selection a new one; it is Game §orders.scheduled.window (ADR-080 decision 9).
 - **The away window opens by itself when the report of a time away arrives,** and closing it drops the report; it is Game §universe.away (ADR-080 decision 9).
 
+#### The leave window [§interface.windows.leave]
+
+- **In a universe, Esc opens the leave window** once no window is open and nothing is armed: "Leave for the menu?", that the deputy keeps the empire going, and Leave universe and Stay side by side. Leave universe goes back to the menu, and Stay closes the window, as its × and Esc do; it is Game §session.join (ADR-078 decision 11).
+- **A skirmish has none:** its way back to the menu is the banner's once the match ends (ADR-020 decision 9; Game §session.end).
+
 ### The camera [§interface.camera]
 
 - **The camera looks down on the battlefield from an angle set by its zoom.** The zoom is the width of ground across the middle of the screen at the focus, the same on any shape of screen, and the camera looks down more steeply as it zooms out ([Catalogue: defaultViewWidthMeters](Reference/Catalogue.md#defaultViewWidthMeters), [Catalogue: minimumViewWidthMeters](Reference/Catalogue.md#minimumViewWidthMeters), [Catalogue: maximumViewWidthMeters](Reference/Catalogue.md#maximumViewWidthMeters), [Catalogue: pitchAtMinimumDegrees](Reference/Catalogue.md#pitchAtMinimumDegrees), [Catalogue: pitchAtMaximumDegrees](Reference/Catalogue.md#pitchAtMaximumDegrees); ADR-012 decisions 1 to 3).
@@ -1550,7 +1556,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **Selecting and ordering** are Game §orders.selection and Game §orders.direct: click, drag, Shift, double-click, the control groups, right-click, A, H, T and S (ADR-013 decision 5; ADR-059 decision 7).
 - **The camera:** the arrow keys, Q and E, the wheel and a middle-drag (Game §interface.camera).
 - **The windows:** D, P, R, O and F1 (Game §interface.windows.behavior).
-- **Esc closes the front window,** and with none open cancels what the controls have armed (ADR-031 decision 5; Game §orders.direct).
+- **Esc closes the front window,** with none open cancels what the controls have armed, and in a universe, with nothing armed, opens the leave window (ADR-031 decision 5; ADR-078 decision 11; Game §orders.direct).
 - **Space moves the camera to the newest alert** (ADR-059 decision 2).
 - **Alt, held, shows a bar over every ship and structure.** The game swallows the window's menu key, so Alt alone never stops the game in a menu; Alt+F4 and Alt+Enter still work (ADR-088 decision 5; ADR-006 decision 1).
 - **Ctrl+= and Ctrl+- scale the interface** (Game §interface.scale).

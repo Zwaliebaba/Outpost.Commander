@@ -14,10 +14,12 @@ enum class WindowKind : std::uint8_t
   // The seat's scheduled orders and the form that gives one, and what happened while the player was away (ADR-080
   // decision 9).
   Orders,
-  Away
+  Away,
+  // In a universe, whether to leave it for the menu (ADR-078 decision 11).
+  Leave
 };
 
-inline constexpr std::size_t WINDOW_KINDS = 6;
+inline constexpr std::size_t WINDOW_KINDS = 7;
 
 // Which windows are open, in what order front to back, where each was left and which is being dragged, all in reference
 // units (ADR-006). It keeps no geometry of its own: the HUD lays each open window out where this says, clamped to the

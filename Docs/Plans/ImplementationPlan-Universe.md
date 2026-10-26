@@ -23,9 +23,9 @@ Task numbers carry the prefix UN, and gates are lettered J.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| UN1.1 | A world becomes a universe, and the game's state the simulation | — | J1, J2, J3, J6, J7 | in review, in the PR that adds this plan |
-| UN2.1 | Esc leaves a universe | UN1.1 | J5 | todo |
-| UN2.2 | The game joins its universe at launch | UN2.1 | J4 | todo |
+| UN1.1 | A world becomes a universe, and the game's state the simulation | — | J1, J2, J3, J6, J7 | merged, [#126](https://github.com/Zwaliebaba/Outpost.Commander/pull/126); awaiting a universe made, run and joined |
+| UN2.1 | Esc leaves a universe | UN1.1 | J5 | in review |
+| UN2.2 | The game joins its universe at launch | UN2.1 | J4 | in review |
 
 ### Milestone order
 
@@ -73,12 +73,12 @@ UN1, UN2.
 
 - **Gate:** J5.
 - **Scope:**
-  - In a universe, Esc with no window open and nothing armed opens a small panel at the middle of the screen: "Leave universe" and "Stay". Esc again, or Stay, closes it. The universe runs on behind it.
+  - In a universe, Esc with no window open and nothing armed opens the leave window, a floating window at first in the middle of the screen: "Leave for the menu?", that the deputy keeps the empire going, and "Leave universe" and "Stay". Esc again, its ×, or Stay closes it. The universe runs on behind it.
   - Leave universe closes the player's connection and shows the menu with no notice. The server sees the connection gone at once, and the deputy takes the seat 60 s of ticks later (ADR-079 decision 4).
   - The next skirmish's server is made as the menu comes back, as Back to menu does now.
   - A skirmish: Esc is unchanged.
-- **ADR:** [ADR-031](../ADR/ADR-031-floating-windows.md) decision 5, Esc's chain; [ADR-084](../ADR/ADR-084-universe-without-an-end.md) decision 7, the way back to the menu; Game §interface.controls and Game §session.join.
-- **Acceptance:** `HudTests`: the panel's two buttons; `GameClient`'s Esc chain reaches it only in a universe, and only with no window open and nothing armed.
+- **ADR:** [ADR-031](../ADR/ADR-031-floating-windows.md) decisions 2, 5 and 6, Esc's chain and where the window opens; [ADR-078](../ADR/ADR-078-dedicated-server.md) decision 11, the leave window, beside the join and the lost connection that ADR-078 already holds; Game §interface.controls, Game §interface.windows.leave and Game §session.join.
+- **Acceptance:** `HudTests.OffersToLeaveAUniverse`: the window in the middle, its words whole, Leave universe and then Stay; `PlayerControlsTests.SaysWhetherAnythingWaitsForAClick`: an attack-move, a standing order and a placement each keep Esc from the window until Esc cancels them; and the longest content's checks of fit, overlap and contrast with the window open. `GameClient`'s Esc needs D3D12 and Windows, so it has no test.
 - **Verify:** CI; run against a dedicated server; owner run.
 
 ### UN2.2 — The game joins its universe at launch
@@ -87,9 +87,9 @@ UN1, UN2.
 - **Scope:**
   - At launch, with no `--measure`, `--load`, `--stress`, `--matchup` or `--ai-matches`, the game joins the universe of `Outpost Commander\Join.json` in the player's documents when it is there, as the menu's Join universe does; `--join <file>` still names another.
   - It joins once. The menu says "Connecting to" and the server, with only Quit live, as a join from the menu does (ADR-078 decision 9).
-  - The automatic join gives the handshake 3 s (`QuicChannel::Desc::connectTimeout`), and the join from the menu or `--join` keeps 10 s.
+  - The automatic join gives the handshake 3 s (`LAUNCH_JOIN_CONNECT_TIMEOUT`, as `QuicTransport`'s connect timeout), and the join from the menu or `--join` keeps `QuicChannel::CONNECT_TIMEOUT`, 10 s.
   - A join that fails shows the menu with "Could not join the universe:" and why. Nothing later tries again; the menu's Join universe does.
   - The skirmish's server is still made at launch, as it is now, for the menu to fall back to (ADR-049).
-- **ADR:** [ADR-078](../ADR/ADR-078-dedicated-server.md) decision 9; Game §session.launch, Game §session.menu and Game §session.join.
-- **Acceptance:** what can be tested without a window: the switches that skip the automatic join, and the timeout a join is given.
+- **ADR:** [ADR-078](../ADR/ADR-078-dedicated-server.md) decision 9; Game §session.launch and Game §session.join.
+- **Acceptance:** `QuicTransportTests.GivesUpAJoinInTheTimeItIsGiven`: a join given 1 s gives up on a server that has gone well inside the 10 s a join from the menu waits. Which switches skip the join at launch is the shell's, which has no test.
 - **Verify:** CI; run with a join file against a server that answers, one that is stopped, and an address where no machine answers; owner run.
