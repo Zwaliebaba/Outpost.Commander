@@ -460,8 +460,35 @@ void Outpost::PlayerControls::SelectAlone(EntityId _entity)
 
 void Outpost::PlayerControls::Give(Order _order)
 {
+  // A move, an attack-move, a hold of a sector and a patrol mark their point, and an attack its target (ADR-097).
+  OrderMark mark{.command = ++m_lastCommandNumber};
+  if (const auto* move = std::get_if<MoveCommand>(&_order))
+    mark.point = move->destination;
+  else if (const auto* attackMove = std::get_if<AttackMoveCommand>(&_order))
+    mark.point = attackMove->destination;
+  else if (const auto* hold = std::get_if<HoldSectorCommand>(&_order))
+    mark.point = hold->position;
+  else if (const auto* patrol = std::get_if<PatrolCommand>(&_order))
+    mark.point = patrol->destination;
+  else if (const auto* attack = std::get_if<AttackCommand>(&_order))
+    mark.target = attack->target;
+  if (mark.point.has_value() || mark.target.has_value())
+    m_marks.push_back(mark);
   // The server fills in the player from the connection (ADR-002), and names the number in a refusal (ADR-094).
-  m_commands.push_back({.player = {}, .order = std::move(_order), .number = ++m_lastCommandNumber});
+  m_commands.push_back({.player = {}, .order = std::move(_order), .number = mark.command});
+}
+
+void Outpost::PlayerControls::AgeMarks(float _elapsedSeconds)
+{
+  for (OrderMark& mark : m_marks)
+    mark.ageSeconds += _elapsedSeconds;
+  std::erase_if(m_marks, [](const OrderMark& _mark) { return _mark.ageSeconds >= MARK_SECONDS; });
+}
+
+void Outpost::PlayerControls::Refuse(std::uint32_t _command) noexcept
+{
+  if (const auto refused = std::ranges::find(m_marks, _command, &OrderMark::command); refused != m_marks.end())
+    refused->refused = true;
 }
 
 void Outpost::PlayerControls::GiveToShips(Order _order)

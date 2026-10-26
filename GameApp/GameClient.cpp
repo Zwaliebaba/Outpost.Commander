@@ -87,6 +87,11 @@ constexpr float RING_SIZE_PER_FOOTPRINT = 1.3f;
 constexpr float OVERLAY_LIFT_METERS = 0.3f;
 constexpr float DRAG_LINE_WIDTH_METERS = 1.5f;
 constexpr DirectX::XMFLOAT4 SELECTION_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
+// An order's mark (ADR-097): a ring as wide as the selection's in its color, around what an attack is at as the selection's
+// ring would be, or around the point the order goes to, MARK_POINT_UNITS of the HUD's reference units in radius at any zoom,
+// shrinking to nothing; in the warning's color, the HUD's WARNING_COLOR, once the server refuses the order (ADR-085 decision 1).
+constexpr float MARK_POINT_UNITS = 16.0f;
+constexpr DirectX::XMFLOAT4 REFUSED_MARK_COLOR{1.0f, 0.5f, 0.35f, 1.0f};
 constexpr DirectX::XMFLOAT4 ATTACK_MOVE_COLOR{1.0f, 0.65f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 
@@ -549,6 +554,12 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
     m_effects.Receive(snapshot);
     Explode(snapshot);
     m_alerts.Observe(snapshot, m_ticksPerSecond);
+    // A refusal turns its order's mark, if it still shows (ADR-097).
+    for (const EventView& event : snapshot.events)
+    {
+      if (event.kind == EventKind::CommandRefused)
+        m_controls.Refuse(event.command);
+    }
     // What happened while the player was away comes once, with its first snapshot after it takes its seat again (ADR-080
     // decision 7).
     if (snapshot.away.has_value())
@@ -612,6 +623,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
 
   m_everyHealthBar = _input.active && _input.IsDown(KEY_EVERY_HEALTH_BAR);
   m_view.Advance(_elapsedSeconds);
+  m_controls.AgeMarks(_elapsedSeconds);
   m_silentSeconds += _elapsedSeconds;
   std::swap(m_previousEntities, m_entities);
   m_view.Entities(m_entities);
@@ -1477,23 +1489,50 @@ void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
   const float hudScale = Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels);
   const auto lines = static_cast<int>(std::max(1L, std::lround(SELECTION_RING_UNITS * hudScale)));
   m_selectionDraws.clear();
+  // A ring of _radiusMeters around _position, `lines` one-pixel lines wide.
+  const auto addRing = [&](PlanePosition _position, float _radiusMeters, float _metersPerPixel, const DirectX::XMFLOAT4& _color)
+  {
+    const DirectX::XMFLOAT3 at{_position.xMeters, OVERLAY_LIFT_METERS, _position.zMeters};
+    for (int line = 0; line < lines; ++line)
+    {
+      const float offset = (static_cast<float>(line) - (static_cast<float>(lines - 1) / 2.0f)) * _metersPerPixel;
+      m_selectionDraws.push_back(
+        {.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, std::max(_radiusMeters + offset, 0.0f)), _color, 0.0f)});
+    }
+  };
   for (const EntityId id : m_controls.Selected())
   {
     const EntityView* selected = FindById(m_entities, id);
     if (selected == nullptr)
       continue;
-    // Nothing for a point behind the camera.
     const float metersPerPixel = m_camera.MetersPerPixelAt(selected->position, m_viewport).value_or(0.0f);
+    if (metersPerPixel > 0.0f)
+      addRing(selected->position, selected->radiusMeters * RING_SIZE_PER_FOOTPRINT, metersPerPixel, ringColor);
+  }
+  // The marks of the orders just given, shrinking to nothing (ADR-097).
+  for (const PlayerControls::OrderMark& mark : m_controls.Marks())
+  {
+    PlanePosition at{};
+    float radiusMeters = 0.0f;
+    if (mark.target.has_value())
+    {
+      const EntityView* target = FindById(m_entities, *mark.target);
+      if (target == nullptr)
+        continue;
+      at = target->position;
+      radiusMeters = target->radiusMeters * RING_SIZE_PER_FOOTPRINT;
+    }
+    else if (mark.point.has_value())
+      at = *mark.point;
+    else
+      continue;
+    const float metersPerPixel = m_camera.MetersPerPixelAt(at, m_viewport).value_or(0.0f);
     if (metersPerPixel <= 0.0f)
       continue;
-    const DirectX::XMFLOAT3 at{selected->position.xMeters, OVERLAY_LIFT_METERS, selected->position.zMeters};
-    const float radius = selected->radiusMeters * RING_SIZE_PER_FOOTPRINT;
-    for (int line = 0; line < lines; ++line)
-    {
-      const float offset = (static_cast<float>(line) - (static_cast<float>(lines - 1) / 2.0f)) * metersPerPixel;
-      m_selectionDraws.push_back(
-        {.mesh = m_ringLine.get(), .instance = MeshInstance(WorldMatrix(at, 0.0f, std::max(radius + offset, 0.0f)), ringColor, 0.0f)});
-    }
+    if (!mark.target.has_value())
+      radiusMeters = MARK_POINT_UNITS * hudScale * metersPerPixel;
+    const float remaining = 1.0f - (mark.ageSeconds / PlayerControls::MARK_SECONDS);
+    addRing(at, radiusMeters * remaining, metersPerPixel, mark.refused ? REFUSED_MARK_COLOR : SELECTION_COLOR);
   }
   m_pipeline.DrawLines(_commandList, m_selectionDraws);
 

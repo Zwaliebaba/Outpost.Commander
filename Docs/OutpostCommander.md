@@ -1451,6 +1451,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 - **The selection is a ring round each selected ship or structure,** 1.3 times its footprint, 3 reference units wide at any zoom at the screen's own scale: green, or amber while attack-move or a standing order waits for its click (ADR-067 decisions 1 and 2). A Mining Rig's selection ring is its asteroid's, since a click anywhere on the rock selects the rig (ADR-042 decision 4).
 - **A drag box is its outline on the ground,** covering the ground the box on the screen covers (ADR-013 decision 5).
+- **An order is marked as it is given:** a move's, an attack-move's, a hold's or a patrol's point, or an attack's target, by a ring as wide as the selection's in its color that shrinks to nothing over 0.4 s, and turns the warning's color if the server refuses the order before it has gone (ADR-097 decisions 1 to 3).
 - **Every structure stands on a faint ring,** a line a pixel wide at 1.3 times its footprint in its side's color, which puts it on the ground and says its size (ADR-042 decision 1).
   - **The ring is for the far view.** It is at its resting strength, faint in its side's color, while its radius is at most 3% of the view's width, and gone from 6.5%, so up close the bases are not ringed (ADR-042 decision 1).
   - **It is at full strength, in its side's ship-line color, a little stronger in hue than the structure's own lines, under the pointer and under every structure while one is placed** (ADR-042 decision 2).
