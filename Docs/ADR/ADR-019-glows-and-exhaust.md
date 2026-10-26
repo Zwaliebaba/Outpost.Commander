@@ -26,4 +26,4 @@ A drive has no mesh (Game §ships.drives), and countering the enemy means readin
 ## What this forecloses
 
 - Glows sorted or alpha-blended: light only adds, so a glow cannot darken or hide what is behind it.
-- Lights and docking hardpoints, until a decision gives them a meaning: their tags fail to load (ADR-018).
+- Docking hardpoints, and lights other than a beacon ([ADR-018](ADR-018-nmf-and-hardpoints.md) decision 9), until a decision gives them a meaning: their tags fail to load.

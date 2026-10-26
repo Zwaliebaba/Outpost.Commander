@@ -26,7 +26,7 @@ Each draw costs command-list recording on the CPU and front-end work on the GPU,
 
 ## Consequences
 
-- A frame draws each distinct model mesh once for its faces and once for its lines, however many ships share it. The per-object cost on the CPU is one 96-byte copy into mapped memory, and a draw sets one root constant.
+- A frame draws each distinct model mesh once for its faces and once for its lines, however many ships share it. The per-object cost on the CPU is one 128-byte copy into mapped memory, and a draw sets one root constant.
 - **The faces are drawn grouped by mesh, not in entity order.** They are opaque and depth-tested, so only faces at exactly the same depth could show the difference. Lines are grouped the same way, and where two lines cover the same pixel, the one drawn last depends on its mesh's group.
 
 ## What this forecloses

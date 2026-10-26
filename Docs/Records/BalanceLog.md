@@ -1489,6 +1489,23 @@ Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time
 - **Method:** The openness byte of every vertex of the baked `.nmf` files, counted.
 - **Source:** ADR-092, Consequences, and the Look plan, LV2.1's As built (commit `7aa6e4d`, #108).
 
+### 2026-10-26 · The baked meshes, counted again
+
+| Quantity | Value |
+|---|---|
+| The 45 `.nmf` files | 1,605,784 bytes in all, 34,088 more than LV2.1's bake: the Human Command Station on a square plan (RF-O1, #120) |
+| Vertices | 50,016, for 16,672 triangles: three a triangle |
+| Wholly open | 24% |
+| Less than half open | 29% |
+| Wholly shut in | 13% |
+| Mean openness | 0.65 |
+| The convex rocks | 0.97 open or more everywhere |
+
+- **Build:** The tree of #125, in the Linux container: the committed `.nmf` files, version 4
+- **Seeds:** not applicable
+- **Method:** The files' sizes, and each file's header and the openness byte of every vertex, read with CPython 3.13. The same count over LV2.1's files gives that entry's figures.
+- **Source:** Budgets.md, The baked meshes, and ADR-092, Context, in the document scan of 2026-10-26.
+
 ## Screen
 
 The figures of the reviews of the screen, and of the meshes as drawn: sizes, contrast, brightness and hues.
