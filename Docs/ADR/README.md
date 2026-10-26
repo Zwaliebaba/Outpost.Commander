@@ -100,3 +100,4 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-093 | [A failed assertion names where it failed and ends the process at once, in every configuration](ADR-093-a-failed-assertion-ends-the-process.md) | `assertions`, `fail-fast`, `exception-vs-assertion` |
 | ADR-094 | [A refused command is told to the player who gave it, as an event, in words](ADR-094-a-refused-command-is-told.md) | `command-refusals`, `refusal-words` |
 | ADR-095 | [A model's faces take one of three paints, team, trim and light, and each line takes its faces' paint](ADR-095-paints-team-trim-and-light.md) | `mesh-paints`, `paint-colors`, `two-tone-lines` |
+| ADR-096 | [A tick's events cross reliably, and its state on a stream of its own that a newer one overtakes](ADR-096-events-and-state-cross-apart.md) | `connection-streams`, `newest-state`, `event-ticks` |
