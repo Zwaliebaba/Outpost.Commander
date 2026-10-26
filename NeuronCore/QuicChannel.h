@@ -83,9 +83,9 @@ public:
   [[nodiscard]] std::vector<std::vector<std::byte>> Receive(std::chrono::milliseconds _wait = {});
 
   // Queues a message of which only the newest matters to the peer, on a unidirectional stream of its own, and returns at once.
-  // Every such message sent before the one before it that the peer has not yet acknowledged whole is abandoned, so that no
-  // more than two are on their way, and the bidirectional stream's messages go first when both have something to send. A message the peer
-  // allows no stream for, NEWEST_STREAMS being on their way, is dropped, as one on a connection that has gone is. Only a
+  // While two such messages are on their way, the peer having acknowledged neither whole, it is dropped instead, so that
+  // nothing sent is abandoned; and the bidirectional stream's messages go first when both have something to send. A message
+  // the peer allows no stream for, NEWEST_STREAMS being open, is dropped too, as one on a connection that has gone is. Only a
   // server's end sends them, since only a client lets its peer open such streams. Throws Neuron::Exception for a message
   // over the limit. Never from a Receiver.
   void SendNewest(std::span<const std::byte> _message);
