@@ -192,7 +192,7 @@ public:
   // made afresh from its folder, it writes where it came back from (ADR-077).
   TEST_METHOD(AUniversesServerWritesItsLog)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     const TemporaryFolder folder;
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     const auto serve = [&]

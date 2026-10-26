@@ -25,6 +25,9 @@
     <Filter Include="Package\Assets\Textures">
       <UniqueIdentifier>{f18713d0-6cda-40d0-801f-7fd10cff831b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Package\ServerData">
+      <UniqueIdentifier>{66f2741d-2c89-45ec-8295-401016de4826}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AiMatches.h">
@@ -67,23 +70,23 @@
     <None Include="Assets\Models.json">
       <Filter>Package\Assets</Filter>
     </None>
-    <None Include="Assets\Map.json">
-      <Filter>Package\Assets</Filter>
+    <None Include="..\ServerData\Map.json">
+      <Filter>Package\ServerData</Filter>
     </None>
-    <None Include="Assets\Matchups.json">
-      <Filter>Package\Assets</Filter>
+    <None Include="..\ServerData\Matchups.json">
+      <Filter>Package\ServerData</Filter>
     </None>
-    <None Include="Assets\Tuning.json">
-      <Filter>Package\Assets</Filter>
+    <None Include="..\ServerData\Tuning.json">
+      <Filter>Package\ServerData</Filter>
     </None>
-    <None Include="Assets\Opponent.json">
-      <Filter>Package\Assets</Filter>
+    <None Include="..\ServerData\Opponent.json">
+      <Filter>Package\ServerData</Filter>
     </None>
-    <None Include="Assets\OpponentEasy.json">
-      <Filter>Package\Assets</Filter>
+    <None Include="..\ServerData\OpponentEasy.json">
+      <Filter>Package\ServerData</Filter>
     </None>
-    <None Include="Assets\OpponentHard.json">
-      <Filter>Package\Assets</Filter>
+    <None Include="..\ServerData\OpponentHard.json">
+      <Filter>Package\ServerData</Filter>
     </None>
     <None Include="Assets\Models\Asteroids\Small.nmf">
       <Filter>Package\Assets\Models\Asteroid</Filter>

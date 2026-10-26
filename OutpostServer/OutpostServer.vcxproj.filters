@@ -24,22 +24,22 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\OutpostCommander\Assets\Tuning.json">
+    <Content Include="..\ServerData\Tuning.json">
       <Filter>Data</Filter>
     </Content>
-    <Content Include="..\OutpostCommander\Assets\Map.json">
+    <Content Include="..\ServerData\Map.json">
       <Filter>Data</Filter>
     </Content>
-    <Content Include="..\OutpostCommander\Assets\Matchups.json">
+    <Content Include="..\ServerData\Matchups.json">
       <Filter>Data</Filter>
     </Content>
-    <Content Include="..\OutpostCommander\Assets\Opponent.json">
+    <Content Include="..\ServerData\Opponent.json">
       <Filter>Data</Filter>
     </Content>
-    <Content Include="..\OutpostCommander\Assets\OpponentEasy.json">
+    <Content Include="..\ServerData\OpponentEasy.json">
       <Filter>Data</Filter>
     </Content>
-    <Content Include="..\OutpostCommander\Assets\OpponentHard.json">
+    <Content Include="..\ServerData\OpponentHard.json">
       <Filter>Data</Filter>
     </Content>
   </ItemGroup>

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Self-play over the AI's settings: a probe of the match's rules (ADR-063).
 
-Two AIs fight, and a search keeps whichever settings of OutpostCommander/Assets/Opponent.json win. What it finds is a
+Two AIs fight, and a search keeps whichever settings of ServerData/Opponent.json win. What it finds is a
 question for the owner: a strategy that wins too easily is a degenerate one in the rules, or a weakness in how the
 scripted AI plays them. The packaged settings are not changed by this; that is the owner's decision.
 
@@ -68,8 +68,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from MatchLog import clock, read_matches, summarize  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PACKAGED_SETTINGS = REPO_ROOT / "OutpostCommander" / "Assets" / "Opponent.json"
-PACKAGED_TUNING = REPO_ROOT / "OutpostCommander" / "Assets" / "Tuning.json"
+PACKAGED_SETTINGS = REPO_ROOT / "ServerData" / "Opponent.json"
+PACKAGED_TUNING = REPO_ROOT / "ServerData" / "Tuning.json"
 # Where the Release|x64 build puts the game: the package layout first, which holds the Assets folder beside the
 # executable, and the bare output folder in case the layout lives there.
 EXE_CANDIDATES = (REPO_ROOT / "x64" / "Release" / "OutpostCommander" / "AppX" / "OutpostCommander.exe",

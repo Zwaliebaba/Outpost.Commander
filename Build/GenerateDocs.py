@@ -4,9 +4,9 @@
 A fact has one home, and a document that only shows a fact from its home is written from it here rather than by hand,
 so that the two cannot drift apart:
 
-  Docs/Reference/Catalogue.md      the tuning data as tables: OutpostCommander/Assets/Tuning.json and Map.json, the
+  Docs/Reference/Catalogue.md      the tuning data as tables: ServerData/Tuning.json and Map.json, the
                                    AI's settings with a column for each difficulty (OpponentEasy.json, Opponent.json
-                                   and OpponentHard.json), Matchups.json and Camera.json
+                                   and OpponentHard.json) and Matchups.json, and OutpostCommander/Assets/Camera.json
   Docs/Reference/Controls.md       every KEY_ constant in GameApp/KeyBindings.h: its key as the Controls window names
                                    it, and the comment above it
   Docs/Reference/Colors.md         every constexpr whose name ends in _COLOR, in the .h and .cpp of GameApp and
@@ -64,12 +64,14 @@ ADR_INDEX = "Docs/ADR/README.md"
 OPEN_DECISIONS = "Docs/Reference/OpenDecisions.md"
 OUTPUTS = (CATALOGUE, CONTROLS, COLORS, ADR_INDEX, OPEN_DECISIONS)
 
+# The server's data, and the client's, which the package carries in one Assets folder (ADR-008).
+SERVER_DATA = "ServerData"
 ASSETS = "OutpostCommander/Assets"
-TUNING = f"{ASSETS}/Tuning.json"
-MAP = f"{ASSETS}/Map.json"
-DIFFICULTIES = (("Easy", f"{ASSETS}/OpponentEasy.json"), ("Normal", f"{ASSETS}/Opponent.json"),
-                ("Hard", f"{ASSETS}/OpponentHard.json"))
-MATCHUPS = f"{ASSETS}/Matchups.json"
+TUNING = f"{SERVER_DATA}/Tuning.json"
+MAP = f"{SERVER_DATA}/Map.json"
+DIFFICULTIES = (("Easy", f"{SERVER_DATA}/OpponentEasy.json"), ("Normal", f"{SERVER_DATA}/Opponent.json"),
+                ("Hard", f"{SERVER_DATA}/OpponentHard.json"))
+MATCHUPS = f"{SERVER_DATA}/Matchups.json"
 CAMERA = f"{ASSETS}/Camera.json"
 
 # The sections each file must have. A file may have more, and they are written too; one of these missing is a section
@@ -508,7 +510,7 @@ class Catalogue:
       fail(MAP, "is not a JSON object with \"sectors\"")
     self.add_names("sectors", map_data["sectors"], f"{MAP}, sectors")
 
-    lines = [banner(f"the data in `{ASSETS}/`", "the data"), "", "# Catalogue", "",
+    lines = [banner(f"the data in `{SERVER_DATA}/` and `{ASSETS}/`", "the data"), "", "# Catalogue", "",
              "The game's tuning data, as tables. The data files are each number's one home, and this shows them. Every "
              "top-level key of a file has an anchor of exactly its name, such as `Catalogue.md#hulls` or "
              "`Catalogue.md#attackGroupShips`, which is how a document links a number. A unit comes from the key's "
