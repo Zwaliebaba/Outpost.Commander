@@ -13,7 +13,7 @@ The HUD's figures and labels are what a player decides by. Xbox Accessibility Gu
 2. **One place sets a face's size: `Hud::FACE_UNITS`, read through `Hud::FaceUnits`.** `Typefaces` rasterizes each face at that size, and Ore's gem beside a figure is sized from it. No call passes a size of its own.
 3. **Every text stands at 4.5:1 or more against what it is drawn on.** Contrast is WCAG's ratio of relative luminances, computed from the linear colors in `Hud.cpp` over black. A hatched panel's stripes and the gaps between them are both counted. The labels stand at 4.8–5.9:1, and these colors are set for the floor:
    - **Locked text** is (0.20, 0.26, 0.35). It stands at 4.6:1 on a locked card's stripes, 5.1:1 on its body and 5.3:1 on a dim card. Its luminance is 29% of live text's.
-   - **Labels on a window's hatched title bar** take the row labels' color, at 5.8:1 on the stripes: "SHIPYARD 05 · DESIGNER", "QUEUE · 2 / 5", "BUILT · 4", "PRODUCTION" and "RESEARCH", and the headers "CONTROLS", "SCHEDULED ORDERS" and "WHILE YOU WERE AWAY".
+   - **Labels on a window's hatched title bar** take the row labels' color, at 5.8:1 on the stripes: "SHIPYARD 05 · DESIGNER", "QUEUE · 2 / 5", "BUILT · 4", "PRODUCTION" and "RESEARCH", and the headers "CONTROLS", "SCHEDULED ORDERS", "WHILE YOU WERE AWAY" and "LEAVE UNIVERSE".
    - **The name's count**, such as "21/32", takes the labels' color, at 5.9:1.
    - **A shown chip's code** takes the accent blue on its lit face, at 5.9:1 (owner, 2026-10-04).
    - **A worse figure's red** is (0.80, 0.09, 0.05), at 4.6:1 on a window (owner, 2026-10-04). The rating bars use the same red; a health bar's colors are [ADR-088](ADR-088-selection-and-commands.md) decision 5's.

@@ -16,7 +16,7 @@ A match ends. Domination ([ADR-057](ADR-057-domination.md)) ends it in under an 
    - On restart the player has a Command Station on its start and the starting Constructors in front of it, placed as at the universe's start (`PlaceStartingBase`). Its Ore is raised to the starting Ore when it has less (owner, 2026-10-08).
    - Its research, designs and Ore above the starting Ore, and its ships and structures that still stand, stay its own. `EventKind::EmpireRestarted` tells it.
    - A player that finishes a Shipyard of its own in the meantime stands again, and does not restart.
-   - The delay is a setting of the universe's rules, saved with them: `RESTART_SECONDS`, 3,600, in a universe, and a few seconds in the tests.
+   - The delay is a setting of the universe's rules, saved with them: `RESTART_SECONDS`, 3,600, in a universe, and 45 in the tests.
 5. **Each base player's start is state** (`Simulation::m_starts`), since a universe restored from a save has no map's starts to place a base on.
 6. **An AI empire plans afresh when its seat restarts** (`AiEmpire`). It makes its `AiPlayer` anew on `EmpireRestarted`, which lays its plan round the new Command Station, as one made afresh after a server restart does ([ADR-079](ADR-079-seat-controller-and-deputy.md) decision 3). A deputy is a keeper with no plan to lay, and plays on.
 7. **The client's banner says it** (`Hud::DescribeOutcome`): "Empire fallen", and when the seat restarts at the player's start, or that it restarts once the start is clear of the enemy. The way back to the menu stays.

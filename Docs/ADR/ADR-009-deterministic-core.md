@@ -24,7 +24,7 @@ A replay can promise the same binary, or also agreement across x64 and ARM64 ([A
 
 - **A bug report needs the seed, the command log and the build.** A match's log lives in the server's memory; the seed in the debugger output and a test that replays the scenario do the job. A universe's log is written to its folder as each tick applies it, from its last save on, and the save and that log bring the universe back ([ADR-077](ADR-077-universe-state-on-disk.md)).
 - **A replay made on the owner's ARM64 machine cannot be checked on CI's x64.** A replay test has to run the match and its replay in the same test run, as `ReplaysFromItsCommandLog` does.
-- **A rejected command is invisible to the client.** `Simulation::Tick` returns a result per command, but the protocol has no message for it. Showing a rejection to the player needs a protocol message, which is a new decision.
+- **A rejected command is told only to the player who gave it,** as an event in that player's snapshot, with no message of its own ([ADR-094](ADR-094-a-refused-command-is-told.md) decision 1).
 - **A simulation without the tuning data,** as the movement and combat tests run, rejects the base's, research's and the designer's orders as not yet supported ([ADR-016](ADR-016-base-building.md)).
 
 ## What this forecloses
