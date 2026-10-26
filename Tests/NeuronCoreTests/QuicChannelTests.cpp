@@ -373,8 +373,8 @@ public:
   }
 
   // ADR-096: the server's end sends messages of which only the newest matters, each on a stream of its own beside the
-  // connection's, and the client's end hands on each that arrives whole and newer than the last. While two are on their
-  // way, one more is dropped rather than either abandoned; once they have arrived, the next goes.
+  // connection's, and the client's end hands on each that arrives whole and newer than the last. While four are on their
+  // way, one more is dropped rather than any abandoned; once they have arrived, the next goes.
   TEST_METHOD(CarriesTheNewestMessagesApart)
   {
     std::mutex mutex;
@@ -401,14 +401,22 @@ public:
     Assert::AreEqual(size_t{1}, ReceiveNewestUntil(*client, Bytes("first"), ordered).size(), L"one alone arrives");
     Assert::AreEqual(std::uint64_t{0}, Settled(*server).backlogBytes, L"and is acknowledged");
 
-    // Two too long to cross in the moment are both on their way when a third is sent.
-    const Message older(2'000'000, std::byte{1});
-    const Message newer(2'000'000, std::byte{2});
-    Assert::IsTrue(server->SendNewest(older) && server->SendNewest(newer), L"both queued");
-    Assert::IsFalse(server->SendNewest(Bytes("dropped")), L"and the third not");
+    // Four too long to cross in the moment are all on their way when a fifth is sent.
+    std::vector<Message> onTheirWay;
+    for (std::uint8_t i = 1; i <= 4; ++i)
+      onTheirWay.emplace_back(2'000'000, std::byte{i});
+    for (const Message& message : onTheirWay)
+      Assert::IsTrue(server->SendNewest(message), L"each queued");
+    Assert::IsFalse(server->SendNewest(Bytes("dropped")), L"and the fifth not");
     server->Send(Bytes("beside"));
-    std::vector<Message> received = ReceiveNewestUntil(*client, newer, ordered);
-    Assert::IsTrue(received.size() == 1 || (received.size() == 2 && received.front() == older), L"each newer than the one before it");
+    std::vector<Message> received = ReceiveNewestUntil(*client, onTheirWay.back(), ordered);
+    auto after = onTheirWay.begin();
+    for (const Message& message : received)
+    {
+      after = std::ranges::find(after, onTheirWay.end(), message);
+      Assert::IsTrue(after != onTheirWay.end(), L"each newer than the one before it");
+      ++after;
+    }
     Assert::AreEqual(std::uint64_t{0}, Settled(*server).backlogBytes, L"nothing sent was abandoned, and all of it arrived");
 
     Assert::IsTrue(server->SendNewest(Bytes("next")), L"the next queued once they have arrived");

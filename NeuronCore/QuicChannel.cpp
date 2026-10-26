@@ -111,10 +111,11 @@ struct PendingSend
 
 // The bidirectional stream's messages go ahead of the newest messages' streams, which keep MsQuic's default (ADR-096).
 constexpr std::uint16_t ORDERED_STREAM_PRIORITY = 0xFFFF;
-// How many newest messages are on their way at most. A message sent while as many are is dropped, rather than any of them
-// abandoned, so that a link too slow for every message carries as many whole as it can. MsQuic sends streams of one
-// priority first come, first served, so the older goes first (ADR-096).
-constexpr std::size_t NEWEST_ON_THEIR_WAY = 2;
+// How many newest messages are on their way at most: enough that a link whose round trip, and the peer's delay of its
+// acknowledgement, is longer than the time between two of them still carries each. A message sent while as many are is
+// dropped, rather than any of them abandoned, so that a link too slow for every message carries as many whole as it can.
+// MsQuic sends streams of one priority first come, first served, so the older goes first (ADR-096).
+constexpr std::size_t NEWEST_ON_THEIR_WAY = 4;
 } // namespace
 
 struct Neuron::QuicChannel::State
