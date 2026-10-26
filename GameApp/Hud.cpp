@@ -579,6 +579,14 @@ std::string LockedBy(const Outpost::Snapshot& _newest, IdType _component, IdType
   return topic != _newest.research.end() ? std::format("RESEARCH{}{}", DOT, Capitals(topic->nameUtf8)) : std::string("RESEARCH");
 }
 
+// The name of the topic that unlocks _component, or none when no topic does.
+template <typename IdType>
+std::string UnlockedBy(const Outpost::Snapshot& _newest, IdType _component, IdType Outpost::ResearchTopicView::*_unlocks)
+{
+  const auto topic = std::ranges::find(_newest.research, _component, _unlocks);
+  return topic != _newest.research.end() ? topic->nameUtf8 : std::string();
+}
+
 // The designer's window (ADR-017 decision 7): its target Shipyard, the name, the saved designs, a
 // card for each component of each slot, the design's numbers against the best in the game, its damage against each hull,
 // and saving, renaming and queuing. A hovered part previews the design it would make.
@@ -635,6 +643,9 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   }
 
   const Outpost::DesignComponents picked = _designer.Picked();
+  // A locked part previews what its topic buys, and the help line names the topic (ADR-017 decision 7).
+  bool previewingLocked = false;
+  std::string previewTopic;
   Hud::SlotRow& hulls = panel.slots[0];
   hulls.label = "HULL";
   hulls.cards.reserve(_newest.hulls.size());
@@ -643,7 +654,11 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     if (hull.id == picked.hull)
       hulls.picked = hull.nameUtf8;
     if (hull.id == preview.hull && preview.hull != picked.hull)
+    {
       previewing = hull.nameUtf8;
+      previewingLocked = !hull.available;
+      previewTopic = UnlockedBy(_newest, hull.id, &Outpost::ResearchTopicView::unlocksHull);
+    }
     hulls.cards.push_back(
       {.name = hull.nameUtf8,
        .cost = hull.cost,
@@ -662,7 +677,11 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     if (drive.id == picked.drive)
       drives.picked = drive.nameUtf8;
     if (drive.id == preview.drive && preview.drive != picked.drive)
+    {
       previewing = drive.nameUtf8;
+      previewingLocked = !drive.available;
+      previewTopic = UnlockedBy(_newest, drive.id, &Outpost::ResearchTopicView::unlocksDrive);
+    }
     drives.cards.push_back(
       {.name = drive.nameUtf8,
        .cost = drive.cost,
@@ -679,7 +698,11 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     if (weapon.id == picked.weapon)
       weapons.picked = weapon.nameUtf8;
     if (weapon.id == preview.weapon && preview.weapon != picked.weapon)
+    {
       previewing = weapon.nameUtf8;
+      previewingLocked = !weapon.available;
+      previewTopic = UnlockedBy(_newest, weapon.id, &Outpost::ResearchTopicView::unlocksWeapon);
+    }
     weapons.cards.push_back(
       {.name = weapon.nameUtf8,
        .cost = weapon.cost,
@@ -707,7 +730,10 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     if (module.id == picked.module)
       modules.picked = module.nameUtf8;
     if (module.id == preview.module && preview.module != picked.module)
+    {
       previewing = module.nameUtf8;
+      previewingLocked = !module.available;
+    }
     modules.cards.push_back(
       {.name = module.nameUtf8,
        .cost = module.cost,
@@ -728,8 +754,12 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     previewer.PickModule(preview.module);
     previewStats = previewer.Stats(_newest);
   }
-  panel.hint =
-    previewStats.has_value() ? std::format("Preview: with {} instead", previewing) : std::string("Hover any part to preview its effect.");
+  if (!previewStats.has_value())
+    panel.hint = "Hover any part to preview its effect.";
+  else if (!previewingLocked)
+    panel.hint = std::format("Preview: with {} instead", previewing);
+  else
+    panel.hint = std::format("Preview: with {}, once {} is researched", previewing, previewTopic.empty() ? "it" : previewTopic);
 
   if (stats.has_value())
   {
@@ -884,7 +914,8 @@ float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _t
                      .firstLine = _layout.lines.size(),
                      .firstText = _layout.texts.size(),
                      .firstSprite = _layout.sprites.size(),
-                     .firstAction = _layout.actions.size()};
+                     .firstAction = _layout.actions.size(),
+                     .firstPreview = _layout.previews.size()};
   _layout.panels.push_back(window.frame);
   _layout.panels.push_back(window.titleBar);
   _layout.panels.push_back(window.closeBox);
@@ -1204,6 +1235,12 @@ public:
     m_layout.actions.emplace_back(_rect, _action);
   }
 
+  // An area that answers the pointer with _action's preview and takes no click, as a locked part's card does.
+  void Preview(const Hud::Rect& _rect, const Hud::Action& _action)
+  {
+    m_layout.previews.emplace_back(_rect, _action);
+  }
+
   // A small square button with a mark on it, such as an arrow, in its middle.
   void SmallButton(std::string _mark, float _left, float _top, bool _enabled, const Hud::Action& _action)
   {
@@ -1469,8 +1506,12 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
                                          card.picked ? PICKED_COLOR
                                          : locked    ? LOCKED_COLOR
                                                      : CARD_COLOR);
+      // A locked card takes no click, but previews what its topic buys under the pointer (ADR-017 decision 7).
       if (locked)
+      {
         paint.Panel(left, cardTop, CARD_WIDTH, cardHeight, LOCKED_HATCH_COLOR, Hud::Fill::Hatched);
+        paint.Preview(face, card.action);
+      }
       else
         paint.Press(face, card.action);
       paint.Outline(left, cardTop, CARD_WIDTH, cardHeight, card.picked ? PICKED_EDGE_COLOR : EDGE_COLOR);
@@ -2449,6 +2490,19 @@ std::optional<Hud::Action> Hud::Layout::ActionAt(float _xPixels, float _yPixels)
   return std::nullopt;
 }
 
+std::optional<Hud::Action> Hud::Layout::HoverAt(float _xPixels, float _yPixels) const noexcept
+{
+  if (const std::optional<Action> action = ActionAt(_xPixels, _yPixels))
+    return action;
+  const Span span = PreviewsOf(LayerAt(_xPixels, _yPixels));
+  for (std::size_t i = span.first; i < span.end; ++i)
+  {
+    if (previews[i].first.Contains(_xPixels, _yPixels))
+      return previews[i].second;
+  }
+  return std::nullopt;
+}
+
 std::size_t Hud::Layout::LayerAt(float _xPixels, float _yPixels) const noexcept
 {
   for (std::size_t window = windows.size(); window-- > 0;)
@@ -2488,6 +2542,11 @@ Hud::Span Hud::Layout::SpritesOf(std::size_t _layer) const noexcept
 Hud::Span Hud::Layout::ActionsOf(std::size_t _layer) const noexcept
 {
   return LayerSpan(*this, _layer, &Window::firstAction, actions.size());
+}
+
+Hud::Span Hud::Layout::PreviewsOf(std::size_t _layer) const noexcept
+{
+  return LayerSpan(*this, _layer, &Window::firstPreview, previews.size());
 }
 
 Outpost::WindowManager::Point Hud::KeepOnScreen(WindowManager::Point _corner, float _widthUnits, float _screenWidthUnits,

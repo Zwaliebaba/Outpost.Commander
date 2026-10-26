@@ -2,8 +2,8 @@
 """Bakes the meshes' glTF sources into the NMF files the game loads (ADR-018, ADR-045).
 
 Each model's source is a binary glTF, Art/Models/<Set>/<Model>.glb, edited with Blender's own glTF import and export.
-This turns each into OutpostCommander/Assets/Models/<Set>/<Model>.nmf: one triangle list of positions, normals and how
-open each vertex is, the model's hardpoints and its spinning parts, in the game's frame. A model that grows has one source a level,
+This turns each into OutpostCommander/Assets/Models/<Set>/<Model>.nmf: one triangle list of positions, normals, how
+open each vertex is and its paint, the model's hardpoints and its spinning parts, in the game's frame. A model that grows has one source a level,
 <Model>_L1.glb to <Model>_L5.glb, and each is baked as a model of its own. The .nmf files are committed, and CI runs
 --check to prove each one is exactly what its source bakes to. CPython's floats are IEEE doubles with no fused
 operations, so a bake is the same bytes on every machine.
@@ -30,7 +30,11 @@ animation is what Blender plays.
 What a source may hold is narrow, and anything else is refused with the file's name rather than baked into something
 the game would draw wrongly: triangles only, a position and a normal on every vertex, no skin or morph target, no
 animation but a part's spin, no extension the file requires (Draco or quantized meshes, say), and no sparse accessor.
-Materials, texture coordinates, cameras and lights are left in the source and not baked.
+Texture coordinates, cameras and lights are left in the source and not baked.
+
+A face's paint is its material's name (ADR-095): team, the side's color; trim, a neutral one; or light, a bright color
+that no light reaches. Blender's own .001 suffixes are allowed, a primitive with no material is team, and any other name
+is refused. Each vertex carries its primitive's paint.
 
 How open a vertex is, its occlusion, is computed here rather than read (ADR-092): rays cast over the hemisphere about its
 normal, cosine-weighted, from a point a quarter of the way in toward its triangle's middle, and the share of them that
@@ -38,10 +42,11 @@ meet none of the model's triangles within a quarter of its largest extent. It is
 only, so it too is the same bytes on every machine. A bake takes seconds for the largest models, so --check and a bake
 of every source run one source a core.
 
-The NMF layout, little-endian, version 3:
+The NMF layout, little-endian, version 4:
 
   char magic[4] = "NMF\\0"; u32 version; u32 vertexCount; u32 indexCount; u32 hardpointCount; u32 partCount; u32 flags = 0
-  vertexCount    x { f32 position[3]; f32 normal[3]; u8 open; u8 zero[3]; }   open is 0 shut in to 255 wholly open
+  vertexCount    x { f32 position[3]; f32 normal[3]; u8 open; u8 paint; u8 zero[2]; }
+                                              open is 0 shut in to 255 wholly open; paint is 0 team, 1 trim or 2 light
   indexCount     x u32, a multiple of 3, each below vertexCount
   hardpointCount x { u8 tagLength; char tag[tagLength]; f32 position[3]; f32 forward[3]; f32 up[3]; f32 size; }
   partCount      x { u32 firstIndex; u32 indexCount; f32 pivot[3]; f32 axis[3]; f32 periodSeconds; }
@@ -73,9 +78,9 @@ SOURCE_DIRECTORY = ROOT / "Art" / "Models"
 OUTPUT_DIRECTORY = ROOT / "OutpostCommander" / "Assets" / "Models"
 
 NMF_MAGIC = b"NMF\0"
-NMF_VERSION = 3
+NMF_VERSION = 4
 NMF_HEADER = struct.Struct("<4s6I")
-NMF_VERTEX = struct.Struct("<6fB3x")
+NMF_VERTEX = struct.Struct("<6fBB2x")
 NMF_HARDPOINT_FLOATS = struct.Struct("<10f")
 NMF_PART = struct.Struct("<2I7f")
 MAXIMUM_TAG_LENGTH = 31
@@ -89,6 +94,9 @@ FLOAT = 5126
 INDEX_COMPONENTS = {5121: ("B", 1), 5123: ("H", 2), 5125: ("I", 4)}
 
 HARDPOINT_NAME = re.compile(r"hp_([a-z][a-z0-9]*)(\.[0-9]+)?")
+# A face's paint, by its material's name (ADR-095), with Blender's .001 suffixes allowed.
+PAINTS = {"team": 0, "trim": 1, "light": 2}
+MATERIAL_NAME = re.compile(r"([a-z]+)(\.[0-9]+)?")
 # A hardpoint's scale is uniform when its axes' lengths agree to this share, which Blender's float32 easily meets.
 UNIFORM_SCALE_TOLERANCE = 1e-4
 # A spin's keys are about one axis when what lies off it is below this, and turn at one rate when each key's angle is
@@ -445,6 +453,20 @@ def occlusion_byte(openness):
   return min(255, max(0, int(openness * 255.0 + 0.5)))
 
 
+def paint_of(document, primitive, where):
+  """A primitive's paint: its material's name, team with no material, and refused for any other name (ADR-095)."""
+  if "material" not in primitive:
+    return PAINTS["team"]
+  materials = document.get("materials", [])
+  if not 0 <= primitive["material"] < len(materials):
+    raise BakeError(f"{where} names a material that does not exist")
+  name = materials[primitive["material"]].get("name", "")
+  match = MATERIAL_NAME.fullmatch(name)
+  if match is None or match.group(1) not in PAINTS:
+    raise BakeError(f"{where} has the material '{name}'; a material is named team, trim or light")
+  return PAINTS[match.group(1)]
+
+
 def walk(document, node_index, parent, depth, visit, part):
   """Visits a node and everything under it. visit takes the node, its parent's and its own world matrix and the part it
   is in, and gives the part its children are in."""
@@ -474,6 +496,8 @@ def bake(data):
     document["nodes"][node_index] = dict(document["nodes"][node_index], rotation=list(spin["rotation"]))
 
   vertices = []
+  # Each vertex's paint, as its primitive's material names it.
+  paints = []
   # The triangles that stand still, as indices into vertices; and each part, by its node's name, with its own triangles.
   fixed = []
   parts = []
@@ -556,6 +580,7 @@ def bake(data):
         corners = list(range(len(positions)))
       if len(corners) % 3 != 0:
         raise BakeError(f"{where} is not a whole number of triangles")
+      paint = paint_of(document, primitive, where)
       first = len(vertices)
       for position, normal in zip(positions, normals):
         if not all(math.isfinite(value) for value in position + normal):
@@ -564,6 +589,7 @@ def bake(data):
         world_normal = normalized(tuple(sum(normals_by[row][k] * normal[k] for k in range(3)) for row in range(3)),
                                   f"a normal of {where}")
         vertices.append(to_game(world_position) + to_game(world_normal))
+        paints.append(paint)
       for triangle in range(0, len(corners), 3):
         a, b, c = corners[triangle:triangle + 3]
         if max(a, b, c) >= len(positions):
@@ -590,8 +616,8 @@ def bake(data):
 
   openness = vertex_openness(vertices, indices)
   output = bytearray(NMF_HEADER.pack(NMF_MAGIC, NMF_VERSION, len(vertices), len(indices), len(hardpoints), len(parts), 0))
-  for vertex, open_share in zip(vertices, openness):
-    output += NMF_VERTEX.pack(*vertex, occlusion_byte(open_share))
+  for vertex, open_share, paint in zip(vertices, openness, paints):
+    output += NMF_VERTEX.pack(*vertex, occlusion_byte(open_share), paint)
   output += struct.pack(f"<{len(indices)}I", *indices)
   for _, tag, position, forward, up, size in hardpoints:
     encoded = tag.encode("ascii")
@@ -632,8 +658,8 @@ def read_nmf_hardpoints(data):
 def write_glb(meshes, hardpoints=(), extra=None, animations=()):
   """A binary glTF of one node per mesh, each with its hardpoints as child nodes.
 
-  Each mesh is a dict of name, positions, normals, indices and, optionally, texcoords, a node translation, rotation and
-  scale, and a parent (an earlier mesh's position in the list) to be the child of. Each hardpoint is a dict of parent (a
+  Each mesh is a dict of name, positions, normals, indices and, optionally, texcoords, a material's name, a node
+  translation, rotation and scale, and a parent (an earlier mesh's position in the list) to be the child of. Each hardpoint is a dict of parent (a
   mesh's position in the list), name, translation, rotation (x, y, z, w) and scale. Each animation is a dict of node (a
   mesh's position in the list), times and values, and optionally path (rotation unless given) and interpolation. extra
   is merged into the document last, so a test can break it."""
@@ -668,8 +694,11 @@ def write_glb(meshes, hardpoints=(), extra=None, animations=()):
     view = add_view(struct.pack(f"<{len(mesh['indices'])}{'I' if wide else 'H'}", *mesh["indices"]), 34963)
     document["accessors"].append({"bufferView": view, "componentType": 5125 if wide else 5123,
                                   "count": len(mesh["indices"]), "type": "SCALAR"})
-    document["meshes"].append({"name": mesh["name"],
-                               "primitives": [{"attributes": attributes, "indices": len(document["accessors"]) - 1}]})
+    primitive = {"attributes": attributes, "indices": len(document["accessors"]) - 1}
+    if "material" in mesh:
+      document.setdefault("materials", []).append({"name": mesh["material"]})
+      primitive["material"] = len(document["materials"]) - 1
+    document["meshes"].append({"name": mesh["name"], "primitives": [primitive]})
     node = {"name": mesh["name"], "mesh": len(document["meshes"]) - 1}
     for key in ("translation", "rotation", "scale"):
       if key in mesh:
@@ -823,6 +852,7 @@ def self_test():
          "a point (x, y, z) did not become (z, y, x)")
   expect(all(vertex[3:6] == (0.0, 1.0, 0.0) for vertex in vertices), "the normals did not keep pointing up")
   expect(all(vertex[6] == 255 for vertex in vertices), "a triangle with nothing above it is not wholly open")
+  expect(all(vertex[7] == PAINTS["team"] for vertex in vertices), "a triangle with no material is not team")
   corners = struct.unpack_from("<3I", baked, NMF_HEADER.size + 3 * NMF_VERTEX.size)
   expect(corners == (0, 1, 2), "a triangle's corners were not reversed")
   # Clockwise seen from above in the game's left-handed frame: cross(b - a, c - a) points along the normal.
@@ -842,6 +872,15 @@ def self_test():
   gun = hardpoints[1]
   expect(gun[2] == (0.0, 1.0, 0.0) and gun[3] == (-1.0, 0.0, 0.0),
          "an unturned empty's arrow is not up, or its up is not back")
+
+  # Paint (ADR-095): each vertex takes its primitive's material, by name, with Blender's suffix.
+  def paints_of(data):
+    vertex_count = NMF_HEADER.unpack_from(data, 0)[2]
+    return [NMF_VERTEX.unpack_from(data, NMF_HEADER.size + i * NMF_VERTEX.size)[7] for i in range(vertex_count)]
+
+  painted = paints_of(bake(write_glb([dict(triangle, material="team"), dict(triangle, name="Trim", material="trim.001"),
+                                      dict(triangle, name="Light", material="light")])))
+  expect(painted == [0, 0, 0, 1, 1, 1, 2, 2, 2], "team, trim and light are not painted 0, 1 and 2")
 
   # A parented hardpoint and a moved mesh are baked in world space.
   moved = dict(triangle, translation=(1.0, 2.0, 3.0))
@@ -944,6 +983,8 @@ def self_test():
     "an index past the vertices": write_glb([dict(triangle, indices=[0, 1, 3])]),
     "a primitive that is not a whole number of triangles": write_glb([dict(triangle, indices=[0, 1, 2, 0])]),
     "a file cut short": good[:-4],
+    "a material that is not a paint": write_glb([dict(triangle, material="chrome")]),
+    "a paint in capitals": write_glb([dict(triangle, material="Trim")]),
     "a file that is not a glTF": b"NMF\0" + good[4:],
   }
 
@@ -961,6 +1002,7 @@ def self_test():
   refusals["a sparse accessor"] = broken(lambda document: document["accessors"][0].update(sparse={"count": 0}))
   refusals["a skinned node"] = broken(lambda document: document["nodes"][0].update(skin=0))
   refusals["morph targets"] = broken(lambda document: document["meshes"][0]["primitives"][0].update(targets=[{"POSITION": 0}]))
+  refusals["a material that does not exist"] = broken(lambda document: document["meshes"][0]["primitives"][0].update(material=3))
   refusals["a buffer outside the file"] = broken(lambda document: document["buffers"][0].update(uri="mesh.bin"))
   refusals["a mesh with no triangles"] = broken(lambda document: document["accessors"][-1].update(count=0))
   for what, data in refusals.items():

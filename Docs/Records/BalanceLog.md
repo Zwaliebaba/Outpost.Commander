@@ -955,6 +955,22 @@ Win rates, match lengths and endings, fleets, banks, idle shares, matchups, and 
 - **Method:** `OutpostServer --matchups` over `Matchups.json`'s five fleets: no bases, no fog, no retreat, and the AI's battle behavior on both sides.
 - **Source:** the Phase 5 plan (commit `a234270`, #98); ADR-083, Consequences (commit `b6d343b`, #98).
 
+### 2026-10-25 · A day of world, with a start that enemy warships hold not free (task 39.5)
+
+| Quantity | Value |
+|---|---|
+| Losses and restarts of a seat | Red lost its base 3 times, at hours 15.6, 16.7 and 22.9, and restarted twice; Blue never lost |
+| How long each restart waited past its hour | the first restart none, at hour 16.6; the second 184,269 ticks, 2.56 hours, at hour 20.2; the third loss was still waiting at the end of the day, 0.06 hours after its hour |
+| How long a restarted base stood | the first 3,980 ticks, 3.3 minutes; the second 195,651 ticks, 2.7 hours |
+| The day's end | Blue 617,985 Ore, 11 nodes, its fleet 48 of its cap of 50; Red 4,277 Ore, 3 nodes, no warship; both had researched every topic; 677 battles in the straight world's log |
+| Recovery | killed after ticks 148,264, 157,123, 189,738, 591,824, 752,200, 754,665, 862,814, 989,411, 1,455,187 and 1,613,540, it came back at 148,242, 157,104, 189,726, 591,600, 751,200, 754,382, 862,800, 989,402, 1,454,400 and 1,613,515, and ended equal |
+
+- **Build:** Task 39.5: `OutpostServer --world-run` built by clang 18 at `-O2` in the Linux container; 288 s for the two worlds
+- **Seeds:** seed 1; the Normal AI in both seats; 24 hours; the default 10 kills
+- **Method:** `OutpostServer --world-run`, read from the straight world's log with `Tools/WorldLog.py`: its `lost`, `waiting` and `restart` records, whose `waited` is the ticks between the restart's tick and the hour its snapshot carried the tick before. The killed world's log holds the same losses and restarts, and a second `waiting` record for the wait a recovery at tick 1,454,400 came back into.
+- **Source:** the Phase 5 plan, task 39.5.
+- **Note:** The play differs from the day of 2026-10-08 from hour 0, whose Red lost first at hour 7: the server code has changed since, not only by this task.
+
 ## Performance
 
 Ticks, frames, order-to-response delay, saves, snapshot and file sizes, GPU time, and how long the checks take to run.
@@ -1732,6 +1748,19 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Seeds:** not applicable
 - **Method:** A Python script replaying `MeshPS.hlsl`'s light, `GameClient.cpp`'s face and line colors and `Models.json`'s side colors over every unit normal in 3° steps that the camera can see at its lowest pitch, 40°; WCAG's ratio of the linear luminances, as ADR-040 computed it. Computed, not measured on a screen.
 - **Source:** the Look plan, what the review found and LV1.1 (commit `fdcc5f5`, #107).
+
+### 2026-10-25 · The Large hull card's numbers in Cascadia Mono (RF-O3)
+
+| Quantity | Value |
+|---|---|
+| Cascadia Mono's advance | 1,200 units of its 2,048 an em, every character the card uses, at weights 400, 600 and 700 |
+| The Large hull card's line, "1,200 HP · ARM 14 · 25m/s", against the card's 196 units of room | 25 characters of the Detail face, 13 units: at 100% on 1920×1080 a character is 8 pixels, 200 units in all, and the line is cut to "1,200 HP · ARM 14 · 2..."; the same at 100% on 2880×1920, at 12 pixels a character; whole at 110% on 1920×1080, at 100% on 2560×1440 and 3840×2160, and in Consolas, at 1,126 units an em, at every one of them |
+| The other part cards | whole, in both faces, at every one of those sizes |
+
+- **Build:** The tree of task 39.5, in the Linux container: `Hud::Describe` and `Hud::Lay` built by clang 18 against stand-ins, and `Neuron::RasterizeFont` replaced by a stand-in that gives each character the advance its font file holds, rounded to whole pixels as the game rounds it
+- **Seeds:** not applicable
+- **Method:** The designer laid out with the tuning data's three hulls unlocked, its card texts read from the layout. Cascadia Mono's advances read from the static fonts of Cascadia Code release 2407.24; Consolas's from its published metrics. Computed through the game's own layout code, not seen on a screen. Bahnschrift and Segoe UI were stood in for by Inter, which the hull card does not use.
+- **Source:** the findings plan, RF-O3.
 
 ## The code
 

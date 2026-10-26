@@ -54,7 +54,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 15.3 | The designer's preview in figures | 14.2 | — | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting the owner's run |
 | 15.4 | Windows open where there is room | — | — | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting a run |
 | 15.5 | The selection ring at a fixed width | — | K3 | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting the owner's run |
-| 15.6 | A locked part previews what its topic buys | 15.3 | K8 | todo |
+| 15.6 | A locked part previews what its topic buys | 15.3 | K8 | in review; awaiting a run and the owner's run |
 | 16.1 | The windows' headers and bodies | 14.2 | — | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
 | 16.2 | The minimap's marks and size | — | K5 | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
 | 16.3 | What a production card says | 14.2 | K5 | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
@@ -199,6 +199,12 @@ Each is an owner decision, proposed in the task it gates, or, for K8, in what th
 - **ADR:** [ADR-017](../ADR/ADR-017-research-and-the-designer.md) decision 7, edited in place; Game §ships.designer.figures.
 - **Acceptance:** `HudTests`: hovering a locked hull, drive, weapon and module previews its figures; a click on it changes nothing; 14.1's tests with a locked card hovered.
 - **Verify:** CI; run; **owner run.**
+- **As built (2026-10-25):** ADR-017 decision 7, and ADR-088 decision 1 for what the pointer finds.
+  - A locked card's area goes to the layout's `previews`, layered as its buttons are. `Layout::HoverAt` finds a button, or else a preview, and `GameClient` previews what it finds; a click still takes only `Layout::ActionAt`'s button, so a locked card is no button.
+  - The help line reads "Preview: with Large, once Large Hull is researched". No topic unlocks a module, so a locked one would read "once it is researched"; the Sensor Array is never locked in the tuning data.
+  - Cards did not light under the pointer before, open or locked, so a locked card lighting nothing needed no code.
+  - `HudTests.PreviewsALockedPart` and `ALockedCardPreviewsAndTakesNoClick`, and 14.1's tests with the locked Large hull previewed, at every step of the interface's scale. Each new test was checked against a broken build: no preview area, a locked card made a button, and the old help line.
+  - **Run in the container:** `GameAppTests` passes, 300 tests, built by clang 18 against stand-ins, with Cascadia Mono's real advances and with Consolas's, and with Inter standing in for Bahnschrift and Segoe UI. `GameClient`, where the pointer is read, is not built there; CI builds it. Not yet seen on screen.
 
 ---
 

@@ -114,7 +114,47 @@ public:
       const DirectX::XMFLOAT4 structure = Outpost::TowardGray(set.color, Outpost::STRUCTURE_GRAY_SHARE);
       ExpectContrast(set.name + " structure", Outpost::Shaded(structure, Outpost::STRUCTURE_FILL_SHADE),
                      Outpost::EdgeColor(structure, Outpost::EDGE_BRIGHTNESS, Outpost::EDGE_WHITE_SHARE), STRUCTURE_FLOOR, normals);
+      // A trim face and its line, as GameClient paints them (ADR-095), to the same floors.
+      ExpectContrast(set.name + " ship's trim", Outpost::FacePaints(set.color, Outpost::FILL_SHADE).trim,
+                     Outpost::LinePaints(set.color, Outpost::EDGE_BRIGHTNESS, Outpost::EDGE_WHITE_SHARE).trim, SHIP_FLOOR, normals);
+      ExpectContrast(set.name + " structure's trim", Outpost::FacePaints(structure, Outpost::STRUCTURE_FILL_SHADE).trim,
+                     Outpost::LinePaints(structure, Outpost::EDGE_BRIGHTNESS, Outpost::EDGE_WHITE_SHARE).trim, STRUCTURE_FLOOR, normals);
     }
+  }
+
+  // ADR-095: the three paints of a model. Team is the model's color, shaded and lined as before paints; trim the gray as
+  // light as it, shaded and lined alike; and light the one warm white, faces and lines, glowing.
+  TEST_METHOD(PaintsTeamTrimAndLight)
+  {
+    const DirectX::XMFLOAT4 color{0.9f, 0.3f, 0.1f, 1.0f};
+    const Outpost::PaintColors faces = Outpost::FacePaints(color, Outpost::FILL_SHADE);
+    const Outpost::PaintColors lines = Outpost::LinePaints(color, Outpost::EDGE_BRIGHTNESS, Outpost::EDGE_WHITE_SHARE);
+    const DirectX::XMFLOAT4 team = Outpost::Shaded(color, Outpost::FILL_SHADE);
+    Assert::IsTrue(faces.team.x == team.x && faces.team.y == team.y && faces.team.z == team.z, L"team as every face was");
+    const DirectX::XMFLOAT4 edge = Outpost::EdgeColor(color, Outpost::EDGE_BRIGHTNESS, Outpost::EDGE_WHITE_SHARE);
+    Assert::IsTrue(lines.team.x == edge.x && lines.team.y == edge.y && lines.team.z == edge.z, L"and every line");
+    const DirectX::XMFLOAT4 trim = Outpost::TrimColor(color);
+    Assert::IsTrue(trim.x == trim.y && trim.y == trim.z, L"trim is neutral");
+    Assert::AreEqual(LuminanceOf(color), LuminanceOf(trim), 1e-6f, L"and as light as the team color");
+    for (const Outpost::PaintColors& paints : {faces, lines})
+    {
+      Assert::IsTrue(paints.trim.x == paints.trim.y && paints.trim.y == paints.trim.z, L"its faces and lines neutral too");
+      Assert::IsTrue(paints.light.x == Outpost::LIGHT_PAINT_COLOR.x && paints.light.y == Outpost::LIGHT_PAINT_COLOR.y &&
+                       paints.light.z == Outpost::LIGHT_PAINT_COLOR.z,
+                     L"light is the one warm white");
+    }
+    Assert::IsTrue(
+      Outpost::LIGHT_PAINT_COLOR.x > Outpost::LIGHT_PAINT_COLOR.y && Outpost::LIGHT_PAINT_COLOR.y > Outpost::LIGHT_PAINT_COLOR.z, L"warm");
+
+    const DirectX::XMFLOAT4X4 world{};
+    const Neuron::MeshPipeline::Instance painted = Outpost::PaintedInstance(world, faces, 0.25f);
+    Assert::IsTrue(painted.color.x == faces.team.x && painted.secondColor.x == faces.trim.x && painted.thirdColor.x == faces.light.x,
+                   L"each paint its color, in the mesh's order");
+    Assert::AreEqual(1.0f, painted.thirdGlows, L"the light glows");
+    Assert::AreEqual(0.25f, painted.liftShare);
+    const Neuron::MeshPipeline::Instance plain = Neuron::MeshPipeline::Instance::InOneColor(world, color, 0.0f);
+    Assert::IsTrue(plain.secondColor.x == color.x && plain.thirdColor.x == color.x && plain.thirdGlows == 0.0f,
+                   L"a copy in one color draws every paint in it, and none glows");
   }
 
   TEST_METHOD(LightsNoFaceTheCameraSeesBelowTheOldAmbient)

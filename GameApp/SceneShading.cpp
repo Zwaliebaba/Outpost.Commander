@@ -41,6 +41,36 @@ DirectX::XMFLOAT4 Outpost::EdgeColor(const DirectX::XMFLOAT4& _color, float _bri
   return {channel(_color.x), channel(_color.y), channel(_color.z), _color.w};
 }
 
+DirectX::XMFLOAT4 Outpost::TrimColor(const DirectX::XMFLOAT4& _color) noexcept
+{
+  return TowardGray(_color, 1.0f);
+}
+
+Outpost::PaintColors Outpost::FacePaints(const DirectX::XMFLOAT4& _color, float _fillShade) noexcept
+{
+  return {.team = Shaded(_color, _fillShade), .trim = Shaded(TrimColor(_color), _fillShade), .light = LIGHT_PAINT_COLOR};
+}
+
+Outpost::PaintColors Outpost::LinePaints(const DirectX::XMFLOAT4& _color, float _brightness, float _whiteShare) noexcept
+{
+  return {.team = EdgeColor(_color, _brightness, _whiteShare),
+          .trim = EdgeColor(TrimColor(_color), _brightness, _whiteShare),
+          .light = LIGHT_PAINT_COLOR};
+}
+
+Neuron::MeshPipeline::Instance Outpost::PaintedInstance(const DirectX::XMFLOAT4X4& _world, const PaintColors& _paints,
+                                                        float _liftShare) noexcept
+{
+  return {.world = _world,
+          .color = _paints.team,
+          .secondColor = _paints.trim,
+          .thirdColor = _paints.light,
+          .liftShare = _liftShare,
+          .thirdGlows = 1.0f,
+          .unused1 = 0.0f,
+          .unused2 = 0.0f};
+}
+
 DirectX::XMFLOAT4 Outpost::TowardGray(const DirectX::XMFLOAT4& _color, float _share) noexcept
 {
   const float lightness = Luminance(_color.x, _color.y, _color.z);

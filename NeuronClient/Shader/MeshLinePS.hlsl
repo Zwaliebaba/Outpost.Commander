@@ -1,7 +1,7 @@
 // A line in the scene, as bright as the light on a surface that faces the way it does, in its own hue: a line carries
 // whose a model is, or what a ring or a border means, and the light's warmth and coolness are the faces' (ADR-090). Its
 // normal is the mean of its two faces' (ADR-027). It is not darkened where its faces are shut in, so that a line in a
-// recess stands out the more (ADR-092). cbuffer Frame is declared again, identically, in MeshVS.hlsl, MeshLineVS.hlsl and
+// recess stands out the more (ADR-092). A line whose paint glows is drawn in its color as it is (ADR-095). cbuffer Frame is declared again, identically, in MeshVS.hlsl, MeshLineVS.hlsl and
 // MeshPS.hlsl, and VertexOut in MeshLineVS.hlsl; they must match MeshPipeline.cpp.
 
 cbuffer Frame : register(b0)
@@ -24,6 +24,7 @@ struct VertexOut
   float4 position : SV_Position;
   float3 normal : NORMAL;
   nointerpolation float4 color : COLOR;
+  nointerpolation float glow : GLOW;
 };
 
 // The luminance weights of linear sRGB.
@@ -39,5 +40,7 @@ float3 LightAt(float3 normal)
 
 float4 main(VertexOut input) : SV_Target
 {
+  if (input.glow > 0.5f)
+    return input.color;
   return float4(input.color.rgb * dot(LightAt(normalize(input.normal)), LUMINANCE), input.color.a);
 }

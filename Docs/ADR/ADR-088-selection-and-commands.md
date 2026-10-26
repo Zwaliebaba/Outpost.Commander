@@ -16,7 +16,7 @@ The retreat is a choice of three, which the player should see whole and pick in 
 
 ## Decision
 
-1. **The HUD answers the pointer.** `Hud::Lay` takes the action under the pointer, as `Hud::Describe` does, which `GameClient` finds in the last frame's layout (`Layout::ActionAt`).
+1. **The HUD answers the pointer.** `Hud::Lay` takes the action under the pointer, as `Hud::Describe` does, which `GameClient` finds in the last frame's layout (`Layout::HoverAt`): an enabled button, or a locked part's card, which previews and takes no click ([ADR-017](ADR-017-research-and-the-designer.md) decision 7). A click takes only a button (`Layout::ActionAt`).
    - An enabled button that takes it has its edge lit in the windows' edge color, (0.25, 0.43, 0.76), short of a pick's edge. A pick keeps its own.
    - A status line that takes it lies on the cards' color. Lines whose click does the same light together, since a click on either does what a click on the other would: the Shipyards' line and the fleet's both open production.
    - The pointer changes nothing else: text the player cannot click, and every word, place and click, are the same with the pointer or without it, and `Lay` without a hovered action lays out the same.

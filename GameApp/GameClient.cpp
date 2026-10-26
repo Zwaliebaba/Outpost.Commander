@@ -293,7 +293,7 @@ DirectX::XMFLOAT4X4 WorldMatrix(const DirectX::XMFLOAT3& _position, float _headi
 // One copy of a mesh as the mesh pipeline draws it (ADR-053).
 Neuron::MeshPipeline::Instance MeshInstance(const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color, float _liftShare) noexcept
 {
-  return {.world = _world, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
+  return Neuron::MeshPipeline::Instance::InOneColor(_world, _color, _liftShare);
 }
 
 // The entity of _entities with this identifier, or nullptr. Every snapshot lists its entities in identifier order, and the
@@ -722,8 +722,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     const bool designerOpen = m_windows.IsOpen(WindowKind::Designer);
     if (!designerOpen)
       m_designer.EndEditing();
+    // A locked part's card answers the pointer with its preview, and takes no click (ADR-017 decision 7).
     const std::optional<Hud::Action> hovered =
-      m_hudLayout.ActionAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
+      m_hudLayout.HoverAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
     // The order the next left-click gives, whose button the HUD lights (ADR-088 decision 2).
     std::optional<Hud::ActionKind> armed;
     if (m_controls.IsAttackMoveArmed())
@@ -1582,14 +1583,15 @@ void Outpost::GameClient::QueueModel(std::string_view _set, std::string_view _mo
                                      const DirectX::XMFLOAT4& _color, float _fillShade, int _level)
 {
   const bool rock = _set == ASTEROID_SET;
-  const DirectX::XMFLOAT4 edgeColor =
-    rock ? EdgeColor(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : EdgeColor(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
+  // Each face and line in its paint: team, trim or light (ADR-095).
+  const PaintColors faces = FacePaints(_color, _fillShade);
+  const PaintColors lines = rock ? LinePaints(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : LinePaints(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
   for (const ModelPiece& piece : ModelPieces(_set, _model, _level))
   {
     const DirectX::XMFLOAT4X4 world = PieceWorld(piece, _world);
-    m_faceDraws.push_back({.mesh = piece.faces.get(), .instance = MeshInstance(world, Shaded(_color, _fillShade), 0.0f)});
+    m_faceDraws.push_back({.mesh = piece.faces.get(), .instance = PaintedInstance(world, faces, 0.0f)});
     if (piece.edges != nullptr)
-      m_lineDraws.push_back({.mesh = piece.edges.get(), .instance = MeshInstance(world, edgeColor, LINE_LIFT_SHARE)});
+      m_lineDraws.push_back({.mesh = piece.edges.get(), .instance = PaintedInstance(world, lines, LINE_LIFT_SHARE)});
   }
 }
 
@@ -1813,6 +1815,20 @@ void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12Gra
       speedShare = meters / m_frameSeconds / EXHAUST_FULL_SPEED_METERS_PER_SECOND;
     }
     AddExhaustGlows(ModelHardpoints(placed->set->name, *placed->model), placed->pose, *color, speedShare, m_frameGlows);
+  }
+  // Each ship's and seen structure's beacons, blinking in its side's line color on the view's clock (ADR-018 decision 9).
+  // A remembered structure shows none, nor does a wreck.
+  const double seconds = m_view.ViewTick() / m_ticksPerSecond;
+  for (const EntityView& entity : m_entities)
+  {
+    if (entity.remembered || (entity.kind != EntityKind::Ship && entity.kind != EntityKind::Structure))
+      continue;
+    const std::optional<PlacedModel> placed = PlaceModel(entity);
+    if (!placed.has_value())
+      continue;
+    AddBeaconGlows(ModelHardpoints(placed->set->name, *placed->model, placed->level), placed->World(), placed->pose.scale,
+                   EdgeColor(placed->set->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE), entity.id, seconds, entity.builtPermille,
+                   m_frameGlows);
   }
   const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
   const auto [right, up] = m_camera.ScreenAxes(aspectRatio);

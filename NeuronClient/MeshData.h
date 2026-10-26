@@ -2,14 +2,20 @@
 
 namespace Neuron
 {
-// One vertex as the mesh pipeline reads it: a position and a normal, in meters once the mesh is fitted (ADR-011), and how
-// open it is, from 0, shut in by the rest of its mesh, to 1, nothing near it above its surface (ADR-092). A vertex made on
-// the CPU, such as a ring's or a line's, is open.
+// How many paints a vertex chooses among (MeshVertex::paint): the three colors each copy of a mesh is drawn with
+// (MeshPipeline::Instance, ADR-095).
+inline constexpr std::uint32_t MESH_PAINT_COUNT = 3;
+
+// One vertex as the mesh pipeline reads it: a position and a normal, in meters once the mesh is fitted (ADR-011); how
+// open it is, from 0, shut in by the rest of its mesh, to 1, nothing near it above its surface (ADR-092); and its paint,
+// which of its copy's colors it takes, from 0 to MESH_PAINT_COUNT - 1 (ADR-095). A vertex made on the CPU, such as a
+// ring's or a line's, is open and takes the first.
 struct MeshVertex
 {
   DirectX::XMFLOAT3 position;
   DirectX::XMFLOAT3 normal;
   float openness = 1.0f;
+  std::uint32_t paint = 0;
 };
 
 // A place on a mesh where something attaches, such as where a gun fires from or an engine's exhaust leaves (ADR-018).
@@ -64,8 +70,8 @@ struct MeshData
 };
 
 // Reads the bytes of an .nmf file, the format Tools/BakeMeshes.py writes (ADR-018, ADR-045). Throws Neuron::Exception
-// naming _fileName and the byte offset when the file is not version 3 of the format, is cut short or has bytes left
-// over, has a vertex whose padding is not zero, has no triangles or an index past its vertices, holds a number that is not finite, has a hardpoint whose tag is
+// naming _fileName and the byte offset when the file is not version 4 of the format, is cut short or has bytes left
+// over, has a vertex whose paint is not one of MESH_PAINT_COUNT or whose padding is not zero, has no triangles or an index past its vertices, holds a number that is not finite, has a hardpoint whose tag is
 // not lowercase letters and digits, whose directions are not unit vectors at right angles, or whose size is not
 // positive, or has a part whose axis is not a unit vector or whose period is not positive, or whose runs of indices do
 // not follow the triangles that stand still, and each other, to the end in whole triangles.
@@ -94,7 +100,8 @@ void CenterAndScale(MeshData& _mesh, float _scale);
 // The edges of _mesh's triangles where its surface bends by more than _minAngleRadians, and the edges only one triangle
 // has, as a line list: two vertices an edge, with indices counting up from zero. Corners are matched by position, since a
 // flat-shaded mesh repeats a corner once for each triangle at it. Each vertex's normal is the mean of the normals of the
-// faces that meet at the edge, so that the line is lit as the surface beside it is. The lines lie on the surface; what
+// faces that meet at the edge, so that the line is lit as the surface beside it is, and its paint is theirs where they
+// share one and the first otherwise (ADR-095). The lines lie on the surface; what
 // keeps them in front of it is MeshPipeline::DrawLines (ADR-040). The bounds are the mesh's. A mesh with no such edge
 // gives no vertices.
 [[nodiscard]] MeshData BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians);

@@ -80,6 +80,7 @@ public:
   {
     Assert::IsTrue(Outpost::HardpointKindOf("gun") == Outpost::HardpointKind::Gun);
     Assert::IsTrue(Outpost::HardpointKindOf("exhaust") == Outpost::HardpointKind::Exhaust);
+    Assert::IsTrue(Outpost::HardpointKindOf("beacon") == Outpost::HardpointKind::Beacon);
     Assert::IsFalse(Outpost::HardpointKindOf("dock").has_value());
     Assert::IsFalse(Outpost::HardpointKindOf("Gun").has_value());
   }
@@ -259,6 +260,89 @@ public:
     std::vector<Neuron::GlowPipeline::Glow> doubled;
     Outpost::AddExhaustGlows(hardpoints, {.position = at, .headingRadians = pose.headingRadians, .scale = 2.0f}, CYAN, 0.0f, doubled);
     Assert::AreEqual(2.0f * resting.front().radiusMeters, doubled.front().radiusMeters, TOLERANCE);
+  }
+
+  // ADR-018 decision 9: a beacon is lit for BEACON_ON_SECONDS of each BEACON_PERIOD_SECONDS, from its entity's phase, and
+  // dark the rest; the same entity always blinks the same way.
+  TEST_METHOD(ABeaconBlinksOnAndOff)
+  {
+    static constexpr Outpost::EntityId ENTITY{7};
+    // The clock in hundredths of a second, so that the steps add up exactly.
+    constexpr double STEP = 0.01;
+    constexpr int PERIOD_STEPS = 160;
+    constexpr int ON_STEPS = 20;
+    const auto litAt = [](int _step) { return Outpost::IsBeaconLit(ENTITY, static_cast<double>(_step) * STEP); };
+    // Where in its period entity 7 lights: the first step it is lit after one that is dark.
+    int lights = -1;
+    for (int step = 1; step <= PERIOD_STEPS && lights < 0; ++step)
+    {
+      if (litAt(step) && !litAt(step - 1))
+        lights = step;
+    }
+    Assert::IsTrue(lights >= 0, L"it lights within a period");
+    int lit = 0;
+    for (int step = lights; step < lights + PERIOD_STEPS; ++step)
+      lit += litAt(step) ? 1 : 0;
+    Assert::AreEqual(Outpost::BEACON_ON_SECONDS, static_cast<double>(lit) * STEP, 1.5 * STEP,
+                     L"lit for its on time, dark for the rest of the period");
+    Assert::AreEqual(Outpost::BEACON_PERIOD_SECONDS, static_cast<double>(PERIOD_STEPS) * STEP, 1e-9);
+    for (int step = lights; step < lights + ON_STEPS - 1; ++step)
+      Assert::IsTrue(litAt(step + (3 * PERIOD_STEPS)), L"the same a few periods on");
+  }
+
+  // ADR-018 decision 9: the phase follows the identifier, so entities whose identifiers are near never light together.
+  TEST_METHOD(NeighborsBlinkOutOfPhase)
+  {
+    // Every 5 ms of a period.
+    constexpr int STEPS = 320;
+    for (std::uint32_t first = 1; first < 40; ++first)
+    {
+      for (std::uint32_t next = first + 1; next <= first + 3; ++next)
+      {
+        for (int step = 0; step < STEPS; ++step)
+        {
+          const double seconds = Outpost::BEACON_PERIOD_SECONDS * static_cast<double>(step) / STEPS;
+          Assert::IsFalse(Outpost::IsBeaconLit(Outpost::EntityId{first}, seconds) && Outpost::IsBeaconLit(Outpost::EntityId{next}, seconds),
+                          std::format(L"{} and {} lit together at {} s", first, next, seconds).c_str());
+        }
+      }
+    }
+  }
+
+  // ADR-018 decision 9: a lit beacon is a glow in the color given, at the hardpoint where the model's world matrix draws it,
+  // as large as its lamp at the model's scale; a dark one, a model with none, or a structure being built gives no glow.
+  TEST_METHOD(ABeaconGlowsWhereTheModelIsDrawnAndNotWhileBuilt)
+  {
+    std::vector<Neuron::MeshHardpoint> hardpoints = TwoGunsAndAnExhaust();
+    hardpoints.push_back({.tag = "beacon", .position = {0.0f, 4.0f, 0.0f}, .forward = UP, .up = BACK, .size = 0.5f});
+    const Outpost::ModelPose pose{.position = {.xMeters = 10.0f, .zMeters = 20.0f}, .headingRadians = 0.7f, .scale = 2.0f};
+    constexpr Outpost::EntityId ENTITY{3};
+    // The first hundredth of a second it is lit, and the first after that it is dark.
+    int step = 0;
+    while (!Outpost::IsBeaconLit(ENTITY, static_cast<double>(step) / 100.0))
+      ++step;
+    const double lit = static_cast<double>(step) / 100.0;
+    while (Outpost::IsBeaconLit(ENTITY, static_cast<double>(step) / 100.0))
+      ++step;
+    const double dark = static_cast<double>(step) / 100.0;
+
+    std::vector<Neuron::GlowPipeline::Glow> glows;
+    Outpost::AddBeaconGlows(hardpoints, Outpost::PoseMatrix(pose), pose.scale, CYAN, ENTITY, lit, Outpost::PERMILLE, glows);
+    Assert::AreEqual(size_t{1}, glows.size(), L"one beacon, lit; the guns and the exhaust give none");
+    const DirectX::XMFLOAT3 placed = Outpost::PlacePoint(pose, hardpoints.back().position);
+    Assert::AreEqual(placed.x, glows.front().position.x, TOLERANCE);
+    Assert::AreEqual(placed.y, glows.front().position.y, TOLERANCE);
+    Assert::AreEqual(placed.z, glows.front().position.z, TOLERANCE);
+    Assert::IsTrue(glows.front().radiusMeters > hardpoints.back().size * pose.scale, L"a glow round the lamp, at the model's scale");
+    Assert::AreEqual(CYAN.y / CYAN.z, glows.front().color.y / glows.front().color.z, TOLERANCE, L"in the color given");
+
+    glows.clear();
+    Outpost::AddBeaconGlows(hardpoints, Outpost::PoseMatrix(pose), pose.scale, CYAN, ENTITY, lit, Outpost::PERMILLE - 1, glows);
+    Assert::IsTrue(glows.empty(), L"none while built");
+    Outpost::AddBeaconGlows(hardpoints, Outpost::PoseMatrix(pose), pose.scale, CYAN, ENTITY, dark, Outpost::PERMILLE, glows);
+    Assert::IsTrue(glows.empty(), L"none while dark");
+    Outpost::AddBeaconGlows(TwoGunsAndAnExhaust(), Outpost::PoseMatrix(pose), pose.scale, CYAN, ENTITY, lit, Outpost::PERMILLE, glows);
+    Assert::IsTrue(glows.empty(), L"none on a model without a beacon");
   }
 
   // Every model that fires has a gun, and every model that moves has an exhaust, in both players' sets (ADR-018): the

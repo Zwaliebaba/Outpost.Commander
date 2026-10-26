@@ -20,14 +20,15 @@ constexpr float TOLERANCE = 1e-3f;
 constexpr size_t VERTEX_COUNT_OFFSET = 8;
 constexpr size_t VERSION_OFFSET = 4;
 // Where the first vertex's openness is, after the 28 bytes of the header and the vertex's position and normal, and its
-// padding after it (ADR-092).
+// paint and its padding after it (ADR-092, ADR-095).
 constexpr size_t FIRST_OPENNESS_OFFSET = 28 + 24;
-constexpr size_t FIRST_PADDING_OFFSET = FIRST_OPENNESS_OFFSET + 1;
+constexpr size_t FIRST_PAINT_OFFSET = FIRST_OPENNESS_OFFSET + 1;
+constexpr size_t FIRST_PADDING_OFFSET = FIRST_PAINT_OFFSET + 1;
 // The format's version, and how open the writer's vertices are: wholly.
-constexpr std::uint32_t NMF_VERSION = 3;
+constexpr std::uint32_t NMF_VERSION = 4;
 constexpr std::uint8_t WHOLLY_OPEN = 255;
 
-// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-018, ADR-045, ADR-092).
+// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-018, ADR-045, ADR-092, ADR-095).
 class NmfWriter
 {
 public:
@@ -50,7 +51,7 @@ public:
     Put(_value.z);
   }
 
-  // A vertex: its position and normal, wholly open, and its three bytes of padding.
+  // A vertex: its position and normal, wholly open, in the first paint, and its two bytes of padding.
   void PutVertex(const DirectX::XMFLOAT3& _position, const DirectX::XMFLOAT3& _normal)
   {
     Put3(_position);
@@ -215,7 +216,7 @@ public:
 
   TEST_METHOD(RejectsAnotherVersion)
   {
-    for (const std::uint32_t version : {1u, 2u, 4u})
+    for (const std::uint32_t version : {1u, 2u, 3u, 5u})
     {
       Neuron::ByteBuffer bytes = OneTriangle();
       std::memcpy(bytes.data() + VERSION_OFFSET, &version, sizeof(version));
@@ -236,9 +237,25 @@ public:
     Assert::AreEqual(0.0f, Neuron::ParseNmf(bytes, "Test.nmf").vertices.front().openness, L"shut in");
   }
 
+  // ADR-095: each vertex's paint is a byte, 0, 1 or 2, which picks the color of its copy it takes.
+  TEST_METHOD(ReadsEachVertexsPaint)
+  {
+    Neuron::ByteBuffer bytes = OneTriangle();
+    Assert::AreEqual(0u, Neuron::ParseNmf(bytes, "Test.nmf").vertices.front().paint, L"the first paint");
+    for (const std::uint8_t paint : {std::uint8_t{1}, std::uint8_t{2}})
+    {
+      bytes[FIRST_PAINT_OFFSET] = paint;
+      const Neuron::MeshData mesh = Neuron::ParseNmf(bytes, "Test.nmf");
+      Assert::AreEqual(std::uint32_t{paint}, mesh.vertices.front().paint);
+      Assert::AreEqual(0u, mesh.vertices[1].paint, L"the next vertex keeps its own");
+    }
+    bytes[FIRST_PAINT_OFFSET] = static_cast<std::uint8_t>(Neuron::MESH_PAINT_COUNT);
+    ExpectRejected(bytes);
+  }
+
   TEST_METHOD(RejectsAVertexWhosePaddingIsNotZero)
   {
-    for (size_t pad = 0; pad < 3; ++pad)
+    for (size_t pad = 0; pad < 2; ++pad)
     {
       Neuron::ByteBuffer bytes = OneTriangle();
       bytes[FIRST_PADDING_OFFSET + pad] = 1;
@@ -413,6 +430,36 @@ public:
     Assert::AreEqual(half, fold->normal.y, TOLERANCE);
     Assert::AreEqual(0.0f, fold->position.x, TOLERANCE);
     Assert::AreEqual(0.0f, fold->position.y, TOLERANCE);
+  }
+
+  // ADR-095: a line takes its faces' paint where they share one, and the first paint where they differ; a rim's line has
+  // one face, and takes its paint.
+  TEST_METHOD(CreaseLinesTakeTheirFacesPaint)
+  {
+    const auto paintsOf = [](std::uint32_t _flat, std::uint32_t _folded)
+    {
+      Neuron::MeshData hinge = Hinge(90.0f);
+      for (std::uint32_t i = 0; i < 3; ++i)
+      {
+        hinge.vertices[i].paint = _flat;
+        hinge.vertices[i + 3].paint = _folded;
+      }
+      return Neuron::BuildCreaseLines(hinge, Degrees(30.0f));
+    };
+    // The fold's line, at x = 0, leans out between the two faces' normals; every other line is a rim's.
+    const auto isFold = [](const Neuron::MeshVertex& _vertex) { return _vertex.normal.x > 0.1f && _vertex.normal.y > 0.1f; };
+    const Neuron::MeshData same = paintsOf(1, 1);
+    Assert::AreEqual(size_t{5}, LineCount(same));
+    Assert::IsTrue(std::ranges::all_of(same.vertices, [](const Neuron::MeshVertex& _vertex) { return _vertex.paint == 1; }),
+                   L"two faces of one paint: every line in it");
+    const Neuron::MeshData mixed = paintsOf(1, 2);
+    for (const Neuron::MeshVertex& vertex : mixed.vertices)
+    {
+      if (isFold(vertex))
+        Assert::AreEqual(0u, vertex.paint, L"between two paints, the first");
+      else
+        Assert::AreEqual(vertex.normal.y > 0.9f ? 1u : 2u, vertex.paint, L"a rim in its own face's paint: the flat face's looks up");
+    }
   }
 
   // A line straight down meets the box's top, wherever over it, and misses it beside the box.

@@ -1,6 +1,7 @@
-// Flat lighting in the object's color: a key light from one direction and a fill from above and below, no textures and no
-// specular (ADR-011, ADR-090). The color is linear, its instance's (ADR-053); the render target encodes it to
-// sRGB. A face is darkened by how shut in it is, as the baker worked it out, by occlusionStrength's share (ADR-092).
+// Flat lighting in the color of the face's paint: a key light from one direction and a fill from above and below, no
+// textures and no specular (ADR-011, ADR-090). The color is linear, its instance's (ADR-053, ADR-095); the render target
+// encodes it to sRGB. A face is darkened by how shut in it is, as the baker worked it out, by occlusionStrength's share
+// (ADR-092). A face whose paint glows is drawn in its color as it is, which no light reaches and no shade darkens.
 // cbuffer Frame is declared again, identically, in MeshVS.hlsl, MeshLineVS.hlsl and MeshLinePS.hlsl, and VertexOut in
 // MeshVS.hlsl; they must match MeshPipeline.cpp.
 
@@ -24,6 +25,7 @@ struct VertexOut
   float4 position : SV_Position;
   float3 normal : NORMAL;
   nointerpolation float4 color : COLOR;
+  nointerpolation float glow : GLOW;
   float openness : OPENNESS;
 };
 
@@ -39,6 +41,8 @@ float3 LightAt(float3 normal)
 
 float4 main(VertexOut input) : SV_Target
 {
+  if (input.glow > 0.5f)
+    return input.color;
   const float shutIn = 1.0f - saturate(input.openness);
   return float4(input.color.rgb * LightAt(normalize(input.normal)) * (1.0f - occlusionStrength * shutIn), input.color.a);
 }

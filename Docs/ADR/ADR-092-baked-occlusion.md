@@ -29,7 +29,7 @@ Three facts constrain it:
 - **The contrast holds:** a face only ever gets darker, so its lines stand further above it. `SceneShadingTests.KeepsEveryModelsLinesOverItsFaces` tries every face wholly open, half open and shut in.
 - **The tests.**
   - `BakeMeshes.py --self-test`: a triangle with nothing above it is wholly open; a floor under a lid is shut in, and the lid less so; a floor's corners at a wall are shut in by some share, and those out of the wall's reach are wholly open; a wall moved out of reach shuts nothing in; and a bake is the same bytes twice.
-  - `MeshDataTests`: the openness read from its byte, a vertex's nonzero padding refused, versions 1, 2 and 4 refused, and the shipped Shipyard and rock read with the openness they were baked with.
+  - `MeshDataTests`: the openness read from its byte, a vertex's nonzero padding refused, other versions refused, and the shipped Shipyard and rock read with the openness they were baked with.
   - `SceneShadingTests.DarkensAFaceByHowShutInItIs`.
 - **A buried corner darkens a seen face.** Where a face runs into another part, the corner inside the part is shut in and the face darkens toward it. That is where a recess is, and the inset keeps it from reaching the whole face.
 - **A spinning part is shut in as it stands at rest.** As it turns, its occlusion turns with it rather than staying where the body is. The parts are radars and rings, which are much the same all round.

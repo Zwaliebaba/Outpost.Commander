@@ -3731,8 +3731,8 @@ void Outpost::Simulation::DecideMatch()
 }
 
 // In a universe no match ends (ADR-084 decision 2): a player who loses is told so in the tick it does, and an hour of ticks
-// later its seat restarts at its start, once no other player holds the start's sector or has a structure in it. A player
-// that builds itself a Shipyard again in the meantime stands again, and waits for nothing.
+// later its seat restarts at its start, once no other player holds the start's sector or has a structure or a warship in
+// it. A player that builds itself a Shipyard again in the meantime stands again, and waits for nothing.
 void Outpost::Simulation::RestartLostPlayers(const std::vector<PlayerId>& _standing)
 {
   const std::uint64_t now = m_tick + 1;
@@ -3776,13 +3776,20 @@ bool Outpost::Simulation::IsStartFree(PlayerId _player, PlanePosition _start) co
   // Without sectors, the start's ground is as far round it as its base reaches and as far again.
   const float reach = 2.0f * (static_cast<float>(StructureTuningFor(StructureKind::CommandStation)->footprintRadiusMeters) +
                               BASE_ROW_GAP_METERS + (2.0f * static_cast<float>(m_tuning->constructor.footprintRadiusMeters)));
-  return std::ranges::none_of(
-    m_entities,
-    [&](const Entity& _entity)
-    {
-      const bool there = home != nullptr ? home->placement.Contains(_entity.position) : Distance(_entity.position, _start) < reach;
-      return _entity.kind == EntityKind::Structure && _entity.owner.IsValid() && _entity.owner != _player && there;
-    });
+  // Another player's structure holds the start, and so does its warship (owner, 2026-10-25); a pirate's ship and a
+  // Constructor do not.
+  return std::ranges::none_of(m_entities,
+                              [&](const Entity& _entity)
+                              {
+                                if (!_entity.owner.IsValid() || _entity.owner == _player)
+                                  return false;
+                                const bool holds =
+                                  _entity.kind == EntityKind::Structure ||
+                                  (_entity.kind == EntityKind::Ship && _entity.role == ShipRole::Warship && _entity.owner != PIRATES);
+                                const bool there =
+                                  home != nullptr ? home->placement.Contains(_entity.position) : Distance(_entity.position, _start) < reach;
+                                return holds && there;
+                              });
 }
 
 std::optional<std::uint64_t> Outpost::Simulation::RestartTick(PlayerId _player) const noexcept

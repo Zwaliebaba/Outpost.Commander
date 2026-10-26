@@ -74,6 +74,11 @@ def summarize(records):
       count = sum(1 for words in records if words[0] == kind and words[3] == player)
       if count:
         lines.append(f"  {kind}: {count}")
+    # How long past its hour each restart waited for its start to be free.
+    waits = sorted(int(words[5]) / TICKS_PER_SECOND for words in records if words[0] == "restart" and words[3] == player and len(words) > 5)
+    if waits:
+      lines.append(f"  restarts waited: {sum(1 for wait in waits if wait > 0)} of {len(waits)}, median {statistics.median(waits):.1f} s, "
+                   f"at most {waits[-1]:.1f} s")
   return lines
 
 

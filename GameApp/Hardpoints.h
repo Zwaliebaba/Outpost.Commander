@@ -9,7 +9,9 @@ enum class HardpointKind : std::uint8_t
   // Where a shot leaves from. Weapons are turrets (Game §combat.turrets), so only its position is used.
   Gun,
   // Where an engine's exhaust leaves, pointing the way the exhaust streams, its size the nozzle's radius (ADR-019).
-  Exhaust
+  Exhaust,
+  // A light that blinks in its side's line color, as on a mast or an antenna, its size the lamp's radius (ADR-018).
+  Beacon
 };
 
 // The kind a tag names, or nothing for a tag the game does not know.
@@ -71,6 +73,21 @@ inline constexpr float MAX_STANCE_TILT_RADIANS = 0.5f;
 // wraps round when the model has fewer guns than that.
 [[nodiscard]] std::optional<PlanePosition> NearestMuzzle(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose,
                                                          PlanePosition _target, std::uint8_t _gun = 0);
+
+// A beacon's blink (ADR-018 decision 9): lit for BEACON_ON_SECONDS of every BEACON_PERIOD_SECONDS, from a phase that its
+// entity's identifier sets, so that an entity always blinks the same way and two whose identifiers are near do not blink
+// together.
+inline constexpr double BEACON_PERIOD_SECONDS = 1.6;
+inline constexpr double BEACON_ON_SECONDS = 0.2;
+
+// Whether _entity's beacons are lit _seconds into the view's clock.
+[[nodiscard]] bool IsBeaconLit(EntityId _entity, double _seconds) noexcept;
+
+// The glows of _entity's beacons, a model drawn by _world at _scale, _seconds into the view's clock: a glow in _color at
+// each while they are lit, and none while the model is being built, _builtPermille short of PERMILLE.
+void AddBeaconGlows(std::span<const Neuron::MeshHardpoint> _hardpoints, const DirectX::XMFLOAT4X4& _world, float _scale,
+                    const DirectX::XMFLOAT4& _color, EntityId _entity, double _seconds, std::int32_t _builtPermille,
+                    std::vector<Neuron::GlowPipeline::Glow>& _glows);
 
 // The glows of a ship's exhausts (ADR-019): at each exhaust a bright core, and a plume streaming the way the exhaust
 // points, which grows longer and brighter as the ship goes faster. _speedShare runs from 0 at rest to 1 at full speed.

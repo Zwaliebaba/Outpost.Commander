@@ -109,7 +109,7 @@ public:
       "order 4 player 1 order 7 attack-move held",
       "lost 5 player 1",
       "waiting 11 player 1",
-      "restart 13 player 1",
+      "restart 13 player 1 waited 3",
       "seat 1000 player 1 player",
       std::format("hour {} player 1 ore 500 income 250 fleet 12 cap 20 nodes 1 researched 2 present {} deputy {}", hour,
                   (hour - 997) / TICKS_PER_SECOND, 997 / TICKS_PER_SECOND)};

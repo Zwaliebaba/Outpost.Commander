@@ -17,9 +17,9 @@ constexpr UINT FRAME_PARAMETER = 0;
 constexpr UINT DRAW_PARAMETER = 1;
 constexpr UINT INSTANCES_PARAMETER = 2;
 
-// struct Object in the shaders: four rows of the world matrix, the color, the lift and three floats unused, read from a
-// structured buffer, whose elements are packed with no padding.
-static_assert(sizeof(Neuron::MeshPipeline::Instance) == 24 * sizeof(float), "An instance is struct Object.");
+// struct Object in the shaders: four rows of the world matrix, the three paints' colors, the lift, whether the third paint
+// glows and two floats unused, read from a structured buffer, whose elements are packed with no padding.
+static_assert(sizeof(Neuron::MeshPipeline::Instance) == 32 * sizeof(float), "An instance is struct Object.");
 
 // DrawTriangles' and DrawLineList's vertices are in the world already.
 constexpr DirectX::XMFLOAT4X4 IDENTITY{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
@@ -65,10 +65,11 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   m_rootSignature = CreateRootSignature(device);
 
   // Matches MeshVertex. The lines' vertex shader takes no openness, which the input layout may offer it all the same.
-  const std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{{
+  const std::array<D3D12_INPUT_ELEMENT_DESC, 4> inputLayout{{
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, normal), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"OPENNESS", 0, DXGI_FORMAT_R32_FLOAT, 0, offsetof(MeshVertex, openness), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    {"PAINT", 0, DXGI_FORMAT_R32_UINT, 0, offsetof(MeshVertex, paint), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
   }};
 
   // The defaults cull back faces, which are the counterclockwise ones, and test depth with less-than (ADR-011).
@@ -178,8 +179,7 @@ void Neuron::MeshPipeline::DrawInstances(ID3D12GraphicsCommandList* _commandList
 void Neuron::MeshPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
                                 const DirectX::XMFLOAT4& _color)
 {
-  if (const std::optional<UINT> first =
-        AddInstance({.world = _world, .color = _color, .liftShare = 0.0f, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f}))
+  if (const std::optional<UINT> first = AddInstance(Instance::InOneColor(_world, _color, 0.0f)))
     DrawInstances(_commandList, _mesh, *first, 1);
 }
 
@@ -235,8 +235,7 @@ bool Neuron::MeshPipeline::DrawFrameVertices(ID3D12GraphicsCommandList* _command
     return true;
   if (_vertices.size() > MAX_FRAME_VERTICES - m_frameVerticesUsed)
     return false;
-  const std::optional<UINT> instance =
-    AddInstance({.world = IDENTITY, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f});
+  const std::optional<UINT> instance = AddInstance(Instance::InOneColor(IDENTITY, _color, _liftShare));
   if (!instance.has_value())
     return false;
   const auto count = static_cast<UINT>(_vertices.size());
@@ -262,9 +261,7 @@ void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, co
 {
   // The root signature and the frame's constants stay as BeginDrawing set them; the state and the topology change, and
   // change back.
-  const MeshDraw draw{
-    .mesh = &_lines,
-    .instance = {.world = _world, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f}};
+  const MeshDraw draw{.mesh = &_lines, .instance = Instance::InOneColor(_world, _color, _liftShare)};
   DrawLines(_commandList, std::span(&draw, 1));
 }
 

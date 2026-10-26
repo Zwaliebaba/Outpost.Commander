@@ -613,6 +613,7 @@ The designer is the window in which a player puts designs together, saves them a
   - Each card is rated against the best any design does to that hull: good from two thirds of it, fair from a third, and poor below. The production window's cards carry the same rating (ADR-017 decision 7; ADR-068 decision 3).
   - A weapon with a splash is counted for every ship of a formation of that hull that one hit reaches, and the card says how many (ADR-014 decision 12; Game §combat.splash).
 - **Hovering a card previews it.** The bars and the damage cards show the design with that component in place, and the change against the design picked; the help line says so (ADR-017 decision 7; ADR-058 decision 7).
+- **A locked card previews what its topic buys.** Hovered, it shows the design it would make at the player's research as it stands, and the help line names the topic that unlocks it; it still takes no click, and keeps its hatching and its research line (ADR-017 decision 7).
 
 #### Saving and queuing [§ships.designer.queue]
 
@@ -1282,7 +1283,7 @@ A universe is a match that does not end. It runs on a dedicated server that the 
 
 ### The universe log [§universe.log]
 
-- **The server writes a universe log beside the saves,** a line a record, every time in ticks: the universe's start and each recovery, each save and how long it held up the server's thread, each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart, every hour each seat's record, and each battle (ADR-082 decision 1).
+- **The server writes a universe log beside the saves,** a line a record, every time in ticks: the universe's start and each recovery, each save and how long it held up the server's thread, each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart with how long it waited past its hour, every hour each seat's record, and each battle (ADR-082 decision 1).
 - **A seat's hour** is its Ore, its income, its command points against its fleet cap, its nodes and its topics researched, with the seconds of the hour its player and its deputy played it (ADR-082 decision 3).
 - **A battle** is an engagement between two seats in one sector, ended by 30 seconds without a shot there; a side was present when its player played the seat at any of its shots. Shots at or by the pirates are no battle (ADR-082 decision 2).
 - **The log is not saved:** a recovery writes where the universe came back from, and a battle the server did not see begin is not recorded (ADR-082).
@@ -1299,7 +1300,7 @@ A universe is a match that does not end. It runs on a dedicated server that the 
 
 - **A player who loses in a universe is told so in the tick it does.** Its banner says "Empire fallen", and under it "It restarts at your start in" and the time left, or "It restarts once your start is clear of the enemy" while it waits, with the way back to the menu (ADR-084 decisions 3 and 7). Neither the alerts nor the report of a time away tell it (ADR-084 decision 8).
 - **An hour of ticks after it lost, its seat restarts at its own start, once the start is free** (ADR-084 decision 4), and at no other start (ADR-084).
-- **A start is free while no other player holds its home sector and no other player's structure stands in it.** Enemy warships on it do not keep it from being free: the base is placed among them (ADR-084 decision 4). While the start is not free, the seat waits.
+- **A start is free while no other player holds its home sector, has a structure standing in it, or has a warship in it** (ADR-084 decision 4). A pirate's ship and a Constructor do not hold a start. While the start is not free, the seat waits, and it restarts in the first tick that finds the start free; a restarted base is not spared after that (ADR-084).
 - **A restarted seat gets a Command Station on its start and the starting Constructors in front of it,** placed as at the universe's start, and its Ore is raised to the starting Ore when it has less ([Catalogue: rules](Reference/Catalogue.md#rules); ADR-084 decision 4).
 - **It keeps everything else:** its research, its designs, its Ore above the starting Ore, and its ships and structures that still stand (ADR-084 decision 4). A rig in a sector it still holds goes on earning while it waits (ADR-084).
 - **A player that finishes a Shipyard of its own while it waits stands again,** and does not restart (ADR-084 decision 4).
@@ -1610,6 +1611,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **A structure stands back from the ships:** its side's color is taken toward gray and its faces are darker, so the ships are the brightest and most saturated things of their side's color (ADR-040 decision 4).
 - **A structure under construction is drawn darker, and brightens as it is built** (ADR-040 decision 1).
 - **The Research Lab's radar and rings spin,** each part about its own axis at its own steady rate, every Lab and every Relay in step with the others; a placement ghost spins too (ADR-045 decisions 2 and 4).
+- **A model's faces take one of three paints,** by their materials' names in its source: team, its side's color; trim, the gray as light as that color; and light, a warm white that no light reaches, so that it glows. A structure under construction keeps its lights lit (ADR-095 decisions 1 and 4).
 
 #### Rocks and fields [§look.models.rocks]
 
@@ -1626,6 +1628,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **A rock's lines are brighter than its faces but never outshine the fleets' lines** (ADR-040 decision 1).
 - **A line is drawn a little toward the eye,** so it shows over the face it lies on and never stands off a silhouette (ADR-040 decision 2).
 - **A line never hides another line** (ADR-027 decision 3).
+- **A line takes its faces' paint:** a team line in its side's line color, a trim line in the trim's, and a light line in the light's; a line between two paints is team (ADR-095 decision 5).
 - **An explosion's shards take the faces' color** (ADR-040 decision 4; Game §look.explosions).
 
 ### Light [§look.light]
@@ -1638,7 +1641,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 
 ### Glow [§look.glow]
 
-- **What is bright glows, as a vector screen's phosphor does:** the lines on a model's lit side, the selection's ring, the exhaust, the shots, the blasts and the brightest stars. The faces, the grid and the borders stay under it, and a rock's lines glow less than a ship's (ADR-091 decisions 1 and 3).
+- **What is bright glows, as a vector screen's phosphor does:** the lines on a model's lit side, a model's lights, the selection's ring, the exhaust, the shots, the blasts and the brightest stars. The faces, the grid and the borders stay under it, and a rock's lines glow less than a ship's (ADR-091 decisions 1 and 3).
 - **The glow stays close to what is bright,** brightening the faces a few pixels from a lit line and fading out beyond (ADR-091 decision 3).
 - **The interface never glows** (ADR-091 decision 1).
 
@@ -1657,6 +1660,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **Each nozzle shows a core and a plume of three puffs streaming behind it,** which grow longer and brighter as the ship goes faster, up to about an Ion Medium's cruise (ADR-019 decision 2).
 - **An exhaust is light:** it adds to what is behind it, and a hull hides the part of it that lies behind the hull (ADR-019 decision 1).
 - **An enemy's exhaust shows its drive as well,** since every snapshot carries each warship's drive (ADR-019 decision 4).
+- **A model may carry beacons, lights that blink in its side's line color,** a fifth of a second in every 1.6 seconds, each entity at its own moment, so that a building says whose it is. A structure being built shows none, nor does one remembered (ADR-018 decision 9).
 
 ### Shots [§look.shots]
 
