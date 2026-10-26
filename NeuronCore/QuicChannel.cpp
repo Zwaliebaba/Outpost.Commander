@@ -111,9 +111,10 @@ struct PendingSend
 
 // The bidirectional stream's messages go ahead of the newest messages' streams, which keep MsQuic's default (ADR-096).
 constexpr std::uint16_t ORDERED_STREAM_PRIORITY = 0xFFFF;
-// How many newest messages are on their way at most: the newest, and the one before it, which has another message's time to
-// arrive whole. MsQuic sends streams of one priority first come, first served, so the older goes first (ADR-096).
-constexpr std::uint64_t NEWEST_ON_THEIR_WAY = 2;
+// How many newest messages are on their way at most. A message sent while as many are is dropped, rather than any of them
+// abandoned, so that a link too slow for every message carries as many whole as it can. MsQuic sends streams of one
+// priority first come, first served, so the older goes first (ADR-096).
+constexpr std::size_t NEWEST_ON_THEIR_WAY = 2;
 } // namespace
 
 struct Neuron::QuicChannel::State
@@ -142,11 +143,9 @@ struct Neuron::QuicChannel::State
   {
     State* state = nullptr;
     HQUIC handle = nullptr;
-    // The server's end: the message's number in the order sent, whether the peer has acknowledged it whole, and whether it
-    // was abandoned for newer ones.
-    std::uint64_t sent = 0;
-    bool acknowledged = false;
-    bool abandoned = false;
+    // The server's end: whether the message's send has completed, the peer having acknowledged it whole or the stream having
+    // failed, so that it is no longer on its way.
+    bool settled = false;
     // The client's end: the stream's id, which orders the messages, and the message's bytes so far.
     std::uint64_t id = 0;
     std::vector<std::byte> bytes;
@@ -165,8 +164,6 @@ struct Neuron::QuicChannel::State
   std::vector<std::unique_ptr<NewestStream>> newestStreams;
   std::vector<std::vector<std::byte>> newest;
   std::optional<std::uint64_t> newestId;
-  // The server's end: how many newest messages it has sent.
-  std::uint64_t newestSent = 0;
   bool connected = false;
   bool closedHere = false;
   // When the handshake completed, whether this end has started closing the connection, and whether MsQuic has finished with
@@ -481,11 +478,8 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnNewestStream(HQUIC _stream, v
     {
       const std::unique_ptr<PendingSend> sent(static_cast<PendingSend*>(_event->SEND_COMPLETE.ClientContext));
       *sent->backlog -= sent->bytes.size();
-      if (!_event->SEND_COMPLETE.Canceled)
-      {
-        const std::scoped_lock lock(state.mutex);
-        newestStream.acknowledged = true;
-      }
+      const std::scoped_lock lock(state.mutex);
+      newestStream.settled = true;
     }
     break;
     case QUIC_STREAM_EVENT_SHUTDOWN_COMPLETE:
@@ -625,17 +619,10 @@ void Neuron::QuicChannel::SendNewest(std::span<const std::byte> _message)
   HQUIC unstarted = nullptr;
   {
     const std::scoped_lock lock(state.mutex);
-    if (state.connection == nullptr || !state.failure.empty())
+    if (state.connection == nullptr || !state.failure.empty() ||
+        std::ranges::count_if(state.newestStreams, [](const std::unique_ptr<State::NewestStream>& _stream) { return !_stream->settled; }) >=
+          static_cast<std::ptrdiff_t>(NEWEST_ON_THEIR_WAY))
       return;
-    newestStream->sent = ++state.newestSent;
-    for (const std::unique_ptr<State::NewestStream>& older : state.newestStreams)
-    {
-      if (!older->acknowledged && !older->abandoned && older->sent + NEWEST_ON_THEIR_WAY <= newestStream->sent)
-      {
-        older->abandoned = true;
-        (void)api.StreamShutdown(older->handle, QUIC_STREAM_SHUTDOWN_FLAG_ABORT_SEND, 0);
-      }
-    }
     if (QUIC_FAILED(api.StreamOpen(state.connection, QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL, &State::OnNewestStream, newestStream.get(),
                                    &newestStream->handle)))
       return;
