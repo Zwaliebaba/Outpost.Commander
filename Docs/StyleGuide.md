@@ -9,7 +9,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 ## Color
 
 - **One color has one meaning.** In the HUD and on the minimap, whose a thing is, is its color: each player's its set's in `Models.json`, as the world draws it (`Hud::SideColorsOf`), and the pirates' violet (`PIRATE_COLOR`); Ore's gold (`GOLD_COLOR`) is for ore alone ([ADR-085](ADR/ADR-085-one-meaning-per-color.md), [ADR-043](ADR/ADR-043-hud-in-the-windows-look.md) decision 7, [ADR-073](ADR/ADR-073-pirates.md) decision 10).
-- **In the world, a side's models are drawn in its set's color,** which `Models.json` gives each seat, and a structure in that color taken toward gray ([ADR-011](ADR/ADR-011-meshes-and-shading.md) decision 3, [ADR-040](ADR/ADR-040-lines-over-dark-faces.md) decision 4).
+- **In the world, a side's models are drawn in its set's color,** which `Models.json` gives each seat, and a structure in that color taken toward gray ([ADR-011](ADR/ADR-011-meshes-and-shading.md) decision 3, [ADR-040](ADR/ADR-040-lines-over-dark-faces.md) decision 4). That is a model's `team` paint; its `trim` is a gray as light as the team color, and its `light` a warm white that glows, whatever the side ([ADR-095](ADR/ADR-095-paints-team-trim-and-light.md) decision 4).
 - **Nothing that is no side's takes a side's color:** a blast runs from white-yellow to amber ([ADR-026](ADR/ADR-026-explosions-and-particles.md) decision 8), tracers, flashes and sparks are yellow ([ADR-034](ADR/ADR-034-shot-looks.md) decision 4), and a drive's exhaust is none of the sides' colors ([ADR-019](ADR/ADR-019-glows-and-exhaust.md) decision 3).
 - **A beam is its shooter's side's color, lightened toward white,** so a beam says who fires it ([ADR-034](ADR/ADR-034-shot-looks.md) decision 4).
 - **The sky's crosses are never warm,** so no star reads as a marker in Ore's gold ([ADR-028](ADR/ADR-028-vector-grid-and-crosses.md) decision 3).
@@ -90,7 +90,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 
 ## The scene
 
-- **Faces are dark and lines bright, and the lines keep their hue;** a new model's colors go through `SceneShading.h`'s `Shaded` and `EdgeColor` ([ADR-040](ADR/ADR-040-lines-over-dark-faces.md) decision 1, [ADR-090](ADR/ADR-090-a-warm-key-and-a-cool-fill.md) decision 4).
+- **Faces are dark and lines bright, and the lines keep their hue;** a new model's colors go through `SceneShading.h`'s `Shaded` and `EdgeColor`, and its paints through `PaintedInstance` ([ADR-040](ADR/ADR-040-lines-over-dark-faces.md) decision 1, [ADR-090](ADR/ADR-090-a-warm-key-and-a-cool-fill.md) decision 4, [ADR-095](ADR/ADR-095-paints-team-trim-and-light.md) decision 4).
 - **A line is pulled toward the eye by its instance's `liftShare`,** never lifted along its normal ([ADR-040](ADR/ADR-040-lines-over-dark-faces.md) decision 2).
 - **Lines are one pixel wide, test depth and write none,** and are drawn after every face ([ADR-027](ADR/ADR-027-rock-crease-lines.md) decision 3).
 - **The scene is drawn at four samples a pixel and resolved by a shader,** and the interface is drawn after the resolve at one sample ([ADR-040](ADR/ADR-040-lines-over-dark-faces.md) decision 3, [ADR-050](ADR/ADR-050-shader-resolve.md) decisions 1 and 2).
