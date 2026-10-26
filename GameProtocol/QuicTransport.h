@@ -14,9 +14,10 @@ struct ServerAddress
 
 // A client's connection to the server over QUIC (ADR-004, ADR-060): its commands go out as WireFormat's messages, and the
 // server's catalogues and each tick's events come in reliably and in order, and each tick's state on a stream of its own, of
-// which only the newest matters (ADR-096). It hands on a snapshot for each state that arrives: the state with the last
-// catalogue put back into it (ADR-060 decision 9), and the events of every tick up to its own that have not been handed on.
-// A state waits for the catalogues and events sent before it, giving way to a newer state while it does.
+// which only the newest matters (ADR-096), whole or as a change of one it holds, which it tells the server it holds once it
+// has it (ADR-098). It hands on a snapshot for each state that arrives: the state with the last catalogue put back into it
+// (ADR-060 decision 9), and the events of every tick up to its own that have not been handed on. A state waits for the
+// catalogues and events sent before it, giving way to a newer state while it does.
 class QuicTransport final : public Transport
 {
 public:
@@ -28,8 +29,8 @@ public:
 
   void Send(Command _command) override;
   // Throws Neuron::Exception once the connection has gone, saying why in the server's words when the server closed it
-  // (DescribeClose), or when the server sends a message that is not the one its stream carries, or a state before a
-  // catalogue.
+  // (DescribeClose), or when the server sends a message that is not the one its stream carries, a state before a catalogue,
+  // or a change of a state the client does not hold.
   [[nodiscard]] std::vector<Snapshot> Receive() override;
 
   // How the connection to the server does (ADR-004 decision 6).
@@ -46,6 +47,8 @@ private:
   void TakeState(StateMessage _state, std::vector<Snapshot>& _snapshots);
 
   std::unique_ptr<Neuron::QuicChannel> m_channel;
+  // The states the server sent, which it sends the next as changes of.
+  HeldStates m_held;
   std::optional<CatalogMessage> m_catalog;
   // How many catalogues and events have come, which a state names; the ticks' events not yet handed on, oldest first; and
   // the newest state waiting for what was sent before it.

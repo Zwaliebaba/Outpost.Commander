@@ -6,11 +6,13 @@ namespace Outpost
 // transport and the server share it, so either may be destroyed first.
 struct LoopbackChannel
 {
-  // Guards both queues: the server's thread takes the commands and adds the snapshots while the client's thread does the
-  // opposite (ADR-025).
+  // Guards both queues, and the state held: the server's thread takes the commands and adds the snapshots while the client's
+  // thread does the opposite (ADR-025).
   std::mutex mutex;
   std::vector<Command> commands;
   std::vector<Snapshot> snapshots;
+  // A seat's: the tick of the newest state its client says it holds, which the server sends the next as a change of (ADR-098).
+  std::optional<std::uint64_t> held;
 };
 
 // A client's end of the loopback.
@@ -163,6 +165,9 @@ private:
     std::vector<std::byte> catalogSent;
     std::optional<std::uint32_t> catalogTaking;
     std::uint32_t orderedSent = 0;
+    // The states sent at that taking, which the next is sent as a change of (ADR-098): touched by the thread that steps the
+    // server only.
+    SentStates statesSent;
     // The player the server plays itself, if any (ADR-079): without a seat, the player; with one, the seat's deputy, which
     // plays it as control says. Touched by the thread that steps the server only, once it is set before the start.
     std::unique_ptr<HostedPlayer> hosted;
@@ -173,7 +178,8 @@ private:
   std::shared_ptr<LoopbackChannel> AddConnection(PlayerId _player, bool _seat, const SeatToken& _token = {});
 
   // What the listener does with a client that has connected over QUIC: its first message is a hello that takes a seat,
-  // and every message after it a command (ADR-060). Called on MsQuic's thread.
+  // and every message after it a command (ADR-060) or the tick of the newest state it holds (ADR-098). Called on MsQuic's
+  // thread.
   [[nodiscard]] Neuron::QuicChannel::Receiver Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel);
 
   // Gives _player's seat to _channel, which showed _token, after sending it its welcome, and returns where the seat's

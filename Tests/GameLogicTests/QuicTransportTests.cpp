@@ -546,9 +546,9 @@ public:
     Assert::IsTrue(server->TakeSeatFigures().empty(), L"each sample is taken once");
   }
 
-  // ADR-060 decision 9, ADR-096: the snapshots a seat's client hands on are the ones the server built, tick by tick, for two
-  // minutes in which the player's research finishes and changes the catalogue, their events whichever snapshot brings them;
-  // and a seat taken again is sent its catalogue before its first state.
+  // ADR-060 decision 9, ADR-096, ADR-098: the snapshots a seat's client hands on are the ones the server built, tick by tick,
+  // for two minutes in which the player's research finishes and changes the catalogue, their events whichever snapshot
+  // brings them and their states whole or as changes; and a seat taken again is sent its catalogue before its first state.
   TEST_METHOD(HandsOnTheSnapshotsTheServerBuilt)
   {
     auto server = QuicServer();

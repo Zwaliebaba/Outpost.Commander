@@ -371,6 +371,94 @@ public:
     Assert::IsTrue(later.away == built.away, L"with the report of a time away");
   }
 
+  // ADR-098: a state crosses as what changed since one the client holds, which put together with that state is the state
+  // the server built, bit for bit: a ship moved, one whose heading's zero turned negative, an entity gone and two new, a
+  // sector taken and the player's Ore.
+  TEST_METHOD(CarriesAStateAsWhatChanged)
+  {
+    Outpost::Snapshot base = FullSnapshot();
+    (void)Outpost::TakeCatalog(base);
+    (void)Outpost::TakeEvents(base);
+    base.entities.push_back({.id = Outpost::EntityId{40}, .position = {.xMeters = 1.0f}, .radiusMeters = 5.0f});
+    base.entities.push_back({.id = Outpost::EntityId{41}, .headingRadians = 0.0f});
+
+    Outpost::Snapshot next = base;
+    ++next.tick;
+    next.entities.erase(next.entities.begin());
+    next.entities[1].position.xMeters = 2.5f;
+    next.entities[2].headingRadians = -0.0f;
+    next.entities.insert(next.entities.begin() + 1, {.id = Outpost::EntityId{35}});
+    next.entities.push_back({.id = Outpost::EntityId{50}, .kind = Outpost::EntityKind::Asteroid});
+    next.sectors[0].holder = Outpost::PlayerId{1};
+    next.ore += 7;
+
+    const std::vector<std::byte> change = Outpost::ChangeOf(base, next);
+    Outpost::Snapshot put = base;
+    Outpost::PutChange(change, put);
+    Assert::IsTrue(StateBytes(put) == StateBytes(next), L"put together, it is the state built");
+    Assert::IsTrue(std::signbit(put.entities[3].headingRadians), L"the zero's sign with it");
+    Assert::IsTrue(change.size() < StateBytes(next).size(), L"the shorter");
+
+    // A ship moved, and nothing else but the tick: the state's bits, the tick, whether the entities change by their
+    // elements, none gone, one changed, its identifier, its bits and its place, and none new.
+    Outpost::Snapshot moved = base;
+    ++moved.tick;
+    moved.entities[2].position.xMeters = 2.5f;
+    Assert::AreEqual(size_t{5 + 8 + 1 + 4 + 4 + 4 + 5 + 8 + 4}, Outpost::ChangeOf(base, moved).size(), L"a ship moved, in bytes");
+    const std::vector<std::byte> same = Outpost::ChangeOf(base, base);
+    Assert::IsTrue(same.size() == 5 && std::ranges::all_of(same, [](std::byte _bits) { return _bits == std::byte{0}; }),
+                   L"no change, but the state's bits");
+
+    // Entities out of order cross whole, and still put together into the state built.
+    Outpost::Snapshot shuffled = next;
+    std::swap(shuffled.entities[0], shuffled.entities[1]);
+    put = base;
+    Outpost::PutChange(Outpost::ChangeOf(base, shuffled), put);
+    Assert::IsTrue(StateBytes(put) == StateBytes(shuffled), L"a list out of order");
+
+    const Outpost::Message message = RoundTrip(Outpost::StateChangeMessage{.orderedSent = 3, .baseTick = base.tick, .change = change});
+    Assert::IsTrue(std::get<Outpost::StateChangeMessage>(message).change == change, L"the change crosses as written");
+    Assert::AreEqual(std::uint64_t{4}, std::get<Outpost::HeldMessage>(RoundTrip(Outpost::HeldMessage{.tick = 4})).tick);
+  }
+
+  // ADR-098: a change is refused where it does not change the state it is put together with into a state: one that changes,
+  // or takes away, an entity the state does not hold, that adds one it holds, that names a field past the state's last, or
+  // that is cut short or runs on.
+  TEST_METHOD(RefusesAChangeOfAnotherState)
+  {
+    Outpost::Snapshot base = FullSnapshot();
+    (void)Outpost::TakeCatalog(base);
+    (void)Outpost::TakeEvents(base);
+    Outpost::Snapshot next = base;
+    ++next.tick;
+    next.entities[1].position.xMeters = 2.5f;
+    next.entities.erase(next.entities.begin());
+    next.entities.push_back({.id = Outpost::EntityId{50}});
+    const std::vector<std::byte> change = Outpost::ChangeOf(base, next);
+    const auto refused = [](std::span<const std::byte> _change, Outpost::Snapshot _state)
+    { Assert::ExpectException<Neuron::Exception>([_change, &_state] { Outpost::PutChange(_change, _state); }); };
+
+    Outpost::Snapshot without = base;
+    without.entities.erase(without.entities.begin() + 1);
+    refused(change, without);
+    Outpost::Snapshot holding = base;
+    holding.entities.push_back({.id = Outpost::EntityId{50}});
+    refused(change, holding);
+    Outpost::Snapshot first = base;
+    first.entities.erase(first.entities.begin());
+    refused(change, first);
+
+    // The state's 36 fields leave the last of its five bytes of bits four to spare.
+    std::vector<std::byte> past = Outpost::ChangeOf(base, base);
+    past.back() = std::byte{0x80};
+    refused(past, base);
+    for (std::size_t length = 0; length < change.size(); ++length)
+      refused(std::span(change).first(length), base);
+    std::vector<std::byte> runOn = change;
+    runOn.push_back(std::byte{0});
+    refused(runOn, base);
+  }
+
   TEST_METHOD(CarriesHelloAndWelcome)
   {
     const Outpost::Message hello = RoundTrip(Outpost::HelloMessage{.player = Outpost::PlayerId{2}});
@@ -435,7 +523,7 @@ public:
       changed[_offset] = _value;
       Assert::ExpectException<Neuron::Exception>([&changed] { (void)Outpost::DecodeMessage(changed); });
     };
-    refused(0, std::byte{6});    // a seventh kind of message
+    refused(0, std::byte{8});    // a ninth kind of message
     refused(5, std::byte{16});   // a seventeenth order
     refused(6, std::byte{0xFF}); // more constructors than bytes
     refused(10, std::byte{7});   // a structure past the Repair Bay, the last

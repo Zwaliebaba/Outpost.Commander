@@ -228,9 +228,11 @@ public:
     {
       const Clock::time_point arrived = Clock::now();
       Outpost::Message decoded = Outpost::DecodeMessage(message);
-      auto* state = std::get_if<Outpost::StateMessage>(&decoded);
-      Assert::IsNotNull(state, L"only states on their own streams");
-      const Outpost::Snapshot& snapshot = state->snapshot;
+      wholeStates += std::holds_alternative<Outpost::StateMessage>(decoded) ? 1 : 0;
+      const Outpost::StateMessage state = m_held.Take(std::move(decoded));
+      // The server sends the next states as changes of this one (ADR-098).
+      m_channel->Send(Outpost::EncodeMessage(Outpost::HeldMessage{.tick = state.snapshot.tick}));
+      const Outpost::Snapshot& snapshot = state.snapshot;
       arrivals.emplace_back(snapshot.tick, arrived);
       stateBytes += message.size();
       stateMostBytes = std::max<std::uint64_t>(stateMostBytes, message.size());
@@ -252,6 +254,8 @@ public:
   }
 
   std::vector<std::pair<std::uint64_t, Clock::time_point>> arrivals;
+  // How many of the states came whole rather than as changes (ADR-098).
+  std::size_t wholeStates = 0;
   std::uint64_t stateBytes = 0;
   std::uint64_t stateMostBytes = 0;
   std::uint64_t catalogBytes = 0;
@@ -318,6 +322,7 @@ private:
   std::optional<Outpost::EntityId> m_probe;
   Neuron::Random m_random;
   std::unique_ptr<Neuron::QuicChannel> m_channel;
+  Outpost::HeldStates m_held;
   std::optional<std::uint64_t> m_lastPeriod;
   bool m_seen = false;
   bool m_outward = false;
@@ -335,6 +340,8 @@ private:
 struct Measurement
 {
   std::size_t states = 0;
+  std::size_t wholeStates = 0;
+  double meanStateBytes = 0.0;
   std::uint64_t newestTick = 0;
   std::uint64_t stateMostBytes = 0;
   std::uint64_t eventsSecondMostBytes = 0;
@@ -418,22 +425,24 @@ Measurement Measure(const Outpost::Tuning& _tuning, const Outpost::Map& _map, co
     blue.arrivals.empty() ? 0.0 : static_cast<double>(blue.stateBytes) / static_cast<double>(blue.arrivals.size());
   const ImpairedLink::Counts down = blueLink.ToClient();
   Measurement measurement{.states = blue.arrivals.size(),
+                          .wholeStates = blue.wholeStates,
+                          .meanStateBytes = meanStateBytes,
                           .newestTick = blue.newestTick,
                           .stateMostBytes = blue.stateMostBytes,
                           .eventsSecondMostBytes = blue.eventsSecondMostBytes,
                           .backlogMostBytes = backlogMostBytes};
-  measurement.report =
-    std::format("{}: {} states of {:.0f} bytes on average, {} bytes of catalogue and {} of events; late by {:.1f} ms at the median, "
-                "{:.1f} at the 95th percentile and {:.1f} at the 99th; the longest gap {:.1f} ms; more than two ticks behind the server in "
-                "{:.2f}% of {} samples; the largest backlog {} bytes, {:.1f} states; a round trip of {:.1f} ms at the median; an order's "
-                "response {:.1f} ms at the median and {:.1f} at the 95th percentile, over {} orders; to the client, {} datagrams carried, "
-                "{} lost and {} dropped",
-                _profile.name, blue.arrivals.size(), meanStateBytes, blue.catalogBytes, blue.eventsBytes, Percentile(lateness, 50),
-                Percentile(lateness, 95), Percentile(lateness, 99), longestGap,
-                samples == 0 ? 0.0 : 100.0 * static_cast<double>(behind) / static_cast<double>(samples), samples, backlogMostBytes,
-                meanStateBytes == 0.0 ? 0.0 : static_cast<double>(backlogMostBytes) / meanStateBytes,
-                Percentile(roundTripsMilliseconds, 50), Percentile(blue.responsesMilliseconds, 50),
-                Percentile(blue.responsesMilliseconds, 95), blue.responsesMilliseconds.size(), down.carried, down.lost, down.dropped);
+  measurement.report = std::format(
+    "{}: {} states of {:.0f} bytes on average, {} of them whole, {} bytes of catalogue and {} of events; late by {:.1f} ms at the median, "
+    "{:.1f} at the 95th percentile and {:.1f} at the 99th; the longest gap {:.1f} ms; more than two ticks behind the server in "
+    "{:.2f}% of {} samples; the largest backlog {} bytes, {:.1f} states; a round trip of {:.1f} ms at the median; an order's "
+    "response {:.1f} ms at the median and {:.1f} at the 95th percentile, over {} orders; to the client, {} datagrams carried, "
+    "{} lost and {} dropped",
+    _profile.name, blue.arrivals.size(), meanStateBytes, blue.wholeStates, blue.catalogBytes, blue.eventsBytes, Percentile(lateness, 50),
+    Percentile(lateness, 95), Percentile(lateness, 99), longestGap,
+    samples == 0 ? 0.0 : 100.0 * static_cast<double>(behind) / static_cast<double>(samples), samples, backlogMostBytes,
+    meanStateBytes == 0.0 ? 0.0 : static_cast<double>(backlogMostBytes) / meanStateBytes, Percentile(roundTripsMilliseconds, 50),
+    Percentile(blue.responsesMilliseconds, 50), Percentile(blue.responsesMilliseconds, 95), blue.responsesMilliseconds.size(), down.carried,
+    down.lost, down.dropped);
   return measurement;
 }
 } // namespace
@@ -623,6 +632,17 @@ public:
     Assert::IsTrue(measurement.backlogMostBytes <= (2 * measurement.stateMostBytes) + measurement.eventsSecondMostBytes,
                    Widen(measurement.report).c_str());
     Assert::IsTrue(measurement.states > 0 && measurement.states * 4 >= measurement.newestTick, Widen(measurement.report).c_str());
+  }
+
+  // ADR-098: through the Wi-Fi profile, over 20 seconds of the measurement load, a state crosses whole only until the
+  // client has said it holds one, and as a change of one it holds after, a fraction of the whole.
+  TEST_METHOD(SendsAStateAsAChangeOfOneTheClientHolds)
+  {
+    const Measurement measurement =
+      Measure(Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), WI_FI_LINK, 20s);
+    Logger::WriteMessage(measurement.report.c_str());
+    Assert::IsTrue(measurement.states > 100 && measurement.wholeStates * 20 <= measurement.states, Widen(measurement.report).c_str());
+    Assert::IsTrue(measurement.meanStateBytes * 3.0 < static_cast<double>(measurement.stateMostBytes), Widen(measurement.report).c_str());
   }
 
   // ADR-096 decision 3: through the Wi-Fi profile every tick's events reach the client once and in order, the shots and

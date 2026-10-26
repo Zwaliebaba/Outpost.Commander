@@ -55,11 +55,10 @@ std::vector<Outpost::Snapshot> Outpost::QuicTransport::Receive()
   }
   for (const std::vector<std::byte>& message : m_channel->ReceiveNewest())
   {
-    Message decoded = DecodeMessage(message);
-    auto* state = std::get_if<StateMessage>(&decoded);
-    if (state == nullptr)
-      throw Neuron::Exception("The server sent a message that is not a state where a state goes.");
-    TakeState(std::move(*state), snapshots);
+    StateMessage state = m_held.Take(DecodeMessage(message));
+    // The server sends the next states as changes of this one (ADR-098).
+    m_channel->Send(EncodeMessage(HeldMessage{.tick = state.snapshot.tick}));
+    TakeState(std::move(state), snapshots);
   }
   return snapshots;
 }

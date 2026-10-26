@@ -66,7 +66,7 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW6.2 | A universe's lost connection is joined again | NW2.2 | M8 | todo |
 | NW6.3 | The tag gives the round trip | NW2.1 | M10 | todo |
 | NW6.4 | Order to response over a real network, again | NW5.1, NW6.1 | M11 | todo; an owner run |
-| NW7.1 | State crosses as what changed | NW4.1 | F5 of the Horizon plan | todo |
+| NW7.1 | State crosses as what changed | NW4.1 | F5 of the Horizon plan | in review |
 
 ### Milestone order
 
@@ -279,3 +279,8 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 
 - **Gate:** F5 of [the Horizon plan](ImplementationPlan-Horizon.md).
 - **Outline, scoped with the task:** built ahead of F5's measurement (owner, 2026-10-26). The client acknowledges, on its stream, the newest state it holds. The server sends each entity's changed fields against that state, and a whole state when a seat is taken or the state acknowledged is too old. All of it is in the transport, as NW3.1 is, so that `Snapshot` is still what every reader reads. A moving ship changes about 12 of its 122 bytes a tick (§1 finding 4, computed).
+- **Scope:** `ChangeOf` and `PutChange` in the wire format; `SentStates` on the server's end of a seat and `HeldStates` on the client's; the client's acknowledgement up its stream; and `QuicChannel::SendNewest` saying whether it queued a state, so that the server keeps only the states it sent.
+- **ADR:** [ADR-098](../ADR/ADR-098-a-state-crosses-as-what-changed.md).
+- **Acceptance:** a change put together with the state it changes is the state built, bit for bit, and a change of another state is refused (`WireFormatTests`, `SentStatesTests`, `HeldStatesTests`); two minutes of snapshots over QUIC are the ones the server built (`QuicTransportTests.HandsOnTheSnapshotsTheServerBuilt`); and through the Wi-Fi profile under the measurement load, no more than one state in 20 crosses whole, and the states average under a third of the largest (`ImpairedLinkTests.SendsAStateAsAChangeOfOneTheClientHolds`).
+- **As built:** the changes are of every field the wire lists, not only an entity's: the state's own fields go by the same rule, and so do the sectors and the scheduled orders, which are lists of records with identifiers in order as the entities are. Fields compare by their bits, so that a heading whose zero turns negative crosses, and the snapshot handed on is the one built byte for byte. The server sends the whole state where a change would be the longer, as it is when every entity a state holds is new. The hotspot's figures with changes, and whether they meet gate M1's targets there, wait on CI's run of `HoldsASeatsBacklogToTwoStatesOnTheHotspot` and the owner's `MeasuresTheProfiles`.
+- **Verify:** the checkers; CI and the container; the owner's `MeasuresTheProfiles`.

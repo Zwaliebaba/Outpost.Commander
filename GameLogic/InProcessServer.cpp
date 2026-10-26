@@ -265,7 +265,8 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
       if (commands)
       {
         auto* command = std::get_if<Command>(&message);
-        if (command == nullptr)
+        const auto* held = std::get_if<HeldMessage>(&message);
+        if (command == nullptr && held == nullptr)
         {
           Refuse(_peer, CloseReason::MalformedMessage);
           return;
@@ -273,6 +274,13 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
         // A connection the seat was taken from sends nothing more to the universe (ADR-078).
         if (!HoldsSeat(seated, &_peer))
           return;
+        // The seat's next states go as changes of the newest state its client holds (ADR-098).
+        if (held != nullptr)
+        {
+          const std::scoped_lock lock(commands->mutex);
+          commands->held = std::max(commands->held.value_or(0), held->tick);
+          return;
+        }
         // The player is set from the seat when the tick takes the command; what the client wrote is never trusted
         // (ADR-002). A client so far ahead of the ticks is broken, and closed once the queue's lock is let go (ADR-009).
         bool broken = false;
@@ -605,7 +613,10 @@ void Outpost::InProcessServer::RunTick()
           if (connection.catalogTaking != seat.takings || encoded != connection.catalogSent)
           {
             if (connection.catalogTaking != seat.takings)
+            {
               connection.orderedSent = 0;
+              connection.statesSent.Clear();
+            }
             seat.quic->Send(encoded);
             connection.catalogSent = std::move(encoded);
             connection.catalogTaking = seat.takings;
@@ -617,8 +628,15 @@ void Outpost::InProcessServer::RunTick()
             seat.quic->Send(EncodeMessage(events));
             ++connection.orderedSent;
           }
+          // The state goes as a change of the newest the seat's client holds, when the server still has it (ADR-098).
+          std::optional<std::uint64_t> held;
+          {
+            const std::scoped_lock lock(connection.channel->mutex);
+            held = connection.channel->held;
+          }
           StateMessage state{.orderedSent = connection.orderedSent, .snapshot = std::move(seat.snapshot)};
-          seat.quic->SendNewest(EncodeMessage(state));
+          if (seat.quic->SendNewest(connection.statesSent.Encode(state, held)))
+            connection.statesSent.Keep(state.snapshot);
           seat.snapshot = std::move(state.snapshot);
           if (connection.hosted)
           {

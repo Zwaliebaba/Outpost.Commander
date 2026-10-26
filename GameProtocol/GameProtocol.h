@@ -11,6 +11,7 @@
 #include <chrono>
 #include <cmath>
 #include <compare>
+#include <deque>
 #include <filesystem>
 #include <functional>
 #include <numbers>
@@ -30,6 +31,8 @@
 #include "Placement.h"
 #include "Transport.h"
 #include "WireFormat.h"
+#include "SentStates.h"
+#include "HeldStates.h"
 #include "QuicTransport.h"
 #include "JoinTicket.h"
 #include "HostedPlayer.h"

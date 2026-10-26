@@ -91,6 +91,8 @@
     <ClInclude Include="JoinTicket.h" />
     <ClInclude Include="HostedPlayer.h" />
     <ClInclude Include="WireFormat.h" />
+    <ClInclude Include="SentStates.h" />
+    <ClInclude Include="HeldStates.h" />
     <ClInclude Include="WireFields.h" />
     <ClInclude Include="ByteFormat.h" />
     <ClInclude Include="Server.h" />
@@ -105,6 +107,8 @@
     <ClCompile Include="SeatToken.cpp" />
     <ClCompile Include="JoinTicket.cpp" />
     <ClCompile Include="WireFormat.cpp" />
+    <ClCompile Include="SentStates.cpp" />
+    <ClCompile Include="HeldStates.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

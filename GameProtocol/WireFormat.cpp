@@ -2,6 +2,7 @@
 #include "WireFormat.h"
 
 #include <algorithm>
+#include <bit>
 #include <concepts>
 #include <iterator>
 #include <utility>
@@ -77,6 +78,226 @@ template <typename Catalog> void Put(Catalog&& _catalog, Snapshot& _snapshot)
     std::ranges::copy(_catalog.fields, std::back_inserter(_snapshot.entities));
   std::ranges::inplace_merge(_snapshot.entities, _snapshot.entities.begin() + middle, {}, &EntityView::id);
 }
+
+template <typename T>
+concept Vector = std::same_as<T, std::vector<typename T::value_type>>;
+
+template <typename T>
+concept Optional = std::same_as<T, std::optional<typename T::value_type>>;
+
+// A record with an identifier, which a list of them, in increasing order of it, changes by (ChangeOf).
+template <typename T>
+concept Keyed = Record<T> && requires(const T& _value) { _value.id; } && std::totally_ordered<decltype(T::id)>;
+
+template <typename T>
+concept KeyedList = Vector<T> && Keyed<typename T::value_type>;
+
+template <typename T> constexpr bool IS_ID = false;
+template <typename Tag> constexpr bool IS_ID<Id<Tag>> = true;
+
+// Whether _a and _b are the same bit for bit: a float by its bits, so that a change keeps a zero's sign, and a record, a list
+// or an optional value by what it holds. A kind of value this does not name does not compile, rather than be compared some
+// other way.
+template <typename T> [[nodiscard]] bool Same(const T& _a, const T& _b)
+{
+  if constexpr (std::same_as<T, float>)
+    return std::bit_cast<std::uint32_t>(_a) == std::bit_cast<std::uint32_t>(_b);
+  else if constexpr (std::same_as<T, double>)
+    return std::bit_cast<std::uint64_t>(_a) == std::bit_cast<std::uint64_t>(_b);
+  else if constexpr (Record<T>)
+  {
+    const auto a = Fields(_a);
+    const auto b = Fields(_b);
+    return [&a, &b]<std::size_t... Indices>(std::index_sequence<Indices...>)
+    { return (Same(std::get<Indices>(a), std::get<Indices>(b)) && ...); }(std::make_index_sequence<std::tuple_size_v<decltype(a)>>{});
+  }
+  else if constexpr (Vector<T>)
+    return std::ranges::equal(_a, _b, [](const auto& _x, const auto& _y) { return Same(_x, _y); });
+  else if constexpr (Optional<T>)
+    return _a.has_value() == _b.has_value() && (!_a.has_value() || Same(*_a, *_b));
+  else
+  {
+    static_assert(std::integral<T> || std::is_enum_v<T> || IS_ID<T> || std::same_as<T, std::string>, "Same does not know this value");
+    return _a == _b;
+  }
+}
+
+// Whether _list's identifiers increase, each past the one before it.
+template <Keyed T> [[nodiscard]] bool Increasing(std::span<const T> _list)
+{
+  return std::ranges::adjacent_find(_list, std::ranges::greater_equal{}, &T::id) == _list.end();
+}
+
+// A record's fields that a change carries, a bit each in the order Fields lists them.
+template <std::size_t Count> using FieldBits = std::array<std::uint8_t, (Count + 7) / 8>;
+
+// Writes what changed from one state to the next (ChangeOf).
+class ChangeWriter
+{
+public:
+  explicit ChangeWriter(ByteWriter& _writer) noexcept
+    : m_writer(_writer)
+  {
+  }
+
+  // A bit for each of the record's fields, set where it differs, and then each that differs.
+  template <Record T> void PutRecord(const T& _base, const T& _next)
+  {
+    const auto base = Fields(_base);
+    const auto next = Fields(_next);
+    constexpr std::size_t COUNT = std::tuple_size_v<decltype(next)>;
+    std::array<bool, COUNT> differs{};
+    [&]<std::size_t... Indices>(std::index_sequence<Indices...>)
+    { ((differs[Indices] = !Same(std::get<Indices>(base), std::get<Indices>(next))), ...); }(std::make_index_sequence<COUNT>{});
+    FieldBits<COUNT> bits{};
+    for (std::size_t i = 0; i < COUNT; ++i)
+    {
+      if (differs[i])
+        bits[i / 8] = static_cast<std::uint8_t>(bits[i / 8] | (1u << (i % 8)));
+    }
+    m_writer.Put(bits);
+    [&]<std::size_t... Indices>(std::index_sequence<Indices...>)
+    { ((differs[Indices] ? PutField(std::get<Indices>(base), std::get<Indices>(next)) : void()), ...); }(std::make_index_sequence<COUNT>{});
+  }
+
+private:
+  template <typename T> void PutField(const T& _base, const T& _next)
+  {
+    if constexpr (KeyedList<T>)
+      PutList(std::span(_base), std::span(_next));
+    else
+      m_writer.Put(_next);
+  }
+
+  // Whether it changes by its elements, which it does where both lists are in order; then the identifiers of the elements
+  // gone, each element changed with its identifier and its change, and each element new, all in order of identifier.
+  template <Keyed T> void PutList(std::span<const T> _base, std::span<const T> _next)
+  {
+    const bool byElement = Increasing(_base) && Increasing(_next);
+    m_writer.Put(byElement);
+    if (!byElement)
+    {
+      m_writer.Put(std::vector<T>(_next.begin(), _next.end()));
+      return;
+    }
+    std::vector<std::remove_cvref_t<decltype(T::id)>> gone;
+    std::vector<std::pair<const T*, const T*>> changed;
+    std::vector<const T*> added;
+    auto base = _base.begin();
+    for (const T& next : _next)
+    {
+      for (; base != _base.end() && base->id < next.id; ++base)
+        gone.push_back(base->id);
+      if (base != _base.end() && base->id == next.id)
+      {
+        if (!Same(*base, next))
+          changed.emplace_back(&*base, &next);
+        ++base;
+      }
+      else
+        added.push_back(&next);
+    }
+    for (; base != _base.end(); ++base)
+      gone.push_back(base->id);
+    m_writer.Put(gone);
+    m_writer.Put(static_cast<std::uint32_t>(changed.size()));
+    for (const auto& [from, to] : changed)
+    {
+      m_writer.Put(to->id);
+      PutRecord(*from, *to);
+    }
+    m_writer.Put(static_cast<std::uint32_t>(added.size()));
+    for (const T* element : added)
+      m_writer.Put(*element);
+  }
+
+  ByteWriter& m_writer;
+};
+
+// Reads what ChangeWriter wrote into the state it was written from, and refuses what it could not have written from it.
+class ChangeReader
+{
+public:
+  explicit ChangeReader(ByteReader& _reader) noexcept
+    : m_reader(_reader)
+  {
+  }
+
+  template <Record T> void GetRecord(T& _value)
+  {
+    const auto fields = Fields(_value);
+    constexpr std::size_t COUNT = std::tuple_size_v<decltype(fields)>;
+    FieldBits<COUNT> bits{};
+    m_reader.Get(bits);
+    if constexpr (COUNT % 8 != 0)
+    {
+      if ((bits.back() >> (COUNT % 8)) != 0)
+        m_reader.Malformed("it changes a field its record does not have");
+    }
+    const auto differs = [&bits](std::size_t _field) { return ((bits[_field / 8] >> (_field % 8)) & 1u) != 0; };
+    [&]<std::size_t... Indices>(std::index_sequence<Indices...>)
+    { ((differs(Indices) ? GetField(std::get<Indices>(fields)) : void()), ...); }(std::make_index_sequence<COUNT>{});
+  }
+
+private:
+  template <typename T> void GetField(T& _value)
+  {
+    if constexpr (KeyedList<T>)
+      GetList(_value);
+    else
+      m_reader.Get(_value);
+  }
+
+  template <Keyed T> void GetList(std::vector<T>& _list)
+  {
+    bool byElement = false;
+    m_reader.Get(byElement);
+    if (!byElement)
+    {
+      m_reader.Get(_list);
+      return;
+    }
+    if (!Increasing(std::span<const T>(_list)))
+      m_reader.Malformed("it changes by its elements a list that is out of order");
+    using Key = std::remove_cvref_t<decltype(T::id)>;
+    // The element of _list with identifier _id, which the change says _list holds.
+    const auto find = [this, &_list](const Key& _id)
+    {
+      const auto found = std::ranges::lower_bound(_list, _id, {}, &T::id);
+      if (found == _list.end() || found->id != _id)
+        m_reader.Malformed("it changes an element the state does not hold");
+      return found;
+    };
+    std::vector<Key> gone;
+    m_reader.Get(gone);
+    for (const Key& id : gone)
+      _list.erase(find(id));
+    std::uint32_t changed = 0;
+    m_reader.Get(changed);
+    for (std::uint32_t i = 0; i < changed; ++i)
+    {
+      Key id{};
+      m_reader.Get(id);
+      GetRecord(*find(id));
+    }
+    std::uint32_t added = 0;
+    m_reader.Get(added);
+    // Each element takes a byte at least, so a count the bytes cannot back runs out of them before memory runs out.
+    if (added > m_reader.Left())
+      m_reader.Malformed(std::format("it adds {} elements with {} bytes left", added, m_reader.Left()));
+    const std::size_t kept = _list.size();
+    for (std::uint32_t i = 0; i < added; ++i)
+      m_reader.Get(_list.emplace_back());
+    const auto middle = _list.begin() + static_cast<std::ptrdiff_t>(kept);
+    if (!Increasing(std::span<const T>(_list.begin(), middle)) || !Increasing(std::span<const T>(middle, _list.end())))
+      m_reader.Malformed("it leaves a list out of order");
+    std::ranges::inplace_merge(_list, middle, {}, &T::id);
+    if (!Increasing(std::span<const T>(_list)))
+      m_reader.Malformed("it adds an element the state holds already");
+  }
+
+  ByteReader& m_reader;
+};
 } // namespace
 
 std::string WireLayout()
@@ -121,6 +342,30 @@ std::vector<std::byte> EncodeMessage(const StateMessage& _state)
 std::vector<std::byte> EncodeMessage(const EventsMessage& _events)
 {
   return Encode(_events);
+}
+
+std::vector<std::byte> EncodeMessage(const StateChangeMessage& _change)
+{
+  return Encode(_change);
+}
+
+std::vector<std::byte> EncodeMessage(const HeldMessage& _held)
+{
+  return Encode(_held);
+}
+
+std::vector<std::byte> ChangeOf(const Snapshot& _base, const Snapshot& _next)
+{
+  ByteWriter writer;
+  ChangeWriter(writer).PutRecord(_base, _next);
+  return writer.Take();
+}
+
+void PutChange(std::span<const std::byte> _change, Snapshot& _state)
+{
+  ByteReader reader(_change, "A state's change");
+  ChangeReader(reader).GetRecord(_state);
+  reader.Finish();
 }
 
 EventsMessage TakeEvents(Snapshot& _snapshot)

@@ -71,6 +71,12 @@
     <ClInclude Include="WireFormat.h">
       <Filter>Connection</Filter>
     </ClInclude>
+    <ClInclude Include="SentStates.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="HeldStates.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
     <ClInclude Include="WireFields.h">
       <Filter>Connection</Filter>
     </ClInclude>
@@ -93,6 +99,12 @@
       <Filter>Connection</Filter>
     </ClCompile>
     <ClCompile Include="WireFormat.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="SentStates.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="HeldStates.cpp">
       <Filter>Connection</Filter>
     </ClCompile>
   </ItemGroup>
