@@ -9,7 +9,7 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-001 | [A plain Win32 shell, packaged as MSIX](ADR-001-win32-shell.md) | `win32-shell`, `msix-packaging`, `winrt-base-for-com` |
 | ADR-002 | [An authoritative server that clients reach only through commands and snapshots](ADR-002-authoritative-server.md) | `authoritative-server`, `command-and-snapshot-boundary`, `transport-interface`, `project-layers`, `include-path-boundary` |
 | ADR-003 | [Two platforms: x64 and ARM64](ADR-003-x64-and-arm64.md) | `build-platforms`, `instruction-set`, `ci-build-configuration` |
-| ADR-004 | [QUIC through MsQuic is the network transport](ADR-004-quic-transport.md) | `quic-transport`, `msquic-package` |
+| ADR-004 | [QUIC through MsQuic is the network transport](ADR-004-quic-transport.md) | `quic-transport`, `msquic-package`, `connection-figures` |
 | ADR-005 | [PIX event markers in the client, in Debug](ADR-005-pix-markers.md) | `pix-markers`, `pix-event-runtime-package` |
 | ADR-006 | [The renderer's shape: borderless full screen with a windowed toggle, two frames in flight, fatal device loss](ADR-006-renderer-shape.md) | `window-mode`, `swap-chain-presentation`, `frames-in-flight`, `back-buffer-size`, `interface-reference-frame`, `graphics-adapter`, `device-loss`, `failure-report`, `debug-diagnostics` |
 | ADR-007 | [d3dx12.h, vendored in NeuronClient](ADR-007-vendored-d3dx12.md) | `d3dx12-header`, `vendored-source` |

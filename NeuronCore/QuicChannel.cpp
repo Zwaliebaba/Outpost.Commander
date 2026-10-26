@@ -95,12 +95,14 @@ private:
   return configuration;
 }
 
-// A message on its way. MsQuic reads the buffer until it reports the send complete, and the stream's callback deletes it
-// then.
+// A message on its way. MsQuic reads the buffer until it reports the send complete, which with its send buffering off is once
+// the peer has acknowledged it (ADR-004 decision 6), and the stream's callback deletes it then. Until then its bytes count in
+// the channel's backlog.
 struct PendingSend
 {
   std::vector<std::byte> bytes;
   QUIC_BUFFER buffer{};
+  std::atomic<std::uint64_t>* backlog = nullptr;
 };
 } // namespace
 
@@ -120,6 +122,9 @@ struct Neuron::QuicChannel::State
   std::uint32_t messageLimit = MESSAGE_LIMIT_BYTES;
   // Whether the peer has sent a whole message, which the listener's Sweep reads.
   std::atomic<bool> spoke = false;
+  // The bytes handed to MsQuic that it has not reported sent and acknowledged: Send adds them and the stream's callback takes
+  // them away, without the lock, which a callback inside a send would otherwise wait for.
+  std::atomic<std::uint64_t> backlogBytes = 0;
 
   // Guards everything below. Nothing holds it while it calls a Receiver or waits for MsQuic.
   std::mutex mutex;
@@ -334,8 +339,11 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnStream([[maybe_unused]] HQUIC
       }
       break;
     case QUIC_STREAM_EVENT_SEND_COMPLETE:
-      delete static_cast<PendingSend*>(_event->SEND_COMPLETE.ClientContext);
-      break;
+    {
+      const std::unique_ptr<PendingSend> sent(static_cast<PendingSend*>(_event->SEND_COMPLETE.ClientContext));
+      *sent->backlog -= sent->bytes.size();
+    }
+    break;
     case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
     case QUIC_STREAM_EVENT_PEER_SEND_ABORTED:
       state.Fail("The peer closed its stream.");
@@ -369,6 +377,9 @@ std::unique_ptr<Neuron::QuicChannel> Neuron::QuicChannel::Connect(const Desc& _d
   QUIC_SETTINGS settings{};
   settings.HandshakeIdleTimeoutMs = static_cast<std::uint64_t>(_desc.connectTimeout.count());
   settings.IsSet.HandshakeIdleTimeoutMs = TRUE;
+  // A send completes once the peer has acknowledged it, so the backlog counts what has not reached it (ADR-004 decision 6).
+  settings.SendBufferingEnabled = FALSE;
+  settings.IsSet.SendBufferingEnabled = TRUE;
   // The server's certificate is self-signed, so it is pinned rather than validated against a root (ADR-060).
   QUIC_CREDENTIAL_CONFIG credential{};
   credential.Type = QUIC_CREDENTIAL_TYPE_NONE;
@@ -431,14 +442,19 @@ void Neuron::QuicChannel::Send(std::span<const std::byte> _message)
                      .Buffer = reinterpret_cast<std::uint8_t*>(pending->bytes.data())};
 
   State& state = *m_state;
+  pending->backlog = &state.backlogBytes;
   const std::scoped_lock lock(state.mutex);
   if (state.stream == nullptr)
     return;
   // MsQuic holds the send from here until it reports it complete, and the stream's callback deletes it then. A send it
   // refuses is never reported.
   PendingSend* sending = pending.release();
+  state.backlogBytes += sending->bytes.size();
   if (QUIC_FAILED(state.runtime->Api().StreamSend(state.stream, &sending->buffer, 1, QUIC_SEND_FLAG_NONE, sending)))
+  {
+    state.backlogBytes -= sending->bytes.size();
     delete sending;
+  }
 }
 
 std::vector<std::vector<std::byte>> Neuron::QuicChannel::Receive(std::chrono::milliseconds _wait)
@@ -476,6 +492,30 @@ bool Neuron::QuicChannel::HasGone() const
 {
   const std::scoped_lock lock(m_state->mutex);
   return !m_state->failure.empty();
+}
+
+Neuron::QuicStatistics Neuron::QuicChannel::Statistics() const
+{
+  State& state = *m_state;
+  QuicStatistics statistics{.backlogBytes = state.backlogBytes};
+  HQUIC connection = nullptr;
+  {
+    const std::scoped_lock lock(state.mutex);
+    connection = state.connection;
+  }
+  if (connection == nullptr)
+    return statistics;
+  // Asked without the channel's lock, since MsQuic may wait for the connection's thread, whose callbacks take it.
+  QUIC_STATISTICS_V2 quic{};
+  auto bytes = static_cast<std::uint32_t>(sizeof(quic));
+  if (QUIC_FAILED(state.runtime->Api().GetParam(connection, QUIC_PARAM_CONN_STATISTICS_V2, &bytes, &quic)))
+    return statistics;
+  statistics.roundTripMicroseconds = quic.Rtt;
+  statistics.leastRoundTripMicroseconds = quic.MinRtt;
+  statistics.packetsSent = quic.SendTotalPackets;
+  statistics.packetsLost = quic.SendSuspectedLostPackets - std::min(quic.SendSpuriousLostPackets, quic.SendSuspectedLostPackets);
+  statistics.congestionWindowBytes = quic.SendCongestionWindow;
+  return statistics;
 }
 
 void Neuron::QuicChannel::Close() noexcept
@@ -595,6 +635,9 @@ Neuron::QuicListener::QuicListener(const Desc& _desc, Accept _accept)
   // A client opens the connection's one stream, and the server opens none (ADR-060).
   settings.PeerBidiStreamCount = 1;
   settings.IsSet.PeerBidiStreamCount = TRUE;
+  // As the client's: a send completes once the peer has acknowledged it (ADR-004 decision 6).
+  settings.SendBufferingEnabled = FALSE;
+  settings.IsSet.SendBufferingEnabled = TRUE;
   QUIC_CREDENTIAL_CONFIG credential{};
   credential.Type = QUIC_CREDENTIAL_TYPE_CERTIFICATE_CONTEXT;
   credential.Flags = QUIC_CREDENTIAL_FLAG_NONE;

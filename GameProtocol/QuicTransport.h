@@ -28,6 +28,9 @@ public:
   // (DescribeClose), or when the server sends anything but a snapshot.
   [[nodiscard]] std::vector<Snapshot> Receive() override;
 
+  // How the connection to the server does (ADR-004 decision 6).
+  [[nodiscard]] Neuron::QuicStatistics Statistics() const;
+
 private:
   // The channel's messages, or, once the connection has gone, an exception that says why.
   [[nodiscard]] std::vector<std::vector<std::byte>> ReceiveFromChannel(std::chrono::milliseconds _wait = {});

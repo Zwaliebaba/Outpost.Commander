@@ -456,6 +456,14 @@ std::vector<Outpost::TickTiming> Outpost::InProcessServer::TakeTickTimings()
   return std::exchange(m_tickTimings, {});
 }
 
+std::vector<Outpost::SeatFigures> Outpost::InProcessServer::TakeSeatFigures()
+{
+  const std::scoped_lock lock(m_reportMutex);
+  std::vector<SeatFigures> figures(m_seatFigures.begin(), m_seatFigures.end());
+  m_seatFigures.clear();
+  return figures;
+}
+
 void Outpost::InProcessServer::RunTick()
 {
   // What was timed between ticks, such as the graphs a structure's placement made match setup build, is no tick's.
@@ -523,7 +531,10 @@ void Outpost::InProcessServer::RunTick()
       Snapshot snapshot;
       SeatPlay play = SeatPlay::Player;
       std::shared_ptr<Neuron::QuicChannel> quic;
+      std::optional<Neuron::QuicStatistics> figures;
     };
+    // Each seat's connection, every SEAT_FIGURES_SECONDS of ticks (ADR-004 decision 6).
+    const bool sample = m_simulation.CurrentTick() % (std::uint64_t{SEAT_FIGURES_SECONDS} * TicksPerSecond()) == 0;
     std::vector<Prepared> prepared;
     prepared.reserve(m_connections.size());
     for (Connection& connection : m_connections)
@@ -551,6 +562,8 @@ void Outpost::InProcessServer::RunTick()
           m_away.Take(next.snapshot, plays);
           next.play = plays ? SeatPlay::Deputy : SeatPlay::Player;
         }
+        if (sample && next.quic)
+          next.figures = next.quic->Statistics();
       }
       else if (connection.hosted)
         next.play = SeatPlay::Ai;
@@ -560,8 +573,19 @@ void Outpost::InProcessServer::RunTick()
       std::vector<SeatTick> seats;
       seats.reserve(prepared.size());
       for (const Prepared& seat : prepared)
-        seats.push_back({.player = seat.connection->player, .play = seat.play, .snapshot = &seat.snapshot});
+        seats.push_back({.player = seat.connection->player, .play = seat.play, .snapshot = &seat.snapshot, .connection = seat.figures});
       m_log->Record(m_simulation.CurrentTick(), seats);
+    }
+    if (sample)
+    {
+      const std::scoped_lock lock(m_reportMutex);
+      for (const Prepared& seat : prepared)
+      {
+        if (seat.figures.has_value())
+          m_seatFigures.push_back({.tick = m_simulation.CurrentTick(), .player = seat.connection->player, .connection = *seat.figures});
+      }
+      while (m_seatFigures.size() > SEAT_FIGURES_KEPT)
+        m_seatFigures.pop_front();
     }
     for (Prepared& seat : prepared)
     {

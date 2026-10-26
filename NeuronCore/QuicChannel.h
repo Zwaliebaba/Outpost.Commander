@@ -10,6 +10,23 @@ using CertificateHash = std::array<std::uint8_t, 32>;
 // the limit. Codes below it are the caller's.
 inline constexpr std::uint64_t FRAMING_ERROR_CODE = 0x100;
 
+// How one connection does, as MsQuic reports it, and what its channel has handed MsQuic that the peer has not yet
+// acknowledged (ADR-004 decision 6).
+struct QuicStatistics
+{
+  // The smoothed round trip, and the least of it since the connection began.
+  std::uint32_t roundTripMicroseconds = 0;
+  std::uint32_t leastRoundTripMicroseconds = 0;
+  // The QUIC packets sent since the connection began, and those of them that were lost: suspected lost and not found again.
+  std::uint64_t packetsSent = 0;
+  std::uint64_t packetsLost = 0;
+  // How many bytes the connection may have in flight before it waits for acknowledgements.
+  std::uint32_t congestionWindowBytes = 0;
+  // The bytes of messages the channel has handed MsQuic that the peer has not yet acknowledged, those still waiting to be sent
+  // and those on their way.
+  std::uint64_t backlogBytes = 0;
+};
+
 // One QUIC connection that carries messages both ways, reliably and in order, on one bidirectional stream (ADR-004,
 // ADR-060). A message is a byte string, and what it means is the caller's: this knows no game concept (R9). MsQuic runs
 // on threads of its own, so every member may be called from any thread, apart from where it says otherwise.
@@ -74,6 +91,10 @@ public:
   // Whether the connection has gone, whichever end closed it and however: a peer that vanished is gone once MsQuic's idle
   // timeout says so.
   [[nodiscard]] bool HasGone() const;
+
+  // How the connection does now; all but the backlog are zero once the channel is closed. It asks MsQuic, which may wait for
+  // the connection's own thread, so never from a Receiver, and not while another thread closes the channel.
+  [[nodiscard]] QuicStatistics Statistics() const;
 
   // Closes the connection and waits for MsQuic's last callback for it. Never from a Receiver. The destructor closes a
   // channel that is still open.

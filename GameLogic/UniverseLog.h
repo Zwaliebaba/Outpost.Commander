@@ -14,12 +14,14 @@ enum class SeatPlay : std::uint8_t
   Ai
 };
 
-// One seat after a tick: its player, who played it, and the snapshot the server built for it.
+// One seat after a tick: its player, who played it, the snapshot the server built for it, and its connection over QUIC
+// when the server sampled it after this tick (ADR-004 decision 6).
 struct SeatTick
 {
   PlayerId player;
   SeatPlay play = SeatPlay::Player;
   const Snapshot* snapshot = nullptr;
+  std::optional<Neuron::QuicStatistics> connection;
 };
 
 // A universe's log (ADR-082 decision 1): ADR-038's match log for a universe that keeps running, written by its server
@@ -44,6 +46,10 @@ struct SeatTick
 //        present <s> deputy <s>                    every hour of ticks: the seat's bank, income, fleet against its cap,
 //                                                  nodes held and topics researched, and the seconds of the hour its
 //                                                  player and its deputy played it (ADR-082 decision 3)
+//        [rtt_median_us <us> rtt_p95_us <us> sent <n> lost <n> backlog_most <bytes>]
+//                                                  and, when its player's connection was sampled in the hour, its round
+//                                                  trip at the median and the 95th percentile, the packets sent and lost
+//                                                  in the hour, and its largest backlog (ADR-004 decision 6)
 //   battle <start> <end> sector <id> player <p> <play> player <p> <play>
 //                                                  two seats' ships firing at each other in one sector within 10 seconds,
 //                                                  until 30 seconds pass with no such shot there, as the match log's
@@ -74,6 +80,14 @@ private:
     std::optional<std::uint64_t> restartTick;
     std::uint64_t playerTicks = 0;
     std::uint64_t deputyTicks = 0;
+    // The hour's samples of the seat's connection: the round trips, the packets sent and lost, and the largest backlog; and
+    // the counts the last sample read, since each connection counts from its own start.
+    std::vector<std::uint32_t> roundTripsMicroseconds;
+    std::uint64_t packetsSent = 0;
+    std::uint64_t packetsLost = 0;
+    std::uint64_t backlogMostBytes = 0;
+    std::uint64_t lastPacketsSent = 0;
+    std::uint64_t lastPacketsLost = 0;
   };
 
   // A sector's fire: the last tick each seat fired at another there, and the battle under way, if any.
@@ -89,6 +103,8 @@ private:
 
   void Write(const std::string& _line);
   void RecordSeat(std::uint64_t _tick, const SeatTick& _seat);
+  static void RecordConnection(SeatState& _state, const Neuron::QuicStatistics& _connection);
+  [[nodiscard]] static std::string ConnectionWords(SeatState& _state);
   void RecordShots(std::uint64_t _tick, std::span<const SeatTick> _seats);
   void EndBattles(std::uint64_t _tick);
 

@@ -173,8 +173,11 @@ template <typename Fn> auto PrepareAsync(Fn _make)
 struct Match
 {
   std::unique_ptr<Outpost::Server> server;
-  std::unique_ptr<Outpost::Transport> player;
-  std::unique_ptr<Outpost::Transport> rival;
+  // Every match goes over QUIC, a skirmish's on the loopback (ADR-060 decision 1).
+  std::unique_ptr<Outpost::QuicTransport> player;
+  std::unique_ptr<Outpost::QuicTransport> rival;
+  // Wall time since the connections' figures were last logged, with --measure (ADR-004 decision 6).
+  std::chrono::nanoseconds sinceFigures{};
   std::optional<Outpost::AiPlayer> ai;
   // A battle matchup's rival, in place of the AI (ADR-083).
   std::optional<Outpost::MatchupPlayer> battle;
@@ -448,6 +451,27 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           for (const std::chrono::nanoseconds part : tick.parts)
             measurements << ' ' << part.count();
           measurements << '\n';
+        }
+        // Each seat's connection as the server found it, and once a second the game's own connections as they find
+        // theirs (ADR-004 decision 6).
+        const auto figuresWords = [](const Neuron::QuicStatistics& _connection)
+        {
+          return std::format("rtt_us {} least_rtt_us {} sent {} lost {} cwnd {} backlog {}", _connection.roundTripMicroseconds,
+                             _connection.leastRoundTripMicroseconds, _connection.packetsSent, _connection.packetsLost,
+                             _connection.congestionWindowBytes, _connection.backlogBytes);
+        };
+        for (const Outpost::SeatFigures& seat : match->server ? match->server->TakeSeatFigures() : std::vector<Outpost::SeatFigures>())
+        {
+          if (measure)
+            measurements << std::format("seat_net {} player {} {}\n", seat.tick, seat.player.value, figuresWords(seat.connection));
+        }
+        match->sinceFigures += elapsed;
+        if (measure && match->sinceFigures >= std::chrono::seconds{Outpost::SEAT_FIGURES_SECONDS})
+        {
+          match->sinceFigures = {};
+          measurements << std::format("client_net player {} {}\n", HUMAN_PLAYER.value, figuresWords(match->player->Statistics()));
+          if (match->rival)
+            measurements << std::format("client_net player {} {}\n", RIVAL_PLAYER.value, figuresWords(match->rival->Statistics()));
         }
 
         std::vector<Outpost::Snapshot> snapshots;

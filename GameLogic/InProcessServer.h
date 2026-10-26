@@ -67,6 +67,7 @@ public:
   void Step() override;
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept override;
   [[nodiscard]] std::vector<TickTiming> TakeTickTimings() override;
+  [[nodiscard]] std::vector<SeatFigures> TakeSeatFigures() override;
 
   // Steps a server that has not started, for tests: runs the ticks due after _elapsedWallTime more wall time, applying the
   // commands that have arrived and sending each connected player a snapshot per tick. This and the started server's
@@ -193,9 +194,11 @@ private:
   // Times the parts of each tick on the thread that runs them: the simulation tells it where each begins and
   // ends, and the server times its snapshots.
   TickProfiler m_profiler;
-  // Guards the tick timings and the failure, which the started server's thread writes and TakeTickTimings reads.
+  // Guards the tick timings, the seats' figures and the failure, which the started server's thread writes and
+  // TakeTickTimings and TakeSeatFigures read.
   std::mutex m_reportMutex;
   std::vector<TickTiming> m_tickTimings;
+  std::deque<SeatFigures> m_seatFigures;
   std::exception_ptr m_failure;
   // Guards the connections while they can still change: until the server starts, MsQuic's threads seat players as the
   // shell's thread adds them. Each connection's QUIC channel stays guarded after it.
