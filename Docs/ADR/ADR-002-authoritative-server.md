@@ -30,7 +30,7 @@ The game is **server-authoritative**. Its server runs inside the game's process 
     ├── Opponent     (static lib)    ── the AI player, and a seat's deputy (ADR-079). → GameProtocol only
     ├── GameLogic    (static lib)    ── the server: state, rules, LoopbackTransport, its QUIC seats. → NeuronServer, GameProtocol
     ├── GameProtocol (static lib)    ── commands, snapshots, entity IDs, their wire format, QuicTransport, the in-process server's factory. → NeuronCore
-    ├── NeuronClient (static lib)    ── client engine: D3D12, input, audio, PIX markers (ADR-005). → NeuronCore
+    ├── NeuronClient (static lib)    ── client engine: D3D12, input, PIX markers (ADR-005). → NeuronCore
     ├── NeuronServer (static lib)    ── server engine: the tick host and the pinned PRNG (ADR-009). → NeuronCore
     └── NeuronCore   (static lib)    ── engine code shared by client and server, including QUIC (ADR-004)
    OutpostServer (exe, console)     ── the dedicated server: runs a universe from its folder (ADR-078), its AI empires and deputies (ADR-079). → GameLogic, NeuronServer, Opponent
