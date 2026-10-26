@@ -61,7 +61,7 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW3.1 | What does not change crosses once | NW2.2 | M2, M3 | in review, [#132](https://github.com/Zwaliebaba/Outpost.Commander/pull/132) |
 | NW3.2 | A command carries its number | NW3.1 | M7 | in review, [#132](https://github.com/Zwaliebaba/Outpost.Commander/pull/132) |
 | NW4.1 | Events and state cross apart, and the newest state wins | NW3.1 | M4 | in review; its measurement an owner run |
-| NW5.1 | The view's delay follows the link | NW4.1 | M5 | todo |
+| NW5.1 | The view's delay follows the link | NW4.1 | M5 | in review |
 | NW6.1 | An order is marked as it is given | NW3.2 | M6 | todo |
 | NW6.2 | A universe's lost connection is joined again | NW2.2 | M8 | todo |
 | NW6.3 | The tag gives the round trip | NW2.1 | M10 | todo |
@@ -233,6 +233,7 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 - **Scope:** `SnapshotInterpolator` as gate M5 has it: the delay from how late states arrive, between 1 and 4 ticks; the clock from the server's ticks; and still no extrapolation. A ship's banking, which reads the interpolator's motions ([ADR-029](../ADR/ADR-029-ship-banking.md)), and the effects, which play from their ticks, follow the view as they do now.
 - **ADR:** [ADR-013](../ADR/ADR-013-client-view-and-controls.md) decision 3.
 - **Acceptance:** `SnapshotInterpolatorTests`: states that arrive every tick keep the delay at 1 tick and the view where it is now; arrivals with the jitter of each of gate M1's profiles hold the view still in no more 60 Hz frames than gate M1's target allows; a burst after a stall moves the view on smoothly, never more than a tick in a frame; and the delay comes back down within 10 s once the jitter ends.
+- **As built:** "how late" is against the clock the view follows, an offset that the earliest arrival sets and a later one moves by a fifth of its lateness, and the delay is a tick and the 95th percentile of that lateness. Taking the frame's wait out of the lateness kept the loopback at exactly a tick but held the view still in 2% of Wi-Fi's frames against the 1% allowed, so the frame's wait counts; on the modelled links the view stands still in 0.1% of near's frames, 0.5% of Wi-Fi's and 2.4% of the hotspot's. A burst after a stall is played through at up to three times the tick rate, and the history keeps what the view has not yet passed, up to 64 snapshots. Built and run in the container with `SnapshotInterpolatorTests`, `MatchLogTests` and `CombatEffectsTests` on their own; the rest of `GameApp` builds first in CI.
 - **Verify:** the checkers; CI and the container; run over Wi-Fi and a phone's hotspot against the owner's universe; the owner's run.
 
 ---
