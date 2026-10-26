@@ -2033,10 +2033,10 @@ public:
     const float y = card->first.top + (card->first.height / 2.0f);
     Assert::IsFalse(still.ActionAt(x, y).has_value(), L"a click on it does nothing");
     Assert::IsTrue(still.HoverAt(x, y) == large, L"the pointer on it previews the Large hull");
-    const Outpost::Hud::Action small{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{2}};
-    const auto open = std::ranges::find(still.actions, small, [](const auto& _entry) { return _entry.second; });
+    const Outpost::Hud::Action medium{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{2}};
+    const auto open = std::ranges::find(still.actions, medium, [](const auto& _entry) { return _entry.second; });
     Assert::IsTrue(open != still.actions.end());
-    Assert::IsTrue(still.HoverAt(open->first.left + 1.0f, open->first.top + 1.0f) == small, L"an open card is a button still");
+    Assert::IsTrue(still.HoverAt(open->first.left + 1.0f, open->first.top + 1.0f) == medium, L"an open card is a button still");
 
     const Outpost::Hud::Layout hovered = layOut(large);
     const auto inCard = [&](const Outpost::Hud::Layout& _layout)
