@@ -397,22 +397,21 @@ public:
     Assert::IsTrue(server != nullptr, L"the server's end");
 
     std::vector<Message> ordered;
-    server->SendNewest(Bytes("first"));
+    Assert::IsTrue(server->SendNewest(Bytes("first")), L"queued");
     Assert::AreEqual(size_t{1}, ReceiveNewestUntil(*client, Bytes("first"), ordered).size(), L"one alone arrives");
     Assert::AreEqual(std::uint64_t{0}, Settled(*server).backlogBytes, L"and is acknowledged");
 
     // Two too long to cross in the moment are both on their way when a third is sent.
     const Message older(2'000'000, std::byte{1});
     const Message newer(2'000'000, std::byte{2});
-    server->SendNewest(older);
-    server->SendNewest(newer);
-    server->SendNewest(Bytes("dropped"));
+    Assert::IsTrue(server->SendNewest(older) && server->SendNewest(newer), L"both queued");
+    Assert::IsFalse(server->SendNewest(Bytes("dropped")), L"and the third not");
     server->Send(Bytes("beside"));
     std::vector<Message> received = ReceiveNewestUntil(*client, newer, ordered);
     Assert::IsTrue(received.size() == 1 || (received.size() == 2 && received.front() == older), L"each newer than the one before it");
     Assert::AreEqual(std::uint64_t{0}, Settled(*server).backlogBytes, L"nothing sent was abandoned, and all of it arrived");
 
-    server->SendNewest(Bytes("next"));
+    Assert::IsTrue(server->SendNewest(Bytes("next")), L"the next queued once they have arrived");
     for (Message& message : ReceiveNewestUntil(*client, Bytes("next"), ordered))
       received.push_back(std::move(message));
     Assert::IsTrue(std::ranges::find(received, Bytes("dropped")) == received.end(), L"the one sent while two were on their way is dropped");
