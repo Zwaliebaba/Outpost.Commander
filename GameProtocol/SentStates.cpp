@@ -17,8 +17,8 @@ std::vector<std::byte> Outpost::SentStates::Encode(const StateMessage& _state, s
 void Outpost::SentStates::Keep(const Snapshot& _snapshot)
 {
   m_states.push_back(_snapshot);
-  while (m_states.size() > STATES_KEPT)
-    m_states.pop_front();
+  if (m_states.size() > STATES_KEPT)
+    m_states.erase(m_states.begin(), m_states.end() - static_cast<std::ptrdiff_t>(STATES_KEPT));
 }
 
 void Outpost::SentStates::Clear() noexcept

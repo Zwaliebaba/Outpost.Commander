@@ -21,7 +21,7 @@ Outpost::StateMessage Outpost::HeldStates::Take(Message&& _message)
   else
     throw Neuron::Exception("The server sent a message that is not a state where a state goes.");
   m_states.push_back(state.snapshot);
-  while (m_states.size() > STATES_KEPT)
-    m_states.pop_front();
+  if (m_states.size() > STATES_KEPT)
+    m_states.erase(m_states.begin(), m_states.end() - static_cast<std::ptrdiff_t>(STATES_KEPT));
   return state;
 }

@@ -19,6 +19,6 @@ public:
   }
 
 private:
-  std::deque<Snapshot> m_states;
+  std::vector<Snapshot> m_states;
 };
 } // namespace Outpost

@@ -263,7 +263,7 @@ private:
     // The element of _list with identifier _id, which the change says _list holds.
     const auto find = [this, &_list](const Key& _id)
     {
-      const auto found = std::ranges::lower_bound(_list, _id, {}, &T::id);
+      auto found = std::ranges::lower_bound(_list, _id, {}, &T::id);
       if (found == _list.end() || found->id != _id)
         m_reader.Malformed("it changes an element the state does not hold");
       return found;
