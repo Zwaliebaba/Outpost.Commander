@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ImpairedLink.h"
 
-#include <mstcpip.h>
+#include <mswsock.h>
 
 #include <deque>
 
