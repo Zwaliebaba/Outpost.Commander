@@ -998,6 +998,11 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     (void)m_pathfinder.PrepareNext();
   m_plannedThisTick = false;
   ++m_tick;
+  // Each shot and destruction says its tick, which a client plays it from (ADR-096).
+  for (ShotView& shot : m_shots)
+    shot.tick = m_tick;
+  for (DestroyedView& destroyed : m_destroyed)
+    destroyed.tick = m_tick;
   return results;
 }
 

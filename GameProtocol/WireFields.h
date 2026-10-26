@@ -283,16 +283,16 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, ShotView>
 auto Fields(Self& _value)
 {
-  auto& [shooter, target, weapon, from, to, splashRadiusMeters, gun] = _value;
-  return std::tie(shooter, target, weapon, from, to, splashRadiusMeters, gun);
+  auto& [shooter, target, weapon, from, to, splashRadiusMeters, gun, tick] = _value;
+  return std::tie(shooter, target, weapon, from, to, splashRadiusMeters, gun, tick);
 }
 
 template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, DestroyedView>
 auto Fields(Self& _value)
 {
-  auto& [id, kind, structure, owner, hull, position, headingRadians, radiusMeters] = _value;
-  return std::tie(id, kind, structure, owner, hull, position, headingRadians, radiusMeters);
+  auto& [id, kind, structure, owner, hull, position, headingRadians, radiusMeters, tick] = _value;
+  return std::tie(id, kind, structure, owner, hull, position, headingRadians, radiusMeters, tick);
 }
 
 template <typename Self>
@@ -347,6 +347,22 @@ auto Fields(Self& _value)
 {
   auto& [player] = _value;
   return std::tie(player);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, StateMessage>
+auto Fields(Self& _value)
+{
+  auto& [orderedSent, snapshot] = _value;
+  return std::tie(orderedSent, snapshot);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, EventsMessage>
+auto Fields(Self& _value)
+{
+  auto& [tick, shots, destroyed, events, away] = _value;
+  return std::tie(tick, shots, destroyed, events, away);
 }
 
 template <typename Self>

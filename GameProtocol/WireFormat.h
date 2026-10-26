@@ -65,17 +65,38 @@ struct CatalogMessage
   std::vector<EntityView> fields;
 };
 
+// A tick's state: the snapshot without its catalog and its events, which crosses on a stream of its own, abandoned for a newer
+// one the client has not yet got whole (ADR-096). It says how many catalogs and events the seat's connection had been sent
+// when the state was, so that the client puts it together with the catalog it was built against and the events of its tick.
+struct StateMessage
+{
+  std::uint32_t orderedSent = 0;
+  Snapshot snapshot;
+};
+
+// What a tick did that a state alone does not show, which crosses reliably and in order, every tick that has any (ADR-096):
+// the shots fired and the entities destroyed in it, the player's events of it, and its report of a time away.
+struct EventsMessage
+{
+  std::uint64_t tick = 0;
+  std::vector<ShotView> shots;
+  std::vector<DestroyedView> destroyed;
+  std::vector<EventView> events;
+  std::optional<AwayReport> away;
+};
+
 // Everything that crosses a QUIC connection to the server. A client sends a hello and then commands, and the server a
-// welcome and then catalogues and snapshots.
-using Message = std::variant<HelloMessage, WelcomeMessage, Command, Snapshot, CatalogMessage>;
+// welcome and then catalogs, events and states.
+using Message = std::variant<HelloMessage, WelcomeMessage, Command, StateMessage, CatalogMessage, EventsMessage>;
 
 // Each encodes one message as the bytes that cross the connection: which message it is, and then its fields in the order
 // they are declared, little-endian (ADR-060).
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const HelloMessage& _hello);
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const WelcomeMessage& _welcome);
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const Command& _command);
-[[nodiscard]] std::vector<std::byte> EncodeMessage(const Snapshot& _snapshot);
+[[nodiscard]] std::vector<std::byte> EncodeMessage(const StateMessage& _state);
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const CatalogMessage& _catalog);
+[[nodiscard]] std::vector<std::byte> EncodeMessage(const EventsMessage& _events);
 
 // Moves _snapshot's catalogue out of it, leaving its lists empty, its sectors with only what changes in play, and its
 // entities without the asteroid fields: the snapshot as it crosses the wire (ADR-060 decision 9).
@@ -85,6 +106,16 @@ using Message = std::variant<HelloMessage, WelcomeMessage, Command, Snapshot, Ca
 // the fields go among the entities in identifier order, as SnapshotInterpolator pairs them.
 void PutCatalog(const CatalogMessage& _catalog, Snapshot& _snapshot);
 void PutCatalog(CatalogMessage&& _catalog, Snapshot& _snapshot);
+
+// Moves _snapshot's events out of it: what crosses reliably while its state may be abandoned (ADR-096).
+[[nodiscard]] EventsMessage TakeEvents(Snapshot& _snapshot);
+
+// Whether _events holds anything, which an events message that holds nothing need not carry.
+[[nodiscard]] bool HasAny(const EventsMessage& _events) noexcept;
+
+// Adds _events to _snapshot's, after what it holds: a snapshot handed on with the events of every tick since the last
+// (ADR-096).
+void PutEvents(EventsMessage&& _events, Snapshot& _snapshot);
 
 // The message _bytes hold. Throws Neuron::Exception when they are not exactly one message, such as when they end early,
 // run on, or hold a value no field can take.

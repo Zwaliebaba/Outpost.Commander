@@ -156,16 +156,11 @@ void Outpost::MatchLog::RecordStall(const Snapshot& _snapshot)
     ++m_stallTicks;
 }
 
-// A shot is shown to each player who sees its shooter or its target (ADR-024), so a tick's shots arrive in both players'
-// snapshots and are counted once. The side that fired is the shooter's owner, or, where the snapshot does not show the
-// shooter, the side its target is not on: a match has two players.
+// A shot is shown to each player who sees its shooter or its target (ADR-024), so it arrives in both players' snapshots,
+// not always of the same tick, and is counted once, at its own tick. The side that fired is the shooter's owner, or, where
+// the snapshot does not show the shooter, the side its target is not on: a match has two players.
 void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
 {
-  if (_snapshot.tick != m_shotTick)
-  {
-    m_shotTick = _snapshot.tick;
-    m_shotsCounted.clear();
-  }
   const auto ownerOf = [&_snapshot](EntityId _id) -> PlayerId
   {
     if (const auto entity = std::ranges::find(_snapshot.entities, _id, &EntityView::id); entity != _snapshot.entities.end())
@@ -175,14 +170,12 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
   };
   for (const ShotView& shot : _snapshot.shots)
   {
-    const std::pair<EntityId, EntityId> key{shot.shooter, shot.target};
-    if (std::ranges::find(m_shotsCounted, key) != m_shotsCounted.end())
+    if (!m_shotsCounted.insert({shot.tick, shot.shooter, shot.target}).second)
       continue;
-    m_shotsCounted.push_back(key);
     // A repaired warship fights again once it fires, at a player or the pirates.
     if (const auto repaired = m_repaired.find(shot.shooter); repaired != m_repaired.end())
     {
-      *m_out << std::format("again {} player {} ship {}\n", _snapshot.tick, repaired->second.value, shot.shooter.value);
+      *m_out << std::format("again {} player {} ship {}\n", shot.tick, repaired->second.value, shot.shooter.value);
       m_repaired.erase(repaired);
     }
     // A fight with the pirates is recorded once a player and sector, in the sector of the pirates' end of the shot. The
@@ -194,7 +187,7 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
       const PlayerId player = shooterOwner == PIRATES ? targetOwner : shooterOwner;
       const SectorView* sector = FindSector(_snapshot.sectors, shooterOwner == PIRATES ? shot.from : shot.to);
       if ((player.value == 1 || player.value == 2) && sector != nullptr && m_piratesFought.insert({player, sector->id}).second)
-        *m_out << std::format("pirates {} player {} sector {}\n", _snapshot.tick, player.value, sector->id);
+        *m_out << std::format("pirates {} player {} sector {}\n", shot.tick, player.value, sector->id);
       continue;
     }
     PlayerId side = shooterOwner;
@@ -205,7 +198,7 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
         target != _snapshot.entities.end() && target->kind == EntityKind::Structure && target->level > 1 &&
         m_attacked.insert({target->id, target->level}).second)
     {
-      *m_out << std::format("attacked {} player {} structure {} {} level {}\n", _snapshot.tick, target->owner.value, target->id.value,
+      *m_out << std::format("attacked {} player {} structure {} {} level {}\n", shot.tick, target->owner.value, target->id.value,
                             KindWord(target->structure), target->level);
     }
     const SectorView* sector = FindSector(_snapshot.sectors, shot.from);
@@ -213,7 +206,7 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
     if (!m_contact)
     {
       m_contact = true;
-      *m_out << std::format("contact {} sector {}\n", _snapshot.tick, sectorId);
+      *m_out << std::format("contact {} sector {}\n", shot.tick, sectorId);
     }
     if (!side.IsValid())
       continue;
@@ -224,20 +217,29 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
     std::uint64_t lastAny = 0;
     for (const auto& [player, tick] : fire->lastShot)
       lastAny = std::max(lastAny, tick);
-    if (fire->engaged && _snapshot.tick > lastAny + m_gapTicks)
+    if (fire->engaged && shot.tick > lastAny + m_gapTicks)
       fire->engaged = false;
     if (const auto last = std::ranges::find(fire->lastShot, side, &std::pair<PlayerId, std::uint64_t>::first); last != fire->lastShot.end())
-      last->second = _snapshot.tick;
+      last->second = std::max(last->second, shot.tick);
     else
-      fire->lastShot.emplace_back(side, _snapshot.tick);
+      fire->lastShot.emplace_back(side, shot.tick);
     const bool bothSides = fire->lastShot.size() >= 2 && std::ranges::all_of(fire->lastShot, [&](const auto& _last)
-                                                                             { return _snapshot.tick <= _last.second + m_windowTicks; });
+                                                                             { return shot.tick <= _last.second + m_windowTicks; });
     if (bothSides && !fire->engaged)
     {
       fire->engaged = true;
-      *m_out << std::format("engagement {} sector {}\n", _snapshot.tick, sectorId);
+      *m_out << std::format("engagement {} sector {}\n", shot.tick, sectorId);
     }
   }
+
+  // A player has been sent every shot it is shown up to its latest snapshot's tick (ADR-096), so a shot no player can
+  // still be shown is let go.
+  auto shownTo = std::ranges::find(m_shotsShownTo, _snapshot.player, &std::pair<PlayerId, std::uint64_t>::first);
+  if (shownTo == m_shotsShownTo.end())
+    shownTo = m_shotsShownTo.insert(m_shotsShownTo.end(), {_snapshot.player, 0});
+  shownTo->second = std::max(shownTo->second, _snapshot.tick);
+  const std::uint64_t shownToAll = std::ranges::min_element(m_shotsShownTo, {}, &std::pair<PlayerId, std::uint64_t>::second)->second;
+  std::erase_if(m_shotsCounted, [shownToAll](const auto& _shot) { return std::get<0>(_shot) <= shownToAll; });
 }
 
 // A warship's retreat and repair are its owner's to see (ADR-075 decision 8). A retreat that ends with the ship whole is a repair; one

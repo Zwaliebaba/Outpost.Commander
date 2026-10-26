@@ -28,8 +28,9 @@ struct QuicStatistics
 };
 
 // One QUIC connection that carries messages both ways, reliably and in order, on one bidirectional stream (ADR-004,
-// ADR-060). A message is a byte string, and what it means is the caller's: this knows no game concept (R9). MsQuic runs
-// on threads of its own, so every member may be called from any thread, apart from where it says otherwise.
+// ADR-060), and from the server to the client messages of which only the newest matters, each on a unidirectional stream of
+// its own (ADR-096). A message is a byte string, and what it means is the caller's: this knows no game concept (R9). MsQuic
+// runs on threads of its own, so every member may be called from any thread, apart from where it says otherwise.
 //
 // MsQuic is included only from the .cpp (ADR-004), so a channel's state is defined there.
 class QuicChannel : NonCopyable
@@ -40,6 +41,8 @@ public:
   // The longest message a channel takes from its peer unless it is told a shorter one (LimitMessages,
   // QuicListener::Desc). The stress scene's snapshot is far shorter, so a longer length is a broken stream, not a message.
   static constexpr std::uint32_t MESSAGE_LIMIT_BYTES = 64u * 1024u * 1024u;
+  // How many messages of which only the newest matters a client lets its server have on their way at once (SendNewest).
+  static constexpr std::uint16_t NEWEST_STREAMS = 16;
 
   struct Desc
   {
@@ -73,10 +76,23 @@ public:
   // why. Throws Neuron::Exception for a message over the limit.
   void Send(std::span<const std::byte> _message);
 
-  // The messages that arrived since the last call, oldest first. With a wait, it waits up to that long for the first one.
-  // Once the connection has gone, whichever end closed it, it throws Neuron::Exception saying why, after the messages that
-  // arrived before then. A server's end hands its messages to its Receiver instead, so this returns none there.
+  // The messages that arrived since the last call, oldest first. With a wait, it waits up to that long for the first one,
+  // or for one of ReceiveNewest's. Once the connection has gone, whichever end closed it, it throws Neuron::Exception saying
+  // why, after the messages that arrived before then. A server's end hands its messages to its Receiver instead, so this
+  // returns none there.
   [[nodiscard]] std::vector<std::vector<std::byte>> Receive(std::chrono::milliseconds _wait = {});
+
+  // Queues a message of which only the newest matters to the peer, on a unidirectional stream of its own, and returns at once.
+  // Every such message sent before the one before it that the peer has not yet acknowledged whole is abandoned, so that no
+  // more than two are on their way, and the bidirectional stream's messages go first when both have something to send. A message the peer
+  // allows no stream for, NEWEST_STREAMS being on their way, is dropped, as one on a connection that has gone is. Only a
+  // server's end sends them, since only a client lets its peer open such streams. Throws Neuron::Exception for a message
+  // over the limit. Never from a Receiver.
+  void SendNewest(std::span<const std::byte> _message);
+
+  // The messages of which only the newest matters that arrived whole since the last call, oldest first, each newer than the
+  // one before it: one that arrives after a newer one is dropped. A client's end receives them, and a server's none.
+  [[nodiscard]] std::vector<std::vector<std::byte>> ReceiveNewest();
 
   // Starts closing the connection, with an error code the peer sees, and returns at once. A Receiver may call it.
   void Shutdown(std::uint64_t _errorCode) noexcept;

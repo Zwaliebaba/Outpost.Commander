@@ -34,7 +34,7 @@ Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _p
   if (welcome == nullptr || welcome->player != _player)
     throw Neuron::Exception(std::format("The server did not welcome player {} to its seat.", _player.value));
   for (std::size_t i = 1; i < messages.size(); ++i)
-    Take(messages[i], m_early);
+    TakeOrdered(messages[i]);
 }
 
 void Outpost::QuicTransport::Send(Command _command)
@@ -44,27 +44,57 @@ void Outpost::QuicTransport::Send(Command _command)
 
 std::vector<Outpost::Snapshot> Outpost::QuicTransport::Receive()
 {
-  std::vector<Snapshot> snapshots = std::exchange(m_early, {});
   for (const std::vector<std::byte>& message : ReceiveFromChannel())
-    Take(message, snapshots);
+    TakeOrdered(message);
+  std::vector<Snapshot> snapshots;
+  if (m_waiting.has_value() && m_waiting->orderedSent <= m_orderedTaken)
+  {
+    StateMessage waiting = std::move(*m_waiting);
+    m_waiting.reset();
+    TakeState(std::move(waiting), snapshots);
+  }
+  for (const std::vector<std::byte>& message : m_channel->ReceiveNewest())
+  {
+    Message decoded = DecodeMessage(message);
+    auto* state = std::get_if<StateMessage>(&decoded);
+    if (state == nullptr)
+      throw Neuron::Exception("The server sent a message that is not a state where a state goes.");
+    TakeState(std::move(*state), snapshots);
+  }
   return snapshots;
 }
 
-void Outpost::QuicTransport::Take(std::span<const std::byte> _message, std::vector<Snapshot>& _snapshots)
+void Outpost::QuicTransport::TakeOrdered(std::span<const std::byte> _message)
 {
   Message decoded = DecodeMessage(_message);
   if (auto* catalog = std::get_if<CatalogMessage>(&decoded))
-  {
     m_catalog = std::move(*catalog);
+  else if (auto* events = std::get_if<EventsMessage>(&decoded))
+    m_events.push_back(std::move(*events));
+  else
+    throw Neuron::Exception("The server sent a message that is neither a catalogue nor a tick's events.");
+  ++m_orderedTaken;
+}
+
+void Outpost::QuicTransport::TakeState(StateMessage _state, std::vector<Snapshot>& _snapshots)
+{
+  // A state waits for what was sent before it: the catalogue it was built against, and the events of its tick. One built
+  // against an older catalogue than the newest is put together with the newest, which is newer by no more ticks than the
+  // state is late.
+  if (_state.orderedSent > m_orderedTaken)
+  {
+    m_waiting = std::move(_state);
     return;
   }
-  auto* snapshot = std::get_if<Snapshot>(&decoded);
-  if (snapshot == nullptr)
-    throw Neuron::Exception("The server sent a message that is neither a catalogue nor a snapshot.");
   if (!m_catalog.has_value())
-    throw Neuron::Exception("The server sent a snapshot before its catalogue.");
-  PutCatalog(*m_catalog, *snapshot);
-  _snapshots.push_back(std::move(*snapshot));
+    throw Neuron::Exception("The server sent a state before its catalogue.");
+  Snapshot snapshot = std::move(_state.snapshot);
+  PutCatalog(*m_catalog, snapshot);
+  const auto handedOn = std::ranges::find_if(m_events, [&snapshot](const EventsMessage& _events) { return _events.tick > snapshot.tick; });
+  for (auto events = m_events.begin(); events != handedOn; ++events)
+    PutEvents(std::move(*events), snapshot);
+  m_events.erase(m_events.begin(), handedOn);
+  _snapshots.push_back(std::move(snapshot));
 }
 
 Neuron::QuicStatistics Outpost::QuicTransport::Statistics() const

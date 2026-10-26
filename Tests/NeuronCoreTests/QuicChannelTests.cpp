@@ -46,6 +46,23 @@ std::vector<Message> ReceiveMessages(Neuron::QuicChannel& _channel, size_t _coun
   return received;
 }
 
+// The messages of which only the newest matters that _channel hands on, until the last of them is _last; the messages of its
+// connection's stream that come meanwhile go to _ordered.
+std::vector<Message> ReceiveNewestUntil(Neuron::QuicChannel& _channel, const Message& _last, std::vector<Message>& _ordered)
+{
+  std::vector<Message> received;
+  const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
+  while ((received.empty() || received.back() != _last) && std::chrono::steady_clock::now() < deadline)
+  {
+    for (Message& message : _channel.Receive(100ms))
+      _ordered.push_back(std::move(message));
+    for (Message& message : _channel.ReceiveNewest())
+      received.push_back(std::move(message));
+  }
+  Assert::IsTrue(!received.empty() && received.back() == _last, L"the newest arrives");
+  return received;
+}
+
 // _channel's figures once its backlog has come back to nothing, or as they are when it has not within the patience.
 Neuron::QuicStatistics Settled(const Neuron::QuicChannel& _channel)
 {
@@ -353,6 +370,58 @@ public:
     const Neuron::QuicStatistics serverFigures = Settled(*server);
     Assert::AreEqual(std::uint64_t{0}, serverFigures.backlogBytes, L"the client has the server's answer");
     Assert::IsTrue(serverFigures.roundTripMicroseconds > 0 && serverFigures.packetsSent > 100, L"and its own figures");
+  }
+
+  // ADR-096: the server's end sends messages of which only the newest matters, each on a stream of its own beside the
+  // connection's, and the client's end hands on each that arrives whole and newer than the last. Of three sent at once, the
+  // first, too long to cross in the moment, is abandoned unless it has already arrived, the newest two go on, and the
+  // newest is handed on last; what was abandoned waits on the server no more.
+  TEST_METHOD(CarriesTheNewestMessagesApart)
+  {
+    std::mutex mutex;
+    std::shared_ptr<Neuron::QuicChannel> serverEnd;
+    const Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL)},
+                                        [&](const std::shared_ptr<Neuron::QuicChannel>& _accepted) -> Neuron::QuicChannel::Receiver
+                                        {
+                                          const std::scoped_lock lock(mutex);
+                                          serverEnd = _accepted;
+                                          return [](Neuron::QuicChannel& _channel, const Message& _message) { _channel.Send(_message); };
+                                        });
+    const std::unique_ptr<Neuron::QuicChannel> client = ConnectTo(listener);
+    client->Send(Bytes("hello"));
+    (void)ReceiveMessages(*client, 1);
+    std::shared_ptr<Neuron::QuicChannel> server;
+    {
+      const std::scoped_lock lock(mutex);
+      server = serverEnd;
+    }
+    Assert::IsTrue(server != nullptr, L"the server's end");
+
+    std::vector<Message> ordered;
+    server->SendNewest(Bytes("first"));
+    Assert::AreEqual(size_t{1}, ReceiveNewestUntil(*client, Bytes("first"), ordered).size(), L"one alone arrives");
+
+    const Message older(2'000'000, std::byte{1});
+    const Message old(2'000'000, std::byte{2});
+    const Message newest = Bytes("newest");
+    server->SendNewest(older);
+    server->SendNewest(old);
+    server->SendNewest(newest);
+    server->Send(Bytes("beside"));
+    const std::vector<Message> received = ReceiveNewestUntil(*client, newest, ordered);
+    const std::array<const Message*, 3> sent{&older, &old, &newest};
+    std::size_t at = 0;
+    for (const Message& message : received)
+    {
+      while (at < sent.size() && *sent[at] != message)
+        ++at;
+      Assert::IsTrue(at < sent.size(), L"each newer than the one before it");
+      ++at;
+    }
+    if (ordered.empty())
+      ordered = ReceiveMessages(*client, 1);
+    Assert::IsTrue(ordered == std::vector<Message>{Bytes("beside")}, L"the connection's stream carries its own beside them");
+    Assert::AreEqual(std::uint64_t{0}, Settled(*server).backlogBytes, L"nothing waits once the newest is there");
   }
 };
 } // namespace NeuronCoreTests

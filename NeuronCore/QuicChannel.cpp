@@ -108,6 +108,12 @@ struct PendingSend
   QUIC_BUFFER buffer{};
   std::atomic<std::uint64_t>* backlog = nullptr;
 };
+
+// The bidirectional stream's messages go ahead of the newest messages' streams, which keep MsQuic's default (ADR-096).
+constexpr std::uint16_t ORDERED_STREAM_PRIORITY = 0xFFFF;
+// How many newest messages are on their way at most: the newest, and the one before it, which has another message's time to
+// arrive whole. MsQuic sends streams of one priority first come, first served, so the older goes first (ADR-096).
+constexpr std::uint64_t NEWEST_ON_THEIR_WAY = 2;
 } // namespace
 
 struct Neuron::QuicChannel::State
@@ -130,6 +136,22 @@ struct Neuron::QuicChannel::State
   // them away, without the lock, which a callback inside a send would otherwise wait for.
   std::atomic<std::uint64_t> backlogBytes = 0;
 
+  // One unidirectional stream of a message of which only the newest matters (ADR-096): the server's end sends on it, and the
+  // client's end reads it. The stream's callbacks have it as their context.
+  struct NewestStream
+  {
+    State* state = nullptr;
+    HQUIC handle = nullptr;
+    // The server's end: the message's number in the order sent, whether the peer has acknowledged it whole, and whether it
+    // was abandoned for newer ones.
+    std::uint64_t sent = 0;
+    bool acknowledged = false;
+    bool abandoned = false;
+    // The client's end: the stream's id, which orders the messages, and the message's bytes so far.
+    std::uint64_t id = 0;
+    std::vector<std::byte> bytes;
+  };
+
   // Guards everything below. Nothing holds it while it calls a Receiver or waits for MsQuic.
   std::mutex mutex;
   std::condition_variable changed;
@@ -138,6 +160,13 @@ struct Neuron::QuicChannel::State
   HQUIC connection = nullptr;
   HQUIC stream = nullptr;
   std::vector<std::vector<std::byte>> messages;
+  // The newest messages' streams MsQuic has not finished with, each closed by whichever takes it out of here: its own last
+  // callback, or Close. The client's end also keeps the newest messages that have arrived whole, and the id of the newest.
+  std::vector<std::unique_ptr<NewestStream>> newestStreams;
+  std::vector<std::vector<std::byte>> newest;
+  std::optional<std::uint64_t> newestId;
+  // The server's end: how many newest messages it has sent.
+  std::uint64_t newestSent = 0;
   bool connected = false;
   bool closedHere = false;
   // When the handshake completed, whether this end has started closing the connection, and whether MsQuic has finished with
@@ -201,11 +230,37 @@ struct Neuron::QuicChannel::State
     return QUIC_STATUS_BAD_CERTIFICATE;
   }
 
-  // The client opens the connection's one stream, and the server's end adopts it here (ADR-060).
+  // The client opens the connection's one bidirectional stream, and the server's end adopts it here (ADR-060); the server
+  // opens a unidirectional stream for each newest message, and the client's end reads each (ADR-096).
   void AdoptStream(const QUIC_CONNECTION_EVENT& _event)
   {
     const HQUIC peerStream = _event.PEER_STREAM_STARTED.Stream;
+    const QUIC_API_TABLE& api = runtime->Api();
+    const bool unidirectional = (_event.PEER_STREAM_STARTED.Flags & QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL) != 0;
+    // Only the client's end has a pinned certificate, and only it lets its peer open unidirectional streams.
     bool adopted = false;
+    if (unidirectional && pinned.has_value())
+    {
+      // Its events come on this thread, after this returns, so its handler is set before Close can see it. One that starts
+      // once Close has taken the channel's streams is refused, as Close would not close it.
+      auto newestStream = std::make_unique<NewestStream>(NewestStream{.state = this, .handle = peerStream});
+      QUIC_UINT62 id = 0;
+      auto idBytes = static_cast<std::uint32_t>(sizeof(id));
+      if (QUIC_SUCCEEDED(api.GetParam(peerStream, QUIC_PARAM_STREAM_ID, &idBytes, &id)))
+        newestStream->id = id;
+      api.SetCallbackHandler(peerStream, reinterpret_cast<void*>(&OnNewestStream), newestStream.get());
+      {
+        const std::scoped_lock lock(mutex);
+        if (!closedHere)
+        {
+          newestStreams.push_back(std::move(newestStream));
+          adopted = true;
+        }
+      }
+      if (adopted)
+        return;
+    }
+    else if (!unidirectional)
     {
       const std::scoped_lock lock(mutex);
       if (stream == nullptr)
@@ -214,13 +269,16 @@ struct Neuron::QuicChannel::State
         adopted = true;
       }
     }
-    const QUIC_API_TABLE& api = runtime->Api();
     if (adopted)
     {
       api.SetCallbackHandler(peerStream, reinterpret_cast<void*>(&OnStream), this);
+      // What it carries goes ahead of the newest messages (ADR-096).
+      (void)api.SetParam(peerStream, QUIC_PARAM_STREAM_PRIORITY, static_cast<std::uint32_t>(sizeof(ORDERED_STREAM_PRIORITY)),
+                         &ORDERED_STREAM_PRIORITY);
       return;
     }
-    // The listener lets a client open one stream only, so this does not happen; if it did, the stream is refused.
+    // Any other stream is refused: one that starts as the channel closes, or one more than the listener lets a client open,
+    // which does not happen.
     api.SetCallbackHandler(peerStream, reinterpret_cast<void*>(&OnRefusedStream), this);
     (void)api.StreamShutdown(peerStream, QUIC_STREAM_SHUTDOWN_FLAG_ABORT, FRAMING_ERROR_CODE);
   }
@@ -270,8 +328,35 @@ struct Neuron::QuicChannel::State
     changed.notify_all();
   }
 
+  // Takes a newest message's stream out of the channel's, when its last callback comes before Close takes it, so that this
+  // callback closes it.
+  [[nodiscard]] std::unique_ptr<NewestStream> Release(const NewestStream* _stream)
+  {
+    const std::scoped_lock lock(mutex);
+    const auto found = std::ranges::find(newestStreams, _stream, &std::unique_ptr<NewestStream>::get);
+    if (found == newestStreams.end())
+      return nullptr;
+    std::unique_ptr<NewestStream> released = std::move(*found);
+    newestStreams.erase(found);
+    return released;
+  }
+
+  // A newest message has arrived whole: kept if it is newer than any before it.
+  void Arrived(NewestStream& _stream)
+  {
+    {
+      const std::scoped_lock lock(mutex);
+      if (newestId.has_value() && _stream.id <= *newestId)
+        return;
+      newestId = _stream.id;
+      newest.push_back(std::exchange(_stream.bytes, {}));
+    }
+    changed.notify_all();
+  }
+
   static QUIC_STATUS QUIC_API OnConnection(HQUIC _connection, void* _context, QUIC_CONNECTION_EVENT* _event) noexcept;
   static QUIC_STATUS QUIC_API OnStream(HQUIC _stream, void* _context, QUIC_STREAM_EVENT* _event) noexcept;
+  static QUIC_STATUS QUIC_API OnNewestStream(HQUIC _stream, void* _context, QUIC_STREAM_EVENT* _event) noexcept;
   static QUIC_STATUS QUIC_API OnRefusedStream(HQUIC _stream, void* _context, QUIC_STREAM_EVENT* _event) noexcept;
 };
 
@@ -369,6 +454,56 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnStream([[maybe_unused]] HQUIC
   }
 }
 
+QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnNewestStream(HQUIC _stream, void* _context, QUIC_STREAM_EVENT* _event) noexcept
+{
+  auto& newestStream = *static_cast<NewestStream*>(_context);
+  State& state = *newestStream.state;
+  try
+  {
+    switch (_event->Type)
+    {
+    case QUIC_STREAM_EVENT_RECEIVE:
+      for (std::uint32_t i = 0; i < _event->RECEIVE.BufferCount; ++i)
+      {
+        const QUIC_BUFFER& buffer = _event->RECEIVE.Buffers[i];
+        const auto* bytes = reinterpret_cast<const std::byte*>(buffer.Buffer);
+        newestStream.bytes.insert(newestStream.bytes.end(), bytes, bytes + buffer.Length);
+      }
+      if (newestStream.bytes.size() > state.messageLimit)
+        state.Break(std::format("The peer sent a message of more than {} bytes, over the limit.", state.messageLimit));
+      break;
+    case QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
+      // The stream's end is the message's.
+      if (!state.broken)
+        state.Arrived(newestStream);
+      break;
+    case QUIC_STREAM_EVENT_SEND_COMPLETE:
+    {
+      const std::unique_ptr<PendingSend> sent(static_cast<PendingSend*>(_event->SEND_COMPLETE.ClientContext));
+      *sent->backlog -= sent->bytes.size();
+      if (!_event->SEND_COMPLETE.Canceled)
+      {
+        const std::scoped_lock lock(state.mutex);
+        newestStream.acknowledged = true;
+      }
+    }
+    break;
+    case QUIC_STREAM_EVENT_SHUTDOWN_COMPLETE:
+      // Closed here, unless Close has taken it to close it; either way nothing touches the stream after.
+      if (const std::unique_ptr<NewestStream> released = state.Release(&newestStream))
+        state.runtime->Api().StreamClose(_stream);
+      break;
+    default:
+      break;
+    }
+    return QUIC_STATUS_SUCCESS;
+  }
+  catch (...)
+  {
+    return QUIC_STATUS_INTERNAL_ERROR;
+  }
+}
+
 QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnRefusedStream(HQUIC _stream, void* _context, QUIC_STREAM_EVENT* _event) noexcept
 {
   // Nothing is sent on a refused stream, so its only event that matters is the one that lets its handle go. The
@@ -387,6 +522,9 @@ std::unique_ptr<Neuron::QuicChannel> Neuron::QuicChannel::Connect(const Desc& _d
   QUIC_SETTINGS settings{};
   settings.HandshakeIdleTimeoutMs = static_cast<std::uint64_t>(_desc.connectTimeout.count());
   settings.IsSet.HandshakeIdleTimeoutMs = TRUE;
+  // The server opens a unidirectional stream for each newest message (ADR-096).
+  settings.PeerUnidiStreamCount = NEWEST_STREAMS;
+  settings.IsSet.PeerUnidiStreamCount = TRUE;
   // A send completes once the peer has acknowledged it, so the backlog counts what has not reached it (ADR-004 decision 6).
   settings.SendBufferingEnabled = FALSE;
   settings.IsSet.SendBufferingEnabled = TRUE;
@@ -467,12 +605,77 @@ void Neuron::QuicChannel::Send(std::span<const std::byte> _message)
   }
 }
 
+void Neuron::QuicChannel::SendNewest(std::span<const std::byte> _message)
+{
+  if (_message.size() > MESSAGE_LIMIT_BYTES)
+    throw Exception(std::format("A message of {} bytes is over the limit of {}.", _message.size(), MESSAGE_LIMIT_BYTES));
+  // The stream's end marks the message's, so it crosses without a length.
+  auto pending = std::make_unique<PendingSend>();
+  pending->bytes.assign(_message.begin(), _message.end());
+  pending->buffer = {.Length = static_cast<std::uint32_t>(pending->bytes.size()),
+                     .Buffer = reinterpret_cast<std::uint8_t*>(pending->bytes.data())};
+  State& state = *m_state;
+  pending->backlog = &state.backlogBytes;
+  const QUIC_API_TABLE& api = state.runtime->Api();
+
+  // A stream in the list is not closed while the lock is held, since only its own last callback and Close close one, and each
+  // takes it out of the list first. Calls from this thread, which is not MsQuic's, run on MsQuic's own and call back there,
+  // so none waits for a callback while the lock is held, but a close does: a stream that could not start is closed after.
+  auto newestStream = std::make_unique<State::NewestStream>(State::NewestStream{.state = &state});
+  HQUIC unstarted = nullptr;
+  {
+    const std::scoped_lock lock(state.mutex);
+    if (state.connection == nullptr || !state.failure.empty())
+      return;
+    newestStream->sent = ++state.newestSent;
+    for (const std::unique_ptr<State::NewestStream>& older : state.newestStreams)
+    {
+      if (!older->acknowledged && !older->abandoned && older->sent + NEWEST_ON_THEIR_WAY <= newestStream->sent)
+      {
+        older->abandoned = true;
+        (void)api.StreamShutdown(older->handle, QUIC_STREAM_SHUTDOWN_FLAG_ABORT_SEND, 0);
+      }
+    }
+    if (QUIC_FAILED(api.StreamOpen(state.connection, QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL, &State::OnNewestStream, newestStream.get(),
+                                   &newestStream->handle)))
+      return;
+    // A stream the peer allows no more of fails to start, after this returns, and is shut down then, which drops its message;
+    // the next goes as usual.
+    if (QUIC_FAILED(api.StreamStart(newestStream->handle, QUIC_STREAM_START_FLAG_FAIL_BLOCKED | QUIC_STREAM_START_FLAG_SHUTDOWN_ON_FAIL)))
+      unstarted = newestStream->handle;
+    else
+    {
+      PendingSend* sending = pending.release();
+      state.backlogBytes += sending->bytes.size();
+      if (QUIC_FAILED(api.StreamSend(newestStream->handle, &sending->buffer, 1, QUIC_SEND_FLAG_FIN, sending)))
+      {
+        state.backlogBytes -= sending->bytes.size();
+        delete sending;
+        (void)api.StreamShutdown(newestStream->handle, QUIC_STREAM_SHUTDOWN_FLAG_ABORT_SEND, 0);
+      }
+      state.newestStreams.push_back(std::move(newestStream));
+    }
+  }
+  // Not in the list, so its last callback leaves it to this.
+  if (unstarted != nullptr)
+    api.StreamClose(unstarted);
+}
+
+std::vector<std::vector<std::byte>> Neuron::QuicChannel::ReceiveNewest()
+{
+  const std::scoped_lock lock(m_state->mutex);
+  return std::exchange(m_state->newest, {});
+}
+
 std::vector<std::vector<std::byte>> Neuron::QuicChannel::Receive(std::chrono::milliseconds _wait)
 {
   State& state = *m_state;
   std::unique_lock lock(state.mutex);
   if (_wait.count() > 0)
-    state.changed.wait_for(lock, _wait, [&state] { return !state.messages.empty() || !state.failure.empty() || state.closedHere; });
+  {
+    state.changed.wait_for(lock, _wait, [&state]
+                           { return !state.messages.empty() || !state.newest.empty() || !state.failure.empty() || state.closedHere; });
+  }
   if (!state.messages.empty())
     return std::exchange(state.messages, {});
   if (state.closedHere)
@@ -534,18 +737,23 @@ void Neuron::QuicChannel::Close() noexcept
   HQUIC stream = nullptr;
   HQUIC connection = nullptr;
   HQUIC configuration = nullptr;
+  std::vector<std::unique_ptr<State::NewestStream>> newestStreams;
   {
     const std::scoped_lock lock(state.mutex);
     stream = std::exchange(state.stream, nullptr);
     connection = std::exchange(state.connection, nullptr);
     configuration = std::exchange(state.configuration, nullptr);
+    newestStreams = std::exchange(state.newestStreams, {});
     state.closedHere = true;
   }
   state.changed.notify_all();
   if (state.runtime == nullptr)
     return;
   const QUIC_API_TABLE& api = state.runtime->Api();
-  // Each close waits for MsQuic's last callback for its handle, so the lock is not held for them.
+  // Each close waits for MsQuic's last callback for its handle, so the lock is not held for them. A newest message's stream
+  // taken out of the channel's here is closed here, and its own last callback leaves it be.
+  for (const std::unique_ptr<State::NewestStream>& newestStream : newestStreams)
+    api.StreamClose(newestStream->handle);
   if (stream != nullptr)
     api.StreamClose(stream);
   if (connection != nullptr)

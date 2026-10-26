@@ -52,7 +52,8 @@ Outpost::Snapshot FullSnapshot()
                             .from = {.xMeters = 36.0f},
                             .to = {.zMeters = 37.0f},
                             .splashRadiusMeters = 38.0f,
-                            .gun = 2});
+                            .gun = 2,
+                            .tick = 0x1'0000'0118ull});
   snapshot.destroyed.push_back({.id = Outpost::EntityId{39},
                                 .kind = Outpost::EntityKind::Structure,
                                 .structure = Outpost::StructureKind::MiningRig,
@@ -60,7 +61,8 @@ Outpost::Snapshot FullSnapshot()
                                 .hull = Outpost::HullId{40},
                                 .position = {.xMeters = 41.0f, .zMeters = 42.0f},
                                 .headingRadians = 43.0f,
-                                .radiusMeters = 44.0f});
+                                .radiusMeters = 44.0f,
+                                .tick = 0x1'0000'0119ull});
   snapshot.ore = 45;
   snapshot.oreIncomeHundredthsPerSecond = 46;
   snapshot.designs.push_back({.id = Outpost::DesignId{47},
@@ -189,6 +191,12 @@ Outpost::Snapshot FullSnapshot()
   return snapshot;
 }
 
+// A snapshot as the bytes of a state that carries it whole.
+std::vector<std::byte> StateBytes(const Outpost::Snapshot& _snapshot)
+{
+  return Outpost::EncodeMessage(Outpost::StateMessage{.snapshot = _snapshot});
+}
+
 Outpost::Message RoundTrip(const auto& _message)
 {
   const std::vector<std::byte> bytes = Outpost::EncodeMessage(_message);
@@ -260,8 +268,10 @@ public:
 
   TEST_METHOD(CarriesEveryFieldOfASnapshot)
   {
-    const Outpost::Message decoded = RoundTrip(FullSnapshot());
-    const auto& snapshot = std::get<Outpost::Snapshot>(decoded);
+    const Outpost::Message decoded = RoundTrip(Outpost::StateMessage{.orderedSent = 120, .snapshot = FullSnapshot()});
+    Assert::AreEqual(std::uint32_t{120}, std::get<Outpost::StateMessage>(decoded).orderedSent,
+                     L"the catalogues and events sent before it (ADR-096)");
+    const auto& snapshot = std::get<Outpost::StateMessage>(decoded).snapshot;
     const Outpost::Snapshot expected = FullSnapshot();
     Assert::AreEqual(expected.tick, snapshot.tick);
     Assert::IsTrue(expected.entities == snapshot.entities, L"entities, with their queues and research");
@@ -282,6 +292,8 @@ public:
     Assert::AreEqual(2, snapshot.hulls[0].shipyardLevel);
     Assert::AreEqual(4, snapshot.hulls[0].commandPoints);
     Assert::AreEqual(2, static_cast<int>(snapshot.shots[0].gun), L"the gun that fired");
+    Assert::AreEqual(std::uint64_t{0x1'0000'0118ull}, snapshot.shots[0].tick, L"the tick it was fired in (ADR-096)");
+    Assert::AreEqual(std::uint64_t{0x1'0000'0119ull}, snapshot.destroyed[0].tick, L"and the tick of a destruction");
     Assert::AreEqual(std::string("Unlocks the Fusion drive."), snapshot.research[0].effectUtf8);
     Assert::AreEqual(0.75, snapshot.modules[0].speedFactor);
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);
@@ -309,7 +321,7 @@ public:
     built.entities.insert(
       built.entities.begin() + 1,
       {.id = Outpost::EntityId{20}, .kind = Outpost::EntityKind::AsteroidField, .position = {.xMeters = 117.0f}, .radiusMeters = 118.0f});
-    const std::vector<std::byte> whole = Outpost::EncodeMessage(built);
+    const std::vector<std::byte> whole = StateBytes(built);
 
     Outpost::Snapshot wire = built;
     const Outpost::CatalogMessage taken = Outpost::TakeCatalog(wire);
@@ -323,14 +335,40 @@ public:
     Assert::IsTrue(wire.mapSizeMeters == 5000.0f && wire.constructorCost == 55 && wire.startingTickets == 96, L"nor the numbers");
 
     const Outpost::Message catalog = RoundTrip(taken);
-    Outpost::Message snapshot = RoundTrip(wire);
-    Assert::IsTrue(Outpost::EncodeMessage(wire).size() < whole.size(), L"the snapshot on the wire is the shorter");
-    Outpost::Snapshot& restored = std::get<Outpost::Snapshot>(snapshot);
+    Outpost::Message state = RoundTrip(Outpost::StateMessage{.snapshot = wire});
+    Assert::IsTrue(StateBytes(wire).size() < whole.size(), L"the snapshot on the wire is the shorter");
+    Outpost::Snapshot& restored = std::get<Outpost::StateMessage>(state).snapshot;
     Outpost::PutCatalog(std::get<Outpost::CatalogMessage>(catalog), restored);
-    Assert::IsTrue(Outpost::EncodeMessage(restored) == whole, L"put back, it is the snapshot built");
-    Outpost::Snapshot moved = std::get<Outpost::Snapshot>(RoundTrip(wire));
+    Assert::IsTrue(StateBytes(restored) == whole, L"put back, it is the snapshot built");
+    Outpost::Snapshot moved = std::get<Outpost::StateMessage>(RoundTrip(Outpost::StateMessage{.snapshot = wire})).snapshot;
     Outpost::PutCatalog(Outpost::CatalogMessage(taken), moved);
-    Assert::IsTrue(Outpost::EncodeMessage(moved) == whole, L"and a catalogue given up puts back the same");
+    Assert::IsTrue(StateBytes(moved) == whole, L"and a catalogue given up puts back the same");
+  }
+
+  // ADR-096: a tick's events cross apart from its state, and put back they are the snapshot built; a state that takes the
+  // events of more than one tick holds them oldest first.
+  TEST_METHOD(CarriesATicksEventsApartFromItsState)
+  {
+    const Outpost::Snapshot built = FullSnapshot();
+    Outpost::Snapshot wire = built;
+    const Outpost::EventsMessage taken = Outpost::TakeEvents(wire);
+    Assert::AreEqual(built.tick, taken.tick);
+    Assert::IsTrue(wire.shots.empty() && wire.destroyed.empty() && wire.events.empty() && !wire.away.has_value(), L"all of them");
+    Assert::IsTrue(Outpost::HasAny(taken));
+    Assert::IsFalse(Outpost::HasAny(Outpost::TakeEvents(wire)), L"and none are left");
+
+    Outpost::EventsMessage events = std::get<Outpost::EventsMessage>(RoundTrip(taken));
+    Outpost::PutEvents(std::move(events), wire);
+    Assert::IsTrue(StateBytes(wire) == StateBytes(built), L"put back, it is the snapshot built");
+
+    Outpost::Snapshot later{.tick = built.tick + 1};
+    Outpost::PutEvents(Outpost::EventsMessage(taken), later);
+    Outpost::EventsMessage next{.tick = built.tick + 1};
+    next.shots.push_back({.shooter = Outpost::EntityId{121}, .tick = built.tick + 1});
+    Outpost::PutEvents(std::move(next), later);
+    Assert::AreEqual(size_t{2}, later.shots.size());
+    Assert::IsTrue(later.shots[0].tick == built.shots[0].tick && later.shots[1].shooter == Outpost::EntityId{121}, L"oldest first");
+    Assert::IsTrue(later.away == built.away, L"with the report of a time away");
   }
 
   TEST_METHOD(CarriesHelloAndWelcome)
@@ -363,12 +401,13 @@ public:
     Assert::IsFalse(Outpost::PeekHelloLayout(welcome).has_value(), L"not a hello");
   }
 
-  // A snapshot, and a catalogue (ADR-060 decision 9), refused cut short anywhere or run on by a byte.
+  // A state, a catalogue (ADR-060 decision 9) and a tick's events (ADR-096), refused cut short anywhere or run on by a byte.
   TEST_METHOD(RefusesAMessageCutShortOrRunOn)
   {
     Outpost::Snapshot snapshot = FullSnapshot();
     const std::vector<std::byte> catalog = Outpost::EncodeMessage(Outpost::TakeCatalog(snapshot));
-    for (const std::vector<std::byte>& bytes : {Outpost::EncodeMessage(FullSnapshot()), catalog})
+    const std::vector<std::byte> events = Outpost::EncodeMessage(Outpost::TakeEvents(snapshot));
+    for (const std::vector<std::byte>& bytes : {StateBytes(FullSnapshot()), catalog, events})
     {
       for (size_t length = 0; length < bytes.size(); ++length)
       {
@@ -396,7 +435,7 @@ public:
       changed[_offset] = _value;
       Assert::ExpectException<Neuron::Exception>([&changed] { (void)Outpost::DecodeMessage(changed); });
     };
-    refused(0, std::byte{5});    // a sixth kind of message
+    refused(0, std::byte{6});    // a seventh kind of message
     refused(5, std::byte{16});   // a seventeenth order
     refused(6, std::byte{0xFF}); // more constructors than bytes
     refused(10, std::byte{7});   // a structure past the Repair Bay, the last
