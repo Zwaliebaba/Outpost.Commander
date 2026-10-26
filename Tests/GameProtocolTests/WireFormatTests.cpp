@@ -168,8 +168,9 @@ Outpost::Snapshot FullSnapshot()
                                  .outcome = Outpost::OrderOutcome::Refused};
   snapshot.events.push_back(fired);
   snapshot.events.push_back({.kind = Outpost::EventKind::EmpireRestarted, .sector = 115});
-  // The last kind of event, a refusal, with the last reason (ADR-094).
-  snapshot.events.push_back({.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::NotYetSupported});
+  // The last kind of event, a refusal, with the last reason and the number of the command refused (ADR-094).
+  snapshot.events.push_back(
+    {.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::NotYetSupported, .command = 117});
   snapshot.restartTick = 116;
   snapshot.scheduled.push_back({.id = 101,
                                 .ships = {Outpost::EntityId{102}},
@@ -236,10 +237,12 @@ public:
     for (size_t i = 0; i < orders.size(); ++i)
     {
       Assert::AreEqual(i, orders[i].index());
-      const Outpost::Message decoded = RoundTrip(Outpost::Command{.player = Outpost::PlayerId{20}, .order = orders[i]});
+      const Outpost::Message decoded =
+        RoundTrip(Outpost::Command{.player = Outpost::PlayerId{20}, .order = orders[i], .number = 30 + static_cast<std::uint32_t>(i)});
       const auto& command = std::get<Outpost::Command>(decoded);
       Assert::AreEqual(std::uint32_t{20}, command.player.value);
       Assert::AreEqual(i, command.order.index());
+      Assert::AreEqual(30 + static_cast<std::uint32_t>(i), command.number, L"the client's number for it (ADR-094)");
     }
 
     const Outpost::Message scheduledMessage = RoundTrip(Outpost::Command{.order = orders[14]});
@@ -287,8 +290,8 @@ public:
     Assert::IsTrue(snapshot.events.size() == 3 && snapshot.events[1].kind == Outpost::EventKind::EmpireRestarted,
                    L"a universe's restarted seat");
     Assert::IsTrue(snapshot.events[2].kind == Outpost::EventKind::CommandRefused &&
-                     snapshot.events[2].refusal == Outpost::CommandResult::NotYetSupported,
-                   L"the last kind of event, with the last reason");
+                     snapshot.events[2].refusal == Outpost::CommandResult::NotYetSupported && snapshot.events[2].command == 117,
+                   L"the last kind of event, with the last reason and the command's number");
     Assert::AreEqual(std::uint64_t{116}, snapshot.restartTick.value_or(0), L"when a universe's lost seat restarts");
     Assert::AreEqual(55.5, snapshot.constructorBuildSeconds, L"the Constructor's build time (ADR-068)");
     Assert::IsTrue(snapshot.entities[1].kind == Outpost::EntityKind::Derelict, L"the last kind of entity (ADR-074)");
@@ -296,6 +299,38 @@ public:
     Assert::IsTrue(snapshot.research[0].recovered);
     Assert::IsTrue(snapshot.entities[0].retreat == Outpost::RetreatThreshold::Half && snapshot.entities[0].retreating, L"ADR-075");
     Assert::IsTrue(snapshot.designs[0].retreat == Outpost::RetreatThreshold::Never);
+  }
+
+  // ADR-060 decision 9: a snapshot crosses without its catalogue, which crosses on its own, and the two put together are the
+  // snapshot sent: its lists, its sectors' names and borders, and the asteroid fields among its entities in identifier order.
+  TEST_METHOD(CarriesASnapshotApartFromItsCatalog)
+  {
+    Outpost::Snapshot built = FullSnapshot();
+    built.entities.insert(
+      built.entities.begin() + 1,
+      {.id = Outpost::EntityId{20}, .kind = Outpost::EntityKind::AsteroidField, .position = {.xMeters = 117.0f}, .radiusMeters = 118.0f});
+    const std::vector<std::byte> whole = Outpost::EncodeMessage(built);
+
+    Outpost::Snapshot wire = built;
+    const Outpost::CatalogMessage taken = Outpost::TakeCatalog(wire);
+    Assert::AreEqual(size_t{2}, wire.entities.size(), L"the field crosses in the catalogue");
+    Assert::IsTrue(wire.hulls.empty() && wire.research.empty() && wire.designs.empty() && wire.structureTypes.empty(), L"and the lists");
+    Assert::IsTrue(wire.sectors.size() == 1 && wire.sectors[0].nameUtf8.empty() && wire.sectors[0].adjacent.empty(),
+                   L"and what a sector is");
+    Assert::IsTrue(wire.sectors[0].holder == Outpost::PlayerId{2} && wire.sectors[0].suppressed && wire.sectors[0].cutOff &&
+                     wire.sectors[0].guarded,
+                   L"but not who holds it and how");
+    Assert::IsTrue(wire.mapSizeMeters == 5000.0f && wire.constructorCost == 55 && wire.startingTickets == 96, L"nor the numbers");
+
+    const Outpost::Message catalog = RoundTrip(taken);
+    Outpost::Message snapshot = RoundTrip(wire);
+    Assert::IsTrue(Outpost::EncodeMessage(wire).size() < whole.size(), L"the snapshot on the wire is the shorter");
+    Outpost::Snapshot& restored = std::get<Outpost::Snapshot>(snapshot);
+    Outpost::PutCatalog(std::get<Outpost::CatalogMessage>(catalog), restored);
+    Assert::IsTrue(Outpost::EncodeMessage(restored) == whole, L"put back, it is the snapshot built");
+    Outpost::Snapshot moved = std::get<Outpost::Snapshot>(RoundTrip(wire));
+    Outpost::PutCatalog(Outpost::CatalogMessage(taken), moved);
+    Assert::IsTrue(Outpost::EncodeMessage(moved) == whole, L"and a catalogue given up puts back the same");
   }
 
   TEST_METHOD(CarriesHelloAndWelcome)
@@ -328,26 +363,31 @@ public:
     Assert::IsFalse(Outpost::PeekHelloLayout(welcome).has_value(), L"not a hello");
   }
 
+  // A snapshot, and a catalogue (ADR-060 decision 9), refused cut short anywhere or run on by a byte.
   TEST_METHOD(RefusesAMessageCutShortOrRunOn)
   {
-    const std::vector<std::byte> bytes = Outpost::EncodeMessage(FullSnapshot());
-    for (size_t length = 0; length < bytes.size(); ++length)
+    Outpost::Snapshot snapshot = FullSnapshot();
+    const std::vector<std::byte> catalog = Outpost::EncodeMessage(Outpost::TakeCatalog(snapshot));
+    for (const std::vector<std::byte>& bytes : {Outpost::EncodeMessage(FullSnapshot()), catalog})
     {
-      const std::span<const std::byte> cut(bytes.data(), length);
-      Assert::ExpectException<Neuron::Exception>([cut] { (void)Outpost::DecodeMessage(cut); });
+      for (size_t length = 0; length < bytes.size(); ++length)
+      {
+        const std::span<const std::byte> cut(bytes.data(), length);
+        Assert::ExpectException<Neuron::Exception>([cut] { (void)Outpost::DecodeMessage(cut); });
+      }
+      std::vector<std::byte> runOn = bytes;
+      runOn.push_back(std::byte{0});
+      Assert::ExpectException<Neuron::Exception>([&runOn] { (void)Outpost::DecodeMessage(runOn); });
     }
-    std::vector<std::byte> runOn = bytes;
-    runOn.push_back(std::byte{0});
-    Assert::ExpectException<Neuron::Exception>([&runOn] { (void)Outpost::DecodeMessage(runOn); });
   }
 
   TEST_METHOD(RefusesValuesNoFieldCanTake)
   {
     // A build order to no constructors, byte by byte: the message's kind, the player, the order's alternative, the count
-    // of constructors, the structure, and the position.
+    // of constructors, the structure, the position, and the command's number.
     const std::vector<std::byte> build = Outpost::EncodeMessage(
       Outpost::Command{.order = Outpost::BuildStructureCommand{.structure = Outpost::StructureKind::Relay, .position = {.xMeters = 1.0f}}});
-    Assert::AreEqual(size_t{1 + 4 + 1 + 4 + 1 + 8}, build.size());
+    Assert::AreEqual(size_t{1 + 4 + 1 + 4 + 1 + 8 + 4}, build.size());
     Assert::IsTrue(build[10] == std::byte{5}, L"the Relay");
 
     const auto refused = [&build](size_t _offset, std::byte _value)
@@ -356,7 +396,7 @@ public:
       changed[_offset] = _value;
       Assert::ExpectException<Neuron::Exception>([&changed] { (void)Outpost::DecodeMessage(changed); });
     };
-    refused(0, std::byte{4});    // a fifth kind of message
+    refused(0, std::byte{5});    // a sixth kind of message
     refused(5, std::byte{16});   // a seventeenth order
     refused(6, std::byte{0xFF}); // more constructors than bytes
     refused(10, std::byte{7});   // a structure past the Repair Bay, the last

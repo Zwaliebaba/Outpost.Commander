@@ -64,7 +64,7 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-057 | [Domination: tickets drain by the nodes behind, whatever the map, and a match records how it ended](ADR-057-domination.md) | `domination`, `tickets-drain`, `match-ending-kind`, `territory-panel` |
 | ADR-058 | [A design has an optional module, and the Sensor Array sets how far its ship sees](ADR-058-modules.md) | `ship-modules`, `sensor-array`, `module-sight` |
 | ADR-059 | [Alerts, and two standing orders the server keeps: hold a sector, and patrol](ADR-059-alerts-and-standing-orders.md) | `alerts`, `standing-orders`, `hold-sector-order`, `patrol-order` |
-| ADR-060 | [The match's players reach the in-process server over QUIC](ADR-060-quic-in-process.md) | `in-process-quic`, `wire-format`, `message-framing`, `seat-hello`, `certificate-pinning`, `protocol-version` |
+| ADR-060 | [The match's players reach the in-process server over QUIC](ADR-060-quic-in-process.md) | `in-process-quic`, `wire-format`, `message-framing`, `seat-hello`, `certificate-pinning`, `protocol-version`, `catalog-once` |
 | ADR-061 | [The HUD measures its text with the fonts it draws it in](ADR-061-measured-text.md) | `measured-text`, `text-fitting`, `text-layout-tests` |
 | ADR-062 | [The HUD's type scale, the contrast of its text, and the room they take](ADR-062-type-scale-and-contrast.md) | `hud-type-scale`, `text-contrast-floor`, `designer-window-width`, `side-by-side-window-widths` |
 | ADR-063 | [Self-play searches the AI's numbers as a probe of the rules, and --ai-matches plays any two settings](ADR-063-self-play-probe.md) | `ai-matches-options`, `quiet-failure-reporting`, `self-play-search`, `self-play-scoring`, `self-play-report` |

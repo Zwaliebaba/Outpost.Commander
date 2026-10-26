@@ -12,6 +12,7 @@ Every connection already gets its player's events in the snapshot of their tick 
 ## Decision
 
 1. **A refusal is an event.** When `Simulation::Tick` refuses a command, it raises `EventKind::CommandRefused` for the command's player, with the reason in `EventView::refusal`, in the order the commands were given. So it reaches that player's snapshot of the tick, and only that player's: the client that sent the command, and no other. A command that is applied raises nothing. No second message is added to the protocol, and `PROTOCOL_VERSION` stays 1 (AGENTS.md R18).
+   - **A refusal names the command it refuses** (owner, 2026-10-26), by the number its client gave it (`Command::number`, in `EventView::command`), so that the client can tell which of its orders was refused. The client's controls number each order as they give it, from 1 (`PlayerControls::Give`); a command no client numbered, such as a hosted player's, carries none. The server trusts the number for nothing else (ADR-002 decision 2): two commands may carry one number, and the refusal names whichever was refused.
 2. **`CommandResult` is the protocol's.** It moves from `GameLogic/Simulation.h` to `GameProtocol/CommandResult.h`, unchanged, so that a client can read a refusal. It crosses the wire as its byte, and a value past its last is refused as any enumeration's is ([ADR-060](ADR-060-quic-in-process.md) decision 4).
 3. **A refusal has no place.** It names no sector and no position. The server does not give it the sector its zero position lies in, as it does another event without one.
 4. **The client says it in words, as an alert** ([ADR-059](ADR-059-alerts-and-standing-orders.md) decision 1). `DescribeRefusal` gives each reason the player's words: "Not enough Ore", "Not in a held sector", "At the node cap: upgrade the Command Station". A reason it has no words for cannot be added without them, since `AlertsTests` asks words of every reason.
@@ -22,10 +23,11 @@ Every connection already gets its player's events in the snapshot of their tick 
 
 ## Consequences
 
-- **The layout of what a universe saves changes,** since a report of a time away keeps whole events (`AwayReport::ordersFired`), so `UNIVERSE_STATE_VERSION` 1's hash is replaced (AGENTS.md R18).
+- **The layout of what a universe saves changes,** since a report of a time away keeps whole events (`AwayReport::ordersFired`), so `UNIVERSE_STATE_VERSION` 1's hash is replaced (AGENTS.md R18). A command's number changes the wire's layout too, and with it the command log's records, which are the wire's ([ADR-077](ADR-077-universe-state-on-disk.md) decision 7), so a universe of the build before is refused, as R18 has it until the game is live.
 - **Tests:**
-  - `WireFormatTests.CarriesEveryFieldOfASnapshot` carries a refusal with the last reason.
-  - `InProcessServerTests.TellsARefusalToItsPlayerAlone`: two refusals reach the connection that sent them, in order, in the snapshot of their tick, and the other player's connection hears of none; a scheduled order with a trigger in no sector is one of them.
+  - `WireFormatTests.CarriesEveryFieldOfASnapshot` carries a refusal with the last reason and its command's number, and `CarriesEveryOrder` every order with its number.
+  - `InProcessServerTests.TellsARefusalToItsPlayerAlone`: two refusals reach the connection that sent them, in order, each naming its command's number, in the snapshot of their tick, and the other player's connection hears of none; a scheduled order with a trigger in no sector is one of them.
+  - `PlayerControlsTests.RightClickMovesOrAttacks`: the controls number a move 1 and the attack after it 2.
   - `AlertsTests.TellsARefusalInWords` and `SaysEveryRefusalInWords`: the words, no place, the key going past a refusal, a refusal told again in its older one's place, and words of their own for every reason.
   - `HudTests.ListsTheAlerts`: an alert with no place has no mark.
 

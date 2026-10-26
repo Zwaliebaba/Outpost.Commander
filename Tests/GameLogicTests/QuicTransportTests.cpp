@@ -13,6 +13,8 @@ constexpr Outpost::PlayerId BLUE{1};
 constexpr Outpost::PlayerId RED{2};
 constexpr Outpost::DesignId SWARM{1};
 constexpr Outpost::ShipMovement SMALL_ION{.speedMetersPerSecond = 78.0f, .turnRateRadiansPerSecond = 3.927f, .radiusMeters = 8.0f};
+// A tier 1 topic of a minute, which changes the hulls when it is done.
+constexpr Outpost::ResearchTopicId HULL_PLATING{2};
 
 std::unique_ptr<Outpost::InProcessServer> QuicServer(const Outpost::ServerDesc& _desc = {.seed = 5, .quic = true})
 {
@@ -521,6 +523,53 @@ public:
     Assert::IsTrue(figures.back().connection.packetsSent > figures.front().connection.packetsSent, L"the packets sent count up");
     Assert::AreEqual(std::uint64_t{0}, figures.back().connection.backlogBytes, L"and nothing waits once the client has every snapshot");
     Assert::IsTrue(server->TakeSeatFigures().empty(), L"each sample is taken once");
+  }
+
+  // ADR-060 decision 9: the snapshots a seat's client hands on are the ones the server built, tick by tick, for two minutes
+  // in which the player's research finishes and changes the catalogue; and a seat taken again is sent its catalogue before
+  // its first snapshot.
+  TEST_METHOD(HandsOnTheSnapshotsTheServerBuilt)
+  {
+    auto server = QuicServer();
+    Outpost::Simulation& simulation = server->SimulationState();
+    simulation.PlaceStartingBases(server->MapData());
+    const Outpost::StructureTuning& labTuning =
+      *std::ranges::find(server->TuningData().structures, Outpost::StructureKind::ResearchLab, &Outpost::StructureTuning::kind);
+    const Outpost::PlanePosition start = server->MapData().starts.front();
+    const Outpost::EntityId lab =
+      simulation.SpawnStructure(BLUE, Outpost::StructureKind::ResearchLab, {.xMeters = start.xMeters + 250.0f, .zMeters = start.zMeters},
+                                static_cast<float>(labTuning.footprintRadiusMeters), simulation.StructureHitPoints(BLUE, labTuning, 1));
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    Outpost::QuicTransport blue(seat, BLUE);
+    const std::unique_ptr<Outpost::Transport> red = server->Connect(RED);
+    blue.Send({.order = Outpost::StartResearchCommand{.lab = lab, .topic = HULL_PLATING}});
+
+    // A hundred ticks at a time, each tick's snapshot as the server built it kept until the client has handed its hundred on.
+    constexpr std::uint32_t BATCH_TICKS = 100;
+    const std::uint32_t ticks = 120 * server->TicksPerSecond();
+    for (std::uint32_t batch = 0; batch < ticks / BATCH_TICKS; ++batch)
+    {
+      std::vector<std::vector<std::byte>> built;
+      for (std::uint32_t tick = 0; tick < BATCH_TICKS; ++tick)
+      {
+        server->Step();
+        built.push_back(Outpost::EncodeMessage(simulation.BuildSnapshot(BLUE)));
+        (void)red->Receive();
+      }
+      const std::vector<Outpost::Snapshot> received = SnapshotsOf(blue, BATCH_TICKS);
+      Assert::AreEqual(built.size(), received.size(), L"a snapshot a tick");
+      for (std::size_t i = 0; i < built.size(); ++i)
+        Assert::IsTrue(Outpost::EncodeMessage(received[i]) == built[i], Wide(std::format("tick {}", received[i].tick)).c_str());
+    }
+    const Outpost::Snapshot last = simulation.BuildSnapshot(BLUE);
+    const auto plating = std::ranges::find(last.research, HULL_PLATING, &Outpost::ResearchTopicView::id);
+    Assert::IsTrue(plating != last.research.end() && plating->researched, L"the research finished in the two minutes");
+
+    Outpost::QuicTransport again(seat, BLUE);
+    server->Step();
+    const std::vector<Outpost::Snapshot> first = SnapshotsOf(again, 1);
+    Assert::IsTrue(!first.empty() && Outpost::EncodeMessage(first.front()) == Outpost::EncodeMessage(simulation.BuildSnapshot(BLUE)),
+                   L"the seat taken again is sent its catalogue before its first snapshot");
   }
 };
 } // namespace GameLogicTests

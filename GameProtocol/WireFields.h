@@ -169,8 +169,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Command>
 auto Fields(Self& _value)
 {
-  auto& [player, order] = _value;
-  return std::tie(player, order);
+  auto& [player, order, number] = _value;
+  return std::tie(player, order, number);
 }
 
 template <typename Self>
@@ -299,8 +299,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, EventView>
 auto Fields(Self& _value)
 {
-  auto& [kind, sector, position, subject, structure, other, order, action, outcome, refusal] = _value;
-  return std::tie(kind, sector, position, subject, structure, other, order, action, outcome, refusal);
+  auto& [kind, sector, position, subject, structure, other, order, action, outcome, refusal, command] = _value;
+  return std::tie(kind, sector, position, subject, structure, other, order, action, outcome, refusal, command);
 }
 
 template <typename Self>
@@ -347,6 +347,14 @@ auto Fields(Self& _value)
 {
   auto& [player] = _value;
   return std::tie(player);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, CatalogMessage>
+auto Fields(Self& _value)
+{
+  auto& [designs, structureTypes, hulls, drives, weapons, modules, research, sectors, fields] = _value;
+  return std::tie(designs, structureTypes, hulls, drives, weapons, modules, research, sectors, fields);
 }
 
 // Each enumeration's last enumerator: a value past it is not one the enumeration has. An enumerator added after it has to

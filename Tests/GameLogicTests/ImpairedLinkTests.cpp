@@ -194,8 +194,14 @@ public:
     {
       const Clock::time_point arrived = Clock::now();
       Outpost::Message decoded = Outpost::DecodeMessage(message);
+      // The catalogue holds no ship, so the states alone are what the load and the probe read (ADR-060 decision 9).
+      if (std::holds_alternative<Outpost::CatalogMessage>(decoded))
+      {
+        catalogBytes += message.size();
+        continue;
+      }
       auto* snapshot = std::get_if<Outpost::Snapshot>(&decoded);
-      Assert::IsNotNull(snapshot, L"only snapshots after the welcome");
+      Assert::IsNotNull(snapshot, L"only catalogues and snapshots after the welcome");
       arrivals.emplace_back(snapshot->tick, arrived);
       stateBytes += message.size();
       newestTick = std::max(newestTick, snapshot->tick);
@@ -217,6 +223,7 @@ public:
 
   std::vector<std::pair<std::uint64_t, Clock::time_point>> arrivals;
   std::uint64_t stateBytes = 0;
+  std::uint64_t catalogBytes = 0;
   std::uint64_t newestTick = 0;
   std::vector<double> responsesMilliseconds;
 
@@ -364,13 +371,14 @@ std::string Measure(const Outpost::Tuning& _tuning, const Outpost::Map& _map, co
   const double meanStateBytes =
     blue.arrivals.empty() ? 0.0 : static_cast<double>(blue.stateBytes) / static_cast<double>(blue.arrivals.size());
   const ImpairedLink::Counts down = blueLink.ToClient();
-  return std::format("{}: {} states of {:.0f} bytes on average; late by {:.1f} ms at the median, {:.1f} at the 95th percentile and {:.1f} "
+  return std::format("{}: {} states of {:.0f} bytes on average, and {} bytes of catalogue; late by {:.1f} ms at the median, {:.1f} at the "
+                     "95th percentile and {:.1f} "
                      "at the 99th; the longest gap {:.1f} ms; more than two ticks behind the server in {:.2f}% of {} samples; the "
                      "largest backlog {} bytes, {:.1f} states; a round trip of {:.1f} ms at the median; an order's response {:.1f} ms "
                      "at the median and {:.1f} at the 95th percentile, over {} orders; to the client, {} datagrams carried, {} lost "
                      "and {} dropped",
-                     _profile.name, blue.arrivals.size(), meanStateBytes, Percentile(lateness, 50), Percentile(lateness, 95),
-                     Percentile(lateness, 99), longestGap,
+                     _profile.name, blue.arrivals.size(), meanStateBytes, blue.catalogBytes, Percentile(lateness, 50),
+                     Percentile(lateness, 95), Percentile(lateness, 99), longestGap,
                      samples == 0 ? 0.0 : 100.0 * static_cast<double>(behind) / static_cast<double>(samples), samples, backlogMostBytes,
                      meanStateBytes == 0.0 ? 0.0 : static_cast<double>(backlogMostBytes) / meanStateBytes,
                      Percentile(roundTripsMilliseconds, 50), Percentile(blue.responsesMilliseconds, 50),

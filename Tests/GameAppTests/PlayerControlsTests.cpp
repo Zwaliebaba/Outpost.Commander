@@ -284,10 +284,14 @@ public:
     Assert::IsTrue(move->destination.zMeters > 0.0f);
 
     driver.Click(driver.Entities()[4], VK_RBUTTON);
+    const std::uint32_t moveNumber = commands[0].number;
     commands = driver.Controls().TakeCommands();
     const auto* attack = std::get_if<Outpost::AttackCommand>(&commands.at(0).order);
     Assert::IsNotNull(attack);
     Assert::IsTrue(attack->target == Outpost::EntityId{5});
+    // Each order is numbered as it is given, from 1, for a refusal to name it (ADR-094 decision 1).
+    Assert::AreEqual(std::uint32_t{1}, moveNumber);
+    Assert::AreEqual(std::uint32_t{2}, commands[0].number);
   }
 
   TEST_METHOD(AThenClickAttackMovesAndSStops)

@@ -157,6 +157,10 @@ private:
     // connection takes it, and counts how often it has.
     std::shared_ptr<Neuron::QuicChannel> quic;
     std::uint32_t takings = 0;
+    // The catalogue the seat was last sent, encoded, and at which of its takings: touched by the thread that steps the server
+    // only. A seat taken again is sent its catalogue before its first snapshot (ADR-060 decision 9).
+    std::vector<std::byte> catalogSent;
+    std::optional<std::uint32_t> catalogTaking;
     // The player the server plays itself, if any (ADR-079): without a seat, the player; with one, the seat's deputy, which
     // plays it as control says. Touched by the thread that steps the server only, once it is set before the start.
     std::unique_ptr<HostedPlayer> hosted;
@@ -170,9 +174,10 @@ private:
   // and every message after it a command (ADR-060). Called on MsQuic's thread.
   [[nodiscard]] Neuron::QuicChannel::Receiver Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel);
 
-  // Gives _player's seat to _channel, which showed _token, and returns where the seat's commands go; none when there is
-  // no such seat, the token is not the seat's, or a match has started. A connection that held the seat is closed with
-  // CloseReason::SeatTaken: the player's newest connection holds it (ADR-078). Called on MsQuic's thread.
+  // Gives _player's seat to _channel, which showed _token, after sending it its welcome, and returns where the seat's
+  // commands go; none when there is no such seat, the token is not the seat's, or a match has started. A connection that held
+  // the seat is closed with CloseReason::SeatTaken: the player's newest connection holds it (ADR-078). Called on MsQuic's
+  // thread.
   [[nodiscard]] std::shared_ptr<LoopbackChannel> TakeSeat(PlayerId _player, const SeatToken& _token,
                                                           std::shared_ptr<Neuron::QuicChannel> _channel);
 

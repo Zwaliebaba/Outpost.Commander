@@ -434,8 +434,9 @@ struct EventView
   std::uint32_t order = 0;
   ScheduledActionKind action = ScheduledActionKind::Move;
   OrderOutcome outcome = OrderOutcome::AsGiven;
-  // A command refused: why.
+  // A command refused: why, and the number its client gave it (ADR-094 decision 1).
   CommandResult refusal = CommandResult::Applied;
+  std::uint32_t command = 0;
 
   friend bool operator==(const EventView&, const EventView&) = default;
 };

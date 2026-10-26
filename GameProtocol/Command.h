@@ -213,10 +213,13 @@ using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCo
                            UpgradeStructureCommand, SalvageCommand, SetRetreatCommand, ScheduleOrderCommand, CancelScheduledOrderCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
-// arrived on; what a client puts there is never trusted (ADR-002).
+// arrived on; what a client puts there is never trusted (ADR-002). The number is the client's for it, from 1, and none for
+// a command no client numbered: a refusal of the command names it, and the server trusts it for nothing else
+// (ADR-094 decision 1).
 struct Command
 {
   PlayerId player;
   Order order;
+  std::uint32_t number = 0;
 };
 } // namespace Outpost
