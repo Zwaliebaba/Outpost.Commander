@@ -230,22 +230,33 @@ public:
                      FailureOf(*early, after), L"a first message over the listener's limit");
   }
 
-  // ADR-060 decision 7: a sweep lets go of the channels whose connections have gone and that nothing else holds, shuts down
-  // the ones that have said nothing for the time it is given, and keeps the rest.
+  // ADR-060 decision 7: a sweep lets go of the channels whose connections MsQuic has finished with and that nothing else
+  // holds, shuts down the ones that have said nothing for the time it is given, and keeps the rest. The connection that goes
+  // is one its server's end shuts down, as a server does a refused hello's or a seat's taken again: MsQuic may hold one its
+  // client closed until its idle timeout.
   TEST_METHOD(SweepsAwayWhatHasGoneAndClosesWhatSaysNothing)
   {
     constexpr std::uint64_t SILENT_CODE = 42;
     Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL)},
                                   [](const std::shared_ptr<Neuron::QuicChannel>&) -> Neuron::QuicChannel::Receiver
-                                  { return [](Neuron::QuicChannel& _channel, const Message& _message) { _channel.Send(_message); }; });
+                                  {
+                                    return [](Neuron::QuicChannel& _channel, const Message& _message)
+                                    {
+                                      if (_message == Bytes("bye"))
+                                        _channel.Shutdown(0);
+                                      else
+                                        _channel.Send(_message);
+                                    };
+                                  });
     const std::unique_ptr<Neuron::QuicChannel> talker = ConnectTo(listener);
     talker->Send(Bytes("here"));
     (void)ReceiveMessages(*talker, 1);
     const std::unique_ptr<Neuron::QuicChannel> silent = ConnectTo(listener);
-    ConnectTo(listener)->Close();
+    const std::unique_ptr<Neuron::QuicChannel> leaving = ConnectTo(listener);
+    leaving->Send(Bytes("bye"));
     Assert::AreEqual(size_t{3}, listener.ChannelCount());
 
-    // Swept as a server's tick sweeps it, until the closed connection has been let go and the silent one has gone too.
+    // Swept as a server's tick sweeps it, until the one shut down has been let go and the silent one has gone too.
     std::vector<Message> after;
     std::string why;
     const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
