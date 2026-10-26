@@ -13,7 +13,7 @@ Status: **open** · Started 2026-10-08, when the owner accepted [the Phase 5 des
 3. **ADRs are edited in place** (AGENTS.md §6), and new ones take the next free number, ADR-077 onward.
 4. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU. The server, the AI and `GameLogicTests` build and run there against a stand-in for the Windows headers, the test framework and MsQuic, as Phases 2 to 4 did; the QUIC tests do not. The dedicated server's executable, the client and every week-long run are CI's or the owner's. Tasks marked *Owner run* stay `in review` until the owner has run them.
 5. **The AI keeps playing at every milestone,** and `AiPlayerTests` keep passing.
-6. **The gates are H1 to H11,** in the gates table below. [The Phase 5 design](OutpostCommander-Phase5.md) sets out the two still open, H10 and H11; H11 came of milestone 39.
+6. **The gates are H1 to H11,** in the gates table below. [The Phase 5 design](OutpostCommander-Phase5.md) sets out H10, the one still open, and H11, which came of milestone 39 and is decided.
 
 Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan's outline put the dedicated server first; the owner chose to start with the universe that survives a restart (2026-10-08), so it is milestone 35 and the server 36.
 
@@ -38,7 +38,7 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 | 39.2 | The universe log and `--universe-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
 | 39.3 | The battle matchups | — | — | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
 | 39.4 | W1–W6 | all above | — | the container's part done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's week |
-| 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | in review; awaiting the owner's run |
+| 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting the owner's run |
 
 ### Milestone order
 

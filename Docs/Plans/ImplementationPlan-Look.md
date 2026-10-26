@@ -45,9 +45,9 @@ Task numbers carry the prefix LV, and gates are lettered A.
 | LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11 |
 | LV1.2 | A phosphor glow | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11, zoomed in and out |
 | LV2.1 | Occlusion baked into every vertex | LV1 | A3 | merged, [#108](https://github.com/Zwaliebaba/Outpost.Commander/pull/108); awaiting the owner's run |
-| LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | in review; awaiting a run and the owner's run |
-| LV2.3 | Two-tone lines | LV2.2 | A4 | in review; awaiting a run and the owner's run |
-| LV3.1 | Beacons | LV2.2 | A5 | in review; awaiting a run and the owner's run |
+| LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
+| LV2.3 | Two-tone lines | LV2.2 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
+| LV3.1 | Beacons | LV2.2 | A5 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | LV4.1 | Fleets on the screen | — | A6, A7 | todo |
 | LV4.2 | Plates over the fleets | LV4.1 | A7 | todo |
 | LV4.3 | Health bars where the plates are not | LV4.2 | A7 | todo |
@@ -59,9 +59,9 @@ LV1, LV2, LV3, LV4.
 - **LV1 changes no file format and no art.** It is the cheapest way to see whether the owner likes the direction.
 - **LV2's paint slots are one format change**, so the owner's models can take a second paint and lights in one bake.
 - **LV3 needs LV2's light slot only for its look,** not to work; it goes after LV2 so a beacon and a lit window are judged together.
-- **LV4 is independent of the rest** and can go at any time once A7 is decided.
+- **LV4 is independent of the rest** and can go at any time, since A7 is decided.
 
-The owner's models are a track of their own beside the plan: chunky proportions, one silhouette per building kind, a prop that says what it is, a mast or a dish, and `trim` and `light` materials once LV2.2 reads them. They need no task.
+The owner's models are a track of their own beside the plan: chunky proportions, one silhouette per building kind, a prop that says what it is, a mast or a dish, and `trim` and `light` materials, which LV2.2 reads. They need no task.
 
 ---
 

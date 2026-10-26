@@ -76,7 +76,7 @@ The limits and the progression of a season must therefore come from the universe
 
 1. **Progression gated by the galaxy** (O1). Research is recovery ([Pillar 3](Pillars.md)), of the technology lost with the old fleet. A research topic keeps its time, but a tier opens by holding a system with a derelict in it, and the last tier by holding a precursor vault deep in contested space. The season then moves as fast as the conquest, and a vault system is the target worth a fleet, as an upgraded Shipyard is worth a raid (Game §structures.levels). A derelict that recovers research is its first step (Game §neutrals.salvage). Finished topics stay finished, as in a match (Game §research); what losing a vault does to a tier not yet finished is open, and so is whether the Lab's levels (Game §research.tiers) stay as a second gate.
 2. **The bound on a fleet** (O2). A fleet is bounded by a cap on command points that the Command Station's level buys, and ships are dear (owner, 2026-10-06; Game §economy.fleetcap). Over a season every player reaches its cap on the first day, and from then on income decides how fast a player recovers from a lost battle, not how large its fleet grows: territory buys recovery more than size ([Pillar 2](Pillars.md)). A bank that nothing drains (Game §economy.bank) weakens even that, since a lost fleet is rebuilt from the bank at once. What a galaxy asks of the cap is how it works across systems.
-3. **Ore that comes back** (O3). A mined-out field recovers over a day, or new fields appear in the galaxy. That also gives "mine this field at 03:00" its meaning: a field is worth timing only if it changes over time. A bank that nothing drains makes Ore that comes back pile up the more, so [the Horizon plan](Plans/ImplementationPlan-Horizon.md) puts a sink or a bound on the bank before it.
+3. **Ore that comes back** (O3). A mined-out field recovers over a day, or new fields appear in the galaxy. That also gives "mine this field at 03:00" its meaning: a field is worth timing only if it changes over time. A bank that nothing drains makes Ore that comes back pile up the more, so [the Horizon plan](Plans/ImplementationPlan-Horizon.md) puts a bound on the bank before it.
 
 ---
 
@@ -121,12 +121,12 @@ Each is the owner's. A phase design that takes one up decides it there. Until th
 
 - **O1 — Progression** (§6.1).
 - **O2 — The bound on fleets** (§6.2). A fleet is bounded by a cap on command points that the Command Station's level buys, not by the nodes a player holds, and its ships are dear (owner, 2026-10-06; Game §economy.fleetcap; ADR-071). What is left is how the cap works across a galaxy's systems.
-- **O3 — Ore over a season** (§6.3), with a sink or a bound on the bank first.
+- **O3 — Ore over a season** (§6.3), with a bound on the bank first.
 - **O4 — The deputy's directives** (§4). In a universe the deputy is a keeper (owner, 2026-10-08; Game §ai.deputy; ADR-079 decision 6).
 - **O5 — Where triggers are evaluated** (§5). The server evaluates them, and the client's alerts read the same events (owner, 2026-10-08; Game §orders.scheduled; ADR-080 decision 1; ADR-059 decision 1).
 - **O6 — Diplomacy.**
 - **O7 — Reach.** A web view of the galaxy would reopen ADR-001 and R14.
-- **O8 — The universe beyond one map.** A universe is one system, the game's map, `sizeMeters` in `Map.json`, and a galaxy's systems are each as large (owner, 2026-10-06; Game §map; Game §universe.overview); a Shipyard and a Repair Bay are built only in a held sector (Game §territory.gives). What is left is how a fleet travels between systems, whether a galaxy is one `Simulation` or one for each system, and whether a system needs pathing by sector, which the tick's budget in Release decides ([Budgets](Budgets.md)).
+- **O8 — The universe beyond one map.** A universe is one system, the game's map, `sizeMeters` in `Map.json`, and a galaxy's systems are each as large (owner, 2026-10-06; Game §map; Game §universe.overview); a Shipyard, a Repair Bay, a Research Lab and a Defence Platform are built only in a held sector, and a Mining Rig only on an asteroid in one (Game §territory.gives). What is left is how a fleet travels between systems, whether a galaxy is one `Simulation` or one for each system, and whether a system needs pathing by sector, which the tick's budget in Release decides ([Budgets](Budgets.md)).
 - **O9 — Seasons of months** (§7), the gate below.
 
 | Gate | Decision | Proposed in | Blocks | Status |

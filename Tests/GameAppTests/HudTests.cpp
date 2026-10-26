@@ -2324,6 +2324,34 @@ public:
     Assert::AreEqual(size_t{0}, count(chips, Outpost::Hud::ActionKind::PreviousDesigns), L"at the first");
   }
 
+  // ADR-062 decision 4: a part card is wide enough for the Large hull's numbers in Cascadia Mono, which the figures take where
+  // it is installed, and which sets every character at 1,200 units of its 2,048 an em. The detail face is set at that
+  // advance, rounded to a whole pixel as the atlas rounds it, so that the test holds where only Consolas is installed.
+  TEST_METHOD(FitsTheLargeHullsNumbersInCascadiaMono)
+  {
+    using Hud = Outpost::Hud;
+    constexpr float CASCADIA_ADVANCE_EMS = 1200.0f / 2048.0f;
+    constexpr std::size_t DETAIL = static_cast<std::size_t>(Hud::Typeface::Detail);
+    const Outpost::Snapshot newest = DesignerSnapshot(true);
+    Outpost::Designer designer;
+    designer.Update(newest);
+    Hud::Content content;
+    content.designer = DesignerOf(newest, designer);
+    const std::string numbers = "1,200 HP \xC2\xB7 ARM 14 \xC2\xB7 25m/s";
+    for (const auto& [width, height] :
+         {std::pair{1280u, 720u}, std::pair{1920u, 1080u}, std::pair{2560u, 1440u}, std::pair{2880u, 1920u}, std::pair{3840u, 2160u}})
+    {
+      const float scale = Hud::Scale(width, height);
+      Neuron::UiAtlas atlas = Neuron::RasterizeUiAtlas(Hud::Typefaces(), Hud::Sprites(), scale);
+      const float advancePixels = std::round(atlas.pixelSizes[DETAIL] * CASCADIA_ADVANCE_EMS);
+      for (Neuron::GlyphAtlas::Glyph& glyph : atlas.glyphs.fonts[DETAIL].glyphs)
+        glyph.advance = advancePixels;
+      const Hud::Layout layout = Hud::Lay(content, Hud::TextMetrics(atlas.glyphs.fonts, scale), width, height);
+      Assert::IsTrue(std::ranges::any_of(layout.texts, [&numbers](const Hud::Text& _text) { return _text.text == numbers; }),
+                     std::format(L"whole at {}x{}", width, height).c_str());
+    }
+  }
+
   // ADR-033 decision 5: the research window lists the topics tier by tier, each with its tier. A topic of a tier the
   // Research Lab has not opened is dim, and names the level that opens it (ADR-064 decision 10).
   TEST_METHOD(ListsTheTopicsTierByTier)

@@ -54,7 +54,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 15.3 | The designer's preview in figures | 14.2 | — | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting the owner's run |
 | 15.4 | Windows open where there is room | — | — | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting a run |
 | 15.5 | The selection ring at a fixed width | — | K3 | merged, [#77](https://github.com/Zwaliebaba/Outpost.Commander/pull/77); awaiting the owner's run |
-| 15.6 | A locked part previews what its topic buys | 15.3 | K8 | in review; awaiting a run and the owner's run |
+| 15.6 | A locked part previews what its topic buys | 15.3 | K8 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | 16.1 | The windows' headers and bodies | 14.2 | — | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
 | 16.2 | The minimap's marks and size | — | K5 | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
 | 16.3 | What a production card says | 14.2 | K5 | merged, [#78](https://github.com/Zwaliebaba/Outpost.Commander/pull/78); awaiting the owner's run |
@@ -65,7 +65,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 
 ### Milestone order
 
-14, 15, 16, 17. Milestone 14 goes first because every later task lays out text: 14.1's tests are what make 14.2's sizes safe, and they guard everything after. It also goes before Phase 2's plan, so that if Phase 2's modules (ADR-058) give the designer its fourth row, the row is laid out once, at the sizes it keeps. Milestone 15 is what a player is missing in play. Milestone 16 is polish, item by item as K5 accepts it. Milestone 17 waits for K7, and may be dropped. A task whose gate the owner turns down is dropped, and its milestone ships without it.
+14, 15, 16, 17. Milestone 14 goes first because every later task lays out text: 14.1's tests are what make 14.2's sizes safe, and they guard everything after. It also goes before Phase 2's plan, so that if Phase 2's modules (ADR-058) give the designer its fourth row, the row is laid out once, at the sizes it keeps. Milestone 15 is what a player is missing in play. Milestone 16 is polish, item by item as K5 accepts it. Milestone 17 is K7's, decided on 2026-10-03. A task whose gate the owner turns down is dropped, and its milestone ships without it.
 
 ---
 

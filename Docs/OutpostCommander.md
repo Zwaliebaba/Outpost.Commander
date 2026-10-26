@@ -70,7 +70,7 @@ A session is everything between starting the game and closing it: the menu, a sk
 - **A player beaten both ways in one tick is beaten by production** (ADR-057 decision 5). The match records which ending it was (ADR-057 decision 6).
 - **The simulation runs on after the match ends, and the outcome stands** (ADR-020 decision 9).
 - **A banner says how it ended:** "Victory", "Defeat" or "Draw", and under it the match's length, after "By domination." for a domination, and a button, Back to menu (ADR-020 decision 9; ADR-057 decision 8).
-- **Back to menu is the way out of a match.** It ends the match and its server, and the next skirmish's server is made as the menu comes back (ADR-025 decision 1; ADR-020 decision 10). A match that has not ended offers no way back to the menu (ADR-020 decision 9); closing the game leaves it, and the match log records it as left (ADR-038 decision 5).
+- **Back to menu is the way out of a match.** It ends the match and its server, and the next skirmish's server is made as the menu comes back (ADR-025 decision 1; ADR-020 decision 10). A skirmish or a matchup that has not ended offers no way back to the menu (ADR-020 decision 9); closing the game leaves it, and the match log records it as left (ADR-038 decision 5). A universe is left from its leave window (Game §session.join).
 
 ### Battle matchups [§session.matchup]
 
@@ -203,7 +203,7 @@ The game has one resource, Ore. Mining Rigs on ore asteroids earn it, salvage ad
 - **A structure is paid for when the order is given.** Its whole cost is taken at once and its site appears; an order the player cannot pay for is refused and costs nothing (ADR-016 decision 4).
 - **A ship, a Constructor or a research topic is paid for when it starts.** It waits at the front of its queue until the player can pay, and what is queued behind it waits too (ADR-016 decision 6; ADR-017 decision 1). A warship also waits for room under the fleet cap (Game §economy.fleetcap).
 - **A structure's next level is paid for when it is ordered** (ADR-064 decision 2; Game §structures.levels.upgrade).
-- **Nothing is refunded, and nothing can be canceled.** A site destroyed before it is finished, a structure destroyed while its next level is being built, and a topic under way when its Lab is destroyed all lose their Ore (ADR-016 decision 6; ADR-064 decision 5; ADR-017 decision 1).
+- **Nothing is refunded, and nothing paid for can be canceled.** A site destroyed before it is finished, a structure destroyed while its next level is being built, and a topic under way when its Lab is destroyed all lose their Ore (ADR-016 decision 6; ADR-064 decision 5; ADR-017 decision 1).
 - **Repair and salvage cost nothing** (ADR-016 decision 5; ADR-075 decision 3; Game §neutrals.repair).
 - What each thing costs is data: [Catalogue: structures](Reference/Catalogue.md#structures), [Catalogue: constructor](Reference/Catalogue.md#constructor), [Catalogue: hulls](Reference/Catalogue.md#hulls), [Catalogue: drives](Reference/Catalogue.md#drives), [Catalogue: weapons](Reference/Catalogue.md#weapons), [Catalogue: modules](Reference/Catalogue.md#modules) and [Catalogue: research](Reference/Catalogue.md#research).
 
@@ -909,13 +909,13 @@ A player commands its ships by orders, and only by orders. An order is given to 
 
 ### Selecting [§orders.selection]
 
-- **A click selects** the nearest of the player's ships within 12 pixels of the pointer, or within its footprint on the screen where that is larger. A click on none of its ships but on one of its structures selects that structure alone, for its panel and its windows. A click on none of its own but on another player's structure, seen or remembered, selects that alone, for its panel, which offers no button and takes no order (ADR-013 decision 5; ADR-081 decision 4). A click on nothing clears the selection (ADR-013 decision 5).
+- **A click selects** the nearest of the player's ships within 12 pixels of the pointer, or within its footprint on the screen where that is larger. A click on none of its ships but on one of its structures selects that structure alone, for its panel and its windows. A click on none of its own but on another player's structure or the pirates', seen or remembered, selects that alone, for its panel, which offers no button and takes no order (ADR-013 decision 5; ADR-081 decision 4). A click on nothing clears the selection (ADR-013 decision 5).
 - **A drag of more than 6 pixels is a box,** which selects the player's ships inside it, and only ships (ADR-013 decision 5). A press on a panel or a window of the HUD is the HUD's and selects nothing, but a drag begun in the world ends wherever it is let go (ADR-015 decision 5).
 - **Shift adds** a ship or a box to the selection, and Shift-clicking a selected ship takes it out. A ship added with Shift joins ships, never a structure (ADR-013 decision 5).
 - **A second click on the same ship within 400 ms** selects every ship of the player's on the screen of that ship's design and hull (ADR-013 decision 5).
 - **Ctrl and a digit store the selection as a control group; the digit recalls it,** and a second tap within 400 ms centers the camera on it (ADR-013 decision 5).
 - **A click on a ship's bar in the selection panel** selects that ship alone and centers the camera on it (ADR-088 decision 4; Game §interface.hud.selection).
-- **Ships that are gone, or are not the player's, drop out of the selection and the control groups;** another player's structure selected alone stays while it is seen or remembered, and joins no control group (ADR-013 decision 5).
+- **Ships that are gone, or are not the player's, drop out of the selection and the control groups;** another player's or the pirates' structure selected alone stays while it is seen or remembered, and joins no control group (ADR-013 decision 5).
 - **The selection is drawn as a ring round each selected ship,** green, or amber while attack-move or a standing order waits for its click (ADR-067 decision 1; Game §interface.marks).
 
 ### Direct orders [§orders.direct]
@@ -1087,7 +1087,7 @@ A player sees what its own ships and structures see, all of each sector it holds
 - **An attack needs a target the player sees, or an enemy structure it remembers.** Any other target is refused (ADR-024 decision 7).
 - **An attack on a ship ends once nothing of the attacker's side sees the ship.** An attack on a remembered structure goes where the player saw it (ADR-024 decision 7).
 - **A salvage order needs a derelict the player sees or remembers** (ADR-074 decision 4; Game §neutrals.salvage).
-- **A structure ordered onto something the player cannot see,** such as an enemy's rig on an asteroid, is refused as any blocked placement is, and the player is told nothing (ADR-024 decision 7; ADR-020 decision 7).
+- **A structure ordered onto something the player cannot see,** such as an enemy's rig on an asteroid, is refused as any blocked placement is, and the player is told only that it cannot stand there (ADR-024 decision 7; ADR-094 decision 4).
 - **The player's game orders a Mining Rig only onto an asteroid it has seen:** the rig's ghost is red over one never seen, and a click there orders nothing. The server itself takes such an order (ADR-046 decision 8).
 - **What a player sees decides what its standing and scheduled orders answer.** A group holding a sector answers the enemy ships its player sees in it (ADR-059 decision 4). A scheduled order's condition counts the enemy and pirate warships its player sees in the action's sector (ADR-080 decision 4). An enemy is seen entering a held sector only where its player sees it, so a warship that suppresses a Relay from beyond the Relay's own sight enters unseen, and the suppression is the event (ADR-080 decision 2; Game §orders.scheduled; Game §interface.alerts).
 
@@ -1114,7 +1114,7 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 - **It sees only what its player sees.** Fog of war binds it as it binds the player: it answers the warships it has seen, attacks what it sees or remembers, and knows an outpost or a derelict only once it has seen it (ADR-020 decision 17; ADR-076 decision 1; Game §sight).
 - **It reads every warship it sees by its components,** whoever owns it, since a design's identifier names a design in its owner's list only (ADR-020 decision 3).
 - **It watches every snapshot and decides once a second.** It looks at every snapshot for shots on its structures, since a shot is in the snapshot of its tick only, and gives its orders at most once a second (ADR-020 decision 1).
-- **It is told nothing of a refusal.** The server reports no refused command, so the AI keeps track of where it sent each Constructor, and takes a site it ordered as refused when the site has not appeared 3 s later (ADR-020 decision 7).
+- **It ignores the refusals it is told.** The server tells the AI its refusals as it tells the player (Game §interface.alerts), and the AI keeps track of where it sent each Constructor instead, taking a site it ordered as refused when the site has not appeared 3 s later (ADR-020 decision 7; ADR-094 decision 6).
 - **No difficulty cheats.** The AI never has more Ore, sight or hit points than its rules give any player; a harder AI plays its hand differently, never with a larger one (ADR-065).
 - **It never kites** (ADR-020 decision 8).
 - **In a skirmish the AI is player 2,** drawn with the Tarkan set, and the game plays it beside the player's own client, handing it every snapshot of its seat (ADR-020 decisions 1 and 10; Game §look.models.sets; Game §session.skirmish).
@@ -1694,7 +1694,7 @@ What the game does not do, at the head of `main`. A rule that a chapter already 
   - There is one map, the one the game ships, with two starts: no other map, no map with spare starts, and no universe of more than two seats (ADR-036 decision 4; ADR-078 decision 2).
   - There is one star system: no travel between systems, and no jump from Relay to Relay (Game §map).
   - A skirmish has no save, no load and no pause (Game §session.skirmish). A universe pauses only while its server is down (Game §universe.persistence).
-  - A running match offers no surrender and no way back to the menu (Game §session.end).
+  - A running skirmish or matchup offers no surrender and no way back to the menu (Game §session.end); a universe is left, never surrendered (Game §session.join).
   - A universe has no season and no end, and nothing carries a save from one layout of the universe's state to another (Game §universe.persistence).
   - Nothing reaches a player outside the game: no notification and no web view of a universe.
 - **Settings.**
@@ -1715,7 +1715,7 @@ What the game does not do, at the head of `main`. A rule that a chapter already 
   - There is no strategic view: the widest view is the camera's, beside the minimap (Game §interface.camera).
 - **Look and sound.**
   - The game plays no sound: no music, no effects and no voice.
-  - No model has a texture or a material: its faces are lit and its ridges are lines (Game §look.lines).
+  - No model has a texture or a vertex color: a face's color is its paint's, and its ridges are lines (Game §look.models; Game §look.lines).
 - **Size.**
   - No map is larger than the fog's grid covers (Game §sight.drawn).
 

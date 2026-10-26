@@ -9,7 +9,7 @@ A model reads as solid when every recess is darker than what stands out. A face 
 
 Three facts constrain it:
 
-- **The sources are flat-shaded and split.** Every one of the 45 sources has three vertices a triangle, 48,948 vertices for 16,316 triangles, counted from the sources, so a vertex belongs to one face and its normal is the face's.
+- **The sources are flat-shaded and split.** Every one of the 45 sources has three vertices a triangle, 50,016 vertices for 16,672 triangles, counted from the baked files, so a vertex belongs to one face and its normal is the face's.
 - **The models are built from parts that overlap.** A face buried inside another part is shut in wholly, and a face that runs into another part has a corner inside it.
 - **The bake must stay the same bytes on every machine**, which `--check` proves in CI ([ADR-018](ADR-018-nmf-and-hardpoints.md) decision 7). CPython's `+`, `-`, `*`, `/` and `math.sqrt` are correctly rounded IEEE doubles; its trigonometric functions come from the platform's C library.
 
@@ -22,7 +22,7 @@ Three facts constrain it:
    - **The work is cut by distance and by plane:** for each triangle, only the triangles near enough to be reached, and with a corner above its plane, are tested. A bake of every source runs one source a process, a core each.
 2. *(retired)*
 3. **`Neuron::MeshVertex` carries `openness`**, a float from 0 to 1, read from its vertex's byte over 255, which the baker writes from 0 to 255, rounded to the nearest step. A vertex made on the CPU, such as a ring's, a line's or the grid's, is open. The mesh pipeline's input layout gives it to the vertex shaders as `OPENNESS`.
-4. **A face's light is darkened by how shut in it is, and a line's never is.** `MeshPS.hlsl` multiplies the key and the fill by `1 − occlusionStrength × (1 − openness)`, `openness` interpolated across the face. `occlusionStrength` is a frame constant of `MeshPipeline`. The game sets it from `SceneShading.h`'s `OCCLUSION_STRENGTH`, 1: a face shut in wholly is black, and one half shut in is lit by half. The lines' shaders take no openness, so a line in a recess stands out the more against the darker faces beside it. `Outpost::FaceLight` darkens its light the same way.
+4. **A face's light is darkened by how shut in it is, and a line's never is.** `MeshPS.hlsl` multiplies the key and the fill by `1 − occlusionStrength × (1 − openness)`, `openness` interpolated across the face. `occlusionStrength` is a frame constant of `MeshPipeline`. The game sets it from `SceneShading.h`'s `OCCLUSION_STRENGTH`, 1: a face shut in wholly is black, and one half shut in is lit by half. The lines' shaders take no openness, so a line in a recess stands out the more against the darker faces beside it. `Outpost::FaceLight` darkens its light the same way. A `light` face that glows is not darkened ([ADR-095](ADR-095-paints-team-trim-and-light.md) decision 3).
 
 ## Consequences
 

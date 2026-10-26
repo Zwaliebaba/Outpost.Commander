@@ -12,13 +12,13 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 - **What it is for:** a probe of the rules. The opponent the game ships stays the scripted one (Game §ai, ADR-041).
 - **Where it trains:** an x64 laptop, on the Release|x64 build.
 - **What comes first:** a search over `Opponent.json`'s numbers, with no network. It is the baseline a network has to beat.
-- **For Phase 3 and the horizon,** later that day: the blueprint and this plan target Phase 3's rules, and take from the horizon only what costs nothing on today's map. The network stays the probe, and becomes the benchmark for the horizon's deputy. Whether a learned policy should ever command a seat in a season is gate N6, still open.
+- **For Phase 3 and the horizon,** later that day: the blueprint and this plan target Phase 3's rules, and take from the horizon only what costs nothing on today's map. The network stays the probe, and becomes the benchmark for the horizon's deputy. Whether a learned policy should ever command a seat in a season was gate N6, decided on 2026-10-25: no.
 
 ## How an agent uses this plan
 
 1. **Read AGENTS.md, ADR-063 and ADR-020, then the blueprint for milestone SP2, and [the living design](../OutpostCommander.md) for the rules as built.** SP2 targets Phase 3's rules, and [the post-mortems](../Records/PostMortems.md) say what each phase since has changed.
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone, in milestone order.
-3. **Tasks are numbered SP\<milestone\>.\<task\>,** apart from the game's milestones, so that the phases keep their numbers. The blueprint's open questions are gates N1 to N6, and this plan's own is gate S1.
+3. **Tasks are numbered SP\<milestone\>.\<task\>,** apart from the game's milestones, so that the phases keep their numbers. The blueprint's questions are gates N1 to N6, all decided, and this plan's own is gate S1.
 4. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU. The server, the AI and the switch build and run there against a stand-in for the Windows headers, as the phases' did. A search on the real build is the owner's run.
 
 ---
@@ -112,7 +112,7 @@ The network's own questions are the blueprint's gates N1 to N6, which SP2.1 need
 
 ### SP2.1 — The network's shape, as an ADR
 
-- **Goal:** the blueprint's gates N1 to N6 decided by the owner, and an ADR written from the blueprint as decided, against Phase 3's rules as built.
+- **Goal:** an ADR written from the blueprint as gates N1 to N6 decided it, against Phase 3's rules as built.
 - **Scope:** the ADR only. The blueprint stays as the explanation, edited to what was decided.
 - **Verify:** the owner's review.
 
