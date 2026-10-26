@@ -168,8 +168,9 @@ Outpost::Snapshot FullSnapshot()
                                  .outcome = Outpost::OrderOutcome::Refused};
   snapshot.events.push_back(fired);
   snapshot.events.push_back({.kind = Outpost::EventKind::EmpireRestarted, .sector = 115});
-  // The last kind of event, a refusal, with the last reason (ADR-094).
-  snapshot.events.push_back({.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::NotYetSupported});
+  // The last kind of event, a refusal, with the last reason and the number of the command refused (ADR-094).
+  snapshot.events.push_back(
+    {.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::NotYetSupported, .command = 117});
   snapshot.restartTick = 116;
   snapshot.scheduled.push_back({.id = 101,
                                 .ships = {Outpost::EntityId{102}},
@@ -236,10 +237,12 @@ public:
     for (size_t i = 0; i < orders.size(); ++i)
     {
       Assert::AreEqual(i, orders[i].index());
-      const Outpost::Message decoded = RoundTrip(Outpost::Command{.player = Outpost::PlayerId{20}, .order = orders[i]});
+      const Outpost::Message decoded =
+        RoundTrip(Outpost::Command{.player = Outpost::PlayerId{20}, .order = orders[i], .number = 30 + static_cast<std::uint32_t>(i)});
       const auto& command = std::get<Outpost::Command>(decoded);
       Assert::AreEqual(std::uint32_t{20}, command.player.value);
       Assert::AreEqual(i, command.order.index());
+      Assert::AreEqual(30 + static_cast<std::uint32_t>(i), command.number, L"the client's number for it (ADR-094)");
     }
 
     const Outpost::Message scheduledMessage = RoundTrip(Outpost::Command{.order = orders[14]});
@@ -287,8 +290,8 @@ public:
     Assert::IsTrue(snapshot.events.size() == 3 && snapshot.events[1].kind == Outpost::EventKind::EmpireRestarted,
                    L"a universe's restarted seat");
     Assert::IsTrue(snapshot.events[2].kind == Outpost::EventKind::CommandRefused &&
-                     snapshot.events[2].refusal == Outpost::CommandResult::NotYetSupported,
-                   L"the last kind of event, with the last reason");
+                     snapshot.events[2].refusal == Outpost::CommandResult::NotYetSupported && snapshot.events[2].command == 117,
+                   L"the last kind of event, with the last reason and the command's number");
     Assert::AreEqual(std::uint64_t{116}, snapshot.restartTick.value_or(0), L"when a universe's lost seat restarts");
     Assert::AreEqual(55.5, snapshot.constructorBuildSeconds, L"the Constructor's build time (ADR-068)");
     Assert::IsTrue(snapshot.entities[1].kind == Outpost::EntityKind::Derelict, L"the last kind of entity (ADR-074)");
@@ -381,10 +384,10 @@ public:
   TEST_METHOD(RefusesValuesNoFieldCanTake)
   {
     // A build order to no constructors, byte by byte: the message's kind, the player, the order's alternative, the count
-    // of constructors, the structure, and the position.
+    // of constructors, the structure, the position, and the command's number.
     const std::vector<std::byte> build = Outpost::EncodeMessage(
       Outpost::Command{.order = Outpost::BuildStructureCommand{.structure = Outpost::StructureKind::Relay, .position = {.xMeters = 1.0f}}});
-    Assert::AreEqual(size_t{1 + 4 + 1 + 4 + 1 + 8}, build.size());
+    Assert::AreEqual(size_t{1 + 4 + 1 + 4 + 1 + 8 + 4}, build.size());
     Assert::IsTrue(build[10] == std::byte{5}, L"the Relay");
 
     const auto refused = [&build](size_t _offset, std::byte _value)

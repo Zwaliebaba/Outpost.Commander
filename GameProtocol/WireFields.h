@@ -169,8 +169,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Command>
 auto Fields(Self& _value)
 {
-  auto& [player, order] = _value;
-  return std::tie(player, order);
+  auto& [player, order, number] = _value;
+  return std::tie(player, order, number);
 }
 
 template <typename Self>
@@ -299,8 +299,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, EventView>
 auto Fields(Self& _value)
 {
-  auto& [kind, sector, position, subject, structure, other, order, action, outcome, refusal] = _value;
-  return std::tie(kind, sector, position, subject, structure, other, order, action, outcome, refusal);
+  auto& [kind, sector, position, subject, structure, other, order, action, outcome, refusal, command] = _value;
+  return std::tie(kind, sector, position, subject, structure, other, order, action, outcome, refusal, command);
 }
 
 template <typename Self>

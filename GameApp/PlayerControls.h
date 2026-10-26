@@ -143,6 +143,8 @@ private:
   std::vector<EntityId> m_selected;
   std::array<std::vector<EntityId>, GROUP_COUNT> m_groups;
   std::vector<Command> m_commands;
+  // The number of the last order given, which numbers the orders from 1 (ADR-094 decision 1).
+  std::uint32_t m_lastCommandNumber = 0;
   std::optional<MoveOrder> m_lastMove;
   bool m_attackMoveArmed = false;
   std::optional<StandingOrder> m_standingArmed;

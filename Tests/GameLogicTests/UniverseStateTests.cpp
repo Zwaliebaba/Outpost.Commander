@@ -14,7 +14,7 @@ using Bytes = std::vector<std::byte>;
 // seats' reports beside it. Until the game is live, UNIVERSE_STATE_VERSION stays 1, and a change to either records its new
 // hash here in place of version 1's (owner, 2026-10-09); a save carries its layout's hash, so a save of the old layout is
 // refused. Once live, a change raises UNIVERSE_STATE_VERSION and records the new version's hash here, below the old.
-constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 1> LAYOUTS{{{1, 0x71BEA80ED9D5E354ull}}};
+constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 1> LAYOUTS{{{1, 0xD4548F4B9A3B37B5ull}}};
 
 // _bytes with their checksum made again, as a save altered on purpose would have it.
 Bytes Rechecked(Bytes _bytes)

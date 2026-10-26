@@ -460,8 +460,8 @@ void Outpost::PlayerControls::SelectAlone(EntityId _entity)
 
 void Outpost::PlayerControls::Give(Order _order)
 {
-  // The server fills in the player from the connection (ADR-002).
-  m_commands.push_back({.player = {}, .order = std::move(_order)});
+  // The server fills in the player from the connection (ADR-002), and names the number in a refusal (ADR-094).
+  m_commands.push_back({.player = {}, .order = std::move(_order), .number = ++m_lastCommandNumber});
 }
 
 void Outpost::PlayerControls::GiveToShips(Order _order)

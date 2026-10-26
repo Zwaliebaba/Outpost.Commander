@@ -106,8 +106,9 @@ public:
     Assert::IsTrue(log[0].command.player == BLUE && log[1].command.player == BLUE);
   }
 
-  // ADR-094: a command the server refuses is told, with why, to the player whose connection sent it, and to no other, in
-  // the snapshot of the tick it was refused at; a scheduled order refused when given is told the same way.
+  // ADR-094: a command the server refuses is told, with why and the number its client gave it, to the player whose connection
+  // sent it, and to no other, in the snapshot of the tick it was refused at; a scheduled order refused when given is told the
+  // same way.
   TEST_METHOD(TellsARefusalToItsPlayerAlone)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
@@ -115,33 +116,37 @@ public:
     const Outpost::EntityId redShip = server.SimulationState().SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
+    // Each refusal's reason, and the number of the command it refuses.
+    using Refusal = std::pair<Outpost::CommandResult, std::uint32_t>;
     const auto refusals = [](const std::vector<Outpost::Snapshot>& _snapshots)
     {
-      std::vector<Outpost::CommandResult> found;
+      std::vector<Refusal> found;
       for (const Outpost::Snapshot& snapshot : _snapshots)
       {
         for (const Outpost::EventView& event : snapshot.events)
         {
           if (event.kind == Outpost::EventKind::CommandRefused)
-            found.push_back(event.refusal);
+            found.emplace_back(event.refusal, event.command);
         }
       }
       return found;
     };
 
-    blue->Send({.order = Outpost::MoveCommand{.ships = {redShip}, .destination = {.xMeters = 5.0f}}});
-    blue->Send({.order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {.xMeters = 7.0f}}});
+    blue->Send({.order = Outpost::MoveCommand{.ships = {redShip}, .destination = {.xMeters = 5.0f}}, .number = 1});
+    blue->Send({.order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {.xMeters = 7.0f}}, .number = 2});
     blue->Send({.order = Outpost::ScheduleOrderCommand{.ships = {blueShip},
-                                                       .trigger = {.kind = Outpost::ScheduledTriggerKind::EnemyInSector, .sector = 9999}}});
+                                                       .trigger = {.kind = Outpost::ScheduledTriggerKind::EnemyInSector, .sector = 9999}},
+                .number = 3});
     server.Step();
-    Assert::IsTrue(refusals(blue->Receive()) == std::vector{Outpost::CommandResult::NotOwned, Outpost::CommandResult::NoSector},
-                   L"blue hears of its own two, in order, and not of the order applied");
+    Assert::IsTrue(refusals(blue->Receive()) ==
+                     std::vector{Refusal{Outpost::CommandResult::NotOwned, 1}, Refusal{Outpost::CommandResult::NoSector, 3}},
+                   L"blue hears of its own two, in order, each naming its command, and not of the order applied");
     Assert::IsTrue(refusals(red->Receive()).empty(), L"red hears of none");
 
-    red->Send({.order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {}}});
+    red->Send({.order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {}}, .number = 1});
     server.Step();
     Assert::IsTrue(refusals(blue->Receive()).empty(), L"once told, not again");
-    Assert::IsTrue(refusals(red->Receive()) == std::vector{Outpost::CommandResult::NotOwned});
+    Assert::IsTrue(refusals(red->Receive()) == std::vector{Refusal{Outpost::CommandResult::NotOwned, 1}});
   }
 
   // ADR-080: a scheduled order's time of day becomes the first tick at or after its moment, as the host's wall clock reads

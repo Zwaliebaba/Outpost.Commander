@@ -59,7 +59,7 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW2.2 | The impaired link | NW2.1 | M1 | in review; its measurement an owner run |
 | NW2.3 | The connection's figures over a real network | NW2.1 | M1 | todo; an owner run |
 | NW3.1 | What does not change crosses once | NW2.2 | M2, M3 | in review |
-| NW3.2 | A command carries its number | NW3.1 | M7 | todo |
+| NW3.2 | A command carries its number | NW3.1 | M7 | in review |
 | NW4.1 | Events and state cross apart, and the newest state wins | NW3.1 | M4 | todo |
 | NW5.1 | The view's delay follows the link | NW4.1 | M5 | todo |
 | NW6.1 | An order is marked as it is given | NW3.2 | M6 | todo |

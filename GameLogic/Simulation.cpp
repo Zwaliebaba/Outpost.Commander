@@ -939,7 +939,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
       results.push_back(ApplyOrder(command.player, command.order));
       // The player who gave a command the server refuses hears why (ADR-094).
       if (results.back() != CommandResult::Applied)
-        Raise(command.player, {.kind = EventKind::CommandRefused, .refusal = results.back()});
+        Raise(command.player, {.kind = EventKind::CommandRefused, .refusal = results.back(), .command = command.number});
     }
   }
 
