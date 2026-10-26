@@ -10,7 +10,7 @@ struct CounterRule
   DesignComponents answer;
 };
 
-// OutpostCommander/Assets/Opponent.json as the AI holds it (ADR-020). These are the AI's own numbers: how it builds its
+// ServerData/Opponent.json as the AI holds it (ADR-020). These are the AI's own numbers: how it builds its
 // base, when it attacks and what it answers the enemy's fleet with. The rules of the match are Tuning.json's, which the
 // AI only sees through its snapshots.
 struct AiSettings
@@ -91,7 +91,7 @@ struct AiSettings
   double scoutOwnHalfSeconds = 0.0;
 };
 
-// Reads the text of OutpostCommander/Assets/Opponent.json. Throws Neuron::Exception on the first problem, naming where it
+// Reads the text of ServerData/Opponent.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "counters[2].answer.hull". It cannot check the identifiers against the tuning data, which only the server
 // reads; an identifier the match does not have is a design the AI never sees and never builds.
 [[nodiscard]] AiSettings LoadAiSettings(std::string_view _json);

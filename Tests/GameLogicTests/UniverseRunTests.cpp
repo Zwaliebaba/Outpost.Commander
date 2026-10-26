@@ -14,7 +14,7 @@ public:
   // same as the universe run straight through, to the bit. Each kill brings it back at or before the tick it was killed after.
   TEST_METHOD(AKilledUniverseEndsAsTheUniverseRunStraightThrough)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     const TemporaryFolder folder;
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     const Outpost::UniverseRunResult result = Outpost::RunUniverses(

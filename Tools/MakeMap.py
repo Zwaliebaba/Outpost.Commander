@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the repository's map, OutpostCommander/Assets/Map.json (ADR-036 decision 4, Game §map).
+"""Writes the repository's map, ServerData/Map.json (ADR-036 decision 4, Game §map).
 
 The map is 10 km a side: 25 sectors of 2 km on a 5 x 5 grid, named by column A to E from west to east and row 1 to 5 from
 south to north, the homes in the corners A1 and E5, point-symmetric about the center. Two asteroid fields stand on every
@@ -153,7 +153,7 @@ def MapText():
 
 
 def Main():
-    path = pathlib.Path(__file__).resolve().parent.parent / "OutpostCommander" / "Assets" / "Map.json"
+    path = pathlib.Path(__file__).resolve().parent.parent / "ServerData" / "Map.json"
     text = MapText().encode("utf-8")
     if "--check" in sys.argv[1:]:
         if path.read_bytes() != text:

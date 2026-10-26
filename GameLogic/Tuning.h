@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// OutpostCommander/Assets/Tuning.json as the game holds it (ADR-008). Every number the file holds is here, in the units
+// ServerData/Tuning.json as the game holds it (ADR-008). Every number the file holds is here, in the units
 // it states (ADR-008 decision 6). Converting them into simulation units, such as seconds into ticks, is the
 // simulation's job. A quantity the design counts in whole numbers, such as hit points, armor, damage, Ore and
 // percentages, is an integer and the loader rejects a fraction; a rate, a time, a distance or a factor is a double.
@@ -358,7 +358,7 @@ struct Tuning
 // levels, and one for any other armed structure.
 [[nodiscard]] std::int32_t StationGuns(const Tuning& _tuning, StructureKind _kind, std::int32_t _level) noexcept;
 
-// Reads the text of OutpostCommander/Assets/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
+// Reads the text of ServerData/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference
 // names something that exists, that each structure kind appears exactly once, and that no research topic requires
 // itself, even through others. And the tiers hold: a topic requires none of a later tier, and each tier after the first is

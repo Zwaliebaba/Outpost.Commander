@@ -6,8 +6,7 @@ namespace GameLogicTests
 {
 std::string ReadRepositoryData(std::string_view _fileName)
 {
-  const std::filesystem::path path =
-    std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander" / "Assets" / _fileName;
+  const std::filesystem::path path = std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "ServerData" / _fileName;
   std::ifstream file(path, std::ios::binary);
   Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(file.is_open(), path.wstring().c_str());
   std::ostringstream text;
@@ -23,11 +22,6 @@ std::string ReadRepositoryTuning()
 std::string ReadRepositoryMap()
 {
   return ReadRepositoryData("Map.json");
-}
-
-std::filesystem::path RepositoryHome()
-{
-  return std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander";
 }
 
 ScopedHomeDirectory::ScopedHomeDirectory(const std::filesystem::path& _home)
@@ -74,5 +68,12 @@ void TemporaryHomeDirectory::WriteAsset(const std::filesystem::path& _name, std:
   std::ofstream file(path, std::ios::binary | std::ios::trunc);
   file.write(_contents.data(), static_cast<std::streamsize>(_contents.size()));
   Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(file.good(), path.wstring().c_str());
+}
+
+PackagedHomeDirectory::PackagedHomeDirectory()
+  : TemporaryHomeDirectory(L"PackagedData")
+{
+  for (const std::string_view file : SERVER_DATA_FILES)
+    WriteAsset(file, ReadRepositoryData(file));
 }
 } // namespace GameLogicTests
