@@ -909,13 +909,13 @@ A player commands its ships by orders, and only by orders. An order is given to 
 
 ### Selecting [§orders.selection]
 
-- **A click selects** the nearest of the player's ships within 12 pixels of the pointer, or within its footprint on the screen where that is larger. A click on none of its ships but on one of its structures selects that structure alone, for its panel and its windows. A click on none of its own but on another player's structure, seen or remembered, selects that alone, for its panel, which offers no button and takes no order (ADR-013 decision 5; ADR-081 decision 4). A click on nothing clears the selection (ADR-013 decision 5).
+- **A click selects** the nearest of the player's ships within 12 pixels of the pointer, or within its footprint on the screen where that is larger. A click on none of its ships but on one of its structures selects that structure alone, for its panel and its windows. A click on none of its own but on another player's structure or the pirates', seen or remembered, selects that alone, for its panel, which offers no button and takes no order (ADR-013 decision 5; ADR-081 decision 4). A click on nothing clears the selection (ADR-013 decision 5).
 - **A drag of more than 6 pixels is a box,** which selects the player's ships inside it, and only ships (ADR-013 decision 5). A press on a panel or a window of the HUD is the HUD's and selects nothing, but a drag begun in the world ends wherever it is let go (ADR-015 decision 5).
 - **Shift adds** a ship or a box to the selection, and Shift-clicking a selected ship takes it out. A ship added with Shift joins ships, never a structure (ADR-013 decision 5).
 - **A second click on the same ship within 400 ms** selects every ship of the player's on the screen of that ship's design and hull (ADR-013 decision 5).
 - **Ctrl and a digit store the selection as a control group; the digit recalls it,** and a second tap within 400 ms centers the camera on it (ADR-013 decision 5).
 - **A click on a ship's bar in the selection panel** selects that ship alone and centers the camera on it (ADR-088 decision 4; Game §interface.hud.selection).
-- **Ships that are gone, or are not the player's, drop out of the selection and the control groups;** another player's structure selected alone stays while it is seen or remembered, and joins no control group (ADR-013 decision 5).
+- **Ships that are gone, or are not the player's, drop out of the selection and the control groups;** another player's or the pirates' structure selected alone stays while it is seen or remembered, and joins no control group (ADR-013 decision 5).
 - **The selection is drawn as a ring round each selected ship,** green, or amber while attack-move or a standing order waits for its click (ADR-067 decision 1; Game §interface.marks).
 
 ### Direct orders [§orders.direct]
