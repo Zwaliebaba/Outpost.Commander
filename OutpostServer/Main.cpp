@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <shellapi.h>
+#include <shlobj.h>
 
 #include "ServerConsole.h"
 
@@ -13,7 +14,7 @@
 namespace
 {
 // The dedicated server (ADR-078). It makes a universe's folder with --new-universe, and runs the universe a folder
-// holds when given the folder.
+// holds when given the folder, or the default universe's when given nothing.
 constexpr std::wstring_view NEW_UNIVERSE_SWITCH = L"--new-universe";
 constexpr std::wstring_view HOST_OPTION = L"--host";
 constexpr std::wstring_view ADDRESS_OPTION = L"--address";
@@ -25,6 +26,8 @@ constexpr std::wstring_view HOURS_OPTION = L"--hours";
 constexpr std::wstring_view KILLS_OPTION = L"--kills";
 constexpr std::wstring_view MATCHUPS_SWITCH = L"--matchups";
 constexpr std::wstring_view SEEDS_OPTION = L"--seeds";
+// The default universe's folder, in the owner's documents beside the game's join file (ADR-078 decision 1).
+constexpr std::wstring_view DEFAULT_UNIVERSE_FOLDER = L"Outpost Commander\\Universe";
 constexpr std::string_view USAGE =
   "Outpost Commander's dedicated server.\n"
   "\n"
@@ -35,10 +38,12 @@ constexpr std::string_view USAGE =
   "      default; --address what the server listens on, 0.0.0.0 by default; --port its UDP port,\n"
   "      45000 by default. --ai gives a seat to an AI empire, Normal unless named.\n"
   "\n"
-  "  OutpostServer <folder>\n"
+  "  OutpostServer [<folder>]\n"
   "      Runs the universe in <folder>, coming back from its newest save, and writes a join file for\n"
   "      each player's seat there. Hand each player its file. A deputy keeps a player's empire\n"
-  "      running from a minute after the player leaves. Ctrl+C saves and stops it.\n"
+  "      running from a minute after the player leaves. Ctrl+C saves and stops it. Without <folder>\n"
+  "      it runs the universe in Outpost Commander\\Universe in your documents, making it first with\n"
+  "      --new-universe's defaults when there is none.\n"
   "\n"
   "  OutpostServer --universe-run <folder> [--seed <n>] [--hours <n>] [--kills <n>] [--ai Easy|Normal|Hard]\n"
   "      Plays a universe with an AI empire in every seat as fast as it can, 24 hours of it unless\n"
@@ -169,11 +174,22 @@ int MakeUniverse(const std::filesystem::path& _folder, std::span<const std::wstr
     throw Neuron::Exception(std::format("{} holds a universe already.", Utf8(_folder)));
   std::filesystem::create_directories(_folder);
   WriteText(settingsPath, Outpost::WriteUniverseSettings(settings));
-  Outpost::ServerConsole::Print(std::format("Made a universe of {} seats in {}, seed {}. Players reach it at {}, port {}.\n"
-                                            "Run it with: OutpostServer \"{}\"",
-                                            settings.seats.size(), Utf8(_folder), settings.seed, settings.host, settings.port,
-                                            Utf8(_folder)));
+  Outpost::ServerConsole::Print(std::format("Made a universe of {} seats in {}, seed {}. Players reach it at {}, port {}.",
+                                            settings.seats.size(), Utf8(_folder), settings.seed, settings.host, settings.port));
   return EXIT_SUCCESS;
+}
+
+// The default universe's folder in the owner's documents. Throws when Windows does not say where the documents are.
+std::filesystem::path DefaultUniverseFolder()
+{
+  PWSTR documents = nullptr;
+  const HRESULT found = SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_DEFAULT, nullptr, &documents);
+  std::filesystem::path folder;
+  if (SUCCEEDED(found))
+    folder = std::filesystem::path(documents) / DEFAULT_UNIVERSE_FOLDER;
+  CoTaskMemFree(documents);
+  winrt::check_hresult(found);
+  return folder;
 }
 
 // Runs the universe in _folder until a stop is asked for, and leaves it saved.
@@ -375,13 +391,25 @@ int Run()
 
     const std::vector<std::wstring> arguments = CommandLineArguments();
     if (arguments.size() >= 2 && arguments[0] == NEW_UNIVERSE_SWITCH)
-      return MakeUniverse(arguments[1], std::span(arguments).subspan(2));
+    {
+      const int made = MakeUniverse(arguments[1], std::span(arguments).subspan(2));
+      Outpost::ServerConsole::Print(std::format("Run it with: OutpostServer \"{}\"", Utf8(std::filesystem::path(arguments[1]))));
+      return made;
+    }
     if (arguments.size() >= 2 && arguments[0] == UNIVERSE_RUN_SWITCH)
       return UniverseRun(arguments[1], std::span(arguments).subspan(2));
     if (!arguments.empty() && arguments[0] == MATCHUPS_SWITCH)
       return Matchups(std::span(arguments).subspan(1));
     if (arguments.size() == 1 && !arguments[0].starts_with(L"--"))
       return RunUniverse(arguments[0]);
+    if (arguments.empty())
+    {
+      // The default universe, made first with --new-universe's defaults when its folder holds none.
+      const std::filesystem::path folder = DefaultUniverseFolder();
+      if (!std::filesystem::exists(folder / Outpost::UNIVERSE_SETTINGS_FILE))
+        (void)MakeUniverse(folder, {});
+      return RunUniverse(folder);
+    }
     Outpost::ServerConsole::PrintError(USAGE);
     return EXIT_FAILURE;
   }
