@@ -31,7 +31,7 @@ const Outpost::OutpostPlacement& OutpostOf(const TerritoryMatch& _match, std::st
 std::vector<const Outpost::Entity*> PiratesIn(TerritoryMatch& _match, std::int32_t _sector)
 {
   std::vector<const Outpost::Entity*> pirates;
-  for (const Outpost::Entity& entity : _match.World().Entities())
+  for (const Outpost::Entity& entity : _match.SimulationState().Entities())
   {
     if (entity.owner == Outpost::PIRATES && _match.Placement(_sector).Contains(entity.position))
       pirates.push_back(&entity);
@@ -66,14 +66,14 @@ std::pair<bool, std::size_t> Assault(TerritoryMatch& _match, std::int32_t _secto
   const Outpost::PlanePosition node = _match.Placement(_sector).node;
   const Outpost::PlanePosition from = TowardBlue(_match, _sector, 850.0f);
   const Outpost::PlaneVector across = Outpost::Perpendicular(Outpost::Normalized(node - from, {1.0f, 0.0f}));
-  const Outpost::DesignId design = _match.World().FindDesign(BLUE, {Outpost::HullId{1}, Outpost::DriveId{1}, _weapon})->id;
+  const Outpost::DesignId design = _match.SimulationState().FindDesign(BLUE, {Outpost::HullId{1}, Outpost::DriveId{1}, _weapon})->id;
   std::vector<Outpost::EntityId> ships;
   ships.reserve(_count);
   for (std::size_t i = 0; i < _count; ++i)
-    ships.push_back(_match.World().SpawnShip(BLUE, design, from + across * (30.0f * static_cast<float>(i))));
+    ships.push_back(_match.SimulationState().SpawnShip(BLUE, design, from + across * (30.0f * static_cast<float>(i))));
   for (std::uint32_t tick = 0; tick < _seconds * TICKS_PER_SECOND && !PiratesIn(_match, _sector).empty(); ++tick)
   {
-    std::erase_if(ships, [&_match](Outpost::EntityId _ship) { return _match.World().FindEntity(_ship) == nullptr; });
+    std::erase_if(ships, [&_match](Outpost::EntityId _ship) { return _match.SimulationState().FindEntity(_ship) == nullptr; });
     if (ships.empty())
       break;
     // Sent again every five seconds, as a player would, since an attack-move ends where it was aimed. They fight to the
@@ -84,9 +84,9 @@ std::pair<bool, std::size_t> Assault(TerritoryMatch& _match, std::int32_t _secto
         {.player = BLUE, .order = Outpost::SetRetreatCommand{.ships = ships, .retreat = Outpost::RetreatThreshold::Never}});
     if (tick % (5 * TICKS_PER_SECOND) == 0)
       commands.push_back({.player = BLUE, .order = Outpost::AttackMoveCommand{.ships = ships, .destination = node}});
-    (void)_match.World().Tick(commands);
+    (void)_match.SimulationState().Tick(commands);
   }
-  std::erase_if(ships, [&_match](Outpost::EntityId _ship) { return _match.World().FindEntity(_ship) == nullptr; });
+  std::erase_if(ships, [&_match](Outpost::EntityId _ship) { return _match.SimulationState().FindEntity(_ship) == nullptr; });
   return {PiratesIn(_match, _sector).empty(), ships.size()};
 }
 } // namespace
@@ -116,7 +116,7 @@ public:
           ++platforms;
           continue;
         }
-        const Outpost::ShipDesign& design = *match.World().FindDesign(pirate->design);
+        const Outpost::ShipDesign& design = *match.SimulationState().FindDesign(pirate->design);
         Assert::IsTrue(design.owner == Outpost::PIRATES);
         Assert::IsTrue(design.stats == Outpost::DesignStatsFor(match.TuningData(), design.components), L"at the base level");
         ships.push_back(design.components);
@@ -129,13 +129,13 @@ public:
       Assert::IsFalse(match.Sector(BLUE, outpost.sector).holder.IsValid(), L"the node is held for no one");
     }
     // Each outpost and its mirror's stand the same, turned half a turn about the center (ADR-073).
-    for (const Outpost::Entity& pirate : match.World().Entities())
+    for (const Outpost::Entity& pirate : match.SimulationState().Entities())
     {
       if (pirate.owner != Outpost::PIRATES || pirate.kind != Outpost::EntityKind::Structure)
         continue;
       const Outpost::PlanePosition across{.xMeters = -pirate.position.xMeters, .zMeters = -pirate.position.zMeters};
       Assert::IsTrue(
-        std::ranges::any_of(match.World().Entities(), [&](const Outpost::Entity& _other)
+        std::ranges::any_of(match.SimulationState().Entities(), [&](const Outpost::Entity& _other)
                             { return _other.owner == Outpost::PIRATES && Outpost::Distance(_other.position, across) < 0.01f; }));
     }
   }
@@ -148,7 +148,7 @@ public:
     const Outpost::EntityId intruder = match.Warship(BLUE, TowardBlue(match, sector, GUARD_METERS - 100.0f));
     match.FightToTheEnd(BLUE, {intruder});
     match.Run(40 * TICKS_PER_SECOND);
-    Assert::IsNull(match.World().FindEntity(intruder), L"the camp destroyed it");
+    Assert::IsNull(match.SimulationState().FindEntity(intruder), L"the camp destroyed it");
     match.Run(30 * TICKS_PER_SECOND);
     Assert::IsTrue(FarthestShip(match, sector) < HOME_METERS + 50.0f, L"and went back to its node");
   }
@@ -160,7 +160,7 @@ public:
     const std::int32_t sector = OutpostOf(match, "camp").sector;
     const Outpost::EntityId passer = match.Warship(BLUE, TowardBlue(match, sector, GUARD_METERS + 100.0f));
     match.Run(30 * TICKS_PER_SECOND);
-    Assert::IsNotNull(match.World().FindEntity(passer));
+    Assert::IsNotNull(match.SimulationState().FindEntity(passer));
     Assert::IsTrue(FarthestShip(match, sector) < HOME_METERS);
   }
 
@@ -172,7 +172,7 @@ public:
     const Outpost::EntityId runner = match.Warship(BLUE, TowardBlue(match, sector, GUARD_METERS - 50.0f));
     match.Run(3 * TICKS_PER_SECOND);
     Assert::IsTrue(FarthestShip(match, sector) > 250.0f, L"they set out after it");
-    (void)match.World().Tick(
+    (void)match.SimulationState().Tick(
       {{.player = BLUE, .order = Outpost::MoveCommand{.ships = {runner}, .destination = TowardBlue(match, sector, 2500.0f)}}});
     float farthest = 0.0f;
     std::size_t pirates = PiratesIn(match, sector).size();
@@ -185,7 +185,7 @@ public:
     }
     Assert::IsTrue(farthest < CHASE_METERS + 50.0f, L"they chased no further than the chase");
     Assert::IsTrue(FarthestShip(match, sector) < HOME_METERS + 50.0f, L"and went back to the node");
-    Assert::IsNotNull(match.World().FindEntity(runner));
+    Assert::IsNotNull(match.SimulationState().FindEntity(runner));
   }
 
   // The sector cannot be claimed while a structure of its outpost stands, and can once they have all fallen.
@@ -201,18 +201,18 @@ public:
     // The camp's wreck lies on the node, where its platform stood, until it is salvaged (ADR-074).
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::InvalidPlacement, L"the wreck blocks");
     const auto wreck =
-      std::ranges::find_if(match.World().Entities(), [node](const Outpost::Entity& _entity)
+      std::ranges::find_if(match.SimulationState().Entities(), [node](const Outpost::Entity& _entity)
                            { return _entity.kind == Outpost::EntityKind::Derelict && Outpost::Distance(_entity.position, node) < 1.0f; });
-    Assert::IsTrue(wreck != match.World().Entities().end(), L"a wreck on the node");
+    Assert::IsTrue(wreck != match.SimulationState().Entities().end(), L"a wreck on the node");
     Assert::AreEqual(600, wreck->salvageOre, L"a camp's");
-    const Outpost::EntityId constructor = match.World().SpawnConstructor(BLUE, TowardBlue(match, sector, 80.0f));
+    const Outpost::EntityId constructor = match.SimulationState().SpawnConstructor(BLUE, TowardBlue(match, sector, 80.0f));
     const Outpost::EntityId derelict = wreck->id;
-    Assert::IsTrue(match.World()
+    Assert::IsTrue(match.SimulationState()
                        .Tick({{.player = BLUE, .order = Outpost::SalvageCommand{.constructors = {constructor}, .derelict = derelict}}})
                        .front() == Outpost::CommandResult::Applied,
                    L"salvage ordered");
     match.Run(40 * TICKS_PER_SECOND);
-    Assert::IsNull(match.World().FindEntity(derelict), L"salvaged");
+    Assert::IsNull(match.SimulationState().FindEntity(derelict), L"salvaged");
     Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, node) == Outpost::CommandResult::Applied, L"then a Relay");
   }
 

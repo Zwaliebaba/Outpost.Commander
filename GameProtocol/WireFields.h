@@ -1,7 +1,7 @@
 #pragma once
 
 // The fields of every type that crosses the wire, which ByteWriter and ByteReader find by argument-dependent lookup, and
-// each of their enumerations' last value. WireFormat.cpp writes messages from them, and a world's save writes the
+// each of their enumerations' last value. WireFormat.cpp writes messages from them, and a universe's save writes the
 // protocol's types it holds from them too (ADR-060, ADR-077). Included where it is needed, not by GameProtocol.h.
 
 #include <concepts>
@@ -11,7 +11,7 @@
 namespace Outpost
 {
 // Each type's fields, in the order it declares them, which is the order they cross the wire in, and the order they are
-// saved in where a world's state holds them (ADR-077). A structured binding has to name every field, so a field added to
+// saved in where a universe's state holds them (ADR-077). A structured binding has to name every field, so a field added to
 // one of these types and not here does not compile (ADR-060).
 template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, PlanePosition>

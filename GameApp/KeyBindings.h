@@ -120,7 +120,7 @@ struct KeyBinding
     {.keys = KeyName(KEY_RESEARCH), .does = "Research"},
     {.keys = KeyName(KEY_ORDERS), .does = "Scheduled orders"},
     {.keys = KeyName(KEY_CONTROLS), .does = "These controls"},
-    {.keys = KeyName(KEY_CANCEL), .does = "Close the front window, or cancel an order"},
+    {.keys = KeyName(KEY_CANCEL), .does = "Close a window, cancel an order, or leave a universe"},
     {.keys = std::format("{}, held", KeyName(KEY_EVERY_HEALTH_BAR)), .does = "Every health bar"},
     {.keys = std::format("Ctrl+{} and Ctrl+{}", KeyName(KEY_LARGER_INTERFACE), KeyName(KEY_SMALLER_INTERFACE)),
      .does = "The interface larger and smaller"},

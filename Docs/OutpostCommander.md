@@ -25,10 +25,10 @@ Outpost Commander is a real-time strategy game in space, built on the model of W
 **Where it is played.**
 
 - **A skirmish** is one match against the AI, at Easy, Normal or Hard, on a server inside the game (Game §session.skirmish; Game §ai).
-- **A world** is a match that does not end, run on a dedicated server for a circle of friends and AI empires. It keeps running while its players are away, a deputy keeps an absent player's empire going, and a player who loses starts again (Game §session.server; Game §world).
+- **A universe** is a match that does not end, run on a dedicated server for a circle of friends and AI empires. It keeps running while its players are away, a deputy keeps an absent player's empire going, and a player who loses starts again (Game §session.server; Game §universe).
 - **Battle matchups and runs without a player** are instruments for the owner, not play (Game §session.matchup; Game §session.instruments).
 
-**How a match ends.** A player whose base was placed is beaten when it has neither a Command Station nor a finished Shipyard, or when its tickets run out. The match ends once, with a winner or a draw (Game §session.end). In a world no match ends: a fallen empire restarts at its start (Game §world.restart).
+**How a match ends.** A player whose base was placed is beaten when it has neither a Command Station nor a finished Shipyard, or when its tickets run out. The match ends once, with a winner or a draw (Game §session.end). In a universe no match ends: a fallen empire restarts at its start (Game §universe.restart).
 
 **What decides.** A server decides everything, on a fixed tick, and every game sees only the snapshots it is sent: the player's game, the AI and a deputy give orders as commands, and the server checks and applies them (ADR-002 decisions 2 and 7; Game §orders.giving). A match replays from its seed and its commands on the same build (ADR-009 decision 1).
 
@@ -38,18 +38,19 @@ Outpost Commander is a real-time strategy game in space, built on the model of W
 
 ## Session [§session]
 
-A session is everything between starting the game and closing it: the menu, a skirmish against the AI on the game's own server, a battle matchup, and a world on a dedicated server that the game joins. The rules of a world itself, its seats, its saves and what happens when a player loses in it, are Game §world.
+A session is everything between starting the game and closing it: the menu, a skirmish against the AI on the game's own server, a battle matchup, and a universe on a dedicated server that the game joins. The rules of a universe itself, its seats, its saves and what happens when a player loses in it, are Game §universe.
 
 ### Starting the game [§session.launch]
 
 - **The game opens on its menu, full screen** (ADR-006 decision 1; Game §interface.screen).
+- **With a join file in the player's documents, the game joins its universe at launch,** once, before it offers a skirmish: the menu says it is connecting, and a server that does not answer within 3 s leaves the menu with its notice and the skirmishes to play (ADR-078 decision 9; Game §session.join). The runs without a player and `--matchup` join nothing (Game §session.instruments; Game §session.matchup).
 - **Everything a skirmish needs is loaded before the screen goes full screen.** The window stays hidden while the first skirmish's server, the AI's three settings files, the client's meshes and the interface's atlas are made on threads of their own, so that a bad tuning, map, AI or model file is reported before the game takes the screen (ADR-049 decisions 2 and 3; ADR-065 decision 4).
 - **A failure is never a silent exit.** A failure at startup, a lost graphics device, or a failure on the skirmish server's thread is shown in a message box, and the game closes (ADR-006 decisions 7 and 8; ADR-025 decision 5).
 - **The game needs Windows 11**, since every match goes over QUIC and QUIC needs TLS 1.3 (ADR-060 decision 8).
 
 ### The menu [§session.menu]
 
-- **The menu offers, from top to bottom:** Easy skirmish, Normal skirmish and Hard skirmish (ADR-065 decision 4); Join world, but only when the player's documents hold `Outpost Commander\Join.json` (ADR-078 decision 9); and Quit (ADR-020 decision 10). Its title is "Outpost Commander", over "A skirmish against the AI".
+- **The menu offers, from top to bottom:** Easy skirmish, Normal skirmish and Hard skirmish (ADR-065 decision 4); Join universe, but only when the player's documents hold `Outpost Commander\Join.json` (ADR-078 decision 9); and Quit (ADR-020 decision 10). Its title is "Outpost Commander", over "A skirmish against the AI".
 - **A notice says why the last game ended** when it ended for a reason the player did not choose, such as a join that failed or a lost connection, in the warning's color under the subtitle (ADR-078 decision 10).
 - **The difficulty is picked per skirmish.** The game keeps the last one asked for while it runs, and starts each run at Normal; it is never remembered between runs and never changed in a match (ADR-065 decision 4 and what it forecloses). The difficulties themselves are Game §ai.difficulty.
 
@@ -59,13 +60,13 @@ A session is everything between starting the game and closing it: the menu, a sk
 - **Each skirmish has its own server and its own seed,** the seed taken from the system clock (ADR-020 decision 10; ADR-009 decision 5). The seed places the map's content (Game §map), and the match replays from its seed and its commands on the same build (ADR-009 decision 1).
 - **The player is player 1, and the AI player 2** at the difficulty the menu's button named (ADR-020 decision 10; ADR-065 decision 4). The AI plays by the player's rules and sees only what its player sees (Game §ai).
 - **Every skirmish is played under fog of war** (ADR-024 decision 2; Game §sight). Each player starts with the starting Ore, its starting designs saved and its base at its start ([Catalogue: rules](Reference/Catalogue.md#rules); ADR-014 decision 2; ADR-016 decision 3; Game §economy.ore; Game §ships.designs.starting; Game §map.starts).
-- **The match runs at the tuning data's tick rate whatever the frame rate** ([Catalogue: rules](Reference/Catalogue.md#rules); ADR-009 decision 3). It runs on while the game is minimized, while windows are open and while the frame loop stalls (ADR-025 decisions 1 and 2). A skirmish has no pause and no save: only a world is saved (ADR-077 decision 7).
+- **The match runs at the tuning data's tick rate whatever the frame rate** ([Catalogue: rules](Reference/Catalogue.md#rules); ADR-009 decision 3). It runs on while the game is minimized, while windows are open and while the frame loop stalls (ADR-025 decisions 1 and 2). A skirmish has no pause and no save: only a universe is saved (ADR-077 decision 7).
 - **A tag in the top-right corner says "Local skirmish",** and warns when no snapshot has come for 2 s (ADR-086 decisions 1 and 2; Game §session.join).
 - **The game logs every skirmish** to `OutpostCommander-matches.log` in the temporary folder: its seed, each player's research, each warship as it first appears, and how the match ended or that it was left (ADR-038 decisions 1 and 5).
 
 ### The end of a match [§session.end]
 
-- **A match ends once a player whose base was placed is beaten:** by losing its production (Game §world.loss) or by running out of tickets (Game §territory.domination). It ends once, in the tick it happens, with a winner, or with a draw when both players are beaten in the same tick (ADR-020 decision 9; ADR-037 decision 1; ADR-057 decision 5).
+- **A match ends once a player whose base was placed is beaten:** by losing its production (Game §universe.loss) or by running out of tickets (Game §territory.domination). It ends once, in the tick it happens, with a winner, or with a draw when both players are beaten in the same tick (ADR-020 decision 9; ADR-037 decision 1; ADR-057 decision 5).
 - **A player beaten both ways in one tick is beaten by production** (ADR-057 decision 5). The match records which ending it was (ADR-057 decision 6).
 - **The simulation runs on after the match ends, and the outcome stands** (ADR-020 decision 9).
 - **A banner says how it ended:** "Victory", "Defeat" or "Draw", and under it the match's length, after "By domination." for a domination, and a button, Back to menu (ADR-020 decision 9; ADR-057 decision 8).
@@ -81,28 +82,28 @@ A session is everything between starting the game and closing it: the menu, a sk
 
 ### The dedicated server [§session.server]
 
-- **A world runs on `OutpostServer`, a console program that is not packaged** and runs from a folder with the game's data beside it (ADR-078 decision 1).
-- **`OutpostServer --new-world <folder>` makes a world:** its settings, `World.json`, with a seat for each of the map's starts. It refuses a folder that holds a world already (ADR-078 decisions 1 and 2).
-  - `--host` is the name or address players reach the machine at, `localhost` unless given; `--address` the address the server listens on, `0.0.0.0` unless given; `--port` its UDP port, 45000 unless given (ADR-078 decision 2); and `--seed` the world's seed, the system clock's unless given (ADR-078 decision 1).
+- **A universe runs on `OutpostServer`, a console program that is not packaged** and runs from a folder with the game's data beside it (ADR-078 decision 1).
+- **`OutpostServer --new-universe <folder>` makes a universe:** its settings, `Universe.json`, with a seat for each of the map's starts. It refuses a folder that holds a universe already (ADR-078 decisions 1 and 2).
+  - `--host` is the name or address players reach the machine at, `localhost` unless given; `--address` the address the server listens on, `0.0.0.0` unless given; `--port` its UDP port, 45000 unless given (ADR-078 decision 2); and `--seed` the universe's seed, the system clock's unless given (ADR-078 decision 1).
   - `--ai <player>[:Easy|Normal|Hard]` gives a seat to an AI empire, Normal unless named (ADR-078 decision 1; ADR-079 decision 7).
-- **`OutpostServer <folder>` runs the world,** coming back from its newest save (Game §world.persistence). It hosts an AI empire for each AI seat and a deputy for each player's seat (ADR-079 decision 7; Game §world.handover), and writes a join file, `Join-Player<n>.json`, for each player's seat into the folder each time it runs. The owner hands each player its file (ADR-078 decision 8).
-- **Ctrl+C, Ctrl+Break, closing the console, signing out and shutting down all stop it,** and it writes the world's last save as it stops (ADR-078 decision 1). A failure on the server's thread ends the process with its message (ADR-078 decision 1; ADR-025 decision 5).
-- **A world's certificate is kept in its folder,** so a player pins it once; its hash changes only when its key is lost or after five years (ADR-078 decision 7).
+- **`OutpostServer <folder>` runs the universe,** coming back from its newest save (Game §universe.persistence). It hosts an AI empire for each AI seat and a deputy for each player's seat (ADR-079 decision 7; Game §universe.handover), and writes a join file, `Join-Player<n>.json`, for each player's seat into the folder each time it runs. The owner hands each player its file (ADR-078 decision 8).
+- **Ctrl+C, Ctrl+Break, closing the console, signing out and shutting down all stop it,** and it writes the universe's last save as it stops (ADR-078 decision 1). A failure on the server's thread ends the process with its message (ADR-078 decision 1; ADR-025 decision 5).
+- **A universe's certificate is kept in its folder,** so a player pins it once; its hash changes only when its key is lost or after five years (ADR-078 decision 7).
 - **Reaching the port from another machine is the owner's to arrange,** through the firewall and the router (ADR-078).
 
-### Joining a world [§session.join]
+### Joining a universe [§session.join]
 
-- **The game joins a world from a join file:** `--join <file>`, or the menu's Join world, which reads `Outpost Commander\Join.json` in the player's documents (ADR-078 decision 9).
-- **While a join connects, the menu says so,** "Connecting to 203.0.113.5:4433...", and only Quit can be pressed; the game keeps drawing, and the menu answers, until the server welcomes the player or the join fails (ADR-078 decision 9; ADR-086 decision 1). A join file holds the host, the port, the SHA-256 of the world's certificate, the seat's token and the player (ADR-078 decision 8).
+- **The game joins a universe from a join file:** `--join <file>`, or the menu's Join universe, which reads `Outpost Commander\Join.json` in the player's documents; and at launch, once, when the documents hold that file (ADR-078 decision 9; Game §session.launch).
+- **While a join connects, the menu says so,** "Connecting to 203.0.113.5:4433...", and only Quit can be pressed; the game keeps drawing, and the menu answers, until the server welcomes the player or the join fails (ADR-078 decision 9; ADR-086 decision 1). A join file holds the host, the port, the SHA-256 of the universe's certificate, the seat's token and the player (ADR-078 decision 8).
 - **The game accepts only the certificate the join file names** (ADR-060 decision 6).
-- **A joined world is the player's connection alone:** no server, rival or AI runs in the game (ADR-078 decision 9). The player plays the seat as it plays a skirmish, under that world's rules (Game §world).
-- **A seat is taken with its token, at any time while the world runs** (ADR-078 decisions 3 and 4). The first snapshot after the seat is taken shows everything the player sees and remembers; the shots and destructions of the ticks it missed are not shown (ADR-078 decision 4).
+- **A joined universe is the player's connection alone:** no server, rival or AI runs in the game (ADR-078 decision 9). The player plays the seat as it plays a skirmish, under that universe's rules (Game §universe).
+- **A seat is taken with its token, at any time while the universe runs** (ADR-078 decisions 3 and 4). The first snapshot after the seat is taken shows everything the player sees and remembers; the shots and destructions of the ticks it missed are not shown (ADR-078 decision 4).
 - **The ground explored before is the game's own record and starts afresh:** everything out of sight is drawn as never seen until it is seen again (Game §sight.memory).
-- **A join that fails goes back to the menu, saying why,** after "Could not join the world:": a join file that cannot be read, a server that cannot be reached or never seats the player, "The server refused the seat: it is not open there, or the join file's token is not the seat's." for a wrong token, and "The server runs another build of the game." for a game of another build (ADR-078 decisions 3 and 10; ADR-060 decision 5; ADR-086 decision 1).
+- **A join that fails goes back to the menu, saying why,** after "Could not join the universe:": a join file that cannot be read, a server that cannot be reached, within 3 s at launch and 10 s otherwise, or never seats the player, "The server refused the seat: it is not open there, or the join file's token is not the seat's." for a wrong token, and "The server runs another build of the game." for a game of another build (ADR-078 decisions 3 and 10; ADR-060 decision 5; ADR-086 decision 1).
 - **A connection lost in play takes the player back to the menu, saying why,** after "The connection to the server was lost:", in the server's own words when the server closed it (ADR-078 decision 10).
 - **The newest connection holds the seat.** A second game that joins with the same join file takes the seat, and the first goes back to the menu with "The seat was taken by another connection with its token." (ADR-078 decisions 4 and 10).
 - **A tag in the top-right corner names the server,** "Server" and its host and port as the join file names them, an IPv6 host in brackets. Once no snapshot has come for 2 s it warns, "No word from the server", counting the seconds (ADR-086 decisions 1 and 2).
-- **The way back to the menu from a world is the banner's,** which a world shows only once the player's empire has fallen (ADR-084 decision 7; Game §world.restart). Closing the game leaves the seat to its deputy (Game §world.handover).
+- **The way back to the menu from a universe is Esc, at any time:** with no window open and nothing armed, Esc opens the leave window, "Leave for the menu?", whose Leave universe goes back to the menu and whose Stay closes it. The connection closes at once, and the deputy takes the seat a minute later (ADR-078 decision 11; Game §universe.handover). Once the player's empire has fallen the banner offers the way back too (ADR-084 decision 7; Game §universe.restart). Closing the game leaves the seat to its deputy (Game §universe.handover).
 
 ### Runs without a player [§session.instruments]
 
@@ -110,14 +111,14 @@ These are instruments for the owner, not play.
 
 - **`--measure`, `--load` and `--stress` skip the menu** and start a skirmish at once against the Normal AI; under `--load` or `--stress` no AI plays (ADR-020 decision 10; ADR-065 decision 4).
 - **`--ai-matches` plays AI-against-AI matches headless,** stepped as fast as the server ticks, with no window, and logs them; its options name the seeds, each AI's settings and the log, and `--quiet` runs it for a script (ADR-038 decision 3; ADR-063 decisions 1 and 2).
-- **`OutpostServer --world-run <folder>`** plays a world with an AI empire in every seat, kills it at random ticks and brings it back from its folder, and compares it with the same world run straight through (ADR-082 decision 4).
+- **`OutpostServer --universe-run <folder>`** plays a universe with an AI empire in every seat, kills it at random ticks and brings it back from its folder, and compares it with the same universe run straight through (ADR-082 decision 4).
 - **`OutpostServer --matchups`** fights every battle matchup with the AI's battle behavior on both sides, over 40 seeds unless told otherwise, and says how often each side won (ADR-083 decision 5).
 
 ---
 
 ## The map [§map]
 
-Every match and every world is played on the one map the game ships: a square star system on a flat plane, divided into sectors, with the two starts in opposite corners. The map fixes its size, its sectors, the asteroid fields between them, the starts and each home's asteroids; the match's seed places the rest of the ore, the pirates' outposts and the derelicts, so that each seed plays a map of its own and both seats always play the same one (ADR-036 decision 4; ADR-072 decision 3). The map's numbers are data: [Catalogue: sizeMeters](Reference/Catalogue.md#sizeMeters).
+Every match and every universe is played on the one map the game ships: a square star system on a flat plane, divided into sectors, with the two starts in opposite corners. The map fixes its size, its sectors, the asteroid fields between them, the starts and each home's asteroids; the match's seed places the rest of the ore, the pirates' outposts and the derelicts, so that each seed plays a map of its own and both seats always play the same one (ADR-036 decision 4; ADR-072 decision 3). The map's numbers are data: [Catalogue: sizeMeters](Reference/Catalogue.md#sizeMeters).
 
 ### The plane [§map.plane]
 
@@ -236,7 +237,7 @@ The game has one resource, Ore. Mining Rigs on ore asteroids earn it, salvage ad
 
 - **The bank is the Ore a player holds.** Its rigs and its salvage fill it, and what it starts and builds empties it (Game §neutrals.salvage).
 - **It has no limit, and nothing drains it.** There is no upkeep on a fleet and no other charge over time (ADR-071; ADR-016). Ore that the fleet cap and the queues leave unspent stays in the bank.
-- **In a world, a seat that restarts keeps its bank**, raised to the starting Ore when it holds less (ADR-084 decision 4; Game §world.restart). The world log records each seat's bank every hour (ADR-082 decision 3; Game §world.log).
+- **In a universe, a seat that restarts keeps its bank**, raised to the starting Ore when it holds less (ADR-084 decision 4; Game §universe.restart). The universe log records each seat's bank every hour (ADR-082 decision 3; Game §universe.log).
 
 ### The fleet cap [§economy.fleetcap]
 
@@ -305,7 +306,7 @@ Territory is what the two players fight over between their bases. Each sector of
 
 - **A held sector is cut off when its holder holds no path of adjacent sectors from it to one of its home sectors.** Suppressed sectors keep the path, so only a lost sector breaks one (ADR-056 decision 7).
 - **A cut-off sector earns the cut-off share** of its rigs' income ([Catalogue: territory](Reference/Catalogue.md#territory)) until the link is restored (ADR-056 decision 5). It is still held, still in sight and still counts for domination (ADR-056 decision 9; ADR-057 decision 3).
-- **A player whose Command Station has fallen has no home sector**, so every sector it still holds is cut off (ADR-056 decision 7; Game §world.loss).
+- **A player whose Command Station has fallen has no home sector**, so every sector it still holds is cut off (ADR-056 decision 7; Game §universe.loss).
 
 ### Losing a sector [§territory.loss]
 
@@ -324,7 +325,7 @@ Territory is what the two players fight over between their bases. Each sector of
 - **What counts:** every sector a player holds, its home and its suppressed and cut-off sectors included. A node nobody holds, one the pirates guard, and a Relay site still being built count for no one (ADR-057 decision 3; ADR-056 decision 3).
 - **A player out of tickets loses.** The match ends once, with the simulation running on, and records that it ended by domination. A player who loses its production and its last tickets in the same tick loses by production (ADR-057 decisions 5 and 6; Game §session.end).
 - **Every player sees both players' tickets** and the drain's numbers, and the territory panel says who the drain takes from, how fast, and when they run out (ADR-057 decisions 7 and 8; Game §interface.hud.territory).
-- **A world has no tickets and no domination**: a world ends only when its owner stops it (ADR-084 decision 2; Game §world.overview).
+- **A universe has no tickets and no domination**: a universe ends only when its owner stops it (ADR-084 decision 2; Game §universe.overview).
 
 ---
 
@@ -448,7 +449,7 @@ A player's base is its structures. Its Command Station stands on its start from 
 ### The Command Station [§structures.station]
 
 - **Each player's Command Station stands on its start from the first tick**, built and armed, with the starting Constructors in a row in front of it, facing the map's center. It stands on its home sector's node and holds that sector (ADR-016 decision 3; ADR-056 decision 3; Game §map.starts; Game §territory.holding).
-- **No Constructor builds one.** A Command Station lost in a match is lost for good; in a world, a seat that restarts is given a new one (ADR-016 decision 4; ADR-037 decision 2; Game §world.restart).
+- **No Constructor builds one.** A Command Station lost in a match is lost for good; in a universe, a seat that restarts is given a new one (ADR-016 decision 4; ADR-037 decision 2; Game §universe.restart).
 - **It is the only place Constructors come from** (ADR-016 decision 6; Game §ships.constructor). A player without one keeps the Constructors it has and builds no more (ADR-037 decision 2).
 - **Its level sets three caps** ([Catalogue: structures](Reference/Catalogue.md#structures); ADR-064 decision 11; ADR-071 decision 1):
   - the nodes its player may hold (Game §territory.cap);
@@ -456,7 +457,7 @@ A player's base is its structures. Its Command Station stands on its start from 
   - the command points its player's warships may take (Game §economy.fleetcap).
 - **Each further gun is the station's gun, on a rhythm of its own**, firing at the target the station holds (ADR-064 decision 11; Game §combat.structures).
 - **It repairs the ships near it**, as a Repair Bay does (ADR-075 decision 3; Game §neutrals.repair.base).
-- **A player without a Command Station has level 1's caps**, has its finished Shipyards revealed to its enemy, and has lost once it also has no finished Shipyard (ADR-037 decisions 1 and 3; ADR-056 decision 4; ADR-071 decision 1; Game §world.loss).
+- **A player without a Command Station has level 1's caps**, has its finished Shipyards revealed to its enemy, and has lost once it also has no finished Shipyard (ADR-037 decisions 1 and 3; ADR-056 decision 4; ADR-071 decision 1; Game §universe.loss).
 - **What it is for:** armed and armored, it destroys a handful of early raiders that would otherwise end a match in its first minutes (ADR-016 decision 7).
 
 ### The Shipyard [§structures.shipyard]
@@ -701,7 +702,7 @@ Ships and armed structures fight by a few fixed rules that the server plays ever
 
 ### Destruction [§combat.destruction]
 
-- **A ship or structure whose hit points reach nothing is destroyed at the end of the tick and leaves the world.** Every order on it ends, and so does every target (ADR-014 decision 6).
+- **A ship or structure whose hit points reach nothing is destroyed at the end of the tick and leaves the simulation.** Every order on it ends, and so does every target (ADR-014 decision 6).
 - **A destroyed structure stops blocking**, and the paths round it are brought up to date (Game §structures.blocking).
 - **What is lost with it:** a structure's levels and an upgrade under way (Game §structures.levels.loss), a producer's queue (Game §structures.production), and a Research Lab's queue and topic under way (Game §research.lab). Nothing is refunded (Game §economy.costs).
 - **A ship that survives a hit below its retreat threshold turns for home**, checked once the tick's hits have landed (Game §orders.retreat.going).
@@ -902,7 +903,7 @@ A player commands its ships by orders, and only by orders. An order is given to 
 ### How an order is given [§orders.giving]
 
 - **An order is a command to the server, never a change.** The server checks it against ownership, cost and legality, applies it at the start of its next tick, or refuses it (ADR-002 decision 2). The player's own game, the AI, a deputy and a scheduled order all give orders the same way (ADR-002 decision 7; ADR-079 decision 2; ADR-080 decision 5).
-- **An order leaves as soon as it is given,** and the screen shows the world one tick behind the newest snapshot, so a ship visibly answers about a tick after the server applied the order (ADR-013 decision 3; ADR-002 decision 5).
+- **An order leaves as soon as it is given,** and the screen shows the simulation one tick behind the newest snapshot, so a ship visibly answers about a tick after the server applied the order (ADR-013 decision 3; ADR-002 decision 5).
 - **A refused order is not obeyed, and the player who gave it is told why,** in words, as an alert; a scheduled order refused as it fires says so as it fires (ADR-094; ADR-080 decision 5; Game §interface.alerts).
 - **Orders go to the selected ships.** A selected structure takes no ship order (ADR-013 decision 5).
 
@@ -986,15 +987,15 @@ A scheduled order is an order given in advance that the server carries out later
 - **A ship waits on one scheduled order at a time.** Any order the player gives it takes it out, and so does a new scheduled order; setting its retreat does not. An order none waits on any more is dropped, and so is one whose ships are all gone, so the orders are bounded by the ships (ADR-080 decision 5).
 - **The player can cancel a scheduled order** from the orders window: it is gone at once and never fires, and its ships keep what they were doing (ADR-080 decision 5).
 - **Giving a scheduled order gives its ships nothing to do until it fires:** they keep their orders, their standing order and their retreat until then (ADR-080 decision 5; ADR-075 decision 6).
-- **A deputy leaves alone a ship that waits on one,** and the server fires it whoever plays the seat (ADR-079 decision 6; ADR-080 decision 5; Game §world.handover).
+- **A deputy leaves alone a ship that waits on one,** and the server fires it whoever plays the seat (ADR-079 decision 6; ADR-080 decision 5; Game §universe.handover).
 - **Only its owner sees it** (ADR-080 decision 5).
 
 #### A time of day [§orders.scheduled.time]
 
 - **A time of day is the player's clock:** the zone the player's system is set to, with its summer time; where the system cannot say the zone, UTC (ADR-080 decisions 6 and 9).
 - **The game turns the hour and minute picked into the next such moment on that clock.** A moment a clock skips as summer time starts is the moment it skips at, and one it reads twice as summer time ends is the first (ADR-080 decisions 6 and 9).
-- **The server turns the moment into a tick as the order arrives,** the first tick at or after it, at most a week ahead. The tick a game writes is never trusted, so the world's log replays (ADR-080 decision 6; ADR-009 decision 3).
-- **A time of day is a moment, not a recurring hour.** An order for 02:00 fires once, at the next 02:00; another night needs another order. A pause while the server is down pushes it late: it fires at its tick (ADR-080 decision 6; Game §world.persistence).
+- **The server turns the moment into a tick as the order arrives,** the first tick at or after it, at most a week ahead. The tick a game writes is never trusted, so the universe's log replays (ADR-080 decision 6; ADR-009 decision 3).
+- **A time of day is a moment, not a recurring hour.** An order for 02:00 fires once, at the next 02:00; another night needs another order. A pause while the server is down pushes it late: it fires at its tick (ADR-080 decision 6; Game §universe.persistence).
 
 #### The orders window [§orders.scheduled.window]
 
@@ -1039,7 +1040,7 @@ A player sees what its own ships and structures see, all of each sector it holds
 
 ### Where the fog is [§sight.where]
 
-- **Every skirmish and every world is played under fog of war,** and so are the measurement runs (ADR-024 decision 2). A battle matchup is fought in the open (ADR-083 decision 2; Game §session.matchup).
+- **Every skirmish and every universe is played under fog of war,** and so are the measurement runs (ADR-024 decision 2). A battle matchup is fought in the open (ADR-083 decision 2; Game §session.matchup).
 - **A snapshot under fog says so,** and the game draws the fog only then (ADR-024 decision 6).
 - **The AI plays under the same fog** as the player (ADR-020 decision 17; Game §ai.client).
 
@@ -1077,9 +1078,9 @@ A player sees what its own ships and structures see, all of each sector it holds
 - **Ships are not remembered.** An enemy ship is shown only while it is seen (ADR-024 decisions 5 and 6).
 - **A memory changes only when the place is seen again,** a revealed Shipyard aside (below). An upgrade, damage or building done out of the player's sight shows once the player sees the structure again (ADR-064 decision 6; ADR-024 decision 5).
 - **A memory is forgotten once its place is in sight and it is not seen there,** which is how a player learns that a structure is gone (ADR-024 decision 5).
-- **The last production is revealed.** While a player has no Command Station, each of its finished Shipyards is added to every other player's memory at the end of each tick, or brought up to date there, unless that player sees it. A Shipyard still a site is not revealed (ADR-037 decision 3; Game §world.loss).
-- **What a player has seen and remembers is part of the world's state.** It replays from the command log, a world's save keeps it, and the first snapshot after a seat is taken again shows everything the player sees and remembers (ADR-024 decision 5; ADR-077 decision 3; ADR-079 decision 5; ADR-081 decision 1; Game §world.persistence).
-- **Where the ground has been seen before is the player's game's own record,** kept for as long as its match is on screen. A game that joins a world, or joins it again, starts that record afresh; the server's memory of structures, derelicts and reserves is whole all the same (ADR-024 decision 9).
+- **The last production is revealed.** While a player has no Command Station, each of its finished Shipyards is added to every other player's memory at the end of each tick, or brought up to date there, unless that player sees it. A Shipyard still a site is not revealed (ADR-037 decision 3; Game §universe.loss).
+- **What a player has seen and remembers is part of the simulation's state.** It replays from the command log, a universe's save keeps it, and the first snapshot after a seat is taken again shows everything the player sees and remembers (ADR-024 decision 5; ADR-077 decision 3; ADR-079 decision 5; ADR-081 decision 1; Game §universe.persistence).
+- **Where the ground has been seen before is the player's game's own record,** kept for as long as its match is on screen. A game that joins a universe, or joins it again, starts that record afresh; the server's memory of structures, derelicts and reserves is whole all the same (ADR-024 decision 9).
 
 ### What fog does to orders [§sight.orders]
 
@@ -1105,7 +1106,7 @@ A player sees what its own ships and structures see, all of each sector it holds
 
 ## The AI [§ai]
 
-The AI is a computer player that plays the game by the player's rules. It plays the second seat of a skirmish at the difficulty the menu named, the seat of an AI empire in a world, and, as a deputy, the seat of a player who is away from a world. All three are one library, `Opponent`, playing from the snapshots a player's own game reads and answering with the commands a player gives (ADR-002 decision 7; ADR-020 decision 1; ADR-079 decisions 3 and 6). In a battle matchup the AI is its battle behavior instead (ADR-083 decision 4; Game §session.matchup).
+The AI is a computer player that plays the game by the player's rules. It plays the second seat of a skirmish at the difficulty the menu named, the seat of an AI empire in a universe, and, as a deputy, the seat of a player who is away from a universe. All three are one library, `Opponent`, playing from the snapshots a player's own game reads and answering with the commands a player gives (ADR-002 decision 7; ADR-020 decision 1; ADR-079 decisions 3 and 6). In a battle matchup the AI is its battle behavior instead (ADR-083 decision 4; Game §session.matchup).
 
 ### A player like any other [§ai.client]
 
@@ -1120,10 +1121,10 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 
 ### Difficulties [§ai.difficulty]
 
-- **The AI plays at Easy, Normal or Hard:** a skirmish at the difficulty the menu's button named, and a world's AI empire at its seat's difficulty (ADR-065 decisions 1 and 4; ADR-079 decision 7; Game §session.menu).
+- **The AI plays at Easy, Normal or Hard:** a skirmish at the difficulty the menu's button named, and a universe's AI empire at its seat's difficulty (ADR-065 decisions 1 and 4; ADR-079 decision 7; Game §session.menu).
 - **Each difficulty is a settings file of its own:** Normal is `Opponent.json`, and `OpponentEasy.json` and `OpponentHard.json` stand beside it, each whole and read as strictly as the tuning data. The server never reads them: they are how one player plays, not the match's rules (ADR-065 decision 1; ADR-020 decision 2).
 - **Every difficulty plays the same rules; only the numbers differ.** How Easy and Hard differ from Normal is ADR-065 decisions 2 and 3, and each file's numbers stand side by side in [Catalogue: Opponent](Reference/Catalogue.md#opponent).
-- **A deputy plays from Normal's file,** whatever the difficulty of the world's AI empires (ADR-079 decision 6).
+- **A deputy plays from Normal's file,** whatever the difficulty of the universe's AI empires (ADR-079 decision 6).
 
 ### Its base [§ai.base]
 
@@ -1181,7 +1182,7 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 - **It claims nothing the pirates guard.** It plans neither a Relay nor a rig in a guarded sector, and a claim that turns out to be guarded is dropped and another made in its place (ADR-020 decision 13; ADR-076 decision 7).
 - **It fortifies its front.** A sector it holds next to one the enemy holds, its home aside, is its front, and the Relay there gets its settings' Defence Platforms beside it, toward its base, once ([Catalogue: frontPlatforms](Reference/Catalogue.md#frontPlatforms); ADR-020 decision 13).
 - **It keeps a scout,** of its scout design, which carries a Sensor Array ([Catalogue: scouts](Reference/Catalogue.md#scouts), [Catalogue: scoutDesign](Reference/Catalogue.md#scoutDesign)). A scout is queued ahead of its warships and of a structure waiting for Ore, so that the first sets out in the opening minutes, and it is not part of the reserve (ADR-020 decision 13; ADR-058 decision 5).
-  - **First it explores its own half,** for its settings' time from the match's or the world's first tick, so an AI empire made afresh later in a world sends its scout round the enemy's flanks at once ([Catalogue: scoutOwnHalfSeconds](Reference/Catalogue.md#scoutOwnHalfSeconds)). It moves, rather than attack-moves, from node to node of the sectors nearer its base than the enemy's, its home aside, the nearest first. A guarded sector it looks at from a lookout 650 m from its node toward its base, or nearer when its base is nearer, outside the reach in which the pirates attack and within its Sensor Array's sight ([Catalogue: pirates](Reference/Catalogue.md#pirates), [Catalogue: modules](Reference/Catalogue.md#modules)). A lookout is turned up to 0.7 radians either way to keep clear of asteroids and structures, and dropped when none is clear (ADR-076 decision 4).
+  - **First it explores its own half,** for its settings' time from the match's or the universe's first tick, so an AI empire made afresh later in a universe sends its scout round the enemy's flanks at once ([Catalogue: scoutOwnHalfSeconds](Reference/Catalogue.md#scoutOwnHalfSeconds)). It moves, rather than attack-moves, from node to node of the sectors nearer its base than the enemy's, its home aside, the nearest first. A guarded sector it looks at from a lookout 650 m from its node toward its base, or nearer when its base is nearer, outside the reach in which the pirates attack and within its Sensor Array's sight ([Catalogue: pirates](Reference/Catalogue.md#pirates), [Catalogue: modules](Reference/Catalogue.md#modules)). A lookout is turned up to 0.7 radians either way to keep clear of asteroids and structures, and dropped when none is clear (ADR-076 decision 4).
   - **Then it tours the enemy's flanks,** attack-moving from one sector next to the enemy's home to the next, so that it meets what is there and suppresses the Relays there while it lives. It takes the enemy's home to be across the map's center from its own (ADR-020 decision 13; Game §territory.suppression).
 - **It raids.** While its reserve holds at least twice its raid's size, that many of the reserve's smallest hulls, which are the fastest, attack-move on the nearest enemy sector, not the enemy's home, by whose node it sees no enemy or pirate warship within 600 m ([Catalogue: raidShips](Reference/Catalogue.md#raidShips)). Those that come near the sector's Relay attack it (ADR-020 decision 13).
   - **A raid ends** once the sector stops being the enemy's, or once it has lost its settings' share of its ships. Its ships then rejoin the reserve, and the next raid waits its settings' interval ([Catalogue: raidLossShare](Reference/Catalogue.md#raidLossShare), [Catalogue: raidIntervalSeconds](Reference/Catalogue.md#raidIntervalSeconds); ADR-020 decision 13).
@@ -1206,18 +1207,18 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 - **Its plan adopts what stands.** A slot for a Shipyard, a Research Lab, a Defence Platform or a Repair Bay takes an own structure of that kind that no slot holds, the nearest within 400 m of the slot's place, rather than a new place beside it. A rig's and a Relay's slots stand where their structures already do. The Relays of the sectors it holds beyond its home become its claims, and count against its claims (ADR-020 decision 16).
 - **Its player's ships join its reserve** (ADR-020 decision 16).
 - **Without a Command Station** its plan is laid round its oldest Shipyard, or else its oldest structure; with no structure at all it waits (ADR-020 decision 16).
-- **It plays on without its Command Station.** It keeps its Shipyards' queues full, researches, builds its plan, repairs with the Constructors it has, and plans new Shipyards round where its station stood. It queues no Constructors (ADR-020 decision 18; Game §world.loss).
+- **It plays on without its Command Station.** It keeps its Shipyards' queues full, researches, builds its plan, repairs with the Constructors it has, and plans new Shipyards round where its station stood. It queues no Constructors (ADR-020 decision 18; Game §universe.loss).
 
 ### AI empires [§ai.empire]
 
-- **An AI empire is the AI playing a world's seat of its own, to win,** at its seat's difficulty (ADR-079 decisions 3 and 7; Game §world.seats).
-- **The server plays it on its own thread.** After each tick, once every player has been sent its snapshot, the AI empire is handed its seat's snapshot, and its orders are applied at the next tick and logged as a player's are, so a world replays from its log without it (ADR-079 decision 2).
-- **Made afresh after the server restarts,** it plays on from the world the server restored, though not as it would have (ADR-079 decision 3; ADR-020 decision 16).
-- **When its seat restarts after a loss,** it lays its plan afresh round its new Command Station (ADR-084 decision 6; Game §world.restart).
+- **An AI empire is the AI playing a universe's seat of its own, to win,** at its seat's difficulty (ADR-079 decisions 3 and 7; Game §universe.seats).
+- **The server plays it on its own thread.** After each tick, once every player has been sent its snapshot, the AI empire is handed its seat's snapshot, and its orders are applied at the next tick and logged as a player's are, so a universe replays from its log without it (ADR-079 decision 2).
+- **Made afresh after the server restarts,** it plays on from the universe the server restored, though not as it would have (ADR-079 decision 3; ADR-020 decision 16).
+- **When its seat restarts after a loss,** it lays its plan afresh round its new Command Station (ADR-084 decision 6; Game §universe.restart).
 
 ### The deputy [§ai.deputy]
 
-- **A deputy keeps an absent player's empire running and plays for nothing more.** When it plays the seat and when it hands it back is Game §world.handover. It decides once a second while it plays, and plays from the Normal AI's file for its research order and how long its defense holds (ADR-079 decision 6).
+- **A deputy keeps an absent player's empire running and plays for nothing more.** When it plays the seat and when it hands it back is Game §universe.handover. It decides once a second while it plays, and plays from the Normal AI's file for its research order and how long its defense holds (ADR-079 decision 6).
 - **It learns while it watches.** While the player plays the seat, the deputy gives no order, and learns what each Shipyard last queued and where the player's rigs stand (ADR-079 decisions 1 and 6).
 - **Research.** A Research Lab with a slot free takes the next topic of the AI's research order, and once that is done, any topic it can take (ADR-079 decision 6; Game §research.queue).
 - **Production.** A finished Shipyard whose queue is empty is given again the design it last queued. One it never saw build, as after the server restarted, is given the design most of its player's warships are of, if its level can build it. It keeps one job queued, which waits for the Ore and the fleet cap as any job does. When the cap holds a Shipyard's next ship back, it upgrades the Command Station once the Ore is there (ADR-079 decision 6; Game §economy.fleetcap).
@@ -1232,27 +1233,27 @@ The AI is a computer player that plays the game by the player's rules. It plays 
 
 ---
 
-## World [§world]
+## Universe [§universe]
 
-A world is a match that does not end. It runs on a dedicated server that the owner keeps going (Game §session.server), keeps running while its players are away, saves itself every minute, and comes back from a restart with what it had. A player who loses in it starts again. How a player joins one is Game §session.join; the rule of loss, which a match and a world share, is here.
+A universe is a match that does not end. It runs on a dedicated server that the owner keeps going (Game §session.server), keeps running while its players are away, saves itself every minute, and comes back from a restart with what it had. A player who loses in it starts again. How a player joins one is Game §session.join; the rule of loss, which a match and a universe share, is here.
 
-### What a world is [§world.overview]
+### What a universe is [§universe.overview]
 
-- **A world is played on the map a skirmish is played on,** under fog of war, with its pirates and derelicts placed from the world's seed, and a seat for each of the map's starts ([Catalogue: starts](Reference/Catalogue.md#starts); ADR-078 decision 2; ADR-024 decision 2; Game §map).
-- **A world's rules are its own, set when it is made and saved with it** (ADR-084 decision 1).
-- **Domination is off in a world.** No player has tickets, none drain, and the territory panel shows neither (ADR-084 decision 2; ADR-057 decisions 4 and 8; Game §territory.domination).
-- **No match ends in a world.** A player who loses restarts (Game §world.restart), and the world runs until the owner stops its server (ADR-084 decision 2; ADR-078 decision 1).
-- **A world's rules differ from a match's in two things only,** domination and what a loss does; the economy, territory, the fleet cap, pirates, salvage and repair play in a world as they do in a skirmish (ADR-084 decisions 1 to 4).
+- **A universe is played on the map a skirmish is played on,** under fog of war, with its pirates and derelicts placed from the universe's seed, and a seat for each of the map's starts ([Catalogue: starts](Reference/Catalogue.md#starts); ADR-078 decision 2; ADR-024 decision 2; Game §map).
+- **A universe's rules are its own, set when it is made and saved with it** (ADR-084 decision 1).
+- **Domination is off in a universe.** No player has tickets, none drain, and the territory panel shows neither (ADR-084 decision 2; ADR-057 decisions 4 and 8; Game §territory.domination).
+- **No match ends in a universe.** A player who loses restarts (Game §universe.restart), and the universe runs until the owner stops its server (ADR-084 decision 2; ADR-078 decision 1).
+- **A universe's rules differ from a match's in two things only,** domination and what a loss does; the economy, territory, the fleet cap, pirates, salvage and repair play in a universe as they do in a skirmish (ADR-084 decisions 1 to 4).
 
-### Seats [§world.seats]
+### Seats [§universe.seats]
 
-- **Each of the map's starts is a seat,** and each seat is a player's or an AI empire's, as the world's settings say (ADR-078 decision 2; ADR-079 decision 7).
+- **Each of the map's starts is a seat,** and each seat is a player's or an AI empire's, as the universe's settings say (ADR-078 decision 2; ADR-079 decision 7).
 - **An AI empire is the AI, playing its seat to win** at its difficulty, on the server (ADR-079 decisions 3 and 7; Game §ai.empire). It has no token and no join file (ADR-079 decision 7).
-- **A player's seat is taken with its token,** 128 bits from the system's cryptographic source, which the world's settings and the seat's join file hold as plain text. Anyone who has the file can take the seat: that is the trust of a circle of friends (ADR-078 decision 3).
-- **A seat is taken at any time while the world runs, and again after a dropped connection,** and the newest connection holds it (ADR-078 decision 4; Game §session.join).
-- **A seat is played by one controller at a time:** its player, its deputy, or, for an AI seat, the AI empire (ADR-079 decisions 3 and 4; Game §world.handover).
+- **A player's seat is taken with its token,** 128 bits from the system's cryptographic source, which the universe's settings and the seat's join file hold as plain text. Anyone who has the file can take the seat: that is the trust of a circle of friends (ADR-078 decision 3).
+- **A seat is taken at any time while the universe runs, and again after a dropped connection,** and the newest connection holds it (ADR-078 decision 4; Game §session.join).
+- **A seat is played by one controller at a time:** its player, its deputy, or, for an AI seat, the AI empire (ADR-079 decisions 3 and 4; Game §universe.handover).
 
-### The hand-over [§world.handover]
+### The hand-over [§universe.handover]
 
 - **A player's seat is its deputy's until the player first takes it** (ADR-079 decision 4).
 - **The player plays the seat while its newest connection is open, and for 60 s of ticks after the server sees that connection gone.** A connection the game closes is seen gone at once; one whose game vanished is seen gone once the transport's idle timeout ends it. After the 60 s the deputy plays the seat until the player takes it again, which hands it back at once (ADR-079 decision 4). So a connection dropped and taken up again within the minute never sees the deputy.
@@ -1260,50 +1261,50 @@ A world is a match that does not end. It runs on a dedicated server that the own
 - **Orders are the server's, whoever plays the seat.** What the deputy ordered stands until the player changes it, and the player's standing and scheduled orders go on while the deputy plays: the deputy leaves the player's orders standing (Game §ai.deputy), and the server fires a scheduled order whoever plays the seat (ADR-079 decision 2; ADR-080 decision 5; Game §orders.scheduled.firing).
 - **While the player plays, the deputy only watches;** what it learns is Game §ai.deputy (ADR-079 decision 1).
 
-### What the player missed [§world.away]
+### What the player missed [§universe.away]
 
 - **While the deputy plays a seat its player has held, the server keeps the seat's report of the time away:** the ships and structures built and lost, the sectors gained and lost as the player comes back to them, a sector gained and lost again being in neither, and the last 16 scheduled orders that fired (ADR-080 decision 7).
-- **The player's first snapshot after it takes the seat again carries the report, once.** A player's first join of a seat carries none, since the deputy played it from the world's start for an empire the player never had (ADR-080 decision 7; ADR-079 decision 4).
+- **The player's first snapshot after it takes the seat again carries the report, once.** A player's first join of a seat carries none, since the deputy played it from the universe's start for an empire the player never had (ADR-080 decision 7; ADR-079 decision 4).
 - **The away window opens by itself when the report arrives:** how long the player was away, what was built and lost, the sectors gained and lost by name, and each order that fired, as its alert says it. Closing the window drops the report (ADR-080 decision 9; Game §interface.windows.orders).
-- **The report is saved with the world,** and so is which seats have been held, so a restart while the player is away loses none of it (ADR-080 decision 7; ADR-077 decision 5).
+- **The report is saved with the universe,** and so is which seats have been held, so a restart while the player is away loses none of it (ADR-080 decision 7; ADR-077 decision 5).
 - **It tells what the seat's events tell:** what the deputy built and lost and the orders that fired, not what the enemy did beyond it (ADR-080).
 
-### Saves and recovery [§world.persistence]
+### Saves and recovery [§universe.persistence]
 
-- **A world is a folder:** its settings, its saves, its command log and its world log (ADR-077 decision 7; ADR-078 decision 2; ADR-082 decision 1).
-- **Every 60 s of ticks the server saves the whole world.** It encodes the state between two ticks, and a thread of its own writes the save to a new file and renames it into place, so a killed process never leaves half a save. The newest three saves are kept (ADR-077 decisions 3 and 7).
-- **Every tick's commands are written to the world's log before the tick applies them,** and handed to the system before the next tick runs (ADR-077 decision 7).
+- **A universe is a folder:** its settings, its saves, its command log and its universe log (ADR-077 decision 7; ADR-078 decision 2; ADR-082 decision 1).
+- **Every 60 s of ticks the server saves the whole universe.** It encodes the state between two ticks, and a thread of its own writes the save to a new file and renames it into place, so a killed process never leaves half a save. The newest three saves are kept (ADR-077 decisions 3 and 7).
+- **Every tick's commands are written to the universe's log before the tick applies them,** and handed to the system before the next tick runs (ADR-077 decision 7).
 - **Stopping the server writes a last save** (ADR-078 decision 1).
-- **On start, a world comes back from its newest save that reads whole, and the commands logged since it,** applied tick by tick as fast as they go. It comes back at the tick after the last command it logged, and saves there at once (ADR-077 decision 8). A killed process so loses only the ticks after the last one that applied a command, never more than those since its last save, and a lost machine keeps only what the system had written (ADR-077).
-- **On the same build, the world that comes back is the world that ran, bit for bit;** on another build that lays the world out alike, it is a world that follows the same orders (ADR-009 decision 1; ADR-077).
-- **A world pauses while its server is down.** It comes back at the tick it left off at, and does not run the hours it missed (ADR-077 decision 9; ADR-009 decision 4). A scheduled order whose time of day fell in the pause fires late, at its tick (ADR-080 decision 6).
-- **A save loads only into the world it came from,** made with the same tuning data and map files, and only in a build that lays the world's state out as the build that wrote it did. Any other save is refused, and so is one cut short or altered; a folder whose saves all fail to read is refused, never started anew (ADR-077 decisions 5, 6 and 8).
+- **On start, a universe comes back from its newest save that reads whole, and the commands logged since it,** applied tick by tick as fast as they go. It comes back at the tick after the last command it logged, and saves there at once (ADR-077 decision 8). A killed process so loses only the ticks after the last one that applied a command, never more than those since its last save, and a lost machine keeps only what the system had written (ADR-077).
+- **On the same build, the universe that comes back is the universe that ran, bit for bit;** on another build that lays the universe out alike, it is a universe that follows the same orders (ADR-009 decision 1; ADR-077).
+- **A universe pauses while its server is down.** It comes back at the tick it left off at, and does not run the hours it missed (ADR-077 decision 9; ADR-009 decision 4). A scheduled order whose time of day fell in the pause fires late, at its tick (ADR-080 decision 6).
+- **A save loads only into the universe it came from,** made with the same tuning data and map files, and only in a build that lays the universe's state out as the build that wrote it did. Any other save is refused, and so is one cut short or altered; a folder whose saves all fail to read is refused, never started anew (ADR-077 decisions 5, 6 and 8).
 - **The players the server hosts keep nothing in a save.** An AI empire made afresh after its server restarts plays on from its seat's snapshot, though not as it would have; a deputy starts its turn afresh (ADR-079 decisions 2 and 6; ADR-020 decision 16).
 
-### The world log [§world.log]
+### The universe log [§universe.log]
 
-- **The server writes a world log beside the saves,** a line a record, every time in ticks: the world's start and each recovery, each save and how long it held up the server's thread, each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart with how long it waited past its hour, every hour each seat's record, and each battle (ADR-082 decision 1).
+- **The server writes a universe log beside the saves,** a line a record, every time in ticks: the universe's start and each recovery, each save and how long it held up the server's thread, each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart with how long it waited past its hour, every hour each seat's record, and each battle (ADR-082 decision 1).
 - **A seat's hour** is its Ore, its income, its command points against its fleet cap, its nodes and its topics researched, with the seconds of the hour its player and its deputy played it (ADR-082 decision 3).
 - **A battle** is an engagement between two seats in one sector, ended by 30 seconds without a shot there; a side was present when its player played the seat at any of its shots. Shots at or by the pirates are no battle (ADR-082 decision 2).
-- **The log is not saved:** a recovery writes where the world came back from, and a battle the server did not see begin is not recorded (ADR-082).
+- **The log is not saved:** a recovery writes where the universe came back from, and a battle the server did not see begin is not recorded (ADR-082).
 
-### Losing [§world.loss]
+### Losing [§universe.loss]
 
 - **A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard.** The server checks it every tick. A Shipyard under construction keeps nobody in, nor do Constructors, Research Labs, Mining Rigs, Relays or Defence Platforms (ADR-037 decision 1).
 - **A Command Station is never built:** a Constructor's order to build one is refused, and only a Command Station builds Constructors. A player that loses its station keeps the Constructors it has, and its Shipyards go on building warships (ADR-037 decision 2; Game §structures.station).
 - **A player without a Command Station has its finished Shipyards revealed** to every other player, through fog of war, as remembered structures, so that the end of a match is not a search of the map for one building (ADR-037 decision 3; Game §sight.memory).
 - **A player without a Command Station keeps every node and ship it has,** under level 1's node cap and fleet cap (ADR-056 decision 4; ADR-071 decision 1; Game §territory.cap; Game §economy.fleetcap).
-- **In a match, a loss ends the match** (Game §session.end); **in a world, the seat restarts** (Game §world.restart).
+- **In a match, a loss ends the match** (Game §session.end); **in a universe, the seat restarts** (Game §universe.restart).
 
-### Restarting [§world.restart]
+### Restarting [§universe.restart]
 
-- **A player who loses in a world is told so in the tick it does.** Its banner says "Empire fallen", and under it "It restarts at your start in" and the time left, or "It restarts once your start is clear of the enemy" while it waits, with the way back to the menu (ADR-084 decisions 3 and 7). Neither the alerts nor the report of a time away tell it (ADR-084 decision 8).
+- **A player who loses in a universe is told so in the tick it does.** Its banner says "Empire fallen", and under it "It restarts at your start in" and the time left, or "It restarts once your start is clear of the enemy" while it waits, with the way back to the menu (ADR-084 decisions 3 and 7). Neither the alerts nor the report of a time away tell it (ADR-084 decision 8).
 - **An hour of ticks after it lost, its seat restarts at its own start, once the start is free** (ADR-084 decision 4), and at no other start (ADR-084).
 - **A start is free while no other player holds its home sector, has a structure standing in it, or has a warship in it** (ADR-084 decision 4). A pirate's ship and a Constructor do not hold a start. While the start is not free, the seat waits, and it restarts in the first tick that finds the start free; a restarted base is not spared after that (ADR-084).
-- **A restarted seat gets a Command Station on its start and the starting Constructors in front of it,** placed as at the world's start, and its Ore is raised to the starting Ore when it has less ([Catalogue: rules](Reference/Catalogue.md#rules); ADR-084 decision 4).
+- **A restarted seat gets a Command Station on its start and the starting Constructors in front of it,** placed as at the universe's start, and its Ore is raised to the starting Ore when it has less ([Catalogue: rules](Reference/Catalogue.md#rules); ADR-084 decision 4).
 - **It keeps everything else:** its research, its designs, its Ore above the starting Ore, and its ships and structures that still stand (ADR-084 decision 4). A rig in a sector it still holds goes on earning while it waits (ADR-084).
 - **A player that finishes a Shipyard of its own while it waits stands again,** and does not restart (ADR-084 decision 4).
-- **A lost seat saved while it waits restarts on the same tick** as in the world that never stopped, since its start and the tick it lost are part of the world's state (ADR-084 decisions 3 and 5).
+- **A lost seat saved while it waits restarts on the same tick** as in the universe that never stopped, since its start and the tick it lost are part of the universe's state (ADR-084 decisions 3 and 5).
 - **An AI empire lays its plan afresh round its new Command Station; a deputy plays on** (ADR-084 decision 6; Game §ai.empire).
 
 ---
@@ -1396,7 +1397,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **"Nodes":** beside it, in the labels' color, the Command Station's node cap out of the map's nodes, "cap" and "of", or only "of" the map's nodes without a cap; and at its right the player's nodes against the enemy's, "3 : 2", the player's figure in its color and the enemy's in theirs. A sector the pirates guard counts for neither (ADR-057 decision 8; ADR-073 decision 10).
 - **"Tickets":** both players' tickets, the same way (ADR-057 decision 8).
 - **The drain:** who it takes tickets from, how many a minute and when they run out, "Enemy", the rate "a minute · out in" and the time, in the text's color; the same after "You" as a chip when it takes the player's; or "No drain" while the nodes are level (ADR-057 decision 8).
-- **A world has no tickets,** and so neither of the last two rows (ADR-057 decision 8; ADR-084 decision 2).
+- **A universe has no tickets,** and so neither of the last two rows (ADR-057 decision 8; ADR-084 decision 2).
 
 #### The selection panel [§interface.hud.selection]
 
@@ -1480,7 +1481,7 @@ On a map with sectors, the territory panel stands under the status panel's place
   - A place in no sector is "the field".
 - **A command the server refuses is told as an alert, in the player's words,** to the player who gave it alone: "Not enough Ore", "Not in a held sector", "At the node cap: upgrade the Command Station". It names no sector and has no place. A scheduled order refused when it is given is told the same way (ADR-094).
 - **One kind of alert in one sector is not raised again within 20 seconds;** a scheduled order is told every time it fires, and a refusal told again takes the older one's place at once (ADR-059 decision 1; ADR-094 decision 4).
-- **Nothing else raises an alert:** what the player builds, the ships and structures it loses other than a Mining Rig, and the sectors it gains and loses go to the report of a time away, and an empire's fall to the banner (ADR-059 decision 1; ADR-084 decision 8; Game §world.away).
+- **Nothing else raises an alert:** what the player builds, the ships and structures it loses other than a Mining Rig, and the sectors it gains and loses go to the report of a time away, and an empire's fall to the banner (ADR-059 decision 1; ADR-084 decision 8; Game §universe.away).
 - **The HUD lists the alerts of the last 8 seconds under the territory panel,** at most four, newest first, the newest a chip (ADR-059 decision 2; ADR-085 decision 1).
 - **Each alert's place is marked on the minimap** over the fog; a refusal has none (ADR-059 decision 2; ADR-094 decision 4).
 - **Space moves the camera to the newest alert that has a place,** whether or not it is still listed (ADR-059 decision 2; ADR-094 decision 4).
@@ -1489,14 +1490,14 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 #### How a window behaves [§interface.windows.behavior]
 
-- **The designer, the production window, the research window, the Controls window, the orders window and the away window float over the HUD** (ADR-031 decision 6). The HUD stays put under them (ADR-043 decision 1).
-- **D, P, R, F1 and O open and close the designer, production, research, Controls and orders windows** in a match, and the buttons on a structure's panel open its windows. The away window opens by itself when the report of a time away arrives (ADR-031 decision 6; Game §world.away).
+- **The designer, the production window, the research window, the Controls window, the orders window, the away window and the leave window float over the HUD** (ADR-031 decision 6). The HUD stays put under them (ADR-043 decision 1).
+- **D, P, R, F1 and O open and close the designer, production, research, Controls and orders windows** in a match, and the buttons on a structure's panel open its windows. The away window opens by itself when the report of a time away arrives, and Esc opens the leave window in a universe (ADR-031 decision 6; Game §universe.away; Game §interface.windows.leave).
 - **A window that shows a structure opens on the one selected.** Selecting another Shipyard while the designer is open makes it the designer's target, and selecting another producer while the production window is open shows it there (ADR-031 decision 6).
 - **A window is dragged by its title bar** and kept on the screen: its whole title bar, and 120 units of its width. A smaller screen moves it back as well (ADR-031 decision 2).
-- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further. With no window open, Esc reaches the controls; while the designer's name takes typing, the designer has Esc first (ADR-031 decision 5; ADR-017 decision 8).
+- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further. With no window open, Esc reaches the controls, and in a universe, with nothing armed, opens the leave window; while the designer's name takes typing, the designer has Esc first (ADR-031 decision 5; ADR-017 decision 8).
 - **Several windows can be open at once,** each drawn whole over the ones behind it (ADR-031 decision 4).
 - **A window opens where it was left,** until the game closes: closing and opening it, or starting another match, puts it back there. Leaving a match closes every window. Nothing is written to disk (ADR-031 decisions 1 and 2).
-- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls and away windows in the middle of the screen (ADR-031 decision 2; ADR-062 decision 6).
+- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls, away and leave windows in the middle of the screen (ADR-031 decision 2; ADR-062 decision 6).
 - **A window has the size its content gives it;** none is resized, docked or minimized (ADR-031).
 
 #### The production window [§interface.windows.production]
@@ -1531,7 +1532,12 @@ On a map with sectors, the territory panel stands under the status panel's place
 #### The orders and away windows [§interface.windows.orders]
 
 - **O opens the orders window,** which lists the seat's scheduled orders and gives the selection a new one; it is Game §orders.scheduled.window (ADR-080 decision 9).
-- **The away window opens by itself when the report of a time away arrives,** and closing it drops the report; it is Game §world.away (ADR-080 decision 9).
+- **The away window opens by itself when the report of a time away arrives,** and closing it drops the report; it is Game §universe.away (ADR-080 decision 9).
+
+#### The leave window [§interface.windows.leave]
+
+- **In a universe, Esc opens the leave window** once no window is open and nothing is armed: "Leave for the menu?", that the deputy keeps the empire going, and Leave universe and Stay side by side. Leave universe goes back to the menu, and Stay closes the window, as its × and Esc do; it is Game §session.join (ADR-078 decision 11).
+- **A skirmish has none:** its way back to the menu is the banner's once the match ends (ADR-020 decision 9; Game §session.end).
 
 ### The camera [§interface.camera]
 
@@ -1551,7 +1557,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **Selecting and ordering** are Game §orders.selection and Game §orders.direct: click, drag, Shift, double-click, the control groups, right-click, A, H, T and S (ADR-013 decision 5; ADR-059 decision 7).
 - **The camera:** the arrow keys, Q and E, the wheel and a middle-drag (Game §interface.camera).
 - **The windows:** D, P, R, O and F1 (Game §interface.windows.behavior).
-- **Esc closes the front window,** and with none open cancels what the controls have armed (ADR-031 decision 5; Game §orders.direct).
+- **Esc closes the front window,** with none open cancels what the controls have armed, and in a universe, with nothing armed, opens the leave window (ADR-031 decision 5; ADR-078 decision 11; Game §orders.direct).
 - **Space moves the camera to the newest alert** (ADR-059 decision 2).
 - **Alt, held, shows a bar over every ship and structure.** The game swallows the window's menu key, so Alt alone never stops the game in a menu; Alt+F4 and Alt+Enter still work (ADR-088 decision 5; ADR-006 decision 1).
 - **Ctrl+= and Ctrl+- scale the interface** (Game §interface.scale).
@@ -1569,7 +1575,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **The scene is drawn at the screen's own resolution,** four samples a pixel, so every line and silhouette is smoothed; there is no lower render resolution and no HDR (ADR-006 decision 4; ADR-040 decision 3).
 - **A frame is drawn in this order:** the sky; the grid; every model's faces and the shards of what is breaking up; every model's lines; the structures' footprint rings, the selection and the placement ghost; the shots; the exhaust and the blasts' particles; the fog; and, over the fog, the territory and what the player only remembers. The glow is added as the frame is finished, and the interface is drawn over it (ADR-022 decision 5; ADR-027 decision 3; ADR-024 decision 9; ADR-081 decision 5; ADR-091 decision 1).
 - **The menu stands over the sky and the empty grid** (ADR-022 decision 5; Game §session.menu).
-- **What is drawn follows the view of the world one tick behind the newest snapshot,** so effects, explosions and spinning parts keep the match's time, whatever the frame rate (ADR-013 decision 3; ADR-026 decision 1; ADR-045 decision 4).
+- **What is drawn follows the view of the simulation one tick behind the newest snapshot,** so effects, explosions and spinning parts keep the match's time, whatever the frame rate (ADR-013 decision 3; ADR-026 decision 1; ADR-045 decision 4).
 
 ### The sky [§look.sky]
 
@@ -1684,13 +1690,13 @@ What the game does not do, at the head of `main`. A rule that a chapter already 
 
 - **Play.**
   - There is no campaign and no story: no screen names a faction, and the two sides differ only in how they are drawn (Game §look.models.sets).
-  - Two people play each other only in a world; a skirmish is always against the AI (Game §session.skirmish).
-  - There is one map, the one the game ships, with two starts: no other map, no map with spare starts, and no world of more than two seats (ADR-036 decision 4; ADR-078 decision 2).
+  - Two people play each other only in a universe; a skirmish is always against the AI (Game §session.skirmish).
+  - There is one map, the one the game ships, with two starts: no other map, no map with spare starts, and no universe of more than two seats (ADR-036 decision 4; ADR-078 decision 2).
   - There is one star system: no travel between systems, and no jump from Relay to Relay (Game §map).
-  - A skirmish has no save, no load and no pause (Game §session.skirmish). A world pauses only while its server is down (Game §world.persistence).
+  - A skirmish has no save, no load and no pause (Game §session.skirmish). A universe pauses only while its server is down (Game §universe.persistence).
   - A running match offers no surrender and no way back to the menu (Game §session.end).
-  - A world has no season and no end, and nothing carries a save from one layout of the world's state to another (Game §world.persistence).
-  - Nothing reaches a player outside the game: no notification and no web view of a world.
+  - A universe has no season and no end, and nothing carries a save from one layout of the universe's state to another (Game §universe.persistence).
+  - Nothing reaches a player outside the game: no notification and no web view of a universe.
 - **Settings.**
   - There is no options screen, and the keys cannot be changed.
   - Nothing a player sets is kept between runs: the window starts full screen, the interface's scale at 100%, the windows at their first places and the difficulty at Normal (ADR-006 decision 1; ADR-070 decision 5; ADR-031 decisions 1 and 2; ADR-065 decision 4).
@@ -1715,4 +1721,4 @@ What the game does not do, at the head of `main`. A rule that a chapter already 
 
 ---
 
-Retired keys: none.
+Retired keys: §world, §world.overview, §world.seats, §world.handover, §world.away, §world.persistence, §world.log, §world.loss, §world.restart.

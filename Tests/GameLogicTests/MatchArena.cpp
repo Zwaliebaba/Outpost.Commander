@@ -22,7 +22,7 @@ MatchArena::MatchArena(std::optional<std::int32_t> _reserveOre)
   }
 }
 
-Outpost::Simulation& MatchArena::World() noexcept
+Outpost::Simulation& MatchArena::SimulationState() noexcept
 {
   return m_simulation;
 }

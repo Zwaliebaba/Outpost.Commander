@@ -24,13 +24,13 @@ Outpost::EntityView Ship(std::uint32_t _id, Outpost::PlayerId _owner, float _xMe
 }
 
 // Three of mine near the focus, one Medium of mine, and an enemy, all on screen at the default zoom.
-std::vector<Outpost::EntityView> World()
+std::vector<Outpost::EntityView> FiveShips()
 {
   return {Ship(1, ME, -60.0f, 0.0f), Ship(2, ME, 0.0f, 0.0f), Ship(3, ME, 60.0f, 0.0f), Ship(4, ME, 0.0f, 80.0f, MEDIUM),
           Ship(5, ENEMY, 120.0f, -60.0f)};
 }
 
-// A world far off screen, for what "visible" means.
+// A ship of mine far off screen, for what "visible" means.
 Outpost::EntityView FarShip(std::uint32_t _id)
 {
   return Ship(_id, ME, 900.0f, 900.0f);
@@ -49,7 +49,7 @@ class Driver
 public:
   Driver()
     : m_camera(Outpost::LoadCameraSettings(ReadRepositoryAssetText("Camera.json"))),
-      m_world(World())
+      m_entities(FiveShips())
   {
   }
 
@@ -92,7 +92,7 @@ public:
   // A frame with the window in the background, which reads no input at all.
   void LoseFocus()
   {
-    m_controls.Update(Neuron::InputState{}, m_world, ME, m_camera, VIEWPORT);
+    m_controls.Update(Neuron::InputState{}, m_entities, ME, m_camera, VIEWPORT);
   }
 
   void Key(std::uint8_t _key, bool _control = false)
@@ -107,9 +107,9 @@ public:
     m_clockMilliseconds += _milliseconds;
   }
 
-  std::vector<Outpost::EntityView>& WorldView()
+  std::vector<Outpost::EntityView>& Entities()
   {
-    return m_world;
+    return m_entities;
   }
 
   Outpost::PlayerControls& Controls()
@@ -144,30 +144,30 @@ private:
     input.cursorXPixels = _cursorX;
     input.cursorYPixels = _cursorY;
     input.events = std::move(_events);
-    m_controls.Update(input, m_world, ME, m_camera, VIEWPORT);
+    m_controls.Update(input, m_entities, ME, m_camera, VIEWPORT);
   }
 
   Outpost::Camera m_camera;
-  std::vector<Outpost::EntityView> m_world;
+  std::vector<Outpost::EntityView> m_entities;
   Outpost::PlayerControls m_controls;
   std::uint32_t m_clockMilliseconds = 1000;
 };
 
 using Ids = std::vector<std::uint32_t>;
 
-// A base's world: World(), with a Constructor of mine, a Shipyard of mine under construction, a whole Command Station
+// A base: FiveShips(), with a Constructor of mine, a Shipyard of mine under construction, a whole Command Station
 // of mine, and an enemy Shipyard.
 constexpr std::uint32_t CONSTRUCTOR = 11;
 constexpr std::uint32_t SITE = 12;
 constexpr std::uint32_t STATION = 13;
 constexpr std::uint32_t ENEMY_YARD = 14;
 
-void AddBase(std::vector<Outpost::EntityView>& _world)
+void AddBase(std::vector<Outpost::EntityView>& _entities)
 {
   Outpost::EntityView constructor = Ship(CONSTRUCTOR, ME, -120.0f, 0.0f);
   constructor.role = Outpost::ShipRole::Constructor;
   constructor.hull = {};
-  _world.push_back(constructor);
+  _entities.push_back(constructor);
   const auto structure = [](std::uint32_t _id, Outpost::PlayerId _owner, float _x, float _z, std::int32_t _built)
   {
     return Outpost::EntityView{.id = Outpost::EntityId{_id},
@@ -180,12 +180,12 @@ void AddBase(std::vector<Outpost::EntityView>& _world)
                                .maxHitPointsHundredths = 250000,
                                .builtPermille = _built};
   };
-  _world.push_back(structure(SITE, ME, -120.0f, -120.0f, 300));
+  _entities.push_back(structure(SITE, ME, -120.0f, -120.0f, 300));
   Outpost::EntityView station = structure(STATION, ME, 120.0f, 120.0f, Outpost::PERMILLE);
   station.structure = Outpost::StructureKind::CommandStation;
   station.hitPointsHundredths = station.maxHitPointsHundredths;
-  _world.push_back(station);
-  _world.push_back(structure(ENEMY_YARD, ENEMY, -150.0f, 120.0f, Outpost::PERMILLE));
+  _entities.push_back(station);
+  _entities.push_back(structure(ENEMY_YARD, ENEMY, -150.0f, 120.0f, Outpost::PERMILLE));
 }
 
 template <typename OrderType> const OrderType* Only(const std::vector<Outpost::Command>& _commands, size_t _index = 0)
@@ -204,27 +204,27 @@ public:
   {
     Driver driver;
     const Outpost::Camera& camera = driver.CameraView();
-    const std::vector<Outpost::EntityView> world = World();
-    const auto [x, y] = PixelOf(camera, world[1]);
+    const std::vector<Outpost::EntityView> entities = FiveShips();
+    const auto [x, y] = PixelOf(camera, entities[1]);
     const auto mine = [](const Outpost::EntityView& _ship) { return _ship.owner == ME; };
     const std::optional<Outpost::EntityId> picked =
-      Outpost::PickShip(world, camera, VIEWPORT, {static_cast<float>(x) + 3.0f, static_cast<float>(y)}, mine);
+      Outpost::PickShip(entities, camera, VIEWPORT, {static_cast<float>(x) + 3.0f, static_cast<float>(y)}, mine);
     Assert::IsTrue(picked == Outpost::EntityId{2});
     // Far from every ship, nothing.
-    Assert::IsFalse(Outpost::PickShip(world, camera, VIEWPORT, {5.0f, 5.0f}, mine).has_value());
+    Assert::IsFalse(Outpost::PickShip(entities, camera, VIEWPORT, {5.0f, 5.0f}, mine).has_value());
     // The enemy is not mine.
-    const auto [ex, ey] = PixelOf(camera, world[4]);
-    Assert::IsFalse(Outpost::PickShip(world, camera, VIEWPORT, {static_cast<float>(ex), static_cast<float>(ey)}, mine).has_value());
+    const auto [ex, ey] = PixelOf(camera, entities[4]);
+    Assert::IsFalse(Outpost::PickShip(entities, camera, VIEWPORT, {static_cast<float>(ex), static_cast<float>(ey)}, mine).has_value());
   }
 
   TEST_METHOD(BoxSelectsOnlyMyShipsInTheBox)
   {
     Driver driver;
-    const std::vector<Outpost::EntityView> world = World();
-    const auto [x1, y1] = PixelOf(driver.CameraView(), world[0]);
-    const auto [x3, y3] = PixelOf(driver.CameraView(), world[2]);
+    const std::vector<Outpost::EntityView> entities = FiveShips();
+    const auto [x1, y1] = PixelOf(driver.CameraView(), entities[0]);
+    const auto [x3, y3] = PixelOf(driver.CameraView(), entities[2]);
     const std::vector<Outpost::EntityId> boxed =
-      Outpost::ShipsInBox(world, driver.CameraView(), VIEWPORT,
+      Outpost::ShipsInBox(entities, driver.CameraView(), VIEWPORT,
                           Outpost::ScreenRect::Between(static_cast<float>(x1 - 20), static_cast<float>(y1 - 20),
                                                        static_cast<float>(x3 + 20), static_cast<float>(y3 + 20)),
                           ME);
@@ -234,14 +234,14 @@ public:
   TEST_METHOD(ClickSelectsAndShiftAdds)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[0]);
+    driver.Click(driver.Entities()[0]);
     Assert::IsTrue(Ids{1} == driver.Selected());
     driver.Wait(1000);
-    driver.Click(driver.WorldView()[2], VK_LBUTTON, true);
+    driver.Click(driver.Entities()[2], VK_LBUTTON, true);
     Assert::IsTrue((Ids{1, 3}) == driver.Selected());
     // Shift-clicking a selected ship takes it out.
     driver.Wait(1000);
-    driver.Click(driver.WorldView()[0], VK_LBUTTON, true);
+    driver.Click(driver.Entities()[0], VK_LBUTTON, true);
     Assert::IsTrue(Ids{3} == driver.Selected());
     // A click on empty ground clears the selection.
     driver.Wait(1000);
@@ -252,8 +252,8 @@ public:
   TEST_METHOD(DragSelectsTheBox)
   {
     Driver driver;
-    const auto [x1, y1] = PixelOf(driver.CameraView(), driver.WorldView()[0]);
-    const auto [x3, y3] = PixelOf(driver.CameraView(), driver.WorldView()[2]);
+    const auto [x1, y1] = PixelOf(driver.CameraView(), driver.Entities()[0]);
+    const auto [x3, y3] = PixelOf(driver.CameraView(), driver.Entities()[2]);
     driver.Drag(x1 - 20, y1 - 20, x3 + 20, y3 + 20);
     Assert::IsTrue((Ids{1, 2, 3}) == driver.Selected());
     Assert::IsFalse(driver.Controls().DragBox().has_value());
@@ -262,9 +262,9 @@ public:
   TEST_METHOD(DoubleClickSelectsEveryVisibleShipOfThatDesign)
   {
     Driver driver;
-    driver.WorldView().push_back(FarShip(6));
-    driver.Click(driver.WorldView()[1]);
-    driver.Click(driver.WorldView()[1]);
+    driver.Entities().push_back(FarShip(6));
+    driver.Click(driver.Entities()[1]);
+    driver.Click(driver.Entities()[1]);
     // The Smalls on screen; not the Medium, not the enemy, not the Small off screen.
     Assert::IsTrue((Ids{1, 2, 3}) == driver.Selected());
   }
@@ -272,7 +272,7 @@ public:
   TEST_METHOD(RightClickMovesOrAttacks)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[1]);
+    driver.Click(driver.Entities()[1]);
     const Outpost::Viewport viewport = VIEWPORT;
     driver.ClickPixel(static_cast<std::int32_t>(viewport.widthPixels / 2), 100, VK_RBUTTON);
     std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
@@ -283,7 +283,7 @@ public:
     // Above the middle of the screen is ahead of the focus: +z at the start.
     Assert::IsTrue(move->destination.zMeters > 0.0f);
 
-    driver.Click(driver.WorldView()[4], VK_RBUTTON);
+    driver.Click(driver.Entities()[4], VK_RBUTTON);
     commands = driver.Controls().TakeCommands();
     const auto* attack = std::get_if<Outpost::AttackCommand>(&commands.at(0).order);
     Assert::IsNotNull(attack);
@@ -293,7 +293,7 @@ public:
   TEST_METHOD(AThenClickAttackMovesAndSStops)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[1]);
+    driver.Click(driver.Entities()[1]);
     driver.Key('A');
     Assert::IsTrue(driver.Controls().IsAttackMoveArmed());
     driver.ClickPixel(960, 200);
@@ -312,7 +312,7 @@ public:
   TEST_METHOD(HAndTThenClickGiveStandingOrders)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[1]);
+    driver.Click(driver.Entities()[1]);
     driver.Key('H');
     Assert::IsTrue(driver.Controls().ArmedStanding() == Outpost::StandingOrder::HoldSector);
     driver.ClickPixel(960, 200);
@@ -343,23 +343,23 @@ public:
   TEST_METHOD(GivesTheOrdersOfTheHudsButtons)
   {
     Driver driver;
-    driver.Controls().ArmAttackMove(driver.WorldView());
-    driver.Controls().ArmStanding(Outpost::StandingOrder::Patrol, driver.WorldView());
-    driver.Controls().Stop(driver.WorldView());
+    driver.Controls().ArmAttackMove(driver.Entities());
+    driver.Controls().ArmStanding(Outpost::StandingOrder::Patrol, driver.Entities());
+    driver.Controls().Stop(driver.Entities());
     Assert::IsFalse(driver.Controls().IsAttackMoveArmed() || driver.Controls().ArmedStanding().has_value(), L"nothing selected");
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
 
-    driver.Click(driver.WorldView()[1]);
-    driver.Controls().ArmAttackMove(driver.WorldView());
+    driver.Click(driver.Entities()[1]);
+    driver.Controls().ArmAttackMove(driver.Entities());
     Assert::IsTrue(driver.Controls().IsAttackMoveArmed());
-    driver.Controls().ArmStanding(Outpost::StandingOrder::HoldSector, driver.WorldView());
+    driver.Controls().ArmStanding(Outpost::StandingOrder::HoldSector, driver.Entities());
     Assert::IsFalse(driver.Controls().IsAttackMoveArmed());
     Assert::IsTrue(driver.Controls().ArmedStanding() == Outpost::StandingOrder::HoldSector);
-    driver.Controls().ArmStanding(Outpost::StandingOrder::Patrol, driver.WorldView());
+    driver.Controls().ArmStanding(Outpost::StandingOrder::Patrol, driver.Entities());
     Assert::IsTrue(driver.Controls().ArmedStanding() == Outpost::StandingOrder::Patrol);
     driver.ClickPixel(960, 200);
     Assert::IsTrue(Ids{2} == driver.Selected(), L"the click was an order, not a selection");
-    driver.Controls().Stop(driver.WorldView());
+    driver.Controls().Stop(driver.Entities());
     const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     Assert::AreEqual(size_t{2}, commands.size());
     Assert::IsNotNull(std::get_if<Outpost::PatrolCommand>(&commands[0].order));
@@ -369,18 +369,42 @@ public:
   TEST_METHOD(EscapeCancelsAttackMove)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[1]);
+    driver.Click(driver.Entities()[1]);
     driver.Key('A');
     driver.Key(VK_ESCAPE);
     Assert::IsFalse(driver.Controls().IsAttackMoveArmed());
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
   }
 
+  // ADR-078 decision 11: in a universe Esc opens the leave window only once nothing waits for a click, an attack-move, a
+  // standing order or a placement, each of which Esc cancels first.
+  TEST_METHOD(SaysWhetherAnythingWaitsForAClick)
+  {
+    Driver driver;
+    AddBase(driver.Entities());
+    Assert::IsFalse(driver.Controls().IsArmed(), L"nothing selected");
+    driver.Click(driver.Entities()[1]);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"a selection waits for nothing");
+    driver.Key('A');
+    Assert::IsTrue(driver.Controls().IsArmed(), L"an attack-move");
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"the attack-move canceled");
+    driver.Key('H');
+    Assert::IsTrue(driver.Controls().IsArmed(), L"a standing order");
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"the standing order canceled");
+    driver.Click(driver.Entities()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.Entities());
+    Assert::IsTrue(driver.Controls().IsArmed(), L"a placement");
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().IsArmed(), L"the placement canceled");
+  }
+
   TEST_METHOD(ControlGroupsAssignRecallAndCenter)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[0]);
-    driver.Click(driver.WorldView()[2], VK_LBUTTON, true);
+    driver.Click(driver.Entities()[0]);
+    driver.Click(driver.Entities()[2], VK_LBUTTON, true);
     driver.Key('1', true);
     driver.Wait(1000);
     driver.ClickPixel(5, 5);
@@ -403,9 +427,9 @@ public:
   TEST_METHOD(SelectsOneOfMyStructures)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    driver.Click(driver.WorldView()[0]);
-    driver.Click(driver.WorldView()[7]);
+    AddBase(driver.Entities());
+    driver.Click(driver.Entities()[0]);
+    driver.Click(driver.Entities()[7]);
     Assert::IsTrue((Ids{STATION}) == driver.Selected());
     driver.Drag(0, 0, 1919, 1079);
     const Ids boxed = driver.Selected();
@@ -418,9 +442,9 @@ public:
   TEST_METHOD(SelectsAnotherPlayersStructureForItsPanel)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    const Outpost::EntityView yard = driver.WorldView()[8];
-    driver.Click(driver.WorldView()[0]);
+    AddBase(driver.Entities());
+    const Outpost::EntityView yard = driver.Entities()[8];
+    driver.Click(driver.Entities()[0]);
     driver.Click(yard, VK_LBUTTON, true);
     Assert::IsTrue((Ids{ENEMY_YARD}) == driver.Selected(), L"alone, even with Shift");
     driver.Hover(0, 0);
@@ -434,18 +458,18 @@ public:
 
     // A control group keeps only the player's own.
     driver.Key('3', true);
-    driver.Click(driver.WorldView()[0]);
+    driver.Click(driver.Entities()[0]);
     driver.Wait(1000);
     driver.Key('3');
     Assert::IsTrue(driver.Selected().empty());
 
     // Remembered under fog, it is still selected by a click, and kept; once forgotten, it goes.
-    driver.WorldView()[8].remembered = true;
-    driver.Click(driver.WorldView()[8]);
+    driver.Entities()[8].remembered = true;
+    driver.Click(driver.Entities()[8]);
     Assert::IsTrue((Ids{ENEMY_YARD}) == driver.Selected());
     driver.Hover(0, 0);
     Assert::IsTrue((Ids{ENEMY_YARD}) == driver.Selected());
-    driver.WorldView().erase(driver.WorldView().begin() + 8);
+    driver.Entities().erase(driver.Entities().begin() + 8);
     driver.Hover(0, 0);
     Assert::IsTrue(driver.Selected().empty());
   }
@@ -455,9 +479,9 @@ public:
   TEST_METHOD(SelectsAStructureFromTheHud)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    driver.Click(driver.WorldView()[5]);
-    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    AddBase(driver.Entities());
+    driver.Click(driver.Entities()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.Entities());
     Assert::IsTrue(driver.Controls().Placing().has_value());
     driver.Controls().SelectAlone(Outpost::EntityId{STATION});
     Assert::IsTrue((Ids{STATION}) == driver.Selected());
@@ -469,13 +493,13 @@ public:
   TEST_METHOD(ConstructorsRepairAFriendlyThatNeedsIt)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    driver.Click(driver.WorldView()[5]);
-    driver.Click(driver.WorldView()[0], VK_LBUTTON, true);
+    AddBase(driver.Entities());
+    driver.Click(driver.Entities()[5]);
+    driver.Click(driver.Entities()[0], VK_LBUTTON, true);
     Assert::IsTrue((Ids{1, CONSTRUCTOR}) == driver.Selected());
     (void)driver.Controls().TakeCommands();
 
-    driver.Click(driver.WorldView()[6], VK_RBUTTON);
+    driver.Click(driver.Entities()[6], VK_RBUTTON);
     std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     Assert::AreEqual(size_t{2}, commands.size());
     const auto* repair = Only<Outpost::RepairCommand>(commands);
@@ -484,7 +508,7 @@ public:
     const auto* move = Only<Outpost::MoveCommand>(commands, 1);
     Assert::IsTrue(move->ships == std::vector{Outpost::EntityId{1}});
 
-    driver.Click(driver.WorldView()[7], VK_RBUTTON);
+    driver.Click(driver.Entities()[7], VK_RBUTTON);
     commands = driver.Controls().TakeCommands();
     Assert::AreEqual(size_t{1}, commands.size());
     Assert::AreEqual(size_t{2}, Only<Outpost::MoveCommand>(commands)->ships.size(), L"a whole structure is a destination");
@@ -495,16 +519,16 @@ public:
   TEST_METHOD(ConstructorsSalvageADerelict)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    driver.WorldView().push_back({.id = Outpost::EntityId{40},
-                                  .kind = Outpost::EntityKind::Derelict,
-                                  .hull = Outpost::HullId{2},
-                                  .position = {.xMeters = 150.0f, .zMeters = -150.0f},
-                                  .radiusMeters = 25.0f,
-                                  .salvageOre = 450});
-    const Outpost::EntityView derelict = driver.WorldView().back();
-    driver.Click(driver.WorldView()[5]);
-    driver.Click(driver.WorldView()[0], VK_LBUTTON, true);
+    AddBase(driver.Entities());
+    driver.Entities().push_back({.id = Outpost::EntityId{40},
+                                 .kind = Outpost::EntityKind::Derelict,
+                                 .hull = Outpost::HullId{2},
+                                 .position = {.xMeters = 150.0f, .zMeters = -150.0f},
+                                 .radiusMeters = 25.0f,
+                                 .salvageOre = 450});
+    const Outpost::EntityView derelict = driver.Entities().back();
+    driver.Click(driver.Entities()[5]);
+    driver.Click(driver.Entities()[0], VK_LBUTTON, true);
     (void)driver.Controls().TakeCommands();
     driver.Click(derelict, VK_RBUTTON);
     std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
@@ -514,7 +538,7 @@ public:
     Assert::IsTrue(salvage->constructors == std::vector{Outpost::EntityId{CONSTRUCTOR}});
     Assert::IsTrue(Only<Outpost::MoveCommand>(commands, 1)->ships == std::vector{Outpost::EntityId{1}});
 
-    driver.Click(driver.WorldView()[0]);
+    driver.Click(driver.Entities()[0]);
     (void)driver.Controls().TakeCommands();
     driver.Click(derelict, VK_RBUTTON);
     commands = driver.Controls().TakeCommands();
@@ -525,10 +549,10 @@ public:
   TEST_METHOD(RightClickAttacksAnEnemyStructure)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    driver.Click(driver.WorldView()[0]);
+    AddBase(driver.Entities());
+    driver.Click(driver.Entities()[0]);
     (void)driver.Controls().TakeCommands();
-    driver.Click(driver.WorldView()[8], VK_RBUTTON);
+    driver.Click(driver.Entities()[8], VK_RBUTTON);
     const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     Assert::IsTrue(Only<Outpost::AttackCommand>(commands)->target == Outpost::EntityId{ENEMY_YARD});
   }
@@ -538,13 +562,13 @@ public:
   TEST_METHOD(PlacesAStructureWithTheNextLeftClick)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    driver.Click(driver.WorldView()[0]);
-    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.WorldView());
+    AddBase(driver.Entities());
+    driver.Click(driver.Entities()[0]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.Entities());
     Assert::IsFalse(driver.Controls().Placing().has_value(), L"no Constructor is selected");
 
-    driver.Click(driver.WorldView()[5]);
-    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.WorldView());
+    driver.Click(driver.Entities()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.Entities());
     Assert::IsTrue(driver.Controls().Placing() == Outpost::StructureKind::DefensePlatform);
     (void)driver.Controls().TakeCommands();
     driver.ClickPixel(800, 400, VK_LBUTTON, true);
@@ -562,11 +586,11 @@ public:
     Assert::AreEqual(ground.zMeters, build->position.zMeters, 0.01f);
     Assert::IsTrue(Ids{CONSTRUCTOR} == driver.Selected(), L"placing does not change the selection");
 
-    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.Entities());
     driver.ClickPixel(900, 400, VK_RBUTTON);
     Assert::IsFalse(driver.Controls().Placing().has_value());
     Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"the right-click only cancels");
-    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.Entities());
     driver.Key(VK_ESCAPE);
     Assert::IsFalse(driver.Controls().Placing().has_value());
   }
@@ -576,19 +600,19 @@ public:
   TEST_METHOD(OrdersAMiningRigOnlyByAKnownAsteroid)
   {
     Driver driver;
-    AddBase(driver.WorldView());
+    AddBase(driver.Entities());
     const Outpost::EntityView asteroid{.id = Outpost::EntityId{90},
                                        .kind = Outpost::EntityKind::Asteroid,
                                        .position = {.xMeters = 150.0f, .zMeters = -40.0f},
                                        .radiusMeters = 45.0f};
-    driver.Click(driver.WorldView()[5]);
-    driver.Controls().ArmPlacement(Outpost::StructureKind::MiningRig, driver.WorldView());
+    driver.Click(driver.Entities()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::MiningRig, driver.Entities());
     (void)driver.Controls().TakeCommands();
     driver.Click(asteroid);
     Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"an asteroid the controls are not given");
     Assert::IsTrue(driver.Controls().Placing() == Outpost::StructureKind::MiningRig, L"still armed");
 
-    driver.WorldView().push_back(asteroid);
+    driver.Entities().push_back(asteroid);
     driver.Click(asteroid);
     const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     Assert::IsTrue(Only<Outpost::BuildStructureCommand>(commands)->structure == Outpost::StructureKind::MiningRig);
@@ -601,12 +625,12 @@ public:
   TEST_METHOD(FoldsTheStructuresOnceGivenAnOrder)
   {
     Driver driver;
-    AddBase(driver.WorldView());
-    const Outpost::EntityView constructor = driver.WorldView()[5];
+    AddBase(driver.Entities());
+    const Outpost::EntityView constructor = driver.Entities()[5];
     driver.Click(constructor);
     Assert::IsFalse(driver.Controls().IsBuildFolded());
 
-    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.WorldView());
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.Entities());
     driver.ClickPixel(800, 400, VK_LBUTTON, true);
     Assert::IsFalse(driver.Controls().IsBuildFolded(), L"Shift keeps them open");
     driver.ClickPixel(900, 400);
@@ -615,11 +639,11 @@ public:
     driver.Controls().OpenBuild();
     Assert::IsFalse(driver.Controls().IsBuildFolded(), L"the button opens them");
 
-    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.Entities());
     driver.ClickPixel(900, 400, VK_RBUTTON);
-    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.Entities());
     driver.Key(VK_ESCAPE);
-    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.WorldView());
+    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.Entities());
     Assert::IsFalse(driver.Controls().IsBuildFolded(), L"nothing was ordered");
 
     // Each order folds them, and a click on the Constructor, past a double click, opens them.
@@ -634,10 +658,10 @@ public:
       Assert::IsFalse(driver.Controls().IsBuildFolded(), _what);
     };
     folds([&driver] { driver.ClickPixel(900, 400, VK_RBUTTON); }, L"a move");
-    folds([&driver] { driver.Click(driver.WorldView()[6], VK_RBUTTON); }, L"building the site");
-    folds([&driver] { driver.Click(driver.WorldView()[8], VK_RBUTTON); }, L"an attack");
+    folds([&driver] { driver.Click(driver.Entities()[6], VK_RBUTTON); }, L"building the site");
+    folds([&driver] { driver.Click(driver.Entities()[8], VK_RBUTTON); }, L"an attack");
     folds([&driver] { driver.Key(Outpost::KEY_STOP); }, L"a stop");
-    folds([&driver] { driver.Controls().MoveTo({.xMeters = 700.0f, .zMeters = -250.0f}, driver.WorldView()); }, L"a move from the minimap");
+    folds([&driver] { driver.Controls().MoveTo({.xMeters = 700.0f, .zMeters = -250.0f}, driver.Entities()); }, L"a move from the minimap");
     folds(
       [&driver]
       {
@@ -676,10 +700,10 @@ public:
   TEST_METHOD(SetsTheSelectionsRetreatFromTheHud)
   {
     Driver driver;
-    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.WorldView());
+    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.Entities());
     Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"nothing selected");
-    driver.Click(driver.WorldView()[0]);
-    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.WorldView());
+    driver.Click(driver.Entities()[0]);
+    driver.Controls().SetRetreat(Outpost::RetreatThreshold::Half, driver.Entities());
     const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     const Outpost::SetRetreatCommand* retreat = Only<Outpost::SetRetreatCommand>(commands);
     Assert::IsTrue(retreat->ships == std::vector<Outpost::EntityId>{Outpost::EntityId{1}});
@@ -689,9 +713,9 @@ public:
   TEST_METHOD(ForgetsShipsThatAreGone)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[0]);
+    driver.Click(driver.Entities()[0]);
     driver.Key('2', true);
-    driver.WorldView().erase(driver.WorldView().begin());
+    driver.Entities().erase(driver.Entities().begin());
     driver.Key('2');
     Assert::IsTrue(driver.Selected().empty());
   }
@@ -724,13 +748,13 @@ public:
   {
     Driver driver;
     constexpr Outpost::PlanePosition THERE{.xMeters = 700.0f, .zMeters = -250.0f};
-    driver.Controls().MoveTo(THERE, driver.WorldView());
+    driver.Controls().MoveTo(THERE, driver.Entities());
     Assert::IsTrue(driver.Controls().TakeCommands().empty());
 
-    driver.Click(driver.WorldView()[1]);
-    driver.Click(driver.WorldView()[0], VK_LBUTTON, true);
+    driver.Click(driver.Entities()[1]);
+    driver.Click(driver.Entities()[0], VK_LBUTTON, true);
     (void)driver.Controls().TakeCommands();
-    driver.Controls().MoveTo(THERE, driver.WorldView());
+    driver.Controls().MoveTo(THERE, driver.Entities());
     const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     const auto* move = Only<Outpost::MoveCommand>(commands);
     Assert::IsTrue(move->destination == THERE);
@@ -770,16 +794,16 @@ public:
     const Outpost::PlayerClock clock;
     const std::chrono::sys_seconds now = std::chrono::sys_days{std::chrono::year{2026} / 10 / 8} + std::chrono::hours{1};
     Outpost::OrderForm form;
-    form.Update(newest, driver.WorldView());
-    driver.Controls().Schedule(form, now, clock, newest, driver.WorldView());
+    form.Update(newest, driver.Entities());
+    driver.Controls().Schedule(form, now, clock, newest, driver.Entities());
     Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"nothing selected");
 
-    driver.Click(driver.WorldView()[0]);
-    driver.Click(driver.WorldView()[1], VK_LBUTTON, true);
+    driver.Click(driver.Entities()[0]);
+    driver.Click(driver.Entities()[1], VK_LBUTTON, true);
     driver.Key(Outpost::KEY_ORDERS);
     Assert::IsTrue(driver.Selected() == Ids{1, 2}, L"O leaves the selection");
     Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"and orders nothing");
-    driver.Controls().Schedule(form, now, clock, newest, driver.WorldView());
+    driver.Controls().Schedule(form, now, clock, newest, driver.Entities());
     const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     const Outpost::ScheduleOrderCommand* order = Only<Outpost::ScheduleOrderCommand>(commands);
     Assert::IsTrue(order->ships == std::vector<Outpost::EntityId>{Outpost::EntityId{1}, Outpost::EntityId{2}});
@@ -792,7 +816,7 @@ public:
   TEST_METHOD(IgnoresAKeyItDoesNotRead)
   {
     Driver driver;
-    driver.Click(driver.WorldView()[0]);
+    driver.Click(driver.Entities()[0]);
     const DirectX::XMFLOAT2 focus = driver.CameraView().Focus();
     driver.Key('Z');
     driver.Key('Z', true);

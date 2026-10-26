@@ -14,13 +14,13 @@ public:
   static constexpr Outpost::PlayerId RED{2};
   static constexpr std::uint32_t TICKS_PER_SECOND = 20;
   // With _content, the seed places the pirates' outposts and the derelicts as in a match (ADR-073, ADR-074); without, every
-  // sector is free and empty, as the tests of the territory rules want it. With _restartSeconds, it plays by a world's rules,
+  // sector is free and empty, as the tests of the territory rules want it. With _restartSeconds, it plays by a universe's rules,
   // a lost seat restarting that long after (ADR-084 decision 4).
   explicit TerritoryMatch(bool _content = false, std::optional<std::uint32_t> _restartSeconds = std::nullopt);
 
   [[nodiscard]] static Outpost::Map MapFor(bool _content);
 
-  [[nodiscard]] Outpost::Simulation& World() noexcept;
+  [[nodiscard]] Outpost::Simulation& SimulationState() noexcept;
 
   [[nodiscard]] const Outpost::SectorPlacement& Placement(std::int32_t _sector) const;
 

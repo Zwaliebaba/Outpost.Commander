@@ -33,7 +33,7 @@ public:
     m_simulation.PlaceMap({.sizeMeters = 4000.0f, .minimumGapMeters = 60.0f, .starts = {}, .oreAsteroids = {}, .asteroidFields = {}});
   }
 
-  [[nodiscard]] Outpost::Simulation& World() noexcept
+  [[nodiscard]] Outpost::Simulation& SimulationState() noexcept
   {
     return m_simulation;
   }
@@ -93,16 +93,16 @@ public:
       const std::int32_t damage = Outpost::DesignStatsFor(arena.TuningData(), SMALL, ION, weapon).damageHundredths;
 
       std::vector<std::uint64_t> shotTicks;
-      std::int32_t previousHitPoints = arena.World().FindEntity(target)->hitPointsHundredths;
+      std::int32_t previousHitPoints = arena.SimulationState().FindEntity(target)->hitPointsHundredths;
       for (std::uint32_t tick = 0; tick < 4 * 60; ++tick)
       {
         const std::vector<Outpost::ShotView> shots = arena.Tick();
-        const std::int32_t hitPoints = arena.World().FindEntity(target)->hitPointsHundredths;
+        const std::int32_t hitPoints = arena.SimulationState().FindEntity(target)->hitPointsHundredths;
         if (!shots.empty())
         {
           Assert::AreEqual(size_t{1}, shots.size());
           Assert::IsTrue(shots[0].shooter == ship && shots[0].target == target && shots[0].weapon == weapon);
-          shotTicks.push_back(arena.World().CurrentTick());
+          shotTicks.push_back(arena.SimulationState().CurrentTick());
           Assert::AreEqual(Outpost::HitHundredths(damage, 800), previousHitPoints - hitPoints);
         }
         else
@@ -128,23 +128,23 @@ public:
     // Out of range: never chosen.
     (void)arena.Ship(RED, SMALL, ION, LANCE, {0.0f, 130.0f});
     (void)arena.Tick();
-    Assert::IsTrue(arena.World().FindEntity(ship)->target == nearShip,
-                   (L"first " + std::to_wstring(arena.World().FindEntity(ship)->target.value)).c_str());
+    Assert::IsTrue(arena.SimulationState().FindEntity(ship)->target == nearShip,
+                   (L"first " + std::to_wstring(arena.SimulationState().FindEntity(ship)->target.value)).c_str());
 
     // A nearer one arriving does not take the target away.
     (void)arena.Ship(RED, SMALL, ION, LANCE, {50.0f, 0.0f});
     for (int tick = 0; tick < 10; ++tick)
       (void)arena.Tick();
-    Assert::IsTrue(arena.World().FindEntity(ship)->target == nearShip,
-                   (L"kept " + std::to_wstring(arena.World().FindEntity(ship)->target.value)).c_str());
+    Assert::IsTrue(arena.SimulationState().FindEntity(ship)->target == nearShip,
+                   (L"kept " + std::to_wstring(arena.SimulationState().FindEntity(ship)->target.value)).c_str());
 
     // Once it is destroyed, the next nearest ship is, and still not the structure.
-    for (int tick = 0; tick < 200 && arena.World().FindEntity(nearShip) != nullptr; ++tick)
+    for (int tick = 0; tick < 200 && arena.SimulationState().FindEntity(nearShip) != nullptr; ++tick)
       (void)arena.Tick();
-    Assert::IsNull(arena.World().FindEntity(nearShip));
+    Assert::IsNull(arena.SimulationState().FindEntity(nearShip));
     (void)arena.Tick();
-    const Outpost::EntityId next = arena.World().FindEntity(ship)->target;
-    Assert::IsTrue(next.IsValid() && next != farShip && arena.World().FindEntity(next)->kind == Outpost::EntityKind::Ship);
+    const Outpost::EntityId next = arena.SimulationState().FindEntity(ship)->target;
+    Assert::IsTrue(next.IsValid() && next != farShip && arena.SimulationState().FindEntity(next)->kind == Outpost::EntityKind::Ship);
   }
 
   // ADR-014 decision 8: with no enemy ship in range, the nearest enemy structure.
@@ -156,7 +156,7 @@ public:
     const Outpost::EntityId nearer = arena.Structure(RED, {0.0f, 60.0f});
     (void)arena.Ship(RED, SMALL, ION, MASS_DRIVER, {0.0f, 400.0f});
     (void)arena.Tick();
-    Assert::IsTrue(arena.World().FindEntity(ship)->target == nearer);
+    Assert::IsTrue(arena.SimulationState().FindEntity(ship)->target == nearer);
   }
 
   // ADR-014 decision 9: an attack-moving ship stops at its own range and fires.
@@ -170,10 +170,12 @@ public:
     for (int tick = 0; tick < 20 * static_cast<int>(TICKS_PER_SECOND); ++tick)
       fired |= !arena.Tick().empty();
     Assert::IsTrue(fired);
-    const float distance = Outpost::Distance(arena.World().FindEntity(ship)->position, arena.World().FindEntity(target)->position);
+    const float distance =
+      Outpost::Distance(arena.SimulationState().FindEntity(ship)->position, arena.SimulationState().FindEntity(target)->position);
     // Within one tick's travel inside the Lance's 220 m, and the Mass Driver's 120 m never reached it.
     Assert::IsTrue(distance <= 220.0f && distance > 220.0f - 78.0f / TICKS_PER_SECOND - 1.0f, std::to_wstring(distance).c_str());
-    Assert::AreEqual(arena.World().FindEntity(ship)->maxHitPointsHundredths, arena.World().FindEntity(ship)->hitPointsHundredths);
+    Assert::AreEqual(arena.SimulationState().FindEntity(ship)->maxHitPointsHundredths,
+                     arena.SimulationState().FindEntity(ship)->hitPointsHundredths);
   }
 
   // ADR-010 decision 7, decided by the owner on 2026-10-01: a group attack-moving on an enemy stands at its own range.
@@ -192,19 +194,19 @@ public:
     }
     // Sturdy enough to outlast every Lance in range for the whole test.
     const Outpost::EntityId target =
-      arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {600.0f, 0.0f}, 20.0f, 1'000'000'000, 0);
+      arena.SimulationState().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {600.0f, 0.0f}, 20.0f, 1'000'000'000, 0);
     (void)arena.Tick({Order(BLUE, Outpost::AttackMoveCommand{.ships = group, .destination = {600.0f, 0.0f}})});
     for (int tick = 0; tick < 30 * static_cast<int>(TICKS_PER_SECOND); ++tick)
       (void)arena.Tick();
 
-    const Outpost::PlanePosition targetPosition = arena.World().FindEntity(target)->position;
+    const Outpost::PlanePosition targetPosition = arena.SimulationState().FindEntity(target)->position;
     float nearestMeters = std::numeric_limits<float>::infinity();
     for (const Outpost::EntityId id : group)
-      nearestMeters = std::min(nearestMeters, Outpost::Distance(arena.World().FindEntity(id)->position, targetPosition));
+      nearestMeters = std::min(nearestMeters, Outpost::Distance(arena.SimulationState().FindEntity(id)->position, targetPosition));
     // No closer than a tick's travel inside the Lance's 220 m.
     Assert::IsTrue(nearestMeters > 220.0f - 52.0f / TICKS_PER_SECOND - 1.0f, std::to_wstring(nearestMeters).c_str());
     const auto firing =
-      std::ranges::count_if(group, [&arena](Outpost::EntityId _id) { return arena.World().FindEntity(_id)->target.IsValid(); });
+      std::ranges::count_if(group, [&arena](Outpost::EntityId _id) { return arena.SimulationState().FindEntity(_id)->target.IsValid(); });
     Assert::IsTrue(firing >= 12, (std::to_wstring(firing) + L" of 16 in range").c_str());
   }
 
@@ -214,17 +216,17 @@ public:
   {
     Arena arena;
     // The enemy ships are unarmed Constructors, so that the missile is the only thing that does damage.
-    arena.World().UseTuning(arena.TuningData());
+    arena.SimulationState().UseTuning(arena.TuningData());
     const Outpost::EntityId launcher = arena.Ship(BLUE, SMALL, ION, MISSILE_RACK, {0.0f, 0.0f});
-    const Outpost::EntityId target = arena.World().SpawnConstructor(RED, {250.0f, 0.0f});
-    const Outpost::EntityId beside = arena.World().SpawnConstructor(RED, {250.0f, 22.0f});
-    const Outpost::EntityId beyond = arena.World().SpawnConstructor(RED, {250.0f, -40.0f});
+    const Outpost::EntityId target = arena.SimulationState().SpawnConstructor(RED, {250.0f, 0.0f});
+    const Outpost::EntityId beside = arena.SimulationState().SpawnConstructor(RED, {250.0f, 22.0f});
+    const Outpost::EntityId beyond = arena.SimulationState().SpawnConstructor(RED, {250.0f, -40.0f});
     // Small footprints, so that nothing is pushed apart before the first missile lands; Research Labs, which repair no ship
     // near them as a Shipyard does (ADR-075).
-    const Outpost::EntityId armored =
-      arena.World().SpawnStructure(RED, Outpost::StructureKind::ResearchLab, {275.0f, 0.0f}, 5.0f, 1'000'000, 10 * Outpost::HUNDREDTHS);
+    const Outpost::EntityId armored = arena.SimulationState().SpawnStructure(RED, Outpost::StructureKind::ResearchLab, {275.0f, 0.0f}, 5.0f,
+                                                                             1'000'000, 10 * Outpost::HUNDREDTHS);
     const Outpost::EntityId friendly =
-      arena.World().SpawnStructure(BLUE, Outpost::StructureKind::ResearchLab, {250.0f, -22.0f}, 5.0f, 1'000'000);
+      arena.SimulationState().SpawnStructure(BLUE, Outpost::StructureKind::ResearchLab, {250.0f, -22.0f}, 5.0f, 1'000'000);
 
     std::vector<Outpost::ShotView> shots;
     for (int tick = 0; tick < 3 * static_cast<int>(TICKS_PER_SECOND) && shots.empty(); ++tick)
@@ -235,7 +237,7 @@ public:
 
     const auto lost = [&arena](Outpost::EntityId _id)
     {
-      const Outpost::Entity& entity = *arena.World().FindEntity(_id);
+      const Outpost::Entity& entity = *arena.SimulationState().FindEntity(_id);
       return entity.maxHitPointsHundredths - entity.hitPointsHundredths;
     };
     // 30 against a Constructor's armor of 2, and against the structure's 10.
@@ -253,8 +255,10 @@ public:
     Arena arena;
     const Outpost::EntityId battery = arena.Ship(BLUE, SMALL, ION, FLAK_BATTERY, {0.0f, 0.0f});
     // Structures with small footprints and no guns, so that nothing moves or fires back.
-    const auto structure = [&arena](Outpost::PlanePosition _position, std::int32_t _armor) {
-      return arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, _position, 3.0f, 1'000'000, _armor * Outpost::HUNDREDTHS);
+    const auto structure = [&arena](Outpost::PlanePosition _position, std::int32_t _armor)
+    {
+      return arena.SimulationState().SpawnStructure(RED, Outpost::StructureKind::Shipyard, _position, 3.0f, 1'000'000,
+                                                    _armor * Outpost::HUNDREDTHS);
     };
     const Outpost::EntityId target = structure({130.0f, 0.0f}, 2);
     const Outpost::EntityId beside = structure({130.0f, 18.0f}, 2);
@@ -270,7 +274,7 @@ public:
 
     const auto lost = [&arena](Outpost::EntityId _id)
     {
-      const Outpost::Entity& entity = *arena.World().FindEntity(_id);
+      const Outpost::Entity& entity = *arena.SimulationState().FindEntity(_id);
       return entity.maxHitPointsHundredths - entity.hitPointsHundredths;
     };
     // 20 against an armor of 2, and 12 against the Medium hull's 8.
@@ -286,18 +290,18 @@ public:
     Arena arena;
     const Outpost::EntityId rail = arena.Ship(BLUE, SMALL, ION, RAIL_CANNON, {0.0f, 0.0f});
     const Outpost::EntityId picket = arena.Ship(RED, SMALL, PULSE, LANCE, {230.0f, 0.0f});
-    Assert::AreEqual(16500, arena.World().FindEntity(picket)->maxHitPointsHundredths);
+    Assert::AreEqual(16500, arena.SimulationState().FindEntity(picket)->maxHitPointsHundredths);
 
     std::vector<Outpost::ShotView> fired;
     // The first shot comes within one interval, 6 s.
-    for (int tick = 0; tick <= 6 * static_cast<int>(TICKS_PER_SECOND) && arena.World().FindEntity(picket) != nullptr; ++tick)
+    for (int tick = 0; tick <= 6 * static_cast<int>(TICKS_PER_SECOND) && arena.SimulationState().FindEntity(picket) != nullptr; ++tick)
     {
       const std::vector<Outpost::ShotView> shots = arena.Tick();
       fired.insert(fired.end(), shots.begin(), shots.end());
     }
     Assert::AreEqual(size_t{1}, fired.size(), L"the Lance at 230 m never fires");
     Assert::IsTrue(fired[0].shooter == rail && fired[0].weapon == RAIL_CANNON);
-    Assert::IsNull(arena.World().FindEntity(picket), L"a 318 hit breaks a raider of 165");
+    Assert::IsNull(arena.SimulationState().FindEntity(picket), L"a 318 hit breaks a raider of 165");
   }
 
   // ADR-014 decision 9: weapons are turrets, so a ship fires while it moves.
@@ -310,15 +314,15 @@ public:
     int shotsWhileMoving = 0;
     for (int tick = 0; tick < 10 * static_cast<int>(TICKS_PER_SECOND); ++tick)
     {
-      const Outpost::PlanePosition before = arena.World().FindEntity(ship)->position;
+      const Outpost::PlanePosition before = arena.SimulationState().FindEntity(ship)->position;
       const bool fired = !arena.Tick().empty();
-      if (fired && arena.World().FindEntity(ship)->position != before)
+      if (fired && arena.SimulationState().FindEntity(ship)->position != before)
         ++shotsWhileMoving;
     }
     Assert::IsTrue(shotsWhileMoving >= 3, std::to_wstring(shotsWhileMoving).c_str());
   }
 
-  // ADR-014: an attack order closes on its target, destroys it, and ends; the target leaves the world and the snapshot
+  // ADR-014: an attack order closes on its target, destroys it, and ends; the target leaves the simulation and the snapshot
   // says where it went.
   TEST_METHOD(AnAttackOrderClosesAndDestroys)
   {
@@ -329,16 +333,16 @@ public:
     std::optional<Outpost::DestroyedView> destroyed;
     for (int tick = 0; tick < 60 * static_cast<int>(TICKS_PER_SECOND) && !destroyed; ++tick)
     {
-      (void)arena.World().Tick({});
-      const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(RED);
+      (void)arena.SimulationState().Tick({});
+      const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(RED);
       if (!snapshot.destroyed.empty())
         destroyed = snapshot.destroyed.front();
     }
     Assert::IsTrue(destroyed.has_value(), L"the target was never destroyed");
     const Outpost::DestroyedView view = destroyed.value_or(Outpost::DestroyedView{});
     Assert::IsTrue(view.id == target && view.owner == RED && view.hull == SMALL);
-    Assert::IsNull(arena.World().FindEntity(target));
-    Assert::IsTrue(arena.World().FindEntity(ship)->order == Outpost::ShipOrder::None);
+    Assert::IsNull(arena.SimulationState().FindEntity(target));
+    Assert::IsTrue(arena.SimulationState().FindEntity(ship)->order == Outpost::ShipOrder::None);
   }
 
   TEST_METHOD(AttackOrdersOnlyEnemies)
@@ -346,7 +350,7 @@ public:
     Arena arena;
     const Outpost::EntityId ship = arena.Ship(BLUE, SMALL, ION, LANCE, {});
     const Outpost::EntityId friendly = arena.Ship(BLUE, SMALL, ION, LANCE, {50.0f, 0.0f});
-    const std::vector<Outpost::CommandResult> results = arena.World().Tick({
+    const std::vector<Outpost::CommandResult> results = arena.SimulationState().Tick({
       Order(BLUE, Outpost::AttackCommand{.ships = {ship}, .target = friendly}),
       Order(BLUE, Outpost::AttackCommand{.ships = {ship}, .target = Outpost::EntityId{1}}),
     });
@@ -369,7 +373,7 @@ public:
       {
         Assert::IsTrue(std::ranges::find(fired, shot.shooter) == fired.end(), L"a ship fired twice within one interval");
         fired.push_back(shot.shooter);
-        firstShotTicks.push_back(arena.World().CurrentTick());
+        firstShotTicks.push_back(arena.SimulationState().CurrentTick());
       }
     }
     Assert::AreEqual(size_t{10}, fired.size());
@@ -391,7 +395,7 @@ public:
         red.push_back(
           arena.Ship(RED, i % 2 == 0 ? MEDIUM : SMALL, ION, i % 4 == 0 ? LANCE : MASS_DRIVER, {400.0f, static_cast<float>(i) * 30.0f}));
       }
-      arena.World().SetTargetRule(Outpost::TargetRule::Random);
+      arena.SimulationState().SetTargetRule(Outpost::TargetRule::Random);
       (void)arena.Tick({Order(BLUE, Outpost::AttackMoveCommand{.ships = blue, .destination = {400.0f, 150.0f}}),
                         Order(RED, Outpost::AttackMoveCommand{.ships = red, .destination = {-400.0f, 150.0f}})});
       for (int tick = 0; tick < 40 * static_cast<int>(TICKS_PER_SECOND); ++tick)
@@ -400,9 +404,9 @@ public:
     };
     Arena first = fight();
     Arena second = fight();
-    Assert::IsTrue(first.World() == second.World());
+    Assert::IsTrue(first.SimulationState() == second.SimulationState());
     // And something was destroyed, so the replay covered combat.
-    Assert::IsTrue(first.World().Entities().size() < 24);
+    Assert::IsTrue(first.SimulationState().Entities().size() < 24);
   }
 };
 } // namespace GameLogicTests

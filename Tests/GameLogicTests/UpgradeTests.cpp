@@ -29,8 +29,8 @@ Outpost::Command Upgrade(Outpost::PlayerId _player, Outpost::EntityId _structure
 Outpost::EntityId ConstructorBeside(MatchArena& _arena, Outpost::PlayerId _owner, Outpost::PlanePosition _at, float _radius,
                                     float _sideMeters = 0.0f)
 {
-  return _arena.World().SpawnConstructor(_owner,
-                                         {.xMeters = _at.xMeters - (_radius + 10.0f + 15.0f), .zMeters = _at.zMeters + _sideMeters});
+  return _arena.SimulationState().SpawnConstructor(
+    _owner, {.xMeters = _at.xMeters - (_radius + 10.0f + 15.0f), .zMeters = _at.zMeters + _sideMeters});
 }
 
 // The ticks the level after _level of a structure of this kind takes to build itself (ADR-064 decision 3).
@@ -54,7 +54,7 @@ std::uint32_t TicksToLevel(MatchArena& _arena, Outpost::EntityId _structure, std
 
 std::int32_t OreOf(MatchArena& _arena, Outpost::PlayerId _player)
 {
-  return static_cast<std::int32_t>(_arena.World().OreHundredths(_player) / Outpost::HUNDREDTHS);
+  return static_cast<std::int32_t>(_arena.SimulationState().OreHundredths(_player) / Outpost::HUNDREDTHS);
 }
 
 const Outpost::EntityView* FindView(const Outpost::Snapshot& _snapshot, Outpost::EntityId _id)
@@ -77,7 +77,7 @@ public:
     const Outpost::EntityId relay = arena.Structure(BLUE, Outpost::StructureKind::Relay, {.xMeters = 300.0f, .zMeters = -300.0f});
     const Outpost::EntityId enemy = arena.Structure(RED, Outpost::StructureKind::Shipyard, {.xMeters = 0.0f, .zMeters = -600.0f});
     const Outpost::EntityId warship = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -300.0f, .zMeters = 300.0f});
-    const Outpost::EntityId builder = arena.World().SpawnConstructor(BLUE, {.xMeters = -600.0f, .zMeters = 0.0f});
+    const Outpost::EntityId builder = arena.SimulationState().SpawnConstructor(BLUE, {.xMeters = -600.0f, .zMeters = 0.0f});
     const auto result = [&](Outpost::Command _command) { return arena.Tick({std::move(_command)})[0]; };
 
     // A site still being built.
@@ -104,7 +104,7 @@ public:
 
     // Ore the player does not have: a player with 350 Ore pays for the station's 300 and not then for a Shipyard's 150.
     constexpr Outpost::PlayerId POOR{3};
-    arena.World().AddPlayer(POOR, 350);
+    arena.SimulationState().AddPlayer(POOR, 350);
     const Outpost::EntityId station = arena.Structure(POOR, Outpost::StructureKind::CommandStation, {.xMeters = 900.0f, .zMeters = 900.0f});
     const Outpost::EntityId poorYard = arena.Structure(POOR, Outpost::StructureKind::Shipyard, {.xMeters = -900.0f, .zMeters = 900.0f});
     Assert::IsTrue(arena.Tick({Upgrade(POOR, station), Upgrade(POOR, poorYard)}) ==
@@ -222,7 +222,7 @@ public:
     MatchArena arena;
     const Outpost::StructureTuning& yardTuning = arena.StructureData(Outpost::StructureKind::Shipyard);
     const Outpost::StructureTuning& labTuning = arena.StructureData(Outpost::StructureKind::ResearchLab);
-    Assert::AreEqual(labTuning.hitPoints * Outpost::HUNDREDTHS * 140 / 100, arena.World().StructureHitPoints(BLUE, labTuning, 3));
+    Assert::AreEqual(labTuning.hitPoints * Outpost::HUNDREDTHS * 140 / 100, arena.SimulationState().StructureHitPoints(BLUE, labTuning, 3));
 
     // A rig pays for the research.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
@@ -236,13 +236,14 @@ public:
     {
       Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::StartResearchCommand{.lab = lab, .topic = topic})})[0] ==
                      Outpost::CommandResult::Applied);
-      for (int tick = 0;
-           tick < 300 * 20 && std::ranges::find(arena.World().Researched(BLUE), topic) == arena.World().Researched(BLUE).end(); ++tick)
+      for (int tick = 0; tick < 300 * 20 && std::ranges::find(arena.SimulationState().Researched(BLUE), topic) ==
+                                              arena.SimulationState().Researched(BLUE).end();
+           ++tick)
         arena.Run(1);
     }
     Assert::AreEqual(yardTuning.hitPoints * Outpost::HUNDREDTHS * 145 / 100, arena.Get(yard).maxHitPointsHundredths);
     Assert::AreEqual(arena.Get(yard).maxHitPointsHundredths, arena.Get(yard).hitPointsHundredths);
-    Assert::AreEqual(labTuning.hitPoints * Outpost::HUNDREDTHS * 165 / 100, arena.World().StructureHitPoints(BLUE, labTuning, 3));
+    Assert::AreEqual(labTuning.hitPoints * Outpost::HUNDREDTHS * 165 / 100, arena.SimulationState().StructureHitPoints(BLUE, labTuning, 3));
   }
 
   // A structure destroyed during its upgrade loses the upgrade's Ore with it, and one built where it stood starts at
@@ -262,9 +263,9 @@ public:
     for (int i = 0; i < 10; ++i)
       lances.push_back(arena.Ship(RED, SMALL, LANCE, {.xMeters = 150.0f, .zMeters = -90.0f + (20.0f * static_cast<float>(i))}));
     (void)arena.Tick({Order(RED, Outpost::AttackCommand{.ships = lances, .target = yard})});
-    for (int tick = 0; tick < 120 * 20 && arena.World().FindEntity(yard) != nullptr; ++tick)
+    for (int tick = 0; tick < 120 * 20 && arena.SimulationState().FindEntity(yard) != nullptr; ++tick)
       arena.Run(1);
-    Assert::IsNull(arena.World().FindEntity(yard), L"the lances destroyed it");
+    Assert::IsNull(arena.SimulationState().FindEntity(yard), L"the lances destroyed it");
     Assert::AreEqual(ore, OreOf(arena, BLUE), L"nothing is refunded");
 
     (void)arena.Tick({Order(RED, Outpost::MoveCommand{.ships = lances, .destination = {.xMeters = 1800.0f, .zMeters = -1800.0f}})});
@@ -281,7 +282,7 @@ public:
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
     const auto radius = static_cast<float>(arena.StructureData(Outpost::StructureKind::Shipyard).footprintRadiusMeters);
     const Outpost::EntityId constructor = ConstructorBeside(arena, BLUE, YARD, radius);
-    const Outpost::Snapshot before = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot before = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(1, FindView(before, yard)->level);
     Assert::IsFalse(FindView(before, yard)->upgradePermille.has_value());
     Assert::AreEqual(1, FindView(before, constructor)->level, L"anything else is level 1");
@@ -293,7 +294,7 @@ public:
     {
       Assert::AreEqual(tuning.levels[i].cost, type->levels[i].cost);
       Assert::AreEqual(tuning.levels[i].buildSeconds, type->levels[i].buildSeconds);
-      Assert::AreEqual(arena.World().StructureHitPoints(BLUE, tuning, static_cast<std::int32_t>(i) + 2),
+      Assert::AreEqual(arena.SimulationState().StructureHitPoints(BLUE, tuning, static_cast<std::int32_t>(i) + 2),
                        type->levels[i].maxHitPointsHundredths);
     }
     const auto relay = std::ranges::find(before.structureTypes, Outpost::StructureKind::Relay, &Outpost::StructureTypeView::structure);
@@ -302,7 +303,7 @@ public:
     (void)arena.Tick({Upgrade(BLUE, yard)});
     arena.Run((LevelTicks(arena, Outpost::StructureKind::Shipyard, 1) / 2) - 1);
     // The snapshot is kept, since the view points into it.
-    const Outpost::Snapshot halfway = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot halfway = arena.SimulationState().BuildSnapshot(BLUE);
     const Outpost::EntityView* half = FindView(halfway, yard);
     Assert::IsTrue(half->upgradePermille.has_value() && *half->upgradePermille == 500,
                    std::to_wstring(half->upgradePermille.value_or(-1)).c_str());
@@ -317,23 +318,23 @@ public:
     const Outpost::PlanePosition at{.xMeters = -1500.0f, .zMeters = 1500.0f};
     const Outpost::EntityId yard = arena.Structure(RED, Outpost::StructureKind::Shipyard, at);
     const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1500.0f, .zMeters = 1350.0f});
-    arena.World().UseFog();
+    arena.SimulationState().UseFog();
     (void)arena.Tick();
-    Assert::AreEqual(1, FindView(arena.World().BuildSnapshot(BLUE), yard)->level);
+    Assert::AreEqual(1, FindView(arena.SimulationState().BuildSnapshot(BLUE), yard)->level);
 
     (void)arena.Tick(
       {Order(BLUE, Outpost::MoveCommand{.ships = {scout}, .destination = {.xMeters = -1500.0f, .zMeters = 200.0f}}), Upgrade(RED, yard)});
     Assert::IsTrue(TicksToLevel(arena, yard, 2, 2 * LevelTicks(arena, Outpost::StructureKind::Shipyard, 1)) > 0);
-    const Outpost::Snapshot memory = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot memory = arena.SimulationState().BuildSnapshot(BLUE);
     const Outpost::EntityView* remembered = FindView(memory, yard);
     Assert::IsTrue(remembered != nullptr && remembered->remembered);
     Assert::AreEqual(1, remembered->level, L"the upgrade was out of sight");
 
     (void)arena.Tick({Order(BLUE, Outpost::MoveCommand{.ships = {scout}, .destination = {.xMeters = -1500.0f, .zMeters = 1350.0f}})});
-    for (int tick = 0; tick < 60 * 20 && !arena.World().Sees(BLUE, arena.Get(yard)); ++tick)
+    for (int tick = 0; tick < 60 * 20 && !arena.SimulationState().Sees(BLUE, arena.Get(yard)); ++tick)
       arena.Run(1);
     arena.Run(1);
-    Assert::AreEqual(2, FindView(arena.World().BuildSnapshot(BLUE), yard)->level);
+    Assert::AreEqual(2, FindView(arena.SimulationState().BuildSnapshot(BLUE), yard)->level);
   }
 };
 } // namespace GameLogicTests

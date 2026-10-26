@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "RepositoryData.h"
-#include "WorldMatch.h"
+#include "UniverseMatch.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::chrono_literals;
@@ -20,12 +20,12 @@ std::unique_ptr<Outpost::InProcessServer> QuicServer(const Outpost::ServerDesc& 
                                                     _desc);
 }
 
-// A world's server in _folder, set up as the server's factory sets one up, with its bases placed (ADR-077, ADR-078).
-std::unique_ptr<Outpost::InProcessServer> WorldServer(const std::filesystem::path& _folder)
+// A universe's server in _folder, set up as the server's factory sets one up, with its bases placed (ADR-077, ADR-078).
+std::unique_ptr<Outpost::InProcessServer> UniverseServer(const std::filesystem::path& _folder)
 {
-  auto server = QuicServer({.seed = 5, .quic = true, .world = _folder});
-  server->World().PlaceStartingBases(server->MapData());
-  server->UseWorld(_folder, WorldMatch::RepositoryDataHash(), Outpost::WorldFolder::Recover(_folder));
+  auto server = QuicServer({.seed = 5, .quic = true, .universe = _folder});
+  server->SimulationState().PlaceStartingBases(server->MapData());
+  server->UseUniverse(_folder, UniverseMatch::RepositoryDataHash(), Outpost::UniverseFolder::Recover(_folder));
   return server;
 }
 
@@ -121,7 +121,7 @@ public:
   TEST_METHOD(PlaysOverQuic)
   {
     auto server = QuicServer();
-    const Outpost::EntityId ship = server->World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId ship = server->SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
     Outpost::QuicTransport blue(server->OpenSeat(BLUE, Outpost::NewSeatToken()), BLUE);
     Outpost::QuicTransport red(server->OpenSeat(RED, Outpost::NewSeatToken()), RED);
     server->Start();
@@ -206,18 +206,18 @@ public:
                                                L"a match's seats close as it starts");
   }
 
-  // ADR-078: a world starts with its seats open, and its players take them while it runs; the newest connection with a
+  // ADR-078: a universe starts with its seats open, and its players take them while it runs; the newest connection with a
   // seat's token holds it, and the one it is taken from is told so and sends nothing more.
-  TEST_METHOD(AWorldsSeatsAreTakenWhileItRunsAndTakenAgain)
+  TEST_METHOD(AUniversesSeatsAreTakenWhileItRunsAndTakenAgain)
   {
     const TemporaryFolder folder;
-    auto server = WorldServer(folder.Path());
+    auto server = UniverseServer(folder.Path());
     const Outpost::ServerAddress blueSeat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
     (void)server->OpenSeat(RED, Outpost::NewSeatToken());
     server->Start();
 
     Outpost::QuicTransport first(blueSeat, BLUE);
-    Assert::IsTrue(SnapshotsOf(first, 3).size() >= 3, L"a seat taken after the world started");
+    Assert::IsTrue(SnapshotsOf(first, 3).size() >= 3, L"a seat taken after the universe started");
     Outpost::QuicTransport second(blueSeat, BLUE);
     Assert::AreEqual(std::string(Outpost::DescribeClose(static_cast<std::uint64_t>(Outpost::CloseReason::SeatTaken)).value_or("")),
                      WhyItWent(first), L"the connection the seat was taken from is told why it went");
@@ -235,7 +235,7 @@ public:
   TEST_METHOD(ADeputyPlaysItsSeatWhileItsPlayerIsAway)
   {
     const TemporaryFolder folder;
-    auto server = WorldServer(folder.Path());
+    auto server = UniverseServer(folder.Path());
     const Outpost::ServerAddress blueSeat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
     auto counter = std::make_unique<Counter>();
     const Counter& deputy = *counter;
@@ -274,25 +274,25 @@ public:
     Assert::IsTrue(!next.empty() && !next.back().away.has_value(), L"once");
   }
 
-  // ADR-078: a world's server keeps its certificate in the world's folder, so that a player pins it once.
-  TEST_METHOD(AWorldKeepsItsCertificate)
+  // ADR-078: a universe's server keeps its certificate in the universe's folder, so that a player pins it once.
+  TEST_METHOD(AUniverseKeepsItsCertificate)
   {
     const TemporaryFolder folder;
     Neuron::CertificateHash first{};
     {
-      auto server = WorldServer(folder.Path());
+      auto server = UniverseServer(folder.Path());
       first = server->OpenSeat(BLUE, Outpost::NewSeatToken()).certificate;
     }
-    auto again = WorldServer(folder.Path());
+    auto again = UniverseServer(folder.Path());
     const Outpost::ServerAddress blueSeat = again->OpenSeat(BLUE, Outpost::NewSeatToken());
-    Assert::IsTrue(blueSeat.certificate == first, L"the same certificate when the world runs again");
+    Assert::IsTrue(blueSeat.certificate == first, L"the same certificate when the universe runs again");
     again->Start();
     Outpost::QuicTransport blue(blueSeat, BLUE);
     Assert::IsTrue(!SnapshotsOf(blue, 1).empty(), L"and a client that pinned it plays");
 
     const TemporaryFolder other;
-    auto otherWorld = WorldServer(other.Path());
-    Assert::IsFalse(otherWorld->OpenSeat(BLUE, Outpost::NewSeatToken()).certificate == first, L"another world has its own");
+    auto otherUniverse = UniverseServer(other.Path());
+    Assert::IsFalse(otherUniverse->OpenSeat(BLUE, Outpost::NewSeatToken()).certificate == first, L"another universe has its own");
     auto match = QuicServer();
     Assert::IsFalse(match->OpenSeat(BLUE, Outpost::NewSeatToken()).certificate == first, L"and a match its own");
   }
@@ -350,6 +350,28 @@ public:
     auto listening = QuicServer();
     const std::unique_ptr<Outpost::Transport> loopback = listening->Connect(BLUE);
     Assert::ExpectException<Neuron::Exception>([&listening] { (void)listening->OpenSeat(BLUE, Outpost::NewSeatToken()); });
+  }
+
+  // ADR-078 decision 9: a join gives the handshake the time it is given, as the game's join at launch gives it 3 s, and
+  // gives up on a server that has gone well before the 10 s a join from the menu waits.
+  TEST_METHOD(GivesUpAJoinInTheTimeItIsGiven)
+  {
+    auto gone = QuicServer();
+    const Outpost::ServerAddress seat = gone->OpenSeat(BLUE, Outpost::NewSeatToken());
+    gone.reset();
+    const auto started = std::chrono::steady_clock::now();
+    std::string message;
+    try
+    {
+      (void)Outpost::QuicTransport(seat, BLUE, 1'000ms);
+    }
+    catch (const Neuron::Exception& error)
+    {
+      message = error.what();
+    }
+    Assert::IsTrue(message.starts_with(std::format("Could not connect to {}:{} over QUIC", seat.host, seat.port)),
+                   std::wstring(winrt::to_hstring(message)).c_str());
+    Assert::IsTrue(std::chrono::steady_clock::now() - started < 5s, L"it gave up within its time");
   }
 };
 } // namespace GameLogicTests

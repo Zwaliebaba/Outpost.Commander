@@ -10,7 +10,7 @@ This plan puts the review's recommendations in order, as a queue of tasks. It is
 
 ## How an agent uses this plan
 
-1. **Read AGENTS.md, then the ADRs the task names, then Game §interface.windows.orders and Game §world.away** for what the client gains beside this plan. The review is not in the repository; what it found is summarized below, with how each figure was found.
+1. **Read AGENTS.md, then the ADRs the task names, then Game §interface.windows.orders and Game §universe.away** for what the client gains beside this plan. The review is not in the repository; what it found is summarized below, with how each figure was found.
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone (owner, 2026-09-30), in the milestone order below, and where V1 places it against Phase 5.
 3. **A gate is an owner decision.** The task does not start until the owner has answered, and the answer is written into the gates table, with its date, first. An answer that changes what a design or an ADR says the interface shows is recorded in the task's ADR, naming what it changes.
 4. **ADRs are edited in place** (AGENTS.md §6). A new one takes the next free number when its task lands; Phase 5's milestones 38 and 39 take numbers too, so this plan reserves none.
@@ -99,9 +99,9 @@ Each is an owner decision, proposed here and in the task it gates. Where a propo
 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
-| V1 | **Where this plan stands against Phase 5.** Proposed: UI1, UI2.1 and UI3.1 land before Phase 5's 39.3, the owner's week. A world played for a week is where the map and the memories matter most, and W6 judges the rhythm by it. The rest goes beside Phase 5 or after it. Phase 5's 38.1 moves the alerts' source to the server, and its 38.3 adds an orders window. UI2.1 restyles the alerts' newest line, and UI4.2 the selection's commands; whichever lands second fits around the other. As proposed. | this plan | the order | decided 2026-10-08 |
+| V1 | **Where this plan stands against Phase 5.** Proposed: UI1, UI2.1 and UI3.1 land before Phase 5's 39.3, the owner's week. A universe played for a week is where the map and the memories matter most, and W6 judges the rhythm by it. The rest goes beside Phase 5 or after it. Phase 5's 38.1 moves the alerts' source to the server, and its 38.3 adds an orders window. UI2.1 restyles the alerts' newest line, and UI4.2 the selection's commands; whichever lands second fits around the other. As proposed. | this plan | the order | decided 2026-10-08 |
 | V2 | **Territory and sight in the world** (UI1.1, UI1.3, UI1.4). Sector borders as one-pixel lines in the holder's color. A neutral border brighter than the grid and never wider, the way back ADR-028 left for major lines. A mark on every node, and a node the player could claim now in the player's color. A suppressed and a cut-off border, each told apart from a held one and from each other by pattern, not color. The borders drawn over the fog, as the minimap's are. The same lattice, nodes and states on the minimap. And a seen-before shade of about 0.8 on the ground, up from 0.55, which takes the grid outside sight from 15 of 255 to about 7, computed, against 27 in sight and about 4 where never seen. It changes ADR-028 decision 1's "all alike" and ADR-024 decision 9's shade. As proposed (owner, 2026-10-08), but with no mark on every node, which made the screen busy: the nodes the player could claim are marked only while it places a Relay, in the world and on the minimap (owner, 2026-10-09). | UI1.1, UI1.3 | UI1.1, UI1.3, UI1.4 | decided 2026-10-09 |
-| V3 | **Memories** (UI1.2). A remembered entity drawn after the fog, as lines without faces and without bars, with its age on hover and on its selection panel. And where the age comes from. Proposed: the server keeps the tick each remembered structure was last seen, so the age survives a save and a seat taken again (Phase 5). It adds to what `Simulation` holds, so `WORLD_STATE_VERSION` and `PROTOCOL_VERSION` rise (AGENTS.md R18). The other way, the client noting when a structure turned remembered, changes neither, but knows no age after a join. As proposed. | UI1.2 | UI1.2 | decided 2026-10-08 |
+| V3 | **Memories** (UI1.2). A remembered entity drawn after the fog, as lines without faces and without bars, with its age on hover and on its selection panel. And where the age comes from. Proposed: the server keeps the tick each remembered structure was last seen, so the age survives a save and a seat taken again (Phase 5). It adds to what `Simulation` holds, so `UNIVERSE_STATE_VERSION` and `PROTOCOL_VERSION` rise (AGENTS.md R18). The other way, the client noting when a structure turned remembered, changes neither, but knows no age after a join. As proposed. | UI1.2 | UI1.2 | decided 2026-10-08 |
 | V4 | **One meaning per color** (UI2.1–UI2.3). A warning as a chip: the word, dark, on a filled tag of the warning's color, never plain text in that color. It marks an idle line's IDLE, an income of nothing and the newest alert; the enemy's figures stay plain text. Build progress in a neutral light gray. For the blast and the glyph, one of three: Ore's glyph becomes another CPU-drawn shape in the same gold (proposed); the particles become round spots, which reverses the owner's choice in ADR-026; or both stay. As proposed. | UI2.1 | UI2.1, UI2.2, UI2.3 | decided 2026-10-08 |
 | V5 | **The status and territory panels** (UI3.1–UI3.3). The Shipyards' line reports what binds them: the cap and the station level that lifts it, Ore, or idle with room. It warns only when an idle Shipyard could start a ship. A click at the cap selects the Command Station. The column's panels take one fixed width, with research and the fleet as bars. The nodes read "3 : 2", with "cap 10 of 25" as a label, under a drain row saying who loses how much a minute and when they reach nothing. The drain row needs the drain's two numbers in the snapshot, so `PROTOCOL_VERSION` rises. As proposed. | UI3.1 | UI3.1, UI3.2, UI3.3 | decided 2026-10-08 |
 | V6 | **Selection and commands** (UI4.2, UI4.3, UI4.5). The command panel stands against the selection panel's right edge, the pair centered at the bottom, so that the two read as one. Attack-move, Hold sector, Patrol and Stop buttons, each with its key's cap, for a selection with a warship. The retreat as three choices. One bar per ship, up to 24, a click on one selecting it. A new design's default name: where its hull, drive and weapon are a starting design's, that design's name with its module's code, "Lancer+SA". As proposed. | UI4.2 | UI4.2, UI4.3, UI4.5 | decided 2026-10-08 |
@@ -153,7 +153,7 @@ Each is an owner decision, proposed here and in the task it gates. Where a propo
     - It has no health bar, no build bar and no resting ring.
   - **Its age is shown.** Hovering it shows "Last seen 4:12 ago". Its selection panel opens with the same line, then what was seen, such as "34% built when seen".
   - **The age comes from the server.** `EntityView` gains the tick it was last seen. The server keeps it with each remembered structure in `Simulation`'s remembered views (ADR-024), so it survives a save and a seat taken again.
-    - `WORLD_STATE_VERSION` rises, and the new layout's hash is recorded beside the old (AGENTS.md R18).
+    - `UNIVERSE_STATE_VERSION` rises, and the new layout's hash is recorded beside the old (AGENTS.md R18).
     - `PROTOCOL_VERSION` rises.
     - If V3 chooses the client's way instead, `GameClient` notes the tick each entity turned remembered, and an entity it never saw turn shows no age.
   - **On the minimap,** a remembered structure's mark differs from a seen one's by more than its color, and from an ore asteroid's outline by its shape. The ADR picks how.
@@ -163,11 +163,11 @@ Each is an owner decision, proposed here and in the task it gates. Where a propo
   - `HudTests`: the minimap's mark.
   - With the server's way:
     - `GameLogicTests`: the tick is the last one in sight, it stands while the structure is remembered, and it survives a save and a load;
-    - `WorldStateTests`: the new version's hash;
+    - `UniverseStateTests`: the new version's hash;
     - `WireFormatTests`: the field.
 - **Verify:** the container's `GameLogicTests` where the server changes; CI; run; **owner run.**
 - **As built (2026-10-08):** [ADR-081](../ADR/ADR-081-territory-and-memory-over-the-fog.md), the server's way.
-  - `WORLD_STATE_VERSION` goes from 4 to 5, with its layout's hash recorded, and `PROTOCOL_VERSION` from 13 to 14. They land after milestone 38, which raised them to 4 and 13.
+  - `UNIVERSE_STATE_VERSION` goes from 4 to 5, with its layout's hash recorded, and `PROTOCOL_VERSION` from 13 to 14. They land after milestone 38, which raised them to 4 and 13.
   - ADR-077 is not edited: it says how versions are kept, and each raise is recorded with its change, as milestone 37's was.
   - The minimap draws a memory as a cross over the fog.
   - The hint reads "Shipyard · last seen 4:12 ago, 34% built", and a remembered derelict's hint ends with its age. `Hud::Describe` and `Hud::DescribeDerelict` take the server's tick rate.
@@ -305,7 +305,7 @@ The milestone's tasks share one ADR: one meaning per color.
   - **The Ore, status, territory and alerts panels take one fixed width,** so the column's edge stands still. It is the wider of the alerts' 380 units and the measured line of the longest topic's name. This rewrites ADR-066 decision 3's fitted width.
   - **Research reads as its topic's name over a progress bar,** with the queued count at the bar's end, "+3", in place of "Researching Reinforced Structures, 91% (+3 queued)".
   - **The Shipyards read as their counts,** a short label and a figure each, "BUILDING 0 · WAITING 2 · IDLE 3". The fleet reads as a bar against its cap, with "29 / 30".
-  - **The column leaves its foot free** for what Phase 5 adds: the panel of what happened while away (Game §world.away), and 38.3's orders window.
+  - **The column leaves its foot free** for what Phase 5 adds: the panel of what happened while away (Game §universe.away), and 38.3's orders window.
 - **ADR:** ADR-066's.
 - **Acceptance:** `HudTests`: the panels' widths equal and unchanged across every status content; bars at 0, 50 and 100%; 14.1's and 14.2's tests.
 - **Verify:** CI; run; **owner run.**
@@ -331,7 +331,7 @@ The milestone's tasks share one ADR: one meaning per color.
   - **The drain's two numbers join the snapshot's rules,** as `constructorBuildSeconds` did (ADR-068): `drainIntervalSeconds` and `drainTicketsPerNodeDifference` (ADR-057 decision 1). `PROTOCOL_VERSION` rises.
     - The time is the drains needed at the current nodes, rounded up, times the interval.
     - The next drain may be up to an interval away, which the row does not try to show.
-  - **A world has no domination** (Game §territory.domination), so it has no ticket rows, as now.
+  - **A universe has no domination** (Game §territory.domination), so it has no ticket rows, as now.
 - **ADR:** ADR-057 decisions 7 and 8 rewritten in place, and ADR-056 decision 11's panel line.
 - **Acceptance:**
   - `HudTests`: ahead, level and behind; the times at shot 1's figures, 32:06, and at shot 5's, 12:09.

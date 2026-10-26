@@ -23,7 +23,7 @@ constexpr DWORD KEY_BITS = 2048;
 // (ADR-078).
 constexpr std::wstring_view CERTIFICATE_FILE = L"Certificate.der";
 constexpr std::wstring_view KEY_NAME_FILE = L"Certificate.key";
-// How long a kept certificate is valid for: longer than any world. One made for a server alone is valid for a year, the
+// How long a kept certificate is valid for: longer than any universe. One made for a server alone is valid for a year, the
 // default, which outlasts any match.
 constexpr int KEPT_YEARS = 5;
 

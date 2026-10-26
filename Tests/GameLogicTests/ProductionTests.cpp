@@ -40,7 +40,7 @@ public:
     for (int i = 0; i < 5; ++i)
       Assert::IsTrue(arena.Tick({Queue(BLUE, yard, design)})[0] == Outpost::CommandResult::Applied);
     Assert::IsTrue(arena.Tick({Queue(BLUE, yard, design)})[0] == Outpost::CommandResult::QueueFull);
-    Assert::AreEqual(size_t{5}, arena.World().BuildSnapshot(BLUE).entities.back().queue.size());
+    Assert::AreEqual(size_t{5}, arena.SimulationState().BuildSnapshot(BLUE).entities.back().queue.size());
   }
 
   // ADR-016 decision 6: a job is paid for when it starts, at the front of the queue, and takes its design's build time; the
@@ -50,28 +50,28 @@ public:
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
     const Outpost::DesignId design = arena.Design(BLUE, SMALL, MASS_DRIVER);
-    const Outpost::DesignStats& stats = arena.World().FindDesign(design)->stats;
-    const std::int64_t start = arena.World().OreHundredths(BLUE);
+    const Outpost::DesignStats& stats = arena.SimulationState().FindDesign(design)->stats;
+    const std::int64_t start = arena.SimulationState().OreHundredths(BLUE);
     const std::int64_t cost = std::int64_t{stats.cost} * Outpost::HUNDREDTHS;
 
     (void)arena.Tick({Queue(BLUE, yard, design), Queue(BLUE, yard, design)});
-    Assert::AreEqual(start - cost, arena.World().OreHundredths(BLUE), L"only the first job has started");
+    Assert::AreEqual(start - cost, arena.SimulationState().OreHundredths(BLUE), L"only the first job has started");
 
     const auto buildTicks = static_cast<std::uint32_t>(stats.buildSeconds * MatchArena::TICKS_PER_SECOND);
     arena.Run(buildTicks - 2);
     Assert::AreEqual(size_t{0}, Warships(arena, BLUE));
     arena.Run(1);
     Assert::AreEqual(size_t{1}, Warships(arena, BLUE), L"the first ship is done in its build time");
-    Assert::AreEqual(start - cost, arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start - cost, arena.SimulationState().OreHundredths(BLUE));
     arena.Run(1);
-    Assert::AreEqual(start - (2 * cost), arena.World().OreHundredths(BLUE), L"the second job starts the next tick");
+    Assert::AreEqual(start - (2 * cost), arena.SimulationState().OreHundredths(BLUE), L"the second job starts the next tick");
 
     const Outpost::Entity& ship = *arena.Owned(BLUE, Outpost::EntityKind::Ship).back();
     Assert::IsTrue(ship.design == design);
     // Every player's snapshot carries the ship's drive, which the client colors its exhaust by (ADR-019).
-    const std::vector<Outpost::EntityView> seen = arena.World().BuildSnapshot(RED).entities;
+    const std::vector<Outpost::EntityView> seen = arena.SimulationState().BuildSnapshot(RED).entities;
     const auto view = std::ranges::find(seen, ship.id, &Outpost::EntityView::id);
-    Assert::IsTrue(view != seen.end() && view->drive == arena.World().FindDesign(design)->components.drive);
+    Assert::IsTrue(view != seen.end() && view->drive == arena.SimulationState().FindDesign(design)->components.drive);
     const float gap = Outpost::Distance(ship.position, YARD) - arena.Get(yard).radiusMeters - ship.radiusMeters;
     Assert::IsTrue(gap >= 0.0f && gap < 10.0f, std::to_wstring(gap).c_str());
     Assert::IsTrue(ship.position.xMeters > YARD.xMeters, L"on the side facing the map's center");
@@ -91,13 +91,13 @@ public:
     Assert::AreEqual(2u, arena.Get(second).shipyardNumber);
     Assert::AreEqual(1u, arena.Get(theirs).shipyardNumber, L"each player counts its own");
 
-    arena.Run(static_cast<std::uint32_t>(arena.World().FindDesign(design)->stats.buildSeconds * MatchArena::TICKS_PER_SECOND));
+    arena.Run(static_cast<std::uint32_t>(arena.SimulationState().FindDesign(design)->stats.buildSeconds * MatchArena::TICKS_PER_SECOND));
     Assert::AreEqual(1u, arena.Get(second).shipsBuilt);
     Assert::AreEqual(0u, arena.Get(first).shipsBuilt);
 
     const auto viewOf = [&arena](Outpost::PlayerId _player, Outpost::EntityId _yard)
     {
-      const std::vector<Outpost::EntityView> entities = arena.World().BuildSnapshot(_player).entities;
+      const std::vector<Outpost::EntityView> entities = arena.SimulationState().BuildSnapshot(_player).entities;
       return *std::ranges::find(entities, _yard, &Outpost::EntityView::id);
     };
     Assert::AreEqual(2u, viewOf(BLUE, second).shipyardNumber);
@@ -115,7 +115,7 @@ public:
     const Outpost::DesignComponents large{.hull = LARGE, .drive = ION, .weapon = MASS_DRIVER};
     const std::array<Outpost::DesignId, 3> designs{
       arena.Design(BLUE, SMALL, MASS_DRIVER), arena.Design(BLUE, MEDIUM, MASS_DRIVER),
-      arena.World().SaveDesign(BLUE, "Large", large, Outpost::DesignStatsFor(arena.TuningData(), large))};
+      arena.SimulationState().SaveDesign(BLUE, "Large", large, Outpost::DesignStatsFor(arena.TuningData(), large))};
     Assert::AreEqual(1, Outpost::ShipyardLevelFor(arena.TuningData(), SMALL));
     Assert::AreEqual(2, Outpost::ShipyardLevelFor(arena.TuningData(), MEDIUM));
     Assert::AreEqual(3, Outpost::ShipyardLevelFor(arena.TuningData(), LARGE));
@@ -137,7 +137,7 @@ public:
       for (int tick = 0; tick < 300 * 20 && arena.Get(yard).level == level; ++tick)
         arena.Run(1);
     }
-    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(2, std::ranges::find(snapshot.hulls, MEDIUM, &Outpost::HullView::id)->shipyardLevel,
                      L"the client knows each hull's level");
   }
@@ -149,10 +149,10 @@ public:
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
     // A Small ship, which a level 1 Shipyard builds (ADR-064 decision 9).
     const Outpost::DesignId swarm = arena.Design(BLUE, SMALL, MASS_DRIVER);
-    const std::int32_t cost = arena.World().FindDesign(swarm)->stats.cost;
+    const std::int32_t cost = arena.SimulationState().FindDesign(swarm)->stats.cost;
     // Spend the Ore down to less than one Small ship, on a rig site and Shipyards elsewhere, which the Constructor leaves
     // unfinished as it goes from one order to the next.
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {600.0f, -600.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {600.0f, -600.0f});
     (void)arena.Tick({Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor},
                                                                  .structure = Outpost::StructureKind::MiningRig,
                                                                  .position = MatchArena::CONTESTED_ASTEROID})});
@@ -162,12 +162,12 @@ public:
                                                                    .structure = Outpost::StructureKind::Shipyard,
                                                                    .position = {600.0f, -1200.0f + (static_cast<float>(i) * 300.0f)}})});
     }
-    Assert::IsTrue(arena.World().OreHundredths(BLUE) < std::int64_t{cost} * Outpost::HUNDREDTHS);
+    Assert::IsTrue(arena.SimulationState().OreHundredths(BLUE) < std::int64_t{cost} * Outpost::HUNDREDTHS);
 
     (void)arena.Tick({Queue(BLUE, yard, swarm)});
     arena.Run(40 * MatchArena::TICKS_PER_SECOND);
     Assert::AreEqual(size_t{0}, Warships(arena, BLUE));
-    Assert::AreEqual(0, arena.World().BuildSnapshot(BLUE).entities[arena.Get(yard).id.value - 1].jobPermille, L"waiting");
+    Assert::AreEqual(0, arena.SimulationState().BuildSnapshot(BLUE).entities[arena.Get(yard).id.value - 1].jobPermille, L"waiting");
 
     // A rig pays for it.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
@@ -181,9 +181,9 @@ public:
     MatchArena arena;
     const Outpost::EntityId station = arena.Structure(BLUE, Outpost::StructureKind::CommandStation, YARD);
     const Outpost::ConstructorTuning& constructor = arena.TuningData().constructor;
-    const std::int64_t start = arena.World().OreHundredths(BLUE);
+    const std::int64_t start = arena.SimulationState().OreHundredths(BLUE);
     (void)arena.Tick({Queue(BLUE, station)});
-    Assert::AreEqual(start - (std::int64_t{constructor.cost} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+    Assert::AreEqual(start - (std::int64_t{constructor.cost} * Outpost::HUNDREDTHS), arena.SimulationState().OreHundredths(BLUE));
     arena.Run(static_cast<std::uint32_t>(constructor.buildSeconds * MatchArena::TICKS_PER_SECOND));
     const std::vector<const Outpost::Entity*> ships = arena.Owned(BLUE, Outpost::EntityKind::Ship);
     Assert::AreEqual(size_t{1}, ships.size());
@@ -202,7 +202,7 @@ public:
     Assert::IsTrue(arena.Tick({Queue(BLUE, yard, theirs)})[0] == Outpost::CommandResult::UnknownDesign);
 
     // A Shipyard under construction does not produce yet.
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, -600.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {0.0f, -600.0f});
     (void)arena.Tick(
       {Order(BLUE, Outpost::BuildStructureCommand{
                      .constructors = {constructor}, .structure = Outpost::StructureKind::Shipyard, .position = {0.0f, -400.0f}})});

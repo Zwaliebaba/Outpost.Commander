@@ -46,15 +46,15 @@ public:
     Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 3, .stressLoad = true});
     // The map as the server placed it from its seed (ADR-072).
     const Outpost::Map& map = server.MapData();
-    server.World().PlaceStartingBases(map);
+    server.SimulationState().PlaceStartingBases(map);
     server.StartStressLoad();
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});
 
-    Census census = Count(server.World());
+    Census census = Count(server.SimulationState());
     Assert::AreEqual(Outpost::STRESS_STRUCTURES_PER_PLAYER, census.structures[0]);
     Assert::AreEqual(Outpost::STRESS_STRUCTURES_PER_PLAYER, census.structures[1]);
     size_t rigs = 0;
-    for (const Outpost::Entity& entity : server.World().Entities())
+    for (const Outpost::Entity& entity : server.SimulationState().Entities())
     {
       if (entity.owner.IsValid())
         Assert::IsTrue(entity.maxHitPointsHundredths > 0, L"everything in the scene can be destroyed");
@@ -86,7 +86,7 @@ public:
       }
       for (const Outpost::TickTiming& tick : server.TakeTickTimings())
         ticks.push_back(tick.total);
-      census = Count(server.World());
+      census = Count(server.SimulationState());
       // Losses in the last tick are made good before the next.
       Assert::IsTrue(census.ships[0] > Outpost::STRESS_SHIPS_PER_PLAYER - 20 && census.ships[1] > Outpost::STRESS_SHIPS_PER_PLAYER - 20,
                      (std::to_wstring(census.ships[0]) + L" and " + std::to_wstring(census.ships[1]) + L" ships").c_str());

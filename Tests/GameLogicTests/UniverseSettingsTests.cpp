@@ -6,7 +6,7 @@ namespace GameLogicTests
 {
 namespace
 {
-// A settings file of the shape WriteWorldSettings writes, with _change made to its text.
+// A settings file of the shape WriteUniverseSettings writes, with _change made to its text.
 std::string SettingsText(std::string_view _from, std::string_view _to)
 {
   std::string text = R"({ "address": "0.0.0.0", "port": 45000, "host": "friends.example.net", "seed": "18446744073709551615",
@@ -19,20 +19,20 @@ std::string SettingsText(std::string_view _from, std::string_view _to)
 void ExpectRefused(std::string_view _from, std::string_view _to, const wchar_t* _why)
 {
   const std::string text = SettingsText(_from, _to);
-  Assert::ExpectException<Neuron::Exception>([&text] { (void)Outpost::ReadWorldSettings(text); }, _why);
+  Assert::ExpectException<Neuron::Exception>([&text] { (void)Outpost::ReadUniverseSettings(text); }, _why);
 }
 } // namespace
 
-// ADR-078 decisions 2 and 8: a world's settings, which its owner makes once, and the join file each seat's player is
+// ADR-078 decisions 2 and 8: a universe's settings, which its owner makes once, and the join file each seat's player is
 // handed.
-TEST_CLASS(WorldSettingsTests)
+TEST_CLASS(UniverseSettingsTests)
 {
 public:
   // New settings have a seat for each player, each with a token of its own, and read back as they were written; a seed
   // too large for a JSON number survives as a string.
   TEST_METHOD(ReadBackAsTheyWereWritten)
   {
-    Outpost::WorldSettings settings = Outpost::NewWorldSettings(0xFFFF'FFFF'FFFF'FFFFull, 3);
+    Outpost::UniverseSettings settings = Outpost::NewUniverseSettings(0xFFFF'FFFF'FFFF'FFFFull, 3);
     settings.host = "a \"quoted\" host\\name";
     settings.port = 47001;
     // The third an AI empire's (ADR-079).
@@ -44,7 +44,7 @@ public:
     Assert::IsFalse(settings.seats[0].token == settings.seats[1].token, L"each seat its own token");
     Assert::IsFalse(settings.seats[0].token == Outpost::SeatToken{}, L"and not zero");
 
-    const Outpost::WorldSettings read = Outpost::ReadWorldSettings(Outpost::WriteWorldSettings(settings));
+    const Outpost::UniverseSettings read = Outpost::ReadUniverseSettings(Outpost::WriteUniverseSettings(settings));
     Assert::AreEqual(settings.address, read.address);
     Assert::AreEqual(settings.port, read.port);
     Assert::AreEqual(settings.host, read.host);
@@ -56,10 +56,10 @@ public:
       Assert::IsTrue(settings.seats[i].token == read.seats[i].token);
       Assert::AreEqual(settings.seats[i].ai, read.seats[i].ai);
     }
-    Assert::AreEqual(std::uint64_t{0xFFFF'FFFF'FFFF'FFFFull}, Outpost::ReadWorldSettings(SettingsText("", "")).seed);
+    Assert::AreEqual(std::uint64_t{0xFFFF'FFFF'FFFF'FFFFull}, Outpost::ReadUniverseSettings(SettingsText("", "")).seed);
   }
 
-  // Settings that are not settings are refused, saying what is wrong, rather than running a world with them.
+  // Settings that are not settings are refused, saying what is wrong, rather than running a universe with them.
   TEST_METHOD(RefusesWhatIsNotSettings)
   {
     ExpectRefused("\"port\": 45000", "\"port\": 70000", L"a port out of range");
@@ -76,7 +76,7 @@ public:
     ExpectRefused(", \"token\": \"ffeeddccbbaa99887766554433221100\"", "", L"a seat neither");
     Assert::AreEqual(
       std::string("Normal"),
-      Outpost::ReadWorldSettings(SettingsText("\"token\": \"ffeeddccbbaa99887766554433221100\"", "\"ai\": \"Normal\"")).seats[1].ai,
+      Outpost::ReadUniverseSettings(SettingsText("\"token\": \"ffeeddccbbaa99887766554433221100\"", "\"ai\": \"Normal\"")).seats[1].ai,
       L"an AI empire's seat");
     ExpectRefused("\"host\"", "\"hots\"", L"a member misspelled");
     ExpectRefused(
@@ -88,7 +88,7 @@ public:
   // reads back as it was written.
   TEST_METHOD(WritesJoinFilesThatReadBack)
   {
-    const Outpost::WorldSettings settings = Outpost::ReadWorldSettings(SettingsText("", ""));
+    const Outpost::UniverseSettings settings = Outpost::ReadUniverseSettings(SettingsText("", ""));
     Neuron::CertificateHash certificate{};
     for (std::size_t i = 0; i < certificate.size(); ++i)
       certificate[i] = static_cast<std::uint8_t>(i * 7);

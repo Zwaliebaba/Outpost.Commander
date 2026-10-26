@@ -116,7 +116,7 @@ public:
       m_settings(_settings.has_value() ? std::move(*_settings) : RepositorySettings()),
       m_ai(m_settings, m_server.TicksPerSecond())
   {
-    m_server.World().PlaceStartingBases(m_server.MapData());
+    m_server.SimulationState().PlaceStartingBases(m_server.MapData());
   }
 
   // The AI made afresh, as a server that restarted makes it: it kept nothing (ADR-020 decision 16).
@@ -125,9 +125,9 @@ public:
     m_ai = Outpost::AiPlayer(m_settings, m_server.TicksPerSecond());
   }
 
-  [[nodiscard]] Outpost::Simulation& World() noexcept
+  [[nodiscard]] Outpost::Simulation& SimulationState() noexcept
   {
-    return m_server.World();
+    return m_server.SimulationState();
   }
 
   [[nodiscard]] Outpost::AiPlayer& Ai() noexcept
@@ -142,7 +142,7 @@ public:
 
   [[nodiscard]] Outpost::Snapshot View(Outpost::PlayerId _player)
   {
-    return m_server.World().BuildSnapshot(_player);
+    return m_server.SimulationState().BuildSnapshot(_player);
   }
 
   // The commands the server has applied, the AI's among them.
@@ -169,7 +169,7 @@ public:
     const auto ticks = static_cast<std::uint64_t>(_seconds * tps);
     for (std::uint64_t tick = 0; tick < ticks; ++tick)
     {
-      if (_untilOver && World().MatchOver())
+      if (_untilOver && SimulationState().MatchOver())
         return;
       m_server.Advance(std::chrono::nanoseconds(1'000'000'000 / tps));
       (void)m_human->Receive();
@@ -185,14 +185,14 @@ public:
   std::vector<Outpost::EntityId> Spawn(Outpost::PlayerId _owner, const Outpost::DesignComponents& _design, int _ships,
                                        Outpost::PlanePosition _center)
   {
-    const Outpost::DesignId design = World().FindDesign(_owner, _design)->id;
+    const Outpost::DesignId design = SimulationState().FindDesign(_owner, _design)->id;
     std::vector<Outpost::EntityId> ships;
     for (int i = 0; i < _ships; ++i)
     {
       const int rowIndex = i / 4;
       const float column = static_cast<float>(i % 4) - 1.5f;
       const auto row = static_cast<float>(rowIndex - 1);
-      ships.push_back(World().SpawnShip(_owner, design, {_center.xMeters + (30.0f * column), _center.zMeters + (30.0f * row)}));
+      ships.push_back(SimulationState().SpawnShip(_owner, design, {_center.xMeters + (30.0f * column), _center.zMeters + (30.0f * row)}));
     }
     return ships;
   }
@@ -207,8 +207,8 @@ public:
   Outpost::EntityId Structure(Outpost::PlayerId _owner, Outpost::StructureKind _kind, Outpost::PlanePosition _position)
   {
     const Outpost::StructureTuning& tuning = *std::ranges::find(m_server.TuningData().structures, _kind, &Outpost::StructureTuning::kind);
-    return World().SpawnStructure(_owner, _kind, _position, static_cast<float>(tuning.footprintRadiusMeters),
-                                  tuning.hitPoints * Outpost::HUNDREDTHS, tuning.armor * Outpost::HUNDREDTHS);
+    return SimulationState().SpawnStructure(_owner, _kind, _position, static_cast<float>(tuning.footprintRadiusMeters),
+                                            tuning.hitPoints * Outpost::HUNDREDTHS, tuning.armor * Outpost::HUNDREDTHS);
   }
 
   // The structures of _kinds the AI ordered from tick _from on.
@@ -651,7 +651,7 @@ public:
   {
     AiMatch match;
     const auto derelicts = [&match]
-    { return std::ranges::count(match.World().Entities(), Outpost::EntityKind::Derelict, &Outpost::Entity::kind); };
+    { return std::ranges::count(match.SimulationState().Entities(), Outpost::EntityKind::Derelict, &Outpost::Entity::kind); };
     const auto placed = derelicts();
     match.Run(30 * 60.0);
     std::size_t salvages = 0;
@@ -827,13 +827,13 @@ public:
     match.Run(1.0);
     Assert::IsTrue(match.Ai().ProductionDesign() == SWARM);
 
-    const Outpost::DesignId swarm = match.World().FindDesign(AI, SWARM)->id;
+    const Outpost::DesignId swarm = match.SimulationState().FindDesign(AI, SWARM)->id;
     // Its scout is queued ahead of its warships (ADR-020 decision 13), and with Phase 4's income it may still wait in the
     // queue when the first warship joins it.
     const Outpost::DesignComponents scoutDesign = RepositorySettings().scoutDesign;
     const auto answerOrScout = [&match, swarm, &scoutDesign](const Outpost::JobView& _job)
     {
-      const Outpost::ShipDesign* design = match.World().FindDesign(_job.design);
+      const Outpost::ShipDesign* design = match.SimulationState().FindDesign(_job.design);
       return _job.design == swarm || (design != nullptr && design->components == scoutDesign);
     };
     bool queued = false;
@@ -1104,7 +1104,7 @@ public:
     kept.Run(12.0 * 60.0);
     restarted.Run(12.0 * 60.0);
     restarted.RestartAi();
-    const std::uint64_t from = restarted.World().CurrentTick();
+    const std::uint64_t from = restarted.SimulationState().CurrentTick();
     kept.Run(60.0);
     restarted.Run(60.0);
     const std::initializer_list<Outpost::StructureKind> base{Outpost::StructureKind::Shipyard, Outpost::StructureKind::ResearchLab,
@@ -1310,7 +1310,7 @@ public:
     // An outpost of the AI's, far from its base, and a raider beside it.
     const Outpost::PlanePosition outpost{home.xMeters - 650.0f, home.zMeters - 600.0f};
     const Outpost::EntityId platform =
-      match.World().SpawnStructure(AI, Outpost::StructureKind::DefensePlatform, outpost, 20.0f, 150000, 1000);
+      match.SimulationState().SpawnStructure(AI, Outpost::StructureKind::DefensePlatform, outpost, 20.0f, 150000, 1000);
     const std::vector<Outpost::EntityId> raider = match.Spawn(HUMAN, LINE, 1, {outpost.xMeters, outpost.zMeters + 200.0f});
     match.Human().Send({.player = HUMAN, .order = Outpost::AttackCommand{.ships = raider, .target = platform}});
     const float before = MeanDistance(match.View(AI), reserve, outpost);
@@ -1370,7 +1370,7 @@ public:
     for (int minute = 0; minute < 45 && !opened(); ++minute)
       match.Run(60.0);
     Assert::IsTrue(opened(), L"the AI has not opened tier 3 in 45 minutes");
-    Logger::WriteMessage(std::format("The AI opened tier 3 at tick {}.\n", match.World().CurrentTick()).c_str());
+    Logger::WriteMessage(std::format("The AI opened tier 3 at tick {}.\n", match.SimulationState().CurrentTick()).c_str());
   }
 
   // The AI finds an entity of its snapshot by a binary search, which needs every snapshot to list its entities once each,
@@ -1409,8 +1409,8 @@ public:
   {
     AiMatch match;
     match.Run(25.0 * 60.0, true);
-    Assert::IsTrue(match.World().MatchOver(), L"the AI has not won in 25 minutes");
-    Assert::IsTrue(match.World().Winner() == AI);
+    Assert::IsTrue(match.SimulationState().MatchOver(), L"the AI has not won in 25 minutes");
+    Assert::IsTrue(match.SimulationState().Winner() == AI);
     Logger::WriteMessage(std::format("The AI won at tick {}.\n", match.View(AI).matchEndedTick).c_str());
   }
 
@@ -1427,13 +1427,13 @@ public:
     {
       if (asteroid.yield != Outpost::OreYield::Contested)
         continue;
-      (void)match.World().SpawnStructure(HUMAN, Outpost::StructureKind::MiningRig, asteroid.position,
-                                         std::max(static_cast<float>(rig.footprintRadiusMeters), asteroid.radiusMeters),
-                                         rig.hitPoints * Outpost::HUNDREDTHS, rig.armor * Outpost::HUNDREDTHS);
+      (void)match.SimulationState().SpawnStructure(HUMAN, Outpost::StructureKind::MiningRig, asteroid.position,
+                                                   std::max(static_cast<float>(rig.footprintRadiusMeters), asteroid.radiusMeters),
+                                                   rig.hitPoints * Outpost::HUNDREDTHS, rig.armor * Outpost::HUNDREDTHS);
     }
     match.Run(25.0 * 60.0, true);
-    Assert::IsTrue(match.World().MatchOver(), L"the AI has not won in 25 minutes");
-    Assert::IsTrue(match.World().Winner() == AI);
+    Assert::IsTrue(match.SimulationState().MatchOver(), L"the AI has not won in 25 minutes");
+    Assert::IsTrue(match.SimulationState().Winner() == AI);
     Logger::WriteMessage(std::format("The AI won at tick {}.\n", match.View(AI).matchEndedTick).c_str());
   }
 

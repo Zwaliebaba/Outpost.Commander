@@ -22,7 +22,7 @@
     <Filter Include="Server">
       <UniqueIdentifier>{be7164de-0da7-4f61-bdc2-f9d191ff5452}</UniqueIdentifier>
     </Filter>
-    <Filter Include="World">
+    <Filter Include="Universe">
       <UniqueIdentifier>{30c90ac9-c3cb-4586-b1c8-989812610919}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -65,14 +65,14 @@
     <ClInclude Include="StressLoad.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="WorldState.h">
-      <Filter>World</Filter>
+    <ClInclude Include="UniverseState.h">
+      <Filter>Universe</Filter>
     </ClInclude>
-    <ClInclude Include="WorldFolder.h">
-      <Filter>World</Filter>
+    <ClInclude Include="UniverseFolder.h">
+      <Filter>Universe</Filter>
     </ClInclude>
-    <ClInclude Include="WorldSettings.h">
-      <Filter>World</Filter>
+    <ClInclude Include="UniverseSettings.h">
+      <Filter>Universe</Filter>
     </ClInclude>
     <ClInclude Include="SeatController.h">
       <Filter>Server</Filter>
@@ -80,10 +80,10 @@
     <ClInclude Include="AwayReports.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="WorldLog.h">
+    <ClInclude Include="UniverseLog.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="WorldRun.h">
+    <ClInclude Include="UniverseRun.h">
       <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
@@ -122,14 +122,14 @@
     <ClCompile Include="StressLoad.cpp">
       <Filter>Server</Filter>
     </ClCompile>
-    <ClCompile Include="WorldState.cpp">
-      <Filter>World</Filter>
+    <ClCompile Include="UniverseState.cpp">
+      <Filter>Universe</Filter>
     </ClCompile>
-    <ClCompile Include="WorldFolder.cpp">
-      <Filter>World</Filter>
+    <ClCompile Include="UniverseFolder.cpp">
+      <Filter>Universe</Filter>
     </ClCompile>
-    <ClCompile Include="WorldSettings.cpp">
-      <Filter>World</Filter>
+    <ClCompile Include="UniverseSettings.cpp">
+      <Filter>Universe</Filter>
     </ClCompile>
     <ClCompile Include="SeatController.cpp">
       <Filter>Server</Filter>
@@ -137,10 +137,10 @@
     <ClCompile Include="AwayReports.cpp">
       <Filter>Server</Filter>
     </ClCompile>
-    <ClCompile Include="WorldLog.cpp">
+    <ClCompile Include="UniverseLog.cpp">
       <Filter>Server</Filter>
     </ClCompile>
-    <ClCompile Include="WorldRun.cpp">
+    <ClCompile Include="UniverseRun.cpp">
       <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>

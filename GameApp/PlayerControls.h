@@ -96,6 +96,12 @@ public:
     return m_standingArmed;
   }
 
+  // Whether anything waits for the next click, an attack-move, a standing order or a placement, for Esc to cancel.
+  [[nodiscard]] bool IsArmed() const noexcept
+  {
+    return m_attackMoveArmed || m_standingArmed.has_value() || m_placing.has_value();
+  }
+
   // The box being dragged, while the left button is held past DRAG_PIXELS.
   [[nodiscard]] std::optional<ScreenRect> DragBox() const noexcept;
 

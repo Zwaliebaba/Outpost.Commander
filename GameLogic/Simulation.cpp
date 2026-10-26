@@ -716,8 +716,8 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
     std::erase_if(m_starts, [owner](const auto& _start) { return _start.first == owner; });
     m_starts.emplace_back(owner, start);
   }
-  // On a map with territory every player starts with its tickets (ADR-057), but in a world, which has no domination.
-  if (HasTerritory() && !m_worldRules)
+  // On a map with territory every player starts with its tickets (ADR-057), but in a universe, which has no domination.
+  if (HasTerritory() && !m_universeRules)
   {
     for (const PlayerId owner : m_basePlayers)
     {
@@ -943,7 +943,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     }
   }
 
-  // The world advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
+  // The simulation advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
   // and work orders head for their targets, and Constructors in reach build and repair; levels build, queues produce,
   // labs research and Mining Rigs earn; ships steer along their paths, then make room for each other, then leave any
   // obstacle they were pushed into. Each part is told to the observer, if there is one.
@@ -1127,7 +1127,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     snapshot.fleetCap = FleetCapOf(_player);
   }
   snapshot.restartTick = RestartTick(_player);
-  if (HasTerritory() && !m_basePlayers.empty() && !m_worldRules)
+  if (HasTerritory() && !m_basePlayers.empty() && !m_universeRules)
   {
     snapshot.startingTickets = m_tuning->territory.tickets;
     snapshot.drainIntervalSeconds = m_tuning->territory.drainIntervalSeconds;
@@ -1559,7 +1559,7 @@ Outpost::EntityId Outpost::Simulation::ChooseTarget(const Entity& _ship, float _
 
 // Every armed ship picks its target from where everything stands at the start of the tick and fires if its weapon is
 // ready. The hits land together at the end, so no shot depends on which ship was handled first, and a target can be hit
-// more than it needs: focus fire overkills, as in the balance check's model. Then the destroyed leave the world, and
+// more than it needs: focus fire overkills, as in the balance check's model. Then the destroyed leave the simulation, and
 // every order on them ends.
 void Outpost::Simulation::Fight()
 {
@@ -3700,7 +3700,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
 }
 
 // A player whose base was placed and who has neither a Command Station nor a finished Shipyard has lost
-// (ADR-037 decision 1). The match ends then, once: the world runs on, but the outcome stands (owner, 2026-10-01).
+// (ADR-037 decision 1). The match ends then, once: the simulation runs on, but the outcome stands (owner, 2026-10-01).
 void Outpost::Simulation::DecideMatch()
 {
   if (m_matchupEnd.has_value())
@@ -3724,13 +3724,13 @@ void Outpost::Simulation::DecideMatch()
     if (producing)
       standing.push_back(player);
   }
-  if (m_worldRules)
+  if (m_universeRules)
     RestartLostPlayers(standing);
   else if (standing.size() < m_basePlayers.size())
     EndMatch(standing, MatchEnding::LostProduction);
 }
 
-// In a world no match ends (ADR-084 decision 2): a player who loses is told so in the tick it does, and an hour of ticks
+// In a universe no match ends (ADR-084 decision 2): a player who loses is told so in the tick it does, and an hour of ticks
 // later its seat restarts at its start, once no other player holds the start's sector or has a structure or a warship in
 // it. A player that builds itself a Shipyard again in the meantime stands again, and waits for nothing.
 void Outpost::Simulation::RestartLostPlayers(const std::vector<PlayerId>& _standing)
@@ -3805,7 +3805,7 @@ std::optional<std::uint64_t> Outpost::Simulation::RestartTick(PlayerId _player) 
 // its owner, and a free node for no one. A player out of tickets loses (ADR-057 decision 5).
 void Outpost::Simulation::Dominate()
 {
-  if (m_matchOver || m_basePlayers.empty() || !HasTerritory() || m_worldRules)
+  if (m_matchOver || m_basePlayers.empty() || !HasTerritory() || m_universeRules)
     return;
   const auto interval =
     std::max<std::uint64_t>(1, static_cast<std::uint64_t>(std::llround(m_tuning->territory.drainIntervalSeconds * m_ticksPerSecond)));

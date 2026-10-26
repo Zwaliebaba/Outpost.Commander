@@ -19,7 +19,7 @@ public:
 
   explicit MatchArena(std::optional<std::int32_t> _reserveOre = std::nullopt);
 
-  [[nodiscard]] Outpost::Simulation& World() noexcept;
+  [[nodiscard]] Outpost::Simulation& SimulationState() noexcept;
 
   [[nodiscard]] const Outpost::Tuning& TuningData() const noexcept;
 

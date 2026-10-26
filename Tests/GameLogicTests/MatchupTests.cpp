@@ -26,18 +26,18 @@ public:
   explicit MatchupBattle(std::uint32_t _matchup, std::uint64_t _seed = 3)
     : m_server(Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), {.seed = _seed, .matchup = _matchup})
   {
-    World().PlaceMatchup(RepositoryMatchups()[_matchup]);
+    SimulationState().PlaceMatchup(RepositoryMatchups()[_matchup]);
   }
 
-  [[nodiscard]] Outpost::Simulation& World() noexcept
+  [[nodiscard]] Outpost::Simulation& SimulationState() noexcept
   {
-    return m_server.World();
+    return m_server.SimulationState();
   }
 
   [[nodiscard]] std::vector<const Outpost::Entity*> Warships(Outpost::PlayerId _owner)
   {
     std::vector<const Outpost::Entity*> ships;
-    for (const Outpost::Entity& entity : World().Entities())
+    for (const Outpost::Entity& entity : SimulationState().Entities())
     {
       if (entity.owner == _owner && entity.kind == Outpost::EntityKind::Ship && entity.role == Outpost::ShipRole::Warship)
         ships.push_back(&entity);
@@ -91,12 +91,12 @@ public:
     const std::vector<const Outpost::Entity*> line = battle.Warships(RED);
     Assert::AreEqual(std::size_t{25}, swarm.size());
     Assert::AreEqual(std::size_t{10}, line.size());
-    Assert::IsTrue(std::ranges::all_of(battle.World().Entities(),
+    Assert::IsTrue(std::ranges::all_of(battle.SimulationState().Entities(),
                                        [](const Outpost::Entity& _entity) { return _entity.kind != Outpost::EntityKind::Structure; }),
                    L"no base and no pirate");
     Assert::IsTrue(
       std::ranges::all_of(swarm, [](const Outpost::Entity* _ship) { return _ship->retreat == Outpost::RetreatThreshold::Never; }));
-    Assert::IsFalse(battle.World().BuildSnapshot(BLUE).fogOfWar);
+    Assert::IsFalse(battle.SimulationState().BuildSnapshot(BLUE).fogOfWar);
     // The front rows are the distance apart; the rows behind them are further.
     const float apart = Outpost::Distance(Middle(swarm), Middle(line));
     Assert::IsTrue(apart > 700.0f && apart < 900.0f, std::format(L"{} m apart", apart).c_str());
@@ -110,22 +110,23 @@ public:
   {
     MatchupBattle battle(SWARM_AGAINST_LINE);
     std::array<Outpost::MatchupPlayer, 2> players{Outpost::MatchupPlayer(TICKS_PER_SECOND), Outpost::MatchupPlayer(TICKS_PER_SECOND)};
-    for (std::uint32_t tick = 0; tick < Outpost::Simulation::MATCHUP_SECONDS * TICKS_PER_SECOND && !battle.World().MatchOver(); ++tick)
+    for (std::uint32_t tick = 0; tick < Outpost::Simulation::MATCHUP_SECONDS * TICKS_PER_SECOND && !battle.SimulationState().MatchOver();
+         ++tick)
     {
       std::vector<Outpost::Command> commands;
       for (const Outpost::PlayerId player : {BLUE, RED})
       {
-        for (Outpost::Command& command : players[player.value - 1].Update(battle.World().BuildSnapshot(player)))
+        for (Outpost::Command& command : players[player.value - 1].Update(battle.SimulationState().BuildSnapshot(player)))
         {
           command.player = player;
           commands.push_back(std::move(command));
         }
       }
-      (void)battle.World().Tick(commands);
+      (void)battle.SimulationState().Tick(commands);
     }
-    Assert::IsTrue(battle.World().MatchOver(), L"fought to an end");
-    Assert::IsTrue(battle.World().Ending() == Outpost::MatchEnding::FleetDestroyed);
-    const Outpost::PlayerId winner = battle.World().Winner();
+    Assert::IsTrue(battle.SimulationState().MatchOver(), L"fought to an end");
+    Assert::IsTrue(battle.SimulationState().Ending() == Outpost::MatchEnding::FleetDestroyed);
+    const Outpost::PlayerId winner = battle.SimulationState().Winner();
     const Outpost::PlayerId loser{3 - winner.value};
     Assert::IsTrue(winner == BLUE || winner == RED);
     Assert::IsFalse(battle.Warships(winner).empty());
@@ -137,13 +138,13 @@ public:
   {
     MatchupBattle battle(SWARM_AGAINST_LINE);
     const std::uint64_t last = std::uint64_t{Outpost::Simulation::MATCHUP_SECONDS} * TICKS_PER_SECOND;
-    while (battle.World().CurrentTick() + 1 < last)
-      (void)battle.World().Tick({});
-    Assert::IsFalse(battle.World().MatchOver(), L"not before its time");
-    (void)battle.World().Tick({});
-    Assert::IsTrue(battle.World().MatchOver());
-    Assert::IsTrue(battle.World().Ending() == Outpost::MatchEnding::TimeLimit);
-    Assert::IsFalse(battle.World().Winner().IsValid(), L"a draw");
+    while (battle.SimulationState().CurrentTick() + 1 < last)
+      (void)battle.SimulationState().Tick({});
+    Assert::IsFalse(battle.SimulationState().MatchOver(), L"not before its time");
+    (void)battle.SimulationState().Tick({});
+    Assert::IsTrue(battle.SimulationState().MatchOver());
+    Assert::IsTrue(battle.SimulationState().Ending() == Outpost::MatchEnding::TimeLimit);
+    Assert::IsFalse(battle.SimulationState().Winner().IsValid(), L"a draw");
   }
 
   // The seed picks where they meet: two seeds, two places.

@@ -2,10 +2,10 @@
 
 namespace Outpost
 {
-// The world's log, in its folder beside its saves (ADR-082).
-inline constexpr std::string_view WORLD_LOG_FILE = "World.log";
+// The universe's log, in its folder beside its saves (ADR-082).
+inline constexpr std::string_view UNIVERSE_LOG_FILE = "Universe.log";
 
-// Who plays a seat in a tick of a world: its player, its deputy while the player is away (ADR-079), or
+// Who plays a seat in a tick of a universe: its player, its deputy while the player is away (ADR-079), or
 // the AI, when the seat is an AI empire's.
 enum class SeatPlay : std::uint8_t
 {
@@ -22,13 +22,13 @@ struct SeatTick
   const Snapshot* snapshot = nullptr;
 };
 
-// A world's log (ADR-082 decision 1): ADR-038's match log for a world that keeps running, written by its server
-// beside its saves, for the owner's week and the world run. It reads what the server knows after each tick: each
+// A universe's log (ADR-082 decision 1): ADR-038's match log for a universe that keeps running, written by its server
+// beside its saves, for the owner's week and the universe run. It reads what the server knows after each tick: each
 // seat's snapshot, and who played it.
 //
 // One line a record, every time in ticks:
 //
-//   start <tick> new                               a new world, with its bases placed
+//   start <tick> new                               a new universe, with its bases placed
 //   start <tick> recovered save <tick> replayed <n>
 //                                                  the server came back from the save of that tick and the n commands
 //                                                  logged after it (ADR-077)
@@ -50,14 +50,14 @@ struct SeatTick
 //                                                  engagement; each side is present when its player played it at any of
 //                                                  its shots in the battle, and otherwise its deputy or the AI fought it. A
 //                                                  sector of 0 is none.
-class WorldLog : Neuron::NonCopyable
+class UniverseLog : Neuron::NonCopyable
 {
 public:
   static constexpr std::uint32_t BATTLE_WINDOW_SECONDS = 10;
   static constexpr std::uint32_t BATTLE_GAP_SECONDS = 30;
   static constexpr std::uint32_t HOUR_SECONDS = 3600;
 
-  WorldLog(std::ostream& _out, std::uint32_t _ticksPerSecond);
+  UniverseLog(std::ostream& _out, std::uint32_t _ticksPerSecond);
 
   void Started(std::uint64_t _tick, std::optional<std::uint64_t> _saveTick, std::size_t _replayed);
   void Saved(std::uint64_t _tick, std::size_t _bytes, std::chrono::microseconds _encode);

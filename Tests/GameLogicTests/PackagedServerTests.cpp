@@ -10,7 +10,7 @@ namespace
 constexpr Outpost::PlayerId BLUE{1};
 constexpr Outpost::PlayerId RED{2};
 
-// The server behind the interface CreateInProcessServer and the factory return, so that a test can count its world.
+// The server behind the interface CreateInProcessServer and the factory return, so that a test can count what its simulation holds.
 Outpost::InProcessServer& Concrete(Outpost::Server& _server)
 {
   auto* server = dynamic_cast<Outpost::InProcessServer*>(&_server);
@@ -198,13 +198,13 @@ public:
     const ScopedHomeDirectory home(RepositoryHome());
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::unique_ptr<Outpost::Server> match = Outpost::CreateInProcessServer({.seed = 1});
-    const Census plain = Count(Concrete(*match).World());
+    const Census plain = Count(Concrete(*match).SimulationState());
     Assert::AreEqual(size_t{2} * static_cast<size_t>(tuning.rules.startingConstructors),
-                     Count(Concrete(*match).World(), BLUE).ships + Count(Concrete(*match).World(), RED).ships);
+                     Count(Concrete(*match).SimulationState(), BLUE).ships + Count(Concrete(*match).SimulationState(), RED).ships);
     Assert::IsTrue(plain.ships < Outpost::MEASUREMENT_SHIPS);
 
     const std::unique_ptr<Outpost::Server> measured = Outpost::CreateInProcessServer({.seed = 1, .measurementLoad = true});
-    const Census load = Count(Concrete(*measured).World());
+    const Census load = Count(Concrete(*measured).SimulationState());
     Assert::AreEqual(Outpost::MEASUREMENT_SHIPS, load.ships);
     Assert::AreEqual(Outpost::MEASUREMENT_STRUCTURES, load.structures);
   }
@@ -215,14 +215,14 @@ public:
     const ScopedHomeDirectory home(RepositoryHome());
     const std::unique_ptr<Outpost::Server> match = Outpost::CreateInProcessServer({.seed = 3});
     (void)StepBoth(*match, 1);
-    Assert::AreEqual(size_t{0}, Count(Concrete(*match).World(), BLUE).warships);
+    Assert::AreEqual(size_t{0}, Count(Concrete(*match).SimulationState(), BLUE).warships);
 
     const std::unique_ptr<Outpost::Server> stressed = Outpost::CreateInProcessServer({.seed = 3, .stressLoad = true});
     for (const Outpost::PlayerId player : {BLUE, RED})
-      Assert::AreEqual(Outpost::STRESS_STRUCTURES_PER_PLAYER, Count(Concrete(*stressed).World(), player).structures);
+      Assert::AreEqual(Outpost::STRESS_STRUCTURES_PER_PLAYER, Count(Concrete(*stressed).SimulationState(), player).structures);
     (void)StepBoth(*stressed, 1);
     for (const Outpost::PlayerId player : {BLUE, RED})
-      Assert::AreEqual(Outpost::STRESS_SHIPS_PER_PLAYER, Count(Concrete(*stressed).World(), player).warships);
+      Assert::AreEqual(Outpost::STRESS_SHIPS_PER_PLAYER, Count(Concrete(*stressed).SimulationState(), player).warships);
   }
 
   // ADR-032: match setup builds the path graphs, so that the first order of the match does not pay for them. A server set
@@ -257,7 +257,7 @@ public:
     Assert::AreEqual(std::int64_t{0}, static_cast<std::int64_t>(graphBuildOfFirstOrder(*prepared).count()));
 
     Outpost::InProcessServer unprepared(Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
-    unprepared.World().PlaceStartingBases(unprepared.MapData());
+    unprepared.SimulationState().PlaceStartingBases(unprepared.MapData());
     Assert::IsTrue(graphBuildOfFirstOrder(unprepared).count() > 0);
   }
 };

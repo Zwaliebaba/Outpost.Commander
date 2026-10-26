@@ -32,7 +32,7 @@ namespace Outpost
 //
 // It starts from any state of its player (ADR-020 decision 16): the structures its player already has
 // are taken into its plan, not built again beside it, and its player's ships join its reserve. So an AI empire plays on
-// from a world the server restored, which kept nothing of the AI.
+// from a universe the server restored, which kept nothing of the AI.
 class AiPlayer
 {
 public:

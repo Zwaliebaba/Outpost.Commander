@@ -26,8 +26,8 @@ Outpost::EntityId Wreck(MatchArena& _arena, Outpost::ResearchTopicId _topic = {}
 {
   Outpost::Map map;
   map.derelicts.push_back({.position = WRECK, .ore = 450, .topic = _topic, .hull = Outpost::HullId{2}, .radiusMeters = 25.0f});
-  _arena.World().PlaceDerelicts(map);
-  return _arena.World().Entities().back().id;
+  _arena.SimulationState().PlaceDerelicts(map);
+  return _arena.SimulationState().Entities().back().id;
 }
 
 Outpost::Command Salvage(std::vector<Outpost::EntityId> _constructors, Outpost::EntityId _derelict)
@@ -37,7 +37,7 @@ Outpost::Command Salvage(std::vector<Outpost::EntityId> _constructors, Outpost::
 
 bool HasResearched(MatchArena& _arena, Outpost::ResearchTopicId _topic)
 {
-  const std::span<const Outpost::ResearchTopicId> researched = _arena.World().Researched(BLUE);
+  const std::span<const Outpost::ResearchTopicId> researched = _arena.SimulationState().Researched(BLUE);
   return std::ranges::find(researched, _topic) != researched.end();
 }
 } // namespace
@@ -53,15 +53,15 @@ public:
     const Outpost::EntityId derelict = Wreck(arena);
     const Outpost::Entity& wreck = arena.Get(derelict);
     Assert::IsTrue(wreck.maxHitPointsHundredths == 0 && !wreck.owner.IsValid(), L"out of combat, and no one's");
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, BESIDE);
-    const std::int64_t before = arena.World().OreHundredths(BLUE);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, BESIDE);
+    const std::int64_t before = arena.SimulationState().OreHundredths(BLUE);
     Assert::IsTrue(arena.Tick({Salvage({constructor}, derelict)})[0] == Outpost::CommandResult::Applied);
     arena.Run(SALVAGE_TICKS - 2);
-    Assert::IsNotNull(arena.World().FindEntity(derelict), L"not yet");
-    Assert::AreEqual(before, arena.World().OreHundredths(BLUE));
+    Assert::IsNotNull(arena.SimulationState().FindEntity(derelict), L"not yet");
+    Assert::AreEqual(before, arena.SimulationState().OreHundredths(BLUE));
     arena.Run(1);
-    Assert::IsNull(arena.World().FindEntity(derelict));
-    Assert::AreEqual(before + (std::int64_t{450} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+    Assert::IsNull(arena.SimulationState().FindEntity(derelict));
+    Assert::AreEqual(before + (std::int64_t{450} * Outpost::HUNDREDTHS), arena.SimulationState().OreHundredths(BLUE));
     Assert::IsTrue(arena.Get(constructor).order == Outpost::ShipOrder::None, L"the order ends");
   }
 
@@ -70,18 +70,18 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId derelict = Wreck(arena);
-    const Outpost::EntityId first = arena.World().SpawnConstructor(BLUE, BESIDE);
-    const Outpost::EntityId second = arena.World().SpawnConstructor(BLUE, {.xMeters = -860.0f, .zMeters = 300.0f});
+    const Outpost::EntityId first = arena.SimulationState().SpawnConstructor(BLUE, BESIDE);
+    const Outpost::EntityId second = arena.SimulationState().SpawnConstructor(BLUE, {.xMeters = -860.0f, .zMeters = 300.0f});
     (void)arena.Tick({Salvage({first, second}, derelict)});
     arena.Run((SALVAGE_TICKS * 2 / 3) - 1);
-    Assert::IsNull(arena.World().FindEntity(derelict), L"in two thirds of the time");
+    Assert::IsNull(arena.SimulationState().FindEntity(derelict), L"in two thirds of the time");
   }
 
   TEST_METHOD(RefusesWhatCannotSalvage)
   {
     MatchArena arena;
     const Outpost::EntityId derelict = Wreck(arena);
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, BESIDE);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, BESIDE);
     const Outpost::EntityId warship = arena.Ship(BLUE, Outpost::HullId{1}, Outpost::WeaponId{1}, BESIDE);
     const Outpost::EntityId rig = arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     const std::vector<Outpost::CommandResult> results =
@@ -98,19 +98,19 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId derelict = Wreck(arena, IMPROVED_EXTRACTION);
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, BESIDE);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, BESIDE);
     (void)arena.Tick({Salvage({constructor}, derelict)});
     arena.Run(SALVAGE_TICKS);
     const auto recovered = [&arena]
     {
-      const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+      const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
       return std::ranges::find(snapshot.research, IMPROVED_EXTRACTION, &Outpost::ResearchTopicView::id)->recovered;
     };
     Assert::IsTrue(recovered(), L"the snapshot shows it");
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {.xMeters = 600.0f, .zMeters = -600.0f});
-    const std::int64_t before = arena.World().OreHundredths(BLUE);
+    const std::int64_t before = arena.SimulationState().OreHundredths(BLUE);
     (void)arena.Tick({Order(BLUE, Outpost::StartResearchCommand{.lab = lab, .topic = IMPROVED_EXTRACTION})});
-    Assert::AreEqual(before - (std::int64_t{150} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE), L"the full cost");
+    Assert::AreEqual(before - (std::int64_t{150} * Outpost::HUNDREDTHS), arena.SimulationState().OreHundredths(BLUE), L"the full cost");
     Assert::IsFalse(recovered(), L"taken off once it starts");
     arena.Run((30 * TICKS_PER_SECOND) - 1);
     Assert::IsTrue(HasResearched(arena, IMPROVED_EXTRACTION), L"in half its 60 s");
@@ -121,7 +121,7 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId derelict = Wreck(arena, IMPROVED_EXTRACTION);
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, BESIDE);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, BESIDE);
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {.xMeters = 600.0f, .zMeters = -600.0f});
     (void)arena.Tick(
       {Order(BLUE, Outpost::StartResearchCommand{.lab = lab, .topic = IMPROVED_EXTRACTION}), Salvage({constructor}, derelict)});
@@ -138,12 +138,12 @@ public:
     arena.Run(60 * TICKS_PER_SECOND);
     Assert::IsTrue(HasResearched(arena, HULL_PLATING));
     const Outpost::EntityId derelict = Wreck(arena, HULL_PLATING);
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, BESIDE);
-    const std::int64_t before = arena.World().OreHundredths(BLUE);
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, BESIDE);
+    const std::int64_t before = arena.SimulationState().OreHundredths(BLUE);
     (void)arena.Tick({Salvage({constructor}, derelict)});
     arena.Run(SALVAGE_TICKS);
-    Assert::AreEqual(before + (std::int64_t{450} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
-    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(before + (std::int64_t{450} * Outpost::HUNDREDTHS), arena.SimulationState().OreHundredths(BLUE));
+    const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::IsTrue(std::ranges::none_of(snapshot.research, &Outpost::ResearchTopicView::recovered));
   }
 
@@ -152,10 +152,10 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId derelict = Wreck(arena, IMPROVED_EXTRACTION);
-    arena.World().UseFog();
+    arena.SimulationState().UseFog();
     const auto view = [&arena, derelict](Outpost::PlayerId _player) -> std::optional<Outpost::EntityView>
     {
-      const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(_player);
+      const Outpost::Snapshot snapshot = arena.SimulationState().BuildSnapshot(_player);
       const auto found = std::ranges::find(snapshot.entities, derelict, &Outpost::EntityView::id);
       return found != snapshot.entities.end() ? std::optional(*found) : std::nullopt;
     };
@@ -185,7 +185,7 @@ public:
     const auto platforms = [&]
     {
       std::vector<Outpost::PlanePosition> standing;
-      for (const Outpost::Entity& entity : match.World().Entities())
+      for (const Outpost::Entity& entity : match.SimulationState().Entities())
       {
         if (entity.owner == Outpost::PIRATES && entity.kind == Outpost::EntityKind::Structure && sector.Contains(entity.position))
           standing.push_back(entity.position);
@@ -194,27 +194,27 @@ public:
     };
     const std::vector<Outpost::PlanePosition> before = platforms();
     const Outpost::DesignId lancer =
-      match.World().FindDesign(TerritoryMatch::BLUE, {Outpost::HullId{2}, Outpost::DriveId{1}, Outpost::WeaponId{2}})->id;
+      match.SimulationState().FindDesign(TerritoryMatch::BLUE, {Outpost::HullId{2}, Outpost::DriveId{1}, Outpost::WeaponId{2}})->id;
     std::vector<Outpost::EntityId> fleet;
     fleet.reserve(16);
     for (int i = 0; i < 16; ++i)
     {
       const int column = i % 4;
       const int row = i / 4;
-      fleet.push_back(match.World().SpawnShip(
+      fleet.push_back(match.SimulationState().SpawnShip(
         TerritoryMatch::BLUE, lancer,
         sector.node + Outpost::PlaneVector{-300.0f + (40.0f * static_cast<float>(column)), -300.0f - (40.0f * static_cast<float>(row))}));
     }
     for (int second = 0; second < 180 && !platforms().empty(); ++second)
     {
-      std::erase_if(fleet, [&match](Outpost::EntityId _ship) { return match.World().FindEntity(_ship) == nullptr; });
-      (void)match.World().Tick(
+      std::erase_if(fleet, [&match](Outpost::EntityId _ship) { return match.SimulationState().FindEntity(_ship) == nullptr; });
+      (void)match.SimulationState().Tick(
         {{.player = TerritoryMatch::BLUE, .order = Outpost::AttackMoveCommand{.ships = fleet, .destination = sector.node}}});
       match.Run(TICKS_PER_SECOND - 1);
     }
     Assert::IsTrue(platforms().empty(), L"the stronghold fell");
     std::vector<const Outpost::Entity*> wrecks;
-    for (const Outpost::Entity& entity : match.World().Entities())
+    for (const Outpost::Entity& entity : match.SimulationState().Entities())
     {
       if (entity.kind == Outpost::EntityKind::Derelict && entity.salvageOre == 1200)
         wrecks.push_back(&entity);

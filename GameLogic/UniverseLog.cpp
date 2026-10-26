@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "WorldLog.h"
+#include "UniverseLog.h"
 
 namespace
 {
@@ -67,19 +67,19 @@ Outpost::PlayerId OwnerIn(const Outpost::Snapshot& _snapshot, Outpost::EntityId 
 }
 } // namespace
 
-Outpost::WorldLog::WorldLog(std::ostream& _out, std::uint32_t _ticksPerSecond)
+Outpost::UniverseLog::UniverseLog(std::ostream& _out, std::uint32_t _ticksPerSecond)
   : m_out(&_out),
     m_ticksPerSecond(_ticksPerSecond)
 {
 }
 
-void Outpost::WorldLog::Write(const std::string& _line)
+void Outpost::UniverseLog::Write(const std::string& _line)
 {
   *m_out << _line << '\n';
   m_out->flush();
 }
 
-void Outpost::WorldLog::Started(std::uint64_t _tick, std::optional<std::uint64_t> _saveTick, std::size_t _replayed)
+void Outpost::UniverseLog::Started(std::uint64_t _tick, std::optional<std::uint64_t> _saveTick, std::size_t _replayed)
 {
   // A server made afresh knows nobody's seat, and a battle it did not see the start of is not one it can tell.
   m_seats.clear();
@@ -88,12 +88,12 @@ void Outpost::WorldLog::Started(std::uint64_t _tick, std::optional<std::uint64_t
                               : std::format("start {} new", _tick));
 }
 
-void Outpost::WorldLog::Saved(std::uint64_t _tick, std::size_t _bytes, std::chrono::microseconds _encode)
+void Outpost::UniverseLog::Saved(std::uint64_t _tick, std::size_t _bytes, std::chrono::microseconds _encode)
 {
   Write(std::format("save {} bytes {} encode_us {}", _tick, _bytes, _encode.count()));
 }
 
-void Outpost::WorldLog::Record(std::uint64_t _tick, std::span<const SeatTick> _seats)
+void Outpost::UniverseLog::Record(std::uint64_t _tick, std::span<const SeatTick> _seats)
 {
   for (const SeatTick& seat : _seats)
     RecordSeat(_tick, seat);
@@ -116,7 +116,7 @@ void Outpost::WorldLog::Record(std::uint64_t _tick, std::span<const SeatTick> _s
   }
 }
 
-void Outpost::WorldLog::RecordSeat(std::uint64_t _tick, const SeatTick& _seat)
+void Outpost::UniverseLog::RecordSeat(std::uint64_t _tick, const SeatTick& _seat)
 {
   auto state = std::ranges::find(m_seats, _seat.player, &SeatState::player);
   if (state == m_seats.end())
@@ -158,7 +158,7 @@ void Outpost::WorldLog::RecordSeat(std::uint64_t _tick, const SeatTick& _seat)
   state->waiting = waiting;
 }
 
-void Outpost::WorldLog::RecordShots(std::uint64_t _tick, std::span<const SeatTick> _seats)
+void Outpost::UniverseLog::RecordShots(std::uint64_t _tick, std::span<const SeatTick> _seats)
 {
   const std::uint64_t window = std::uint64_t{BATTLE_WINDOW_SECONDS} * m_ticksPerSecond;
   for (const SeatTick& seat : _seats)
@@ -209,7 +209,7 @@ void Outpost::WorldLog::RecordShots(std::uint64_t _tick, std::span<const SeatTic
   }
 }
 
-void Outpost::WorldLog::EndBattles(std::uint64_t _tick)
+void Outpost::UniverseLog::EndBattles(std::uint64_t _tick)
 {
   const std::uint64_t gap = std::uint64_t{BATTLE_GAP_SECONDS} * m_ticksPerSecond;
   std::erase_if(m_battles,

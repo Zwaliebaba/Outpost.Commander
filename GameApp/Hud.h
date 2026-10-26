@@ -113,11 +113,13 @@ public:
     // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
     SaveAndQueue,
     // The main menu's and the match end's (ADR-020 decisions 9 and 10): start a match against the AI at a difficulty
-    // (ADR-065), leave the game, or leave the match; and the menu's join of a world on another machine (ADR-078).
+    // (ADR-065), leave the game, or leave the match; and the menu's join of a universe on another machine (ADR-078).
     StartSkirmish,
     Quit,
     BackToMenu,
-    JoinWorld,
+    JoinUniverse,
+    // The leave window's Stay, which closes it; its Leave universe is BackToMenu (ADR-078 decision 11).
+    Stay,
     // The designer's window (ADR-017 decision 7): open it aimed at a Shipyard, step its target Shipyard, ask for fewer or
     // more ships, load a saved design, and scroll the saved designs.
     OpenDesigner,
@@ -634,6 +636,8 @@ public:
     // The orders window's content and the away window's, while they are open (ADR-080 decision 9); GameClient fills them.
     std::optional<OrdersPanel> orders;
     std::optional<AwayPanel> away;
+    // Whether the leave window is open, in a universe (ADR-078 decision 11).
+    bool leave = false;
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
@@ -650,7 +654,7 @@ public:
     // Under fog of war, the fog is drawn over the marks (ADR-024): one panel over the minimap, which the client fills
     // from the fog's own texture (ADR-052).
     bool fog = false;
-    // Once the match is over, a banner with a button back to the menu; the world runs on behind it (owner, 2026-10-01).
+    // Once the match is over, a banner with a button back to the menu; the simulation runs on behind it (owner, 2026-10-01).
     std::optional<Outcome> outcome;
     // Where the match runs; GameClient fills it (ADR-086).
     std::optional<Connection> connection;
@@ -852,7 +856,7 @@ public:
   [[nodiscard]] static std::optional<EntityBar> BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels,
                                                         const DirectX::XMFLOAT4& _back, bool _every) noexcept;
 
-  // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs. In a world,
+  // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs. In a universe,
   // which does not end, when the player's seat restarts after its loss (ADR-084 decision 7).
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
 
@@ -860,18 +864,18 @@ public:
   // and an IPv6 host in brackets, "[2001:db8::5]:4433".
   [[nodiscard]] static std::string ServerName(std::string_view _host, std::uint16_t _port);
 
-  // What the main menu offers and says besides its skirmishes (ADR-078): a world to join, when a join file is there, and a
+  // What the main menu offers and says besides its skirmishes (ADR-078): a universe to join, when a join file is there, and a
   // notice, such as why the last game ended.
   struct MenuState
   {
-    bool joinWorld = false;
+    bool joinUniverse = false;
     std::string notice;
     // While a join connects, the server it connects to, as ServerName writes it (ADR-078 decision 9).
     std::string connecting;
   };
 
   // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, a notice in the
-  // warning's color when _state has one, and buttons to start a skirmish against the AI, to join a world when _state
+  // warning's color when _state has one, and buttons to start a skirmish against the AI, to join a universe when _state
   // offers one, and to quit (ADR-020 decision 10). While a join connects, it says so under the subtitle, and only Quit
   // can be pressed (ADR-078 decision 9). _factor is the interface's own scale (ADR-070). The plain menu is an
   // overload rather than a default argument, which could not use MenuState's member initializers before Hud is complete.

@@ -47,26 +47,26 @@ public:
     MatchArena arena;
     // A swarm ship sees 120 m and the 50 m margin; a Constructor, unarmed, 200 m.
     const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1000.0f, .zMeters = -1000.0f});
-    const Outpost::EntityId nearby = arena.World().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -825.0f});
-    const Outpost::EntityId distant = arena.World().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -600.0f});
-    Assert::IsTrue(arena.World().Sees(BLUE, arena.Get(distant)), L"no fog yet");
-    Assert::AreEqual(170.0f, arena.World().SightMetersOf(arena.Get(scout)), 1e-4f);
-    Assert::AreEqual(200.0f, arena.World().SightMetersOf(arena.Get(nearby)), 1e-4f);
+    const Outpost::EntityId nearby = arena.SimulationState().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -825.0f});
+    const Outpost::EntityId distant = arena.SimulationState().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -600.0f});
+    Assert::IsTrue(arena.SimulationState().Sees(BLUE, arena.Get(distant)), L"no fog yet");
+    Assert::AreEqual(170.0f, arena.SimulationState().SightMetersOf(arena.Get(scout)), 1e-4f);
+    Assert::AreEqual(200.0f, arena.SimulationState().SightMetersOf(arena.Get(nearby)), 1e-4f);
 
-    Assert::IsFalse(arena.World().BuildSnapshot(BLUE).fogOfWar);
+    Assert::IsFalse(arena.SimulationState().BuildSnapshot(BLUE).fogOfWar);
 
-    arena.World().UseFog();
-    const Outpost::Snapshot blue = arena.World().BuildSnapshot(BLUE);
+    arena.SimulationState().UseFog();
+    const Outpost::Snapshot blue = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::IsTrue(blue.fogOfWar);
     Assert::AreEqual(170.0f, FindView(blue, scout)->sightMeters, 1e-4f, L"its own entity's sight, which the client draws by");
     Assert::IsNotNull(FindView(blue, nearby), L"175 m off, within 170 m and its 10 m footprint");
     Assert::AreEqual(0.0f, FindView(blue, nearby)->sightMeters, L"an enemy's is not told");
     Assert::IsNull(FindView(blue, distant));
-    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(distant)));
+    Assert::IsFalse(arena.SimulationState().Sees(BLUE, arena.Get(distant)));
     Assert::IsTrue(
       std::ranges::any_of(blue.entities, [](const Outpost::EntityView& _view) { return _view.kind == Outpost::EntityKind::Asteroid; }),
       L"the map is always seen");
-    Assert::IsNotNull(FindView(arena.World().BuildSnapshot(RED), scout), L"the Constructor sees 200 m");
+    Assert::IsNotNull(FindView(arena.SimulationState().BuildSnapshot(RED), scout), L"the Constructor sees 200 m");
   }
 
   // Every armed entity sees beyond its weapon's range, so fog never changes what anything fires at: a battle plays the
@@ -75,7 +75,7 @@ public:
   {
     MatchArena clear;
     MatchArena fogged;
-    fogged.World().UseFog();
+    fogged.SimulationState().UseFog();
     StageBattle(clear);
     StageBattle(fogged);
     for (int tick = 0; tick < 60 * 20; ++tick)
@@ -83,8 +83,8 @@ public:
       (void)clear.Tick();
       (void)fogged.Tick();
     }
-    Assert::IsTrue(std::ranges::equal(clear.World().Entities(), fogged.World().Entities()));
-    Assert::IsTrue(clear.World().Entities().size() < 10 + 2, L"the battle was fought");
+    Assert::IsTrue(std::ranges::equal(clear.SimulationState().Entities(), fogged.SimulationState().Entities()));
+    Assert::IsTrue(clear.SimulationState().Entities().size() < 10 + 2, L"the battle was fought");
   }
 
   // A ship that hits a player is seen by that player for the tuning data's three seconds after each hit, even from beyond
@@ -95,8 +95,8 @@ public:
     // The line's Lance reaches 220 m; the swarm ship sees 170 m and the line's 14 m footprint.
     const Outpost::EntityId swarm = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1000.0f, .zMeters = -1000.0f});
     const Outpost::EntityId line = arena.Ship(RED, MEDIUM, LANCE, {.xMeters = -1000.0f, .zMeters = -790.0f});
-    arena.World().UseFog();
-    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(line)));
+    arena.SimulationState().UseFog();
+    Assert::IsFalse(arena.SimulationState().Sees(BLUE, arena.Get(line)));
 
     int ticks = 0;
     while (arena.Get(swarm).hitPointsHundredths == arena.Get(swarm).maxHitPointsHundredths && ticks < 100)
@@ -105,15 +105,15 @@ public:
       ++ticks;
     }
     Assert::IsTrue(ticks < 100, L"the line fired");
-    Assert::IsTrue(arena.World().Sees(BLUE, arena.Get(line)), L"seen on the tick of the hit");
-    const Outpost::Snapshot blue = arena.World().BuildSnapshot(BLUE);
+    Assert::IsTrue(arena.SimulationState().Sees(BLUE, arena.Get(line)), L"seen on the tick of the hit");
+    const Outpost::Snapshot blue = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::IsNotNull(FindView(blue, line));
     Assert::IsTrue(std::ranges::any_of(blue.shots, [line](const Outpost::ShotView& _shot) { return _shot.shooter == line; }));
 
     // Out of range, it fades three seconds after its last hit.
     (void)arena.Tick({Order(RED, Outpost::MoveCommand{.ships = {line}, .destination = {.xMeters = -1000.0f, .zMeters = 400.0f}})});
     arena.Run(10 * 20);
-    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(line)));
+    Assert::IsFalse(arena.SimulationState().Sees(BLUE, arena.Get(line)));
   }
 
   // An enemy structure once seen stays in the player's snapshot where it was seen, marked remembered, until the player
@@ -125,13 +125,13 @@ public:
     const Outpost::EntityId hidden = arena.Structure(RED, Outpost::StructureKind::ResearchLab, {.xMeters = 1500.0f, .zMeters = 1500.0f});
     // 150 m off: inside its sight with the yard's 40 m footprint, beyond its 120 m reach.
     const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1500.0f, .zMeters = 1350.0f});
-    arena.World().UseFog();
-    Assert::IsTrue(arena.World().Sees(BLUE, arena.Get(yard)));
+    arena.SimulationState().UseFog();
+    Assert::IsTrue(arena.SimulationState().Sees(BLUE, arena.Get(yard)));
 
     (void)arena.Tick({Order(BLUE, Outpost::MoveCommand{.ships = {scout}, .destination = {.xMeters = -1500.0f, .zMeters = 200.0f}})});
     arena.Run(20 * 20);
-    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(yard)));
-    const Outpost::Snapshot memory = arena.World().BuildSnapshot(BLUE);
+    Assert::IsFalse(arena.SimulationState().Sees(BLUE, arena.Get(yard)));
+    const Outpost::Snapshot memory = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::IsTrue(std::ranges::is_sorted(memory.entities, {}, &Outpost::EntityView::id), L"in identifier order, as clients pair them");
     const Outpost::EntityView* remembered = FindView(memory, yard);
     Assert::IsNotNull(remembered);
@@ -147,11 +147,11 @@ public:
     Assert::IsTrue(results[0] == Outpost::CommandResult::NotVisible, L"never seen");
     Assert::IsTrue(results[1] == Outpost::CommandResult::Applied, L"remembered");
 
-    for (int tick = 0; tick < 180 * 20 && arena.World().FindEntity(yard) != nullptr; ++tick)
+    for (int tick = 0; tick < 180 * 20 && arena.SimulationState().FindEntity(yard) != nullptr; ++tick)
       (void)arena.Tick();
-    Assert::IsNull(arena.World().FindEntity(yard), L"the lances destroyed it");
+    Assert::IsNull(arena.SimulationState().FindEntity(yard), L"the lances destroyed it");
     (void)arena.Tick();
-    Assert::IsNull(FindView(arena.World().BuildSnapshot(BLUE), yard), L"seen gone, so forgotten");
+    Assert::IsNull(FindView(arena.SimulationState().BuildSnapshot(BLUE), yard), L"seen gone, so forgotten");
   }
 
   // A remembered structure carries the tick of the last snapshot its player saw it in, which the client tells its age by
@@ -161,28 +161,28 @@ public:
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(RED, Outpost::StructureKind::Shipyard, {.xMeters = -1500.0f, .zMeters = 1500.0f});
     const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1500.0f, .zMeters = 1350.0f});
-    arena.World().UseFog();
-    const Outpost::Snapshot first = arena.World().BuildSnapshot(BLUE);
+    arena.SimulationState().UseFog();
+    const Outpost::Snapshot first = arena.SimulationState().BuildSnapshot(BLUE);
     const Outpost::EntityView* seen = FindView(first, yard);
     Assert::IsTrue(seen != nullptr && !seen->remembered);
     Assert::AreEqual(std::uint64_t{0}, seen->lastSeenTick, L"seen now, so no age");
 
     (void)arena.Tick({Order(BLUE, Outpost::MoveCommand{.ships = {scout}, .destination = {.xMeters = -1500.0f, .zMeters = 200.0f}})});
     std::uint64_t lastSeen = 0;
-    for (int tick = 0; tick < 20 * 20 && arena.World().Sees(BLUE, arena.Get(yard)); ++tick)
+    for (int tick = 0; tick < 20 * 20 && arena.SimulationState().Sees(BLUE, arena.Get(yard)); ++tick)
     {
-      lastSeen = arena.World().BuildSnapshot(BLUE).tick;
+      lastSeen = arena.SimulationState().BuildSnapshot(BLUE).tick;
       (void)arena.Tick();
     }
-    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(yard)), L"the scout left it behind");
+    Assert::IsFalse(arena.SimulationState().Sees(BLUE, arena.Get(yard)), L"the scout left it behind");
     Assert::IsTrue(lastSeen > 0);
-    const Outpost::Snapshot gone = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot gone = arena.SimulationState().BuildSnapshot(BLUE);
     const Outpost::EntityView* remembered = FindView(gone, yard);
     Assert::IsTrue(remembered != nullptr && remembered->remembered);
     Assert::AreEqual(lastSeen, remembered->lastSeenTick, L"the last snapshot that showed it");
 
     arena.Run(10 * 20);
-    const Outpost::Snapshot later = arena.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot later = arena.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(lastSeen, FindView(later, yard)->lastSeenTick, L"it stands while the yard is out of sight");
     Assert::IsTrue(later.tick >= lastSeen + (std::uint64_t{10} * 20));
   }
@@ -191,11 +191,11 @@ public:
   TEST_METHOD(EndsAnAttackOnAShipOutOfSight)
   {
     MatchArena arena;
-    const Outpost::EntityId target = arena.World().SpawnConstructor(RED, {.xMeters = 0.0f, .zMeters = -1500.0f});
-    const Outpost::EntityId spotter = arena.World().SpawnConstructor(BLUE, {.xMeters = 150.0f, .zMeters = -1500.0f});
+    const Outpost::EntityId target = arena.SimulationState().SpawnConstructor(RED, {.xMeters = 0.0f, .zMeters = -1500.0f});
+    const Outpost::EntityId spotter = arena.SimulationState().SpawnConstructor(BLUE, {.xMeters = 150.0f, .zMeters = -1500.0f});
     const Outpost::EntityId lance = arena.Ship(BLUE, SMALL, LANCE, {.xMeters = -1500.0f, .zMeters = -1500.0f});
-    const Outpost::EntityId unseen = arena.World().SpawnConstructor(RED, {.xMeters = 1500.0f, .zMeters = 1500.0f});
-    arena.World().UseFog();
+    const Outpost::EntityId unseen = arena.SimulationState().SpawnConstructor(RED, {.xMeters = 1500.0f, .zMeters = 1500.0f});
+    arena.SimulationState().UseFog();
 
     const std::vector<Outpost::CommandResult> results =
       arena.Tick({Order(BLUE, Outpost::AttackCommand{.ships = {lance}, .target = unseen}),
@@ -206,7 +206,7 @@ public:
     Assert::IsTrue(arena.Get(lance).order == Outpost::ShipOrder::Attack);
 
     arena.Run(5 * 20);
-    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(target)));
+    Assert::IsFalse(arena.SimulationState().Sees(BLUE, arena.Get(target)));
     Assert::IsTrue(arena.Get(lance).order == Outpost::ShipOrder::None, L"the target went out of sight");
   }
 };

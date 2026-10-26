@@ -25,7 +25,7 @@ constexpr Outpost::PlanePosition B1_EDGE{.xMeters = -1300.0f, .zMeters = -3300.0
 
 Outpost::CommandResult Give(TerritoryMatch& _match, Outpost::PlayerId _player, Outpost::Order _order)
 {
-  return _match.World().Tick({{.player = _player, .order = std::move(_order)}}).front();
+  return _match.SimulationState().Tick({{.player = _player, .order = std::move(_order)}}).front();
 }
 
 Outpost::ScheduledTrigger At(std::uint64_t _tick)
@@ -47,7 +47,7 @@ Outpost::ScheduledAction Doing(Outpost::ScheduledActionKind _kind, Outpost::Plan
 std::vector<Outpost::EventView> Fired(TerritoryMatch& _match, Outpost::PlayerId _player = BLUE)
 {
   std::vector<Outpost::EventView> fired;
-  for (const Outpost::EventView& event : _match.World().BuildSnapshot(_player).events)
+  for (const Outpost::EventView& event : _match.SimulationState().BuildSnapshot(_player).events)
   {
     if (event.kind == Outpost::EventKind::OrderFired)
       fired.push_back(event);
@@ -69,7 +69,7 @@ std::vector<Outpost::EventView> RunUntilFired(TerritoryMatch& _match, std::uint3
 
 const Outpost::Entity& Get(TerritoryMatch& _match, Outpost::EntityId _id)
 {
-  const Outpost::Entity* entity = _match.World().FindEntity(_id);
+  const Outpost::Entity* entity = _match.SimulationState().FindEntity(_id);
   Assert::IsNotNull(entity);
   return *entity;
 }
@@ -96,21 +96,21 @@ public:
     TerritoryMatch match;
     const std::vector<Outpost::EntityId> ships = Warships(match, BLUE, MUSTER, 2);
     match.Run(1);
-    const std::uint64_t due = match.World().CurrentTick() + 40;
+    const std::uint64_t due = match.SimulationState().CurrentTick() + 40;
     const Outpost::PlanePosition there = match.Placement(B1).node;
     Assert::IsTrue(
       Give(match, BLUE,
            Outpost::ScheduleOrderCommand{.ships = ships, .trigger = At(due), .action = Doing(Outpost::ScheduledActionKind::Move, there)}) ==
       Outpost::CommandResult::Applied);
-    const Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot blue = match.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(std::size_t{1}, blue.scheduled.size());
     Assert::IsTrue(blue.scheduled[0].ships == ships && blue.scheduled[0].trigger.tick == due);
     const auto view = std::ranges::find(blue.entities, ships[0], &Outpost::EntityView::id);
     Assert::AreEqual(blue.scheduled[0].id, view->scheduledOrder, L"the ship names the order it waits on");
-    Assert::IsTrue(match.World().BuildSnapshot(RED).scheduled.empty(), L"only Blue sees Blue's");
+    Assert::IsTrue(match.SimulationState().BuildSnapshot(RED).scheduled.empty(), L"only Blue sees Blue's");
     Assert::IsTrue(Get(match, ships[0]).order == Outpost::ShipOrder::None, L"nothing to do until it fires");
 
-    while (match.World().CurrentTick() < due)
+    while (match.SimulationState().CurrentTick() < due)
     {
       match.Run(1);
       Assert::IsTrue(Fired(match).empty(), L"not before its tick");
@@ -121,7 +121,7 @@ public:
     Assert::IsTrue(fired[0].outcome == Outpost::OrderOutcome::AsGiven && fired[0].action == Outpost::ScheduledActionKind::Move);
     Assert::AreEqual(B1, fired[0].sector);
     Assert::IsTrue(Get(match, ships[0]).order == Outpost::ShipOrder::Move && Get(match, ships[1]).order == Outpost::ShipOrder::Move);
-    Assert::IsTrue(match.World().BuildSnapshot(BLUE).scheduled.empty(), L"once, and gone");
+    Assert::IsTrue(match.SimulationState().BuildSnapshot(BLUE).scheduled.empty(), L"once, and gone");
     match.Run(TICKS_PER_SECOND);
     Assert::IsTrue(Fired(match).empty());
   }
@@ -141,7 +141,7 @@ public:
     const Outpost::PlanePosition a2 = match.Placement(A2).node;
     (void)match.Warship(RED, {.xMeters = a2.xMeters + 150.0f, .zMeters = a2.zMeters});
     match.Run(2 * TICKS_PER_SECOND);
-    Assert::IsTrue(Fired(match).empty() && !match.World().BuildSnapshot(BLUE).scheduled.empty(), L"another sector");
+    Assert::IsTrue(Fired(match).empty() && !match.SimulationState().BuildSnapshot(BLUE).scheduled.empty(), L"another sector");
 
     const Outpost::PlanePosition b1 = match.Placement(B1).node;
     (void)match.Warship(RED, {.xMeters = b1.xMeters + 150.0f, .zMeters = b1.zMeters});
@@ -160,7 +160,7 @@ public:
     const std::vector<Outpost::EntityId> guards = Warships(match, BLUE, MUSTER, 1);
     const std::vector<Outpost::EntityId> avengers =
       Warships(match, BLUE, {.xMeters = MUSTER.xMeters, .zMeters = MUSTER.zMeters + 100.0f}, 1);
-    (void)match.World().Tick(
+    (void)match.SimulationState().Tick(
       {{.player = BLUE,
         .order = Outpost::ScheduleOrderCommand{.ships = guards,
                                                .trigger = On(Outpost::ScheduledTriggerKind::RelayThreatened, B1),
@@ -169,7 +169,7 @@ public:
         .order = Outpost::ScheduleOrderCommand{.ships = avengers,
                                                .trigger = On(Outpost::ScheduledTriggerKind::RigLost, B1),
                                                .action = Doing(Outpost::ScheduledActionKind::Patrol, match.Placement(B1).node)}}});
-    Assert::AreEqual(std::size_t{2}, match.World().BuildSnapshot(BLUE).scheduled.size());
+    Assert::AreEqual(std::size_t{2}, match.SimulationState().BuildSnapshot(BLUE).scheduled.size());
 
     // One raid on the rig, and one on the Relay.
     const Outpost::PlanePosition rig = match.AsteroidIn(B1);
@@ -207,7 +207,7 @@ public:
     const std::vector<Outpost::EntityId> ships = Warships(match, BLUE, MUSTER, 5);
     const Outpost::EntityId constructor = match.Constructors(BLUE).front();
     match.Run(1);
-    const std::uint64_t due = match.World().CurrentTick() + 2;
+    const std::uint64_t due = match.SimulationState().CurrentTick() + 2;
     const Outpost::PlanePosition node = match.Placement(B1).node;
     const std::array<Outpost::ScheduledAction, 5> actions{
       Doing(Outpost::ScheduledActionKind::Move, node), Doing(Outpost::ScheduledActionKind::AttackMove, node),
@@ -222,7 +222,7 @@ public:
       {.player = BLUE,
        .order = Outpost::ScheduleOrderCommand{
          .ships = {constructor}, .trigger = At(due), .action = Doing(Outpost::ScheduledActionKind::BuildRig, match.AsteroidIn(B1))}});
-    for (const Outpost::CommandResult result : match.World().Tick(orders))
+    for (const Outpost::CommandResult result : match.SimulationState().Tick(orders))
       Assert::IsTrue(result == Outpost::CommandResult::Applied);
     const std::vector<Outpost::EventView> fired = RunUntilFired(match, 1);
     Assert::AreEqual(std::size_t{6}, fired.size(), L"all on the same tick");
@@ -246,9 +246,9 @@ public:
     const std::vector<Outpost::EntityId> cautious = Warships(match, BLUE, MUSTER, 2);
     const std::vector<Outpost::EntityId> bold = Warships(match, BLUE, {.xMeters = MUSTER.xMeters, .zMeters = MUSTER.zMeters + 100.0f}, 2);
     match.Run(1);
-    const std::uint64_t due = match.World().CurrentTick() + 2;
+    const std::uint64_t due = match.SimulationState().CurrentTick() + 2;
     const Outpost::ScheduledAction attack = Doing(Outpost::ScheduledActionKind::AttackMove, match.Placement(B1).node);
-    (void)match.World().Tick(
+    (void)match.SimulationState().Tick(
       {{.player = BLUE,
         .order = Outpost::ScheduleOrderCommand{.ships = cautious, .trigger = At(due), .action = attack, .unlessCommandPoints = 2}},
        {.player = BLUE,
@@ -272,7 +272,7 @@ public:
     match.Run(1);
     Assert::IsTrue(Give(match, BLUE,
                         Outpost::ScheduleOrderCommand{.ships = {constructor},
-                                                      .trigger = At(match.World().CurrentTick() + 1),
+                                                      .trigger = At(match.SimulationState().CurrentTick() + 1),
                                                       .action = Doing(Outpost::ScheduledActionKind::BuildRig, match.AsteroidIn(B2))}) ==
                    Outpost::CommandResult::Applied);
     const std::vector<Outpost::EventView> fired = RunUntilFired(match, 1);
@@ -287,21 +287,21 @@ public:
     TerritoryMatch match;
     const std::vector<Outpost::EntityId> ships = Warships(match, BLUE, MUSTER, 3);
     const Outpost::ScheduledAction move = Doing(Outpost::ScheduledActionKind::Move, match.Placement(B1).node);
-    const std::uint64_t later = match.World().CurrentTick() + (std::uint64_t{60} * TICKS_PER_SECOND);
+    const std::uint64_t later = match.SimulationState().CurrentTick() + (std::uint64_t{60} * TICKS_PER_SECOND);
     Assert::IsTrue(Give(match, BLUE, Outpost::ScheduleOrderCommand{.ships = ships, .trigger = At(later), .action = move}) ==
                    Outpost::CommandResult::Applied);
     (void)Give(match, BLUE, Outpost::SetRetreatCommand{.ships = ships, .retreat = Outpost::RetreatThreshold::Never});
-    Assert::IsTrue(match.World().BuildSnapshot(BLUE).scheduled[0].ships == ships, L"a retreat set is no order");
+    Assert::IsTrue(match.SimulationState().BuildSnapshot(BLUE).scheduled[0].ships == ships, L"a retreat set is no order");
     (void)Give(match, BLUE, Outpost::StopCommand{.ships = {ships[0]}});
-    Assert::IsTrue(match.World().BuildSnapshot(BLUE).scheduled[0].ships == std::vector<Outpost::EntityId>{ships[1], ships[2]});
+    Assert::IsTrue(match.SimulationState().BuildSnapshot(BLUE).scheduled[0].ships == std::vector<Outpost::EntityId>{ships[1], ships[2]});
     Assert::IsTrue(Give(match, BLUE, Outpost::ScheduleOrderCommand{.ships = {ships[1]}, .trigger = At(later), .action = move}) ==
                    Outpost::CommandResult::Applied);
-    Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
+    Outpost::Snapshot blue = match.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(std::size_t{2}, blue.scheduled.size());
     Assert::IsTrue(blue.scheduled[0].ships == std::vector<Outpost::EntityId>{ships[2]} &&
                    blue.scheduled[1].ships == std::vector<Outpost::EntityId>{ships[1]});
     (void)Give(match, BLUE, Outpost::HoldSectorCommand{.ships = {ships[2]}, .position = match.Placement(A1).node});
-    blue = match.World().BuildSnapshot(BLUE);
+    blue = match.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(std::size_t{1}, blue.scheduled.size(), L"the first order is gone with its last ship");
     Assert::AreEqual(std::uint32_t{0}, std::ranges::find(blue.entities, ships[2], &Outpost::EntityView::id)->scheduledOrder);
   }
@@ -313,18 +313,18 @@ public:
     TerritoryMatch match;
     const std::vector<Outpost::EntityId> ships = Warships(match, BLUE, MUSTER, 2);
     const Outpost::ScheduledAction move = Doing(Outpost::ScheduledActionKind::Move, match.Placement(B1).node);
-    const std::uint64_t soon = match.World().CurrentTick() + TICKS_PER_SECOND;
+    const std::uint64_t soon = match.SimulationState().CurrentTick() + TICKS_PER_SECOND;
     Assert::IsTrue(Give(match, BLUE, Outpost::ScheduleOrderCommand{.ships = {ships[0]}, .trigger = At(soon), .action = move}) ==
                    Outpost::CommandResult::Applied);
     Assert::IsTrue(Give(match, BLUE, Outpost::ScheduleOrderCommand{.ships = {ships[1]}, .trigger = At(soon), .action = move}) ==
                    Outpost::CommandResult::Applied);
-    const std::uint32_t first = match.World().BuildSnapshot(BLUE).scheduled[0].id;
-    const std::uint32_t second = match.World().BuildSnapshot(BLUE).scheduled[1].id;
+    const std::uint32_t first = match.SimulationState().BuildSnapshot(BLUE).scheduled[0].id;
+    const std::uint32_t second = match.SimulationState().BuildSnapshot(BLUE).scheduled[1].id;
 
     Assert::IsTrue(Give(match, RED, Outpost::CancelScheduledOrderCommand{.order = first}) == Outpost::CommandResult::UnknownOrder,
                    L"not Red's to cancel");
     Assert::IsTrue(Give(match, BLUE, Outpost::CancelScheduledOrderCommand{.order = first}) == Outpost::CommandResult::Applied);
-    const Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
+    const Outpost::Snapshot blue = match.SimulationState().BuildSnapshot(BLUE);
     Assert::AreEqual(std::size_t{1}, blue.scheduled.size());
     Assert::AreEqual(second, blue.scheduled[0].id, L"the other stays");
     Assert::AreEqual(std::uint32_t{0}, std::ranges::find(blue.entities, ships[0], &Outpost::EntityView::id)->scheduledOrder,
@@ -344,7 +344,7 @@ public:
     const std::vector<Outpost::EntityId> ships = Warships(match, BLUE, MUSTER, 1);
     const Outpost::EntityId constructor = match.Constructors(BLUE).front();
     const Outpost::EntityId enemy = match.Warship(RED, {.xMeters = MUSTER.xMeters + 400.0f, .zMeters = MUSTER.zMeters});
-    const Outpost::ScheduledTrigger soon = At(match.World().CurrentTick() + 100);
+    const Outpost::ScheduledTrigger soon = At(match.SimulationState().CurrentTick() + 100);
     const Outpost::ScheduledAction move = Doing(Outpost::ScheduledActionKind::Move, match.Placement(B1).node);
     const auto schedule = [&](std::vector<Outpost::EntityId> _ships, Outpost::ScheduledTrigger _trigger, Outpost::ScheduledAction _action,
                               std::optional<std::int32_t> _unless = std::nullopt, Outpost::PlayerId _player = BLUE)
@@ -368,36 +368,36 @@ public:
     Assert::IsTrue(schedule(ships, soon, move, -1) == Outpost::CommandResult::InvalidCondition);
     Assert::IsTrue(schedule(ships, soon, move, std::nullopt, RED) == Outpost::CommandResult::NotOwned);
     Assert::IsTrue(schedule(ships, soon, Doing(Outpost::ScheduledActionKind::Attack, {}, enemy)) == Outpost::CommandResult::Applied);
-    Assert::AreEqual(std::size_t{1}, match.World().BuildSnapshot(BLUE).scheduled.size(), L"what was refused changed nothing");
+    Assert::AreEqual(std::size_t{1}, match.SimulationState().BuildSnapshot(BLUE).scheduled.size(), L"what was refused changed nothing");
   }
 
-  // A world saved with an order pending comes back with it, and fires it on the same tick as the world that never stopped.
-  TEST_METHOD(ASavedWorldKeepsItsOrders)
+  // A universe saved with an order pending comes back with it, and fires it on the same tick as the universe that never stopped.
+  TEST_METHOD(ASavedUniverseKeepsItsOrders)
   {
     TerritoryMatch match;
     const std::vector<Outpost::EntityId> ships = Warships(match, BLUE, MUSTER, 2);
-    const std::uint64_t due = match.World().CurrentTick() + 30;
+    const std::uint64_t due = match.SimulationState().CurrentTick() + 30;
     (void)Give(match, BLUE,
                Outpost::ScheduleOrderCommand{.ships = ships,
                                              .trigger = At(due),
                                              .action = Doing(Outpost::ScheduledActionKind::AttackMove, match.Placement(B1).node),
                                              .unlessCommandPoints = 4});
     match.Run(5);
-    const Outpost::WorldIdentity identity{.seed = 3, .ticksPerSecond = TICKS_PER_SECOND};
+    const Outpost::UniverseIdentity identity{.seed = 3, .ticksPerSecond = TICKS_PER_SECOND};
     Outpost::Simulation loaded(identity.seed, identity.ticksPerSecond);
     loaded.UseTuning(match.TuningData());
-    (void)Outpost::DecodeWorld(Outpost::EncodeWorld(match.World(), identity), identity, loaded);
-    Assert::IsTrue(loaded == match.World());
+    (void)Outpost::DecodeUniverse(Outpost::EncodeUniverse(match.SimulationState(), identity), identity, loaded);
+    Assert::IsTrue(loaded == match.SimulationState());
     std::uint64_t firedTick = 0;
-    while (match.World().CurrentTick() <= due)
+    while (match.SimulationState().CurrentTick() <= due)
     {
       match.Run(1);
       (void)loaded.Tick({});
       if (!Fired(match).empty())
-        firedTick = match.World().CurrentTick();
+        firedTick = match.SimulationState().CurrentTick();
     }
     Assert::AreEqual(due + 1, firedTick);
-    Assert::IsTrue(loaded == match.World(), L"the same world after it fired");
+    Assert::IsTrue(loaded == match.SimulationState(), L"the same universe after it fired");
   }
 };
 } // namespace GameLogicTests

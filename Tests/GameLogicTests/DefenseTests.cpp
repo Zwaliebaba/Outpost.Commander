@@ -21,7 +21,7 @@ constexpr Outpost::PlanePosition PLATFORM{.xMeters = 0.0f, .zMeters = 0.0f};
 std::vector<Outpost::ShotView> TickShots(MatchArena& _arena)
 {
   _arena.Run(1);
-  return _arena.World().BuildSnapshot(BLUE).shots;
+  return _arena.SimulationState().BuildSnapshot(BLUE).shots;
 }
 } // namespace
 
@@ -85,7 +85,7 @@ public:
     MatchArena arena;
     const Outpost::EntityId station = arena.Structure(BLUE, Outpost::StructureKind::CommandStation, PLATFORM);
     (void)arena.Structure(BLUE, Outpost::StructureKind::Shipyard, {0.0f, 500.0f});
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-900.0f, -900.0f});
+    const Outpost::EntityId constructor = arena.SimulationState().SpawnConstructor(BLUE, {-900.0f, -900.0f});
     (void)arena.Tick(
       {Order(BLUE, Outpost::BuildStructureCommand{
                      .constructors = {constructor}, .structure = Outpost::StructureKind::DefensePlatform, .position = {0.0f, -500.0f}})});
@@ -98,7 +98,7 @@ public:
     {
       for (const Outpost::ShotView& shot : TickShots(arena))
       {
-        if (arena.World().FindEntity(shot.shooter) != nullptr && arena.Get(shot.shooter).owner == BLUE)
+        if (arena.SimulationState().FindEntity(shot.shooter) != nullptr && arena.Get(shot.shooter).owner == BLUE)
           shooters.push_back(shot.shooter);
       }
     }

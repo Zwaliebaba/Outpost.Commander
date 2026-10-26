@@ -19,7 +19,7 @@ Outpost::EntityView Entity(std::uint32_t _id, Outpost::EntityKind _kind, Outpost
 
 // Three sectors in a row, North and South held by the player and East by the enemy; two warships and a Constructor of the
 // player's in North; and in East an enemy ship, two enemy structures, a pirate structure, and two asteroids, one run dry.
-Outpost::Snapshot World()
+Outpost::Snapshot ThreeSectors()
 {
   Outpost::Snapshot snapshot{.tick = 100, .player = ME};
   const auto sector = [](std::int32_t _id, const char* _name, float _minX, Outpost::PlayerId _holder)
@@ -83,44 +83,44 @@ public:
   // condition from none up to the most command points and back to none.
   TEST_METHOD(StepsEachFieldRoundTheEnd)
   {
-    const Outpost::Snapshot world = World();
+    const Outpost::Snapshot snapshot = ThreeSectors();
     Outpost::OrderForm form;
     Assert::AreEqual(2, form.Hour(), L"the design's 02:00");
     Assert::IsTrue(form.Action() == Outpost::ScheduledActionKind::AttackMove);
-    form.Step(Outpost::OrderField::Trigger, -1, world, world.entities);
+    form.Step(Outpost::OrderField::Trigger, -1, snapshot, snapshot.entities);
     Assert::IsTrue(form.Trigger() == Outpost::ScheduledTriggerKind::RigLost, L"back round the end");
-    form.Step(Outpost::OrderField::Trigger, 1, world, world.entities);
-    form.Step(Outpost::OrderField::Trigger, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Trigger, 1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::Trigger, 1, snapshot, snapshot.entities);
     Assert::IsTrue(form.Trigger() == Outpost::ScheduledTriggerKind::EnemyInSector);
 
     for (int step = 0; step < 3; ++step)
-      form.Step(Outpost::OrderField::Hour, -1, world, world.entities);
+      form.Step(Outpost::OrderField::Hour, -1, snapshot, snapshot.entities);
     Assert::AreEqual(23, form.Hour());
-    form.Step(Outpost::OrderField::Hour, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Hour, 1, snapshot, snapshot.entities);
     Assert::AreEqual(0, form.Hour());
-    form.Step(Outpost::OrderField::Minute, -1, world, world.entities);
+    form.Step(Outpost::OrderField::Minute, -1, snapshot, snapshot.entities);
     Assert::AreEqual(55, form.Minute());
-    form.Step(Outpost::OrderField::Minute, 1, world, world.entities);
-    form.Step(Outpost::OrderField::Minute, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Minute, 1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::Minute, 1, snapshot, snapshot.entities);
     Assert::AreEqual(5, form.Minute());
 
-    form.Step(Outpost::OrderField::Action, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
     Assert::IsTrue(form.Action() == Outpost::ScheduledActionKind::Attack);
     for (int step = 0; step < 4; ++step)
-      form.Step(Outpost::OrderField::Action, 1, world, world.entities);
+      form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
     Assert::IsTrue(form.Action() == Outpost::ScheduledActionKind::Move, L"round the end");
 
     Assert::IsFalse(form.Condition().has_value());
-    form.Step(Outpost::OrderField::Condition, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Condition, 1, snapshot, snapshot.entities);
     Assert::AreEqual(0, form.Condition().value_or(-1));
-    form.Step(Outpost::OrderField::Condition, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Condition, 1, snapshot, snapshot.entities);
     Assert::AreEqual(Outpost::OrderForm::CONDITION_STEP, form.Condition().value_or(-1));
-    form.Step(Outpost::OrderField::Condition, -1, world, world.entities);
-    form.Step(Outpost::OrderField::Condition, -1, world, world.entities);
+    form.Step(Outpost::OrderField::Condition, -1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::Condition, -1, snapshot, snapshot.entities);
     Assert::IsFalse(form.Condition().has_value(), L"below nothing is none");
-    form.Step(Outpost::OrderField::Condition, -1, world, world.entities);
+    form.Step(Outpost::OrderField::Condition, -1, snapshot, snapshot.entities);
     Assert::AreEqual(Outpost::OrderForm::MOST_COMMAND_POINTS, form.Condition().value_or(-1), L"and round to the most");
-    form.Step(Outpost::OrderField::Condition, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Condition, 1, snapshot, snapshot.entities);
     Assert::IsFalse(form.Condition().has_value());
   }
 
@@ -129,45 +129,46 @@ public:
   // structures and then their ships, and for a rig the asteroids with Ore left. One that is gone gives way to the first.
   TEST_METHOD(OffersTheSectorsAndTargetsThePlayerCanPick)
   {
-    Outpost::Snapshot world = World();
+    Outpost::Snapshot snapshot = ThreeSectors();
     Outpost::OrderForm form;
-    form.Update(world, world.entities);
+    form.Update(snapshot, snapshot.entities);
     Assert::AreEqual(NORTH, form.TriggerSector());
     Assert::AreEqual(NORTH, form.ActionSector());
-    form.Step(Outpost::OrderField::TriggerSector, 1, world, world.entities);
+    form.Step(Outpost::OrderField::TriggerSector, 1, snapshot, snapshot.entities);
     Assert::AreEqual(SOUTH, form.TriggerSector());
-    form.Step(Outpost::OrderField::TriggerSector, 1, world, world.entities);
+    form.Step(Outpost::OrderField::TriggerSector, 1, snapshot, snapshot.entities);
     Assert::AreEqual(NORTH, form.TriggerSector(), L"East is not the player's to watch");
-    form.Step(Outpost::OrderField::ActionSector, -1, world, world.entities);
+    form.Step(Outpost::OrderField::ActionSector, -1, snapshot, snapshot.entities);
     Assert::AreEqual(EAST, form.ActionSector(), L"any sector is a place to go");
 
-    form.Step(Outpost::OrderField::Action, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
     Assert::IsTrue(form.Action() == Outpost::ScheduledActionKind::Attack);
-    Assert::IsTrue(IdsOf(form.Targets(world, world.entities)) == std::vector<std::uint32_t>{11, 12, 13, 10});
+    Assert::IsTrue(IdsOf(form.Targets(snapshot, snapshot.entities)) == std::vector<std::uint32_t>{11, 12, 13, 10});
     Assert::AreEqual(11u, form.Target().value);
-    Assert::AreEqual(std::string("Pirate Relay"), Outpost::OrderForm::NameOf(*form.Targets(world, world.entities)[2], world));
-    Assert::AreEqual(std::string("Medium ship"), Outpost::OrderForm::NameOf(*form.Targets(world, world.entities)[3], world));
-    form.Step(Outpost::OrderField::Target, -1, world, world.entities);
+    Assert::AreEqual(std::string("Pirate Relay"), Outpost::OrderForm::NameOf(*form.Targets(snapshot, snapshot.entities)[2], snapshot));
+    Assert::AreEqual(std::string("Medium ship"), Outpost::OrderForm::NameOf(*form.Targets(snapshot, snapshot.entities)[3], snapshot));
+    form.Step(Outpost::OrderField::Target, -1, snapshot, snapshot.entities);
     Assert::AreEqual(10u, form.Target().value);
-    std::erase_if(world.entities, [](const Outpost::EntityView& _entity) { return _entity.id.value == 10; });
-    form.Update(world, world.entities);
+    std::erase_if(snapshot.entities, [](const Outpost::EntityView& _entity) { return _entity.id.value == 10; });
+    form.Update(snapshot, snapshot.entities);
     Assert::AreEqual(11u, form.Target().value, L"gone, so the first");
 
     for (int step = 0; step < 3; ++step)
-      form.Step(Outpost::OrderField::Action, 1, world, world.entities);
+      form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
     Assert::IsTrue(form.Action() == Outpost::ScheduledActionKind::BuildRig);
-    Assert::IsTrue(IdsOf(form.Targets(world, world.entities)) == std::vector<std::uint32_t>{20}, L"not the dry one");
-    Assert::AreEqual(std::string("Asteroid, Ore 12,000"), Outpost::OrderForm::NameOf(*form.Targets(world, world.entities)[0], world));
-    form.Step(Outpost::OrderField::ActionSector, 1, world, world.entities);
-    Assert::IsTrue(IdsOf(form.Targets(world, world.entities)) == std::vector<std::uint32_t>{22}, L"an asteroid of unknown Ore");
+    Assert::IsTrue(IdsOf(form.Targets(snapshot, snapshot.entities)) == std::vector<std::uint32_t>{20}, L"not the dry one");
+    Assert::AreEqual(std::string("Asteroid, Ore 12,000"),
+                     Outpost::OrderForm::NameOf(*form.Targets(snapshot, snapshot.entities)[0], snapshot));
+    form.Step(Outpost::OrderField::ActionSector, 1, snapshot, snapshot.entities);
+    Assert::IsTrue(IdsOf(form.Targets(snapshot, snapshot.entities)) == std::vector<std::uint32_t>{22}, L"an asteroid of unknown Ore");
     Assert::AreEqual(22u, form.Target().value);
 
-    form.Step(Outpost::OrderField::Action, 1, world, world.entities);
+    form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
     Assert::IsFalse(form.Target().IsValid(), L"a move takes no target");
 
     // A sector the player loses is no longer one to watch.
-    world.sectors[0].holder = ENEMY;
-    form.Update(world, world.entities);
+    snapshot.sectors[0].holder = ENEMY;
+    form.Update(snapshot, snapshot.entities);
     Assert::AreEqual(SOUTH, form.TriggerSector());
   }
 
@@ -176,18 +177,18 @@ public:
   // target; and the condition. Until it can be given, the button says why.
   TEST_METHOD(GivesItsOrderToTheSelection)
   {
-    const Outpost::Snapshot world = World();
+    const Outpost::Snapshot snapshot = ThreeSectors();
     const Outpost::PlayerClock clock(std::chrono::hours{2});
     const std::chrono::sys_seconds now = std::chrono::sys_days{std::chrono::year{2026} / 10 / 8} + std::chrono::hours{22};
     Outpost::OrderForm form;
-    form.Update(world, world.entities);
-    Assert::AreEqual(std::string("SELECT WARSHIPS"), form.Missing({}, world, world.entities));
-    Assert::IsFalse(form.Command({}, now, clock, world, world.entities).has_value());
+    form.Update(snapshot, snapshot.entities);
+    Assert::AreEqual(std::string("SELECT WARSHIPS"), form.Missing({}, snapshot, snapshot.entities));
+    Assert::IsFalse(form.Command({}, now, clock, snapshot, snapshot.entities).has_value());
 
-    form.Step(Outpost::OrderField::Condition, 1, world, world.entities);
-    form.Step(Outpost::OrderField::Condition, 1, world, world.entities);
-    form.Step(Outpost::OrderField::ActionSector, -1, world, world.entities);
-    Outpost::ScheduleOrderCommand order = Given(form.Command(SELECTED, now, clock, world, world.entities));
+    form.Step(Outpost::OrderField::Condition, 1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::Condition, 1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::ActionSector, -1, snapshot, snapshot.entities);
+    Outpost::ScheduleOrderCommand order = Given(form.Command(SELECTED, now, clock, snapshot, snapshot.entities));
     Assert::IsTrue(order.ships == std::vector<Outpost::EntityId>{Outpost::EntityId{1}, Outpost::EntityId{2}}, L"the warships");
     Assert::IsTrue(order.trigger.kind == Outpost::ScheduledTriggerKind::TimeOfDay);
     // 02:00 two hours ahead of UTC, after midnight there: midnight UTC on the 9th.
@@ -198,26 +199,26 @@ public:
     Assert::AreEqual(1000.0f, order.action.position.xMeters, L"East's node");
     Assert::AreEqual(2, order.unlessCommandPoints.value_or(-1));
 
-    form.Step(Outpost::OrderField::Trigger, 1, world, world.entities);
-    form.Step(Outpost::OrderField::TriggerSector, 1, world, world.entities);
-    form.Step(Outpost::OrderField::Action, 1, world, world.entities);
-    form.Step(Outpost::OrderField::Target, 1, world, world.entities);
-    order = Given(form.Command(SELECTED, now, clock, world, world.entities));
+    form.Step(Outpost::OrderField::Trigger, 1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::TriggerSector, 1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
+    form.Step(Outpost::OrderField::Target, 1, snapshot, snapshot.entities);
+    order = Given(form.Command(SELECTED, now, clock, snapshot, snapshot.entities));
     Assert::IsTrue(order.trigger.kind == Outpost::ScheduledTriggerKind::EnemyInSector);
     Assert::AreEqual(SOUTH, order.trigger.sector);
     Assert::AreEqual(12u, order.action.target.value, L"the Mining Rig");
     Assert::AreEqual(1100.0f, order.action.position.xMeters);
 
     for (int step = 0; step < 3; ++step)
-      form.Step(Outpost::OrderField::Action, 1, world, world.entities);
-    order = Given(form.Command(SELECTED, now, clock, world, world.entities));
+      form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
+    order = Given(form.Command(SELECTED, now, clock, snapshot, snapshot.entities));
     Assert::IsTrue(order.ships == std::vector<Outpost::EntityId>{Outpost::EntityId{3}}, L"the Constructor builds the rig");
     Assert::IsFalse(order.action.target.IsValid());
     Assert::AreEqual(1300.0f, order.action.position.xMeters, L"on the asteroid");
-    Assert::AreEqual(std::string("SELECT CONSTRUCTORS"), form.Missing(std::vector{Outpost::EntityId{1}}, world, world.entities));
+    Assert::AreEqual(std::string("SELECT CONSTRUCTORS"), form.Missing(std::vector{Outpost::EntityId{1}}, snapshot, snapshot.entities));
 
     // Nothing to attack, nothing to watch.
-    Outpost::Snapshot empty = world;
+    Outpost::Snapshot empty = snapshot;
     std::erase_if(empty.entities, [](const Outpost::EntityView& _entity) { return _entity.owner == ENEMY || !_entity.owner.IsValid(); });
     form.Update(empty, empty.entities);
     Assert::AreEqual(std::string("NO ASTEROID THERE"), form.Missing(SELECTED, empty, empty.entities));
@@ -231,32 +232,33 @@ public:
   // waits on, or for how many its selection waits on (ADR-080 decision 9).
   TEST_METHOD(DescribesAScheduledOrderAndTheOneAShipWaitsOn)
   {
-    Outpost::Snapshot world = World();
+    Outpost::Snapshot snapshot = ThreeSectors();
     const Outpost::PlayerClock clock(std::chrono::hours{2});
     const std::int64_t midnight =
       std::chrono::sys_seconds{std::chrono::sys_days{std::chrono::year{2026} / 10 / 9}}.time_since_epoch().count();
-    world.scheduled = {{.id = 7,
-                        .ships = {Outpost::EntityId{1}},
-                        .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = midnight},
-                        .action = {.kind = Outpost::ScheduledActionKind::AttackMove, .position = {.xMeters = 1000.0f}},
-                        .unlessCommandPoints = 8},
-                       {.id = 9,
-                        .ships = {Outpost::EntityId{2}},
-                        .trigger = {.kind = Outpost::ScheduledTriggerKind::RelayThreatened, .sector = SOUTH},
-                        .action = {.kind = Outpost::ScheduledActionKind::HoldSector, .position = {.xMeters = 0.0f}}}};
+    snapshot.scheduled = {{.id = 7,
+                           .ships = {Outpost::EntityId{1}},
+                           .trigger = {.kind = Outpost::ScheduledTriggerKind::TimeOfDay, .utcSeconds = midnight},
+                           .action = {.kind = Outpost::ScheduledActionKind::AttackMove, .position = {.xMeters = 1000.0f}},
+                           .unlessCommandPoints = 8},
+                          {.id = 9,
+                           .ships = {Outpost::EntityId{2}},
+                           .trigger = {.kind = Outpost::ScheduledTriggerKind::RelayThreatened, .sector = SOUTH},
+                           .action = {.kind = Outpost::ScheduledActionKind::HoldSector, .position = {.xMeters = 0.0f}}}};
     Assert::AreEqual(std::string("at 02:00, attack-move to East, unless over 8 enemy CP"),
-                     Outpost::DescribeScheduledOrder(world.scheduled[0], world, clock));
+                     Outpost::DescribeScheduledOrder(snapshot.scheduled[0], snapshot, clock));
     Assert::AreEqual(std::string("when the Relay in South is threatened, hold South"),
-                     Outpost::DescribeScheduledOrder(world.scheduled[1], world, clock));
+                     Outpost::DescribeScheduledOrder(snapshot.scheduled[1], snapshot, clock));
 
-    Assert::IsFalse(Outpost::PendingOrderLine(SELECTED, world.entities, world, clock).has_value(), L"none waits");
-    world.entities[0].scheduledOrder = 7;
+    Assert::IsFalse(Outpost::PendingOrderLine(SELECTED, snapshot.entities, snapshot, clock).has_value(), L"none waits");
+    snapshot.entities[0].scheduledOrder = 7;
     Assert::AreEqual(std::string("Scheduled: at 02:00, attack-move to East, unless over 8 enemy CP"),
-                     Outpost::PendingOrderLine(SELECTED, world.entities, world, clock).value_or(""));
-    world.entities[1].scheduledOrder = 9;
-    Assert::AreEqual(std::string("Scheduled: 2 orders"), Outpost::PendingOrderLine(SELECTED, world.entities, world, clock).value_or(""));
+                     Outpost::PendingOrderLine(SELECTED, snapshot.entities, snapshot, clock).value_or(""));
+    snapshot.entities[1].scheduledOrder = 9;
+    Assert::AreEqual(std::string("Scheduled: 2 orders"),
+                     Outpost::PendingOrderLine(SELECTED, snapshot.entities, snapshot, clock).value_or(""));
     Assert::AreEqual(std::string("Scheduled: when the Relay in South is threatened, hold South"),
-                     Outpost::PendingOrderLine(std::vector{Outpost::EntityId{2}}, world.entities, world, clock).value_or(""));
+                     Outpost::PendingOrderLine(std::vector{Outpost::EntityId{2}}, snapshot.entities, snapshot, clock).value_or(""));
   }
 };
 } // namespace GameAppTests
