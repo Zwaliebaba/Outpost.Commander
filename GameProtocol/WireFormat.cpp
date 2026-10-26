@@ -113,9 +113,38 @@ std::vector<std::byte> EncodeMessage(const Command& _command)
   return Encode(_command);
 }
 
-std::vector<std::byte> EncodeMessage(const Snapshot& _snapshot)
+std::vector<std::byte> EncodeMessage(const StateMessage& _state)
 {
-  return Encode(_snapshot);
+  return Encode(_state);
+}
+
+std::vector<std::byte> EncodeMessage(const EventsMessage& _events)
+{
+  return Encode(_events);
+}
+
+EventsMessage TakeEvents(Snapshot& _snapshot)
+{
+  return {.tick = _snapshot.tick,
+          .shots = std::exchange(_snapshot.shots, {}),
+          .destroyed = std::exchange(_snapshot.destroyed, {}),
+          .events = std::exchange(_snapshot.events, {}),
+          .away = std::exchange(_snapshot.away, std::nullopt)};
+}
+
+bool HasAny(const EventsMessage& _events) noexcept
+{
+  return !_events.shots.empty() || !_events.destroyed.empty() || !_events.events.empty() || _events.away.has_value();
+}
+
+void PutEvents(EventsMessage&& _events, Snapshot& _snapshot)
+{
+  std::ranges::move(_events.shots, std::back_inserter(_snapshot.shots));
+  std::ranges::move(_events.destroyed, std::back_inserter(_snapshot.destroyed));
+  std::ranges::move(_events.events, std::back_inserter(_snapshot.events));
+  // A report of a time away is in the first snapshot after the seat is taken again, so one never meets another.
+  if (_events.away.has_value())
+    _snapshot.away = std::move(_events.away);
 }
 
 std::vector<std::byte> EncodeMessage(const CatalogMessage& _catalog)

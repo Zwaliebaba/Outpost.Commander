@@ -100,7 +100,7 @@ private:
     bool engaged = false;
   };
 
-  // Every shot of _snapshot's tick that another snapshot of the tick has not already shown, for contact and engagements.
+  // Every shot of _snapshot that another snapshot has not already shown, for contact and engagements.
   void RecordShots(const Snapshot& _snapshot);
 
   // What has been written already.
@@ -113,9 +113,10 @@ private:
   bool m_contact = false;
   std::vector<SectorFire> m_fire;
   std::vector<std::pair<std::int32_t, PlayerId>> m_holders;
-  // The tick whose shots were last read, and the shots of it already counted, by shooter and target.
-  std::uint64_t m_shotTick = 0;
-  std::vector<std::pair<EntityId, EntityId>> m_shotsCounted;
+  // Each player's latest snapshot's tick, by which every shot it is shown has arrived, and the shots counted that a player
+  // may still be shown, by tick, shooter and target.
+  std::vector<std::pair<PlayerId, std::uint64_t>> m_shotsShownTo;
+  std::set<std::tuple<std::uint64_t, EntityId, EntityId>> m_shotsCounted;
 
   // A structure of the player's own that grows, at the level its owner last saw, and whether a level was under way.
   struct Growth

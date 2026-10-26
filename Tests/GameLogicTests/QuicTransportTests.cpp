@@ -69,6 +69,27 @@ std::wstring Wide(std::string_view _text)
   return {_text.begin(), _text.end()};
 }
 
+// A snapshot as the bytes of a state that carries it whole.
+std::vector<std::byte> StateBytes(const Outpost::Snapshot& _snapshot)
+{
+  return Outpost::EncodeMessage(Outpost::StateMessage{.snapshot = _snapshot});
+}
+
+// The next snapshot _player's connection hands on, waiting at most 30 seconds for it, which is the only one it has.
+Outpost::Snapshot NextSnapshotOf(Outpost::Transport& _player)
+{
+  std::vector<Outpost::Snapshot> snapshots;
+  const auto deadline = std::chrono::steady_clock::now() + 30s;
+  while (snapshots.empty() && std::chrono::steady_clock::now() < deadline)
+  {
+    snapshots = _player.Receive();
+    if (snapshots.empty())
+      std::this_thread::sleep_for(1ms);
+  }
+  Assert::AreEqual(size_t{1}, snapshots.size(), L"one snapshot, in time");
+  return std::move(snapshots.front());
+}
+
 // A channel of the engine's own to _seat's server, which says nothing until a test has it say something.
 std::unique_ptr<Neuron::QuicChannel> ChannelTo(const Outpost::ServerAddress& _seat)
 {
@@ -519,9 +540,9 @@ public:
     Assert::IsTrue(server->TakeSeatFigures().empty(), L"each sample is taken once");
   }
 
-  // ADR-060 decision 9: the snapshots a seat's client hands on are the ones the server built, tick by tick, for two minutes
-  // in which the player's research finishes and changes the catalogue; and a seat taken again is sent its catalogue before
-  // its first snapshot.
+  // ADR-060 decision 9, ADR-096: the snapshots a seat's client hands on are the ones the server built, tick by tick, for two
+  // minutes in which the player's research finishes and changes the catalogue, their events whichever snapshot brings them;
+  // and a seat taken again is sent its catalogue before its first state.
   TEST_METHOD(HandsOnTheSnapshotsTheServerBuilt)
   {
     auto server = QuicServer();
@@ -538,22 +559,14 @@ public:
     const std::unique_ptr<Outpost::Transport> red = server->Connect(RED);
     blue.Send({.order = Outpost::StartResearchCommand{.lab = lab, .topic = HULL_PLATING}});
 
-    // A hundred ticks at a time, each tick's snapshot as the server built it kept until the client has handed its hundred on.
-    constexpr std::uint32_t BATCH_TICKS = 100;
+    // Tick by tick, so that no state is overtaken by the next (ADR-096).
     const std::uint32_t ticks = 120 * server->TicksPerSecond();
-    for (std::uint32_t batch = 0; batch < ticks / BATCH_TICKS; ++batch)
+    for (std::uint32_t tick = 0; tick < ticks; ++tick)
     {
-      std::vector<std::vector<std::byte>> built;
-      for (std::uint32_t tick = 0; tick < BATCH_TICKS; ++tick)
-      {
-        server->Step();
-        built.push_back(Outpost::EncodeMessage(simulation.BuildSnapshot(BLUE)));
-        (void)red->Receive();
-      }
-      const std::vector<Outpost::Snapshot> received = SnapshotsOf(blue, BATCH_TICKS);
-      Assert::AreEqual(built.size(), received.size(), L"a snapshot a tick");
-      for (std::size_t i = 0; i < built.size(); ++i)
-        Assert::IsTrue(Outpost::EncodeMessage(received[i]) == built[i], Wide(std::format("tick {}", received[i].tick)).c_str());
+      server->Step();
+      (void)red->Receive();
+      const Outpost::Snapshot built = simulation.BuildSnapshot(BLUE);
+      Assert::IsTrue(StateBytes(NextSnapshotOf(blue)) == StateBytes(built), Wide(std::format("tick {}", built.tick)).c_str());
     }
     const Outpost::Snapshot last = simulation.BuildSnapshot(BLUE);
     const auto plating = std::ranges::find(last.research, HULL_PLATING, &Outpost::ResearchTopicView::id);
@@ -561,9 +574,8 @@ public:
 
     Outpost::QuicTransport again(seat, BLUE);
     server->Step();
-    const std::vector<Outpost::Snapshot> first = SnapshotsOf(again, 1);
-    Assert::IsTrue(!first.empty() && Outpost::EncodeMessage(first.front()) == Outpost::EncodeMessage(simulation.BuildSnapshot(BLUE)),
-                   L"the seat taken again is sent its catalogue before its first snapshot");
+    Assert::IsTrue(StateBytes(NextSnapshotOf(again)) == StateBytes(simulation.BuildSnapshot(BLUE)),
+                   L"the seat taken again is sent its catalogue before its first state");
   }
 };
 } // namespace GameLogicTests

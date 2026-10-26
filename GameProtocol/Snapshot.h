@@ -358,6 +358,8 @@ struct ShotView
   // Which of the shooter's guns fired it: 0 for a ship's and a structure's first, and 1 on for a Command Station's further
   // Defence guns (ADR-064 decision 11), which the client draws from hardpoints of their own.
   std::uint8_t gun = 0;
+  // The tick it was fired in, which a client plays it from, whichever snapshot brings it (ADR-096).
+  std::uint64_t tick = 0;
 };
 
 // An entity destroyed in the tick, where it was, so the client can show it go after it has left the snapshot (ADR-014 decision 11).
@@ -372,6 +374,8 @@ struct DestroyedView
   PlanePosition position;
   float headingRadians = 0.0f;
   float radiusMeters = 0.0f;
+  // The tick it was destroyed in, which a client plays it from, whichever snapshot brings it (ADR-096).
+  std::uint64_t tick = 0;
 };
 
 // What happened to a player in a tick, which the server raises and the player's snapshot of that tick carries

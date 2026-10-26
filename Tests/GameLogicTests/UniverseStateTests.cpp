@@ -32,8 +32,8 @@ Bytes Rechecked(Bytes _bytes)
 std::array<Bytes, 2> NextSnapshots(Outpost::Simulation& _simulation)
 {
   (void)_simulation.Tick({});
-  return {Outpost::EncodeMessage(_simulation.BuildSnapshot(UniverseMatch::BLUE)),
-          Outpost::EncodeMessage(_simulation.BuildSnapshot(UniverseMatch::RED))};
+  return {Outpost::EncodeMessage(Outpost::StateMessage{.snapshot = _simulation.BuildSnapshot(UniverseMatch::BLUE)}),
+          Outpost::EncodeMessage(Outpost::StateMessage{.snapshot = _simulation.BuildSnapshot(UniverseMatch::RED)})};
 }
 
 void ExpectRefused(std::span<const std::byte> _bytes, const Outpost::UniverseIdentity& _identity, const UniverseMatch& _match,

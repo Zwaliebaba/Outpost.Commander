@@ -594,21 +594,37 @@ void Outpost::InProcessServer::RunTick()
       Connection& connection = *seat.connection;
       if (connection.seat)
       {
-        if (seat.quic)
+        // A seat whose connection has gone is sent nothing more, rather than having it queued (ADR-096).
+        if (seat.quic && !seat.quic->HasGone())
         {
-          // The catalogue crosses before the seat's first snapshot and again when it has changed, and the snapshot crosses
-          // without it; then it goes back, for a seat's deputy (ADR-060 decision 9).
+          // The catalogue crosses before the seat's first state and again when it has changed (ADR-060 decision 9), and the
+          // tick's events after it, reliably and in order; the state crosses on its own, and gives way to a newer one
+          // (ADR-096). Then what was taken goes back, for a seat's deputy.
           CatalogMessage catalog = TakeCatalog(seat.snapshot);
           std::vector<std::byte> encoded = EncodeMessage(catalog);
           if (connection.catalogTaking != seat.takings || encoded != connection.catalogSent)
           {
+            if (connection.catalogTaking != seat.takings)
+              connection.orderedSent = 0;
             seat.quic->Send(encoded);
             connection.catalogSent = std::move(encoded);
             connection.catalogTaking = seat.takings;
+            ++connection.orderedSent;
           }
-          seat.quic->Send(EncodeMessage(seat.snapshot));
+          EventsMessage events = TakeEvents(seat.snapshot);
+          if (HasAny(events))
+          {
+            seat.quic->Send(EncodeMessage(events));
+            ++connection.orderedSent;
+          }
+          StateMessage state{.orderedSent = connection.orderedSent, .snapshot = std::move(seat.snapshot)};
+          seat.quic->SendNewest(EncodeMessage(state));
+          seat.snapshot = std::move(state.snapshot);
           if (connection.hosted)
+          {
+            PutEvents(std::move(events), seat.snapshot);
             PutCatalog(std::move(catalog), seat.snapshot);
+          }
         }
         if (connection.hosted && connection.control.has_value())
           turns.push_back({.connection = &connection, .snapshot = std::move(seat.snapshot), .plays = seat.play == SeatPlay::Deputy});

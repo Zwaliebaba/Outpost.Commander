@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <deque>
 #include <thread>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -158,9 +159,21 @@ double Milliseconds(Clock::duration _duration)
   return std::chrono::duration<double, std::milli>(_duration).count();
 }
 
+std::wstring Widen(std::string_view _text)
+{
+  return {_text.begin(), _text.end()};
+}
+
+// A snapshot as the bytes of a state that carries it whole.
+std::vector<std::byte> StateBytes(const Outpost::Snapshot& _snapshot)
+{
+  return Outpost::EncodeMessage(Outpost::StateMessage{.snapshot = _snapshot});
+}
+
 // One player of the measurement, on a channel of the test's own, so that each state is timed as it comes. Its ships are
 // ordered across the map every LOAD_PERIOD_TICKS, as the shell's --load orders them (LoadDriver), save its probe, which it
-// orders a short way from rest and back, timing the response.
+// orders a short way from rest and back, timing the response. The states come on streams of their own, and the catalogue
+// and the ticks' events on the connection's stream (ADR-096).
 class MeasuredPlayer
 {
 public:
@@ -190,23 +203,40 @@ public:
   // Takes what has come, waiting up to _wait for the first of it, and gives the orders due.
   void Update(std::chrono::milliseconds _wait)
   {
+    // The catalogue and the events hold no ship, so the states alone are what the load and the probe read (ADR-060
+    // decision 9).
     for (const std::vector<std::byte>& message : m_channel->Receive(_wait))
     {
-      const Clock::time_point arrived = Clock::now();
-      Outpost::Message decoded = Outpost::DecodeMessage(message);
-      // The catalogue holds no ship, so the states alone are what the load and the probe read (ADR-060 decision 9).
+      const Outpost::Message decoded = Outpost::DecodeMessage(message);
       if (std::holds_alternative<Outpost::CatalogMessage>(decoded))
       {
         catalogBytes += message.size();
         continue;
       }
-      auto* snapshot = std::get_if<Outpost::Snapshot>(&decoded);
-      Assert::IsNotNull(snapshot, L"only catalogues and snapshots after the welcome");
-      arrivals.emplace_back(snapshot->tick, arrived);
+      Assert::IsTrue(std::holds_alternative<Outpost::EventsMessage>(decoded), L"only catalogues and events on the connection's stream");
+      eventsBytes += message.size();
+      const Clock::time_point arrived = Clock::now();
+      m_eventsLastSecond.emplace_back(arrived, message.size());
+      while (arrived - m_eventsLastSecond.front().first > std::chrono::seconds{1})
+        m_eventsLastSecond.pop_front();
+      std::uint64_t secondBytes = 0;
+      for (const auto& [at, bytes] : m_eventsLastSecond)
+        secondBytes += bytes;
+      eventsSecondMostBytes = std::max(eventsSecondMostBytes, secondBytes);
+    }
+    for (const std::vector<std::byte>& message : m_channel->ReceiveNewest())
+    {
+      const Clock::time_point arrived = Clock::now();
+      Outpost::Message decoded = Outpost::DecodeMessage(message);
+      auto* state = std::get_if<Outpost::StateMessage>(&decoded);
+      Assert::IsNotNull(state, L"only states on their own streams");
+      const Outpost::Snapshot& snapshot = state->snapshot;
+      arrivals.emplace_back(snapshot.tick, arrived);
       stateBytes += message.size();
-      newestTick = std::max(newestTick, snapshot->tick);
-      OrderTheLoad(*snapshot);
-      WatchTheProbe(*snapshot, arrived);
+      stateMostBytes = std::max<std::uint64_t>(stateMostBytes, message.size());
+      newestTick = std::max(newestTick, snapshot.tick);
+      OrderTheLoad(snapshot);
+      WatchTheProbe(snapshot, arrived);
     }
     if (m_probe.has_value() && m_orderAt.has_value() && Clock::now() >= *m_orderAt)
     {
@@ -223,7 +253,11 @@ public:
 
   std::vector<std::pair<std::uint64_t, Clock::time_point>> arrivals;
   std::uint64_t stateBytes = 0;
+  std::uint64_t stateMostBytes = 0;
   std::uint64_t catalogBytes = 0;
+  std::uint64_t eventsBytes = 0;
+  // The most bytes of events that arrived in any second.
+  std::uint64_t eventsSecondMostBytes = 0;
   std::uint64_t newestTick = 0;
   std::vector<double> responsesMilliseconds;
 
@@ -294,10 +328,22 @@ private:
   std::uint32_t m_restingStates = 0;
   std::optional<Clock::time_point> m_orderAt;
   std::optional<Clock::time_point> m_ordered;
+  std::deque<std::pair<Clock::time_point, std::size_t>> m_eventsLastSecond;
 };
 
-// Two minutes of the measurement load with both players through links of _profile, and what Blue's link did to its states.
-std::string Measure(const Outpost::Tuning& _tuning, const Outpost::Map& _map, const LinkProfile& _profile)
+// What a run of the measurement load found: the figures a test holds to, and the report of them all.
+struct Measurement
+{
+  std::size_t states = 0;
+  std::uint64_t newestTick = 0;
+  std::uint64_t stateMostBytes = 0;
+  std::uint64_t eventsSecondMostBytes = 0;
+  std::uint64_t backlogMostBytes = 0;
+  std::string report;
+};
+
+// _length of the measurement load with both players through links of _profile, and what Blue's link did to its states.
+Measurement Measure(const Outpost::Tuning& _tuning, const Outpost::Map& _map, const LinkProfile& _profile, Clock::duration _length)
 {
   Outpost::InProcessServer server(_tuning, _map, {.seed = 1, .measurementLoad = true, .quic = true});
   Outpost::Simulation& simulation = server.SimulationState();
@@ -327,7 +373,7 @@ std::string Measure(const Outpost::Tuning& _tuning, const Outpost::Map& _map, co
   const Clock::time_point start = Clock::now();
   const auto tick = std::chrono::duration_cast<Clock::duration>(std::chrono::seconds{1}) / server.TicksPerSecond();
   constexpr auto SAMPLE = std::chrono::duration_cast<Clock::duration>(std::chrono::seconds{1}) / 60;
-  const Clock::time_point end = start + 2min;
+  const Clock::time_point end = start + _length;
   Clock::time_point nextSample = start + SAMPLE;
   std::uint64_t samples = 0;
   std::uint64_t behind = 0;
@@ -371,18 +417,24 @@ std::string Measure(const Outpost::Tuning& _tuning, const Outpost::Map& _map, co
   const double meanStateBytes =
     blue.arrivals.empty() ? 0.0 : static_cast<double>(blue.stateBytes) / static_cast<double>(blue.arrivals.size());
   const ImpairedLink::Counts down = blueLink.ToClient();
-  return std::format("{}: {} states of {:.0f} bytes on average, and {} bytes of catalogue; late by {:.1f} ms at the median, {:.1f} at the "
-                     "95th percentile and {:.1f} "
-                     "at the 99th; the longest gap {:.1f} ms; more than two ticks behind the server in {:.2f}% of {} samples; the "
-                     "largest backlog {} bytes, {:.1f} states; a round trip of {:.1f} ms at the median; an order's response {:.1f} ms "
-                     "at the median and {:.1f} at the 95th percentile, over {} orders; to the client, {} datagrams carried, {} lost "
-                     "and {} dropped",
-                     _profile.name, blue.arrivals.size(), meanStateBytes, blue.catalogBytes, Percentile(lateness, 50),
-                     Percentile(lateness, 95), Percentile(lateness, 99), longestGap,
-                     samples == 0 ? 0.0 : 100.0 * static_cast<double>(behind) / static_cast<double>(samples), samples, backlogMostBytes,
-                     meanStateBytes == 0.0 ? 0.0 : static_cast<double>(backlogMostBytes) / meanStateBytes,
-                     Percentile(roundTripsMilliseconds, 50), Percentile(blue.responsesMilliseconds, 50),
-                     Percentile(blue.responsesMilliseconds, 95), blue.responsesMilliseconds.size(), down.carried, down.lost, down.dropped);
+  Measurement measurement{.states = blue.arrivals.size(),
+                          .newestTick = blue.newestTick,
+                          .stateMostBytes = blue.stateMostBytes,
+                          .eventsSecondMostBytes = blue.eventsSecondMostBytes,
+                          .backlogMostBytes = backlogMostBytes};
+  measurement.report =
+    std::format("{}: {} states of {:.0f} bytes on average, {} bytes of catalogue and {} of events; late by {:.1f} ms at the median, "
+                "{:.1f} at the 95th percentile and {:.1f} at the 99th; the longest gap {:.1f} ms; more than two ticks behind the server in "
+                "{:.2f}% of {} samples; the largest backlog {} bytes, {:.1f} states; a round trip of {:.1f} ms at the median; an order's "
+                "response {:.1f} ms at the median and {:.1f} at the 95th percentile, over {} orders; to the client, {} datagrams carried, "
+                "{} lost and {} dropped",
+                _profile.name, blue.arrivals.size(), meanStateBytes, blue.catalogBytes, blue.eventsBytes, Percentile(lateness, 50),
+                Percentile(lateness, 95), Percentile(lateness, 99), longestGap,
+                samples == 0 ? 0.0 : 100.0 * static_cast<double>(behind) / static_cast<double>(samples), samples, backlogMostBytes,
+                meanStateBytes == 0.0 ? 0.0 : static_cast<double>(backlogMostBytes) / meanStateBytes,
+                Percentile(roundTripsMilliseconds, 50), Percentile(blue.responsesMilliseconds, 50),
+                Percentile(blue.responsesMilliseconds, 95), blue.responsesMilliseconds.size(), down.carried, down.lost, down.dropped);
+  return measurement;
 }
 } // namespace
 
@@ -560,6 +612,79 @@ public:
     }
   }
 
+  // ADR-096 decision 2: on the hotspot profile, whose 4 Mbit/s the measurement load's states all but fill, a seat's backlog
+  // stays at two states, the newest two on their way, and no more than a second of the events, over a minute of the load;
+  // and states keep coming.
+  TEST_METHOD(HoldsASeatsBacklogToTwoStatesOnTheHotspot)
+  {
+    const Measurement measurement =
+      Measure(Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), HOTSPOT_LINK, 1min);
+    Logger::WriteMessage(measurement.report.c_str());
+    Assert::IsTrue(measurement.backlogMostBytes <= (2 * measurement.stateMostBytes) + measurement.eventsSecondMostBytes,
+                   Widen(measurement.report).c_str());
+    Assert::IsTrue(measurement.states > 0 && measurement.states * 4 >= measurement.newestTick, Widen(measurement.report).c_str());
+  }
+
+  // ADR-096 decision 3: through the Wi-Fi profile every tick's events reach the client once and in order, the shots and
+  // destructions of a fight, whichever snapshots bring them.
+  TEST_METHOD(CarriesEveryTicksEventsOverWiFi)
+  {
+    auto server = std::make_unique<Outpost::InProcessServer>(
+      Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), Outpost::ServerDesc{.seed = 5, .quic = true});
+    Outpost::Simulation& simulation = server->SimulationState();
+    for (const Outpost::PlayerId player : {BLUE, RED})
+    {
+      const Outpost::ShipDesign* swarm = simulation.FindDesign(player, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1}});
+      Assert::IsNotNull(swarm, L"each player's swarm");
+      for (int i = 0; i < 4; ++i)
+      {
+        (void)simulation.SpawnShip(player, swarm->id,
+                                   {.xMeters = player == BLUE ? -40.0f : 40.0f, .zMeters = 30.0f * static_cast<float>(i)});
+      }
+    }
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    const ImpairedLink link(seat.port, WI_FI_LINK, 1);
+    Outpost::QuicTransport blue(link.Through(seat), BLUE);
+    const std::unique_ptr<Outpost::Transport> red = server->Connect(RED);
+
+    // Ten seconds of ticks at the tuning data's rate, each tick's events as the server built them gathered in one snapshot,
+    // and as the client hands them on in another; then until the client has the last tick's state.
+    Outpost::Snapshot built;
+    Outpost::Snapshot received;
+    std::uint64_t handedOn = 0;
+    const auto take = [&]
+    {
+      for (Outpost::Snapshot& snapshot : blue.Receive())
+      {
+        Assert::IsTrue(snapshot.tick > handedOn, L"in order");
+        handedOn = snapshot.tick;
+        Outpost::PutEvents(Outpost::TakeEvents(snapshot), received);
+      }
+    };
+    const auto tick = std::chrono::duration_cast<Clock::duration>(std::chrono::seconds{1}) / server->TicksPerSecond();
+    Clock::time_point next = Clock::now();
+    for (std::uint32_t i = 0; i < 10 * server->TicksPerSecond(); ++i)
+    {
+      server->Step();
+      (void)red->Receive();
+      Outpost::Snapshot snapshot = simulation.BuildSnapshot(BLUE);
+      Outpost::PutEvents(Outpost::TakeEvents(snapshot), built);
+      next += tick;
+      std::this_thread::sleep_until(next);
+      take();
+    }
+    const std::uint64_t last = simulation.CurrentTick();
+    const auto deadline = Clock::now() + PATIENCE;
+    while (handedOn < last && Clock::now() < deadline)
+    {
+      std::this_thread::sleep_for(10ms);
+      take();
+    }
+    Assert::AreEqual(last, handedOn, L"the last tick's state");
+    Assert::IsTrue(!built.shots.empty() && !built.destroyed.empty(), L"a fight, with ships lost");
+    Assert::IsTrue(StateBytes(received) == StateBytes(built), L"every tick's events, once and in order");
+  }
+
   // Two minutes of the measurement load, as --load plays it, with both players through each profile's links: how late each
   // of Blue's states arrives against when the server's tick was due, the longest gap between two, the share of 60 Hz samples
   // at which Blue's newest state is more than two ticks behind the server, Blue's seat's largest backlog, and an order's
@@ -575,7 +700,7 @@ public:
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
     for (const LinkProfile& profile : {CLEAR_LINK, NEAR_LINK, WI_FI_LINK, HOTSPOT_LINK})
-      Logger::WriteMessage(Measure(tuning, map, profile).c_str());
+      Logger::WriteMessage(Measure(tuning, map, profile, 2min).report.c_str());
   }
 };
 } // namespace GameLogicTests

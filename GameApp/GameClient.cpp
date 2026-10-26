@@ -1607,10 +1607,11 @@ void Outpost::GameClient::QueueStructure(const EntityView& _entity)
 
 void Outpost::GameClient::Explode(const Snapshot& _snapshot)
 {
-  // As a shot does, a destruction plays from one tick before its snapshot, where the view shows it (ADR-013).
-  const double start = static_cast<double>(_snapshot.tick) - 1.0;
   for (const DestroyedView& destroyed : _snapshot.destroyed)
   {
+    // As a shot does, a destruction plays from one tick before its own, where the view shows it, whichever snapshot brought
+    // it (ADR-013, ADR-096).
+    const double start = static_cast<double>(destroyed.tick) - 1.0;
     // What blew up as the view last held it, which says what a structure is and how it is drawn; it is not in this
     // snapshot. It breaks where the server says it died. Without it, a ship falls back on its hull.
     EntityView entity{.id = destroyed.id, .kind = destroyed.kind, .owner = destroyed.owner, .hull = destroyed.hull};
@@ -1624,7 +1625,7 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
     entity.radiusMeters = destroyed.radiusMeters;
 
     // The same destruction always looks the same.
-    const std::uint64_t seed = (std::uint64_t{destroyed.id.value} << 32U) ^ _snapshot.tick;
+    const std::uint64_t seed = (std::uint64_t{destroyed.id.value} << 32U) ^ destroyed.tick;
     const std::optional<PlacedModel> placed = PlaceModel(entity);
     const float liftMeters = placed.has_value() ? placed->OriginLiftMeters() : 0.0f;
     m_particles.AddBlast({destroyed.position.xMeters, liftMeters, destroyed.position.zMeters}, destroyed.radiusMeters, destroyed.kind,

@@ -154,7 +154,7 @@ public:
           Outpost::Snapshot view = snapshot(player, _tick);
           if (!_shooterSeen)
             std::erase_if(view.entities, [_shooter](const Outpost::EntityView& _entity) { return _entity.id == _shooter; });
-          view.shots = {{.shooter = _shooter, .target = _target, .from = {.xMeters = -50.0f, .zMeters = 50.0f}}};
+          view.shots = {{.shooter = _shooter, .target = _target, .from = {.xMeters = -50.0f, .zMeters = 50.0f}, .tick = _tick}};
           log.Record(view);
         }
       };
@@ -213,11 +213,13 @@ public:
         view.shots = {{.shooter = Outpost::EntityId{10},
                        .target = Outpost::EntityId{30},
                        .from = {.xMeters = -50.0f, .zMeters = 50.0f},
-                       .to = {.xMeters = -40.0f, .zMeters = 50.0f}},
+                       .to = {.xMeters = -40.0f, .zMeters = 50.0f},
+                       .tick = tick},
                       {.shooter = Outpost::EntityId{30},
                        .target = Outpost::EntityId{10},
                        .from = {.xMeters = -40.0f, .zMeters = 50.0f},
-                       .to = {.xMeters = -50.0f, .zMeters = 50.0f}}};
+                       .to = {.xMeters = -50.0f, .zMeters = 50.0f},
+                       .tick = tick}};
         log.Record(view);
       }
     }
@@ -227,6 +229,42 @@ public:
     Assert::IsTrue(written.find("cleared 120 sector 1\n") != std::string::npos, L"the sector cleared");
     Assert::IsTrue(written.find("contact") == std::string::npos);
     Assert::IsTrue(written.find("engagement") == std::string::npos);
+  }
+
+  // ADR-096: a player's state of a tick can be overtaken, and the shots of that tick come with its next snapshot. A shot is
+  // counted at its own tick, and once, whichever of the players' snapshots brings it.
+  TEST_METHOD(CountsAShotAtItsOwnTickWhicheverSnapshotBringsIt)
+  {
+    std::ostringstream out;
+    {
+      Outpost::MatchLog log(out, 7, 20);
+      const auto snapshot = [](Outpost::PlayerId _player, std::uint64_t _tick)
+      {
+        Outpost::Snapshot view = SnapshotOf(_player, _tick);
+        view.sectors = {{.id = 1, .minXMeters = -100.0f, .maxXMeters = 0.0f, .maxZMeters = 100.0f, .holder = HUMAN}};
+        view.entities = {Swarm(10, HUMAN), Swarm(20, AI)};
+        return view;
+      };
+      const Outpost::ShotView humanFires{
+        .shooter = Outpost::EntityId{10}, .target = Outpost::EntityId{20}, .from = {.xMeters = -50.0f, .zMeters = 50.0f}, .tick = 100};
+      const Outpost::ShotView aiFires{
+        .shooter = Outpost::EntityId{20}, .target = Outpost::EntityId{10}, .from = {.xMeters = -40.0f, .zMeters = 50.0f}, .tick = 101};
+      log.Record(snapshot(HUMAN, 1));
+      log.Record(snapshot(AI, 1));
+      // The AI's state of tick 100 is overtaken, so its tick 101 brings both shots.
+      Outpost::Snapshot ai = snapshot(AI, 101);
+      ai.shots = {humanFires, aiFires};
+      log.Record(ai);
+      // The human's of ticks 100 and 101 are overtaken too, and its tick 102 brings the same two.
+      Outpost::Snapshot human = snapshot(HUMAN, 102);
+      human.shots = {humanFires, aiFires};
+      log.Record(human);
+    }
+    const std::string written = out.str();
+    Assert::IsTrue(written.find("contact 100 sector 1\n") != std::string::npos, L"the contact, at the first shot's tick");
+    Assert::AreEqual(written.find("contact"), written.rfind("contact"), L"one contact");
+    Assert::IsTrue(written.find("engagement 101 sector 1\n") != std::string::npos, L"the engagement, at the second shot's tick");
+    Assert::AreEqual(written.find("engagement"), written.rfind("engagement"), L"one engagement");
   }
 
   // ADR-038 decision 1: a derelict gone from the sight of the Constructors at it was salvaged by their player, not by one
@@ -263,9 +301,9 @@ public:
         log.Record(snapshot(player, 120, false, 2000, true));
       log.Record(snapshot(HUMAN, 140, false, 10000, false));
       Outpost::Snapshot fire = snapshot(HUMAN, 160, false, 10000, false);
-      fire.shots = {{.shooter = Outpost::EntityId{10}, .target = Outpost::EntityId{20}}};
+      fire.shots = {{.shooter = Outpost::EntityId{10}, .target = Outpost::EntityId{20}, .tick = 160}};
       log.Record(fire);
-      fire.tick = 170;
+      fire.tick = fire.shots[0].tick = 170;
       log.Record(fire);
     }
     const std::string written = out.str();
@@ -359,10 +397,10 @@ public:
     human.nodeCap = 4;
     ai.entities.push_back(human.entities[0]);
     ai.entities[1].upgradePermille = 10;
-    ai.shots = {{.shooter = Outpost::EntityId{2}, .target = Outpost::EntityId{1}}};
+    ai.shots = {{.shooter = Outpost::EntityId{2}, .target = Outpost::EntityId{1}, .tick = 102}};
     log.Record(human);
     log.Record(ai);
-    human.tick = ai.tick = 103;
+    human.tick = ai.tick = ai.shots[0].tick = 103;
     log.Record(human);
     log.Record(ai);
 

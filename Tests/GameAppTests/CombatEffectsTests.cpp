@@ -17,7 +17,7 @@ constexpr Outpost::PlanePosition TARGET{.xMeters = 100.0f, .zMeters = 0.0f};
 // Where a test's view finds the shooter's gun.
 constexpr Outpost::PlanePosition MUZZLE{.xMeters = 6.0f, .zMeters = 2.0f};
 
-// A snapshot at _tick reporting one shot.
+// A snapshot at _tick reporting one shot, fired in its tick.
 Outpost::Snapshot Shot(std::uint64_t _tick, Outpost::WeaponId _weapon, float _splashRadiusMeters = 0.0f)
 {
   Outpost::Snapshot snapshot{.tick = _tick, .player = Outpost::PlayerId{1}};
@@ -26,7 +26,8 @@ Outpost::Snapshot Shot(std::uint64_t _tick, Outpost::WeaponId _weapon, float _sp
                             .weapon = _weapon,
                             .from = GUN,
                             .to = TARGET,
-                            .splashRadiusMeters = _splashRadiusMeters});
+                            .splashRadiusMeters = _splashRadiusMeters,
+                            .tick = _tick});
   return snapshot;
 }
 
@@ -52,7 +53,7 @@ size_t CountOf(const std::vector<Outpost::CombatEffects::Draw>& _draws, Outpost:
 TEST_CLASS(CombatEffectsTests)
 {
 public:
-  // ADR-013 decision 3: an effect plays when the view reaches the tick its shot was fired at, one before its snapshot.
+  // ADR-096 decision 4: an effect plays when the view reaches the tick its shot was fired at, one before its own.
   TEST_METHOD(WaitsForTheViewToReachTheShot)
   {
     Outpost::CombatEffects effects = Effects();
@@ -61,6 +62,17 @@ public:
     const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(9.0);
     Assert::AreEqual(size_t{1}, CountOf(draws, Outpost::CombatEffects::Shape::Disc), L"a muzzle flash");
     Assert::AreEqual(size_t{1}, CountOf(draws, Outpost::CombatEffects::Shape::Band), L"a tracer");
+  }
+
+  // ADR-096: a shot whose tick's state was overtaken comes with a later snapshot, and plays from its own tick all the same.
+  TEST_METHOD(PlaysAShotFromItsOwnTickWhicheverSnapshotBringsIt)
+  {
+    Outpost::CombatEffects effects = Effects();
+    Outpost::Snapshot late = Shot(10, MASS_DRIVER);
+    late.tick = 12;
+    effects.Receive(late);
+    Assert::IsTrue(effects.At(8.5).empty());
+    Assert::AreEqual(size_t{1}, CountOf(effects.At(9.0), Outpost::CombatEffects::Shape::Band), L"a tracer, a tick before its own");
   }
 
   // A tracer's head crosses from the gun to the target, and a spark shows where it lands.

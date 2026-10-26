@@ -77,12 +77,12 @@ CombatEffects::CombatEffects(std::uint32_t _ticksPerSecond, std::vector<WeaponSh
 
 void CombatEffects::Receive(const Snapshot& _snapshot)
 {
-  const double start = static_cast<double>(_snapshot.tick) - 1.0;
   for (const ShotView& shot : _snapshot.shots)
   {
     const auto look = std::ranges::find(m_shots, shot.weapon, &WeaponShot::weapon);
+    // A shot plays from one tick before its own, where the view shows it, whichever snapshot brought it (ADR-096).
     m_effects.push_back({.look = look != m_shots.end() ? look->look : ShotLook::Tracer,
-                         .startTick = start,
+                         .startTick = static_cast<double>(shot.tick) - 1.0,
                          .shooter = shot.shooter,
                          .from = shot.from,
                          .to = shot.to,
