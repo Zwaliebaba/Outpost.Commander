@@ -1,7 +1,10 @@
 #include "pch.h"
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
 #include <numbers>
+#include <tuple>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -29,6 +32,60 @@ Outpost::Snapshot At(std::uint64_t _tick, float _xMeters, float _headingRadians 
 float ShipX(const Outpost::SnapshotInterpolator& _view)
 {
   return _view.Entities().front().position.xMeters;
+}
+
+// A link as a state crosses it: half the round trip, its jitter either way, and its packets' loss. A state is six packets,
+// and one that loses any arrives a round trip later, unless a newer one has overtaken it.
+struct Link
+{
+  double delaySeconds = 0.0;
+  double jitterSeconds = 0.0;
+  double lossShare = 0.0;
+};
+
+constexpr std::size_t PACKETS_A_STATE = 6;
+// The links the network is measured over, each way (owner, 2026-10-26): near, Wi-Fi and a phone's hotspot.
+constexpr Link NEAR_LINK{.delaySeconds = 0.010, .jitterSeconds = 0.005, .lossShare = 0.001};
+constexpr Link WI_FI_LINK{.delaySeconds = 0.020, .jitterSeconds = 0.015, .lossShare = 0.01};
+constexpr Link HOTSPOT_LINK{.delaySeconds = 0.040, .jitterSeconds = 0.030, .lossShare = 0.02};
+
+// When each tick's state from _first to _last arrives over _link, by a seed, in the order they arrive.
+std::vector<std::pair<double, std::uint64_t>> Arrivals(const Link& _link, std::uint64_t _first, std::uint64_t _last, std::uint64_t _seed)
+{
+  Outpost::EffectRandom random(_seed);
+  std::vector<std::pair<double, std::uint64_t>> arrivals;
+  for (std::uint64_t tick = _first; tick <= _last; ++tick)
+  {
+    double arrives = (static_cast<double>(tick) * SECONDS_PER_TICK) + _link.delaySeconds +
+                     static_cast<double>(random.Signed(static_cast<float>(_link.jitterSeconds)));
+    bool lost = false;
+    for (std::size_t packet = 0; packet < PACKETS_A_STATE; ++packet)
+      lost = lost || random.Unit() < static_cast<float>(_link.lossShare);
+    if (lost)
+      arrives += 2.0 * _link.delaySeconds;
+    arrivals.emplace_back(arrives, tick);
+  }
+  std::ranges::sort(arrivals);
+  return arrivals;
+}
+
+// Plays _arrivals into _view a 60 Hz frame at a time, from _fromFrame to _toFrame, each frame taking what has arrived by
+// its start; _frame is called after each frame's Advance.
+void Play(Outpost::SnapshotInterpolator& _view, const std::vector<std::pair<double, std::uint64_t>>& _arrivals, std::size_t& _next,
+          int _fromFrame, int _toFrame, const std::function<void(int)>& _frame)
+{
+  for (int frame = _fromFrame; frame < _toFrame; ++frame)
+  {
+    const double now = static_cast<double>(frame) * FRAME_SECONDS;
+    while (_next < _arrivals.size() && _arrivals[_next].first <= now)
+    {
+      const std::uint64_t tick = _arrivals[_next].second;
+      _view.Receive(At(tick, static_cast<float>(tick)));
+      ++_next;
+    }
+    _view.Advance(FRAME_SECONDS);
+    _frame(frame);
+  }
 }
 } // namespace
 
@@ -158,6 +215,107 @@ public:
     view.Receive(At(9, 99.0f));
     Assert::AreEqual(std::uint64_t{10}, view.Newest().tick);
     Assert::AreEqual(0.0f, view.Newest().entities.front().position.xMeters);
+  }
+
+  // ADR-013 decision 3: states that arrive every tick keep the delay at a tick, and the view a tick behind the newest as
+  // each arrives.
+  TEST_METHOD(KeepsTheDelayAtATickWhenStatesArriveEveryTick)
+  {
+    Outpost::SnapshotInterpolator view(TICKS_PER_SECOND);
+    std::vector<std::pair<double, std::uint64_t>> arrivals;
+    for (std::uint64_t tick = 1; tick <= 600; ++tick)
+      arrivals.emplace_back(static_cast<double>(tick) * SECONDS_PER_TICK, tick);
+    std::size_t next = 0;
+    std::uint64_t newest = 0;
+    Play(view, arrivals, next, 0, 1800,
+         [&](int _frame)
+         {
+           Assert::AreEqual(Outpost::SnapshotInterpolator::LEAST_DELAY_TICKS, view.DelayTicks(), 1e-3);
+           if (view.IsEmpty())
+             return;
+           if (_frame > 120 && view.Newest().tick != newest)
+             Assert::AreEqual(static_cast<double>(view.Newest().tick) - 1.0, view.ViewTick(), 0.4, L"a tick behind the newest");
+           newest = view.Newest().tick;
+         });
+  }
+
+  // ADR-013 decision 3: with the jitter and loss of each of the network's links, the view stands still in no more frames
+  // than the share its budget allows the newest state to be late: 1% on near and Wi-Fi, 5% on a hotspot.
+  TEST_METHOD(RidesOutEachLinksJitter)
+  {
+    const std::array<std::tuple<Link, double, const wchar_t*>, 3> links{
+      {{NEAR_LINK, 0.01, L"near"}, {WI_FI_LINK, 0.01, L"Wi-Fi"}, {HOTSPOT_LINK, 0.05, L"hotspot"}}};
+    std::uint64_t seed = 1;
+    for (const auto& [link, allowed, name] : links)
+    {
+      Outpost::SnapshotInterpolator view(TICKS_PER_SECOND);
+      const std::vector<std::pair<double, std::uint64_t>> arrivals = Arrivals(link, 1, 1300, seed++);
+      std::size_t next = 0;
+      double previous = 0.0;
+      int frames = 0;
+      int still = 0;
+      // A minute, after two seconds in which the delay finds the link.
+      Play(view, arrivals, next, 0, 3720,
+           [&](int _frame)
+           {
+             if (_frame >= 120)
+             {
+               ++frames;
+               still += view.ViewTick() == previous ? 1 : 0;
+             }
+             previous = view.ViewTick();
+           });
+      const double share = static_cast<double>(still) / static_cast<double>(frames);
+      Assert::IsTrue(
+        share <= allowed,
+        std::format(L"{}: still in {} of {} frames, at a delay of {:.2f} ticks", name, still, frames, view.DelayTicks()).c_str());
+    }
+  }
+
+  // ADR-013 decision 3: when states stop and then come all at once, the view plays on to them, never more than a tick in a
+  // frame and never back, rather than jumping.
+  TEST_METHOD(PlaysOnAfterAStallRatherThanJumping)
+  {
+    Outpost::SnapshotInterpolator view(TICKS_PER_SECOND);
+    // Five seconds on time, a second of nothing, and then that second's twenty at once, and on time again.
+    std::vector<std::pair<double, std::uint64_t>> arrivals;
+    for (std::uint64_t tick = 1; tick <= 400; ++tick)
+    {
+      const bool stalled = tick > 100 && tick <= 120;
+      arrivals.emplace_back(stalled ? 121.0 * SECONDS_PER_TICK : static_cast<double>(tick) * SECONDS_PER_TICK, tick);
+    }
+    std::ranges::sort(arrivals);
+    std::size_t next = 0;
+    double previous = 0.0;
+    Play(view, arrivals, next, 0, 1200,
+         [&](int _frame)
+         {
+           if (_frame > 0)
+           {
+             Assert::IsTrue(view.ViewTick() >= previous, L"never back");
+             Assert::IsTrue(view.ViewTick() - previous <= 1.0 + 1e-6, std::format(L"frame {}: no more than a tick", _frame).c_str());
+           }
+           previous = view.ViewTick();
+         });
+    Assert::IsTrue(static_cast<double>(view.Newest().tick) - view.ViewTick() <= view.DelayTicks() + 0.5, L"and it caught up");
+  }
+
+  // ADR-013 decision 3: the delay a jittery link set comes back down to about a tick within the window once the jitter ends.
+  TEST_METHOD(BringsTheDelayBackDownOnceTheJitterEnds)
+  {
+    Outpost::SnapshotInterpolator view(TICKS_PER_SECOND);
+    // Twenty seconds of Wi-Fi, and then its half round trip alone.
+    std::vector<std::pair<double, std::uint64_t>> arrivals = Arrivals(WI_FI_LINK, 1, 400, 7);
+    for (std::uint64_t tick = 401; tick <= 700; ++tick)
+      arrivals.emplace_back((static_cast<double>(tick) * SECONDS_PER_TICK) + WI_FI_LINK.delaySeconds, tick);
+    std::ranges::sort(arrivals);
+    std::size_t next = 0;
+    double jittery = 0.0;
+    // The jitter ends with tick 400's state, about frame 1,200; ten seconds is 600 frames more.
+    Play(view, arrivals, next, 0, 1200, [&](int) { jittery = std::max(jittery, view.DelayTicks()); });
+    Assert::IsTrue(jittery > 1.5, std::format(L"the jitter raised the delay, to {:.2f}", jittery).c_str());
+    Play(view, arrivals, next, 1200, 1810, [](int) {});
+    Assert::AreEqual(Outpost::SnapshotInterpolator::LEAST_DELAY_TICKS, view.DelayTicks(), 0.05, L"back to a tick, within a twentieth");
   }
 
   TEST_METHOD(ShowsANewEntityWhereItIs)
