@@ -21,6 +21,10 @@ constexpr std::size_t LENGTH_BYTES = 4;
 constexpr std::uint64_t SERVER_HANDSHAKE_TIMEOUT_MILLISECONDS = 10'000;
 // How much longer Connect waits than the handshake may take, so that MsQuic's own timeout is the one that ends it.
 constexpr std::chrono::milliseconds CONNECT_GRACE{1'000};
+// What a client is told when the server had no listener for its connection.
+constexpr std::string_view NO_LISTENER_HINT =
+  " The server has no listener for this connection: it listens on another address family than the host was reached on, such "
+  "as 0.0.0.0 for a host that resolved to IPv6, or speaks another application protocol.";
 
 [[nodiscard]] std::string StatusText(QUIC_STATUS _status)
 {
@@ -293,8 +297,14 @@ QUIC_STATUS QUIC_API Neuron::QuicChannel::State::OnConnection([[maybe_unused]] H
       state.AdoptStream(*_event);
       break;
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
-      state.Fail(std::format("The QUIC connection failed with status {}.", StatusText(_event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status)));
+    {
+      const QUIC_STATUS status = _event->SHUTDOWN_INITIATED_BY_TRANSPORT.Status;
+      // A server refuses a connection no listener of its matches as it refuses an application protocol it does not
+      // speak, and the likelier cause is a listener of one address family reached on the other.
+      const std::string_view hint = status == QUIC_STATUS_ALPN_NEG_FAILURE ? NO_LISTENER_HINT : std::string_view{};
+      state.Fail(std::format("The QUIC connection failed with status {}.{}", StatusText(status), hint));
       break;
+    }
     case QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_PEER:
     {
       const std::scoped_lock lock(state.mutex);
@@ -645,19 +655,23 @@ Neuron::QuicListener::QuicListener(const Desc& _desc, Accept _accept)
   state.configuration = OpenConfiguration(*state.runtime, _desc.applicationProtocol, settings, credential);
 
   Check(api.ListenerOpen(state.runtime->Registration(), &State::OnListener, &state, &state.listener), "ListenerOpen");
-  // The loopback address, unless _desc names another, as an IPv4 or IPv6 literal.
+  // The loopback address, unless _desc names another, as an IPv4 or IPv6 literal or as every address. MsQuic matches a
+  // connection to a listener of its own family, so a listener on 0.0.0.0 has none for a client that reaches it on IPv6, as
+  // one naming localhost does; a listener of no family matches both.
   QUIC_ADDR address{};
   if (_desc.address.empty())
   {
     QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_INET);
     address.Ipv4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   }
+  else if (_desc.address == EVERY_ADDRESS)
+    QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_UNSPEC);
   else if (inet_pton(AF_INET, _desc.address.c_str(), &address.Ipv4.sin_addr) == 1)
     QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_INET);
   else if (inet_pton(AF_INET6, _desc.address.c_str(), &address.Ipv6.sin6_addr) == 1)
     QuicAddrSetFamily(&address, QUIC_ADDRESS_FAMILY_INET6);
   else
-    throw Exception(std::format("QuicListener: '{}' is not an IPv4 or IPv6 address to listen on.", _desc.address));
+    throw Exception(std::format("QuicListener: '{}' is not an IPv4 or IPv6 address to listen on, nor {}.", _desc.address, EVERY_ADDRESS));
   QuicAddrSetPort(&address, _desc.port);
   std::string protocolName = _desc.applicationProtocol;
   const QUIC_BUFFER protocol = ProtocolBuffer(protocolName);

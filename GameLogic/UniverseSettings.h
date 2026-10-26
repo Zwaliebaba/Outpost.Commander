@@ -25,8 +25,9 @@ struct UniverseSeat
 // was made with, and its seats.
 struct UniverseSettings
 {
-  // An IPv4 or IPv6 address; "0.0.0.0" listens on every interface.
-  std::string address = "0.0.0.0";
+  // An IPv4 or IPv6 address, or "*", which listens on every interface of both, as a player naming localhost needs: it
+  // reaches the server on IPv6.
+  std::string address = std::string(Neuron::QuicListener::EVERY_ADDRESS);
   std::uint16_t port = DEFAULT_UNIVERSE_PORT;
   // The name or address a player on another machine reaches the server at, which the join files name.
   std::string host = "localhost";

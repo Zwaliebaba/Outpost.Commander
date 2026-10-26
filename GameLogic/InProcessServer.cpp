@@ -27,7 +27,7 @@ void Refuse(Neuron::QuicChannel& _channel, Outpost::CloseReason _reason) noexcep
 // the loopback itself or every interface, and otherwise the address it listens on.
 std::string ListenHost(std::string_view _address)
 {
-  if (_address.empty() || _address == "0.0.0.0")
+  if (_address.empty() || _address == "0.0.0.0" || _address == Neuron::QuicListener::EVERY_ADDRESS)
     return std::string(LOOPBACK_HOST);
   if (_address == "::")
     return "::1";

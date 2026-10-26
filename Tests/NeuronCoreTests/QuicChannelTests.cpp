@@ -214,6 +214,33 @@ public:
     Assert::IsTrue(std::chrono::steady_clock::now() - started < PATIENCE, L"it gave up in time");
   }
 
+  // ADR-078 decision 6: a listener on every address takes a client that reaches it on either family, localhost among them,
+  // and one on IPv4's every interface has none for a client that reaches it on IPv6, which Connect names.
+  TEST_METHOD(ListensOnEveryAddressOfBothFamilies)
+  {
+    const auto accept = [](const std::shared_ptr<Neuron::QuicChannel>&) -> Neuron::QuicChannel::Receiver { return {}; };
+    const Neuron::QuicListener everywhere(
+      {.applicationProtocol = std::string(PROTOCOL), .address = std::string(Neuron::QuicListener::EVERY_ADDRESS)}, accept);
+    for (const char* host : {"127.0.0.1", "::1", "localhost"})
+      (void)Neuron::QuicChannel::Connect({.host = host,
+                                          .port = everywhere.Port(),
+                                          .applicationProtocol = std::string(PROTOCOL),
+                                          .serverCertificate = everywhere.Certificate()});
+
+    const Neuron::QuicListener ipv4({.applicationProtocol = std::string(PROTOCOL), .address = "0.0.0.0"}, accept);
+    std::string message;
+    try
+    {
+      (void)Neuron::QuicChannel::Connect(
+        {.host = "::1", .port = ipv4.Port(), .applicationProtocol = std::string(PROTOCOL), .serverCertificate = ipv4.Certificate()});
+    }
+    catch (const Neuron::Exception& error)
+    {
+      message = error.what();
+    }
+    Assert::IsTrue(message.contains("0x80410007") && message.contains("no listener"), std::wstring(message.begin(), message.end()).c_str());
+  }
+
   // ADR-060 decision 2: a client is held to the listener's limit until its Receiver sets another, which holds from the
   // very next message, though both came in one read.
   TEST_METHOD(HoldsAPeerToTheLimitItsReceiverSets)

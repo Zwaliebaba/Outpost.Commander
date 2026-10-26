@@ -327,6 +327,12 @@ public:
     Assert::IsTrue(blueSeat.port != 0);
     Outpost::QuicTransport blue(blueSeat, BLUE);
     Assert::ExpectException<Neuron::Exception>([] { (void)QuicServer({.seed = 5, .quic = true, .quicAddress = "not an address"}); });
+
+    // On every address of both families, a player on the same machine is sent to the loopback.
+    auto everywhere = QuicServer({.seed = 5, .quic = true, .quicAddress = std::string(Neuron::QuicListener::EVERY_ADDRESS)});
+    const Outpost::ServerAddress redSeat = everywhere->OpenSeat(RED, Outpost::NewSeatToken());
+    Assert::AreEqual(std::string("127.0.0.1"), redSeat.host);
+    Outpost::QuicTransport red(redSeat, RED);
   }
 
   // ADR-060: a hello of another version is refused as one, even when its fields are not this version's.

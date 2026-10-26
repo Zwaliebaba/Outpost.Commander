@@ -14,7 +14,8 @@ struct ServerDesc
   // The server also takes players over QUIC, through OpenSeat (ADR-060): on the loopback address and a port the system
   // chooses, unless the two below say otherwise (ADR-078).
   bool quic = false;
-  // The IPv4 or IPv6 address the server listens on, such as "0.0.0.0" for every interface; empty for the loopback.
+  // The IPv4 or IPv6 address the server listens on, such as "0.0.0.0" for every interface of IPv4, or "*" for every
+  // interface of both; empty for the loopback.
   std::string quicAddress;
   // The port it listens on; zero lets the system choose one.
   std::uint16_t quicPort = 0;

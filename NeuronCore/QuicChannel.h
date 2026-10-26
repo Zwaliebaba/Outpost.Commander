@@ -112,10 +112,14 @@ private:
 class QuicListener : NonCopyable
 {
 public:
+  // The address that listens on every interface of both IPv4 and IPv6 (ADR-078 decision 6).
+  static constexpr std::string_view EVERY_ADDRESS = "*";
+
   struct Desc
   {
     std::string applicationProtocol;
-    // The IPv4 or IPv6 address to listen on, such as "0.0.0.0" for every interface; empty for 127.0.0.1 only (ADR-060).
+    // The IPv4 or IPv6 address to listen on, such as "0.0.0.0" for every interface of IPv4 alone, or EVERY_ADDRESS for
+    // every interface of both; empty for 127.0.0.1 only (ADR-060).
     std::string address;
     // Zero lets the system choose one; Port says which.
     std::uint16_t port = 0;
