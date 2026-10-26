@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <algorithm>
+#include <thread>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::chrono_literals;
@@ -197,6 +198,68 @@ public:
     Assert::IsTrue(message.starts_with(std::format("Could not connect to 127.0.0.1:{} over QUIC", port)),
                    std::wstring(message.begin(), message.end()).c_str());
     Assert::IsTrue(std::chrono::steady_clock::now() - started < PATIENCE, L"it gave up in time");
+  }
+
+  // ADR-060 decision 2: a client is held to the listener's limit until its Receiver sets another, which holds from the
+  // very next message, though both came in one read.
+  TEST_METHOD(HoldsAPeerToTheLimitItsReceiverSets)
+  {
+    const Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL), .messageLimitBytes = 8},
+                                        [](const std::shared_ptr<Neuron::QuicChannel>&) -> Neuron::QuicChannel::Receiver
+                                        {
+                                          return [](Neuron::QuicChannel& _channel, const Message& _message)
+                                          {
+                                            _channel.LimitMessages(64);
+                                            _channel.Send(_message);
+                                          };
+                                        });
+    const std::unique_ptr<Neuron::QuicChannel> client = ConnectTo(listener);
+    const Message longer(40, std::byte{7});
+    client->Send(Bytes("hello"));
+    client->Send(longer);
+    const std::vector<Message> echoed = ReceiveMessages(*client, 2);
+    Assert::IsTrue(echoed[1] == longer, L"the second message under the limit the first one's Receiver set");
+    client->Send(Message(65));
+    std::vector<Message> after;
+    Assert::AreEqual(std::format("The peer closed the QUIC connection with error code {}.", Neuron::FRAMING_ERROR_CODE),
+                     FailureOf(*client, after), L"one over it breaks the framing");
+
+    const std::unique_ptr<Neuron::QuicChannel> early = ConnectTo(listener);
+    early->Send(Message(9));
+    Assert::AreEqual(std::format("The peer closed the QUIC connection with error code {}.", Neuron::FRAMING_ERROR_CODE),
+                     FailureOf(*early, after), L"a first message over the listener's limit");
+  }
+
+  // ADR-060 decision 7: a sweep lets go of the channels whose connections have gone and that nothing else holds, shuts down
+  // the ones that have said nothing for the time it is given, and keeps the rest.
+  TEST_METHOD(SweepsAwayWhatHasGoneAndClosesWhatSaysNothing)
+  {
+    constexpr std::uint64_t SILENT_CODE = 42;
+    Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL)},
+                                  [](const std::shared_ptr<Neuron::QuicChannel>&) -> Neuron::QuicChannel::Receiver
+                                  { return [](Neuron::QuicChannel& _channel, const Message& _message) { _channel.Send(_message); }; });
+    const std::unique_ptr<Neuron::QuicChannel> talker = ConnectTo(listener);
+    talker->Send(Bytes("here"));
+    (void)ReceiveMessages(*talker, 1);
+    const std::unique_ptr<Neuron::QuicChannel> silent = ConnectTo(listener);
+    ConnectTo(listener)->Close();
+    Assert::AreEqual(size_t{3}, listener.ChannelCount());
+
+    // Swept as a server's tick sweeps it, until the closed connection has been let go and the silent one has gone too.
+    std::vector<Message> after;
+    std::string why;
+    const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
+    while (std::chrono::steady_clock::now() < deadline && (why.empty() || listener.ChannelCount() != 1))
+    {
+      listener.Sweep(200ms, SILENT_CODE);
+      if (why.empty() && silent->HasGone())
+        why = FailureOf(*silent, after);
+      std::this_thread::sleep_for(10ms);
+    }
+    Assert::AreEqual(std::format("The peer closed the QUIC connection with error code {}.", SILENT_CODE), why, L"the silent one");
+    Assert::AreEqual(size_t{1}, listener.ChannelCount(), L"only the one that spoke is kept");
+    talker->Send(Bytes("still here"));
+    Assert::IsTrue(Bytes("still here") == ReceiveMessages(*talker, 1).front(), L"and it plays on");
   }
 };
 } // namespace NeuronCoreTests

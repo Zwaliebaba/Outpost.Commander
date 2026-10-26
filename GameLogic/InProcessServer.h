@@ -26,6 +26,11 @@ private:
   std::shared_ptr<LoopbackChannel> m_channel;
 };
 
+// The longest message a client may send before its hello has taken a seat (ADR-060 decision 2). A hello is 33 bytes.
+inline constexpr std::uint32_t HELLO_LIMIT_BYTES = 256;
+// How long after its handshake a client has to send its hello before the server closes it (ADR-060 decision 5).
+inline constexpr std::chrono::seconds HELLO_TIMEOUT{5};
+
 // The tick at which _utcSeconds comes, a moment the player's clock picked for a scheduled order (ADR-080), when the wall
 // clock reads _now and the next tick to run is _tick: the first tick at or after it at _ticksPerSecond, _tick for a moment
 // that has passed, and a week ahead at most. The server's host is where wall time becomes ticks (ADR-009).
@@ -90,6 +95,12 @@ public:
     return m_commandLog;
   }
 
+  // For tests: how many QUIC connections the server's listener holds, or none when it takes no players over QUIC.
+  [[nodiscard]] std::size_t ListenerConnections() const
+  {
+    return m_listener ? m_listener->ChannelCount() : 0;
+  }
+
   // Match setup for a measurement run: places the stress scene and keeps it at full size before every tick.
   void StartStressLoad();
 
@@ -113,7 +124,8 @@ public:
 private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
   // them, and then a snapshot for every connected player. A universe's tick logs its commands and saves when a save is due.
-  // The players the server hosts then answer their snapshots, with orders for the next tick (ADR-079).
+  // The players the server hosts then answer their snapshots, with orders for the next tick (ADR-079). Each tick first has
+  // the listener let go of the connections that have gone and close the ones that sent no hello in time (ADR-060).
   void RunTick();
 
   // Hands a save of the universe as it stands to its folder, which begins its log anew there (ADR-077).

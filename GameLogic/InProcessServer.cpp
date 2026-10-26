@@ -169,12 +169,14 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   // Last, since a client may connect as soon as it listens.
   if (_desc.quic)
   {
-    // A universe keeps its certificate in its folder, so that a player pins it once (ADR-078).
+    // A universe keeps its certificate in its folder, so that a player pins it once (ADR-078). A client may send no more
+    // than a hello until its hello has taken a seat (ADR-060).
     m_listener =
       std::make_unique<Neuron::QuicListener>(Neuron::QuicListener::Desc{.applicationProtocol = std::string(QUIC_APPLICATION_PROTOCOL),
                                                                         .address = _desc.quicAddress,
                                                                         .port = _desc.quicPort,
-                                                                        .identity = _desc.universe},
+                                                                        .identity = _desc.universe,
+                                                                        .messageLimitBytes = HELLO_LIMIT_BYTES},
                                              [this](const std::shared_ptr<Neuron::QuicChannel>& _channel) { return Admit(_channel); });
     m_listenHost = ListenHost(_desc.quicAddress);
   }
@@ -293,6 +295,8 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
         return;
       }
       seated = hello->player;
+      // A seated client sends commands, which may be longer than a hello (ADR-060).
+      _peer.LimitMessages(Neuron::QuicChannel::MESSAGE_LIMIT_BYTES);
       _peer.Send(EncodeMessage(WelcomeMessage{.player = hello->player}));
     }
     catch (const Neuron::Exception&)
@@ -447,6 +451,10 @@ void Outpost::InProcessServer::RunTick()
   // What was timed between ticks, such as the graphs a structure's placement made match setup build, is no tick's.
   (void)m_profiler.Take();
   const auto started = std::chrono::steady_clock::now();
+  // The listener lets go of the connections that have gone, on this thread and never MsQuic's, and closes the ones that
+  // have not said hello in time (ADR-060).
+  if (m_listener)
+    m_listener->Sweep(HELLO_TIMEOUT, static_cast<std::uint64_t>(CloseReason::MalformedMessage));
   std::vector<Command> commands;
   for (const Connection& connection : m_connections)
   {

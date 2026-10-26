@@ -52,8 +52,8 @@ Each finding cites the code as it stands at `efbfbf2`.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| NW1.1 | The listener lets go of a connection that has gone | — | — | todo |
-| NW1.2 | A connection is held to its hello | — | — | todo |
+| NW1.1 | The listener lets go of a connection that has gone | — | — | in review |
+| NW1.2 | A connection is held to its hello | — | — | in review |
 | NW1.3 | A seat's commands are bounded | — | M9 | todo |
 | NW2.1 | The connection's figures | — | — | todo |
 | NW2.2 | The impaired link | NW2.1 | M1 | todo |
@@ -105,11 +105,11 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 
 - **Finding:** 5.
 - **Scope:**
-  - The listener lets go of a channel once its connection has gone and no seat holds it. It does so from a thread of the server's and never from MsQuic's, since `QuicChannel::Close` waits for MsQuic's last callback and is never called from one (ADR-060 decision 7).
+  - The listener lets go of a channel once its connection has gone and no seat holds it (`QuicListener::Sweep`). It does so from a thread of the server's, the tick's, and never from MsQuic's, since `QuicChannel::Close` waits for MsQuic's last callback and is never called from one (ADR-060 decision 7).
   - `QuicListener` says how many channels it holds, for the tests.
 - **Not in scope:** the limits on what a connection sends, which are NW1.2's and NW1.3's.
 - **ADR:** [ADR-060](../ADR/ADR-060-quic-in-process.md) decision 7, which says who closes what, and when.
-- **Acceptance:** `QuicTransportTests.LetsGoOfConnectionsThatHaveGone`: 200 connections refused for a wrong token, and 200 that take a universe's seat in turn and close, leave the listener holding only the connections still open; a connection whose seat a newer one took is let go too. The tests of a seat taken again and of the deputy's hand-over pass as they are.
+- **Acceptance:** `QuicTransportTests.LetsGoOfConnectionsThatHaveGone`: 50 connections refused for a wrong token, and 50 that take a universe's seat in turn and close, leave the listener holding only the connection the seat still holds; a connection whose seat a newer one took is let go too. The tests of a seat taken again and of the deputy's hand-over pass as they are.
 - **Verify:** the checkers; CI's Debug|x64 run.
 
 ### NW1.2 — A connection is held to its hello
@@ -118,7 +118,7 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 - **Scope:**
   - Before its hello, a connection may send one message of at most 256 bytes; a hello is 33. A longer one closes it with `Neuron::FRAMING_ERROR_CODE`, as a message over the limit does now.
   - A connection that has sent no hello 5 s after its handshake is closed with `CloseReason::MalformedMessage`.
-  - The channel takes the first message's limit from whoever reads it, the listener's `Accept` giving it with the receiver, so that the engine still knows nothing of a hello (R9).
+  - The listener holds every client to the first limit (`QuicListener::Desc::messageLimitBytes`), and the server's receiver raises it as it seats the client (`QuicChannel::LimitMessages`), so that the engine still knows nothing of a hello (R9). The tick's sweep (NW1.1) closes the silent ones.
 - **ADR:** [ADR-060](../ADR/ADR-060-quic-in-process.md) decisions 2 and 5.
 - **Acceptance:** `QuicTransportTests.RefusesAFirstMessageLongerThanAHello` and `ClosesAConnectionThatSaysNoHello`; every test of the hello passes as it is.
 - **Verify:** the checkers; CI's Debug|x64 run.
@@ -130,9 +130,10 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 - **ADR:** [ADR-009](../ADR/ADR-009-deterministic-core.md) decision 6, the order commands are applied in, which the commands that wait keep; [ADR-002](../ADR/ADR-002-authoritative-server.md) decision 2.
 - **Acceptance:**
   - `InProcessServerTests.AppliesASeatsCommandsAtItsShare`: 100 orders sent in one tick are applied 32, 32, 32 and 4 over four ticks, in the order given, each logged with the tick it was applied at, and the log replays to an equal simulation.
-  - `QuicTransportTests.ClosesASeatThatFloodsIt`: a client that has more commands waiting than gate M9 allows is closed, and told why.
-  - `--ai-matches` over seeds 1 to 40 plays the same matches with the limits as without, its match log the same line for line, so no AI meets them; the most commands any seat gave in one tick is recorded in [the balance log](../Records/BalanceLog.md).
-- **Verify:** the checkers; CI; the container's `--ai-matches`, with the limits and without.
+  - `InProcessServerTests.RefusesAConnectionFarAheadOfItsTicks`: a loopback client's command past the limit throws, and a hosted player's fails the tick.
+  - `QuicTransportTests.ClosesASeatThatFloodsIt`: a client that has more commands waiting than gate M9 allows is closed, and told why; so is one whose message is over a seated client's limit.
+  - The AI-against-AI matches of seeds 1 to 40, played as `--ai-matches` plays them, and three hour-long universes with a deputy in one seat for their second half, play the same with the limits as without, so no AI meets them; the most commands any seat gave in one tick is recorded in [the balance log](../Records/BalanceLog.md).
+- **Verify:** the checkers; CI; the container's runs, with the limits and without.
 
 ---
 
