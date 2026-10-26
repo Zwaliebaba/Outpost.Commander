@@ -120,6 +120,9 @@ Outpost::LoopbackTransport::LoopbackTransport(std::shared_ptr<LoopbackChannel> _
 void Outpost::LoopbackTransport::Send(Command _command)
 {
   const std::scoped_lock lock(m_channel->mutex);
+  // A client that far ahead of the server's ticks is broken, as a QUIC client is that the server closes for it (ADR-009).
+  if (m_channel->commands.size() >= COMMANDS_WAITING_LIMIT)
+    throw Neuron::Exception(std::format("LoopbackTransport: {} commands wait for the server's ticks already", COMMANDS_WAITING_LIMIT));
   m_channel->commands.push_back(std::move(_command));
 }
 
@@ -169,12 +172,14 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   // Last, since a client may connect as soon as it listens.
   if (_desc.quic)
   {
-    // A universe keeps its certificate in its folder, so that a player pins it once (ADR-078).
+    // A universe keeps its certificate in its folder, so that a player pins it once (ADR-078). A client may send no more
+    // than a hello until its hello has taken a seat (ADR-060).
     m_listener =
       std::make_unique<Neuron::QuicListener>(Neuron::QuicListener::Desc{.applicationProtocol = std::string(QUIC_APPLICATION_PROTOCOL),
                                                                         .address = _desc.quicAddress,
                                                                         .port = _desc.quicPort,
-                                                                        .identity = _desc.universe},
+                                                                        .identity = _desc.universe,
+                                                                        .messageLimitBytes = HELLO_LIMIT_BYTES},
                                              [this](const std::shared_ptr<Neuron::QuicChannel>& _channel) { return Admit(_channel); });
     m_listenHost = ListenHost(_desc.quicAddress);
   }
@@ -269,9 +274,16 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
         if (!HoldsSeat(seated, &_peer))
           return;
         // The player is set from the seat when the tick takes the command; what the client wrote is never trusted
-        // (ADR-002).
-        const std::scoped_lock lock(commands->mutex);
-        commands->commands.push_back(std::move(*command));
+        // (ADR-002). A client so far ahead of the ticks is broken, and closed once the queue's lock is let go (ADR-009).
+        bool broken = false;
+        {
+          const std::scoped_lock lock(commands->mutex);
+          broken = commands->commands.size() >= COMMANDS_WAITING_LIMIT;
+          if (!broken)
+            commands->commands.push_back(std::move(*command));
+        }
+        if (broken)
+          Refuse(_peer, CloseReason::MalformedMessage);
         return;
       }
 
@@ -293,6 +305,8 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
         return;
       }
       seated = hello->player;
+      // A seated client sends commands, which may be longer than a hello (ADR-060).
+      _peer.LimitMessages(SEATED_MESSAGE_LIMIT_BYTES);
       _peer.Send(EncodeMessage(WelcomeMessage{.player = hello->player}));
     }
     catch (const Neuron::Exception&)
@@ -447,11 +461,18 @@ void Outpost::InProcessServer::RunTick()
   // What was timed between ticks, such as the graphs a structure's placement made match setup build, is no tick's.
   (void)m_profiler.Take();
   const auto started = std::chrono::steady_clock::now();
+  // The listener lets go of the connections that have gone, on this thread and never MsQuic's, and closes the ones that
+  // have not said hello in time (ADR-060).
+  if (m_listener)
+    m_listener->Sweep(HELLO_TIMEOUT, static_cast<std::uint64_t>(CloseReason::MalformedMessage));
   std::vector<Command> commands;
   for (const Connection& connection : m_connections)
   {
     const std::scoped_lock lock(connection.channel->mutex);
-    for (Command& command : connection.channel->commands)
+    // A connection's oldest commands, at most COMMANDS_PER_TICK of them; the rest wait for the next tick (ADR-009).
+    std::vector<Command>& waiting = connection.channel->commands;
+    const std::size_t taken = std::min(waiting.size(), COMMANDS_PER_TICK);
+    for (Command& command : std::span(waiting).first(taken))
     {
       // The connection says who sent it; what the client wrote there is never trusted (ADR-002). Nor is the tick of a
       // scheduled order's time of day, which the host makes of its moment here (ADR-080).
@@ -464,7 +485,7 @@ void Outpost::InProcessServer::RunTick()
       }
       commands.push_back(std::move(command));
     }
-    connection.channel->commands.clear();
+    waiting.erase(waiting.begin(), waiting.begin() + static_cast<std::ptrdiff_t>(taken));
   }
 
   // The stress scene's replacements and their orders come after the players'.
@@ -575,6 +596,10 @@ void Outpost::InProcessServer::RunTick()
       std::vector<Command> orders = turn.connection->hosted->Play(turn.snapshot);
       const std::scoped_lock lock(turn.connection->channel->mutex);
       std::ranges::move(orders, std::back_inserter(turn.connection->channel->commands));
+      // A hosted player as far ahead of the ticks as a broken client is a fault of the server's own (ADR-009, ADR-025).
+      if (turn.connection->channel->commands.size() > COMMANDS_WAITING_LIMIT)
+        throw Neuron::Exception(std::format("InProcessServer: player {}'s hosted player has more than {} orders waiting",
+                                            turn.connection->player.value, COMMANDS_WAITING_LIMIT));
     }
   }
   const TickTiming timing{.total = std::chrono::steady_clock::now() - started, .parts = m_profiler.Take()};

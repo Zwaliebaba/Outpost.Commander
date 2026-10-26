@@ -902,7 +902,7 @@ A player commands its ships by orders, and only by orders. An order is given to 
 
 ### How an order is given [§orders.giving]
 
-- **An order is a command to the server, never a change.** The server checks it against ownership, cost and legality, applies it at the start of its next tick, or refuses it (ADR-002 decision 2). The player's own game, the AI, a deputy and a scheduled order all give orders the same way (ADR-002 decision 7; ADR-079 decision 2; ADR-080 decision 5).
+- **An order is a command to the server, never a change.** The server checks it against ownership, cost and legality, applies it at the start of its next tick, or refuses it (ADR-002 decision 2). A tick applies at most 32 of a player's orders, and the rest at the ticks after, in the order given (ADR-009 decision 6). The player's own game, the AI, a deputy and a scheduled order all give orders the same way (ADR-002 decision 7; ADR-079 decision 2; ADR-080 decision 5).
 - **An order leaves as soon as it is given,** and the screen shows the simulation one tick behind the newest snapshot, so a ship visibly answers about a tick after the server applied the order (ADR-013 decision 3; ADR-002 decision 5).
 - **A refused order is not obeyed, and the player who gave it is told why,** in words, as an alert; a scheduled order refused as it fires says so as it fires (ADR-094; ADR-080 decision 5; Game §interface.alerts).
 - **Orders go to the selected ships.** A selected structure takes no ship order (ADR-013 decision 5).

@@ -20,6 +20,9 @@ class QuicChannel : NonCopyable
 public:
   // How long a client's handshake may take before it gives up, unless its Desc says otherwise.
   static constexpr std::chrono::milliseconds CONNECT_TIMEOUT{10'000};
+  // The longest message a channel takes from its peer unless it is told a shorter one (LimitMessages,
+  // QuicListener::Desc). The stress scene's snapshot is far shorter, so a longer length is a broken stream, not a message.
+  static constexpr std::uint32_t MESSAGE_LIMIT_BYTES = 64u * 1024u * 1024u;
 
   struct Desc
   {
@@ -61,6 +64,10 @@ public:
   // Starts closing the connection, with an error code the peer sees, and returns at once. A Receiver may call it.
   void Shutdown(std::uint64_t _errorCode) noexcept;
 
+  // The longest message the peer may send from here on; a longer one breaks the framing. Only from the channel's Receiver,
+  // which is handed the peer's messages one at a time, so that the limit holds from the message after the one it was given.
+  void LimitMessages(std::uint32_t _bytes) noexcept;
+
   // The error code the peer closed the connection with, once it has; none while it is open, or when it went otherwise.
   [[nodiscard]] std::optional<std::uint64_t> PeerErrorCode() const;
 
@@ -73,6 +80,9 @@ public:
   void Close() noexcept;
 
 private:
+  // The listener makes the channels of the connections it is given, and lets them go (QuicListener::Sweep).
+  friend class QuicListener;
+
   std::unique_ptr<State> m_state;
 };
 
@@ -91,6 +101,8 @@ public:
     // A folder the listener keeps its certificate in, so that it presents the same one each time it is made there and a
     // client pins it once (ADR-078); empty for a certificate of its own that goes with it.
     std::filesystem::path identity;
+    // The longest message a client may send until its Receiver says otherwise (QuicChannel::LimitMessages).
+    std::uint32_t messageLimitBytes = QuicChannel::MESSAGE_LIMIT_BYTES;
   };
 
   // What the listener does with a client that has connected, on MsQuic's thread: given its channel, it returns the
@@ -106,6 +118,14 @@ public:
 
   [[nodiscard]] std::uint16_t Port() const noexcept;
   [[nodiscard]] const CertificateHash& Certificate() const noexcept;
+
+  // Shuts down, with _errorCode, every connection that completed its handshake more than _silence ago and has sent no
+  // message since, and lets go of every channel whose connection MsQuic has finished with and that nothing else holds.
+  // Never from a Receiver or any other of MsQuic's threads: letting a channel go waits for MsQuic's last callback for it.
+  void Sweep(std::chrono::milliseconds _silence, std::uint64_t _errorCode);
+
+  // How many channels it holds: every connection it was given that it has not let go.
+  [[nodiscard]] std::size_t ChannelCount() const;
 
 private:
   std::unique_ptr<State> m_state;

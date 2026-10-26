@@ -1,6 +1,6 @@
 # Outpost Commander — Play Over a Real Network
 
-Status: **open** · gates M1–M11 open, for the owner · From the owner's request of 2026-10-26 for a plan from the review of the game's network code: the transport, the server's tick, the snapshot and the client's view, as they stand at `efbfbf2`
+Status: **open** · gate M9 decided by the owner on 2026-10-26; M1–M8, M10 and M11 open · From the owner's request of 2026-10-26 for a plan from the review of the game's network code: the transport, the server's tick, the snapshot and the client's view, as they stand at `efbfbf2`
 
 The game's server model stands: one authoritative server, fog of war applied there, commands up and snapshots down, and the AI as a player like any other (ADR-002). This plan is about the transport under it. Every skirmish crosses QUIC on the loopback (ADR-060 decision 1), which runs the transport's code in every match but never meets what a real network does: no loss, no jitter, no limit on bandwidth, and a round trip of nothing. A universe has yet to be played from another machine: the [Phase 5 plan's](ImplementationPlan-Phase5.md) tasks 36.1 and 36.3 await the owner's run, and ADR-004 says that latency over a real network is not measured. The review found that what the loopback hides is where the transport is weakest (§1).
 
@@ -52,9 +52,9 @@ Each finding cites the code as it stands at `efbfbf2`.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| NW1.1 | The listener lets go of a connection that has gone | — | — | todo |
-| NW1.2 | A connection is held to its hello | — | — | todo |
-| NW1.3 | A seat's commands are bounded | — | M9 | todo |
+| NW1.1 | The listener lets go of a connection that has gone | — | — | in review |
+| NW1.2 | A connection is held to its hello | — | — | in review |
+| NW1.3 | A seat's commands are bounded | — | M9 | in review |
 | NW2.1 | The connection's figures | — | — | todo |
 | NW2.2 | The impaired link | NW2.1 | M1 | todo |
 | NW2.3 | The connection's figures over a real network | NW2.1 | M1 | todo; an owner run |
@@ -93,7 +93,7 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 | M6 | **The order's mark.** Proposed: as the player gives a move, an attack-move, a hold of a sector or a patrol, its point is marked on the ground at once, and an attack's target, by a ring in the color of the selection's ring (ADR-067) that shrinks to nothing over 0.4 s; a refusal of that order (gate M7) turns its mark the warning color (ADR-085 decision 1). It predicts nothing: the ships move when a snapshot says they do. | this plan, §1 finding 11 | NW6.1 | open |
 | M7 | **A command's number.** Proposed: the client numbers its commands, and a refusal names the number of the command it refuses (ADR-094 decision 1); the server trusts the number for nothing (ADR-002 decision 2). The order's mark reads it now (gate M6), and an acknowledgement or a prediction would need it later (gate M11). `EventView` carries it, so the layout of what a universe saves changes and version 1's hash is replaced (AGENTS.md R18), with what that does to a running universe, as the milestone order says. | this plan, §1 finding 11 | NW3.2 | open |
 | M8 | **A universe's lost connection.** Proposed: in a universe, a connection lost for any reason but the server's own close (`Finished`, `WrongVersion`, `SeatRefused` or `SeatTaken`), or silent for 10 s, is joined again with the same join file, at once and then every 2 s for 30 s, while the match stays on screen and the tag says "Reconnecting · 5 s"; after that, the menu, as now. 30 s is half the deputy's minute, so a link that drops for a moment never hands the seat to the deputy (ADR-079 decision 4). A skirmish, whose server is in the game, goes back to the menu as now. | this plan, §1 finding 10 | NW6.2 | open |
-| M9 | **A seat's commands.** Proposed: a seated client's message is at most 64 KiB, which holds a command naming every ship a fleet cap allows many times over; a seat's commands are applied at most 32 a tick, and the rest wait for the next tick, in the order given; and a connection with more than 1,200 waiting, nearly two seconds behind at 32 a tick, is closed as `MalformedMessage`. Every connection is held to them, the loopback's and the hosted players' too, so that what the tests play is what a match plays; NW1.3 shows that no AI meets them. | this plan, §1 finding 7 | NW1.3 | open |
+| M9 | **A seat's commands.** Proposed: a seated client's message is at most 64 KiB, which holds a command naming every ship a fleet cap allows many times over; a seat's commands are applied at most 32 a tick, and the rest wait for the next tick, in the order given; and a connection with more than 1,200 waiting, nearly two seconds behind at 32 a tick, is closed as `MalformedMessage`. Every connection is held to them, the loopback's and the hosted players' too, so that what the tests play is what a match plays; NW1.3 shows that no AI meets them. **Decided on 2026-10-26:** as proposed. | this plan, §1 finding 7 | NW1.3 | decided 2026-10-26 |
 | M10 | **The round trip on the tag.** Proposed: in a universe the tag gives the connection's smoothed round trip beside the address, in whole milliseconds, "Server 203.0.113.5:4433 · 42 ms"; a skirmish's tag stays "Local skirmish". It lifts ADR-086's foreclosure of a round trip on the tag. | this plan, §1 finding 8 | NW6.3 | open |
 | M11 | **Acknowledgement or prediction** (ADR-002 decision 5), from NW6.4's measurement over a real network. Proposed: neither, while the order's mark and the measured response hold gate M1's target; if the response misses it, which of the two is a plan of its own. | this plan, §2 | A later plan, if any | open |
 
@@ -105,11 +105,11 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 
 - **Finding:** 5.
 - **Scope:**
-  - The listener lets go of a channel once its connection has gone and no seat holds it. It does so from a thread of the server's and never from MsQuic's, since `QuicChannel::Close` waits for MsQuic's last callback and is never called from one (ADR-060 decision 7).
+  - The listener lets go of a channel once its connection has gone and no seat holds it (`QuicListener::Sweep`). It does so from a thread of the server's, the tick's, and never from MsQuic's, since `QuicChannel::Close` waits for MsQuic's last callback and is never called from one (ADR-060 decision 7).
   - `QuicListener` says how many channels it holds, for the tests.
 - **Not in scope:** the limits on what a connection sends, which are NW1.2's and NW1.3's.
 - **ADR:** [ADR-060](../ADR/ADR-060-quic-in-process.md) decision 7, which says who closes what, and when.
-- **Acceptance:** `QuicTransportTests.LetsGoOfConnectionsThatHaveGone`: 200 connections refused for a wrong token, and 200 that take a universe's seat in turn and close, leave the listener holding only the connections still open; a connection whose seat a newer one took is let go too. The tests of a seat taken again and of the deputy's hand-over pass as they are.
+- **Acceptance:** `QuicTransportTests.LetsGoOfConnectionsThatHaveGone`: 50 connections refused for a wrong token, and 50 that take a universe's seat in turn and close, leave the listener holding only the connection the seat still holds; a connection whose seat a newer one took is let go too. The tests of a seat taken again and of the deputy's hand-over pass as they are.
 - **Verify:** the checkers; CI's Debug|x64 run.
 
 ### NW1.2 — A connection is held to its hello
@@ -118,7 +118,7 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 - **Scope:**
   - Before its hello, a connection may send one message of at most 256 bytes; a hello is 33. A longer one closes it with `Neuron::FRAMING_ERROR_CODE`, as a message over the limit does now.
   - A connection that has sent no hello 5 s after its handshake is closed with `CloseReason::MalformedMessage`.
-  - The channel takes the first message's limit from whoever reads it, the listener's `Accept` giving it with the receiver, so that the engine still knows nothing of a hello (R9).
+  - The listener holds every client to the first limit (`QuicListener::Desc::messageLimitBytes`), and the server's receiver raises it as it seats the client (`QuicChannel::LimitMessages`), so that the engine still knows nothing of a hello (R9). The tick's sweep (NW1.1) closes the silent ones.
 - **ADR:** [ADR-060](../ADR/ADR-060-quic-in-process.md) decisions 2 and 5.
 - **Acceptance:** `QuicTransportTests.RefusesAFirstMessageLongerThanAHello` and `ClosesAConnectionThatSaysNoHello`; every test of the hello passes as it is.
 - **Verify:** the checkers; CI's Debug|x64 run.
@@ -130,9 +130,10 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 - **ADR:** [ADR-009](../ADR/ADR-009-deterministic-core.md) decision 6, the order commands are applied in, which the commands that wait keep; [ADR-002](../ADR/ADR-002-authoritative-server.md) decision 2.
 - **Acceptance:**
   - `InProcessServerTests.AppliesASeatsCommandsAtItsShare`: 100 orders sent in one tick are applied 32, 32, 32 and 4 over four ticks, in the order given, each logged with the tick it was applied at, and the log replays to an equal simulation.
-  - `QuicTransportTests.ClosesASeatThatFloodsIt`: a client that has more commands waiting than gate M9 allows is closed, and told why.
-  - `--ai-matches` over seeds 1 to 40 plays the same matches with the limits as without, its match log the same line for line, so no AI meets them; the most commands any seat gave in one tick is recorded in [the balance log](../Records/BalanceLog.md).
-- **Verify:** the checkers; CI; the container's `--ai-matches`, with the limits and without.
+  - `InProcessServerTests.RefusesAConnectionFarAheadOfItsTicks`: a loopback client's command past the limit throws, and a hosted player's fails the tick.
+  - `QuicTransportTests.ClosesASeatThatFloodsIt`: a client that has more commands waiting than gate M9 allows is closed, and told why; so is one whose message is over a seated client's limit.
+  - The AI-against-AI matches of seeds 1 to 40, played as `--ai-matches` plays them, and three hour-long universes with a deputy in one seat for their second half, play the same with the limits as without, so no AI meets them; the most commands any seat gave in one tick is recorded in [the balance log](../Records/BalanceLog.md).
+- **Verify:** the checkers; CI; the container's runs, with the limits and without.
 
 ---
 
