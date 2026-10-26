@@ -349,6 +349,14 @@ auto Fields(Self& _value)
   return std::tie(player);
 }
 
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, CatalogMessage>
+auto Fields(Self& _value)
+{
+  auto& [designs, structureTypes, hulls, drives, weapons, modules, research, sectors, fields] = _value;
+  return std::tie(designs, structureTypes, hulls, drives, weapons, modules, research, sectors, fields);
+}
+
 // Each enumeration's last enumerator: a value past it is not one the enumeration has. An enumerator added after it has to
 // be named here too, or a message or a save that carries it is refused.
 constexpr EntityKind LastOf(EntityKind) noexcept

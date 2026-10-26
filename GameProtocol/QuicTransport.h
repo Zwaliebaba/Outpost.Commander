@@ -13,7 +13,8 @@ struct ServerAddress
 };
 
 // A client's connection to the server over QUIC (ADR-004, ADR-060): its commands go out and its snapshots come in as
-// WireFormat's messages, reliably and in order.
+// WireFormat's messages, reliably and in order. It keeps the last catalogue the server sent and puts it back into every
+// snapshot, so that each snapshot it hands on is the one the server built (ADR-060 decision 9).
 class QuicTransport final : public Transport
 {
 public:
@@ -25,7 +26,7 @@ public:
 
   void Send(Command _command) override;
   // Throws Neuron::Exception once the connection has gone, saying why in the server's words when the server closed it
-  // (DescribeClose), or when the server sends anything but a snapshot.
+  // (DescribeClose), or when the server sends anything but a catalogue or a snapshot, or a snapshot before a catalogue.
   [[nodiscard]] std::vector<Snapshot> Receive() override;
 
   // How the connection to the server does (ADR-004 decision 6).
@@ -35,7 +36,11 @@ private:
   // The channel's messages, or, once the connection has gone, an exception that says why.
   [[nodiscard]] std::vector<std::vector<std::byte>> ReceiveFromChannel(std::chrono::milliseconds _wait = {});
 
+  // Keeps a catalogue the server sent, and adds a snapshot to _snapshots with the catalogue put back.
+  void Take(std::span<const std::byte> _message, std::vector<Snapshot>& _snapshots);
+
   std::unique_ptr<Neuron::QuicChannel> m_channel;
+  std::optional<CatalogMessage> m_catalog;
   // Snapshots that arrived along with the welcome.
   std::vector<Snapshot> m_early;
 };

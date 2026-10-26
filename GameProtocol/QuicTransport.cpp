@@ -7,13 +7,6 @@ namespace
 {
 // How long the server may take to seat a client once it has connected.
 constexpr std::chrono::milliseconds WELCOME_TIMEOUT{10'000};
-
-Outpost::Snapshot ToSnapshot(Outpost::Message _message)
-{
-  if (auto* snapshot = std::get_if<Outpost::Snapshot>(&_message))
-    return std::move(*snapshot);
-  throw Neuron::Exception("The server sent a message that is not a snapshot.");
-}
 } // namespace
 
 Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _player, std::chrono::milliseconds _connectTimeout)
@@ -41,7 +34,7 @@ Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _p
   if (welcome == nullptr || welcome->player != _player)
     throw Neuron::Exception(std::format("The server did not welcome player {} to its seat.", _player.value));
   for (std::size_t i = 1; i < messages.size(); ++i)
-    m_early.push_back(ToSnapshot(DecodeMessage(messages[i])));
+    Take(messages[i], m_early);
 }
 
 void Outpost::QuicTransport::Send(Command _command)
@@ -53,8 +46,25 @@ std::vector<Outpost::Snapshot> Outpost::QuicTransport::Receive()
 {
   std::vector<Snapshot> snapshots = std::exchange(m_early, {});
   for (const std::vector<std::byte>& message : ReceiveFromChannel())
-    snapshots.push_back(ToSnapshot(DecodeMessage(message)));
+    Take(message, snapshots);
   return snapshots;
+}
+
+void Outpost::QuicTransport::Take(std::span<const std::byte> _message, std::vector<Snapshot>& _snapshots)
+{
+  Message decoded = DecodeMessage(_message);
+  if (auto* catalog = std::get_if<CatalogMessage>(&decoded))
+  {
+    m_catalog = std::move(*catalog);
+    return;
+  }
+  auto* snapshot = std::get_if<Snapshot>(&decoded);
+  if (snapshot == nullptr)
+    throw Neuron::Exception("The server sent a message that is neither a catalogue nor a snapshot.");
+  if (!m_catalog.has_value())
+    throw Neuron::Exception("The server sent a snapshot before its catalogue.");
+  PutCatalog(*m_catalog, *snapshot);
+  _snapshots.push_back(std::move(*snapshot));
 }
 
 Neuron::QuicStatistics Outpost::QuicTransport::Statistics() const

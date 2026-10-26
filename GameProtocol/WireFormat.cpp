@@ -1,7 +1,10 @@
 #include "pch.h"
 #include "WireFormat.h"
 
+#include <algorithm>
 #include <concepts>
+#include <iterator>
+#include <utility>
 
 #include "ByteFormat.h"
 #include "WireFields.h"
@@ -31,6 +34,48 @@ template <typename T> std::vector<std::byte> Encode(const T& _message)
   writer.Put(KindOf<T>(std::type_identity<Message>{}));
   writer.Put(_message);
   return writer.Take();
+}
+
+// PutCatalog for a catalogue to copy from or one to move from.
+template <typename Catalog> void Put(Catalog&& _catalog, Snapshot& _snapshot)
+{
+  constexpr bool MOVES = std::is_rvalue_reference_v<Catalog&&>;
+  // A part of the catalogue, to move from when the caller gives the catalogue up, and to copy from when it keeps it.
+  const auto part = [](auto& _part) -> decltype(auto)
+  {
+    if constexpr (std::is_rvalue_reference_v<Catalog&&>)
+      return std::move(_part);
+    else
+      return std::as_const(_part);
+  };
+  _snapshot.designs = part(_catalog.designs);
+  _snapshot.structureTypes = part(_catalog.structureTypes);
+  _snapshot.hulls = part(_catalog.hulls);
+  _snapshot.drives = part(_catalog.drives);
+  _snapshot.weapons = part(_catalog.weapons);
+  _snapshot.modules = part(_catalog.modules);
+  _snapshot.research = part(_catalog.research);
+  // The two list the map's sectors in the map's order, so a sector's place finds it.
+  for (std::size_t i = 0; i < _snapshot.sectors.size() && i < _catalog.sectors.size(); ++i)
+  {
+    SectorView& sector = _snapshot.sectors[i];
+    auto& shape = _catalog.sectors[i];
+    if (shape.id != sector.id)
+      continue;
+    sector.nameUtf8 = part(shape.nameUtf8);
+    sector.minXMeters = shape.minXMeters;
+    sector.maxXMeters = shape.maxXMeters;
+    sector.minZMeters = shape.minZMeters;
+    sector.maxZMeters = shape.maxZMeters;
+    sector.node = shape.node;
+    sector.adjacent = part(shape.adjacent);
+  }
+  const auto middle = static_cast<std::ptrdiff_t>(_snapshot.entities.size());
+  if constexpr (MOVES)
+    std::ranges::move(_catalog.fields, std::back_inserter(_snapshot.entities));
+  else
+    std::ranges::copy(_catalog.fields, std::back_inserter(_snapshot.entities));
+  std::ranges::inplace_merge(_snapshot.entities, _snapshot.entities.begin() + middle, {}, &EntityView::id);
 }
 } // namespace
 
@@ -71,6 +116,50 @@ std::vector<std::byte> EncodeMessage(const Command& _command)
 std::vector<std::byte> EncodeMessage(const Snapshot& _snapshot)
 {
   return Encode(_snapshot);
+}
+
+std::vector<std::byte> EncodeMessage(const CatalogMessage& _catalog)
+{
+  return Encode(_catalog);
+}
+
+CatalogMessage TakeCatalog(Snapshot& _snapshot)
+{
+  CatalogMessage catalog{.designs = std::exchange(_snapshot.designs, {}),
+                         .structureTypes = std::exchange(_snapshot.structureTypes, {}),
+                         .hulls = std::exchange(_snapshot.hulls, {}),
+                         .drives = std::exchange(_snapshot.drives, {}),
+                         .weapons = std::exchange(_snapshot.weapons, {}),
+                         .modules = std::exchange(_snapshot.modules, {}),
+                         .research = std::exchange(_snapshot.research, {})};
+  // What a sector is, out of it; who holds it, and the rest that changes in play, stays.
+  catalog.sectors.reserve(_snapshot.sectors.size());
+  for (SectorView& sector : _snapshot.sectors)
+  {
+    catalog.sectors.push_back({.id = sector.id,
+                               .nameUtf8 = std::exchange(sector.nameUtf8, {}),
+                               .minXMeters = std::exchange(sector.minXMeters, 0.0f),
+                               .maxXMeters = std::exchange(sector.maxXMeters, 0.0f),
+                               .minZMeters = std::exchange(sector.minZMeters, 0.0f),
+                               .maxZMeters = std::exchange(sector.maxZMeters, 0.0f),
+                               .node = std::exchange(sector.node, {}),
+                               .adjacent = std::exchange(sector.adjacent, {})});
+  }
+  const auto fields =
+    std::ranges::stable_partition(_snapshot.entities, [](const EntityView& _entity) { return _entity.kind != EntityKind::AsteroidField; });
+  catalog.fields.assign(std::make_move_iterator(fields.begin()), std::make_move_iterator(fields.end()));
+  _snapshot.entities.erase(fields.begin(), fields.end());
+  return catalog;
+}
+
+void PutCatalog(const CatalogMessage& _catalog, Snapshot& _snapshot)
+{
+  Put(_catalog, _snapshot);
+}
+
+void PutCatalog(CatalogMessage&& _catalog, Snapshot& _snapshot)
+{
+  Put(std::move(_catalog), _snapshot);
 }
 
 std::optional<std::string_view> DescribeClose(std::uint64_t _errorCode) noexcept

@@ -46,9 +46,28 @@ struct WelcomeMessage
   PlayerId player;
 };
 
+// What a player's snapshot holds that seldom changes or never does, which crosses a seat's connection once, before its first
+// snapshot, and again before the snapshot of any tick in which it changed; the snapshot on the wire leaves it out
+// (ADR-060 decision 9). Its sectors are the map's, with their names, borders, nodes and neighbors, and none of what changes
+// in play: their holders, suppression, cut-off and guard stay in the snapshot. Its fields are the map's asteroid fields,
+// which every player always sees, in identifier order. The snapshot's numbers stay in it, since a number costs the wire
+// its bytes either way.
+struct CatalogMessage
+{
+  std::vector<DesignView> designs;
+  std::vector<StructureTypeView> structureTypes;
+  std::vector<HullView> hulls;
+  std::vector<DriveView> drives;
+  std::vector<WeaponView> weapons;
+  std::vector<ModuleView> modules;
+  std::vector<ResearchTopicView> research;
+  std::vector<SectorView> sectors;
+  std::vector<EntityView> fields;
+};
+
 // Everything that crosses a QUIC connection to the server. A client sends a hello and then commands, and the server a
-// welcome and then snapshots.
-using Message = std::variant<HelloMessage, WelcomeMessage, Command, Snapshot>;
+// welcome and then catalogues and snapshots.
+using Message = std::variant<HelloMessage, WelcomeMessage, Command, Snapshot, CatalogMessage>;
 
 // Each encodes one message as the bytes that cross the connection: which message it is, and then its fields in the order
 // they are declared, little-endian (ADR-060).
@@ -56,6 +75,16 @@ using Message = std::variant<HelloMessage, WelcomeMessage, Command, Snapshot>;
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const WelcomeMessage& _welcome);
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const Command& _command);
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const Snapshot& _snapshot);
+[[nodiscard]] std::vector<std::byte> EncodeMessage(const CatalogMessage& _catalog);
+
+// Moves _snapshot's catalogue out of it, leaving its lists empty, its sectors with only what changes in play, and its
+// entities without the asteroid fields: the snapshot as it crosses the wire (ADR-060 decision 9).
+[[nodiscard]] CatalogMessage TakeCatalog(Snapshot& _snapshot);
+
+// Puts _catalog back into _snapshot, a snapshot TakeCatalog left without one, so that it is the snapshot the server built:
+// the fields go among the entities in identifier order, as SnapshotInterpolator pairs them.
+void PutCatalog(const CatalogMessage& _catalog, Snapshot& _snapshot);
+void PutCatalog(CatalogMessage&& _catalog, Snapshot& _snapshot);
 
 // The message _bytes hold. Throws Neuron::Exception when they are not exactly one message, such as when they end early,
 // run on, or hold a value no field can take.

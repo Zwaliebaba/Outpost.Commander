@@ -329,8 +329,8 @@ std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::TakeSeat(Pla
       std::ranges::find_if(m_connections, [_player](const Connection& _connection) { return _connection.player == _player; });
     if (seat == m_connections.end() || !seat->seat || seat->token != _token)
       return nullptr;
-    // The welcome goes before the seat has the channel, so that it is the first the client hears, ahead of the snapshot a
-    // running universe's next tick sends (ADR-060 decision 5).
+    // The welcome goes before the seat has the channel, so that it is the first the client hears, ahead of the catalog and
+    // the snapshot a running universe's next tick sends (ADR-060 decisions 5 and 9).
     _channel->Send(EncodeMessage(WelcomeMessage{.player = _player}));
     // The player's newest connection holds the seat, so that one whose connection dropped without the server knowing yet
     // takes it back.
@@ -533,6 +533,7 @@ void Outpost::InProcessServer::RunTick()
       Snapshot snapshot;
       SeatPlay play = SeatPlay::Player;
       std::shared_ptr<Neuron::QuicChannel> quic;
+      std::uint32_t takings = 0;
       std::optional<Neuron::QuicStatistics> figures;
     };
     // Each seat's connection, every SEAT_FIGURES_SECONDS of ticks (ADR-004 decision 6).
@@ -546,11 +547,10 @@ void Outpost::InProcessServer::RunTick()
       if (connection.seat)
       {
         // A seat not yet taken has nobody to send to.
-        std::uint32_t takings = 0;
         {
           const std::scoped_lock lock(m_seatMutex);
           next.quic = connection.quic;
-          takings = connection.takings;
+          next.takings = connection.takings;
         }
         // A seat's deputy comes with the controller that says when it plays (Host). While it does, the seat's report of what
         // its player misses grows, and the player's first snapshot once it plays again carries it (ADR-080).
@@ -560,7 +560,7 @@ void Outpost::InProcessServer::RunTick()
         if (control != nullptr)
         {
           const bool gone = next.quic && next.quic->HasGone();
-          const bool plays = control->DeputyPlays(m_simulation.CurrentTick(), takings, gone);
+          const bool plays = control->DeputyPlays(m_simulation.CurrentTick(), next.takings, gone);
           m_away.Take(next.snapshot, plays);
           next.play = plays ? SeatPlay::Deputy : SeatPlay::Player;
         }
@@ -595,7 +595,21 @@ void Outpost::InProcessServer::RunTick()
       if (connection.seat)
       {
         if (seat.quic)
+        {
+          // The catalogue crosses before the seat's first snapshot and again when it has changed, and the snapshot crosses
+          // without it; then it goes back, for a seat's deputy (ADR-060 decision 9).
+          CatalogMessage catalog = TakeCatalog(seat.snapshot);
+          std::vector<std::byte> encoded = EncodeMessage(catalog);
+          if (connection.catalogTaking != seat.takings || encoded != connection.catalogSent)
+          {
+            seat.quic->Send(encoded);
+            connection.catalogSent = std::move(encoded);
+            connection.catalogTaking = seat.takings;
+          }
           seat.quic->Send(EncodeMessage(seat.snapshot));
+          if (connection.hosted)
+            PutCatalog(std::move(catalog), seat.snapshot);
+        }
         if (connection.hosted && connection.control.has_value())
           turns.push_back({.connection = &connection, .snapshot = std::move(seat.snapshot), .plays = seat.play == SeatPlay::Deputy});
         continue;

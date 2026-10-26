@@ -298,6 +298,38 @@ public:
     Assert::IsTrue(snapshot.designs[0].retreat == Outpost::RetreatThreshold::Never);
   }
 
+  // ADR-060 decision 9: a snapshot crosses without its catalogue, which crosses on its own, and the two put together are the
+  // snapshot sent: its lists, its sectors' names and borders, and the asteroid fields among its entities in identifier order.
+  TEST_METHOD(CarriesASnapshotApartFromItsCatalog)
+  {
+    Outpost::Snapshot built = FullSnapshot();
+    built.entities.insert(
+      built.entities.begin() + 1,
+      {.id = Outpost::EntityId{20}, .kind = Outpost::EntityKind::AsteroidField, .position = {.xMeters = 117.0f}, .radiusMeters = 118.0f});
+    const std::vector<std::byte> whole = Outpost::EncodeMessage(built);
+
+    Outpost::Snapshot wire = built;
+    const Outpost::CatalogMessage taken = Outpost::TakeCatalog(wire);
+    Assert::AreEqual(size_t{2}, wire.entities.size(), L"the field crosses in the catalogue");
+    Assert::IsTrue(wire.hulls.empty() && wire.research.empty() && wire.designs.empty() && wire.structureTypes.empty(), L"and the lists");
+    Assert::IsTrue(wire.sectors.size() == 1 && wire.sectors[0].nameUtf8.empty() && wire.sectors[0].adjacent.empty(),
+                   L"and what a sector is");
+    Assert::IsTrue(wire.sectors[0].holder == Outpost::PlayerId{2} && wire.sectors[0].suppressed && wire.sectors[0].cutOff &&
+                     wire.sectors[0].guarded,
+                   L"but not who holds it and how");
+    Assert::IsTrue(wire.mapSizeMeters == 5000.0f && wire.constructorCost == 55 && wire.startingTickets == 96, L"nor the numbers");
+
+    const Outpost::Message catalog = RoundTrip(taken);
+    Outpost::Message snapshot = RoundTrip(wire);
+    Assert::IsTrue(Outpost::EncodeMessage(wire).size() < whole.size(), L"the snapshot on the wire is the shorter");
+    Outpost::Snapshot& restored = std::get<Outpost::Snapshot>(snapshot);
+    Outpost::PutCatalog(std::get<Outpost::CatalogMessage>(catalog), restored);
+    Assert::IsTrue(Outpost::EncodeMessage(restored) == whole, L"put back, it is the snapshot built");
+    Outpost::Snapshot moved = std::get<Outpost::Snapshot>(RoundTrip(wire));
+    Outpost::PutCatalog(Outpost::CatalogMessage(taken), moved);
+    Assert::IsTrue(Outpost::EncodeMessage(moved) == whole, L"and a catalogue given up puts back the same");
+  }
+
   TEST_METHOD(CarriesHelloAndWelcome)
   {
     const Outpost::Message hello = RoundTrip(Outpost::HelloMessage{.player = Outpost::PlayerId{2}});
@@ -328,17 +360,22 @@ public:
     Assert::IsFalse(Outpost::PeekHelloLayout(welcome).has_value(), L"not a hello");
   }
 
+  // A snapshot, and a catalogue (ADR-060 decision 9), refused cut short anywhere or run on by a byte.
   TEST_METHOD(RefusesAMessageCutShortOrRunOn)
   {
-    const std::vector<std::byte> bytes = Outpost::EncodeMessage(FullSnapshot());
-    for (size_t length = 0; length < bytes.size(); ++length)
+    Outpost::Snapshot snapshot = FullSnapshot();
+    const std::vector<std::byte> catalog = Outpost::EncodeMessage(Outpost::TakeCatalog(snapshot));
+    for (const std::vector<std::byte>& bytes : {Outpost::EncodeMessage(FullSnapshot()), catalog})
     {
-      const std::span<const std::byte> cut(bytes.data(), length);
-      Assert::ExpectException<Neuron::Exception>([cut] { (void)Outpost::DecodeMessage(cut); });
+      for (size_t length = 0; length < bytes.size(); ++length)
+      {
+        const std::span<const std::byte> cut(bytes.data(), length);
+        Assert::ExpectException<Neuron::Exception>([cut] { (void)Outpost::DecodeMessage(cut); });
+      }
+      std::vector<std::byte> runOn = bytes;
+      runOn.push_back(std::byte{0});
+      Assert::ExpectException<Neuron::Exception>([&runOn] { (void)Outpost::DecodeMessage(runOn); });
     }
-    std::vector<std::byte> runOn = bytes;
-    runOn.push_back(std::byte{0});
-    Assert::ExpectException<Neuron::Exception>([&runOn] { (void)Outpost::DecodeMessage(runOn); });
   }
 
   TEST_METHOD(RefusesValuesNoFieldCanTake)
@@ -356,7 +393,7 @@ public:
       changed[_offset] = _value;
       Assert::ExpectException<Neuron::Exception>([&changed] { (void)Outpost::DecodeMessage(changed); });
     };
-    refused(0, std::byte{4});    // a fifth kind of message
+    refused(0, std::byte{5});    // a sixth kind of message
     refused(5, std::byte{16});   // a seventeenth order
     refused(6, std::byte{0xFF}); // more constructors than bytes
     refused(10, std::byte{7});   // a structure past the Repair Bay, the last
