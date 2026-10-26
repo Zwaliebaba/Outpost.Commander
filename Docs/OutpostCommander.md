@@ -1432,6 +1432,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 #### The tag [§interface.hud.tag]
 
 - **The tag in the top-right corner says where the match runs,** as Game §session.skirmish and Game §session.join have it. It is as wide as its words, 16 units in from the screen's right edge; an address too long for it is cut short, and while it warns it is as wide as its widest warning, so its edge stands still as the seconds count (ADR-086 decisions 1 and 2).
+- **A universe's tag gives the connection's round trip** after the address, "Server 203.0.113.5:4433 · 42 ms", taken once a second, up to 999 ms, and as wide as its widest whatever it reads (ADR-086 decision 1).
 - **It takes no click, and the designer covers it** while it is open (ADR-086 decisions 1 and 3).
 
 ### The minimap [§interface.minimap]

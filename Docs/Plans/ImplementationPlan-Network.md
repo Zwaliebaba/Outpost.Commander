@@ -64,7 +64,7 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW5.1 | The view's delay follows the link | NW4.1 | M5 | todo |
 | NW6.1 | An order is marked as it is given | NW3.2 | M6 | todo |
 | NW6.2 | A universe's lost connection is joined again | NW2.2 | M8 | todo |
-| NW6.3 | The tag gives the round trip | NW2.1 | M10 | todo |
+| NW6.3 | The tag gives the round trip | NW2.1 | M10 | in review |
 | NW6.4 | Order to response over a real network, again | NW5.1, NW6.1 | M11 | todo; an owner run |
 | NW7.1 | State crosses as what changed | NW4.1 | F5 of the Horizon plan | todo |
 

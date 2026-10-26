@@ -176,7 +176,8 @@ struct Match
   // Every match goes over QUIC, a skirmish's on the loopback (ADR-060 decision 1).
   std::unique_ptr<Outpost::QuicTransport> player;
   std::unique_ptr<Outpost::QuicTransport> rival;
-  // Wall time since the connections' figures were last logged, with --measure (ADR-004 decision 6).
+  // Wall time since the connections' figures were last taken, for a universe's tag and, with --measure, the log (ADR-004
+  // decision 6, ADR-086 decision 1).
   std::chrono::nanoseconds sinceFigures{};
   std::optional<Outpost::AiPlayer> ai;
   // A battle matchup's rival, in place of the AI (ADR-083).
@@ -465,13 +466,20 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           if (measure)
             measurements << std::format("seat_net {} player {} {}\n", seat.tick, seat.player.value, figuresWords(seat.connection));
         }
+        // A universe's tag gives the connection's round trip, once a second (ADR-086 decision 1).
         match->sinceFigures += elapsed;
-        if (measure && match->sinceFigures >= std::chrono::seconds{Outpost::SEAT_FIGURES_SECONDS})
+        if (match->sinceFigures >= std::chrono::seconds{Outpost::SEAT_FIGURES_SECONDS})
         {
           match->sinceFigures = {};
-          measurements << std::format("client_net player {} {}\n", HUMAN_PLAYER.value, figuresWords(match->player->Statistics()));
-          if (match->rival)
-            measurements << std::format("client_net player {} {}\n", RIVAL_PLAYER.value, figuresWords(match->rival->Statistics()));
+          const Neuron::QuicStatistics playerFigures = match->player->Statistics();
+          if (!match->server)
+            client.ShowRoundTrip(playerFigures.roundTripMicroseconds);
+          if (measure)
+          {
+            measurements << std::format("client_net player {} {}\n", HUMAN_PLAYER.value, figuresWords(playerFigures));
+            if (match->rival)
+              measurements << std::format("client_net player {} {}\n", RIVAL_PLAYER.value, figuresWords(match->rival->Statistics()));
+          }
         }
 
         std::vector<Outpost::Snapshot> snapshots;

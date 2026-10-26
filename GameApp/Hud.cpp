@@ -157,6 +157,8 @@ constexpr float BANNER_WIDTH = 520.0f;
 // the seconds count.
 constexpr float CONNECTION_MOST_UNITS = 360.0f;
 constexpr std::string_view CONNECTION_WIDEST_SILENCE = "No word from the server \xC2\xB7 999 s";
+// The round trip after a server's address at its widest, which the tag is as wide as whatever it reads (ADR-086 decision 1).
+constexpr std::string_view CONNECTION_WIDEST_ROUND_TRIP = " \xC2\xB7 999 ms";
 // The main menu, centered.
 constexpr float MENU_WIDTH = 440.0f;
 
@@ -3473,20 +3475,30 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
                (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
   }
 
-  // Top-right anchor: where the match runs, "Local skirmish" or "Server 203.0.113.5:4433", and under it, once no snapshot
-  // has come for SILENT_SECONDS, a warning chip, "No word from the server · 5 s" (ADR-086). It takes no click.
+  // Top-right anchor: where the match runs, "Local skirmish" or "Server 203.0.113.5:4433 · 42 ms", and under it, once no
+  // snapshot has come for SILENT_SECONDS, a warning chip, "No word from the server · 5 s" (ADR-086). The round trip is as
+  // wide as 999 ms whatever it reads, so that the tag's edge stands still as it changes. It takes no click.
   if (_content.connection.has_value())
   {
     const Connection& connection = *_content.connection;
     std::string where = connection.server.empty() ? std::string("Local skirmish") : std::format("Server {}", connection.server);
+    std::string roundTrip;
+    float roundTripUnits = 0.0f;
+    if (connection.roundTripMilliseconds.has_value())
+    {
+      roundTrip = std::format("{}{} ms", DOT, std::clamp(*connection.roundTripMilliseconds, 0, 999));
+      roundTripUnits = _metrics.Width(Typeface::Name, CONNECTION_WIDEST_ROUND_TRIP);
+    }
     const bool silent = connection.silentSeconds >= SILENT_SECONDS;
-    float textUnits = std::min(_metrics.Width(Typeface::Name, where), CONNECTION_MOST_UNITS);
+    // An address too long is cut short, so that with its round trip the tag is no wider than CONNECTION_MOST_UNITS.
+    const float whereUnits = std::min(_metrics.Width(Typeface::Name, where), CONNECTION_MOST_UNITS - roundTripUnits);
+    float textUnits = whereUnits + roundTripUnits;
     if (silent)
       textUnits = std::max(textUnits, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS));
     const float widthUnits = textUnits + (2.0f * PADDING);
     const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + ((silent ? 2.0f : 1.0f) * NAME_LINE_UNITS);
     Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - widthUnits, .yUnits = MARGIN}, widthUnits, heightUnits);
-    paint.Text(paint.Fit(where, Typeface::Name, textUnits), PADDING, TERRITORY_INSET_UNITS, TEXT_COLOR, Typeface::Name);
+    paint.Text(paint.Fit(where, Typeface::Name, whereUnits) + roundTrip, PADDING, TERRITORY_INSET_UNITS, TEXT_COLOR, Typeface::Name);
     if (silent)
     {
       (void)paint.Chip(std::format("No word from the server{}{} s", DOT, std::min(connection.silentSeconds, 999)), PADDING - CHIP_PAD_UNITS,

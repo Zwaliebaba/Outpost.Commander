@@ -473,6 +473,7 @@ void Outpost::GameClient::StartMatch(std::string _server)
 {
   ClearMatch();
   m_server = std::move(_server);
+  m_roundTripMilliseconds.reset();
   m_menuNotice.clear();
   m_connecting.clear();
   m_screen = Screen::Match;
@@ -484,6 +485,12 @@ void Outpost::GameClient::ShowMenu(std::string _notice)
   m_menuNotice = std::move(_notice);
   m_connecting.clear();
   m_screen = Screen::Menu;
+}
+
+void Outpost::GameClient::ShowRoundTrip(std::uint64_t _microseconds) noexcept
+{
+  if (_microseconds > 0)
+    m_roundTripMilliseconds = static_cast<std::int32_t>(std::min<std::uint64_t>((_microseconds + 500) / 1000, 999));
 }
 
 void Outpost::GameClient::ShowConnecting(std::string _server)
@@ -752,7 +759,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       bar.footPixels = foot.value_or(DirectX::XMFLOAT2{});
       content.entityBars.push_back(bar);
     }
-    content.connection = Hud::Connection{.server = m_server, .silentSeconds = static_cast<std::int32_t>(m_silentSeconds)};
+    content.connection = Hud::Connection{.server = m_server,
+                                         .silentSeconds = static_cast<std::int32_t>(m_silentSeconds),
+                                         .roundTripMilliseconds = m_server.empty() ? std::nullopt : m_roundTripMilliseconds};
     // What a derelict under the pointer holds (ADR-074 decision 10), and how long ago a structure the player only remembers
     // was seen (ADR-081 decision 4), unless a placement's hint says more.
     if (const auto pointed = std::ranges::find(m_entities, m_hovered.value_or(EntityId{}), &EntityView::id);

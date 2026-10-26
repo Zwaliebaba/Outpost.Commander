@@ -484,6 +484,8 @@ public:
     std::string server;
     // Whole seconds since the last snapshot came.
     std::int32_t silentSeconds = 0;
+    // The connection's smoothed round trip in whole milliseconds, a universe's once it has one (ADR-086 decision 1).
+    std::optional<std::int32_t> roundTripMilliseconds;
   };
   // How long no snapshot may come, at 20 a second, before the tag warns of it (ADR-086).
   static constexpr std::int32_t SILENT_SECONDS = 2;
