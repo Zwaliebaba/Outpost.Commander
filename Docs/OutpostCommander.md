@@ -905,7 +905,7 @@ A player commands its ships by orders, and only by orders. An order is given to 
 ### How an order is given [§orders.giving]
 
 - **An order is a command to the server, never a change.** The server checks it against ownership, cost and legality, applies it at the start of its next tick, or refuses it (ADR-002 decision 2). A tick applies at most 32 of a player's orders, and the rest at the ticks after, in the order given (ADR-009 decision 6). The player's own game, the AI, a deputy and a scheduled order all give orders the same way (ADR-002 decision 7; ADR-079 decision 2; ADR-080 decision 5).
-- **An order leaves as soon as it is given,** and the screen shows the simulation one tick behind the newest snapshot, so a ship visibly answers about a tick after the server applied the order (ADR-013 decision 3; ADR-002 decision 5).
+- **An order leaves as soon as it is given,** and the screen shows the simulation a tick behind the server, and up to 4 as the link is late, so on a steady link a ship visibly answers about a tick after the server applied the order (ADR-013 decision 3; ADR-002 decision 5).
 - **A refused order is not obeyed, and the player who gave it is told why,** in words, as an alert; a scheduled order refused as it fires says so as it fires (ADR-094; ADR-080 decision 5; Game §interface.alerts).
 - **Orders go to the selected ships.** A selected structure takes no ship order (ADR-013 decision 5).
 
@@ -1579,7 +1579,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 - **The scene is drawn at the screen's own resolution,** four samples a pixel, so every line and silhouette is smoothed; there is no lower render resolution and no HDR (ADR-006 decision 4; ADR-040 decision 3).
 - **A frame is drawn in this order:** the sky; the grid; every model's faces and the shards of what is breaking up; every model's lines; the structures' footprint rings, the selection and the placement ghost; the shots; the exhaust and the blasts' particles; the fog; and, over the fog, the territory and what the player only remembers. The glow is added as the frame is finished, and the interface is drawn over it (ADR-022 decision 5; ADR-027 decision 3; ADR-024 decision 9; ADR-081 decision 5; ADR-091 decision 1).
 - **The menu stands over the sky and the empty grid** (ADR-022 decision 5; Game §session.menu).
-- **What is drawn follows the view of the simulation one tick behind the newest snapshot,** so effects, explosions and spinning parts keep the match's time, whatever the frame rate (ADR-013 decision 3; ADR-026 decision 1; ADR-045 decision 4).
+- **What is drawn follows the view of the simulation, a tick or more behind the server,** so effects, explosions and spinning parts keep the match's time, whatever the frame rate (ADR-013 decision 3; ADR-026 decision 1; ADR-045 decision 4).
 
 ### The sky [§look.sky]
 

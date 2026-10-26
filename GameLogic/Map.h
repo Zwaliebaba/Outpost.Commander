@@ -132,7 +132,7 @@ struct PlacementRules
   float oreSpacingMeters = 0.0f;
 };
 
-// OutpostCommander/Assets/Map.json as the game holds it (ADR-008). The map is a square centered on the origin.
+// ServerData/Map.json as the game holds it (ADR-008). The map is a square centered on the origin.
 struct Map
 {
   float sizeMeters = 0.0f;
@@ -160,7 +160,7 @@ struct Map
   std::vector<DerelictPlacement> derelicts;
 };
 
-// Reads the text of OutpostCommander/Assets/Map.json. Throws Neuron::Exception on the first problem, naming where it is,
+// Reads the text of ServerData/Map.json. Throws Neuron::Exception on the first problem, naming where it is,
 // such as "oreAsteroids[3].radiusMeters". Every ore asteroid states its reserve; sectors are optional. Besides types and
 // ranges it checks that every sector's identifier is unique, its rectangle is on the map with its node inside it, its
 // node keeps the minimum gap from every obstacle, and its adjacency names other sectors and is returned by them. It

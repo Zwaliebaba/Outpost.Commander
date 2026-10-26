@@ -14,22 +14,44 @@ void Outpost::SnapshotInterpolator::Receive(Snapshot _snapshot)
 {
   if (!m_history.empty() && _snapshot.tick <= m_history.back().tick)
     return;
+
+  // The server's clock is the wall time less the snapshot's tick. A snapshot that arrives earlier than the clock says sets
+  // it back at once, and a later one moves it by a share of how late it is, so that it follows the earliest arrivals and,
+  // slowly, a server that falls behind (ADR-013 decision 3).
+  const double offset = m_seconds - (static_cast<double>(_snapshot.tick) / m_ticksPerSecond);
+  double lateness = 0.0;
+  if (!m_offsetSeconds.has_value() || offset <= *m_offsetSeconds)
+    m_offsetSeconds = offset;
+  else
+  {
+    lateness = offset - *m_offsetSeconds;
+    *m_offsetSeconds += lateness * CLOCK_FOLLOW;
+  }
+  m_lateness.emplace_back(m_seconds, lateness);
+  while (m_lateness.front().first < m_seconds - LATENESS_WINDOW_SECONDS)
+    m_lateness.pop_front();
+  m_latenessSorted.clear();
+  for (const auto& [arrived, late] : m_lateness)
+    m_latenessSorted.push_back(late);
+  // The nearest rank, as Tools/FrameTimes.py takes a percentile.
+  const std::size_t rank = std::max<std::size_t>(1, ((m_latenessSorted.size() * LATENESS_PERCENT) + 99) / 100) - 1;
+  std::ranges::nth_element(m_latenessSorted, m_latenessSorted.begin() + static_cast<std::ptrdiff_t>(rank));
+  m_delayTicks = std::clamp(LEAST_DELAY_TICKS + (m_latenessSorted[rank] * m_ticksPerSecond), LEAST_DELAY_TICKS, MOST_DELAY_TICKS);
+
   m_history.push_back(std::move(_snapshot));
-  if (m_history.size() > HISTORY)
+  // The oldest goes once the view has passed the one after it, and at the most kept whatever the view needs.
+  while (m_history.size() > MOST_HISTORY || (m_history.size() > HISTORY && static_cast<double>(m_history[1].tick) <= m_viewTick))
     m_history.pop_front();
-  m_sinceNewestSeconds = 0.0;
 }
 
 void Outpost::SnapshotInterpolator::Advance(float _elapsedSeconds) noexcept
 {
-  if (m_history.empty())
+  m_seconds += _elapsedSeconds;
+  if (m_history.empty() || !m_offsetSeconds.has_value())
     return;
-  m_sinceNewestSeconds += _elapsedSeconds;
 
-  // Where the view should be: the newest tick, plus the time since it arrived, less the delay. It is a saw tooth that
-  // jitters by a frame with each arrival, so the clock follows it loosely rather than exactly.
-  const auto newestTick = static_cast<double>(m_history.back().tick);
-  const double target = newestTick + (m_sinceNewestSeconds * m_ticksPerSecond) - DELAY_TICKS;
+  // Where the view should be: the server's tick now, less the delay.
+  const double target = ((m_seconds - *m_offsetSeconds) * m_ticksPerSecond) - m_delayTicks;
   if (!m_clockStarted)
   {
     m_viewTick = target;
@@ -37,12 +59,13 @@ void Outpost::SnapshotInterpolator::Advance(float _elapsedSeconds) noexcept
   }
   else
   {
-    m_viewTick += _elapsedSeconds * m_ticksPerSecond;
-    const double error = target - m_viewTick;
-    m_viewTick = std::abs(error) > CLOCK_SNAP_TICKS ? target : m_viewTick + (error * CLOCK_CORRECTION);
+    // On at the tick rate, pulled toward the target; never back, and no faster than the catch-up pace.
+    const double step = _elapsedSeconds * m_ticksPerSecond;
+    const double pulled = m_viewTick + step + ((target - (m_viewTick + step)) * CLOCK_CORRECTION);
+    m_viewTick = std::clamp(pulled, m_viewTick, m_viewTick + (step * CATCH_UP_PACE));
   }
   // Never ahead of what has arrived, and never behind what is kept.
-  m_viewTick = std::clamp(m_viewTick, static_cast<double>(m_history.front().tick), newestTick);
+  m_viewTick = std::clamp(m_viewTick, static_cast<double>(m_history.front().tick), static_cast<double>(m_history.back().tick));
 }
 
 std::vector<Outpost::EntityView> Outpost::SnapshotInterpolator::Entities() const

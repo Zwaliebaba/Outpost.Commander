@@ -6,7 +6,7 @@ version of that question: a fast first guess at what a change does. The scripted
 decide, and the tuning numbers are tuned against them. The model is not taught the simulation's geometry, so it
 can disagree with them (owner, 2026-10-01).
 
-It reads the hulls, drives, weapons and research topics from OutpostCommander/Assets/Tuning.json, the same file the game
+It reads the hulls, drives, weapons and research topics from ServerData/Tuning.json, the same file the game
 loads (ADR-008), so the model and the game cannot disagree: change a number or an effect there and run this again.
 
 The model is deliberately small, and each simplification is one the design document also makes or leaves open:
@@ -52,7 +52,7 @@ and leaves every win rate as it was. It passes when, at every budget of every st
       Pulse Drive to be worth building: its case is speed, which no battle here sees.
 
 Usage:
-  python Tools/BattleModel.py                        the balance check against OutpostCommander/Assets/Tuning.json
+  python Tools/BattleModel.py                        the balance check against ServerData/Tuning.json
   python Tools/BattleModel.py --detail               also print every win-rate matrix and the shots-to-kill table
   python Tools/BattleModel.py --quick                skip the robustness sweep in (c)
   python Tools/BattleModel.py --set Small.hp=220     try a number without editing the data (repeatable)
@@ -69,7 +69,7 @@ import re
 import sys
 from pathlib import Path
 
-TUNING_DEFAULT = Path(__file__).resolve().parents[1] / "OutpostCommander" / "Assets" / "Tuning.json"
+TUNING_DEFAULT = Path(__file__).resolve().parents[1] / "ServerData" / "Tuning.json"
 
 ARMOUR_FLOOR = 0.25  # ADR-014 decision 3: damage taken = max(damage x 0.25, damage - armor)
 START_GAP_M = 400.0  # both clumps start out of range of every weapon

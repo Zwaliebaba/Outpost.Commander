@@ -168,7 +168,7 @@ public:
   // The game reads each difficulty's settings from the package's Assets folder (ADR-065), Opponent.json when it names none.
   TEST_METHOD(LoadsEachPackagedFile)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     for (const std::wstring_view file : {Outpost::NORMAL_AI_SETTINGS, Outpost::EASY_AI_SETTINGS, Outpost::HARD_AI_SETTINGS})
     {
       const Outpost::AiSettings packaged = Outpost::LoadPackagedAiSettings(file);

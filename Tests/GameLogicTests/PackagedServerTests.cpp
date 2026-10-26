@@ -88,15 +88,15 @@ void MakeFactory()
 
 // The executable starts its server with CreateInProcessServer, and the AI-against-AI matches make theirs with
 // InProcessServerFactory (Server.h): both read Tuning.json and Map.json from the package's Assets folder, through FileSys,
-// and set the match up. These tests point FileSys at the repository's OutpostCommander folder, as WinMain points it at the
-// package's.
+// and set the match up. These tests point FileSys at a folder whose Assets folder holds the repository's server data, as
+// WinMain points it at the package's.
 TEST_CLASS(PackagedServerTests)
 {
 public:
   // A match starts from the packaged data, at its tuned rate, with each player's starting base placed (ADR-016).
   TEST_METHOD(StartsAMatchFromThePackagedData)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::unique_ptr<Outpost::Server> server = Outpost::CreateInProcessServer({.seed = 1});
     Assert::AreEqual(static_cast<std::uint32_t>(tuning.rules.tickHz), server->TicksPerSecond());
@@ -124,7 +124,7 @@ public:
   // The factory's servers start the same match from the same seed as CreateInProcessServer's.
   TEST_METHOD(TheFactoryMakesServersAsCreateInProcessServerDoes)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     const Outpost::ServerFactory factory = Outpost::InProcessServerFactory();
     const std::unique_ptr<Outpost::Server> made = factory({.seed = 7});
     const std::unique_ptr<Outpost::Server> created = Outpost::CreateInProcessServer({.seed = 7});
@@ -146,7 +146,7 @@ public:
   {
     Outpost::ServerFactory factory;
     {
-      const ScopedHomeDirectory home(RepositoryHome());
+      const PackagedHomeDirectory home;
       factory = Outpost::InProcessServerFactory();
     }
     const TemporaryHomeDirectory empty(L"PackagedServerTests");
@@ -195,7 +195,7 @@ public:
   // A measurement run's server holds the measurement load, and a match's does not.
   TEST_METHOD(PlacesTheMeasurementLoadOnlyWhenAsked)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::unique_ptr<Outpost::Server> match = Outpost::CreateInProcessServer({.seed = 1});
     const Census plain = Count(Concrete(*match).SimulationState());
@@ -212,7 +212,7 @@ public:
   // A stress run's server sets the stress scene up, and fills both fleets as its first tick starts.
   TEST_METHOD(StartsTheStressLoadOnlyWhenAsked)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     const std::unique_ptr<Outpost::Server> match = Outpost::CreateInProcessServer({.seed = 3});
     (void)StepBoth(*match, 1);
     Assert::AreEqual(size_t{0}, Count(Concrete(*match).SimulationState(), BLUE).warships);
@@ -229,7 +229,7 @@ public:
   // up without that builds them in the order's tick, which shows that the tick's timing would see it.
   TEST_METHOD(TheFirstOrderBuildsNoPathGraph)
   {
-    const ScopedHomeDirectory home(RepositoryHome());
+    const PackagedHomeDirectory home;
     const auto graphBuildOfFirstOrder = [](Outpost::Server& _server)
     {
       const std::unique_ptr<Outpost::Transport> blue = _server.Connect(BLUE);

@@ -16,7 +16,7 @@ constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::WeaponId LANCE{2};
 constexpr Outpost::DesignId SWARM{1};
 
-// A snapshot with OutpostCommander/Assets/Tuning.json's components as the server sends them before any research: the
+// A snapshot with ServerData/Tuning.json's components as the server sends them before any research: the
 // Large hull, the Fusion drive and the Missile Rack locked (Game §research.unlocks). _unlocked opens all three.
 Outpost::Snapshot Components(bool _unlocked = false)
 {

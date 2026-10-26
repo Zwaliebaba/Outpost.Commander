@@ -2,23 +2,20 @@
 
 namespace OpponentTests
 {
-// The text of a data file the game ships, from OutpostCommander/Assets in the repository (ADR-008). UseFullPaths makes
-// __FILE__ absolute, so the repository is three levels up from this header.
+// The data files the package carries from the repository's ServerData folder into its Assets folder (ADR-008).
+inline constexpr std::array<std::string_view, 6> SERVER_DATA_FILES{"Tuning.json",   "Map.json",          "Matchups.json",
+                                                                   "Opponent.json", "OpponentEasy.json", "OpponentHard.json"};
+
+// The text of a data file the game ships, from ServerData in the repository (ADR-008). UseFullPaths makes __FILE__
+// absolute, so the repository is three levels up from this header.
 inline std::string ReadRepositoryData(std::string_view _fileName)
 {
-  const std::filesystem::path path =
-    std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander" / "Assets" / _fileName;
+  const std::filesystem::path path = std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "ServerData" / _fileName;
   std::ifstream file(path, std::ios::binary);
   Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(file.is_open(), path.wstring().c_str());
   std::ostringstream text;
   text << file.rdbuf();
   return text.str();
-}
-
-// The repository's OutpostCommander folder, whose Assets folder the package carries (ADR-008).
-inline std::filesystem::path RepositoryHome()
-{
-  return std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "OutpostCommander";
 }
 
 // FileSys pointed at _home for one test, as WinMain points it at the package's folder, and put back exactly as it was
@@ -97,5 +94,18 @@ public:
 private:
   std::filesystem::path m_root;
   ScopedHomeDirectory m_home;
+};
+
+// A home directory of its own whose Assets folder holds the repository's server data, as the package's does (ADR-008),
+// that FileSys reads from for one test.
+class PackagedHomeDirectory : public TemporaryHomeDirectory
+{
+public:
+  PackagedHomeDirectory()
+    : TemporaryHomeDirectory(L"PackagedData")
+  {
+    for (const std::string_view file : SERVER_DATA_FILES)
+      WriteAsset(file, ReadRepositoryData(file));
+  }
 };
 } // namespace OpponentTests
