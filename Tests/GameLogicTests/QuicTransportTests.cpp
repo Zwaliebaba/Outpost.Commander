@@ -451,5 +451,32 @@ public:
     Assert::IsTrue(std::chrono::steady_clock::now() - connected > Outpost::HELLO_TIMEOUT - 1s, L"not before its time");
     Assert::IsFalse(SnapshotsOf(blue, 3).empty(), L"the client that said hello plays on");
   }
+
+  // ADR-009 decision 6 and ADR-060 decision 2: a seated client with more commands waiting than COMMANDS_WAITING_LIMIT is
+  // closed, and so is one that sends a message longer than a seated client's limit.
+  TEST_METHOD(ClosesASeatThatFloodsIt)
+  {
+    auto server = QuicServer();
+    const Outpost::EntityId ship = server->SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    Outpost::QuicTransport blue(server->OpenSeat(BLUE, Outpost::NewSeatToken()), BLUE);
+    // A match's server starts once its seats are taken, so nothing takes these from the queue.
+    for (std::size_t order = 0; order <= Outpost::COMMANDS_WAITING_LIMIT; ++order)
+      blue.Send({.order = Outpost::StopCommand{.ships = {ship}}});
+    Assert::AreEqual(std::string(Outpost::DescribeClose(static_cast<std::uint64_t>(Outpost::CloseReason::MalformedMessage)).value_or("")),
+                     WhyItWent(blue), L"closed, and told why");
+
+    const Outpost::ServerAddress seat = server->OpenSeat(RED, Outpost::NewSeatToken());
+    const std::unique_ptr<Neuron::QuicChannel> red = ChannelTo(seat);
+    red->Send(Outpost::EncodeMessage(Outpost::HelloMessage{.player = RED, .token = seat.token}));
+    std::vector<std::vector<std::byte>> welcome;
+    const auto deadline = std::chrono::steady_clock::now() + 10s;
+    while (welcome.empty() && std::chrono::steady_clock::now() < deadline)
+      welcome = red->Receive(100ms);
+    Assert::IsFalse(welcome.empty(), L"seated");
+    const std::vector<Outpost::EntityId> ships(Outpost::SEATED_MESSAGE_LIMIT_BYTES / sizeof(std::uint32_t), ship);
+    red->Send(Outpost::EncodeMessage(Outpost::Command{.order = Outpost::StopCommand{.ships = ships}}));
+    const std::uint64_t code = CloseCodeOf(*red);
+    Assert::AreEqual(Neuron::FRAMING_ERROR_CODE, code, Wide(std::format("closed with code {}", code)).c_str());
+  }
 };
 } // namespace GameLogicTests

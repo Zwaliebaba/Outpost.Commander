@@ -19,6 +19,7 @@ class LoopbackTransport final : public Transport
 public:
   explicit LoopbackTransport(std::shared_ptr<LoopbackChannel> _channel) noexcept;
 
+  // Throws Neuron::Exception when COMMANDS_WAITING_LIMIT commands are waiting for the server's ticks already.
   void Send(Command _command) override;
   [[nodiscard]] std::vector<Snapshot> Receive() override;
 
@@ -26,10 +27,16 @@ private:
   std::shared_ptr<LoopbackChannel> m_channel;
 };
 
-// The longest message a client may send before its hello has taken a seat (ADR-060 decision 2). A hello is 33 bytes.
+// The longest message a client may send before its hello has taken a seat, and after (ADR-060 decision 2). A hello is 33
+// bytes, and a seated client's largest command, an order to every warship a fleet cap allows, is far shorter than its limit.
 inline constexpr std::uint32_t HELLO_LIMIT_BYTES = 256;
+inline constexpr std::uint32_t SEATED_MESSAGE_LIMIT_BYTES = 64u * 1024u;
 // How long after its handshake a client has to send its hello before the server closes it (ADR-060 decision 5).
 inline constexpr std::chrono::seconds HELLO_TIMEOUT{5};
+// The most of one connection's commands a tick applies; the rest wait for the next tick, in the order sent. A connection
+// with more than COMMANDS_WAITING_LIMIT waiting is broken (ADR-009 decision 6).
+inline constexpr std::size_t COMMANDS_PER_TICK = 32;
+inline constexpr std::size_t COMMANDS_WAITING_LIMIT = 1'200;
 
 // The tick at which _utcSeconds comes, a moment the player's clock picked for a scheduled order (ADR-080), when the wall
 // clock reads _now and the next tick to run is _tick: the first tick at or after it at _ticksPerSecond, _tick for a moment
@@ -122,10 +129,11 @@ public:
   void ReplaceHosted(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted);
 
 private:
-  // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
-  // them, and then a snapshot for every connected player. A universe's tick logs its commands and saves when a save is due.
-  // The players the server hosts then answer their snapshots, with orders for the next tick (ADR-079). Each tick first has
-  // the listener let go of the connections that have gone and close the ones that sent no hello in time (ADR-060).
+  // Runs one tick: the commands that arrived since the last, at most COMMANDS_PER_TICK of each connection's, in connection
+  // order and then in the order each client sent them, and then a snapshot for every connected player. A universe's tick
+  // logs its commands and saves when a save is due. The players the server hosts then answer their snapshots, with orders
+  // for the ticks after (ADR-079). Each tick first has the listener let go of the connections that have gone and close the
+  // ones that sent no hello in time (ADR-060).
   void RunTick();
 
   // Hands a save of the universe as it stands to its folder, which begins its log anew there (ADR-077).

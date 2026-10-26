@@ -4,7 +4,7 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-16 gates are open, in 5 documents.
+15 gates are open, in 5 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
@@ -31,7 +31,6 @@ Every owner decision that is still open: each row of a gate table whose Status i
 | M6 | **The order's mark.** Proposed: as the player gives a move, an attack-move, a hold of a sector or a patrol, its point is marked on the ground at once, and an attack's target, by a ring in the color of the selection's ring (ADR-067) that shrinks to nothing over 0.4 s; a refusal of that order (gate M7) turns its mark the warning color (ADR-085 decision 1). It predicts nothing: the ships move when a snapshot says they do. | NW6.1 |
 | M7 | **A command's number.** Proposed: the client numbers its commands, and a refusal names the number of the command it refuses (ADR-094 decision 1); the server trusts the number for nothing (ADR-002 decision 2). The order's mark reads it now (gate M6), and an acknowledgement or a prediction would need it later (gate M11). `EventView` carries it, so the layout of what a universe saves changes and version 1's hash is replaced (AGENTS.md R18), with what that does to a running universe, as the milestone order says. | NW3.2 |
 | M8 | **A universe's lost connection.** Proposed: in a universe, a connection lost for any reason but the server's own close (`Finished`, `WrongVersion`, `SeatRefused` or `SeatTaken`), or silent for 10 s, is joined again with the same join file, at once and then every 2 s for 30 s, while the match stays on screen and the tag says "Reconnecting · 5 s"; after that, the menu, as now. 30 s is half the deputy's minute, so a link that drops for a moment never hands the seat to the deputy (ADR-079 decision 4). A skirmish, whose server is in the game, goes back to the menu as now. | NW6.2 |
-| M9 | **A seat's commands.** Proposed: a seated client's message is at most 64 KiB, which holds a command naming every ship a fleet cap allows many times over; a seat's commands are applied at most 32 a tick, and the rest wait for the next tick, in the order given; and a connection with more than 1,200 waiting, nearly two seconds behind at 32 a tick, is closed as `MalformedMessage`. Every connection is held to them, the loopback's and the hosted players' too, so that what the tests play is what a match plays; NW1.3 shows that no AI meets them. | NW1.3 |
 | M10 | **The round trip on the tag.** Proposed: in a universe the tag gives the connection's smoothed round trip beside the address, in whole milliseconds, "Server 203.0.113.5:4433 · 42 ms"; a skirmish's tag stays "Local skirmish". It lifts ADR-086's foreclosure of a round trip on the tag. | NW6.3 |
 | M11 | **Acknowledgement or prediction** (ADR-002 decision 5), from NW6.4's measurement over a real network. Proposed: neither, while the order's mark and the measured response hold gate M1's target; if the response misses it, which of the two is a plan of its own. | A later plan, if any |
 
