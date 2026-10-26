@@ -3489,7 +3489,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       roundTrip = std::format("{}{} ms", DOT, std::clamp(*connection.roundTripMilliseconds, 0, 999));
       roundTripUnits = _metrics.Width(Typeface::Name, CONNECTION_WIDEST_ROUND_TRIP);
     }
-    const bool silent = connection.silentSeconds >= SILENT_SECONDS;
+    // Joining a lost connection again says so in the silence's place (ADR-078 decision 10).
+    const bool silent = connection.silentSeconds >= SILENT_SECONDS || connection.reconnectingSeconds.has_value();
     // An address too long is cut short, so that with its round trip the tag is no wider than CONNECTION_MOST_UNITS.
     const float whereUnits = std::min(_metrics.Width(Typeface::Name, where), CONNECTION_MOST_UNITS - roundTripUnits);
     float textUnits = whereUnits + roundTripUnits;
@@ -3501,8 +3502,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     paint.Text(paint.Fit(where, Typeface::Name, whereUnits) + roundTrip, PADDING, TERRITORY_INSET_UNITS, TEXT_COLOR, Typeface::Name);
     if (silent)
     {
-      (void)paint.Chip(std::format("No word from the server{}{} s", DOT, std::min(connection.silentSeconds, 999)), PADDING - CHIP_PAD_UNITS,
-                       TERRITORY_INSET_UNITS + NAME_LINE_UNITS, Typeface::Name, NAME_LINE_UNITS);
+      const std::string warning = connection.reconnectingSeconds.has_value()
+                                    ? std::format("Reconnecting{}{} s", DOT, std::clamp(*connection.reconnectingSeconds, 0, 999))
+                                    : std::format("No word from the server{}{} s", DOT, std::min(connection.silentSeconds, 999));
+      (void)paint.Chip(warning, PADDING - CHIP_PAD_UNITS, TERRITORY_INSET_UNITS + NAME_LINE_UNITS, Typeface::Name, NAME_LINE_UNITS);
     }
   }
 

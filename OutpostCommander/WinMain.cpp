@@ -58,6 +58,12 @@ constexpr auto JOIN_FILE = L"Join.json";
 // What the join at launch gives the handshake, so that a player whose server is not there waits no longer for the menu's
 // skirmishes; the menu's Join universe and --join give it the channel's own (ADR-078 decision 9).
 constexpr std::chrono::milliseconds LAUNCH_JOIN_CONNECT_TIMEOUT{3'000};
+// A universe's connection lost but for the server's own close, or silent for REJOIN_SILENCE, is joined again with its join
+// file's ticket at once and then every REJOIN_INTERVAL, each join given that long to connect, while the match stays on
+// the screen; after REJOIN_PATIENCE, half the deputy's minute, the menu says why (ADR-078 decision 10).
+constexpr std::chrono::seconds REJOIN_SILENCE{10};
+constexpr std::chrono::seconds REJOIN_INTERVAL{2};
+constexpr std::chrono::seconds REJOIN_PATIENCE{30};
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -187,6 +193,20 @@ struct Match
   // The log writes to the file, so it comes after it and is destroyed before it.
   std::ofstream logFile;
   std::optional<Outpost::MatchLog> log;
+  // A universe's: the join file's ticket, which a lost connection is joined again with, and the wall time since its
+  // connection last brought a snapshot (ADR-078 decision 10).
+  std::optional<Outpost::JoinTicket> ticket;
+  std::chrono::nanoseconds sinceSnapshot{};
+  // While a universe's lost connection is joined again: when it was lost and why, when the next join starts, and the join
+  // under way, if any. The player's connection is none meanwhile.
+  struct Rejoin
+  {
+    std::chrono::steady_clock::time_point lost;
+    std::string why;
+    std::chrono::steady_clock::time_point next;
+    std::future<std::unique_ptr<Outpost::QuicTransport>> transport;
+  };
+  std::optional<Rejoin> rejoin;
 };
 } // namespace
 
@@ -358,6 +378,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     struct Joining
     {
       std::string server;
+      Outpost::JoinTicket ticket;
       std::future<std::unique_ptr<Outpost::QuicTransport>> transport;
     };
     std::optional<Joining> joining;
@@ -377,6 +398,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         client.ShowConnecting(server);
         // The ticket goes to the thread as an argument, which std::async copies, rather than in the lambda's captures.
         joining.emplace(Joining{.server = std::move(server),
+                                .ticket = ticket,
                                 .transport = std::async(
                                   std::launch::async, [](const Outpost::JoinTicket& _ticket, std::chrono::milliseconds _timeout)
                                   { return std::make_unique<Outpost::QuicTransport>(_ticket.address, _ticket.player, _timeout); }, ticket,
@@ -397,6 +419,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         std::unique_ptr<Outpost::QuicTransport> player = joining->transport.get();
         match.emplace();
         match->player = std::move(player);
+        match->ticket = joining->ticket;
         client.StartMatch(joining->server);
         lastFrame = std::chrono::steady_clock::now();
       }
@@ -471,25 +494,82 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         if (match->sinceFigures >= std::chrono::seconds{Outpost::SEAT_FIGURES_SECONDS})
         {
           match->sinceFigures = {};
-          const Neuron::QuicStatistics playerFigures = match->player->Statistics();
-          if (!match->server)
-            client.ShowRoundTrip(playerFigures.roundTripMicroseconds);
-          if (measure)
+          if (match->player)
           {
-            measurements << std::format("client_net player {} {}\n", HUMAN_PLAYER.value, figuresWords(playerFigures));
-            if (match->rival)
-              measurements << std::format("client_net player {} {}\n", RIVAL_PLAYER.value, figuresWords(match->rival->Statistics()));
+            const Neuron::QuicStatistics playerFigures = match->player->Statistics();
+            if (!match->server)
+              client.ShowRoundTrip(playerFigures.roundTripMicroseconds);
+            if (measure)
+            {
+              measurements << std::format("client_net player {} {}\n", HUMAN_PLAYER.value, figuresWords(playerFigures));
+              if (match->rival)
+                measurements << std::format("client_net player {} {}\n", RIVAL_PLAYER.value, figuresWords(match->rival->Statistics()));
+            }
           }
         }
 
+        // A universe's connection lost but for the server's own close, or silent too long, is joined again while the match
+        // stays on the screen (ADR-078 decision 10); any other lost connection ends the match.
+        const auto startRejoin = [&](std::string _why)
+        {
+          const auto lost = std::chrono::steady_clock::now();
+          match->player.reset();
+          match->rejoin.emplace(Match::Rejoin{.lost = lost, .why = std::move(_why), .next = lost, .transport = {}});
+        };
         std::vector<Outpost::Snapshot> snapshots;
-        try
+        if (match->player)
         {
-          snapshots = match->player->Receive();
+          try
+          {
+            snapshots = match->player->Receive();
+          }
+          catch (const Neuron::Exception& error)
+          {
+            if (match->ticket.has_value() && Outpost::MayJoinAgain(error))
+              startRejoin(error.what());
+            else
+              connectionLost = error.what();
+          }
         }
-        catch (const Neuron::Exception& error)
+        match->sinceSnapshot = snapshots.empty() ? match->sinceSnapshot + elapsed : std::chrono::nanoseconds{};
+        if (match->player && match->ticket.has_value() && match->sinceSnapshot >= REJOIN_SILENCE)
+          startRejoin(std::format("The server sent nothing for {} s.", REJOIN_SILENCE.count()));
+        if (match->rejoin.has_value() && match->ticket.has_value())
         {
-          connectionLost = error.what();
+          const auto rejoinNow = std::chrono::steady_clock::now();
+          if (match->rejoin->transport.valid() && match->rejoin->transport.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+          {
+            try
+            {
+              match->player = match->rejoin->transport.get();
+              match->sinceSnapshot = {};
+              match->rejoin.reset();
+            }
+            catch (const Neuron::Exception& error)
+            {
+              // A join the server refuses ends the match; any other failure waits for the next.
+              if (!Outpost::MayJoinAgain(error))
+                connectionLost = error.what();
+            }
+          }
+          if (match->rejoin.has_value() && !connectionLost && !match->rejoin->transport.valid())
+          {
+            if (rejoinNow - match->rejoin->lost >= REJOIN_PATIENCE)
+              connectionLost = match->rejoin->why;
+            else if (rejoinNow >= match->rejoin->next)
+            {
+              match->rejoin->next = rejoinNow + REJOIN_INTERVAL;
+              // The ticket goes to the thread as an argument, which std::async copies, as a join's does.
+              match->rejoin->transport = std::async(
+                std::launch::async, [](const Outpost::JoinTicket& _ticket, std::chrono::milliseconds _timeout)
+                { return std::make_unique<Outpost::QuicTransport>(_ticket.address, _ticket.player, _timeout); }, *match->ticket,
+                std::chrono::duration_cast<std::chrono::milliseconds>(REJOIN_INTERVAL));
+            }
+          }
+          client.ShowReconnecting(match->rejoin.has_value()
+                                    ? std::optional(static_cast<std::int32_t>(
+                                        std::chrono::duration_cast<std::chrono::seconds>(rejoinNow - match->rejoin->lost).count()))
+                                    : std::nullopt);
         }
         if (load)
         {
@@ -551,9 +631,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       renderer.Resize(window.ClientWidthPixels(), window.ClientHeightPixels());
       client.Update(input, std::chrono::duration<float>(elapsed).count(), renderer.WidthPixels(), renderer.HeightPixels());
       // Orders leave as soon as they are given; the server applies them at the start of its next tick (ADR-002).
+      // An order given while a lost connection is joined again goes nowhere (ADR-078 decision 10).
       for (Outpost::Command& command : client.TakeCommands())
       {
-        if (match)
+        if (match && match->player)
           match->player->Send(std::move(command));
       }
       // The menu's buttons and the match end's (ADR-020 decision 10). Leaving a match ends its server, and the next one is made.

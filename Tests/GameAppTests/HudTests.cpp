@@ -832,6 +832,16 @@ public:
     }
     Assert::IsTrue(std::ranges::all_of(widths, [&](float _width) { return _width == widths.front(); }), L"its edge stands still");
 
+    // A lost connection joined again (ADR-078 decision 10): the chip says so in the silence's place, at its widest at 30 s,
+    // and the tag keeps its width.
+    content.connection->reconnectingSeconds = 30;
+    const Outpost::Hud::Layout rejoining = Lay(content, 1920, 1080);
+    Assert::IsTrue(IsChip(rejoining, TextOf(rejoining, "Reconnecting \xC2\xB7 30 s")), L"a chip");
+    Assert::IsFalse(std::ranges::any_of(rejoining.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("No word"); }),
+                    L"in the silence's place");
+    Assert::AreEqual(widths.front(), tagOf(rejoining, TextOf(rejoining, "Server 203.0.113.5:4433")).width, L"the tag keeps its width");
+    content.connection->reconnectingSeconds.reset();
+
     // A universe's round trip follows the address, and the tag is as wide at 42 ms as at 999, and at more, written as 999.
     content.connection = Outpost::Hud::Connection{.server = Outpost::Hud::ServerName("203.0.113.5", 4433)};
     std::vector<float> roundTripWidths;
