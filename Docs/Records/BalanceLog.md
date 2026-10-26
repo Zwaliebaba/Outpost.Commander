@@ -1779,6 +1779,21 @@ The figures of the reviews of the screen, and of the meshes as drawn: sizes, con
 - **Method:** The designer laid out with the tuning data's three hulls unlocked, its card texts read from the layout. Cascadia Mono's advances read from the static fonts of Cascadia Code release 2407.24; Consolas's from its published metrics. Computed through the game's own layout code, not seen on a screen. Bahnschrift and Segoe UI were stood in for by Inter, which the hull card does not use.
 - **Source:** the findings plan, RF-O3.
 
+### 2026-10-26 · The part cards' numbers on cards 224 units wide (F15)
+
+| Quantity | Value |
+|---|---|
+| A part card's room for its numbers | 204 units: a card 224 units wide, its text 10 units in from either side, where it was 196 |
+| The Large hull card's line, "1,200 HP · ARM 14 · 25m/s", in Cascadia Mono | whole at 100% on 1920×1080 and on 2880×1920, at 200 units, and at 110% on 1920×1080, at 100% on 2560×1440 and 3840×2160 |
+| The same in Consolas | whole at every one of those sizes |
+| The other part cards | whole, in both faces, at every one of those sizes |
+| `HudTests.FitsTheLargeHullsNumbersInCascadiaMono` | passes on the wider cards, and on cards 220 units wide with their text 12 in fails at 1920×1080 |
+
+- **Build:** The tree of #128, in the Linux container: `Hud::Lay` built by clang 18 against stand-ins, with the stand-in `Neuron::RasterizeFont` of the 2026-10-25 entry
+- **Seeds:** not applicable
+- **Method:** As the 2026-10-25 entry: the designer laid out with the tuning data's three hulls unlocked, its card texts read from the layout, in Cascadia Mono's advances and with Cascadia Mono hidden so that Consolas's are used. The test was run against both widths.
+- **Source:** ADR-062 decision 4, and the findings plan, gate F15 and RF-O3.
+
 ## The code
 
 Counts taken over the source tree and its history.
