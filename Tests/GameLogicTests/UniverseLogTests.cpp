@@ -276,6 +276,12 @@ public:
     Assert::IsTrue(Outpost::UniverseLog::ReadLastRecords(file, 500) == std::vector<std::string>(written.end() - 500, written.end()));
     Assert::IsTrue(Outpost::UniverseLog::ReadLastRecords(file, 5'000) == written, L"a log shorter than asked for, whole");
     Assert::IsTrue(Outpost::UniverseLog::ReadLastRecords(folder.Path() / "None.log", 500).empty(), L"no log");
+    // Windows writes the log in text mode, each line ending in a carriage return and a line feed.
+    const std::filesystem::path windows = folder.Path() / "Windows.log";
+    std::ofstream(windows, std::ios::binary) << "start 0 new\r\nsave 0 bytes 10 encode_us 5\r\n";
+    Assert::IsTrue(Outpost::UniverseLog::ReadLastRecords(windows, 500) ==
+                     std::vector<std::string>{"start 0 new", "save 0 bytes 10 encode_us 5"},
+                   L"without the carriage returns");
   }
 
   // The battles under way, as the overseer's Health says them (ADR-101): one starts once both sides have fired within the window.

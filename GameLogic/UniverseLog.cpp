@@ -185,7 +185,12 @@ std::vector<std::string> Outpost::UniverseLog::ReadLastRecords(const std::filesy
   std::vector<std::string> lines;
   std::size_t begin = 0;
   for (std::size_t end = tail.find('\n'); end != std::string::npos; begin = end + 1, end = tail.find('\n', begin))
-    lines.emplace_back(tail, begin, end - begin);
+  {
+    // A log written on Windows ends its lines with a carriage return too, which is no part of the record.
+    std::string& line = lines.emplace_back(tail, begin, end - begin);
+    if (line.ends_with('\r'))
+      line.pop_back();
+  }
   // The first line of a chunk that starts within the file may be cut short, and a last line with no end is still being written.
   if (start > 0 && !lines.empty())
     lines.erase(lines.begin());
