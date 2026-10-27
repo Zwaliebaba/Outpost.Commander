@@ -1,6 +1,6 @@
 # Outpost Commander — The Universe Overseer
 
-Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D7, all open
+Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D7, of which D1, D4 and D7 are decided
 
 The overseer is the dedicated server's management console: a separate application, with a channel of its own to the server, that oversees the whole universe (Game §session.server). What it shows, how it reaches the server and what the server has to measure for it are [the proposal](UniverseOverseer.md)'s. This plan is the order the work is done in. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -31,7 +31,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV2.3 | The universe's view and the log's stream | OV2.1 | — | todo |
 | OV2.4 | `Closing`, and the server's state | OV2.2 | — | todo |
 | OV3.1 | The overseer's project and window | OV2 | D1, D5, D6 | todo |
-| OV3.2 | The overview: header, tiles, seat table, attention, who played, the log | OV3.1 | D7 | todo |
+| OV3.2 | The overview: header, tiles, seat table, attention, who played, the log | OV3.1, the canvas plan's CV9.1 | D7 | todo |
 | OV3.3 | The map: one system's sectors, full sight and a seat's | OV3.1 | — | todo |
 | OV4.1 | The seat window, the server window and the header states | OV3 | — | todo |
 | OV5.1 | Save now and Stop | OV4 | — | todo |
@@ -44,7 +44,7 @@ OV1, OV2, OV3, OV4, OV5.
 - **OV1 changes no message and nothing a universe saves,** so a universe made before it runs on after it. It is the server's own instrument, written to `Universe.log` whether or not an overseer ever connects, and it waits on no gate.
 - **The process's figures are OV2.2's,** not OV1's as the proposal's §10 has it: nothing reads them before `Health` does.
 - **The galaxy view comes with the galaxy** (the Horizon plan's milestone 42). Until then a universe is one system, and OV3.3's map is its sector map.
-- **OV3 follows the canvas** (gate D1): the overseer is built on the widgets the canvas plan puts in `NeuronClient`, so it waits on that plan's widget milestone, not on the windows the canvas replaces. OV1 and OV2 need nothing of it.
+- **OV3 is built on the canvas** (gate D1), whose widgets are merged ([ADR-100](../ADR/ADR-100-the-canvas.md)), and waits on none of the windows the canvas plan still ports. Before OV3.2, [the canvas plan](ImplementationPlan-Canvas.md)'s scroll view, CV9.1, is merged, as a pull request of its own if nobody has taken it yet (owner, 2026-10-27); OV3.2 adds the table to the canvas with its first use (gate D7). The sector map shares the minimap's drawing, which the canvas plan ports last (CV8.3), so OV3.3 is laid out against whichever of the two stands then. OV1 and OV2 need nothing of it.
 
 ---
 
