@@ -4479,15 +4479,22 @@ public:
         const Outpost::Hud::TextMetrics metrics = MetricsFor(width, height, factor);
         const Outpost::Hud::Content longest = LongestContent(true);
         Outpost::Hud::Content pointed = longest;
-        pointed.orders->give.enabled = true;
-        pointed.orders->give.note.clear();
-        pointed.orders->give.action = {.kind = Outpost::Hud::ActionKind::GiveOrder};
+        if (!pointed.orders.has_value() || !pointed.build.has_value())
+        {
+          Assert::Fail(L"the longest content has the orders and build windows");
+          return;
+        }
+        Outpost::Hud::Button& give = pointed.orders->give;
+        give.enabled = true;
+        give.note.clear();
+        give.action = {.kind = Outpost::Hud::ActionKind::GiveOrder};
+        std::vector<Outpost::Hud::Button>& structures = pointed.build->structures;
         constexpr std::array<Outpost::StructureKind, 6> STRUCTURES{
           Outpost::StructureKind::Shipyard,        Outpost::StructureKind::ResearchLab, Outpost::StructureKind::MiningRig,
           Outpost::StructureKind::DefensePlatform, Outpost::StructureKind::Relay,       Outpost::StructureKind::RepairBay};
-        Assert::AreEqual(STRUCTURES.size(), pointed.build->structures.size());
+        Assert::AreEqual(STRUCTURES.size(), structures.size());
         for (std::size_t structure = 0; structure < STRUCTURES.size(); ++structure)
-          pointed.build->structures[structure].action = {.kind = Outpost::Hud::ActionKind::Build, .structure = STRUCTURES[structure]};
+          structures[structure].action = {.kind = Outpost::Hud::ActionKind::Build, .structure = STRUCTURES[structure]};
         Outpost::WindowManager moved;
         for (const WindowKind kind : PORTED)
         {
