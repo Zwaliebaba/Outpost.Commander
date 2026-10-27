@@ -477,6 +477,7 @@ std::size_t Neuron::Canvas::DropDown(std::string_view _id, std::string _value, s
   bool open = m_interaction.DropDown() == field;
   const WidgetId active = m_interaction.Active();
   std::vector<WidgetId> rows;
+  rows.reserve(_choices.size());
   m_interaction.PushId(list);
   for (std::size_t choice = 0; choice < _choices.size(); ++choice)
     rows.push_back(m_interaction.IdOf(std::uint64_t{choice}));
