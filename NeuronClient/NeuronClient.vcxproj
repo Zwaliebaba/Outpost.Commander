@@ -91,6 +91,8 @@
     <ClInclude Include="GlyphAtlas.h" />
     <ClInclude Include="UiPipeline.h" />
     <ClInclude Include="ScreenSegment.h" />
+    <ClInclude Include="DrawList.h" />
+    <ClInclude Include="TextMetrics.h" />
     <ClInclude Include="GlowPipeline.h" />
     <ClInclude Include="GroundMaskPipeline.h" />
     <ClInclude Include="StarPipeline.h" />
@@ -109,6 +111,8 @@
     <ClCompile Include="GlyphAtlas.cpp" />
     <ClCompile Include="UiPipeline.cpp" />
     <ClCompile Include="ScreenSegment.cpp" />
+    <ClCompile Include="DrawList.cpp" />
+    <ClCompile Include="TextMetrics.cpp" />
     <ClCompile Include="GlowPipeline.cpp" />
     <ClCompile Include="GroundMaskPipeline.cpp" />
     <ClCompile Include="StarPipeline.cpp" />

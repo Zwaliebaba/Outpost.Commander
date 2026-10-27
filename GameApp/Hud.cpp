@@ -888,7 +888,7 @@ void AddCorners(Hud::Layout& _layout, const Hud::Rect& _frame, float _scale)
   {
     for (const bool bottom : {false, true})
     {
-      _layout.sprites.push_back({.sprite = Hud::Sprite::Corner,
+      _layout.sprites.push_back({.sprite = Hud::SpriteOf(Hud::Sprite::Corner),
                                  .area = {right ? _frame.left + _frame.width - corner : _frame.left,
                                           bottom ? _frame.top + _frame.height - corner : _frame.top, corner, corner, WINDOW_EDGE_COLOR},
                                  .mirrorX = right,
@@ -897,9 +897,9 @@ void AddCorners(Hud::Layout& _layout, const Hud::Rect& _frame, float _scale)
   }
 }
 
-// Opens a window in the layout: its frame, title bar, close box and corners, its place in the layout's lists, and its
-// title, unless the caller draws its own. The body below the title bar is _bodyHeightUnits tall; what goes in it is the caller's, and returns the body's top
-// in pixels.
+// Opens a window in the layout: a layer of the display list of its own (ADR-100), its frame, title bar, close box and
+// corners, its place in the layout's lists of buttons and previews, and its title, unless the caller draws its own. The
+// body below the title bar is _bodyHeightUnits tall; what goes in it is the caller's, and returns the body's top in pixels.
 float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _title, Outpost::WindowManager::Point _corner,
                  float _widthUnits, float _bodyHeightUnits, float _scale)
 {
@@ -907,25 +907,21 @@ float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _t
   const float top = _corner.yUnits * _scale;
   const float width = _widthUnits * _scale;
   const float titleHeight = Hud::TITLE_BAR_UNITS * _scale;
-  Hud::Window window{.kind = _kind,
-                     .frame = {left, top, width, titleHeight + (_bodyHeightUnits * _scale), WINDOW_COLOR},
-                     .titleBar = {left, top, width - titleHeight, titleHeight, TITLE_HATCH_COLOR, Hud::Fill::Hatched},
-                     .closeBox = {left + width - titleHeight, top, titleHeight, titleHeight, CLOSE_BOX_COLOR},
-                     .corner = _corner,
-                     .firstPanel = _layout.panels.size(),
-                     .firstLine = _layout.lines.size(),
-                     .firstText = _layout.texts.size(),
-                     .firstSprite = _layout.sprites.size(),
-                     .firstAction = _layout.actions.size(),
-                     .firstPreview = _layout.previews.size()};
+  const Hud::Window window{.kind = _kind,
+                           .frame = {left, top, width, titleHeight + (_bodyHeightUnits * _scale), WINDOW_COLOR},
+                           .titleBar = {left, top, width - titleHeight, titleHeight, TITLE_HATCH_COLOR, Hud::Fill::Hatched},
+                           .closeBox = {left + width - titleHeight, top, titleHeight, titleHeight, CLOSE_BOX_COLOR},
+                           .corner = _corner,
+                           .firstAction = _layout.actions.size()};
+  _layout.BeginLayer(window.frame);
   _layout.panels.push_back(window.frame);
   _layout.panels.push_back(window.titleBar);
   _layout.panels.push_back(window.closeBox);
   if (!_title.empty())
     _layout.texts.push_back(
-      {std::move(_title), left + (PADDING * _scale), top + (TITLE_TEXT_INSET * _scale), TEXT_COLOR, Hud::Typeface::Title});
+      {std::move(_title), left + (PADDING * _scale), top + (TITLE_TEXT_INSET * _scale), TEXT_COLOR, Hud::FontOf(Hud::Typeface::Title)});
   _layout.texts.push_back({std::string(CLOSE_MARK), window.closeBox.left + (CLOSE_TEXT_LEFT * _scale), top + (TITLE_TEXT_INSET * _scale),
-                           TEXT_COLOR, Hud::Typeface::Title});
+                           TEXT_COLOR, Hud::FontOf(Hud::Typeface::Title)});
   AddCorners(_layout, window.frame, _scale);
   _layout.windows.push_back(window);
   return top + titleHeight;
@@ -1197,7 +1193,8 @@ public:
 
   void Text(std::string _text, float _left, float _top, const DirectX::XMFLOAT4& _color, Hud::Typeface _face, float _tracking = 0.0f)
   {
-    m_layout.texts.push_back({std::move(_text), m_originX + (_left * m_scale), m_originY + (_top * m_scale), _color, _face, _tracking});
+    m_layout.texts.push_back(
+      {std::move(_text), m_originX + (_left * m_scale), m_originY + (_top * m_scale), _color, Hud::FontOf(_face), _tracking});
   }
 
   // A line that ends at _right.
@@ -1225,7 +1222,7 @@ public:
 
   void Sprite(Hud::Sprite _sprite, float _left, float _top, float _size, const DirectX::XMFLOAT4& _color)
   {
-    m_layout.sprites.push_back({.sprite = _sprite, .area = Area(_left, _top, _size, _size, _color)});
+    m_layout.sprites.push_back({.sprite = Hud::SpriteOf(_sprite), .area = Area(_left, _top, _size, _size, _color)});
   }
 
   // The edge round a lit rectangle.
@@ -1237,14 +1234,17 @@ public:
     Panel(_left + _width - LINE_UNITS, _top, LINE_UNITS, _height, _color);
   }
 
+  // A region that takes a press, whose payload is _action's place among the layout's actions (ADR-100).
   void Press(const Hud::Rect& _rect, const Hud::Action& _action)
   {
+    m_layout.regions.push_back({.area = _rect, .payload = static_cast<std::uint32_t>(m_layout.actions.size())});
     m_layout.actions.emplace_back(_rect, _action);
   }
 
   // An area that answers the pointer with _action's preview and takes no click, as a locked part's card does.
   void Preview(const Hud::Rect& _rect, const Hud::Action& _action)
   {
+    m_layout.regions.push_back({.area = _rect, .payload = static_cast<std::uint32_t>(m_layout.previews.size()), .hoverOnly = true});
     m_layout.previews.emplace_back(_rect, _action);
   }
 
@@ -2164,40 +2164,6 @@ void LayBuild(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud:
 }
 
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
-// The part of the line from _from to _to that lies inside _rect, by Liang and Barsky's clipping; none when none of it does.
-std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> ClipToRect(DirectX::XMFLOAT2 _from, DirectX::XMFLOAT2 _to,
-                                                                          const Hud::Rect& _rect) noexcept
-{
-  const float dx = _to.x - _from.x;
-  const float dy = _to.y - _from.y;
-  // How far along the line it enters the rectangle and leaves it, each edge taken as a bound on the share along: the left,
-  // the right, the top and the bottom.
-  float enter = 0.0f;
-  float leave = 1.0f;
-  const std::array<std::pair<float, float>, 4> edges{{{-dx, _from.x - _rect.left},
-                                                      {dx, _rect.left + _rect.width - _from.x},
-                                                      {-dy, _from.y - _rect.top},
-                                                      {dy, _rect.top + _rect.height - _from.y}}};
-  for (const auto& [toward, room] : edges)
-  {
-    if (toward == 0.0f)
-    {
-      if (room < 0.0f)
-        return std::nullopt;
-      continue;
-    }
-    const float share = room / toward;
-    if (toward < 0.0f)
-      enter = std::max(enter, share);
-    else
-      leave = std::min(leave, share);
-  }
-  if (enter > leave)
-    return std::nullopt;
-  return std::pair{DirectX::XMFLOAT2{_from.x + (enter * dx), _from.y + (enter * dy)},
-                   DirectX::XMFLOAT2{_from.x + (leave * dx), _from.y + (leave * dy)}};
-}
-
 std::size_t LayerStart(const Hud::Layout& _layout, std::size_t _window, std::size_t Hud::Window::*_first, std::size_t _total) noexcept
 {
   return _window < _layout.windows.size() ? _layout.windows[_window].*_first : _total;
@@ -2208,65 +2174,6 @@ Hud::Span LayerSpan(const Hud::Layout& _layout, std::size_t _layer, std::size_t 
   return {.first = _layer == 0 ? 0 : LayerStart(_layout, _layer - 1, _first, _total), .end = LayerStart(_layout, _layer, _first, _total)};
 }
 } // namespace
-
-float Outpost::Hud::TextMetrics::Width(Typeface _face, std::string_view _text, float _trackingUnits) const noexcept
-{
-  const auto font = static_cast<std::size_t>(_face);
-  if (font >= m_fonts.size() || m_scale <= 0.0f)
-    return 0.0f;
-  return m_fonts[font].Width(_text, std::round(_trackingUnits * m_scale)) / m_scale;
-}
-
-std::string Outpost::Hud::TextMetrics::Fit(Typeface _face, std::string_view _text, float _widthUnits, float _trackingUnits) const
-{
-  if (Width(_face, _text, _trackingUnits) <= _widthUnits)
-    return std::string(_text);
-  // The longest start of the text that fits with the dots after it, less any space it would end on. ends[n] is where the
-  // first n characters end, counting a character of several UTF-8 bytes once.
-  constexpr std::string_view DOTS = "...";
-  std::vector<std::size_t> ends{0};
-  for (std::size_t index = 0; index < _text.size();)
-  {
-    (void)Neuron::NextCodePoint(_text, index);
-    ends.push_back(index);
-  }
-  for (std::size_t characters = ends.size() - 1; characters-- > 0;)
-  {
-    std::string_view start = _text.substr(0, ends[characters]);
-    while (!start.empty() && start.back() == ' ')
-      start.remove_suffix(1);
-    std::string cut = std::string(start) + std::string(DOTS);
-    if (Width(_face, cut, _trackingUnits) <= _widthUnits)
-      return cut;
-  }
-  return {};
-}
-
-std::vector<std::string> Outpost::Hud::TextMetrics::Wrap(Typeface _face, std::string_view _text, float _widthUnits) const
-{
-  std::vector<std::string> lines;
-  std::string line;
-  for (std::size_t start = 0; start < _text.size();)
-  {
-    const std::size_t space = _text.find(' ', start);
-    const std::string_view word = _text.substr(start, space == std::string_view::npos ? std::string_view::npos : space - start);
-    start = space == std::string_view::npos ? _text.size() : space + 1;
-    if (word.empty())
-      continue;
-    std::string joined = line.empty() ? std::string(word) : std::format("{} {}", line, word);
-    if (Width(_face, joined) <= _widthUnits)
-    {
-      line = std::move(joined);
-      continue;
-    }
-    if (!line.empty())
-      lines.push_back(std::move(line));
-    line = Fit(_face, word, _widthUnits);
-  }
-  if (!line.empty())
-    lines.push_back(std::move(line));
-  return lines;
-}
 
 std::string Outpost::WithThousands(std::int64_t _value)
 {
@@ -2481,7 +2388,8 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
                          const MenuState& _state)
 {
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
-  Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
+  Layout layout;
+  layout.fontPixels = FONT_UNITS * scale;
   // A skirmish at each difficulty (ADR-065), a universe to join when there is one (ADR-078), then Quit.
   std::vector<Button> buttons{{.label = "Easy skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Easy}},
                               {.label = "Normal skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Normal}},
@@ -2527,43 +2435,18 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
   return layout;
 }
 
-bool Hud::Layout::Covers(float _xPixels, float _yPixels) const noexcept
-{
-  return std::ranges::any_of(panels, [&](const Rect& _panel) { return _panel.Contains(_xPixels, _yPixels); });
-}
-
 std::optional<Hud::Action> Hud::Layout::ActionAt(float _xPixels, float _yPixels) const noexcept
 {
-  const Span span = ActionsOf(LayerAt(_xPixels, _yPixels));
-  for (std::size_t i = span.first; i < span.end; ++i)
-  {
-    if (actions[i].first.Contains(_xPixels, _yPixels))
-      return actions[i].second;
-  }
+  if (const Neuron::CanvasRegion* region = HitAt(_xPixels, _yPixels); region != nullptr && region->payload != Neuron::NO_PAYLOAD)
+    return actions[region->payload].second;
   return std::nullopt;
 }
 
 std::optional<Hud::Action> Hud::Layout::HoverAt(float _xPixels, float _yPixels) const noexcept
 {
-  if (const std::optional<Action> action = ActionAt(_xPixels, _yPixels))
-    return action;
-  const Span span = PreviewsOf(LayerAt(_xPixels, _yPixels));
-  for (std::size_t i = span.first; i < span.end; ++i)
-  {
-    if (previews[i].first.Contains(_xPixels, _yPixels))
-      return previews[i].second;
-  }
+  if (const Neuron::CanvasRegion* region = PointedAt(_xPixels, _yPixels); region != nullptr && region->payload != Neuron::NO_PAYLOAD)
+    return (region->hoverOnly ? previews : actions)[region->payload].second;
   return std::nullopt;
-}
-
-std::size_t Hud::Layout::LayerAt(float _xPixels, float _yPixels) const noexcept
-{
-  for (std::size_t window = windows.size(); window-- > 0;)
-  {
-    if (windows[window].frame.Contains(_xPixels, _yPixels))
-      return window + 1;
-  }
-  return 0;
 }
 
 const Hud::Window* Hud::Layout::WindowAt(float _xPixels, float _yPixels) const noexcept
@@ -2572,34 +2455,9 @@ const Hud::Window* Hud::Layout::WindowAt(float _xPixels, float _yPixels) const n
   return layer == 0 ? nullptr : &windows[layer - 1];
 }
 
-Hud::Span Hud::Layout::PanelsOf(std::size_t _layer) const noexcept
-{
-  return LayerSpan(*this, _layer, &Window::firstPanel, panels.size());
-}
-
-Hud::Span Hud::Layout::LinesOf(std::size_t _layer) const noexcept
-{
-  return LayerSpan(*this, _layer, &Window::firstLine, lines.size());
-}
-
-Hud::Span Hud::Layout::TextsOf(std::size_t _layer) const noexcept
-{
-  return LayerSpan(*this, _layer, &Window::firstText, texts.size());
-}
-
-Hud::Span Hud::Layout::SpritesOf(std::size_t _layer) const noexcept
-{
-  return LayerSpan(*this, _layer, &Window::firstSprite, sprites.size());
-}
-
 Hud::Span Hud::Layout::ActionsOf(std::size_t _layer) const noexcept
 {
   return LayerSpan(*this, _layer, &Window::firstAction, actions.size());
-}
-
-Hud::Span Hud::Layout::PreviewsOf(std::size_t _layer) const noexcept
-{
-  return LayerSpan(*this, _layer, &Window::firstPreview, previews.size());
 }
 
 Outpost::WindowManager::Point Hud::KeepOnScreen(WindowManager::Point _corner, float _widthUnits, float _screenWidthUnits,
@@ -3302,7 +3160,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   const auto width = static_cast<float>(_widthPixels);
   const auto height = static_cast<float>(_heightPixels);
-  Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
+  Layout layout;
+  layout.fontPixels = FONT_UNITS * scale;
 
   // Every panel of the HUD is in the windows' look (ADR-043), and is laid out in reference units from its own top-left
   // corner, as a window's content is.
@@ -3759,7 +3618,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     if (_content.fog)
     {
       layout.panels.push_back(
-        {layout.minimap.left, layout.minimap.top, layout.minimap.width, layout.minimap.height, {0.0f, 0.0f, 0.0f, 1.0f}, Fill::Fog});
+        {layout.minimap.left, layout.minimap.top, layout.minimap.width, layout.minimap.height, {0.0f, 0.0f, 0.0f, 1.0f}, Fill::Image});
     }
 
     // Over the fog, since both sides know who holds what and where the pirates are: every sector's border, then each held
@@ -3851,8 +3710,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     // far and turns with the camera (ADR-015 decision 4). What runs past the map is cut at the minimap's edge.
     for (std::size_t corner = 0; corner < _view.size(); ++corner)
     {
-      if (const std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> inside =
-            ClipToRect(layout.MinimapPixelAt(_view[corner]), layout.MinimapPixelAt(_view[(corner + 1) % _view.size()]), layout.minimap))
+      if (const std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> inside = Neuron::ClipToRect(
+            layout.MinimapPixelAt(_view[corner]), layout.MinimapPixelAt(_view[(corner + 1) % _view.size()]), layout.minimap))
       {
         layout.lines.push_back(
           {.segment = {.from = inside->first, .to = inside->second, .widthPixels = VIEW_LINE_UNITS * scale}, .color = VIEW_COLOR});

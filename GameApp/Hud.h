@@ -65,32 +65,43 @@ public:
 
   [[nodiscard]] static std::vector<Neuron::SpriteDesc> Sprites();
 
-  // How wide the interface's text is set, as the atlas it is drawn from sets it (ADR-061): the fonts Typefaces names, in
-  // its order, rasterized for a back buffer at _scale pixels to a reference unit. The layout measures every line it places
-  // with it, so that a line is cut short, wrapped or given room by what it takes on the screen. It reads the fonts where
-  // they are, so they must outlive it.
-  class TextMetrics
+  // A typeface's index among the atlas's fonts, and a sprite's among its sprites, as the display list names them (ADR-100).
+  [[nodiscard]] static constexpr std::size_t FontOf(Typeface _face) noexcept
+  {
+    return static_cast<std::size_t>(_face);
+  }
+  [[nodiscard]] static constexpr std::size_t SpriteOf(Sprite _sprite) noexcept
+  {
+    return static_cast<std::size_t>(_sprite);
+  }
+
+  // How wide the interface's text is set, as the atlas it is drawn from sets it (ADR-061): the engine's measure (ADR-100) of
+  // the fonts Typefaces names, in its order, rasterized for a back buffer at _scale pixels to a reference unit, each named
+  // by its typeface. The layout measures every line it places with it, so that a line is cut short, wrapped or given room
+  // by what it takes on the screen. It reads the fonts where they are, so they must outlive it.
+  class TextMetrics : public Neuron::TextMetrics
   {
   public:
-    TextMetrics(std::span<const Neuron::GlyphAtlas::Font> _fonts, float _scale) noexcept
-      : m_fonts(_fonts),
-        m_scale(_scale)
-    {
-    }
+    using Neuron::TextMetrics::TextMetrics;
 
     // How wide _text is set in _face, with _trackingUnits more between each two characters, in reference units, as
     // Neuron::UiPipeline::DrawText sets it: each character at its whole-pixel advance, and the tracking at a whole pixel.
-    [[nodiscard]] float Width(Typeface _face, std::string_view _text, float _trackingUnits = 0.0f) const noexcept;
+    [[nodiscard]] float Width(Typeface _face, std::string_view _text, float _trackingUnits = 0.0f) const noexcept
+    {
+      return Neuron::TextMetrics::Width(static_cast<std::size_t>(_face), _text, _trackingUnits);
+    }
 
     // _text as _face sets it within _widthUnits: whole when it fits, and otherwise cut short with three dots.
-    [[nodiscard]] std::string Fit(Typeface _face, std::string_view _text, float _widthUnits, float _trackingUnits = 0.0f) const;
+    [[nodiscard]] std::string Fit(Typeface _face, std::string_view _text, float _widthUnits, float _trackingUnits = 0.0f) const
+    {
+      return Neuron::TextMetrics::Fit(static_cast<std::size_t>(_face), _text, _widthUnits, _trackingUnits);
+    }
 
     // _text broken between its words into lines that _face sets within _widthUnits; a word wider than that is cut short.
-    [[nodiscard]] std::vector<std::string> Wrap(Typeface _face, std::string_view _text, float _widthUnits) const;
-
-  private:
-    std::span<const Neuron::GlyphAtlas::Font> m_fonts;
-    float m_scale = 1.0f;
+    [[nodiscard]] std::vector<std::string> Wrap(Typeface _face, std::string_view _text, float _widthUnits) const
+    {
+      return Neuron::TextMetrics::Wrap(static_cast<std::size_t>(_face), _text, _widthUnits);
+    }
   };
 
   // What a button does when it is pressed.
@@ -677,14 +688,10 @@ public:
     std::vector<EntityBar> entityBars;
   };
 
-  // How a panel is filled: solid, or with diagonal stripes, as a window's title bar is (ADR-030).
-  enum class Fill : std::uint8_t
-  {
-    Solid,
-    Hatched,
-    // The fog's shades over the minimap: the color, as opaque as each point's shade (ADR-052).
-    Fog
-  };
+  // How a panel is filled, as the engine's display list has it (ADR-100): solid; with diagonal stripes, as a window's title
+  // bar is (ADR-030); or with the image, the fog's shades over the minimap, the color as opaque as each point's shade
+  // (ADR-052).
+  using Fill = Neuron::CanvasFill;
 
   // A hatched panel's stripes: this wide, this far apart, in reference units.
   static constexpr float HATCH_STRIPE_UNITS = 2.0f;
@@ -695,51 +702,19 @@ public:
   static constexpr float TITLE_BAR_UNITS = 36.0f;
   static constexpr float WINDOW_KEPT_ON_SCREEN_UNITS = 120.0f;
 
-  struct Rect
-  {
-    float left = 0.0f;
-    float top = 0.0f;
-    float width = 0.0f;
-    float height = 0.0f;
-    DirectX::XMFLOAT4 color{};
-    Fill fill = Fill::Solid;
-
-    [[nodiscard]] bool Contains(float _xPixels, float _yPixels) const noexcept
-    {
-      return _xPixels >= left && _xPixels < left + width && _yPixels >= top && _yPixels < top + height;
-    }
-  };
-
-  // A line of text, in UTF-8, in a typeface and with extra space between its letters.
-  struct Text
-  {
-    std::string text;
-    float left = 0.0f;
-    float top = 0.0f;
-    DirectX::XMFLOAT4 color{};
-    Typeface typeface = Typeface::Body;
-    float trackingPixels = 0.0f;
-  };
-
-  // A sprite drawn into a rectangle, in the rectangle's color, mirrored when asked (ADR-030).
-  struct SpriteMark
-  {
-    Sprite sprite = Sprite::OreMark;
-    Rect area;
-    bool mirrorX = false;
-    bool mirrorY = false;
-  };
-
-  // A solid line at any angle, in pixels, such as the minimap's view (ADR-015).
-  struct Line
-  {
-    Neuron::ScreenSegment segment;
-    DirectX::XMFLOAT4 color{};
-  };
+  // The display list's parts are the engine's (ADR-100), in pixels: a rectangle; a line of text, in a typeface by its index
+  // in Typeface; a sprite, by its index in Sprite, drawn into a rectangle in the rectangle's color and mirrored when asked
+  // (ADR-030); a solid line at any angle, such as the minimap's view (ADR-015); and a layer's share of one of the lists.
+  using Rect = Neuron::CanvasRect;
+  using Text = Neuron::CanvasText;
+  using SpriteMark = Neuron::CanvasSprite;
+  using Line = Neuron::CanvasLine;
+  using Span = Neuron::CanvasSpan;
 
   // A floating window as laid out (ADR-031): its kind; where it stands, its title bar and its close box, in pixels; its
-  // top-left corner in reference units, as WindowManager::Grab takes it; and where its panels, lines, texts, sprites,
-  // buttons and previews start in the layout's lists. Each runs to where the next window's starts, or to the list's end.
+  // top-left corner in reference units, as WindowManager::Grab takes it; and where its buttons start among the layout's
+  // actions, running to where the next window's start, or to the list's end. Its panels, lines, texts, sprites and
+  // regions are its layer's in the display list.
   struct Window
   {
     WindowKind kind = WindowKind::Designer;
@@ -747,61 +722,34 @@ public:
     Rect titleBar;
     Rect closeBox;
     WindowManager::Point corner;
-    std::size_t firstPanel = 0;
-    std::size_t firstLine = 0;
-    std::size_t firstText = 0;
-    std::size_t firstSprite = 0;
     std::size_t firstAction = 0;
-    std::size_t firstPreview = 0;
   };
 
-  // A layer's share of one of the layout's lists, from first up to end.
-  struct Span
-  {
-    std::size_t first = 0;
-    std::size_t end = 0;
-  };
-
-  // The HUD on a back buffer of one size, in its pixels. It is drawn in layers: the HUD, then each window back to front,
-  // each layer's panels, then its lines, then its sprites, then its texts. A click belongs to the front layer under it.
-  struct Layout
+  // The HUD on a back buffer of one size, in its pixels: the engine's display list (ADR-100), in which layer 0 is the HUD
+  // and layer i + 1 the window windows[i], and what the game keeps beside it. It is drawn in layers: the HUD, then each
+  // window back to front, each layer's panels, then its lines, then its sprites, then its texts. A click belongs to the
+  // front layer under it.
+  struct Layout : Neuron::DrawList
   {
     float fontPixels = 0.0f;
-    std::vector<Rect> panels;
-    std::vector<Line> lines;
-    std::vector<Text> texts;
-    // Where each enabled button is, for clicks.
+    // Where each enabled button is, for clicks: what a region that takes a press names by its payload.
     std::vector<std::pair<Rect, Action>> actions;
-    // Where each locked part's card is, which answers the pointer with its preview and takes no click (ADR-017 decision 7).
+    // Where each locked part's card is, which answers the pointer with its preview and takes no click (ADR-017 decision 7):
+    // what a region that answers the pointer only names by its payload.
     std::vector<std::pair<Rect, Action>> previews;
     // The minimap's drawing area, the map's square; empty when there is no minimap.
     Rect minimap;
     float mapSizeMeters = 0.0f;
-    std::vector<SpriteMark> sprites;
     // Back to front, the order they are drawn in.
     std::vector<Window> windows;
     // The bars over the entities, drawn before every layer, so under every panel and window (ADR-088 decision 5).
     // They take no click and cover nothing, so that a click on one is the world's.
     std::vector<Rect> bars;
 
-    // Layer 0 is the HUD and layer i + 1 the window windows[i]; there are windows.size() + 1.
-    [[nodiscard]] std::size_t LayerCount() const noexcept
-    {
-      return windows.size() + 1;
-    }
-    // The front layer under a point: the front window's that holds it, or the HUD's.
-    [[nodiscard]] std::size_t LayerAt(float _xPixels, float _yPixels) const noexcept;
-    [[nodiscard]] Span PanelsOf(std::size_t _layer) const noexcept;
-    [[nodiscard]] Span LinesOf(std::size_t _layer) const noexcept;
-    [[nodiscard]] Span TextsOf(std::size_t _layer) const noexcept;
-    [[nodiscard]] Span SpritesOf(std::size_t _layer) const noexcept;
     [[nodiscard]] Span ActionsOf(std::size_t _layer) const noexcept;
-    [[nodiscard]] Span PreviewsOf(std::size_t _layer) const noexcept;
     // The front window under a point, if any.
     [[nodiscard]] const Window* WindowAt(float _xPixels, float _yPixels) const noexcept;
 
-    // Whether a point in back-buffer pixels is on a panel, where a click belongs to the HUD.
-    [[nodiscard]] bool Covers(float _xPixels, float _yPixels) const noexcept;
     // The enabled button of the front layer under a point, if any: a button of the HUD under a window takes no click.
     [[nodiscard]] std::optional<Action> ActionAt(float _xPixels, float _yPixels) const noexcept;
     // What the pointer is over in the front layer: its enabled button, as ActionAt finds it, or else a locked part's card,

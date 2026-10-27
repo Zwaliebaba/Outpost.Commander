@@ -5,6 +5,7 @@
 #include <array>
 #include <bitset>
 #include <chrono>
+#include <limits>
 #include <optional>
 #include <span>
 
@@ -27,4 +28,6 @@
 #include "StarPipeline.h"
 #include "GlyphAtlas.h"
 #include "ScreenSegment.h"
+#include "DrawList.h"
+#include "TextMetrics.h"
 #include "UiPipeline.h"

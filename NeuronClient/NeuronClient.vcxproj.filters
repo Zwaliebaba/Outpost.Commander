@@ -61,6 +61,12 @@
     <ClInclude Include="ScreenSegment.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="DrawList.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="TextMetrics.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -101,6 +107,12 @@
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="ScreenSegment.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="DrawList.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="TextMetrics.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
   </ItemGroup>

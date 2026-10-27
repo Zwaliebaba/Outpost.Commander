@@ -69,6 +69,22 @@ public:
   void DrawImage(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color, float _u0, float _v0, float _u1,
                  float _v1);
 
+  // How Draw fills a hatched rectangle, its stripes hatchStripePixels wide every hatchPeriodPixels, and an image rectangle,
+  // with the part of the image from (imageU0, imageV0) at its top-left corner to (imageU1, imageV1).
+  struct FillStyle
+  {
+    float hatchPeriodPixels = 0.0f;
+    float hatchStripePixels = 0.0f;
+    float imageU0 = 0.0f;
+    float imageV0 = 0.0f;
+    float imageU1 = 1.0f;
+    float imageV1 = 1.0f;
+  };
+
+  // Draws _list, layer by layer, back to front: each layer's panels, then its lines, then its sprites, then its texts, so
+  // that a layer covers the text of the layer behind it (ADR-031 decision 4; ADR-100).
+  void Draw(const DrawList& _list, const FillStyle& _fills);
+
   [[nodiscard]] float TextWidth(std::size_t _font, std::string_view _text, float _trackingPixels = 0.0f) const noexcept
   {
     return m_atlas.fonts[_font].Width(_text, _trackingPixels);
