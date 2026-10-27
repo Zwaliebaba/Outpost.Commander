@@ -104,6 +104,7 @@
     <ClInclude Include="OrderForm.h" />
     <ClInclude Include="PlayerClock.h" />
     <ClInclude Include="KeyBindings.h" />
+    <ClInclude Include="WindowTable.h" />
     <ClInclude Include="Hud.h" />
   </ItemGroup>
   <ItemGroup>

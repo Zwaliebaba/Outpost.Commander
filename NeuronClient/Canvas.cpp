@@ -20,7 +20,15 @@ Neuron::Canvas::Canvas(const Theme& _theme, const TextMetrics& _metrics, Interac
 {
 }
 
-void Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits, const LayoutStyle& _body)
+std::size_t Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits,
+                                        const LayoutStyle& _body)
+{
+  return BeginWindow(_window, std::move(_title), LayoutAnchor::TopLeft, {.left = _corner.xUnits, .top = _corner.yUnits}, _widthUnits,
+                     _body);
+}
+
+std::size_t Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, LayoutAnchor _anchor, const LayoutEdges& _margin,
+                                        float _widthUnits, const LayoutStyle& _body)
 {
   const bool claimed = m_interaction.Claim(_window);
   ASSERT(claimed);
@@ -29,9 +37,9 @@ void Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, CanvasPoi
   const bool titleClaimed = m_interaction.Claim(titleBar);
   const bool closeClaimed = m_interaction.Claim(closeBox);
   ASSERT(titleClaimed && closeClaimed);
+  // The body stretches across the frame, so that it holds its children within the window's width whatever they would take.
   const std::size_t frame =
-    m_tree.Begin(LayoutKind::Column,
-                 {.widthUnits = _widthUnits, .anchor = LayoutAnchor::TopLeft, .margin = {.left = _corner.xUnits, .top = _corner.yUnits}});
+    m_tree.Begin(LayoutKind::Column, {.widthUnits = _widthUnits, .alignX = LayoutAlign::Stretch, .anchor = _anchor, .margin = _margin});
   (void)m_tree.Add({.heightUnits = m_theme.titleBarUnits});
   (void)m_tree.Begin(LayoutKind::Column, _body);
   m_interaction.PushId(_window);
@@ -42,22 +50,22 @@ void Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, CanvasPoi
       const float scale = Scale();
       const CanvasRect body = RectOf(frame, m_theme.windowColor);
       const float titleHeight = m_theme.titleBarUnits * scale;
-      const CanvasRect bar{body.left, body.top, body.width - titleHeight, titleHeight, m_theme.titleColor, CanvasFill::Hatched};
+      const CanvasRect bar{body.left, body.top, body.width - titleHeight, titleHeight, m_theme.titleBarColor, CanvasFill::Hatched};
       const CanvasRect close{body.left + body.width - titleHeight, body.top, titleHeight, titleHeight, m_theme.closeBoxColor};
       _list.BeginLayer(body);
       _list.panels.push_back(body);
       _list.panels.push_back(bar);
       _list.panels.push_back(close);
-      const float textTop = body.top + (m_theme.titleTopUnits * scale);
+      _list.texts.push_back({m_theme.closeMark, close.left + (m_theme.closeMarkLeftUnits * scale),
+                             body.top + (m_theme.closeMarkTopUnits * scale), m_theme.textColor, m_theme.closeMarkFont});
       if (!title.empty())
-        _list.texts.push_back(
-          {std::move(title), body.left + (m_theme.titleLeftUnits * scale), textTop, m_theme.textColor, m_theme.titleFont});
-      _list.texts.push_back(
-        {m_theme.closeMark, close.left + (m_theme.closeMarkLeftUnits * scale), textTop, m_theme.textColor, m_theme.titleFont});
+        _list.texts.push_back({std::move(title), body.left + (m_theme.titleLeftUnits * scale), body.top + (m_theme.titleTopUnits * scale),
+                               m_theme.titleTextColor, m_theme.titleFont, m_theme.titleTrackingUnits * scale});
       Corners(_list, body);
       _list.regions.push_back({.area = bar, .widget = titleBar});
       _list.regions.push_back({.area = close, .widget = closeBox});
     });
+  return frame;
 }
 
 void Neuron::Canvas::EndWindow()
@@ -406,9 +414,9 @@ void Neuron::Canvas::DrawButton(DrawList& _list, std::size_t _node, WidgetId _wi
     Cap(_list, _button.key, right - theme.keyCapUnits, top + ((height - theme.keyCapUnits) / 2.0f));
     room -= theme.keyCapUnits + theme.fitGapUnits;
   }
-  if (!_button.figure.empty() && !_button.enabled && !_button.note.empty())
+  if (!_button.enabled && !_button.note.empty())
   {
-    // The reason it cannot be pressed stands in its figure's place.
+    // The reason it cannot be pressed stands in its figure's place, or where one would stand on a button without one.
     const float noteWidth = m_metrics.Width(theme.labelFont, _button.note);
     Text(_list, _button.note, right - noteWidth, figureTop, theme.labelColor, theme.labelFont);
     Text(_list, m_metrics.Fit(theme.nameFont, _button.label, room - noteWidth - theme.fitGapUnits), left + theme.buttonInsetUnits, labelTop,

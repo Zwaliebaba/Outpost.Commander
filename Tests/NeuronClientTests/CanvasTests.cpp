@@ -40,6 +40,12 @@ bool RectIs(const CanvasRect& _rect, float _left, float _top, float _width, floa
          Same(_rect.color, _color);
 }
 
+void AssertStandsAt(const Neuron::LayoutNode& _node, float _leftUnits, float _topUnits, const wchar_t* _what)
+{
+  Assert::AreEqual(_leftUnits, _node.leftUnits, 0.001f, _what);
+  Assert::AreEqual(_topUnits, _node.topUnits, 0.001f, _what);
+}
+
 bool TextIs(const Neuron::CanvasText& _text, std::string_view _words, float _left, float _top, const DirectX::XMFLOAT4& _color,
             std::size_t _font)
 {
@@ -77,7 +83,8 @@ Neuron::Theme TestTheme()
 {
   Neuron::Theme theme;
   theme.windowColor = Role(0.01f);
-  theme.titleColor = Role(0.02f);
+  theme.titleBarColor = Role(0.02f);
+  theme.titleTextColor = Role(0.21f);
   theme.closeBoxColor = Role(0.03f);
   theme.cornerColor = Role(0.04f);
   theme.cardColor = Role(0.05f);
@@ -96,17 +103,20 @@ Neuron::Theme TestTheme()
   theme.warningColor = Role(0.18f);
   theme.barTrackColor = Role(0.19f);
   theme.barFillColor = Role(0.20f);
-  theme.titleFont = TITLE;
+  theme.titleFont = LABEL;
+  theme.closeMarkFont = TITLE;
   theme.nameFont = NAME;
   theme.labelFont = LABEL;
   theme.figureFont = FIGURE;
   theme.cornerSprite = CORNER;
   theme.checkSprite = CHECK;
   theme.titleBarUnits = 36.0f;
-  theme.titleLeftUnits = 12.0f;
-  theme.titleTopUnits = 5.0f;
-  theme.closeMarkLeftUnits = 11.0f;
+  theme.titleLeftUnits = 24.0f;
+  theme.titleTopUnits = 11.0f;
+  theme.titleTrackingUnits = 2.0f;
   theme.closeMark = "x";
+  theme.closeMarkLeftUnits = 11.0f;
+  theme.closeMarkTopUnits = 5.0f;
   theme.cornerUnits = 12.0f;
   theme.edgeUnits = 1.0f;
   theme.buttonInsetUnits = 12.0f;
@@ -151,14 +161,14 @@ TEST_CLASS(CanvasTests)
 {
 public:
   // ADR-031 decision 3; ADR-100: a window is a layer of its own, its frame at its corner and as tall as its title bar and
-  // its body, its hatched title bar with its title, its close box with its mark, a bracket at each corner, and a region for
-  // the title bar and one for the close box, which name nothing for the caller to do.
+  // its body, its hatched title bar with its close box's mark and its title, its close box, a bracket at each corner, and a
+  // region for the title bar and one for the close box, which name nothing for the caller to do.
   TEST_METHOD(DrawsAWindowInItsLook)
   {
     Fixture fixture;
     Canvas canvas = fixture.Begin();
-    canvas.BeginWindow(7, "Build", {.xUnits = 100.0f, .yUnits = 50.0f}, 300.0f,
-                       {.padding = {.left = 12.0f, .top = 12.0f, .right = 12.0f, .bottom = 12.0f}});
+    const std::size_t frame = canvas.BeginWindow(7, "BUILD", {.xUnits = 100.0f, .yUnits = 50.0f}, 300.0f,
+                                                 {.padding = {.left = 12.0f, .top = 12.0f, .right = 12.0f, .bottom = 12.0f}});
     (void)canvas.Tree().Add({.heightUnits = 40.0f});
     canvas.EndWindow();
     DrawList list;
@@ -169,11 +179,13 @@ public:
     Assert::IsTrue(RectIs(list.layers[0].frame, 200.0f, 100.0f, 600.0f, 200.0f, theme.windowColor), L"36 of title bar and 64 of body");
     Assert::AreEqual(size_t{3}, list.panels.size());
     Assert::IsTrue(RectIs(list.panels[0], 200.0f, 100.0f, 600.0f, 200.0f, theme.windowColor));
-    Assert::IsTrue(RectIs(list.panels[1], 200.0f, 100.0f, 528.0f, 72.0f, theme.titleColor) && list.panels[1].fill == CanvasFill::Hatched);
+    Assert::IsTrue(RectIs(list.panels[1], 200.0f, 100.0f, 528.0f, 72.0f, theme.titleBarColor) &&
+                   list.panels[1].fill == CanvasFill::Hatched);
     Assert::IsTrue(RectIs(list.panels[2], 728.0f, 100.0f, 72.0f, 72.0f, theme.closeBoxColor));
     Assert::AreEqual(size_t{2}, list.texts.size());
-    Assert::IsTrue(TextIs(list.texts[0], "Build", 224.0f, 110.0f, theme.textColor, TITLE));
-    Assert::IsTrue(TextIs(list.texts[1], "x", 750.0f, 110.0f, theme.textColor, TITLE));
+    Assert::IsTrue(TextIs(list.texts[0], "x", 750.0f, 110.0f, theme.textColor, TITLE), L"the close mark first");
+    Assert::IsTrue(TextIs(list.texts[1], "BUILD", 248.0f, 122.0f, theme.titleTextColor, LABEL), L"then the title");
+    Assert::AreEqual(4.0f, list.texts[1].trackingPixels, L"tracked as the theme has it");
     Assert::AreEqual(size_t{4}, list.sprites.size());
     const std::array<std::array<float, 2>, 4> corners{{{200.0f, 100.0f}, {200.0f, 276.0f}, {776.0f, 100.0f}, {776.0f, 276.0f}}};
     for (std::size_t corner = 0; corner < corners.size(); ++corner)
@@ -188,6 +200,46 @@ public:
     Assert::AreEqual(canvas.TitleBarOf(7), list.regions[0].widget);
     Assert::AreEqual(canvas.CloseBoxOf(7), list.regions[1].widget);
     Assert::AreEqual(Neuron::NO_PAYLOAD, list.regions[1].payload);
+    Assert::AreEqual(100.0f, canvas.Tree().Node(frame).leftUnits, L"the frame's node, where it stood");
+  }
+
+  // ADR-100 decisions 2 and 6: a window not yet moved stands at its anchor of the screen, less its margin, as tall as
+  // what it holds.
+  TEST_METHOD(AnchorsAWindowThatHasNotMoved)
+  {
+    Fixture fixture;
+    Canvas canvas = fixture.Begin();
+    const std::size_t middle =
+      canvas.BeginWindow(7, std::string(), LayoutAnchor::Middle, {.left = 16.0f, .top = 16.0f, .right = 16.0f, .bottom = 16.0f}, 300.0f);
+    (void)canvas.Tree().Add({.heightUnits = 64.0f});
+    canvas.EndWindow();
+    const std::size_t corner = canvas.BeginWindow(8, std::string(), LayoutAnchor::BottomRight, {.right = 16.0f, .bottom = 40.0f}, 200.0f);
+    (void)canvas.Tree().Add({.heightUnits = 24.0f});
+    canvas.EndWindow();
+    DrawList list;
+    canvas.Finish(list);
+
+    AssertStandsAt(canvas.Tree().Node(middle), 330.0f, 220.0f, L"in the middle of 960 by 540, 300 by 100");
+    AssertStandsAt(canvas.Tree().Node(corner), 744.0f, 440.0f, L"16 in from the right and 40 up from the foot, 200 by 60");
+    Assert::IsTrue(RectIs(list.layers[1].frame, 1488.0f, 880.0f, 400.0f, 120.0f, fixture.theme.windowColor), L"and drawn there");
+    Assert::AreEqual(size_t{2}, list.texts.size(), L"no title, only the two close marks");
+  }
+
+  // ADR-100: a window's body is as wide as the window, whatever its children would take, so that a child it stretches spans
+  // the window less the body's padding.
+  TEST_METHOD(StretchesAWindowsBodyAcrossIt)
+  {
+    Fixture fixture;
+    Canvas canvas = fixture.Begin();
+    (void)canvas.BeginWindow(7, std::string(), {.xUnits = 100.0f, .yUnits = 50.0f}, 300.0f,
+                             {.padding = {.left = 12.0f, .top = 12.0f, .right = 12.0f, .bottom = 12.0f}, .alignX = LayoutAlign::Stretch});
+    const std::size_t button = canvas.Tree().Add({.heightUnits = 34.0f});
+    canvas.EndWindow();
+    DrawList list;
+    canvas.Finish(list);
+
+    AssertStandsAt(canvas.Tree().Node(button), 112.0f, 98.0f, L"inside the padding, under the title bar");
+    Assert::AreEqual(276.0f, canvas.Tree().Node(button).widthUnits, 0.001f, L"across the window less the padding");
   }
 
   // ADR-043 decision 1; ADR-100: a panel of the HUD is a window's body and corners, anchored, as large as what it holds,
@@ -284,8 +336,8 @@ public:
     Assert::IsTrue(OutlineIs(picked, 6, 0.0f, 88.0f, 600.0f, 68.0f, theme.pickedEdgeColor), L"a picked one's edge is lit already");
   }
 
-  // ADR-043 decision 4; ADR-100: a disabled button is dim and takes no press, and its reason stands in its figure's place;
-  // without a reason, its figure is dim too.
+  // ADR-043 decision 4; ADR-100: a disabled button is dim and takes no press, and its reason stands in its figure's place,
+  // or where one would stand on a button without one; without a reason, its figure is dim too.
   TEST_METHOD(DimsADisabledButtonWithItsReason)
   {
     Fixture fixture;
@@ -296,6 +348,7 @@ public:
                         {.heightUnits = 34.0f});
     (void)canvas.Button("yard", {.label = "Shipyard", .figure = "900", .figureMark = GEM, .payload = 7, .enabled = false},
                         {.heightUnits = 34.0f});
+    (void)canvas.Button("give", {.label = "Give the order", .note = "NO SHIPS", .payload = 8, .enabled = false}, {.heightUnits = 34.0f});
     canvas.Tree().End();
     DrawList list;
     canvas.Finish(list);
@@ -307,6 +360,7 @@ public:
     Assert::AreEqual(size_t{1}, list.sprites.size(), L"no mark beside the reason");
     Assert::IsTrue(Same(list.sprites[0].area.color, theme.lockedTextColor), L"the other's mark is dim");
     Assert::IsTrue(TextIs(list.texts[3], "900", 528.0f, 105.0f, theme.lockedTextColor, FIGURE), L"and its figure");
+    Assert::IsTrue(TextIs(list.texts[4], "NO SHIPS", 480.0f, 193.0f, theme.labelColor, LABEL), L"a reason with no figure at the right");
 
     Assert::IsTrue(fixture.ui.Press(list, 100.0f, 30.0f), L"a press on it is the canvas's");
     Assert::AreEqual(Neuron::NO_WIDGET, fixture.ui.Active(), L"but presses nothing");

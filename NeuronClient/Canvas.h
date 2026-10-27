@@ -46,9 +46,13 @@ public:
   }
 
   // A floating window (ADR-031 decision 3): a layer of its own, its frame with its top-left corner at _corner, _widthUnits
-  // wide and as tall as its title bar and its body; its hatched title bar, with _title, and its close box; and a bracket at
-  // each corner. Its body is a column of _body's style, which takes what is built until EndWindow, named under _window.
-  void BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits, const LayoutStyle& _body = {});
+  // wide and as tall as its title bar and its body; its hatched title bar, with its close box's mark and _title, and its
+  // close box; and a bracket at each corner. Its body is a column of _body's style, which takes what is built until
+  // EndWindow, named under _window. The frame's node, for where it stood once the canvas is finished.
+  std::size_t BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits, const LayoutStyle& _body = {});
+  // A window that stands at _anchor of the screen, less _margin, where it first opens before it is moved.
+  std::size_t BeginWindow(WidgetId _window, std::string _title, LayoutAnchor _anchor, const LayoutEdges& _margin, float _widthUnits,
+                          const LayoutStyle& _body = {});
   void EndWindow();
   // The identifiers of a window's title bar, which a press drags it by, and of its close box.
   [[nodiscard]] WidgetId TitleBarOf(WidgetId _window) const noexcept;

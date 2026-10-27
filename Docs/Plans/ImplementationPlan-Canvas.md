@@ -78,15 +78,15 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | CV1.1 | Window places and the scale kept on disk | — | C2 | merged, [#142](https://github.com/Zwaliebaba/Outpost.Commander/pull/142) |
-| CV2.1 | The build window | CV1.1 | C7 | in review, [#144](https://github.com/Zwaliebaba/Outpost.Commander/pull/144) |
-| CV3.1 | The display list in the engine | — | C4 | in review, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV3.2 | A layout that measures | CV3.1 | C4 | in review, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV3.3 | Interaction every widget shares | CV3.1 | C4 | in review, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV3.4 | The theme and the widgets | CV3.2, CV3.3 | C4 | in review, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV4.1 | The windows' table, and the leave and away windows | CV3.4 | — | todo |
-| CV4.2 | The Controls window | CV4.1 | — | todo |
-| CV4.3 | The orders window | CV4.1 | — | todo |
-| CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | todo |
+| CV2.1 | The build window | CV1.1 | C7 | merged, [#144](https://github.com/Zwaliebaba/Outpost.Commander/pull/144) |
+| CV3.1 | The display list in the engine | — | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
+| CV3.2 | A layout that measures | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
+| CV3.3 | Interaction every widget shares | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
+| CV3.4 | The theme and the widgets | CV3.2, CV3.3 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
+| CV4.1 | The windows' table, and the leave and away windows | CV3.4 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
+| CV4.2 | The Controls window | CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
+| CV4.3 | The orders window | CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
+| CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
 | CV5.1 | The production window | CV4.1 | — | todo |
 | CV5.2 | The research window | CV5.1 | — | todo |
 | CV6.1 | The designer | CV5.1 | — | todo |
@@ -251,24 +251,28 @@ Each task is a port (rule 5).
 - **ADR:** the canvas's; ADR-031 decision 2's first places move to the table.
 - **Acceptance:** the port's comparison; `HudTests` and `WindowManagerTests` as they stand.
 - **Verify:** CI; run, both windows open and dragged.
+- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 7 and 8, and decisions 2, 5 and 6 rewritten; ADR-031 decisions 2 and 3, ADR-070 decision 3 and ADR-099 decisions 1 and 3 rewritten. The table is `Outpost::WINDOWS`, with each window's title, and `WindowsFit` measures the windows its rows count. `GameClient` keeps the canvas's interaction and moves it over the HUD drawn last. The theme's title is the windows' header, in the label face and its own color, so that a window's title bar on the canvas is drawn as `OpenWindow` drew it with its header. The comparison found four things in the engine, fixed in it: a window's body did not stretch across it, an anchored node larger than its box stood off its start, a text of nothing took no line, and a disabled button's reason stood only beside a figure, so that Give's was lost. A button on the canvas is lit as the one under the pointer, where the old windows lit every button whose action was the one under it; no two of a window's buttons share an action, so that the game shows no difference, and the comparison points at buttons with the actions `Describe` gives them.
 
 ### CV4.2 — The Controls window
 
 - **Scope:** the Controls window on the canvas, its lines still made by `KeyBindings()` (ADR-068 decision 4). `ControlsHeight` goes.
 - **Acceptance:** the port's comparison; `ListsEveryKeyInTheControlsWindow`.
 - **Verify:** CI; run, on the menu and in a match.
+- **As built (2026-10-27):** ADR-100 decision 7. Each key stands in a column of its own, cut short a gap before it, and what it does takes the rest of the line.
 
 ### CV4.3 — The orders window
 
 - **Scope:** the orders window on the canvas, its form's rows as steppers. `ORDERS_WINDOW_HEIGHT` goes.
 - **Acceptance:** the port's comparison; the orders window's tests as they stand.
 - **Verify:** CI; run, an order given and canceled.
+- **As built (2026-10-27):** ADR-100 decision 7. The scheduled orders and the form's rows stand in room for their most, so that the window keeps its height; each cancel button stands in the middle of its line. The arrows' actions are made before the stepper, in the order they are drawn, since a call's arguments are made in any order. `LaysOutTheOrdersWindow` points at Give with the canvas's pointer rather than naming Give's action as the one under it, since a button on the canvas is lit as the widget under the pointer; what it holds, that Give lights under the pointer and not without it, is as it stood.
 
 ### CV4.4 — The build window on the canvas
 
 - **Scope:** CV2.1's window on the canvas, its buttons the canvas's, its row in the windows' table.
 - **Acceptance:** the port's comparison; CV2.1's tests as they stand.
 - **Verify:** CI; run, a structure placed from it.
+- **As built (2026-10-27):** ADR-100 decisions 7 and 8. Its first place is `FirstPlace::BesideTheSelection`, an anchor at the bottom right, and `BuildCorner` goes.
 
 ---
 

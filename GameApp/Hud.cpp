@@ -1672,6 +1672,8 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
 constexpr float RESEARCH_WINDOW_WIDTH = 560.0f;
 constexpr float PRODUCTION_WINDOW_WIDTH = Hud::REFERENCE_WIDTH_UNITS - (4.0f * MARGIN) - DESIGNER_WIDTH - RESEARCH_WINDOW_WIDTH;
 constexpr float WINDOW_INSET = 24.0f;
+// Where a window's header, its label in its title bar, stands from the title bar's top.
+constexpr float WINDOW_HEADER_TOP = 11.0f;
 // A section's label, and how far under it what it labels starts.
 constexpr float SECTION_TOP = 84.0f;
 constexpr float SECTION_BODY_GAP = 20.0f;
@@ -1788,7 +1790,8 @@ void LayProduction(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const
   (void)OpenWindow(_layout, Outpost::WindowKind::Production, std::string(), _corner, PRODUCTION_WINDOW_WIDTH,
                    ProductionHeight(_panel) - Hud::TITLE_BAR_UNITS, _scale);
   Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("PRODUCTION", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  paint.Text(std::string(Outpost::RowOf(Outpost::WindowKind::Production).title), WINDOW_INSET, WINDOW_HEADER_TOP, HEADER_LABEL_COLOR,
+             Hud::Typeface::Label, paint.Tracking());
   Header(paint, _panel.producer, _panel.ore, PRODUCTION_WINDOW_WIDTH,
          std::pair{Hud::Action{.kind = Hud::ActionKind::PreviousProducer}, Hud::Action{.kind = Hud::ActionKind::NextProducer}},
          _panel.canStep);
@@ -1888,7 +1891,8 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   (void)OpenWindow(_layout, Outpost::WindowKind::Research, std::string(), _corner, RESEARCH_WINDOW_WIDTH,
                    QueueWindowHeight(cardsBottom, _panel.queue.size()) - Hud::TITLE_BAR_UNITS, _scale);
   Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("RESEARCH", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  paint.Text(std::string(Outpost::RowOf(Outpost::WindowKind::Research).title), WINDOW_INSET, WINDOW_HEADER_TOP, HEADER_LABEL_COLOR,
+             Hud::Typeface::Label, paint.Tracking());
   Header(paint, _panel.lab, _panel.ore, RESEARCH_WINDOW_WIDTH);
 
   // Where the page is among the topics, "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030; ADR-068 decision 1).
@@ -1949,47 +1953,208 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   QueueRows(paint, _panel.queue, RESEARCH_WINDOW_WIDTH, QueueTop(cardsBottom));
 }
 
+// The windows on the canvas (ADR-100). The game's look as the canvas's theme: the windows' colors, typefaces and sizes
+// above, and a window's header in the label face at the body's inset, as each window has drawn its own.
+const Neuron::Theme& GameTheme()
+{
+  static const Neuron::Theme THEME = []
+  {
+    Neuron::Theme made;
+    made.windowColor = WINDOW_COLOR;
+    made.titleBarColor = TITLE_HATCH_COLOR;
+    made.titleTextColor = HEADER_LABEL_COLOR;
+    made.closeBoxColor = CLOSE_BOX_COLOR;
+    made.cornerColor = WINDOW_EDGE_COLOR;
+    made.cardColor = CARD_COLOR;
+    made.pickedColor = PICKED_COLOR;
+    made.fieldColor = FIELD_COLOR;
+    made.disabledColor = DISABLED_BUTTON_COLOR;
+    made.edgeColor = EDGE_COLOR;
+    made.hoverEdgeColor = HOVER_EDGE_COLOR;
+    made.pickedEdgeColor = PICKED_EDGE_COLOR;
+    made.textColor = TEXT_COLOR;
+    made.dimTextColor = DIM_TEXT_COLOR;
+    made.labelColor = LABEL_COLOR;
+    made.keyColor = ROW_LABEL_COLOR;
+    made.lockedTextColor = LOCKED_TEXT_COLOR;
+    made.figureColor = GOLD_COLOR;
+    made.warningColor = WARNING_COLOR;
+    made.barTrackColor = BAR_TRACK_COLOR;
+    made.barFillColor = BAR_FILL_COLOR;
+    made.titleFont = Hud::FontOf(Hud::Typeface::Label);
+    made.closeMarkFont = Hud::FontOf(Hud::Typeface::Title);
+    made.nameFont = Hud::FontOf(Hud::Typeface::Name);
+    made.labelFont = Hud::FontOf(Hud::Typeface::Label);
+    made.figureFont = Hud::FontOf(Hud::Typeface::Figure);
+    made.cornerSprite = Hud::SpriteOf(Hud::Sprite::Corner);
+    made.checkSprite = Hud::SpriteOf(Hud::Sprite::Checkbox);
+    made.titleBarUnits = Hud::TITLE_BAR_UNITS;
+    made.titleLeftUnits = WINDOW_INSET;
+    made.titleTopUnits = WINDOW_HEADER_TOP;
+    made.titleTrackingUnits = LABEL_TRACKING_UNITS;
+    made.closeMark = std::string(CLOSE_MARK);
+    made.closeMarkLeftUnits = CLOSE_TEXT_LEFT;
+    made.closeMarkTopUnits = TITLE_TEXT_INSET;
+    made.cornerUnits = CORNER_UNITS;
+    made.edgeUnits = LINE_UNITS;
+    made.buttonInsetUnits = BUTTON_INSET;
+    made.fitGapUnits = FIT_GAP_UNITS;
+    made.nameLineUnits = NAME_LINE_UNITS;
+    made.figureLineUnits = FIGURE_LINE_UNITS;
+    const float figureUnits = Hud::FaceUnits(Hud::Typeface::Figure);
+    made.figureMarkUnits = std::round(figureUnits * ORE_MARK_SHARE);
+    made.figureMarkTopUnits = ((figureUnits * 1.25f) - made.figureMarkUnits) / 2.0f;
+    made.figureMarkGapUnits = ORE_MARK_GAP_UNITS;
+    made.keyCapUnits = KEY_CAP_UNITS;
+    made.keyCapTextTopUnits = KEY_CAP_TEXT_TOP;
+    made.barUnits = BUTTON_BAR_UNITS;
+    made.barInsetUnits = BUTTON_BAR_INSET;
+    made.smallButtonUnits = SMALL_BUTTON_UNITS;
+    made.smallButtonTextTopUnits = SMALL_BUTTON_TEXT_TOP;
+    made.arrowGapUnits = ARROW_GAP_UNITS;
+    made.chipPadUnits = CHIP_PAD_UNITS;
+    // No window has a checkbox yet: a small button's side, its tick as large as a locked card's, and an arrow's gap.
+    made.checkUnits = SMALL_BUTTON_UNITS;
+    made.checkInsetUnits = (SMALL_BUTTON_UNITS - 10.0f) / 2.0f;
+    made.checkGapUnits = ARROW_GAP_UNITS;
+    return made;
+  }();
+  return THEME;
+}
+
+// A window's body on the canvas: its content inset from its sides and a padding from its title bar and its foot, stretched
+// across it, so that a row of buttons shares its width.
+Neuron::LayoutStyle BodyStyle() noexcept
+{
+  return {.padding = {.left = WINDOW_INSET, .top = PADDING, .right = WINDOW_INSET, .bottom = PADDING},
+          .alignX = Neuron::LayoutAlign::Stretch};
+}
+
+// A text the canvas sets in _face on that face's line, cut short where it does not fit.
+Neuron::LayoutText FittedText(std::string _text, Hud::Typeface _face, float _lineUnits)
+{
+  return {.text = std::move(_text), .font = Hud::FontOf(_face), .lineUnits = _lineUnits, .flow = Neuron::TextFlow::Fit};
+}
+
+// A press on a window's button: _action at its place among the layout's actions, which the button's region names by its
+// payload, its rectangle given once the canvas is finished.
+std::uint32_t PressOf(Hud::Layout& _layout, const Hud::Action& _action)
+{
+  _layout.actions.emplace_back(Hud::Rect{}, _action);
+  return static_cast<std::uint32_t>(_layout.actions.size() - 1);
+}
+
+// _button as the canvas draws it (ADR-043 decision 4), naming its action's place among the layout's actions while it is
+// enabled: its label up to a '|', and after one its cost, as Ore's gem and the figure. A '|' gives the button a cost's
+// place, which its reason takes while it is disabled, even with no cost after it; a button without one shows no reason.
+Neuron::ButtonContent ContentOf(Hud::Layout& _layout, const Hud::Button& _button)
+{
+  const std::size_t split = _button.label.find('|');
+  Neuron::ButtonContent content{.label = _button.label.substr(0, split),
+                                .note = split != std::string::npos ? _button.note : std::string(),
+                                .key = _button.key,
+                                .payload = _button.enabled ? PressOf(_layout, _button.action) : Neuron::NO_PAYLOAD,
+                                .enabled = _button.enabled,
+                                .picked = _button.selected};
+  std::int32_t cost = 0;
+  const std::string figure = split == std::string::npos ? std::string() : _button.label.substr(split + 1);
+  if (split != std::string::npos && std::from_chars(figure.data(), figure.data() + figure.size(), cost).ec == std::errc{})
+  {
+    content.figure = Outpost::WithThousands(cost);
+    content.figureMark = Hud::SpriteOf(Hud::Sprite::OreMark);
+  }
+  if (_button.progressPermille.has_value())
+    content.progress =
+      static_cast<float>(std::clamp(*_button.progressPermille, 0, Outpost::PERMILLE)) / static_cast<float>(Outpost::PERMILLE);
+  return content;
+}
+
+// Where a window stands on the canvas: where the player left it, kept on the screen (ADR-031 decision 2), or else at its
+// first place, an anchor of the screen less a margin (ADR-100 decision 8).
+struct WindowPlace
+{
+  std::optional<Outpost::WindowManager::Point> corner;
+  Neuron::LayoutAnchor anchor = Neuron::LayoutAnchor::Middle;
+  Neuron::LayoutEdges margin;
+};
+
+// Opens _kind's window on _canvas where _place puts it, named and titled by its row (ADR-100), its body of _body's style, and
+// returns its frame's node.
+std::size_t BeginWindowAt(Neuron::Canvas& _canvas, Neuron::Interaction& _interaction, Outpost::WindowKind _kind, const WindowPlace& _place,
+                          float _widthUnits, const Neuron::LayoutStyle& _body)
+{
+  const Outpost::WindowRow& row = Outpost::RowOf(_kind);
+  const Neuron::WidgetId window = _interaction.IdOf(row.name);
+  if (_place.corner.has_value())
+    return _canvas.BeginWindow(window, std::string(row.title), *_place.corner, _widthUnits, _body);
+  return _canvas.BeginWindow(window, std::string(row.title), _place.anchor, _place.margin, _widthUnits, _body);
+}
+
+// Draws the window built on _canvas into the layout, and keeps beside it what OpenWindow keeps: the rectangle of each
+// button among the layout's actions from _firstAction, and the window's frame, title bar, close box and corner.
+void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _frame, Outpost::WindowKind _kind, std::size_t _firstAction)
+{
+  const std::size_t firstRegion = _layout.regions.size();
+  _canvas.Finish(_layout);
+  for (std::size_t region = firstRegion; region < _layout.regions.size(); ++region)
+  {
+    const Neuron::CanvasRegion& pressed = _layout.regions[region];
+    if (!pressed.hoverOnly && pressed.payload != Neuron::NO_PAYLOAD)
+      _layout.actions[pressed.payload].first = pressed.area;
+  }
+  const std::size_t panel = _layout.layers.back().firstPanel;
+  const Neuron::LayoutNode& frame = _canvas.Tree().Node(_frame);
+  _layout.windows.push_back({.kind = _kind,
+                             .frame = _layout.panels[panel],
+                             .titleBar = _layout.panels[panel + 1],
+                             .closeBox = _layout.panels[panel + 2],
+                             .corner = {.xUnits = frame.leftUnits, .yUnits = frame.topUnits},
+                             .firstAction = _firstAction});
+}
+
+// Where the windows are built: the layout they are drawn into, its metrics, what their widgets share, and the screen's size
+// in reference units.
+struct WindowBench
+{
+  Hud::Layout* layout = nullptr;
+  const Hud::TextMetrics* metrics = nullptr;
+  Neuron::Interaction* interaction = nullptr;
+  float screenWidthUnits = 0.0f;
+  float screenHeightUnits = 0.0f;
+};
+
+// Builds _kind's window _widthUnits wide on a canvas of its own, where _place puts it, its body of _body's style holding what
+// _build adds to the canvas, and draws it into the bench's layout.
+template <class Build>
+void LayWindow(const WindowBench& _bench, Outpost::WindowKind _kind, const WindowPlace& _place, float _widthUnits,
+               const Neuron::LayoutStyle& _body, Build&& _build)
+{
+  Neuron::Canvas canvas(GameTheme(), *_bench.metrics, *_bench.interaction, _bench.screenWidthUnits, _bench.screenHeightUnits);
+  const std::size_t firstAction = _bench.layout->actions.size();
+  const std::size_t frame = BeginWindowAt(canvas, *_bench.interaction, _kind, _place, _widthUnits, _body);
+  std::forward<Build>(_build)(canvas);
+  canvas.EndWindow();
+  FinishWindow(*_bench.layout, canvas, frame, _kind, firstAction);
+}
+
+// A label over what follows it in a window, in the label face and tracked, its line a name's, the label a little down it.
+constexpr float HEADING_TOP = 3.0f;
+
+std::size_t Heading(Neuron::Canvas& _canvas, std::string _text, Neuron::LayoutStyle _style = {})
+{
+  _style.padding.top = HEADING_TOP;
+  return _canvas.Label({.text = std::move(_text),
+                        .font = Hud::FontOf(Hud::Typeface::Label),
+                        .lineUnits = NAME_LINE_UNITS - HEADING_TOP,
+                        .trackingUnits = LABEL_TRACKING_UNITS},
+                       LABEL_COLOR, _style);
+}
+
 // The Controls window (ADR-068 decision 4): every key and mouse action the game reads in a match, as KeyBindings lists
 // them, under their headings, the keys in a column of their own.
 constexpr float CONTROLS_WINDOW_WIDTH = 700.0f;
 constexpr float CONTROLS_KEYS_WIDTH = 240.0f;
 constexpr float CONTROLS_HEADING_GAP = 10.0f;
-
-float ControlsHeight(const std::vector<Outpost::KeyBinding>& _bindings) noexcept
-{
-  float height = Hud::TITLE_BAR_UNITS + PADDING;
-  for (std::size_t line = 0; line < _bindings.size(); ++line)
-    height += NAME_LINE_UNITS + (_bindings[line].does.empty() && line > 0 ? CONTROLS_HEADING_GAP : 0.0f);
-  return height + PADDING;
-}
-
-void LayControls(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, Outpost::WindowManager::Point _corner, float _scale)
-{
-  const std::vector<Outpost::KeyBinding> bindings = Outpost::KeyBindings();
-  (void)OpenWindow(_layout, Outpost::WindowKind::Controls, std::string(), _corner, CONTROLS_WINDOW_WIDTH,
-                   ControlsHeight(bindings) - Hud::TITLE_BAR_UNITS, _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("CONTROLS", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  const float doesLeft = WINDOW_INSET + CONTROLS_KEYS_WIDTH;
-  float top = Hud::TITLE_BAR_UNITS + PADDING;
-  for (std::size_t line = 0; line < bindings.size(); ++line)
-  {
-    const Outpost::KeyBinding& binding = bindings[line];
-    if (binding.does.empty())
-    {
-      top += line > 0 ? CONTROLS_HEADING_GAP : 0.0f;
-      paint.Text(binding.keys, WINDOW_INSET, top + 3.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-    }
-    else
-    {
-      paint.Text(paint.Fit(binding.keys, Hud::Typeface::Name, CONTROLS_KEYS_WIDTH - FIT_GAP_UNITS), WINDOW_INSET, top, ACCENT_COLOR,
-                 Hud::Typeface::Name);
-      paint.Text(paint.Fit(binding.does, Hud::Typeface::Name, CONTROLS_WINDOW_WIDTH - WINDOW_INSET - doesLeft), doesLeft, top, TEXT_COLOR,
-                 Hud::Typeface::Name);
-    }
-    top += NAME_LINE_UNITS;
-  }
-}
 
 // The orders window (ADR-080 decision 9): under a label, the seat's scheduled orders, a line each; and under another,
 // the form's rows, each its label and its value between the arrows that step it, the line that says when the order fires,
@@ -2004,85 +2169,8 @@ constexpr float ORDER_LABEL_TOP = 9.0f;
 // What the line beside WAITING says.
 constexpr std::string_view ORDERS_LEAVE_NOTE = "Any order to its ships takes them out";
 
-// Where the form's label stands, and the window's height.
-constexpr float ORDERS_FORM_TOP =
-  Hud::TITLE_BAR_UNITS + PADDING + NAME_LINE_UNITS + (static_cast<float>(Hud::ORDERS_SHOWN + 1) * NAME_LINE_UNITS) + SECTION_GAP;
-constexpr float ORDERS_ROWS_TOP = ORDERS_FORM_TOP + NAME_LINE_UNITS;
-constexpr float ORDERS_FIRES_TOP = ORDERS_ROWS_TOP + (static_cast<float>(Hud::ORDER_ROWS) * ORDER_ROW_UNITS) + PANEL_GAP;
-constexpr float ORDERS_GIVE_TOP = ORDERS_FIRES_TOP + NAME_LINE_UNITS + PANEL_GAP;
-constexpr float ORDERS_WINDOW_HEIGHT = ORDERS_GIVE_TOP + BUTTON_HEIGHT + PADDING;
-
-// Give lights under the pointer, _giveHovered, as the HUD's own buttons do (ADR-088 decision 1).
-void LayOrders(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::OrdersPanel& _panel,
-               Outpost::WindowManager::Point _corner, float _scale, bool _giveHovered)
-{
-  (void)OpenWindow(_layout, Outpost::WindowKind::Orders, std::string(), _corner, ORDERS_WINDOW_WIDTH,
-                   ORDERS_WINDOW_HEIGHT - Hud::TITLE_BAR_UNITS, _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("SCHEDULED ORDERS", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  const float room = ORDERS_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
-  float top = Hud::TITLE_BAR_UNITS + PADDING;
-  paint.Text("WAITING", WINDOW_INSET, top + 3.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  // Beside the label, that a ship given another order leaves the one it waits on, as the cancel button takes them all out.
-  paint.RightText(paint.Fit(std::string(ORDERS_LEAVE_NOTE), Hud::Typeface::Name, room / 2.0f), ORDERS_WINDOW_WIDTH - WINDOW_INSET, top,
-                  DIM_TEXT_COLOR, Hud::Typeface::Name);
-  top += NAME_LINE_UNITS;
-  if (_panel.scheduled.empty())
-    paint.Text("None", WINDOW_INSET, top, DIM_TEXT_COLOR, Hud::Typeface::Name);
-  // Each order with its cancel button at the line's right end, the line cut short to leave room for it.
-  const float cancelLeft = ORDERS_WINDOW_WIDTH - WINDOW_INSET - SMALL_BUTTON_UNITS;
-  for (const Hud::ScheduledLine& line : _panel.scheduled)
-  {
-    paint.Text(paint.Fit(line.text, Hud::Typeface::Name, cancelLeft - ARROW_GAP_UNITS - WINDOW_INSET), WINDOW_INSET, top, TEXT_COLOR,
-               Hud::Typeface::Name);
-    paint.SmallButton("X", cancelLeft, top - 1.0f, true, {.kind = Hud::ActionKind::CancelOrder, .order = line.order});
-    top += NAME_LINE_UNITS;
-  }
-  if (_panel.more > 0)
-    paint.Text(std::format("and {} more", _panel.more), WINDOW_INSET, top, DIM_TEXT_COLOR, Hud::Typeface::Name);
-
-  paint.Text("NEW ORDER FOR THE SELECTION", WINDOW_INSET, ORDERS_FORM_TOP + 3.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  for (std::size_t row = 0; row < _panel.rows.size() && row < Hud::ORDER_ROWS; ++row)
-  {
-    const Hud::OrderRow& order = _panel.rows[row];
-    const float rowTop = ORDERS_ROWS_TOP + (static_cast<float>(row) * ORDER_ROW_UNITS);
-    paint.Text(order.label, WINDOW_INSET, rowTop + ORDER_LABEL_TOP, ROW_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-    (void)paint.Stepped(order.value, ORDER_VALUE_LEFT, rowTop + ORDER_ARROW_TOP, rowTop + ORDER_TEXT_TOP,
-                        ORDERS_WINDOW_WIDTH - WINDOW_INSET - ORDER_VALUE_LEFT, true,
-                        {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = -1},
-                        {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = 1}, TEXT_COLOR, Hud::Typeface::Name);
-  }
-  paint.Text(paint.Fit(_panel.fires, Hud::Typeface::Name, room), WINDOW_INSET, ORDERS_FIRES_TOP, NUMBERS_COLOR, Hud::Typeface::Name);
-  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET, ORDERS_GIVE_TOP, room, BUTTON_HEIGHT, CARD_COLOR), _panel.give,
-            _panel.give.enabled && _giveHovered);
-}
-
 // The away window (ADR-080 decision 9): how long the player was away, in the title face, and what happened, a line each.
 constexpr float AWAY_WINDOW_WIDTH = 600.0f;
-
-float AwayHeight(std::size_t _lines) noexcept
-{
-  return Hud::TITLE_BAR_UNITS + PADDING + TITLE_LINE_UNITS + (static_cast<float>(_lines) * NAME_LINE_UNITS) + PADDING;
-}
-
-void LayAway(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::AwayPanel& _panel, Outpost::WindowManager::Point _corner,
-             float _scale)
-{
-  const std::size_t lines = std::min(_panel.lines.size(), Hud::AWAY_LINES);
-  (void)OpenWindow(_layout, Outpost::WindowKind::Away, std::string(), _corner, AWAY_WINDOW_WIDTH, AwayHeight(lines) - Hud::TITLE_BAR_UNITS,
-                   _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("WHILE YOU WERE AWAY", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  const float room = AWAY_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
-  float top = Hud::TITLE_BAR_UNITS + PADDING;
-  paint.Text(paint.Fit(_panel.since, Hud::Typeface::Title, room), WINDOW_INSET, top, TEXT_COLOR, Hud::Typeface::Title);
-  top += TITLE_LINE_UNITS;
-  for (std::size_t line = 0; line < lines; ++line)
-  {
-    paint.Text(paint.Fit(_panel.lines[line], Hud::Typeface::Name, room), WINDOW_INSET, top, NUMBERS_COLOR, Hud::Typeface::Name);
-    top += NAME_LINE_UNITS;
-  }
-}
 
 // The leave window (ADR-078 decision 11): in a universe, whether to go back to the menu, the deputy keeping the empire going
 // meanwhile. Leave universe goes, and Stay closes the window, side by side under the question.
@@ -2090,31 +2178,147 @@ constexpr float LEAVE_WINDOW_WIDTH = 560.0f;
 constexpr std::string_view LEAVE_QUESTION = "Leave for the menu?";
 constexpr std::string_view LEAVE_DEPUTY = "Your deputy keeps your empire going while you are away.";
 
-float LeaveHeight() noexcept
+// The away window: how long the player was away, and as many of what happened as it shows.
+void LayAway(const WindowBench& _bench, const Hud::AwayPanel& _panel, const WindowPlace& _place)
 {
-  return Hud::TITLE_BAR_UNITS + PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT + PADDING;
+  LayWindow(_bench, Outpost::WindowKind::Away, _place, AWAY_WINDOW_WIDTH, BodyStyle(),
+            [&](Neuron::Canvas& _canvas)
+            {
+              (void)_canvas.Label(FittedText(_panel.since, Hud::Typeface::Title, TITLE_LINE_UNITS), TEXT_COLOR);
+              for (std::size_t line = 0; line < _panel.lines.size() && line < Hud::AWAY_LINES; ++line)
+                (void)_canvas.Label(FittedText(_panel.lines[line], Hud::Typeface::Name, NAME_LINE_UNITS), NUMBERS_COLOR);
+            });
 }
 
-void LayLeave(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, Outpost::WindowManager::Point _corner, float _scale,
-              const std::optional<Hud::Action>& _hovered)
+// The leave window: the question, what the deputy does meanwhile, and Leave universe and Stay side by side.
+void LayLeave(const WindowBench& _bench, const WindowPlace& _place)
 {
-  (void)OpenWindow(_layout, Outpost::WindowKind::Leave, std::string(), _corner, LEAVE_WINDOW_WIDTH, LeaveHeight() - Hud::TITLE_BAR_UNITS,
-                   _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("LEAVE UNIVERSE", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  const float room = LEAVE_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
-  float top = Hud::TITLE_BAR_UNITS + PADDING;
-  paint.Text(paint.Fit(std::string(LEAVE_QUESTION), Hud::Typeface::Title, room), WINDOW_INSET, top, TEXT_COLOR, Hud::Typeface::Title);
-  top += TITLE_LINE_UNITS;
-  paint.Text(paint.Fit(std::string(LEAVE_DEPUTY), Hud::Typeface::Name, room), WINDOW_INSET, top, NUMBERS_COLOR, Hud::Typeface::Name);
-  top += NAME_LINE_UNITS + BUTTON_GAP;
-  const float buttonWidth = (room - BUTTON_GAP) / 2.0f;
-  const Hud::Button leave{.label = "Leave universe", .action = {.kind = Hud::ActionKind::BackToMenu}};
-  const Hud::Button stay{.label = "Stay", .action = {.kind = Hud::ActionKind::Stay}};
-  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET, top, buttonWidth, BUTTON_HEIGHT, CARD_COLOR), leave,
-            _hovered == leave.action);
-  AddButton(_layout, _metrics, _scale, paint.Area(WINDOW_INSET + buttonWidth + BUTTON_GAP, top, buttonWidth, BUTTON_HEIGHT, CARD_COLOR),
-            stay, _hovered == stay.action);
+  LayWindow(_bench, Outpost::WindowKind::Leave, _place, LEAVE_WINDOW_WIDTH, BodyStyle(),
+            [&](Neuron::Canvas& _canvas)
+            {
+              (void)_canvas.Label(FittedText(std::string(LEAVE_QUESTION), Hud::Typeface::Title, TITLE_LINE_UNITS), TEXT_COLOR);
+              (void)_canvas.Label(FittedText(std::string(LEAVE_DEPUTY), Hud::Typeface::Name, NAME_LINE_UNITS), NUMBERS_COLOR);
+              (void)_canvas.Tree().Add({.heightUnits = BUTTON_GAP});
+              (void)_canvas.Tree().Begin(Neuron::LayoutKind::Row, {.gapUnits = BUTTON_GAP});
+              const Hud::Button leave{.label = "Leave universe", .action = {.kind = Hud::ActionKind::BackToMenu}};
+              const Hud::Button stay{.label = "Stay", .action = {.kind = Hud::ActionKind::Stay}};
+              (void)_canvas.Button("leave", ContentOf(*_bench.layout, leave), {.heightUnits = BUTTON_HEIGHT, .grow = 1.0f});
+              (void)_canvas.Button("stay", ContentOf(*_bench.layout, stay), {.heightUnits = BUTTON_HEIGHT, .grow = 1.0f});
+              _canvas.Tree().End();
+            });
+}
+
+// The Controls window: each heading over its keys, a gap before each but the first, and each key in its column beside what
+// it does.
+void LayControls(const WindowBench& _bench, const WindowPlace& _place)
+{
+  LayWindow(_bench, Outpost::WindowKind::Controls, _place, CONTROLS_WINDOW_WIDTH, BodyStyle(),
+            [&](Neuron::Canvas& _canvas)
+            {
+              const std::vector<Outpost::KeyBinding> bindings = Outpost::KeyBindings();
+              for (std::size_t line = 0; line < bindings.size(); ++line)
+              {
+                const Outpost::KeyBinding& binding = bindings[line];
+                if (binding.does.empty())
+                {
+                  if (line > 0)
+                    (void)_canvas.Tree().Add({.heightUnits = CONTROLS_HEADING_GAP});
+                  (void)Heading(_canvas, binding.keys);
+                  continue;
+                }
+                (void)_canvas.Tree().Begin(Neuron::LayoutKind::Row, {});
+                (void)_canvas.Label(FittedText(binding.keys, Hud::Typeface::Name, NAME_LINE_UNITS), ACCENT_COLOR,
+                                    {.widthUnits = CONTROLS_KEYS_WIDTH, .padding = {.right = FIT_GAP_UNITS}});
+                (void)_canvas.Label(FittedText(binding.does, Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR, {.grow = 1.0f});
+                _canvas.Tree().End();
+              }
+            });
+}
+
+// The orders window: WAITING, and the note beside it at its right; the scheduled orders, each with its
+// cancel button at its line's right end, in room for as many as it shows and the line that counts the rest; NEW ORDER FOR
+// THE SELECTION over the form's rows, each its label and its value as a stepper, in room for every row; the line that says
+// when the order fires; and Give.
+void LayOrders(const WindowBench& _bench, const Hud::OrdersPanel& _panel, const WindowPlace& _place)
+{
+  LayWindow(
+    _bench, Outpost::WindowKind::Orders, _place, ORDERS_WINDOW_WIDTH, BodyStyle(),
+    [&](Neuron::Canvas& _canvas)
+    {
+      Hud::Layout& layout = *_bench.layout;
+      Neuron::LayoutTree& tree = _canvas.Tree();
+      constexpr float ROOM = ORDERS_WINDOW_WIDTH - (2.0f * WINDOW_INSET);
+      (void)tree.Begin(Neuron::LayoutKind::Row, {});
+      (void)Heading(_canvas, "WAITING", {.grow = 1.0f});
+      // That a ship given another order leaves the one it waits on, as the cancel button takes them all out.
+      (void)_canvas.Label(FittedText(std::string(ORDERS_LEAVE_NOTE), Hud::Typeface::Name, NAME_LINE_UNITS), DIM_TEXT_COLOR,
+                          {.mostWidthUnits = ROOM / 2.0f});
+      tree.End();
+      (void)tree.Begin(Neuron::LayoutKind::Column, {.heightUnits = static_cast<float>(Hud::ORDERS_SHOWN + 1) * NAME_LINE_UNITS,
+                                                    .alignX = Neuron::LayoutAlign::Stretch});
+      if (_panel.scheduled.empty())
+        (void)_canvas.Label(FittedText("None", Hud::Typeface::Name, NAME_LINE_UNITS), DIM_TEXT_COLOR);
+      // The cancel button stands in the middle of its line, which it is a little taller than.
+      for (const Hud::ScheduledLine& line : _panel.scheduled)
+      {
+        (void)tree.Begin(Neuron::LayoutKind::Row,
+                         {.heightUnits = NAME_LINE_UNITS, .gapUnits = ARROW_GAP_UNITS, .alignY = Neuron::LayoutAlign::Center});
+        (void)_canvas.Label(FittedText(line.text, Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR, {.grow = 1.0f});
+        (void)_canvas.SmallButton(std::format("cancel {}", line.order), "X", true,
+                                  PressOf(layout, {.kind = Hud::ActionKind::CancelOrder, .order = line.order}));
+        tree.End();
+      }
+      if (_panel.more > 0)
+        (void)_canvas.Label(FittedText(std::format("and {} more", _panel.more), Hud::Typeface::Name, NAME_LINE_UNITS), DIM_TEXT_COLOR);
+      tree.End();
+      (void)tree.Add({.heightUnits = SECTION_GAP});
+      (void)Heading(_canvas, "NEW ORDER FOR THE SELECTION");
+      (void)tree.Begin(Neuron::LayoutKind::Column, {.heightUnits = static_cast<float>(Hud::ORDER_ROWS) * ORDER_ROW_UNITS});
+      for (std::size_t row = 0; row < _panel.rows.size() && row < Hud::ORDER_ROWS; ++row)
+      {
+        const Hud::OrderRow& order = _panel.rows[row];
+        (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = ORDER_ROW_UNITS});
+        (void)_canvas.Label({.text = order.label,
+                             .font = Hud::FontOf(Hud::Typeface::Label),
+                             .lineUnits = ORDER_ROW_UNITS - ORDER_LABEL_TOP,
+                             .trackingUnits = LABEL_TRACKING_UNITS},
+                            ROW_LABEL_COLOR, {.widthUnits = ORDER_VALUE_LEFT - WINDOW_INSET, .padding = {.top = ORDER_LABEL_TOP}});
+        // The arrows' actions in the order they are drawn, each pressed apart, since a call's arguments are made in any order.
+        const std::uint32_t previous = PressOf(layout, {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = -1});
+        const std::uint32_t next = PressOf(layout, {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = 1});
+        (void)tree.Begin(Neuron::LayoutKind::Column, {.padding = {.top = ORDER_ARROW_TOP}});
+        _canvas.Stepper(std::format("row {}", row),
+                        {.text = order.value, .font = Hud::FontOf(Hud::Typeface::Name), .lineUnits = NAME_LINE_UNITS}, TEXT_COLOR,
+                        ORDERS_WINDOW_WIDTH - WINDOW_INSET - ORDER_VALUE_LEFT, ORDER_TEXT_TOP - ORDER_ARROW_TOP, true, previous, next);
+        tree.End();
+        tree.End();
+      }
+      tree.End();
+      (void)tree.Add({.heightUnits = PANEL_GAP});
+      (void)_canvas.Label(FittedText(_panel.fires, Hud::Typeface::Name, NAME_LINE_UNITS), NUMBERS_COLOR);
+      (void)tree.Add({.heightUnits = PANEL_GAP});
+      (void)_canvas.Button("give", ContentOf(layout, _panel.give), {.heightUnits = BUTTON_HEIGHT});
+    });
+}
+
+// A window's size, in reference units.
+struct WindowSize
+{
+  float widthUnits = 0.0f;
+  float heightUnits = 0.0f;
+};
+
+// How large a window stands once _build has built it on the canvas, which WindowsFit compares with the screen (ADR-070): it
+// is built where nothing else is, with no font, since every line it holds is one line however wide.
+template <class Build> WindowSize BuiltSize(Build&& _build)
+{
+  Hud::Layout scratch;
+  Neuron::Interaction interaction;
+  const Hud::TextMetrics metrics({}, 1.0f);
+  std::forward<Build>(_build)(WindowBench{.layout = &scratch, .metrics = &metrics, .interaction = &interaction});
+  if (scratch.windows.empty())
+    return {};
+  return {.widthUnits = scratch.windows.back().frame.width, .heightUnits = scratch.windows.back().frame.height};
 }
 
 // The build window (ADR-031 decision 6): the structures' buttons in a column, as wide as the buttons' panel held them.
@@ -2127,40 +2331,93 @@ bool IsOffered(const Outpost::Snapshot& _newest, const Outpost::StructureTypeVie
   return _type.buildable && (_type.structure != Outpost::StructureKind::Relay || !_newest.sectors.empty());
 }
 
-float BuildHeight(std::size_t _structures) noexcept
+// Where a window first stands on a screen _screenWidthUnits wide, as its row's first place has it (ADR-100 decision 8): an
+// anchor of the screen less a margin. The top-right corner; the right edge level with the places under the Ore; the middle;
+// or the bottom right where the selection and its buttons leave the build window room at their widest, kept clear of the
+// minimap as they are (ADR-088 decision 2), and where they do not, its foot a gap above the minimap's top, so that it does
+// not move as the selection changes. The places under the Ore are the window manager's slots, the first of which is the
+// margin.
+WindowPlace FirstPlaceOf(Outpost::FirstPlace _first, float _screenWidthUnits) noexcept
 {
-  const auto count = static_cast<float>(_structures);
-  const float buttons = _structures > 0 ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
-  return Hud::TITLE_BAR_UNITS + PADDING + buttons + PADDING;
-}
-
-// Where the build window first stands, _heightUnits tall (ADR-031 decision 2): at the bottom right, where the selection and its
-// buttons leave it room at their widest, kept clear of the minimap as they are (ADR-088 decision 2); and where they do not,
-// at the right edge over the bottom row, its foot a gap above the minimap's top, so that it does not move as the selection
-// changes.
-Outpost::WindowManager::Point BuildCorner(float _heightUnits, float _screenWidthUnits, float _screenHeightUnits) noexcept
-{
-  const float left = _screenWidthUnits - MARGIN - BUILD_WINDOW_WIDTH;
-  constexpr float PAIR_WIDTH = SELECTION_PANEL_WIDTH + BUTTON_PANEL_WIDTH;
-  const float pairRight = std::max((_screenWidthUnits - PAIR_WIDTH) / 2.0f, MARGIN + MINIMAP_SIZE + PANEL_GAP) + PAIR_WIDTH;
-  const float foot = left >= pairRight + PANEL_GAP ? _screenHeightUnits - MARGIN : _screenHeightUnits - MARGIN - MINIMAP_SIZE - PANEL_GAP;
-  return {.xUnits = left, .yUnits = foot - _heightUnits};
-}
-
-void LayBuild(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::BuildPanel& _panel, Outpost::WindowManager::Point _corner,
-              float _scale, const std::optional<Hud::Action>& _hovered)
-{
-  (void)OpenWindow(_layout, Outpost::WindowKind::Build, std::string(), _corner, BUILD_WINDOW_WIDTH,
-                   BuildHeight(_panel.structures.size()) - Hud::TITLE_BAR_UNITS, _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("BUILD", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  float top = Hud::TITLE_BAR_UNITS + PADDING;
-  for (const Hud::Button& structure : _panel.structures)
+  switch (_first)
   {
-    AddButton(_layout, _metrics, _scale, paint.Area(PADDING, top, BUILD_WINDOW_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT, CARD_COLOR),
-              structure, structure.enabled && _hovered == structure.action);
-    top += BUTTON_HEIGHT + BUTTON_GAP;
+  case Outpost::FirstPlace::TopRight:
+    return {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = MARGIN, .right = MARGIN}};
+  case Outpost::FirstPlace::UnderTheOre:
+    return {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = MARGIN, .top = WINDOWS_TOP}};
+  case Outpost::FirstPlace::RightUnderTheOre:
+    return {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = WINDOWS_TOP, .right = MARGIN}};
+  case Outpost::FirstPlace::BesideTheSelection:
+  {
+    const float left = _screenWidthUnits - MARGIN - BUILD_WINDOW_WIDTH;
+    constexpr float PAIR_WIDTH = SELECTION_PANEL_WIDTH + BUTTON_PANEL_WIDTH;
+    const float pairRight = std::max((_screenWidthUnits - PAIR_WIDTH) / 2.0f, MARGIN + MINIMAP_SIZE + PANEL_GAP) + PAIR_WIDTH;
+    const float foot = left >= pairRight + PANEL_GAP ? MARGIN : MARGIN + MINIMAP_SIZE + PANEL_GAP;
+    return {.anchor = Neuron::LayoutAnchor::BottomRight, .margin = {.right = MARGIN, .bottom = foot}};
   }
+  case Outpost::FirstPlace::Middle:
+    break;
+  }
+  return {.anchor = Neuron::LayoutAnchor::Middle, .margin = {.left = MARGIN, .top = MARGIN, .right = MARGIN, .bottom = MARGIN}};
+}
+
+// The top-left corner of a window _widthUnits wide standing at _place's anchor, for a window not yet on the canvas, whose
+// anchor needs no height: one at the top of the screen.
+Outpost::WindowManager::Point TopCornerOf(const WindowPlace& _place, float _widthUnits, float _screenWidthUnits) noexcept
+{
+  const bool right = _place.anchor == Neuron::LayoutAnchor::TopRight;
+  return {.xUnits = right ? _screenWidthUnits - _place.margin.right - _widthUnits : _place.margin.left, .yUnits = _place.margin.top};
+}
+
+// The build window: the structures' buttons in a column, inset from its sides only by the padding, as the buttons' panel
+// held them.
+void LayBuild(const WindowBench& _bench, const Hud::BuildPanel& _panel, const WindowPlace& _place)
+{
+  LayWindow(_bench, Outpost::WindowKind::Build, _place, BUILD_WINDOW_WIDTH,
+            {.padding = {.left = PADDING, .top = PADDING, .right = PADDING, .bottom = PADDING},
+             .gapUnits = BUTTON_GAP,
+             .alignX = Neuron::LayoutAlign::Stretch},
+            [&](Neuron::Canvas& _canvas)
+            {
+              for (std::size_t structure = 0; structure < _panel.structures.size(); ++structure)
+                (void)_canvas.Button(std::to_string(structure), ContentOf(*_bench.layout, _panel.structures[structure]),
+                                     {.heightUnits = BUTTON_HEIGHT});
+            });
+}
+
+// How large _window stands holding its most, in the match _newest is of, or the Controls window outside one, for WindowsFit
+// (ADR-070): the away window with as many lines as it shows, the build window with every structure the match offers
+// (ADR-031 decision 6), and the designer with every component of the match, locked or not, as tall as it grows. The
+// Controls and orders windows are as large whatever they hold. A window its row does not count is not measured.
+WindowSize LongestOf(Outpost::WindowKind _window, const Outpost::Snapshot* _newest)
+{
+  const WindowPlace corner{.corner = Outpost::WindowManager::Point{}};
+  switch (_window)
+  {
+  case Outpost::WindowKind::Controls:
+    return BuiltSize([&](const WindowBench& _bench) { LayControls(_bench, corner); });
+  case Outpost::WindowKind::Orders:
+    return BuiltSize([&](const WindowBench& _bench) { LayOrders(_bench, {}, corner); });
+  case Outpost::WindowKind::Away:
+    return BuiltSize([&](const WindowBench& _bench) { LayAway(_bench, {.lines = std::vector<std::string>(Hud::AWAY_LINES)}, corner); });
+  case Outpost::WindowKind::Build:
+  {
+    const auto offered = static_cast<std::size_t>(std::ranges::count_if(
+      _newest->structureTypes, [_newest](const Outpost::StructureTypeView& _type) { return IsOffered(*_newest, _type); }));
+    return BuiltSize([&](const WindowBench& _bench) { LayBuild(_bench, {.structures = std::vector<Hud::Button>(offered)}, corner); });
+  }
+  case Outpost::WindowKind::Designer:
+  {
+    Outpost::Designer designer;
+    designer.Update(*_newest);
+    return {.widthUnits = DESIGNER_WIDTH, .heightUnits = ExtentOf(DescribeDesigner(*_newest, designer, std::nullopt)).height};
+  }
+  case Outpost::WindowKind::Research:
+  case Outpost::WindowKind::Production:
+  case Outpost::WindowKind::Leave:
+    break;
+  }
+  return {};
 }
 
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
@@ -3114,23 +3371,16 @@ bool Hud::WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::u
     return false;
   const float screenWidthUnits = static_cast<float>(_widthPixels) / scale;
   const float screenHeightUnits = static_cast<float>(_heightPixels) / scale;
-  const auto fits = [&](float _widthUnits, float _heightUnits)
-  { return _widthUnits + (2.0f * MARGIN) <= screenWidthUnits && _heightUnits + (2.0f * MARGIN) <= screenHeightUnits; };
-  if (!fits(CONTROLS_WINDOW_WIDTH, ControlsHeight(KeyBindings())))
-    return false;
-  if (_newest == nullptr)
-    return true;
-  if (!fits(ORDERS_WINDOW_WIDTH, ORDERS_WINDOW_HEIGHT) || !fits(AWAY_WINDOW_WIDTH, AwayHeight(AWAY_LINES)))
-    return false;
-  // The build window with every structure the match offers (ADR-031 decision 6).
-  const auto structures = static_cast<std::size_t>(
-    std::ranges::count_if(_newest->structureTypes, [_newest](const StructureTypeView& _type) { return IsOffered(*_newest, _type); }));
-  if (!fits(BUILD_WINDOW_WIDTH, BuildHeight(structures)))
-    return false;
-  // The designer with every component of the match, locked or not, as tall as it grows.
-  Designer designer;
-  designer.Update(*_newest);
-  return fits(DESIGNER_WIDTH, ExtentOf(DescribeDesigner(*_newest, designer, std::nullopt)).height);
+  // Each window its row counts, at its most (ADR-100), the Controls window on the menu too and the others only in a match.
+  for (const WindowRow& row : WINDOWS)
+  {
+    if (!row.fits || (_newest == nullptr && row.kind != WindowKind::Controls))
+      continue;
+    const WindowSize longest = LongestOf(row.kind, _newest);
+    if (longest.widthUnits + (2.0f * MARGIN) > screenWidthUnits || longest.heightUnits + (2.0f * MARGIN) > screenHeightUnits)
+      return false;
+  }
+  return true;
 }
 
 float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std::uint32_t _widthPixels, std::uint32_t _heightPixels)
@@ -3153,8 +3403,13 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 }
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                     std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered)
+                     std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered,
+                     Neuron::Interaction* _interaction)
 {
+  // The windows on the canvas name their widgets afresh each frame (ADR-100).
+  Neuron::Interaction unpointed;
+  Neuron::Interaction& interaction = _interaction != nullptr ? *_interaction : unpointed;
+  interaction.BeginBuild();
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   const auto width = static_cast<float>(_widthPixels);
   const auto height = static_cast<float>(_heightPixels);
@@ -3728,6 +3983,18 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     const std::optional<WindowManager::Point> moved = _windows != nullptr ? _windows->PositionOf(_kind) : std::nullopt;
     return KeepOnScreen(moved.value_or(_default), _widthUnits, screenWidthUnits, screenHeightUnits);
   };
+  // A window on the canvas stands where the player left it, kept on the screen, or else at its row's first place.
+  const auto placed = [&](WindowKind _kind, float _widthUnits)
+  {
+    if (const std::optional<WindowManager::Point> moved = _windows != nullptr ? _windows->PositionOf(_kind) : std::nullopt)
+      return WindowPlace{.corner = KeepOnScreen(*moved, _widthUnits, screenWidthUnits, screenHeightUnits)};
+    return FirstPlaceOf(RowOf(_kind).first, screenWidthUnits);
+  };
+  const WindowBench bench{.layout = &layout,
+                          .metrics = &_metrics,
+                          .interaction = &interaction,
+                          .screenWidthUnits = screenWidthUnits,
+                          .screenHeightUnits = screenHeightUnits};
   // Production and research stand at first in the slots under the Ore, each in the one it took as it opened
   // (ADR-031 decision 2): the first at the margin, the second beside where the other window stands in the first. Without a
   // manager, production takes the first and research the second.
@@ -3743,7 +4010,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     if (kind == WindowKind::Designer && _content.designer.has_value())
     {
       const WindowManager::Point corner =
-        place(kind, {.xUnits = screenWidthUnits - MARGIN - DESIGNER_WIDTH, .yUnits = MARGIN}, DESIGNER_WIDTH);
+        place(kind, TopCornerOf(FirstPlaceOf(RowOf(kind).first, screenWidthUnits), DESIGNER_WIDTH, screenWidthUnits), DESIGNER_WIDTH);
       LayDesigner(layout, _metrics, *_content.designer, corner, scale);
     }
     // Production and research, at first side by side under the Ore and the status panel, clear of the designer.
@@ -3751,40 +4018,18 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       LayProduction(layout, _metrics, *_content.production, place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH), scale);
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
       LayResearch(layout, _metrics, *_content.laboratory, place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH), scale);
-    // The Controls window, at first in the middle of the screen (ADR-031 decision 2).
+    // The windows on the canvas, each at first where its row puts it (ADR-100 decision 8): the Controls, away and leave
+    // windows in the middle, the orders window at the right under the Ore's line, and the build window at the bottom right.
     else if (kind == WindowKind::Controls && _content.controls)
-    {
-      const WindowManager::Point middle{.xUnits = (screenWidthUnits - CONTROLS_WINDOW_WIDTH) / 2.0f,
-                                        .yUnits = std::max(MARGIN, (screenHeightUnits - ControlsHeight(KeyBindings())) / 2.0f)};
-      LayControls(layout, _metrics, place(kind, middle, CONTROLS_WINDOW_WIDTH), scale);
-    }
-    // The orders window, at first at the right under the Ore's line, and the away window in the middle (ADR-031 decision 2).
+      LayControls(bench, placed(kind, CONTROLS_WINDOW_WIDTH));
     else if (kind == WindowKind::Orders && _content.orders.has_value())
-    {
-      LayOrders(layout, _metrics, *_content.orders,
-                place(kind, {.xUnits = screenWidthUnits - MARGIN - ORDERS_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, ORDERS_WINDOW_WIDTH), scale,
-                hovered(_content.orders->give.action));
-    }
+      LayOrders(bench, *_content.orders, placed(kind, ORDERS_WINDOW_WIDTH));
     else if (kind == WindowKind::Away && _content.away.has_value())
-    {
-      const float heightUnits = AwayHeight(std::min(_content.away->lines.size(), AWAY_LINES));
-      const WindowManager::Point middle{.xUnits = (screenWidthUnits - AWAY_WINDOW_WIDTH) / 2.0f,
-                                        .yUnits = std::max(MARGIN, (screenHeightUnits - heightUnits) / 2.0f)};
-      LayAway(layout, _metrics, *_content.away, place(kind, middle, AWAY_WINDOW_WIDTH), scale);
-    }
-    // The leave window, at first in the middle (ADR-078 decision 11).
+      LayAway(bench, *_content.away, placed(kind, AWAY_WINDOW_WIDTH));
     else if (kind == WindowKind::Leave && _content.leave)
-    {
-      const WindowManager::Point middle{.xUnits = (screenWidthUnits - LEAVE_WINDOW_WIDTH) / 2.0f,
-                                        .yUnits = std::max(MARGIN, (screenHeightUnits - LeaveHeight()) / 2.0f)};
-      LayLeave(layout, _metrics, place(kind, middle, LEAVE_WINDOW_WIDTH), scale, _hovered);
-    }
-    // The build window, at first at the bottom right (ADR-031 decision 2).
+      LayLeave(bench, placed(kind, LEAVE_WINDOW_WIDTH));
     else if (kind == WindowKind::Build && _content.build.has_value())
-    {
-      const WindowManager::Point corner = BuildCorner(BuildHeight(_content.build->structures.size()), screenWidthUnits, screenHeightUnits);
-      LayBuild(layout, _metrics, *_content.build, place(kind, corner, BUILD_WINDOW_WIDTH), scale, _hovered);
-    }
+      LayBuild(bench, *_content.build, placed(kind, BUILD_WINDOW_WIDTH));
   }
   return layout;
 }

@@ -10,12 +10,6 @@ namespace
 {
 using Outpost::InterfaceSettings;
 
-// The windows' names in the file, in WindowKind's order. A name is never changed, since a file an earlier build wrote names
-// its windows so.
-constexpr std::array<std::string_view, Outpost::WINDOW_KINDS> WINDOW_NAMES{"designer", "research", "production", "controls",
-                                                                           "orders",   "away",     "leave",      "build"};
-static_assert(static_cast<std::size_t>(Outpost::WindowKind::Build) + 1 == Outpost::WINDOW_KINDS, "a name for every window");
-
 // The corner a place is measured from, by its fromBottom and then its fromRight.
 constexpr std::array<std::string_view, 4> CORNER_NAMES{"topLeft", "topRight", "bottomLeft", "bottomRight"};
 
@@ -110,11 +104,12 @@ std::optional<Outpost::InterfaceSettings> Outpost::ReadInterfaceSettings(std::st
   {
     for (const Neuron::JsonMember& member : windows->AsObject())
     {
-      const auto named = std::ranges::find(WINDOW_NAMES, std::string_view(member.name));
-      if (named == WINDOW_NAMES.end())
+      // A window's name in the file is its row's (ADR-099 decision 3), and one whose place is not kept is passed over.
+      const auto named = std::ranges::find(WINDOWS, std::string_view(member.name), &WindowRow::name);
+      if (named == WINDOWS.end() || !named->kept)
         continue;
       if (const std::optional<InterfaceSettings::Place> place = PlaceIn(member.value); place.has_value())
-        settings.places[static_cast<std::size_t>(named - WINDOW_NAMES.begin())] = place;
+        settings.places[static_cast<std::size_t>(named->kind)] = place;
     }
   }
   return settings;
@@ -128,10 +123,10 @@ std::string Outpost::WriteInterfaceSettings(const InterfaceSettings& _settings)
   for (std::size_t window = 0; window < WINDOW_KINDS; ++window)
   {
     const std::optional<InterfaceSettings::Place>& place = _settings.places[window];
-    if (!place.has_value())
+    if (!place.has_value() || !WINDOWS[window].kept)
       continue;
     text +=
-      std::format("{}\n    {}: {{\"from\": {}, \"xUnits\": {}, \"yUnits\": {}}}", first ? "" : ",", Neuron::QuoteJson(WINDOW_NAMES[window]),
+      std::format("{}\n    {}: {{\"from\": {}, \"xUnits\": {}, \"yUnits\": {}}}", first ? "" : ",", Neuron::QuoteJson(WINDOWS[window].name),
                   Neuron::QuoteJson(CORNER_NAMES[CornerIndex(*place)]), place->xUnits, place->yUnits);
     first = false;
   }

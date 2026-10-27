@@ -40,6 +40,7 @@
 #include "WindowManager.h"
 #include "InterfaceSettings.h"
 #include "KeyBindings.h"
+#include "WindowTable.h"
 #include "Hud.h"
 #include "LoadDriver.h"
 #include "MatchLog.h"

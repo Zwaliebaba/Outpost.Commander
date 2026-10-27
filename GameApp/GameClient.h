@@ -317,6 +317,9 @@ private:
   Neuron::UiPipeline m_ui;
   // The HUD as this frame draws it; the next frame's clicks are tested against it.
   Hud::Layout m_hudLayout;
+  // What the widgets of the HUD's windows share, such as the one under the pointer, resolved against the HUD drawn last
+  // (ADR-100).
+  Neuron::Interaction m_interaction;
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
   Designer m_designer;

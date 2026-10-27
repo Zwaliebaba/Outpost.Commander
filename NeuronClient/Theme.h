@@ -9,8 +9,9 @@ struct Theme
 {
   // A window's body and a panel's, and a chip's words on its tag.
   DirectX::XMFLOAT4 windowColor{};
-  // A window's hatched title bar, and its close box.
-  DirectX::XMFLOAT4 titleColor{};
+  // A window's hatched title bar, its title, and its close box.
+  DirectX::XMFLOAT4 titleBarColor{};
+  DirectX::XMFLOAT4 titleTextColor{};
   DirectX::XMFLOAT4 closeBoxColor{};
   // The bracket at each corner of a window or a panel.
   DirectX::XMFLOAT4 cornerColor{};
@@ -38,9 +39,10 @@ struct Theme
   DirectX::XMFLOAT4 barTrackColor{};
   DirectX::XMFLOAT4 barFillColor{};
 
-  // A window's title and its close mark; a button's label and a field's text; a key's letter, a small button's mark and a
-  // reason; and a figure.
+  // A window's title, and its close mark; a button's label and a field's text; a key's letter, a small button's mark and
+  // a reason; and a figure.
   std::size_t titleFont = 0;
+  std::size_t closeMarkFont = 0;
   std::size_t nameFont = 0;
   std::size_t labelFont = 0;
   std::size_t figureFont = 0;
@@ -49,12 +51,14 @@ struct Theme
   std::size_t checkSprite = 0;
 
   float titleBarUnits = 0.0f;
-  // The title's left from the window's edge, the title's and the close mark's top in the title bar, and the close mark's
-  // left in its box, which the close mark, in UTF-8, stands in.
+  // The title's left from the window's edge, its top in the title bar and its tracking; and the close mark, in UTF-8, its
+  // left in its box and its top.
   float titleLeftUnits = 0.0f;
   float titleTopUnits = 0.0f;
-  float closeMarkLeftUnits = 0.0f;
+  float titleTrackingUnits = 0.0f;
   std::string closeMark;
+  float closeMarkLeftUnits = 0.0f;
+  float closeMarkTopUnits = 0.0f;
   float cornerUnits = 0.0f;
   // How thick an edge is.
   float edgeUnits = 0.0f;

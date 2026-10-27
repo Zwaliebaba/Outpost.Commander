@@ -16,6 +16,7 @@ The game is packaged as MSIX ([ADR-001](ADR-001-win32-shell.md)). Windows keeps 
 1. **What is kept: the scale's step the player last took, and the place of each window the player has moved.**
    - The step is kept as its percentage. A step down that a screen or a match makes ([ADR-070](ADR-070-interface-scale.md) decision 4) is not kept, nor a step up the screen has no room for, so that the next session starts at the player's own and comes down only as far as its screen needs.
    - A window not yet moved is not kept, and opens where the HUD first puts it (ADR-031 decision 2).
+   - Whether a window's place is kept is its row's in the windows' table ([ADR-100](ADR-100-the-canvas.md) decision 8), and every window's is.
    - A place is kept from the corner of the screen nearest the window's middle: the distance from that corner's side edge to the window's left edge, and from its top or bottom edge to the window's top, in reference units (`InterfaceSettings::Place`, `PlaceOf`, `CornerOf`). A window left against the right edge stays against it on a wider screen, a narrower one and at another scale, and one left low stays as far above the foot.
 2. **Where: `Outpost Commander\Interface.json` in the player's local application data** (`FOLDERID_LocalAppData`), which Windows keeps in the package's own data. The shell finds the folder (`LocalInterfaceFile`) and hands the path to `GameClient::KeepInterfaceIn`. `GameApp` reads and writes the file (`LoadInterfaceSettings`, `SaveInterfaceSettings`) with NeuronCore's JSON (`ParseJson`, `QuoteJson`).
 3. **The file is JSON of version 1:** its `version`, its `scalePercent`, and under `windows` a member for each kept window, by name, with the corner it is kept `from` and its `xUnits` and `yUnits`:
@@ -30,7 +31,7 @@ The game is packaged as MSIX ([ADR-001](ADR-001-win32-shell.md)). Windows keeps 
    }
    ```
 
-   - The windows' names are `designer`, `research`, `production`, `controls`, `orders`, `away`, `leave` and `build`, and a corner's are `topLeft`, `topRight`, `bottomLeft` and `bottomRight`. A name is never changed, since a file an earlier build wrote names its windows so.
+   - The windows' names are their rows' in the windows' table ([ADR-100](ADR-100-the-canvas.md) decision 8), `designer`, `research`, `production`, `controls`, `orders`, `away`, `leave` and `build`, and a corner's are `topLeft`, `topRight`, `bottomLeft` and `bottomRight`. A name is never changed, since a file an earlier build wrote names its windows so.
    - A file of another version, or with none, is not read (`ReadInterfaceSettings`).
    - A member that is not as the game writes it is left out, and the rest is read: a scale that is no step, a corner with no name, a distance that is no number or more than 100,000 units from its corner. So is a window this build does not have, so that a file a later build wrote still gives what this one knows.
 4. **When:** the file is read once, as the shell starts the client and before its window shows. It is written when the player lets go of a window, when a step the player takes changes the scale, and as the game closes, and only when what it would hold has changed since it was last written or read. It is written to `Interface.json.new` beside it, which then replaces it, so that a crash never leaves half a file.

@@ -8,6 +8,7 @@ namespace
 {
 using Neuron::LayoutAlign;
 using Neuron::LayoutAnchor;
+using Neuron::LayoutEdges;
 using Neuron::LayoutKind;
 using Neuron::LayoutTree;
 using Neuron::TextFlow;
@@ -228,8 +229,23 @@ public:
     AssertStands(tree.Node(inParent), 540.0f, 280.0f, 50.0f, 10.0f, L"at its parent's bottom right, inside its padding");
   }
 
+  // ADR-100: an anchored node larger than its box stands at the box's start that way, so that its top-left corner stays in
+  // the box, and at its anchor the other way.
+  TEST_METHOD(StandsAnAnchoredNodeTooLargeAtItsStart)
+  {
+    const TenUnitFont font;
+    LayoutTree tree(1000.0f, 500.0f);
+    const LayoutEdges margin{.left = 10.0f, .top = 20.0f, .right = 30.0f, .bottom = 40.0f};
+    const std::size_t tall = tree.Add({.widthUnits = 100.0f, .heightUnits = 450.0f, .anchor = LayoutAnchor::Middle, .margin = margin});
+    const std::size_t wide = tree.Add({.widthUnits = 980.0f, .heightUnits = 50.0f, .anchor = LayoutAnchor::BottomRight, .margin = margin});
+    tree.Arrange(font.metrics);
+
+    AssertStands(tree.Node(tall), 440.0f, 20.0f, 100.0f, 450.0f, L"in the middle across, at the top margin down");
+    AssertStands(tree.Node(wide), 10.0f, 410.0f, 980.0f, 50.0f, L"at the left margin across, at the bottom down");
+  }
+
   // ADR-061 decision 3; ADR-100: a text wraps to the width it is given, or is cut short with three dots, or is set as it
-  // is; its parent is as tall as its lines, and its lines sit across its box as it aligns them.
+  // is; it is as tall as its lines, and a line tall with nothing to set, and its lines sit across its box as it aligns them.
   TEST_METHOD(WrapsAndCutsText)
   {
     const TenUnitFont font;
@@ -242,6 +258,7 @@ public:
     const std::size_t asIs = tree.AddText({.text = "Calibration matrix", .lineUnits = 18.0f});
     const std::size_t centered = tree.AddText({.text = "fire", .lineUnits = 18.0f}, {.alignX = LayoutAlign::Center});
     const std::size_t tracked = tree.AddText({.text = "Mass Driver", .lineUnits = 18.0f, .trackingUnits = 1.0f, .flow = TextFlow::Wrap});
+    const std::size_t nothing = tree.AddText({.lineUnits = 18.0f, .flow = TextFlow::Fit});
     tree.End();
     tree.Arrange(font.metrics);
 
@@ -256,7 +273,9 @@ public:
     Assert::AreEqual(180.0f, tree.Node(asIs).lines.at(0).widthUnits, L"set as it is, past its box");
     Assert::AreEqual(40.0f, tree.Node(centered).lines.at(0).leftUnits, L"40 in the middle of 110, past 5");
     Assert::AreEqual(size_t{2}, tree.Node(tracked).lines.size(), L"ten gaps of tracking take Mass Driver past 110");
-    Assert::AreEqual(5.0f + 36.0f + 18.0f + 18.0f + 18.0f + 36.0f + 5.0f, tree.Node(column).heightUnits, L"its lines and padding");
+    Assert::IsTrue(tree.Node(nothing).lines.empty(), L"nothing to set");
+    Assert::AreEqual(18.0f, tree.Node(nothing).heightUnits, L"and still a line tall");
+    Assert::AreEqual(5.0f + 36.0f + 18.0f + 18.0f + 18.0f + 36.0f + 18.0f + 5.0f, tree.Node(column).heightUnits, L"its lines and padding");
   }
 
   // ADR-070; ADR-100: a tree is laid out in reference units, so that at twice the scale, with fonts rasterized at twice

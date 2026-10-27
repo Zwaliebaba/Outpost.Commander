@@ -536,6 +536,7 @@ void Outpost::GameClient::ClearMatch()
   m_entities.clear();
   m_previousEntities.clear();
   m_hudLayout = {};
+  m_interaction = Neuron::Interaction();
   m_cameraPlaced = false;
   m_minimapDragging = false;
   m_cursorGround.reset();
@@ -675,19 +676,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
+    // The window whose row's key this is (ADR-100).
     std::optional<WindowKind> toggled;
-    if (keyDown && event->key == KEY_DESIGNER)
-      toggled = WindowKind::Designer;
-    else if (keyDown && event->key == KEY_PRODUCTION)
-      toggled = WindowKind::Production;
-    else if (keyDown && event->key == KEY_RESEARCH)
-      toggled = WindowKind::Research;
-    else if (keyDown && event->key == KEY_CONTROLS)
-      toggled = WindowKind::Controls;
-    else if (keyDown && event->key == KEY_ORDERS)
-      toggled = WindowKind::Orders;
-    else if (keyDown && event->key == KEY_BUILD)
-      toggled = WindowKind::Build;
+    if (const auto row = std::ranges::find(WINDOWS, event->key, &WindowRow::key); keyDown && event->key != 0 && row != WINDOWS.end())
+      toggled = row->kind;
     if (keyDown && event->key == KEY_CANCEL && !m_controls.Placing().has_value() && m_windows.CloseFront())
       event = input.events.erase(event);
     else if (keyDown && event->key == KEY_CANCEL && !m_server.empty() && !m_controls.IsArmed())
@@ -752,6 +744,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     // A locked part's card answers the pointer with its preview, and takes no click (ADR-017 decision 7).
     const std::optional<Hud::Action> hovered =
       m_hudLayout.HoverAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
+    m_interaction.Move(m_hudLayout, static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
     // The order the next left-click gives, whose button the HUD lights (ADR-088 decision 2).
     std::optional<Hud::ActionKind> armed;
     if (m_controls.IsAttackMoveArmed())
@@ -819,7 +812,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     if (std::optional<std::string> pending = PendingOrderLine(selected, m_entities, m_view.Newest(), m_clock);
         pending.has_value() && !content.selection.empty())
       content.selection.push_back(std::move(*pending));
-    m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows, m_interfaceFactor, hovered);
+    m_hudLayout =
+      Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows, m_interfaceFactor, hovered, &m_interaction);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
   }
@@ -894,8 +888,9 @@ void Outpost::GameClient::PlaceKeptWindows() noexcept
 
 void Outpost::GameClient::KeepDraggedWindow() noexcept
 {
+  // A window whose row does not keep its place is let go where it is (ADR-099 decision 1).
   const std::optional<WindowKind> dragged = m_windows.Grabbed();
-  if (!dragged.has_value() || m_hudLayout.fontPixels <= 0.0f)
+  if (!dragged.has_value() || !RowOf(*dragged).kept || m_hudLayout.fontPixels <= 0.0f)
     return;
   // Where the last frame laid it out, kept on the screen, at that frame's scale, is where the player let go of it.
   const auto laid = std::ranges::find(m_hudLayout.windows, *dragged, &Hud::Window::kind);
