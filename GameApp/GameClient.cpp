@@ -1418,42 +1418,15 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   for (const Hud::Rect& bar : m_hudLayout.bars)
     m_ui.FillRect(bar.left, bar.top, bar.width, bar.height, bar.color);
   // The HUD, then each window back to front: each layer's panels, then its lines, then its sprites, then its texts (ADR-031).
-  for (std::size_t layer = 0; layer < m_hudLayout.LayerCount(); ++layer)
-  {
-    const Hud::Span panels = m_hudLayout.PanelsOf(layer);
-    for (std::size_t i = panels.first; i < panels.end; ++i)
-    {
-      const Hud::Rect& panel = m_hudLayout.panels[i];
-      if (panel.fill == Hud::Fill::Hatched)
-        m_ui.FillHatched(panel.left, panel.top, panel.width, panel.height, panel.color, Hud::HATCH_PERIOD_UNITS * scale,
-                         Hud::HATCH_STRIPE_UNITS * scale);
-      else if (panel.fill == Hud::Fill::Fog)
-      {
-        // The fog's texture holds the grid in its corner, cell (x, z) at texel (x, z), and the minimap's top is the map's
-        // far edge in z (ADR-052).
-        const float extent = static_cast<float>(m_fog.CellsPerSide()) / static_cast<float>(Neuron::GroundMaskPipeline::TEXTURE_SIDE);
-        m_ui.DrawImage(panel.left, panel.top, panel.width, panel.height, panel.color, 0.0f, extent, extent, 0.0f);
-      }
-      else
-        m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
-    }
-    const Hud::Span lines = m_hudLayout.LinesOf(layer);
-    for (std::size_t i = lines.first; i < lines.end; ++i)
-      m_ui.DrawSegment(m_hudLayout.lines[i].segment, m_hudLayout.lines[i].color);
-    const Hud::Span sprites = m_hudLayout.SpritesOf(layer);
-    for (std::size_t i = sprites.first; i < sprites.end; ++i)
-    {
-      const Hud::SpriteMark& mark = m_hudLayout.sprites[i];
-      m_ui.DrawSprite(static_cast<std::size_t>(mark.sprite), mark.area.left, mark.area.top, mark.area.width, mark.area.height,
-                      mark.area.color, mark.mirrorX, mark.mirrorY);
-    }
-    const Hud::Span texts = m_hudLayout.TextsOf(layer);
-    for (std::size_t i = texts.first; i < texts.end; ++i)
-    {
-      const Hud::Text& text = m_hudLayout.texts[i];
-      m_ui.DrawText(static_cast<std::size_t>(text.typeface), text.text, text.left, text.top, text.color, text.trackingPixels);
-    }
-  }
+  // The only image is the minimap's fog: the fog's texture holds the grid in its corner, cell (x, z) at texel (x, z), and
+  // the minimap's top is the map's far edge in z (ADR-052).
+  const float extent = static_cast<float>(m_fog.CellsPerSide()) / static_cast<float>(Neuron::GroundMaskPipeline::TEXTURE_SIDE);
+  m_ui.Draw(m_hudLayout, {.hatchPeriodPixels = Hud::HATCH_PERIOD_UNITS * scale,
+                          .hatchStripePixels = Hud::HATCH_STRIPE_UNITS * scale,
+                          .imageU0 = 0.0f,
+                          .imageV0 = extent,
+                          .imageU1 = extent,
+                          .imageV1 = 0.0f});
   m_ui.End(_commandList, _frameIndex);
 }
 

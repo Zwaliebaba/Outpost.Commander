@@ -2,11 +2,15 @@
 
 // The client engine: what only the game client needs, such as rendering, input and audio.
 
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <chrono>
+#include <limits>
 #include <optional>
 #include <span>
+#include <unordered_map>
+#include <unordered_set>
 
 // It builds on NeuronCore and knows no game concept (R9).
 #include "NeuronCore.h"
@@ -27,4 +31,11 @@
 #include "StarPipeline.h"
 #include "GlyphAtlas.h"
 #include "ScreenSegment.h"
+#include "DrawList.h"
+#include "TextMetrics.h"
+#include "LayoutTree.h"
+#include "WindowStack.h"
+#include "Interaction.h"
+#include "Theme.h"
+#include "Canvas.h"
 #include "UiPipeline.h"

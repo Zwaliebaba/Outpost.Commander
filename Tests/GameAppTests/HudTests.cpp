@@ -334,7 +334,7 @@ std::span<const Neuron::GlyphAtlas::Font> FontsOf(const Outpost::Hud::Layout& _l
 // its characters' advances and its tracking, and a line of its font tall.
 Outpost::Hud::Rect LineBoxOf(const Outpost::Hud::Text& _text, std::span<const Neuron::GlyphAtlas::Font> _fonts)
 {
-  const Neuron::GlyphAtlas::Font& font = _fonts[static_cast<std::size_t>(_text.typeface)];
+  const Neuron::GlyphAtlas::Font& font = _fonts[_text.font];
   return {.left = std::round(_text.left),
           .top = std::round(_text.top),
           .width = font.Width(_text.text, std::round(_text.trackingPixels)),
@@ -467,8 +467,8 @@ public:
     Assert::IsTrue(window.titleBar.fill == Outpost::Hud::Fill::Hatched);
     const Outpost::Hud::Span sprites = layout.SpritesOf(1);
     const auto corners = std::ranges::count(layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.first),
-                                            layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end), Outpost::Hud::Sprite::Corner,
-                                            &Outpost::Hud::SpriteMark::sprite);
+                                            layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end),
+                                            Outpost::Hud::SpriteOf(Outpost::Hud::Sprite::Corner), &Outpost::Hud::SpriteMark::sprite);
     Assert::AreEqual(std::ptrdiff_t{4}, corners);
     const Outpost::Hud::Span hud = layout.SpritesOf(0);
     Assert::IsTrue(std::all_of(layout.sprites.begin() + static_cast<std::ptrdiff_t>(hud.first),
@@ -1137,7 +1137,7 @@ public:
                      {.position = seen, .radiusMeters = 40.0f, .side = Outpost::Hud::Side::Enemy, .kind = Outpost::EntityKind::Structure}};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const auto fog =
-      std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; });
+      std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Image; });
     Assert::IsTrue(fog != layout.panels.end());
     const auto marksAt = [&layout](Outpost::PlanePosition _position, float _dx, float _dy)
     {
@@ -1145,7 +1145,7 @@ public:
       std::vector<std::ptrdiff_t> found;
       for (auto panel = layout.panels.begin(); panel != layout.panels.end(); ++panel)
       {
-        if (panel->fill != Outpost::Hud::Fill::Fog && panel->width < 100.0f && panel->Contains(at.x + _dx, at.y + _dy))
+        if (panel->fill != Outpost::Hud::Fill::Image && panel->width < 100.0f && panel->Contains(at.x + _dx, at.y + _dy))
           found.push_back(panel - layout.panels.begin());
       }
       return found;
@@ -1401,7 +1401,7 @@ public:
     Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
                     L"no tickets without them");
     const auto fog =
-      std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; });
+      std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Image; });
     const DirectX::XMFLOAT2 west = layout.MinimapPixelOf({.xMeters = -1000.0f, .zMeters = 0.0f});
     const DirectX::XMFLOAT2 middle = layout.MinimapPixelOf({.xMeters = 0.0f, .zMeters = 0.0f});
     const auto wash = std::ranges::find_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
@@ -2637,7 +2637,8 @@ public:
     const auto oreAt = [](std::int32_t _ore)
     {
       const Outpost::Hud::Layout layout = Lay({.ore = _ore, .oreIncomeHundredthsPerSecond = 2700}, 1920, 1080);
-      const auto gem = std::ranges::find(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite);
+      const auto gem =
+        std::ranges::find(layout.sprites, Outpost::Hud::SpriteOf(Outpost::Hud::Sprite::OreMark), &Outpost::Hud::SpriteMark::sprite);
       const auto figure = std::ranges::find(layout.texts, Outpost::WithThousands(_ore), &Outpost::Hud::Text::text);
       const auto income = std::ranges::find(layout.texts, std::string("+27/s"), &Outpost::Hud::Text::text);
       Assert::IsTrue(gem != layout.sprites.end() && figure != layout.texts.end() && income != layout.texts.end());
@@ -2787,9 +2788,10 @@ public:
                                         .mapSizeMeters = 2000.0f};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     const Outpost::Hud::Span sprites = layout.SpritesOf(0);
-    const auto corners = std::count_if(layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.first),
-                                       layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end),
-                                       [](const Outpost::Hud::SpriteMark& _mark) { return _mark.sprite == Outpost::Hud::Sprite::Corner; });
+    const auto corners =
+      std::count_if(layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.first),
+                    layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end), [](const Outpost::Hud::SpriteMark& _mark)
+                    { return _mark.sprite == Outpost::Hud::SpriteOf(Outpost::Hud::Sprite::Corner); });
     Assert::AreEqual(std::ptrdiff_t{20}, corners, L"four for each of the Ore, the status, the selection, the buttons and the minimap");
   }
 
@@ -2809,9 +2811,10 @@ public:
     { return std::ranges::any_of(layout.texts, [_text](const Outpost::Hud::Text& _line) { return _line.text == _text; }); };
     Assert::IsTrue(has("12,345") && has("1,500") && has("2,500"));
     Assert::IsFalse(has("12345") || has("Ore") || has("1500"));
-    Assert::AreEqual(std::ptrdiff_t{4},
-                     std::ranges::count(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite),
-                     L"a gem for the stockpile, the button, the window's Ore and the card");
+    Assert::AreEqual(
+      std::ptrdiff_t{4},
+      std::ranges::count(layout.sprites, Outpost::Hud::SpriteOf(Outpost::Hud::Sprite::OreMark), &Outpost::Hud::SpriteMark::sprite),
+      L"a gem for the stockpile, the button, the window's Ore and the card");
   }
 
   // ADR-043: the production window's cards stay where they are as its queue grows, so that a card can be clicked again and
@@ -2874,7 +2877,7 @@ public:
   {
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
     content.marks.push_back({.position = {}, .radiusMeters = 8.0f, .side = Outpost::Hud::Side::Own, .kind = Outpost::EntityKind::Ship});
-    const auto isFog = [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; };
+    const auto isFog = [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Image; };
     Assert::IsFalse(std::ranges::any_of(Lay(content, 1920, 1080).panels, isFog), L"no fog without fog of war");
 
     content.fog = true;
@@ -3894,7 +3897,7 @@ public:
     const auto cap = std::ranges::find(layout.texts, std::string("P"), &Outpost::Hud::Text::text);
     Assert::IsTrue(cap != layout.texts.end() && inside(production, *cap));
     Assert::IsTrue(cap->left > production.left + (production.width * 0.8f), L"at the right end");
-    Assert::IsTrue(cap->typeface == Outpost::Hud::Typeface::Label);
+    Assert::IsTrue(cap->font == Outpost::Hud::FontOf(Outpost::Hud::Typeface::Label));
     Assert::IsTrue(std::ranges::any_of(layout.panels,
                                        [&](const Outpost::Hud::Rect& _panel)
                                        {

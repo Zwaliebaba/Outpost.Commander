@@ -317,6 +317,47 @@ void Neuron::UiPipeline::DrawImage(float _left, float _top, float _width, float 
   AddQuad(_left, _top, _left + _width, _top + _height, _u0 + IMAGE_U_OFFSET, _v0, _u1 + IMAGE_U_OFFSET, _v1, _color);
 }
 
+void Neuron::UiPipeline::Draw(const DrawList& _list, const FillStyle& _fills)
+{
+  for (std::size_t layer = 0; layer < _list.LayerCount(); ++layer)
+  {
+    const CanvasSpan panels = _list.PanelsOf(layer);
+    for (std::size_t i = panels.first; i < panels.end; ++i)
+    {
+      const CanvasRect& panel = _list.panels[i];
+      switch (panel.fill)
+      {
+      case CanvasFill::Hatched:
+        FillHatched(panel.left, panel.top, panel.width, panel.height, panel.color, _fills.hatchPeriodPixels, _fills.hatchStripePixels);
+        break;
+      case CanvasFill::Image:
+        DrawImage(panel.left, panel.top, panel.width, panel.height, panel.color, _fills.imageU0, _fills.imageV0, _fills.imageU1,
+                  _fills.imageV1);
+        break;
+      case CanvasFill::Solid:
+        FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
+        break;
+      }
+    }
+    const CanvasSpan lines = _list.LinesOf(layer);
+    for (std::size_t i = lines.first; i < lines.end; ++i)
+      DrawSegment(_list.lines[i].segment, _list.lines[i].color);
+    const CanvasSpan sprites = _list.SpritesOf(layer);
+    for (std::size_t i = sprites.first; i < sprites.end; ++i)
+    {
+      const CanvasSprite& mark = _list.sprites[i];
+      DrawSprite(mark.sprite, mark.area.left, mark.area.top, mark.area.width, mark.area.height, mark.area.color, mark.mirrorX,
+                 mark.mirrorY);
+    }
+    const CanvasSpan texts = _list.TextsOf(layer);
+    for (std::size_t i = texts.first; i < texts.end; ++i)
+    {
+      const CanvasText& text = _list.texts[i];
+      DrawText(text.font, text.text, text.left, text.top, text.color, text.trackingPixels);
+    }
+  }
+}
+
 void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)
 {
   if (m_frameVertices.empty())
