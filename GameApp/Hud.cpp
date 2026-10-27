@@ -2420,6 +2420,346 @@ WindowSize LongestOf(Outpost::WindowKind _window, const Outpost::Snapshot* _newe
   return {};
 }
 
+// Production and research on the canvas (ADR-100), from the top-left of the window as their layout functions place them:
+// the header under the title bar, the cards under their section's label, and the queue under them.
+
+// Where a header's subject stands, and the Ore's box in it.
+constexpr float HEADER_SUBJECT_TOP = 40.0f;
+constexpr float ORE_BOX_TOP = 38.0f;
+constexpr float ORE_BOX_HEIGHT = 30.0f;
+// A production option's lines from its card's top: its name, its code and cost, and its time and strengths.
+constexpr float OPTION_NAME_TOP = 6.0f;
+constexpr float OPTION_DETAIL_TOP = 28.0f;
+// A topic card's name and cost on the first line, the cost's figure a little lower; a prerequisite's box in its line.
+constexpr float TOPIC_COST_TOP = 3.0f;
+constexpr float NEED_BOX_UNITS = 10.0f;
+constexpr float NEED_BOX_TOP = 2.0f;
+constexpr float NEED_TEXT_LEFT = 16.0f;
+// How tall a topic card is at least, and the height group every topic's card is measured in (ADR-061 decision 4).
+constexpr float TOPIC_LEAST_UNITS = TOPIC_LINES_TOP + (static_cast<float>(TOPIC_LEAST_LINES) * TOPIC_LINE_UNITS) + TOPIC_FOOT_UNITS;
+constexpr std::uint32_t TOPIC_CARDS = 1;
+// A queue's row: its inset, where its name starts, where its texts and bar stand down it, and the room for the front job's
+// percentage after its bar.
+constexpr float QUEUE_ROW_INSET = 10.0f;
+constexpr float QUEUE_NAME_LEFT = 32.0f;
+constexpr float QUEUE_NUMBER_TOP = 7.0f;
+constexpr float QUEUE_NAME_TOP = 5.0f;
+constexpr float QUEUE_WAIT_TOP = 9.0f;
+constexpr float QUEUE_BAR_TOP = 12.0f;
+constexpr float QUEUE_BAR_HEIGHT = 6.0f;
+constexpr float QUEUE_PERCENT_UNITS = 44.0f;
+
+// A queue window's body: its header across the whole of it, and what is under the header inset by the windows' inset.
+Neuron::LayoutStyle QueueWindowBody() noexcept
+{
+  return {.alignX = Neuron::LayoutAlign::Stretch};
+}
+
+Neuron::LayoutStyle UnderHeader() noexcept
+{
+  return {.padding = {.left = WINDOW_INSET, .top = PADDING, .right = WINDOW_INSET, .bottom = SECTION_GAP},
+          .alignX = Neuron::LayoutAlign::Stretch};
+}
+
+// A section's label, in the label face and tracked, on a line as tall as the gap under it to what it labels.
+Neuron::LayoutText SectionText(std::string _text)
+{
+  return {.text = std::move(_text),
+          .font = Hud::FontOf(Hud::Typeface::Label),
+          .lineUnits = SECTION_BODY_GAP,
+          .trackingUnits = LABEL_TRACKING_UNITS};
+}
+
+// A text set as it is in _face, on that face's line.
+Neuron::LayoutText LineText(std::string _text, Hud::Typeface _face, float _lineUnits)
+{
+  return {.text = std::move(_text), .font = Hud::FontOf(_face), .lineUnits = _lineUnits};
+}
+
+// An amount of Ore on the canvas: Ore's gem, sized by _face, in the middle of the figure's line, then the figure.
+void OreAmount(Neuron::Canvas& _canvas, std::int32_t _ore, Hud::Typeface _face, const DirectX::XMFLOAT4& _color,
+               Neuron::LayoutStyle _style = {})
+{
+  const float sizeUnits = Hud::FaceUnits(_face);
+  const float mark = std::round(sizeUnits * ORE_MARK_SHARE);
+  _style.gapUnits = ORE_MARK_GAP_UNITS;
+  (void)_canvas.Tree().Begin(Neuron::LayoutKind::Row, _style);
+  (void)_canvas.Icon(Hud::SpriteOf(Hud::Sprite::OreMark), mark, _color, {.padding = {.top = ((sizeUnits * 1.25f) - mark) / 2.0f}});
+  (void)_canvas.Label(LineText(Outpost::WithThousands(_ore), _face, sizeUnits * 1.25f), _color);
+  _canvas.Tree().End();
+}
+
+// A window's header on the canvas (ADR-068 decision 1): the hatched band under the title bar and its edge at its foot; its
+// subject in the title face, between the arrows that step it when it is stepped through; and the player's Ore in its box.
+void HeaderOnCanvas(Neuron::Canvas& _canvas, Hud::Layout& _layout, const std::string& _subject, std::int32_t _ore, float _widthUnits,
+                    std::optional<std::pair<Hud::Action, Hud::Action>> _steps = std::nullopt, bool _canStep = false)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const std::size_t band = tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = DESIGNER_HEADER - Hud::TITLE_BAR_UNITS});
+  _canvas.Fill(band, TITLE_HATCH_COLOR, Neuron::CanvasFill::Hatched);
+  _canvas.Fill(tree.Add({.widthUnits = _widthUnits, .heightUnits = LINE_UNITS, .anchor = Neuron::LayoutAnchor::BottomLeft}), EDGE_COLOR);
+  const float room = _widthUnits - (2.0f * WINDOW_INSET) - ORE_BOX_WIDTH - FIT_GAP_UNITS;
+  if (_steps.has_value())
+  {
+    // The arrows' actions in the order they are drawn, each only while the arrows step.
+    const std::uint32_t previous = _canStep ? PressOf(_layout, _steps->first) : Neuron::NO_PAYLOAD;
+    const std::uint32_t next = _canStep ? PressOf(_layout, _steps->second) : Neuron::NO_PAYLOAD;
+    (void)tree.Begin(Neuron::LayoutKind::Column, {.anchor = Neuron::LayoutAnchor::TopLeft,
+                                                  .margin = {.left = WINDOW_INSET, .top = ARROWS_IN_HEADER_TOP - Hud::TITLE_BAR_UNITS}});
+    _canvas.Stepper("subject", LineText(_subject, Hud::Typeface::Title, TITLE_LINE_UNITS), TEXT_COLOR, room,
+                    HEADER_SUBJECT_TOP - ARROWS_IN_HEADER_TOP, _canStep, previous, next);
+    tree.End();
+  }
+  else
+  {
+    (void)_canvas.Label(FittedText(_subject, Hud::Typeface::Title, TITLE_LINE_UNITS), TEXT_COLOR,
+                        {.mostWidthUnits = room,
+                         .anchor = Neuron::LayoutAnchor::TopLeft,
+                         .margin = {.left = WINDOW_INSET, .top = HEADER_SUBJECT_TOP - Hud::TITLE_BAR_UNITS}});
+  }
+  (void)_canvas.BeginBox({.face = FIELD_COLOR, .edge = EDGE_COLOR},
+                         {.widthUnits = ORE_BOX_WIDTH,
+                          .heightUnits = ORE_BOX_HEIGHT,
+                          .padding = {.top = LINE_UNITS, .right = 10.0f},
+                          .alignX = Neuron::LayoutAlign::End,
+                          .anchor = Neuron::LayoutAnchor::TopRight,
+                          .margin = {.top = ORE_BOX_TOP - Hud::TITLE_BAR_UNITS, .right = WINDOW_INSET}});
+  OreAmount(_canvas, _ore, Hud::Typeface::Title, GOLD_COLOR);
+  _canvas.EndBox();
+  tree.End();
+}
+
+// A queue on the canvas: its label, then a row for each job, a box in the cards' look with the job's number, its name, and
+// the front one's progress or its wait, for Ore or for the fleet cap (ADR-071 decision 4), at its right.
+void QueueOnCanvas(Neuron::Canvas& _canvas, const std::vector<Hud::QueueLine>& _queue)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)_canvas.Label(SectionText(QueueLabel(_queue.size())), LABEL_COLOR);
+  for (std::size_t slot = 0; slot < _queue.size(); ++slot)
+  {
+    const Hud::QueueLine& line = _queue[slot];
+    (void)_canvas.BeginBox({.face = CARD_COLOR, .edge = EDGE_COLOR}, {.heightUnits = QUEUE_ROW_HEIGHT,
+                                                                      .padding = {.left = QUEUE_ROW_INSET, .right = QUEUE_ROW_INSET},
+                                                                      .alignX = Neuron::LayoutAlign::Stretch});
+    (void)tree.Begin(Neuron::LayoutKind::Row, {});
+    (void)_canvas.Label(LineText(std::to_string(slot + 1), Hud::Typeface::Figure, FIGURE_LINE_UNITS), LABEL_COLOR,
+                        {.widthUnits = QUEUE_NAME_LEFT - QUEUE_ROW_INSET, .padding = {.top = QUEUE_NUMBER_TOP}});
+    (void)_canvas.Label(FittedText(line.name, Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR,
+                        {.padding = {.top = QUEUE_NAME_TOP, .right = FIT_GAP_UNITS}, .grow = 1.0f});
+    if (line.waiting)
+    {
+      const std::string_view waiting = line.capped ? "WAITING FOR FLEET CAP" : "WAITING FOR ORE";
+      (void)_canvas.Label(LineText(std::string(waiting), Hud::Typeface::Label, NAME_LINE_UNITS), AMBER_COLOR,
+                          {.padding = {.top = QUEUE_WAIT_TOP}});
+    }
+    else if (line.front)
+    {
+      (void)tree.Begin(Neuron::LayoutKind::Stack, {.widthUnits = QUEUE_BAR_WIDTH + QUEUE_PERCENT_UNITS});
+      (void)_canvas.ProgressBar(static_cast<float>(std::clamp(line.permille, 0, Outpost::PERMILLE)) / static_cast<float>(Outpost::PERMILLE),
+                                {.widthUnits = QUEUE_BAR_WIDTH,
+                                 .heightUnits = QUEUE_BAR_HEIGHT,
+                                 .anchor = Neuron::LayoutAnchor::TopLeft,
+                                 .margin = {.top = QUEUE_BAR_TOP}});
+      (void)_canvas.Label(LineText(std::format("{}%", line.permille / 10), Hud::Typeface::Figure, FIGURE_LINE_UNITS), TEXT_COLOR,
+                          {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = QUEUE_NUMBER_TOP}});
+      tree.End();
+    }
+    tree.End();
+    _canvas.EndBox();
+    (void)tree.Add({.heightUnits = QUEUE_ROW_GAP});
+  }
+}
+
+// A production option's card (ADR-068 decision 3), a composite of the game's: its name; its code, cut short where it would
+// meet its cost, and its cost; and its build time and its strength against each hull at its right, three segments a hull, three
+// lit for Good, two for Fair and one for Poor, so that the bars read without their colors.
+void OptionCard(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::QueueOption& _option, std::size_t _index)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const bool enabled = _option.enabled;
+  (void)_canvas.BeginCard(std::to_string(_index), {.face = enabled ? CARD_COLOR : FIELD_COLOR, .edge = EDGE_COLOR},
+                          enabled ? PressOf(_layout, _option.action) : Neuron::NO_PAYLOAD,
+                          {.heightUnits = OPTION_HEIGHT,
+                           .padding = {.left = CARD_INSET, .top = OPTION_NAME_TOP, .right = CARD_INSET},
+                           .alignX = Neuron::LayoutAlign::Stretch});
+  (void)_canvas.Label(FittedText(_option.name, Hud::Typeface::Name, NAME_LINE_UNITS), enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR,
+                      {.heightUnits = OPTION_DETAIL_TOP - OPTION_NAME_TOP});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = OPTION_THIRD_LINE_TOP - OPTION_DETAIL_TOP});
+  (void)_canvas.Label(FittedText(_option.detail, Hud::Typeface::Detail, NAME_LINE_UNITS), enabled ? CODE_COLOR : LOCKED_TEXT_COLOR,
+                      {.padding = {.right = FIT_GAP_UNITS}, .grow = 1.0f});
+  OreAmount(_canvas, _option.cost, Hud::Typeface::Figure, enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+  tree.End();
+  (void)tree.Begin(Neuron::LayoutKind::Row, {});
+  (void)_canvas.Label(LineText(_option.time, Hud::Typeface::Detail, NAME_LINE_UNITS), enabled ? LABEL_COLOR : LOCKED_TEXT_COLOR);
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = STRENGTH_GROUP_GAP, .anchor = Neuron::LayoutAnchor::TopRight});
+  for (const Hud::HullRating& strength : _option.strengths)
+  {
+    (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = STRENGTH_LETTER_GAP});
+    (void)_canvas.Label(LineText(strength.hull, Hud::Typeface::Label, NAME_LINE_UNITS), enabled ? ROW_LABEL_COLOR : LOCKED_TEXT_COLOR);
+    (void)tree.Begin(Neuron::LayoutKind::Row, {.padding = {.top = 5.0f}, .gapUnits = STRENGTH_SEGMENT_GAP});
+    const auto lit = static_cast<std::size_t>(strength.rating) + 1;
+    for (std::size_t segment = 0; segment < STRENGTH_SEGMENTS; ++segment)
+    {
+      const DirectX::XMFLOAT4& color = segment >= lit ? BAR_TRACK_COLOR : enabled ? RatingColor(strength.rating) : LOCKED_TEXT_COLOR;
+      _canvas.Fill(tree.Add({.widthUnits = STRENGTH_SEGMENT_UNITS, .heightUnits = STRENGTH_SEGMENT_HEIGHT}), color);
+    }
+    tree.End();
+    tree.End();
+  }
+  tree.End();
+  tree.End();
+  _canvas.EndBox();
+}
+
+// The production window on the canvas: the producer between the arrows that step through the others, a card for each thing
+// it builds, two to a row and at least a row's room, kept still as the queue under them grows (ADR-043 decision 6), with
+// the hint over them when there is one, and the queue.
+void LayProductionOnCanvas(const WindowBench& _bench, const Hud::ProductionPanel& _panel, const WindowPlace& _place)
+{
+  LayWindow(_bench, Outpost::WindowKind::Production, _place, PRODUCTION_WINDOW_WIDTH, QueueWindowBody(),
+            [&](Neuron::Canvas& _canvas)
+            {
+              Neuron::LayoutTree& tree = _canvas.Tree();
+              HeaderOnCanvas(
+                _canvas, *_bench.layout, _panel.producer, _panel.ore, PRODUCTION_WINDOW_WIDTH,
+                std::pair{Hud::Action{.kind = Hud::ActionKind::PreviousProducer}, Hud::Action{.kind = Hud::ActionKind::NextProducer}},
+                _panel.canStep);
+              (void)tree.Begin(Neuron::LayoutKind::Column, UnderHeader());
+              (void)_canvas.Label(SectionText("BUILD"), LABEL_COLOR);
+              (void)tree.Begin(Neuron::LayoutKind::Stack, {.leastHeightUnits = OPTION_HEIGHT, .alignX = Neuron::LayoutAlign::Stretch});
+              (void)tree.Begin(Neuron::LayoutKind::Grid, {.gapUnits = CARD_SPACING, .alignX = Neuron::LayoutAlign::Stretch, .columns = 2});
+              for (std::size_t option = 0; option < _panel.options.size(); ++option)
+                OptionCard(_canvas, *_bench.layout, _panel.options[option], option);
+              tree.End();
+              if (!_panel.hint.empty())
+              {
+                (void)_canvas.Label(FittedText(_panel.hint, Hud::Typeface::Detail, TOPIC_LINE_UNITS), LABEL_COLOR,
+                                    {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.top = 16.0f}});
+              }
+              tree.End();
+              (void)tree.Add({.heightUnits = SECTION_GAP});
+              QueueOnCanvas(_canvas, _panel.queue);
+              tree.End();
+            });
+}
+
+// A topic's card (ADR-043 decision 6), a composite of the game's: its name and its cost; its effect, wrapped to the card;
+// each prerequisite neither researched nor queued on a line of its own with its box, "NEEDS · RESEARCH LAB L2", then
+// "+ HULL PLATING", and hatched and dimmed while it has one (ADR-061 decision 4); or else its tier and time. Every topic's
+// card is as tall as the most lines any topic needs, in the height group TopicMeasure measures the others in.
+void TopicCardOnCanvas(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::TopicCard& _topic, std::size_t _index)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const bool blocked = !_topic.needs.empty();
+  (void)_canvas.BeginCard(std::to_string(_index),
+                          {.face = blocked          ? LOCKED_COLOR
+                                   : _topic.enabled ? CARD_COLOR
+                                                    : FIELD_COLOR,
+                           .hatch = blocked ? std::optional(LOCKED_HATCH_COLOR) : std::nullopt,
+                           .edge = EDGE_COLOR},
+                          _topic.enabled ? PressOf(_layout, _topic.action) : Neuron::NO_PAYLOAD,
+                          {.leastHeightUnits = TOPIC_LEAST_UNITS,
+                           .padding = {.left = CARD_INSET, .top = OPTION_NAME_TOP, .right = CARD_INSET, .bottom = TOPIC_FOOT_UNITS},
+                           .alignX = Neuron::LayoutAlign::Stretch,
+                           .heightGroup = TOPIC_CARDS});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = TOPIC_LINES_TOP - OPTION_NAME_TOP});
+  (void)_canvas.Label(FittedText(_topic.name, Hud::Typeface::Name, NAME_LINE_UNITS), _topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR,
+                      {.padding = {.right = FIT_GAP_UNITS}, .grow = 1.0f});
+  OreAmount(_canvas, _topic.cost, Hud::Typeface::Figure, _topic.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR,
+            {.padding = {.top = TOPIC_COST_TOP}});
+  tree.End();
+  if (!_topic.effect.empty())
+  {
+    (void)_canvas.Label(
+      {.text = _topic.effect, .font = Hud::FontOf(Hud::Typeface::Detail), .lineUnits = TOPIC_LINE_UNITS, .flow = Neuron::TextFlow::Wrap},
+      _topic.enabled ? NUMBERS_COLOR : LOCKED_TEXT_COLOR);
+  }
+  for (std::size_t need = 0; need < _topic.needs.size(); ++need)
+  {
+    (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = TOPIC_LINE_UNITS});
+    (void)_canvas.Icon(Hud::SpriteOf(Hud::Sprite::Checkbox), NEED_BOX_UNITS, AMBER_COLOR,
+                       {.widthUnits = NEED_TEXT_LEFT, .padding = {.top = NEED_BOX_TOP}});
+    const std::string needs = need == 0 ? std::format("NEEDS{}{}", DOT, _topic.needs[need]) : std::format("+ {}", _topic.needs[need]);
+    (void)_canvas.Label(FittedText(needs, Hud::Typeface::Label, TOPIC_LINE_UNITS), AMBER_COLOR, {.grow = 1.0f});
+    tree.End();
+  }
+  if (!blocked)
+  {
+    (void)_canvas.Label(LineText(_topic.time, Hud::Typeface::Detail, TOPIC_LINE_UNITS), _topic.enabled ? LABEL_COLOR : LOCKED_TEXT_COLOR);
+  }
+  _canvas.EndBox();
+}
+
+// A topic not on the page, measured as its card is and not drawn, standing where it takes no room, so that every card is as
+// tall as the most lines any topic needs and the cards keep their height from page to page.
+void TopicMeasure(Neuron::LayoutTree& _tree, const Hud::TopicCard& _topic)
+{
+  (void)_tree.Begin(Neuron::LayoutKind::Column,
+                    {.widthUnits = TopicWidth(),
+                     .leastHeightUnits = TOPIC_LEAST_UNITS,
+                     .padding = {.left = CARD_INSET, .top = TOPIC_LINES_TOP, .right = CARD_INSET, .bottom = TOPIC_FOOT_UNITS},
+                     .alignX = Neuron::LayoutAlign::Stretch,
+                     .anchor = Neuron::LayoutAnchor::TopLeft,
+                     .heightGroup = TOPIC_CARDS});
+  if (!_topic.effect.empty())
+  {
+    (void)_tree.AddText(
+      {.text = _topic.effect, .font = Hud::FontOf(Hud::Typeface::Detail), .lineUnits = TOPIC_LINE_UNITS, .flow = Neuron::TextFlow::Wrap});
+  }
+  (void)_tree.Add({.heightUnits = TOPIC_LINE_UNITS * static_cast<float>(std::max<std::size_t>(1, _topic.needs.size()))});
+  _tree.End();
+}
+
+// The research window on the canvas: the Research Lab, where the page stands among the topics with the arrows that scroll a
+// row at a time when they do not all fit, a page of topic cards and the others measured with them, and the queue.
+void LayResearchOnCanvas(const WindowBench& _bench, const Hud::ResearchPanel& _panel, const WindowPlace& _place)
+{
+  LayWindow(
+    _bench, Outpost::WindowKind::Research, _place, RESEARCH_WINDOW_WIDTH, QueueWindowBody(),
+    [&](Neuron::Canvas& _canvas)
+    {
+      Neuron::LayoutTree& tree = _canvas.Tree();
+      Hud::Layout& layout = *_bench.layout;
+      HeaderOnCanvas(_canvas, layout, _panel.lab, _panel.ore, RESEARCH_WINDOW_WIDTH);
+      (void)tree.Begin(Neuron::LayoutKind::Column, UnderHeader());
+      // Where the page is among the topics, "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030; ADR-068 decision 1).
+      const std::size_t pageEnd = std::min(_panel.firstTopic + Hud::TOPICS_SHOWN, _panel.topics.size());
+      (void)tree.Begin(Neuron::LayoutKind::Row, {});
+      (void)_canvas.Label(SectionText(_panel.topics.empty()
+                                        ? std::string("TOPICS")
+                                        : std::format("TOPICS{}{}-{} OF {}", DOT, _panel.firstTopic + 1, pageEnd, _panel.topics.size())),
+                          LABEL_COLOR);
+      if (_panel.topics.size() > Hud::TOPICS_SHOWN)
+      {
+        const bool back = _panel.firstTopic > 0;
+        const bool on = _panel.firstTopic + Hud::TOPICS_SHOWN < _panel.topics.size();
+        const std::uint32_t previous = back ? PressOf(layout, {.kind = Hud::ActionKind::PreviousTopics}) : Neuron::NO_PAYLOAD;
+        const std::uint32_t next = on ? PressOf(layout, {.kind = Hud::ActionKind::NextTopics}) : Neuron::NO_PAYLOAD;
+        (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = 4.0f, .anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = -6.0f}});
+        (void)_canvas.SmallButton("previous", "<", back, previous);
+        (void)_canvas.SmallButton("next", ">", on, next);
+        tree.End();
+      }
+      tree.End();
+      (void)tree.Begin(Neuron::LayoutKind::Grid,
+                       {.gapUnits = CARD_SPACING, .alignX = Neuron::LayoutAlign::Stretch, .columns = Hud::TOPIC_COLUMNS});
+      for (std::size_t topic = _panel.firstTopic; topic < pageEnd; ++topic)
+        TopicCardOnCanvas(_canvas, layout, _panel.topics[topic], topic);
+      // With no card on the page, a card's room still.
+      if (_panel.firstTopic >= pageEnd)
+        (void)tree.Add({.leastHeightUnits = TOPIC_LEAST_UNITS, .heightGroup = TOPIC_CARDS});
+      for (std::size_t topic = 0; topic < _panel.topics.size(); ++topic)
+      {
+        if (topic < _panel.firstTopic || topic >= pageEnd)
+          TopicMeasure(tree, _panel.topics[topic]);
+      }
+      tree.End();
+      (void)tree.Add({.heightUnits = SECTION_GAP});
+      QueueOnCanvas(_canvas, _panel.queue);
+      tree.End();
+    });
+}
+
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
 std::size_t LayerStart(const Hud::Layout& _layout, std::size_t _window, std::size_t Hud::Window::*_first, std::size_t _total) noexcept
 {
@@ -3404,7 +3744,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                      std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered,
-                     Neuron::Interaction* _interaction)
+                     Neuron::Interaction* _interaction, bool _ported)
 {
   // The windows on the canvas name their widgets afresh each frame (ADR-100).
   Neuron::Interaction unpointed;
@@ -4014,6 +4354,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       LayDesigner(layout, _metrics, *_content.designer, corner, scale);
     }
     // Production and research, at first side by side under the Ore and the status panel, clear of the designer.
+    else if (kind == WindowKind::Production && _content.production.has_value() && _ported)
+      LayProductionOnCanvas(bench, *_content.production, {.corner = place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH)});
+    else if (kind == WindowKind::Research && _content.laboratory.has_value() && _ported)
+      LayResearchOnCanvas(bench, *_content.laboratory, {.corner = place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH)});
     else if (kind == WindowKind::Production && _content.production.has_value())
       LayProduction(layout, _metrics, *_content.production, place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH), scale);
     else if (kind == WindowKind::Research && _content.laboratory.has_value())

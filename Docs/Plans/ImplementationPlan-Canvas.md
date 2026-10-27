@@ -283,12 +283,14 @@ Each task is a port (rule 5).
 - **Scope:** production on the canvas: its header's stepper, its cards two to a row, kept still as the queue grows (ADR-043 decision 6), each card a composite of the game's, and the queue under them. `ProductionHeight` and `QueueWindowHeight` go.
 - **Acceptance:** the port's comparison; `KeepsTheCardsStillAsTheQueueGrows`, `SaysWhatAProductionCardBuilds`.
 - **Verify:** CI; run, a queue filled and emptied.
+- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 6 and 7. The canvas gains a box, a card and an icon, which the cards, the queue's rows and the Ore's box are composed of; a card is not lit under the pointer, as the old ones were not. The header is `HeaderOnCanvas`, which the designer takes in CV6.
 
 ### CV5.2 — The research window
 
 - **Scope:** research on the canvas, its paging by a row as now, every topic card as tall as the most lines any shown topic needs (ADR-061 decision 4). `TopicHeight` goes.
 - **Acceptance:** the port's comparison; research's tests as they stand.
 - **Verify:** CI; run, paged to the end and back.
+- **As built (2026-10-27):** ADR-100 decisions 2 and 7. Every topic card is as tall as the most lines any listed topic needs, as `TopicHeight` made it, by a height group in the layout: the topics not on the page are measured in it and not drawn, so that the cards keep their height from page to page.
 
 ---
 

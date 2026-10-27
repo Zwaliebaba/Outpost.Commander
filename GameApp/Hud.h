@@ -861,10 +861,12 @@ public:
   // left them; without a manager, every window the content has, at its default place. _hovered is the action under the
   // pointer, which the HUD's button and status line that take it are lit for (ADR-088 decision 1). The windows built on
   // the canvas take what is under the pointer from _interaction (ADR-100), or have nothing under it without one.
+  // _ported, while production and research move onto the canvas, lays them out as they were before when false.
   [[nodiscard]] static Layout Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels,
                                   std::uint32_t _heightPixels, std::span<const PlanePosition> _view = {},
                                   const WindowManager* _windows = nullptr, float _factor = 1.0f,
-                                  std::optional<Action> _hovered = std::nullopt, Neuron::Interaction* _interaction = nullptr);
+                                  std::optional<Action> _hovered = std::nullopt, Neuron::Interaction* _interaction = nullptr,
+                                  bool _ported = true);
 
   // Where a window _widthUnits wide may stand with its top-left corner at _corner on a screen of this size, in reference
   // units: moved only as far as keeps its title bar on the screen, and WINDOW_KEPT_ON_SCREEN_UNITS of its width.
