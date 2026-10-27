@@ -1542,7 +1542,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **B and the Build button open and close it, and it never opens by itself** (owner, 2026-10-27; ADR-031 decision 6).
 - **It holds a button for each structure the Constructors build,** with its cost; the Relay only on a map with sectors. The Research Lab's is dim with ONE PER PLAYER once the player has one, and the Relay's with NODE CAP at the Command Station's cap. With no Constructor selected, every one is dim and says NO CONSTRUCTOR, and the window keeps its size (ADR-031 decision 6; ADR-043 decision 4; ADR-056 decision 11; Game §orders.constructors).
 - **Picking a structure arms its placement and leaves the window open,** so that another can be picked once it is placed. Esc cancels the placement before it closes any window (ADR-031 decisions 5 and 6).
-- **It first opens at the bottom right,** beside the selection and its buttons where they leave it room at their widest, and over them, its foot a gap above the minimap's top, where they do not, as from 125% on a 16:9 screen (ADR-031 decision 2).
+- **It first opens at the bottom right,** beside the selection and its buttons where they leave it room at their widest, and over them, its foot a gap above the minimap's top, where they do not, as from 110% on a 16:9 screen (ADR-031 decision 2).
 
 #### The leave window [§interface.windows.leave]
 

@@ -78,7 +78,7 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | CV1.1 | Window places and the scale kept on disk | — | C2 | in review, [#142](https://github.com/Zwaliebaba/Outpost.Commander/pull/142) |
-| CV2.1 | The build window | CV1.1 | C7 | todo |
+| CV2.1 | The build window | CV1.1 | C7 | in review, [#144](https://github.com/Zwaliebaba/Outpost.Commander/pull/144) |
 | CV3.1 | The display list in the engine | — | C4 | todo |
 | CV3.2 | A layout that measures | CV3.1 | C4 | todo |
 | CV3.3 | Interaction every widget shares | CV3.1 | C4 | todo |
@@ -168,6 +168,9 @@ Each is an owner decision, proposed here and in the task it gates.
 - **ADR:** ADR-031 decisions 2, 5 and 6 for the new window, Esc and how it opens, ADR-088 decision 2 for the buttons' panel, ADR-068 decision 4 for its key and ADR-099 decision 3 for its name in the file, rewritten in place; Game §interface.windows.behavior and Game §interface.hud.buttons.
 - **Acceptance:** `GameAppTests`: the Build button with B's cap for a selection with a Constructor, a mixed one included, and none without; the window's buttons, each structure's cost, reason and dim state as the buttons' tests have them now, and NO CONSTRUCTOR without one; its first place at 100% and at 125%; the buttons' panel without structures; Esc's order with a placement armed; `WindowManagerTests` for the eighth kind; B in the Controls window; the layout and contrast guards with the window open.
 - **Verify:** CI; run, a base built from the window, the window dragged, closed and opened again with B and with Build, and Esc with a placement armed; **owner run.**
+- **As built (2026-10-27):** ADR-031 decisions 2, 5 and 6 and ADR-088 decision 2.
+  - The window stands over the bottom row from 110%, not 125%: at 110% it would clear the selection and its buttons at their widest by 6.7 units, short of the 8 units of `PANEL_GAP` that stand between the HUD's panels.
+  - `InterfaceSettings` and `WindowManager` with their tests ran in the Linux container, as CV1.1's did. `Hud`, `GameClient` and `PlayerControls` are CI's to build first. Not yet run on Windows.
 
 ---
 
