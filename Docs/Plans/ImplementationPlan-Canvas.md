@@ -90,8 +90,8 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV5.1 | The production window | CV4.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
 | CV5.2 | The research window | CV5.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
 | CV6.1 | The designer | CV5.1 | — | in review, [#148](https://github.com/Zwaliebaba/Outpost.Commander/pull/148) |
-| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5, C8 | in review |
-| CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | in review |
+| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5, C8 | in review, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154) |
+| CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | in review, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154) |
 | CV8.1 | The column under the Ore | CV3.4 | C1 | todo |
 | CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | todo |
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | todo |
