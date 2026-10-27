@@ -37,8 +37,15 @@ public:
 
   ~TestFolder()
   {
-    std::error_code ignored;
-    (void)std::filesystem::remove_all(m_path, ignored);
+    try
+    {
+      std::error_code ignored;
+      (void)std::filesystem::remove_all(m_path, ignored);
+    }
+    catch (const std::exception& error)
+    {
+      Logger::WriteMessage(error.what());
+    }
   }
 
   [[nodiscard]] const std::filesystem::path& Path() const noexcept
