@@ -46,8 +46,8 @@ Neuron::WidgetId Neuron::Interaction::IdUnder(WidgetId _parent, std::string_view
 Neuron::WidgetId Neuron::Interaction::IdOf(std::uint64_t _index) const noexcept
 {
   std::uint64_t hash = Mix(m_ids.empty() ? HASH_START : m_ids.back(), INDEX_MARK);
-  for (std::size_t byte = 0; byte < sizeof(_index); ++byte)
-    hash = Mix(hash, static_cast<std::uint8_t>(_index >> (8 * byte)));
+  for (std::size_t shift = 0; shift < 64; shift += 8)
+    hash = Mix(hash, static_cast<std::uint8_t>(_index >> shift));
   return Named(hash);
 }
 

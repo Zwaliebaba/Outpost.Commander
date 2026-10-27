@@ -138,8 +138,8 @@ public:
     const std::size_t right = tree.Add({.widthUnits = 30.0f});
     tree.End();
     (void)tree.Begin(LayoutKind::Row, {.widthUnits = 300.0f});
-    const std::size_t small = tree.Add({.mostWidthUnits = 40.0f, .grow = 1.0f});
-    const std::size_t large = tree.Add({.grow = 3.0f});
+    const std::size_t capped = tree.Add({.mostWidthUnits = 40.0f, .grow = 1.0f});
+    const std::size_t growing = tree.Add({.grow = 3.0f});
     const std::size_t least = tree.Add({.leastWidthUnits = 60.0f});
     tree.End();
     (void)tree.Begin(LayoutKind::Column, {.heightUnits = 50.0f});
@@ -156,8 +156,8 @@ public:
     Assert::AreEqual(200.0f, tree.Node(spacer).widthUnits, L"300 less 50, 30 and two gaps");
     Assert::AreEqual(270.0f, tree.Node(right).leftUnits, L"pushed to the row's end");
     Assert::AreEqual(0.0f, tree.Node(left).leftUnits);
-    Assert::AreEqual(40.0f, tree.Node(small).widthUnits, L"a quarter of 240 is more than its most");
-    Assert::AreEqual(200.0f, tree.Node(large).widthUnits, L"three quarters, and what the small one could not take");
+    Assert::AreEqual(40.0f, tree.Node(capped).widthUnits, L"a quarter of 240 is more than its most");
+    Assert::AreEqual(200.0f, tree.Node(growing).widthUnits, L"three quarters, and what the capped one could not take");
     Assert::AreEqual(60.0f, tree.Node(least).widthUnits, L"nothing in it, and held at its least");
     Assert::AreEqual(20.0f, tree.Node(squeezed).heightUnits, L"gives up what the 50 lacks, but no more than its least");
     Assert::AreEqual(100.0f, tree.Node(cut).widthUnits, L"gives up the 40 the row lacks");
@@ -265,27 +265,27 @@ public:
   {
     const std::array<Neuron::GlyphAtlas::Font, 1> atOne{EvenFont(10.0f)};
     const std::array<Neuron::GlyphAtlas::Font, 1> atTwo{EvenFont(20.0f)};
-    LayoutTree small(1920.0f, 1080.0f);
-    LayoutTree large(1920.0f, 1080.0f);
-    BuildWindow(small);
-    BuildWindow(large);
-    small.Arrange(Neuron::TextMetrics(atOne, 1.0f));
-    large.Arrange(Neuron::TextMetrics(atTwo, 2.0f));
+    LayoutTree once(1920.0f, 1080.0f);
+    LayoutTree twice(1920.0f, 1080.0f);
+    BuildWindow(once);
+    BuildWindow(twice);
+    once.Arrange(Neuron::TextMetrics(atOne, 1.0f));
+    twice.Arrange(Neuron::TextMetrics(atTwo, 2.0f));
 
-    Assert::AreEqual(small.Nodes().size(), large.Nodes().size());
-    for (std::size_t node = 0; node < small.Nodes().size(); ++node)
+    Assert::AreEqual(once.Nodes().size(), twice.Nodes().size());
+    for (std::size_t node = 0; node < once.Nodes().size(); ++node)
     {
-      const Neuron::LayoutNode& one = small.Node(node);
-      AssertStands(large.Node(node), one.leftUnits, one.topUnits, one.widthUnits, one.heightUnits, L"the same in units");
-      Assert::AreEqual(one.lines.size(), large.Node(node).lines.size());
+      const Neuron::LayoutNode& one = once.Node(node);
+      AssertStands(twice.Node(node), one.leftUnits, one.topUnits, one.widthUnits, one.heightUnits, L"the same in units");
+      Assert::AreEqual(one.lines.size(), twice.Node(node).lines.size());
       for (std::size_t line = 0; line < one.lines.size(); ++line)
       {
-        Assert::AreEqual(one.lines[line].text, large.Node(node).lines[line].text);
-        Assert::AreEqual(one.lines[line].leftUnits, large.Node(node).lines[line].leftUnits, 0.001f);
+        Assert::AreEqual(one.lines[line].text, twice.Node(node).lines[line].text);
+        Assert::AreEqual(one.lines[line].leftUnits, twice.Node(node).lines[line].leftUnits, 0.001f);
       }
     }
     // The window stands 16 in from the screen's bottom right, as wide as it was given.
-    const Neuron::LayoutNode& window = small.Node(1);
+    const Neuron::LayoutNode& window = once.Node(1);
     Assert::AreEqual(1920.0f - 16.0f - 300.0f, window.leftUnits, 0.001f);
     Assert::AreEqual(1080.0f - 16.0f, window.topUnits + window.heightUnits, 0.001f);
   }
