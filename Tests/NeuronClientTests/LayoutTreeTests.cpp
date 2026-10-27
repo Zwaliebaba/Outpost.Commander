@@ -165,6 +165,52 @@ public:
     Assert::IsTrue(tree.Node(cut).lines.size() == 1 && tree.Node(cut).lines[0].text == "Shipyar...", L"and is cut short to it");
   }
 
+  // ADR-100: a scroll holds what it holds as tall as that is, however tall the scroll stands, above its top by its offset,
+  // held so that what it holds still covers it. A column held at its most gives up the room it lacks from what grows in it,
+  // a scroll down to its least, and is never shorter than what it holds at its least.
+  TEST_METHOD(ScrollsWhatAColumnHasNoRoomFor)
+  {
+    const TenUnitFont font;
+    const auto build = [](LayoutTree& _tree, float _mostUnits, float _scrollUnits)
+    {
+      (void)_tree.Begin(LayoutKind::Column, {.widthUnits = 200.0f, .mostHeightUnits = _mostUnits, .alignX = LayoutAlign::Stretch});
+      (void)_tree.Add({.heightUnits = 40.0f});
+      (void)_tree.Begin(LayoutKind::Scroll, {.leastHeightUnits = 30.0f, .grow = 1.0f, .scrollUnits = _scrollUnits});
+      (void)_tree.Begin(LayoutKind::Column, {.alignX = LayoutAlign::Stretch});
+      for (int line = 0; line < 10; ++line)
+        (void)_tree.Add({.heightUnits = 20.0f});
+      _tree.End();
+      _tree.End();
+      (void)_tree.Add({.heightUnits = 20.0f});
+      _tree.End();
+    };
+    constexpr std::size_t WINDOW = 1;
+    constexpr std::size_t VIEW = 3;
+    constexpr std::size_t CONTENT = 4;
+
+    LayoutTree held(1000.0f, 500.0f);
+    build(held, 150.0f, 500.0f);
+    held.Arrange(font.metrics);
+    AssertStands(held.Node(WINDOW), 0.0f, 0.0f, 200.0f, 150.0f, L"260 of what it holds, held at its most");
+    AssertStands(held.Node(VIEW), 0.0f, 40.0f, 200.0f, 90.0f, L"the 200 it holds less the 110 the column lacks");
+    Assert::AreEqual(110.0f, held.Node(VIEW).scrolledUnits, 0.001f, L"held where what it holds ends at its foot");
+    AssertStands(held.Node(CONTENT), 0.0f, -70.0f, 200.0f, 200.0f, L"as tall as what it holds, and 110 above its top");
+
+    LayoutTree least(1000.0f, 500.0f);
+    build(least, 50.0f, 0.0f);
+    least.Arrange(font.metrics);
+    AssertStands(least.Node(WINDOW), 0.0f, 0.0f, 200.0f, 90.0f, L"never shorter than at its least, whatever its most");
+    AssertStands(least.Node(VIEW), 0.0f, 40.0f, 200.0f, 30.0f, L"at its least");
+    Assert::AreEqual(0.0f, least.Node(VIEW).scrolledUnits);
+    AssertStands(least.Node(CONTENT), 0.0f, 40.0f, 200.0f, 200.0f, L"at its top");
+
+    LayoutTree room(1000.0f, 500.0f);
+    build(room, Neuron::UNBOUNDED_UNITS, 50.0f);
+    room.Arrange(font.metrics);
+    AssertStands(room.Node(VIEW), 0.0f, 40.0f, 200.0f, 200.0f, L"as tall as what it holds, with the room for it");
+    Assert::AreEqual(0.0f, room.Node(VIEW).scrolledUnits, L"and nothing to scroll");
+  }
+
   // ADR-100: a grid sets its cells in rows of its columns' count, each column as wide as the others and each row as tall
   // as its tallest cell; a stack is as large as the largest it holds.
   TEST_METHOD(SetsAGridAndAStack)

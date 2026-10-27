@@ -112,5 +112,54 @@ public:
     Assert::IsFalse(Neuron::ClipToRect({-50.0f, -10.0f}, {150.0f, -10.0f}, area).has_value(), L"above it");
     Assert::IsFalse(Neuron::ClipToRect({150.0f, 10.0f}, {150.0f, 90.0f}, area).has_value(), L"beside it, upright");
   }
+
+  // ADR-100: a quad is cut to its clip with its texture coordinates, so that a glyph or a sprite cut short shows what it
+  // showed there, a mirrored one too; a solid quad, which samples one texel at every corner, and a hatched one, which
+  // carries its period and its stripe in them, keep them; and a quad outside its clip is dropped. A list says which clip
+  // an item of each list is drawn cut to.
+  TEST_METHOD(CutsAQuadToItsClip)
+  {
+    const CanvasRect clip{.left = 0.0f, .top = 0.0f, .width = 100.0f, .height = 100.0f};
+    const auto quadIs = [](const std::optional<Neuron::CanvasQuad>& _quad, std::array<float, 8> _expected)
+    {
+      const Neuron::CanvasQuad quad = _quad.value_or(Neuron::CanvasQuad{.left = -1.0f});
+      const std::array<float, 8> found{quad.left, quad.top, quad.right, quad.bottom, quad.u0, quad.v0, quad.u1, quad.v1};
+      for (std::size_t i = 0; i < found.size(); ++i)
+      {
+        if (std::abs(found[i] - _expected[i]) > 0.0001f)
+          return false;
+      }
+      return _quad.has_value();
+    };
+    // A glyph's quad half past the clip's right edge and a quarter above its top.
+    Assert::IsTrue(
+      quadIs(Neuron::ClipQuad(
+               {.left = 80.0f, .top = -10.0f, .right = 120.0f, .bottom = 30.0f, .u0 = 0.2f, .v0 = 0.4f, .u1 = 0.6f, .v1 = 0.8f}, clip),
+             {80.0f, 0.0f, 100.0f, 30.0f, 0.2f, 0.5f, 0.4f, 0.8f}),
+      L"a glyph's");
+    Assert::IsTrue(
+      quadIs(Neuron::ClipQuad(
+               {.left = 60.0f, .top = 80.0f, .right = 140.0f, .bottom = 120.0f, .u0 = 0.6f, .v0 = 0.0f, .u1 = 0.2f, .v1 = 0.4f}, clip),
+             {60.0f, 80.0f, 100.0f, 100.0f, 0.6f, 0.0f, 0.4f, 0.2f}),
+      L"a sprite's, mirrored across");
+    Assert::IsTrue(
+      quadIs(Neuron::ClipQuad(
+               {.left = -50.0f, .top = 50.0f, .right = 150.0f, .bottom = 70.0f, .u0 = 0.3f, .v0 = 0.7f, .u1 = 0.3f, .v1 = 0.7f}, clip),
+             {0.0f, 50.0f, 100.0f, 70.0f, 0.3f, 0.7f, 0.3f, 0.7f}),
+      L"a solid one's");
+    Assert::IsTrue(
+      quadIs(Neuron::ClipQuad(
+               {.left = 90.0f, .top = 90.0f, .right = 130.0f, .bottom = 130.0f, .u0 = -8.0f, .v0 = 3.0f, .u1 = -8.0f, .v1 = 3.0f}, clip),
+             {90.0f, 90.0f, 100.0f, 100.0f, -8.0f, 3.0f, -8.0f, 3.0f}),
+      L"a hatched one's");
+    Assert::IsFalse(Neuron::ClipQuad({.left = 120.0f, .top = 10.0f, .right = 140.0f, .bottom = 30.0f}, clip).has_value(), L"beside it");
+
+    Neuron::DrawList list = TwoLayers();
+    list.clips.push_back({.area = clip, .panels = {.first = 1, .end = 2}, .texts = {.first = 0, .end = 1}});
+    Assert::IsTrue(list.ClipOf(&Neuron::CanvasClip::panels, 1) == &list.clips[0].area);
+    Assert::IsTrue(list.ClipOf(&Neuron::CanvasClip::panels, 2) == nullptr, L"past its share");
+    Assert::IsTrue(list.ClipOf(&Neuron::CanvasClip::texts, 0) == &list.clips[0].area);
+    Assert::IsTrue(list.ClipOf(&Neuron::CanvasClip::sprites, 0) == nullptr, L"no sprite of its");
+  }
 };
 } // namespace NeuronClientTests

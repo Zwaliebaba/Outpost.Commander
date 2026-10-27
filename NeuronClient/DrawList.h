@@ -80,6 +80,30 @@ struct CanvasRegion
   bool scrolls = false;
 };
 
+// What is drawn cut to a rectangle, as what a scroll view holds is (ADR-100): the rectangle, in back-buffer pixels, and its
+// share of the panels, the texts and the sprites. Lines are never cut.
+struct CanvasClip
+{
+  CanvasRect area;
+  CanvasSpan panels;
+  CanvasSpan texts;
+  CanvasSpan sprites;
+};
+
+// A rectangle of the interface's quads, in back-buffer pixels, and its texture coordinates at its top-left and
+// bottom-right corners.
+struct CanvasQuad
+{
+  float left = 0.0f;
+  float top = 0.0f;
+  float right = 0.0f;
+  float bottom = 0.0f;
+  float u0 = 0.0f;
+  float v0 = 0.0f;
+  float u1 = 0.0f;
+  float v1 = 0.0f;
+};
+
 // A layer above the first: the rectangle a press on it falls in, whether it is the overlay of an open drop-down, and where
 // its share of each list starts. Its share runs to where the next layer's starts, or to the list's end.
 struct CanvasLayer
@@ -106,6 +130,8 @@ struct DrawList
   std::vector<CanvasRegion> regions;
   // The layers above the first, back to front.
   std::vector<CanvasLayer> layers;
+  // What is drawn cut to a rectangle, in the order it was drawn.
+  std::vector<CanvasClip> clips;
 
   // Starts a layer over the ones before it, whose press falls in _frame: what is added from now on is its own. An overlay
   // is an open drop-down's, which stands over every window.
@@ -135,7 +161,15 @@ struct DrawList
   // The region of the front layer under a point that takes the wheel, if any: the last added, the innermost of those that
   // hold one another.
   [[nodiscard]] const CanvasRegion* ScrollAt(float _xPixels, float _yPixels) const noexcept;
+  // The rectangle the item at _index of a list is cut to, the list named by its share of a clip, such as
+  // &CanvasClip::texts; none when it is drawn whole.
+  [[nodiscard]] const CanvasRect* ClipOf(CanvasSpan CanvasClip::*_list, std::size_t _index) const noexcept;
 };
+
+// _quad cut to _clip, its texture coordinates with it, so that a glyph or a sprite cut short shows what it showed there,
+// and a solid or a hatched quad, whose coordinates are the same at every corner, keeps them; none when none of it is
+// inside.
+[[nodiscard]] std::optional<CanvasQuad> ClipQuad(const CanvasQuad& _quad, const CanvasRect& _clip) noexcept;
 
 // The part of the line from _from to _to that lies inside _rect, by Liang and Barsky's clipping; none when none of it does.
 [[nodiscard]] std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> ClipToRect(DirectX::XMFLOAT2 _from, DirectX::XMFLOAT2 _to,

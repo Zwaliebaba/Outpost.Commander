@@ -152,6 +152,20 @@ public:
     Assert::IsTrue(ui.TakeStrokes(FIELD) == std::vector<FieldStroke>{{.key = FieldKey::Enter}});
   }
 
+  // ADR-100: a widget dragged while it is active, as a scroll's thumb, takes how far down the pointer has moved since the
+  // press, or since it last took it.
+  TEST_METHOD(MeasuresADrag)
+  {
+    const Neuron::DrawList list = Screen();
+    Interaction ui;
+    Assert::IsTrue(ui.Press(list, 170.0f, 165.0f));
+    ui.Move(list, 175.0f, 185.0f);
+    Assert::AreEqual(20.0f, ui.TakeDragPixels());
+    Assert::AreEqual(0.0f, ui.TakeDragPixels(), L"taken once");
+    ui.Move(list, 175.0f, 175.0f);
+    Assert::AreEqual(-10.0f, ui.TakeDragPixels(), L"and back up");
+  }
+
   // ADR-100: an open drop-down's list stands in an overlay over every window; a press outside it closes it and goes no
   // further, and one inside reaches its items.
   TEST_METHOD(ClosesADropDownOnAPressOutsideIt)

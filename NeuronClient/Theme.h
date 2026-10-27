@@ -35,7 +35,7 @@ struct Theme
   DirectX::XMFLOAT4 figureColor{};
   // A chip's tag, which nothing else fills (ADR-085 decision 1), and a text that is refused, plain in a field of its own.
   DirectX::XMFLOAT4 warningColor{};
-  // A progress bar's track and its fill.
+  // A progress bar's track and its fill, which a scroll view's track and its thumb take too.
   DirectX::XMFLOAT4 barTrackColor{};
   DirectX::XMFLOAT4 barFillColor{};
 
@@ -87,5 +87,10 @@ struct Theme
   float checkUnits = 0.0f;
   float checkInsetUnits = 0.0f;
   float checkGapUnits = 0.0f;
+  // A scroll view's lane at its right, which its track and thumb stand in the middle of; how wide they are; and how short
+  // its thumb is at its least.
+  float scrollLaneUnits = 0.0f;
+  float scrollThumbUnits = 0.0f;
+  float scrollLeastThumbUnits = 0.0f;
 };
 } // namespace Neuron

@@ -62,6 +62,12 @@ float Across(const LayoutNode& _child, float _roomUnits, LayoutAlign _align) noe
   return Held(wanted, _child.style.leastWidthUnits, _child.style.mostWidthUnits);
 }
 
+// Whether a child of a column gives up room when the column lacks it: one that grows and has no height given.
+bool Shrinks(const LayoutNode& _child) noexcept
+{
+  return !_child.style.heightUnits.has_value() && _child.style.grow > 0.0f;
+}
+
 // A child's height in _roomUnits as _align puts it: the height it was given, all the room when stretched, and otherwise
 // what it takes.
 float Down(const LayoutNode& _child, float _roomUnits, LayoutAlign _align) noexcept
@@ -255,6 +261,7 @@ void Neuron::LayoutTree::MeasureWidth(LayoutNode& _node, const TextMetrics& _met
   }
   case LayoutKind::Column:
   case LayoutKind::Stack:
+  case LayoutKind::Scroll:
     content = widest;
     break;
   case LayoutKind::Row:
@@ -301,8 +308,10 @@ void Neuron::LayoutTree::GiveWidths(const LayoutNode& _node)
   }
   else
   {
+    // A scroll holds what it holds across it, as a column that stretches does.
+    const LayoutAlign across = _node.kind == LayoutKind::Scroll ? LayoutAlign::Stretch : style.alignX;
     for (const std::size_t child : flow)
-      m_nodes[child].widthUnits = Across(m_nodes[child], room, style.alignX);
+      m_nodes[child].widthUnits = Across(m_nodes[child], room, across);
   }
   for (const std::size_t child : ChildrenOf(m_nodes, _node, true))
   {
@@ -323,6 +332,9 @@ void Neuron::LayoutTree::MeasureHeight(LayoutNode& _node, const TextMetrics& _me
     sum += m_nodes[child].naturalHeightUnits;
   }
   float content = 0.0f;
+  // What a column or a scroll holds at its least, where a column's children that grow give up what room they can and a scroll
+  // holds nothing.
+  float shrunk = 0.0f;
   switch (_node.kind)
   {
   case LayoutKind::Text:
@@ -346,10 +358,16 @@ void Neuron::LayoutTree::MeasureHeight(LayoutNode& _node, const TextMetrics& _me
     break;
   }
   case LayoutKind::Column:
+  {
     content = sum + Gaps(flow.size(), style.gapUnits);
+    shrunk = Gaps(flow.size(), style.gapUnits);
+    for (const std::size_t child : flow)
+      shrunk += Shrinks(m_nodes[child]) ? m_nodes[child].shrunkHeightUnits : m_nodes[child].naturalHeightUnits;
     break;
+  }
   case LayoutKind::Row:
   case LayoutKind::Stack:
+  case LayoutKind::Scroll:
     content = tallest;
     break;
   case LayoutKind::Grid:
@@ -363,8 +381,15 @@ void Neuron::LayoutTree::MeasureHeight(LayoutNode& _node, const TextMetrics& _me
   case LayoutKind::Box:
     break;
   }
-  _node.naturalHeightUnits =
-    style.heightUnits.value_or(Held(content + style.padding.top + style.padding.bottom, style.leastHeightUnits, style.mostHeightUnits));
+  // A column or a scroll is never shorter than at its least, whatever its most.
+  const float padding = style.padding.top + style.padding.bottom;
+  _node.naturalHeightUnits = style.heightUnits.value_or(Held(content + padding, style.leastHeightUnits, style.mostHeightUnits));
+  _node.shrunkHeightUnits = _node.naturalHeightUnits;
+  if ((_node.kind == LayoutKind::Column || _node.kind == LayoutKind::Scroll) && !style.heightUnits.has_value())
+  {
+    _node.shrunkHeightUnits = std::max(style.leastHeightUnits, shrunk + padding);
+    _node.naturalHeightUnits = std::max(_node.naturalHeightUnits, _node.shrunkHeightUnits);
+  }
   if (const auto group = std::ranges::find(m_tallest, style.heightGroup, &std::pair<std::uint32_t, float>::first);
       style.heightGroup != 0 && group != m_tallest.end())
     _node.naturalHeightUnits = std::max(_node.naturalHeightUnits, group->second);
@@ -401,7 +426,7 @@ void Neuron::LayoutTree::Place(LayoutNode& _node)
       const LayoutStyle& cell = m_nodes[child].style;
       shares.push_back({.baseUnits = m_nodes[child].naturalHeightUnits,
                         .grow = cell.heightUnits.has_value() ? 0.0f : cell.grow,
-                        .leastUnits = cell.leastHeightUnits,
+                        .leastUnits = std::max(cell.leastHeightUnits, m_nodes[child].shrunkHeightUnits),
                         .mostUnits = cell.mostHeightUnits});
     }
     ShareOut(shares, roomY - Gaps(flow.size(), style.gapUnits));
@@ -463,6 +488,18 @@ void Neuron::LayoutTree::Place(LayoutNode& _node)
       cell.heightUnits = Down(cell, roomY, style.alignY);
       cell.leftUnits = left + Offset(style.alignX, roomX - cell.widthUnits);
       cell.topUnits = top + Offset(style.alignY, roomY - cell.heightUnits);
+    }
+    break;
+  case LayoutKind::Scroll:
+    // What it holds keeps its height, and stands as far above the top as the offset, held so that it still covers the room.
+    _node.scrolledUnits = 0.0f;
+    for (const std::size_t child : flow)
+    {
+      LayoutNode& cell = m_nodes[child];
+      cell.heightUnits = cell.naturalHeightUnits;
+      _node.scrolledUnits = std::clamp(style.scrollUnits, 0.0f, std::max(0.0f, cell.heightUnits - roomY));
+      cell.leftUnits = left;
+      cell.topUnits = top - _node.scrolledUnits;
     }
     break;
   case LayoutKind::Box:

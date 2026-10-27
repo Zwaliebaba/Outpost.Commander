@@ -95,7 +95,7 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV8.1 | The column under the Ore | CV3.4 | C1 | todo |
 | CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | todo |
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | todo |
-| CV9.1 | The scroll view | CV3.4 | — | todo |
+| CV9.1 | The scroll view | CV3.4 | — | in review |
 
 ### Milestone order
 
@@ -369,6 +369,7 @@ The HUD's panels stay where they are (C1). Each task is a port (rule 5).
 - **ADR:** the canvas's for the scroll view.
 - **Acceptance:** `NeuronClientTests` for the clip of a solid, a hatched, a sprite and a text quad, and for the scroll view: the wheel over it and off it, the thumb dragged and held at either end, and a content shorter than the view, which does not move.
 - **Verify:** the container's tests; CI. It changes nothing on the screen, so there is nothing to run.
+- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 1, 2, 3 and 6. The layout gains a scroll node, which holds what it holds as tall as that is, and a height at its least, so that a window held to a most keeps what does not scroll and its scroll view gives up the room: `BeginWindow` takes that most. The interaction measures a drag for the thumb. Every layout of the HUD harness's cases, 135,139 lines of panels, texts, sprites, regions, actions and windows, is byte-identical before and after it.
 
 ---
 

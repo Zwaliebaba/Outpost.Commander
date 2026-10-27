@@ -137,6 +137,9 @@ Neuron::Theme TestTheme()
   theme.checkUnits = 14.0f;
   theme.checkInsetUnits = 2.0f;
   theme.checkGapUnits = 6.0f;
+  theme.scrollLaneUnits = 14.0f;
+  theme.scrollThumbUnits = 6.0f;
+  theme.scrollLeastThumbUnits = 12.0f;
   return theme;
 }
 
@@ -624,6 +627,76 @@ public:
     DrawList dropped;
     Assert::IsTrue(build(dropped) == FieldEnd::Dropped, L"the caller puts back what it had");
     Assert::IsFalse(fixture.ui.TakesKeys());
+  }
+
+  // ADR-100: a scroll view holds what it holds as tall as that is, and shows what its offset brings into it. What lies
+  // wholly outside it is not drawn and takes no press, what lies across its edge is drawn cut to it, and a region across
+  // its edge is cut to it. It takes the wheel over it, its offset held so that what it holds covers it. While there is more
+  // than it shows, its track and its thumb stand in its lane, the thumb as long against the track as the view against what
+  // it holds, and dragging the thumb moves the offset; with nothing more, there is neither.
+  TEST_METHOD(ScrollsWhatItHolds)
+  {
+    Fixture fixture;
+    const Neuron::Theme& theme = fixture.theme;
+    // Rows 40 units tall, each a card with a label, in a view 100 units tall and 200 wide, its lane past them.
+    const auto build = [&fixture](DrawList& _list, int _rows)
+    {
+      Canvas canvas = fixture.Begin();
+      (void)canvas.BeginScroll("list", {.widthUnits = 214.0f, .heightUnits = 100.0f});
+      for (int row = 0; row < _rows; ++row)
+      {
+        (void)canvas.BeginCard(std::format("row {}", row), {.face = fixture.theme.cardColor, .edge = fixture.theme.edgeColor},
+                               static_cast<std::uint32_t>(row), {.heightUnits = 40.0f});
+        (void)canvas.Label({.text = "Row", .font = NAME, .lineUnits = 22.0f}, fixture.theme.textColor);
+        canvas.EndBox();
+      }
+      canvas.EndScroll();
+      canvas.Finish(_list);
+    };
+    const Neuron::WidgetId view = fixture.ui.IdOf("list");
+    const Neuron::WidgetId thumb = Neuron::Interaction::IdUnder(view, "thumb");
+
+    DrawList top;
+    build(top, 5);
+    Assert::AreEqual(size_t{3}, top.texts.size(), L"the rows at 0, 40 and 80 of 200, the third across its foot");
+    Assert::AreEqual(size_t{16}, top.panels.size(), L"two cards whole, the third but its bottom edge, the track and the thumb");
+    Assert::IsTrue(RectIs(top.panels[10], 0.0f, 160.0f, 400.0f, 80.0f, theme.cardColor), L"the third card whole, drawn cut");
+    Assert::AreEqual(size_t{1}, top.clips.size());
+    Assert::IsTrue(RectIs(top.clips[0].area, 0.0f, 0.0f, 400.0f, 200.0f, {}), L"cut to the view, short of its lane");
+    Assert::IsTrue(top.ClipOf(&Neuron::CanvasClip::panels, 10) != nullptr && top.ClipOf(&Neuron::CanvasClip::texts, 2) != nullptr);
+    Assert::IsTrue(RectIs(top.panels[14], 408.0f, 0.0f, 12.0f, 200.0f, theme.barTrackColor), L"the track in the middle of its lane");
+    Assert::IsTrue(RectIs(top.panels[15], 408.0f, 0.0f, 12.0f, 100.0f, theme.barFillColor), L"the thumb, 100 of 200 long, at the top");
+    Assert::AreEqual(size_t{5}, top.regions.size(), L"three rows, the view and the thumb");
+    Assert::IsTrue(RectIs(top.regions[2].area, 0.0f, 160.0f, 400.0f, 40.0f, theme.cardColor), L"the third row's cut to the view");
+    Assert::IsTrue(top.regions[3].widget == view && top.regions[3].scrolls && top.regions[3].hoverOnly, L"the view takes the wheel only");
+    Assert::AreEqual(thumb, top.regions[4].widget);
+
+    Assert::IsTrue(fixture.ui.Wheel(top, 100.0f, 100.0f, 60.0f), L"the wheel over the view is the canvas's");
+    DrawList moved;
+    build(moved, 5);
+    Assert::AreEqual(size_t{2}, moved.texts.size(),
+                     L"60 down: the labels of the rows at 80 and 120, the row at 40 shown only under its label");
+    Assert::AreEqual(40.0f, moved.texts[0].top, 0.001f);
+    Assert::IsTrue(RectIs(moved.panels.back(), 408.0f, 60.0f, 12.0f, 100.0f, theme.barFillColor), L"the thumb 60 of 100 down its travel");
+
+    Assert::IsTrue(fixture.ui.Wheel(moved, 100.0f, 100.0f, 1000.0f));
+    DrawList bottom;
+    build(bottom, 5);
+    Assert::AreEqual(100.0f, fixture.ui.ScrollOf(view), 0.001f, L"held where the last row ends at its foot");
+    Assert::IsFalse(fixture.ui.Wheel(bottom, 600.0f, 100.0f, 1.0f), L"the wheel beside it is not the canvas's");
+
+    Assert::IsTrue(fixture.ui.Press(bottom, 412.0f, 150.0f), L"on the thumb, at the bottom");
+    Assert::AreEqual(thumb, fixture.ui.Active());
+    fixture.ui.Move(bottom, 412.0f, 110.0f);
+    DrawList dragged;
+    build(dragged, 5);
+    Assert::AreEqual(60.0f, fixture.ui.ScrollOf(view), 0.001f, L"20 units up its travel of 50 is 40 up the 100 spare");
+    (void)fixture.ui.Release(dragged, 412.0f, 110.0f);
+
+    DrawList fits;
+    build(fits, 2);
+    Assert::AreEqual(size_t{10}, fits.panels.size(), L"two cards, and no track nor thumb");
+    Assert::AreEqual(size_t{3}, fits.regions.size(), L"two rows and the view");
   }
 
   // ADR-100: a field's text stands in its content box, the theme's inset in from its sides and in its middle down, so that

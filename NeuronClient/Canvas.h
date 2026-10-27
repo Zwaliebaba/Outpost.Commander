@@ -63,13 +63,15 @@ public:
   }
 
   // A floating window (ADR-031 decision 3): a layer of its own, its frame with its top-left corner at _corner, _widthUnits
-  // wide and as tall as its title bar and its body; its hatched title bar, with its close box's mark and _title, and its
-  // close box; and a bracket at each corner. Its body is a column of _body's style, which takes what is built until
-  // EndWindow, named under _window. The frame's node, for where it stood once the canvas is finished.
-  std::size_t BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits, const LayoutStyle& _body = {});
+  // wide and as tall as its title bar and its body, but no taller than _mostHeightUnits while a scroll view in it can give
+  // up room; its hatched title bar, with its close box's mark and _title, and its close box; and a bracket at each corner.
+  // Its body is a column of _body's style, which takes what is built until EndWindow, named under _window. The frame's
+  // node, for where it stood once the canvas is finished.
+  std::size_t BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits, const LayoutStyle& _body = {},
+                          float _mostHeightUnits = UNBOUNDED_UNITS);
   // A window that stands at _anchor of the screen, less _margin, where it first opens before it is moved.
   std::size_t BeginWindow(WidgetId _window, std::string _title, LayoutAnchor _anchor, const LayoutEdges& _margin, float _widthUnits,
-                          const LayoutStyle& _body = {});
+                          const LayoutStyle& _body = {}, float _mostHeightUnits = UNBOUNDED_UNITS);
   void EndWindow();
   // The identifiers of a window's title bar, which a press drags it by, and of its close box.
   [[nodiscard]] WidgetId TitleBarOf(WidgetId _window) const noexcept;
@@ -88,6 +90,13 @@ public:
   WidgetId BeginCard(std::string_view _id, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style,
                      CardPress _press = CardPress::Pressed);
   void EndBox();
+
+  // A view of what is built until EndScroll, of _style, that scrolls it when it is the taller (ADR-100): what it holds as
+  // tall as that is, cut to the view, and moved by the wheel over the view and by its thumb, dragged, which stands with its
+  // track in a lane at the view's right while there is more than the view shows. The view gives up room down to its least
+  // when the window lacks it, when its style grows.
+  std::size_t BeginScroll(std::string_view _id, const LayoutStyle& _style);
+  void EndScroll();
 
   // A text in _color: one line, one cut short, or wrapped, as _text flows (ADR-061 decision 3).
   std::size_t Label(LayoutText _text, const DirectX::XMFLOAT4& _color, const LayoutStyle& _style = {});
@@ -155,6 +164,24 @@ private:
   void DrawSmallButton(DrawList& _list, std::size_t _node, WidgetId _widget, const std::string& _mark, bool _enabled,
                        std::uint32_t _payload) const;
   std::size_t OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style, CardPress _press);
+  // Where what a scroll view holds starts in each list, once drawn.
+  struct ListStarts
+  {
+    std::size_t panels = 0;
+    std::size_t texts = 0;
+    std::size_t sprites = 0;
+    std::size_t regions = 0;
+  };
+  // What a scroll view holds, from _from: what lies wholly outside _area goes, a region is cut to it, and what is left is
+  // drawn cut to it.
+  void Cut(DrawList& _list, const ListStarts& _from, const CanvasRect& _area) const;
+  // Where each list ends now, which is where what is drawn next starts.
+  [[nodiscard]] static ListStarts EndsOf(const DrawList& _list) noexcept;
+  // The track and the thumb of a view _shownUnits tall of what is _wholeUnits tall, in a lane at _laneLeftUnits from
+  // _topUnits, and the thumb's region, while it shows less than all; and _offsetUnits held within what is spare, moved by
+  // the thumb's drag while it is _dragged.
+  [[nodiscard]] float ScrollBar(DrawList& _list, WidgetId _thumb, float _laneLeftUnits, float _topUnits, float _shownUnits,
+                                float _wholeUnits, float _offsetUnits, bool _dragged) const;
 
   const Theme& m_theme;
   const TextMetrics& m_metrics;
@@ -163,5 +190,15 @@ private:
   std::vector<Draw> m_draws;
   // The windows open in the build, the innermost last, and their frames' nodes.
   std::vector<std::pair<WidgetId, std::size_t>> m_windows;
+  // A scroll view open in the build: its identifier and its thumb's, its node, and where what it holds starts in each list,
+  // once drawn.
+  struct OpenScroll
+  {
+    WidgetId view = NO_WIDGET;
+    WidgetId thumb = NO_WIDGET;
+    std::size_t node = 0;
+    std::shared_ptr<ListStarts> from;
+  };
+  std::vector<OpenScroll> m_scrolls;
 };
 } // namespace Neuron

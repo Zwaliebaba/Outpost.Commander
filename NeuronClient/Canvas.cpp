@@ -21,14 +21,14 @@ Neuron::Canvas::Canvas(const Theme& _theme, const TextMetrics& _metrics, Interac
 }
 
 std::size_t Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits,
-                                        const LayoutStyle& _body)
+                                        const LayoutStyle& _body, float _mostHeightUnits)
 {
-  return BeginWindow(_window, std::move(_title), LayoutAnchor::TopLeft, {.left = _corner.xUnits, .top = _corner.yUnits}, _widthUnits,
-                     _body);
+  return BeginWindow(_window, std::move(_title), LayoutAnchor::TopLeft, {.left = _corner.xUnits, .top = _corner.yUnits}, _widthUnits, _body,
+                     _mostHeightUnits);
 }
 
 std::size_t Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, LayoutAnchor _anchor, const LayoutEdges& _margin,
-                                        float _widthUnits, const LayoutStyle& _body)
+                                        float _widthUnits, const LayoutStyle& _body, float _mostHeightUnits)
 {
   const bool claimed = m_interaction.Claim(_window);
   ASSERT(claimed);
@@ -37,11 +37,15 @@ std::size_t Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, La
   const bool titleClaimed = m_interaction.Claim(titleBar);
   const bool closeClaimed = m_interaction.Claim(closeBox);
   ASSERT(titleClaimed && closeClaimed);
-  // The body stretches across the frame, so that it holds its children within the window's width whatever they would take.
-  const std::size_t frame =
-    m_tree.Begin(LayoutKind::Column, {.widthUnits = _widthUnits, .alignX = LayoutAlign::Stretch, .anchor = _anchor, .margin = _margin});
+  // The body stretches across the frame, so that it holds its children within the window's width whatever they would take,
+  // and gives up the room the frame lacks under its most.
+  const std::size_t frame = m_tree.Begin(
+    LayoutKind::Column,
+    {.widthUnits = _widthUnits, .mostHeightUnits = _mostHeightUnits, .alignX = LayoutAlign::Stretch, .anchor = _anchor, .margin = _margin});
   (void)m_tree.Add({.heightUnits = m_theme.titleBarUnits});
-  (void)m_tree.Begin(LayoutKind::Column, _body);
+  LayoutStyle body = _body;
+  body.grow = 1.0f;
+  (void)m_tree.Begin(LayoutKind::Column, body);
   m_interaction.PushId(_window);
   m_windows.emplace_back(_window, frame);
   m_draws.emplace_back(
@@ -134,6 +138,124 @@ Neuron::WidgetId Neuron::Canvas::BeginCard(std::string_view _id, const BoxLook& 
 void Neuron::Canvas::EndBox()
 {
   m_tree.End();
+}
+
+std::size_t Neuron::Canvas::BeginScroll(std::string_view _id, const LayoutStyle& _style)
+{
+  const WidgetId view = Claim(_id);
+  const WidgetId thumb = Interaction::IdUnder(view, "thumb");
+  const bool claimed = m_interaction.Claim(thumb);
+  ASSERT(claimed);
+  LayoutStyle style = _style;
+  style.padding.right += m_theme.scrollLaneUnits;
+  style.scrollUnits = m_interaction.ScrollOf(view);
+  const std::size_t node = m_tree.Begin(LayoutKind::Scroll, style);
+  (void)m_tree.Begin(LayoutKind::Column, {.alignX = LayoutAlign::Stretch});
+  auto from = std::make_shared<ListStarts>();
+  m_draws.emplace_back([from](DrawList& _list) { *from = EndsOf(_list); });
+  m_scrolls.push_back({.view = view, .thumb = thumb, .node = node, .from = std::move(from)});
+  return node;
+}
+
+void Neuron::Canvas::EndScroll()
+{
+  ASSERT(!m_scrolls.empty());
+  m_tree.End();
+  m_tree.End();
+  const OpenScroll open = m_scrolls.back();
+  m_scrolls.pop_back();
+  const bool dragged = m_interaction.Active() == open.thumb;
+  m_draws.emplace_back(
+    [this, open, dragged](DrawList& _list)
+    {
+      const LayoutNode& view = m_tree.Node(open.node);
+      const LayoutEdges& padding = view.style.padding;
+      const float shownUnits = std::max(0.0f, view.heightUnits - padding.top - padding.bottom);
+      const float viewLeft = view.leftUnits + padding.left;
+      const float viewTop = view.topUnits + padding.top;
+      const float viewWidth = std::max(0.0f, view.widthUnits - padding.left - padding.right);
+      Cut(_list, *open.from, Area(viewLeft, viewTop, viewWidth, shownUnits, {}));
+      _list.regions.push_back({.area = RectOf(open.node, {}), .widget = open.view, .hoverOnly = true, .scrolls = true});
+      const float wholeUnits = view.firstChild == LayoutNode::NO_NODE ? 0.0f : m_tree.Node(view.firstChild).heightUnits;
+      m_interaction.SetScroll(
+        open.view, ScrollBar(_list, open.thumb, viewLeft + viewWidth, viewTop, shownUnits, wholeUnits, view.scrolledUnits, dragged));
+    });
+}
+
+Neuron::Canvas::ListStarts Neuron::Canvas::EndsOf(const DrawList& _list) noexcept
+{
+  return {.panels = _list.panels.size(), .texts = _list.texts.size(), .sprites = _list.sprites.size(), .regions = _list.regions.size()};
+}
+
+float Neuron::Canvas::ScrollBar(DrawList& _list, WidgetId _thumb, float _laneLeftUnits, float _topUnits, float _shownUnits,
+                                float _wholeUnits, float _offsetUnits, bool _dragged) const
+{
+  const float spareUnits = std::max(0.0f, _wholeUnits - _shownUnits);
+  float offset = std::clamp(_offsetUnits, 0.0f, spareUnits);
+  if (spareUnits <= 0.0f || _shownUnits <= 0.0f)
+    return offset;
+  // The thumb is as long against its track as the view against what it holds, and stands as far down it as the offset is
+  // through what is spare.
+  const float thumbUnits = std::min(_shownUnits, std::max(m_theme.scrollLeastThumbUnits, _shownUnits * _shownUnits / _wholeUnits));
+  const float travel = _shownUnits - thumbUnits;
+  const float left = _laneLeftUnits + ((m_theme.scrollLaneUnits - m_theme.scrollThumbUnits) / 2.0f);
+  _list.panels.push_back(Area(left, _topUnits, m_theme.scrollThumbUnits, _shownUnits, m_theme.barTrackColor));
+  const CanvasRect thumb =
+    Area(left, _topUnits + (travel * offset / spareUnits), m_theme.scrollThumbUnits, thumbUnits, m_theme.barFillColor);
+  _list.panels.push_back(thumb);
+  _list.regions.push_back({.area = thumb, .widget = _thumb});
+  if (_dragged && travel > 0.0f)
+    offset = std::clamp(offset + (m_interaction.TakeDragPixels() / Scale() * spareUnits / travel), 0.0f, spareUnits);
+  return offset;
+}
+
+void Neuron::Canvas::Cut(DrawList& _list, const ListStarts& _from, const CanvasRect& _area) const
+{
+  const float right = _area.left + _area.width;
+  const float bottom = _area.top + _area.height;
+  const auto outside = [&_area, right, bottom](float _left, float _top, float _right, float _bottom)
+  { return _right <= _area.left || _left >= right || _bottom <= _area.top || _top >= bottom; };
+  const auto from = [](auto& _items, std::size_t _first) { return _items.begin() + static_cast<std::ptrdiff_t>(_first); };
+  _list.panels.erase(std::remove_if(from(_list.panels, _from.panels), _list.panels.end(), [&outside](const CanvasRect& _panel)
+                                    { return outside(_panel.left, _panel.top, _panel.left + _panel.width, _panel.top + _panel.height); }),
+                     _list.panels.end());
+  _list.texts.erase(std::remove_if(from(_list.texts, _from.texts), _list.texts.end(),
+                                   [this, &outside](const CanvasText& _text)
+                                   {
+                                     const std::span<const GlyphAtlas::Font> fonts = m_metrics.Fonts();
+                                     const float line = _text.font < fonts.size() ? fonts[_text.font].lineHeight : 0.0f;
+                                     const float width = m_metrics.Width(_text.font, _text.text, _text.trackingPixels / Scale()) * Scale();
+                                     return outside(_text.left, _text.top, _text.left + width, _text.top + line);
+                                   }),
+                    _list.texts.end());
+  _list.sprites.erase(std::remove_if(from(_list.sprites, _from.sprites), _list.sprites.end(),
+                                     [&outside](const CanvasSprite& _sprite)
+                                     {
+                                       const CanvasRect& area = _sprite.area;
+                                       return outside(area.left, area.top, area.left + area.width, area.top + area.height);
+                                     }),
+                      _list.sprites.end());
+  _list.regions.erase(std::remove_if(from(_list.regions, _from.regions), _list.regions.end(),
+                                     [&outside](const CanvasRegion& _region)
+                                     {
+                                       const CanvasRect& area = _region.area;
+                                       return outside(area.left, area.top, area.left + area.width, area.top + area.height);
+                                     }),
+                      _list.regions.end());
+  for (std::size_t region = _from.regions; region < _list.regions.size(); ++region)
+  {
+    CanvasRect& area = _list.regions[region].area;
+    const float left = std::max(area.left, _area.left);
+    const float top = std::max(area.top, _area.top);
+    area.width = std::min(area.left + area.width, right) - left;
+    area.height = std::min(area.top + area.height, bottom) - top;
+    area.left = left;
+    area.top = top;
+  }
+  _list.clips.push_back({.area = _area,
+                         .panels = {.first = _from.panels, .end = _list.panels.size()},
+                         .texts = {.first = _from.texts, .end = _list.texts.size()},
+                         .sprites = {.first = _from.sprites, .end = _list.sprites.size()}});
 }
 
 std::size_t Neuron::Canvas::Label(LayoutText _text, const DirectX::XMFLOAT4& _color, const LayoutStyle& _style)
@@ -377,7 +499,7 @@ bool Neuron::Canvas::MayFill(const Theme& _theme, const DirectX::XMFLOAT4& _colo
 
 void Neuron::Canvas::Finish(DrawList& _list)
 {
-  ASSERT(m_windows.empty());
+  ASSERT(m_windows.empty() && m_scrolls.empty());
   m_tree.Arrange(m_metrics);
   for (Draw& draw : m_draws)
     draw(_list);

@@ -72,6 +72,7 @@ bool Neuron::Interaction::Claim(WidgetId _widget)
 
 void Neuron::Interaction::Move(const DrawList& _list, float _xPixels, float _yPixels)
 {
+  m_pointerYPixels = _yPixels;
   const CanvasRegion* region = _list.PointedAt(_xPixels, _yPixels);
   m_hot = region == nullptr ? NO_WIDGET : region->widget;
   if (m_active != NO_WIDGET && m_hot != m_active)
@@ -91,6 +92,7 @@ bool Neuron::Interaction::Press(const DrawList& _list, float _xPixels, float _yP
   }
   const CanvasRegion* region = _list.Covers(_xPixels, _yPixels) ? _list.HitAt(_xPixels, _yPixels) : nullptr;
   m_active = region == nullptr ? NO_WIDGET : region->widget;
+  m_dragFromYPixels = _yPixels;
   if (m_focused != NO_WIDGET && m_focused != m_active)
     m_focused = NO_WIDGET;
   Move(_list, _xPixels, _yPixels);
@@ -104,6 +106,13 @@ Neuron::WidgetId Neuron::Interaction::Release(const DrawList& _list, float _xPix
   const CanvasRegion* region = _list.HitAt(_xPixels, _yPixels);
   Move(_list, _xPixels, _yPixels);
   return pressed != NO_WIDGET && region != nullptr && region->widget == pressed ? pressed : NO_WIDGET;
+}
+
+float Neuron::Interaction::TakeDragPixels() noexcept
+{
+  const float moved = m_pointerYPixels - m_dragFromYPixels;
+  m_dragFromYPixels = m_pointerYPixels;
+  return moved;
 }
 
 bool Neuron::Interaction::Wheel(const DrawList& _list, float _xPixels, float _yPixels, float _units)
