@@ -336,8 +336,8 @@ public:
     Assert::IsTrue(OutlineIs(picked, 6, 0.0f, 88.0f, 600.0f, 68.0f, theme.pickedEdgeColor), L"a picked one's edge is lit already");
   }
 
-  // ADR-043 decision 4; ADR-100: a disabled button is dim and takes no press, and its reason stands in its figure's place;
-  // without a reason, its figure is dim too.
+  // ADR-043 decision 4; ADR-100: a disabled button is dim and takes no press, and its reason stands in its figure's place,
+  // or where one would stand on a button without one; without a reason, its figure is dim too.
   TEST_METHOD(DimsADisabledButtonWithItsReason)
   {
     Fixture fixture;
@@ -348,6 +348,7 @@ public:
                         {.heightUnits = 34.0f});
     (void)canvas.Button("yard", {.label = "Shipyard", .figure = "900", .figureMark = GEM, .payload = 7, .enabled = false},
                         {.heightUnits = 34.0f});
+    (void)canvas.Button("give", {.label = "Give the order", .note = "NO SHIPS", .payload = 8, .enabled = false}, {.heightUnits = 34.0f});
     canvas.Tree().End();
     DrawList list;
     canvas.Finish(list);
@@ -359,6 +360,7 @@ public:
     Assert::AreEqual(size_t{1}, list.sprites.size(), L"no mark beside the reason");
     Assert::IsTrue(Same(list.sprites[0].area.color, theme.lockedTextColor), L"the other's mark is dim");
     Assert::IsTrue(TextIs(list.texts[3], "900", 528.0f, 105.0f, theme.lockedTextColor, FIGURE), L"and its figure");
+    Assert::IsTrue(TextIs(list.texts[4], "NO SHIPS", 480.0f, 193.0f, theme.labelColor, LABEL), L"a reason with no figure at the right");
 
     Assert::IsTrue(fixture.ui.Press(list, 100.0f, 30.0f), L"a press on it is the canvas's");
     Assert::AreEqual(Neuron::NO_WIDGET, fixture.ui.Active(), L"but presses nothing");

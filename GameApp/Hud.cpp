@@ -2045,12 +2045,13 @@ std::uint32_t PressOf(Hud::Layout& _layout, const Hud::Action& _action)
 }
 
 // _button as the canvas draws it (ADR-043 decision 4), naming its action's place among the layout's actions while it is
-// enabled: its label up to a '|', and after one its cost, as Ore's gem and the figure.
+// enabled: its label up to a '|', and after one its cost, as Ore's gem and the figure. A '|' gives the button a cost's
+// place, which its reason takes while it is disabled, even with no cost after it; a button without one shows no reason.
 Neuron::ButtonContent ContentOf(Hud::Layout& _layout, const Hud::Button& _button)
 {
   const std::size_t split = _button.label.find('|');
   Neuron::ButtonContent content{.label = _button.label.substr(0, split),
-                                .note = _button.note,
+                                .note = split != std::string::npos ? _button.note : std::string(),
                                 .key = _button.key,
                                 .payload = _button.enabled ? PressOf(_layout, _button.action) : Neuron::NO_PAYLOAD,
                                 .enabled = _button.enabled,

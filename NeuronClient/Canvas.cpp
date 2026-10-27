@@ -414,9 +414,9 @@ void Neuron::Canvas::DrawButton(DrawList& _list, std::size_t _node, WidgetId _wi
     Cap(_list, _button.key, right - theme.keyCapUnits, top + ((height - theme.keyCapUnits) / 2.0f));
     room -= theme.keyCapUnits + theme.fitGapUnits;
   }
-  if (!_button.figure.empty() && !_button.enabled && !_button.note.empty())
+  if (!_button.enabled && !_button.note.empty())
   {
-    // The reason it cannot be pressed stands in its figure's place.
+    // The reason it cannot be pressed stands in its figure's place, or where one would stand on a button without one.
     const float noteWidth = m_metrics.Width(theme.labelFont, _button.note);
     Text(_list, _button.note, right - noteWidth, figureTop, theme.labelColor, theme.labelFont);
     Text(_list, m_metrics.Fit(theme.nameFont, _button.label, room - noteWidth - theme.fitGapUnits), left + theme.buttonInsetUnits, labelTop,
