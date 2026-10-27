@@ -211,6 +211,7 @@ public:
       if (std::holds_alternative<Outpost::CatalogMessage>(decoded))
       {
         catalogBytes += message.size();
+        catalogMostBytes = std::max<std::uint64_t>(catalogMostBytes, message.size());
         continue;
       }
       Assert::IsTrue(std::holds_alternative<Outpost::EventsMessage>(decoded), L"only catalogues and events on the connection's stream");
@@ -259,6 +260,7 @@ public:
   std::uint64_t stateBytes = 0;
   std::uint64_t stateMostBytes = 0;
   std::uint64_t catalogBytes = 0;
+  std::uint64_t catalogMostBytes = 0;
   std::uint64_t eventsBytes = 0;
   // The most bytes of events that arrived in any second.
   std::uint64_t eventsSecondMostBytes = 0;
@@ -344,6 +346,7 @@ struct Measurement
   double meanStateBytes = 0.0;
   std::uint64_t newestTick = 0;
   std::uint64_t stateMostBytes = 0;
+  std::uint64_t catalogMostBytes = 0;
   std::uint64_t eventsSecondMostBytes = 0;
   std::uint64_t backlogMostBytes = 0;
   std::string report;
@@ -429,6 +432,7 @@ Measurement Measure(const Outpost::Tuning& _tuning, const Outpost::Map& _map, co
                           .meanStateBytes = meanStateBytes,
                           .newestTick = blue.newestTick,
                           .stateMostBytes = blue.stateMostBytes,
+                          .catalogMostBytes = blue.catalogMostBytes,
                           .eventsSecondMostBytes = blue.eventsSecondMostBytes,
                           .backlogMostBytes = backlogMostBytes};
   measurement.report = std::format(
@@ -622,14 +626,16 @@ public:
   }
 
   // ADR-096 decision 2: on the hotspot profile, whose round trip and loss hold a state on its way for longer than two ticks,
-  // a seat's backlog stays at four states, the newest four on their way, and no more than a second of the events, over a
-  // minute of the measurement load; and three states in four arrive.
+  // a seat's backlog, what is on its way counted, stays at four states, the newest four on their way, with a catalogue and
+  // no more than a second of the events beside them, over a minute of the measurement load; and three states in four
+  // arrive.
   TEST_METHOD(HoldsASeatsBacklogToFourStatesOnTheHotspot)
   {
     const Measurement measurement =
       Measure(Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), HOTSPOT_LINK, 1min);
     Logger::WriteMessage(measurement.report.c_str());
-    Assert::IsTrue(measurement.backlogMostBytes <= (4 * measurement.stateMostBytes) + measurement.eventsSecondMostBytes,
+    Assert::IsTrue(measurement.backlogMostBytes <=
+                     (4 * measurement.stateMostBytes) + measurement.catalogMostBytes + measurement.eventsSecondMostBytes,
                    Widen(measurement.report).c_str());
     Assert::IsTrue(measurement.states > 0 && measurement.states * 4 >= measurement.newestTick * 3, Widen(measurement.report).c_str());
   }
