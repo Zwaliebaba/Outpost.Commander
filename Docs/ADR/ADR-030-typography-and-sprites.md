@@ -1,7 +1,7 @@
 # ADR-030 — The interface draws several fonts, a few characters past ASCII, sprites and hatching from one atlas
 
 Status: **accepted** · 2026-10-02
-Owns: interface-fonts, font-fallback, atlas-characters, letter-tracking, ui-sprites, ui-hatching
+Owns: interface-fonts, font-fallback, atlas-characters, letter-tracking, ui-sprites, ui-hatching, text-halos
 
 ## Context
 
@@ -9,20 +9,21 @@ The ship designer, and the research and production windows with it, follow the o
 
 ## Decision
 
-1. **One atlas, several fonts.** `Neuron::UiPipeline` is built with a list of `Neuron::FontDesc`: the families to look for in order, a weight, a stretch and a size in reference units. `Neuron::RasterizeFont` draws each with DirectWrite as ADR-015 has it, at its size times ADR-006's scale, and `Neuron::PackGlyphs` packs every font into one `R8_UNORM` texture, so the interface is one draw call. A font is named by its index in the list; `Outpost::Hud::Typefaces` gives the game's list, and `Hud::Typeface` names them: `Body` in Segoe UI semibold, and `Title`, `Label`, `Name`, `Figure`, `LargeFigure` and `Detail` in the mockup's faces (`Docs/Mockups/ShipDesigner.png`), Bahnschrift for the words and Cascadia Mono or Consolas for the figures. Each face's size is [ADR-062](ADR-062-type-scale-and-contrast.md) decision 2's. The atlas is drawn again when the scale moves any font or sprite by a whole pixel.
+1. **One atlas, several fonts.** `Neuron::UiPipeline` is built with a list of `Neuron::FontDesc`: the families to look for in order, a weight, a stretch and a size in reference units. `Neuron::RasterizeFont` draws each with DirectWrite as ADR-015 has it, at its size times ADR-006's scale, and `Neuron::PackGlyphs` packs every font into one `R8_UNORM` texture, so the interface is one draw call. A font is named by its index in the list; `Outpost::Hud::Typefaces` gives the game's list, and `Hud::Typeface` names them: `Body` in Segoe UI semibold, and `Title`, `Label`, `Name`, `Figure`, `LargeFigure` and `Detail` in the mockup's faces (`Docs/Mockups/ShipDesigner.png`), Bahnschrift for the words and Cascadia Mono or Consolas for the figures, and `Plate`, a fleet plate's count, in Bahnschrift's bold semicondensed face ([ADR-101](ADR-101-plates-over-the-fleets.md) decision 2). Each face's size is [ADR-062](ADR-062-type-scale-and-contrast.md) decision 2's. The atlas is drawn again when the scale moves any font or sprite by a whole pixel.
 2. **A font that is not installed fails.** The first installed family of a font's list is used, and a font none of whose families is installed throws `Neuron::Exception` naming them, rather than drawing in whatever the system offers first. The figures list Cascadia Mono and then Consolas (owner, 2026-10-02), and in Debug the game writes which it found to the debugger.
 3. **Text is UTF-8, and the atlas holds printable ASCII, · and ×.** `Neuron::NextCodePoint` reads one character at a time; a character of more than two bytes, or a byte that starts no character, shows as `?`, once. Other characters are added to `GlyphAtlas::EXTRA_CHARACTERS` when the interface needs them.
 4. **Letters can be spaced.** `DrawText` and `TextWidth` take a tracking in pixels, added between each two characters, for the mockup's small capitals.
-5. **Sprites are drawn into the atlas, not shipped.** `Neuron::DrawSprite` draws a cut gem ([ADR-085](ADR-085-one-meaning-per-color.md) decision 3), a checkbox outline or a corner bracket in a square of any size, edges smoothed, on the CPU, and the atlas packs them after the fonts. `UiPipeline::DrawSprite` draws one into a rectangle in any color, mirrored to make a bracket's other three corners. `Hud::Sprites` lists the game's: Ore's gem, the locked part's box, and the window's corner.
+5. **Sprites are drawn into the atlas, not shipped.** `Neuron::DrawSprite` draws a cut gem ([ADR-085](ADR-085-one-meaning-per-color.md) decision 3), a checkbox outline, a corner bracket, a disc, a ring, one, two or three chevrons, or a plus in a square of any size, edges smoothed, on the CPU, and the atlas packs them after the fonts. `UiPipeline::DrawSprite` draws one into a rectangle in any color, mirrored to make a bracket's other three corners. `Hud::Sprites` lists the game's: Ore's gem, the locked part's box, the window's corner, and a fleet plate's ring, disc and insignia ([ADR-101](ADR-101-plates-over-the-fleets.md) decision 2).
 6. **Hatching is drawn by the pixel shader.** `FillHatched` sends one quad whose texture coordinate u is negative: `UiPS.hlsl` then draws diagonal stripes rising to the right, v pixels wide every −u pixels, on the screen's pixels, so neighboring hatched rectangles line up. A repeating tile in the atlas would take a quad per tile, hundreds for a window's header, and the sampler clamps.
 7. *(retired)*
+8. **A font may have a halo, for text that stands on the scene with no panel behind it.** A `Neuron::FontDesc` with a `haloEms` has each glyph drawn into the atlas a second time by `Neuron::HaloOf`, widened by that share of its em, a pixel at least, and blurred over each texel and its eight neighbors, at the glyph's pen position and advance; `PackGlyphs` packs a font's halos after its glyphs. A `Neuron::CanvasText` with a `halo` color draws its line's halos in that color first, then the line, so no character's halo covers the character before it: a second quad a character. Only `Hud::Typeface::Plate` has one ([ADR-101](ADR-101-plates-over-the-fleets.md) decision 2).
 
 ## Consequences
 
-- **The atlas holds seven fonts of 97 characters and three sprites.** It is uploaded at startup and again when the scale changes.
+- **The atlas holds eight fonts of 97 characters, the plate's with a halo for each, and eight sprites.** It is uploaded at startup and again when the scale changes.
 - **Bahnschrift and Segoe UI must be installed**, as they are on Windows 11. The game stops with a message if one is not, rather than drawing the interface in the wrong face.
 - **The shader samples the atlas with `SampleLevel`**, since a branch may not take derivatives; the atlas has no mipmaps, so it loses nothing.
-- **`NeuronClientTests` checks it without a GPU:** packing several fonts and sprites without overlap, UTF-8 and the fallback, tracking, the sprites' shapes, rasterizing Segoe UI with its ×, and a font list falling back to its second family, or failing with none installed. The HUD test in `GameAppTests` checks the typefaces' order.
+- **`NeuronClientTests` checks it without a GPU:** packing several fonts, one with halos, and sprites without overlap, UTF-8 and the fallback, tracking, the sprites' shapes, a halo's size, place, softness and reach, rasterizing Segoe UI with its ×, and a font list falling back to its second family, or failing with none installed. `UiPipeline::DrawText` needs D3D12, so CI builds its halos and the owner's run sees them. The HUD test in `GameAppTests` checks the typefaces' order.
 
 ## What this forecloses
 

@@ -2430,6 +2430,161 @@ Hud::Span LayerSpan(const Hud::Layout& _layout, std::size_t _layer, std::size_t 
 {
   return {.first = _layer == 0 ? 0 : LayerStart(_layout, _layer - 1, _first, _total), .end = LayerStart(_layout, _layer, _first, _total)};
 }
+
+// A fleet's plate (ADR-101 decision 2), in reference units at the interface's scale: its disc, the ring round it a unit
+// out, as a line this wide, and the insignia on the disc. The ring's arc, its count and its insignia are white, which none
+// of health's colors is, and the count stands on a dark halo. A whole fleet's ring is one sprite; a hurt fleet's is drawn
+// in this many pieces round the circle, white as far as its hit points reach and in the halo's color for the rest, so
+// that the arc reads as a share. At 13 units, a piece strays from the circle by a quarter of a pixel at 1080p.
+constexpr float PLATE_DISC_UNITS = 22.0f;
+constexpr float PLATE_RING_STROKE_UNITS = 2.0f;
+constexpr float PLATE_RING_RADIUS_UNITS = (PLATE_DISC_UNITS / 2.0f) + 1.0f + (PLATE_RING_STROKE_UNITS / 2.0f);
+static_assert(2.0f * (PLATE_RING_RADIUS_UNITS + (PLATE_RING_STROKE_UNITS / 2.0f)) == Hud::PLATE_WIDTH_UNITS);
+constexpr int PLATE_RING_PIECES = 16;
+constexpr float PLATE_INSIGNIA_UNITS = 14.0f;
+constexpr float PLATE_HALO_EMS = 0.15f;
+constexpr DirectX::XMFLOAT4 PLATE_MARK_COLOR{1.0f, 1.0f, 1.0f, 1.0f};
+constexpr DirectX::XMFLOAT4 PLATE_HALO_COLOR{0.01f, 0.015f, 0.03f, 0.9f};
+// Plates of two sides that meet are moved apart, up and down, at most this many times over.
+constexpr int PLATE_PARTINGS = 4;
+
+Hud::Sprite SpriteOf(Hud::Insignia _insignia) noexcept
+{
+  switch (_insignia)
+  {
+  case Hud::Insignia::TwoChevrons:
+    return Hud::Sprite::TwoChevrons;
+  case Hud::Insignia::ThreeChevrons:
+    return Hud::Sprite::ThreeChevrons;
+  case Hud::Insignia::Constructor:
+    return Hud::Sprite::Plus;
+  case Hud::Insignia::OneChevron:
+  default:
+    return Hud::Sprite::OneChevron;
+  }
+}
+
+// The plates over the fleets, each standing a bar's lift above its foot and centered over it (ADR-101 decision 2): a
+// count over a disc in its side's color, ringed by the arc of its hit points, with its insignia on the disc. A plate of one
+// ship has no count. Plates of two sides that meet are moved apart, the higher up and the lower down, and a plate wholly
+// off the screen is left out. Whole pixels, so that the sprites and the count stay sharp as the plates move.
+void LayPlates(Hud::Layout& _layout, const Hud::Content& _content, const Hud::TextMetrics& _metrics, float _scale, float _width,
+               float _height)
+{
+  struct Placed
+  {
+    const Hud::Plate* plate = nullptr;
+    float left = 0.0f;
+    float top = 0.0f;
+    float height = 0.0f;
+  };
+  const float plateWidth = Hud::PLATE_WIDTH_UNITS * _scale;
+  std::vector<Placed> placed;
+  placed.reserve(_content.plates.size());
+  for (const Hud::Plate& plate : _content.plates)
+  {
+    const float height = (plate.count > 1 ? Hud::PLATE_HEIGHT_UNITS : Hud::PLATE_WIDTH_UNITS) * _scale;
+    const float bottom = plate.footPixels.y - (ENTITY_BAR_LIFT_UNITS * _scale);
+    placed.push_back({.plate = &plate, .left = plate.footPixels.x - (plateWidth / 2.0f), .top = bottom - height, .height = height});
+  }
+  for (int parting = 0; parting < PLATE_PARTINGS; ++parting)
+  {
+    bool moved = false;
+    for (std::size_t first = 0; first < placed.size(); ++first)
+    {
+      for (std::size_t second = first + 1; second < placed.size(); ++second)
+      {
+        Placed& a = placed[first];
+        Placed& b = placed[second];
+        const float overlap = std::min(a.top + a.height, b.top + b.height) - std::max(a.top, b.top);
+        if (a.plate->owner == b.plate->owner || std::abs(a.left - b.left) >= plateWidth || overlap <= 0.0f)
+          continue;
+        Placed& upper = a.top < b.top || (a.top == b.top && a.plate->fleet < b.plate->fleet) ? a : b;
+        Placed& lower = &upper == &a ? b : a;
+        upper.top -= overlap / 2.0f;
+        lower.top += overlap / 2.0f;
+        moved = true;
+      }
+    }
+    if (!moved)
+      break;
+  }
+
+  const std::span<const Neuron::GlyphAtlas::Font> fonts = _metrics.Fonts();
+  const std::size_t countFont = Hud::FontOf(Hud::Typeface::Plate);
+  const float lineHeight =
+    countFont < fonts.size() ? fonts[countFont].lineHeight : std::round(Hud::FaceUnits(Hud::Typeface::Plate) * 1.2f * _scale);
+  const float stroke = std::max(1.0f, std::round(PLATE_RING_STROKE_UNITS * _scale));
+  for (const Placed& at : placed)
+  {
+    const Hud::Plate& plate = *at.plate;
+    const float left = std::round(at.left);
+    const float top = std::round(at.top);
+    if (left + plateWidth <= 0.0f || left >= _width || top + at.height <= 0.0f || top >= _height)
+      continue;
+    const float centerX = left + (plateWidth / 2.0f);
+    const float centerY = top + at.height - (plateWidth / 2.0f);
+    // The ring from the top, clockwise, white as far round as the fleet's hit points reach.
+    const float radius = PLATE_RING_RADIUS_UNITS * _scale;
+    const float share = std::clamp(plate.health, 0.0f, 1.0f);
+    const auto pointAt = [centerX, centerY, radius](float _turn)
+    {
+      const float angle = (2.0f * std::numbers::pi_v<float> * _turn) - (std::numbers::pi_v<float> / 2.0f);
+      return DirectX::XMFLOAT2{centerX + (radius * std::cos(angle)), centerY + (radius * std::sin(angle))};
+    };
+    if (share >= 1.0f)
+    {
+      const float ring = std::round(Hud::PLATE_WIDTH_UNITS * _scale);
+      _layout.plates.sprites.push_back({.sprite = Hud::SpriteOf(Hud::Sprite::PlateRing),
+                                        .area = {.left = std::round(centerX - (ring / 2.0f)),
+                                                 .top = std::round(centerY - (ring / 2.0f)),
+                                                 .width = ring,
+                                                 .height = ring,
+                                                 .color = PLATE_MARK_COLOR}});
+    }
+    for (int piece = 0; piece < PLATE_RING_PIECES && share < 1.0f; ++piece)
+    {
+      const float from = static_cast<float>(piece) / static_cast<float>(PLATE_RING_PIECES);
+      const float to = static_cast<float>(piece + 1) / static_cast<float>(PLATE_RING_PIECES);
+      if (share > from)
+        _layout.plates.lines.push_back(
+          {.segment = {.from = pointAt(from), .to = pointAt(std::min(to, share)), .widthPixels = stroke}, .color = PLATE_MARK_COLOR});
+      if (share < to)
+        _layout.plates.lines.push_back(
+          {.segment = {.from = pointAt(std::max(from, share)), .to = pointAt(to), .widthPixels = stroke}, .color = PLATE_HALO_COLOR});
+    }
+    const float disc = std::round(PLATE_DISC_UNITS * _scale);
+    DirectX::XMFLOAT4 discColor = plate.color;
+    discColor.w = 1.0f;
+    _layout.plates.sprites.push_back({.sprite = Hud::SpriteOf(Hud::Sprite::PlateDisc),
+                                      .area = {.left = std::round(centerX - (disc / 2.0f)),
+                                               .top = std::round(centerY - (disc / 2.0f)),
+                                               .width = disc,
+                                               .height = disc,
+                                               .color = discColor}});
+    const float insignia = std::round(PLATE_INSIGNIA_UNITS * _scale);
+    _layout.plates.sprites.push_back({.sprite = Hud::SpriteOf(SpriteOf(plate.insignia)),
+                                      .area = {.left = std::round(centerX - (insignia / 2.0f)),
+                                               .top = std::round(centerY - (insignia / 2.0f)),
+                                               .width = insignia,
+                                               .height = insignia,
+                                               .color = PLATE_MARK_COLOR}});
+    if (plate.count > 1)
+    {
+      const std::string count = std::to_string(plate.count);
+      const float countWidth = _metrics.Width(Hud::Typeface::Plate, count) * _scale;
+      _layout.plates.texts.push_back({.text = count,
+                                      .left = std::round(centerX - (countWidth / 2.0f)),
+                                      .top = std::round(top + (((Hud::PLATE_COUNT_UNITS * _scale) - lineHeight) / 2.0f)),
+                                      .color = PLATE_MARK_COLOR,
+                                      .font = countFont,
+                                      .trackingPixels = 0.0f,
+                                      .halo = PLATE_HALO_COLOR});
+    }
+    if (plate.own)
+      _layout.plateHits.emplace_back(Hud::Rect{.left = left, .top = top, .width = plateWidth, .height = at.height}, plate.fleet);
+  }
+}
 } // namespace
 
 std::string Outpost::WithThousands(std::int64_t _value)
@@ -2489,18 +2644,81 @@ std::string Hud::DescribeMemory(const Snapshot& _newest, const EntityView& _stru
 }
 
 std::optional<Hud::EntityBar> Hud::BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels, const DirectX::XMFLOAT4& _back,
-                                           bool _every) noexcept
+                                           BarRule _rule) noexcept
 {
   if (_entity.remembered)
     return std::nullopt;
   EntityBar bar{.footPixels = _footPixels, .health = std::nullopt, .built = std::nullopt, .back = _back};
-  if (_entity.maxHitPointsHundredths > 0 && (_every || _entity.hitPointsHundredths < _entity.maxHitPointsHundredths))
+  // A ship far out has its fleet's plate in place of its bar, unless Alt is held or the pointer is over it (ADR-101
+  // decision 3); a structure keeps its bar.
+  const bool ship = _entity.kind == EntityKind::Ship;
+  const bool hurt = _entity.hitPointsHundredths < _entity.maxHitPointsHundredths;
+  const bool shows = _rule.every || (ship ? (_rule.pointed || (_rule.closeIn && hurt)) : hurt);
+  if (_entity.maxHitPointsHundredths > 0 && shows)
     bar.health = HealthShare(_entity.hitPointsHundredths, _entity.maxHitPointsHundredths);
   if (_entity.builtPermille < PERMILLE)
     bar.built = static_cast<float>(std::max(_entity.builtPermille, 0)) / static_cast<float>(PERMILLE);
   if (!bar.health.has_value() && !bar.built.has_value())
     return std::nullopt;
   return bar;
+}
+
+Hud::Plate Hud::PlateOver(const ScreenFleets::Fleet& _fleet, const Snapshot& _newest, std::span<const EntityView> _entities,
+                          std::span<const SideColor> _sideColors)
+{
+  Plate plate{.fleet = _fleet.id,
+              .owner = _fleet.owner,
+              .footPixels = _fleet.footPixels,
+              .count = static_cast<std::uint32_t>(_fleet.ships.size()),
+              .insignia = Insignia::OneChevron,
+              .health = 1.0f,
+              .color = NEUTRAL_COLOR,
+              .own = _fleet.owner == _newest.player};
+  if (_fleet.owner == PIRATES)
+    plate.color = PIRATE_COLOR;
+  else if (const auto found = std::ranges::find(_sideColors, _fleet.owner, &SideColor::player); found != _sideColors.end())
+    plate.color = found->color;
+
+  // The match's hulls, smallest first, give a warship's chevrons: one for the smallest, three for the third and any larger.
+  std::vector<const HullView*> hulls;
+  hulls.reserve(_newest.hulls.size());
+  for (const HullView& hull : _newest.hulls)
+    hulls.push_back(&hull);
+  std::ranges::stable_sort(hulls, {}, &HullView::footprintRadiusMeters);
+  const auto insigniaOf = [&hulls](const EntityView& _ship)
+  {
+    if (_ship.role == ShipRole::Constructor)
+      return Insignia::Constructor;
+    const auto rank = std::ranges::find(hulls, _ship.hull, &HullView::id);
+    if (rank == hulls.end())
+      return Insignia::OneChevron;
+    const auto place = std::min<std::ptrdiff_t>(rank - hulls.begin(), 2);
+    return place <= 0 ? Insignia::OneChevron : place == 1 ? Insignia::TwoChevrons : Insignia::ThreeChevrons;
+  };
+  std::array<std::uint32_t, 4> counts{};
+  std::int64_t hundredths = 0;
+  std::int64_t maxHundredths = 0;
+  for (const EntityView& entity : _entities)
+  {
+    if (!std::ranges::binary_search(_fleet.ships, entity.id))
+      continue;
+    ++counts[static_cast<std::size_t>(insigniaOf(entity))];
+    hundredths += entity.hitPointsHundredths;
+    maxHundredths += entity.maxHitPointsHundredths;
+  }
+  // The commonest; a tie goes to the larger hull, and a warship before a Constructor.
+  const std::array<Insignia, 4> preferred{Insignia::ThreeChevrons, Insignia::TwoChevrons, Insignia::OneChevron, Insignia::Constructor};
+  std::uint32_t most = 0;
+  for (const Insignia insignia : preferred)
+  {
+    if (counts[static_cast<std::size_t>(insignia)] > most)
+    {
+      most = counts[static_cast<std::size_t>(insignia)];
+      plate.insignia = insignia;
+    }
+  }
+  plate.health = maxHundredths > 0 ? HealthShare(hundredths, maxHundredths) : 1.0f;
+  return plate;
 }
 
 std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
@@ -2697,6 +2915,15 @@ std::optional<Hud::Action> Hud::Layout::ActionAt(float _xPixels, float _yPixels)
   if (const Neuron::CanvasRegion* region = HitAt(_xPixels, _yPixels); region != nullptr && region->payload != Neuron::NO_PAYLOAD)
     return actions[region->payload].second;
   return std::nullopt;
+}
+
+std::optional<std::uint32_t> Hud::Layout::PlateAt(float _xPixels, float _yPixels) const noexcept
+{
+  if (Covers(_xPixels, _yPixels))
+    return std::nullopt;
+  const auto hit = std::ranges::find_if(plateHits, [_xPixels, _yPixels](const std::pair<Rect, std::uint32_t>& _plate)
+                                        { return _plate.first.Contains(_xPixels, _yPixels); });
+  return hit != plateHits.end() ? std::optional(hit->second) : std::nullopt;
 }
 
 std::optional<Hud::Action> Hud::Layout::HoverAt(float _xPixels, float _yPixels) const noexcept
@@ -3330,7 +3557,7 @@ std::size_t Hud::StepTopics(std::size_t _firstTopic, int _step, std::size_t _top
   return static_cast<std::size_t>(std::clamp<std::ptrdiff_t>(row, 0, lastFirstRow)) * TOPIC_COLUMNS;
 }
 
-static_assert(Hud::FACE_UNITS.size() == static_cast<std::size_t>(Hud::Typeface::Detail) + 1, "a size for every typeface");
+static_assert(Hud::FACE_UNITS.size() == static_cast<std::size_t>(Hud::Typeface::Plate) + 1, "a size for every typeface");
 
 std::vector<Neuron::FontDesc> Hud::Typefaces()
 {
@@ -3346,6 +3573,11 @@ std::vector<Neuron::FontDesc> Hud::Typefaces()
     {.families = figures, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::Figure)},
     {.families = figures, .weight = 700, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::LargeFigure)},
     {.families = figures, .weight = 400, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::Detail)},
+    {.families = condensed,
+     .weight = 700,
+     .stretch = Neuron::FontStretch::SemiCondensed,
+     .emUnits = FaceUnits(Typeface::Plate),
+     .haloEms = PLATE_HALO_EMS},
   };
 }
 
@@ -3355,6 +3587,12 @@ std::vector<Neuron::SpriteDesc> Hud::Sprites()
     {.shape = Neuron::SpriteShape::Gem, .sizeUnits = 12.0f},
     {.shape = Neuron::SpriteShape::Checkbox, .sizeUnits = 10.0f},
     {.shape = Neuron::SpriteShape::CornerBracket, .sizeUnits = 12.0f},
+    {.shape = Neuron::SpriteShape::Ring, .sizeUnits = PLATE_WIDTH_UNITS},
+    {.shape = Neuron::SpriteShape::Disc, .sizeUnits = PLATE_DISC_UNITS},
+    {.shape = Neuron::SpriteShape::Chevron, .sizeUnits = PLATE_INSIGNIA_UNITS},
+    {.shape = Neuron::SpriteShape::TwoChevrons, .sizeUnits = PLATE_INSIGNIA_UNITS},
+    {.shape = Neuron::SpriteShape::ThreeChevrons, .sizeUnits = PLATE_INSIGNIA_UNITS},
+    {.shape = Neuron::SpriteShape::Plus, .sizeUnits = PLATE_INSIGNIA_UNITS},
   };
 }
 
@@ -3460,6 +3698,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       }
     }
   }
+  // Then the plates over the fleets, at the interface's scale, which their count is drawn at (ADR-101 decision 2).
+  LayPlates(layout, _content, _metrics, scale, width, height);
 
   // Whether _action is the one under the pointer, which lights what takes it (ADR-088 decision 1).
   const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };

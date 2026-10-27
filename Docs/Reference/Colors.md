@@ -70,5 +70,7 @@ Every color constant, a `constexpr` whose name ends in `_COLOR`, in the `.h` and
 | `HEALTH_GOOD_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.2, 0.85, 0.3, 1.0 | `#7CED95` |
 | `HEALTH_FAIR_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 1.0, 0.7, 0.1, 1.0 | `#FFDA59` |
 | `HEALTH_POOR_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.95, 0.2, 0.15, 1.0 | `#F97C6C` |
+| `PLATE_MARK_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 1.0, 1.0, 1.0, 1.0 | `#FFFFFF` |
+| `PLATE_HALO_COLOR` | [GameApp/Hud.cpp](../../GameApp/Hud.cpp) | 0.01, 0.015, 0.03, 0.9 | `#192130` |
 | `KEY_COLOR` | [GameApp/SceneShading.h](../../GameApp/SceneShading.h) | 0.627, 0.539, 0.427 | `#CFC2AF` |
 | `LIGHT_PAINT_COLOR` | [GameApp/SceneShading.h](../../GameApp/SceneShading.h) | 1.0, 0.86, 0.62, 1.0 | `#FFEFCE` |

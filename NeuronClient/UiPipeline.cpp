@@ -83,7 +83,10 @@ Neuron::UiAtlas Neuron::RasterizeUiAtlas(const std::vector<FontDesc>& _fonts, co
   std::vector<FontBitmaps> fonts;
   fonts.reserve(_fonts.size());
   for (size_t i = 0; i < _fonts.size(); ++i)
+  {
     fonts.push_back(RasterizeFont(_fonts[i], atlas.pixelSizes[i]));
+    fonts.back().halos = HalosOf(fonts.back(), atlas.pixelSizes[i], _fonts[i].haloEms);
+  }
   std::vector<GlyphBitmap> sprites;
   sprites.reserve(_sprites.size());
   for (size_t i = 0; i < _sprites.size(); ++i)
@@ -263,28 +266,39 @@ void Neuron::UiPipeline::FillHatched(float _left, float _top, float _width, floa
 }
 
 void Neuron::UiPipeline::DrawText(std::size_t _font, std::string_view _text, float _left, float _top, const DirectX::XMFLOAT4& _color,
-                                  float _trackingPixels)
+                                  float _trackingPixels, const std::optional<DirectX::XMFLOAT4>& _halo)
 {
   const GlyphAtlas::Font& font = m_atlas.fonts[_font];
-  // Whole pixels, so that texels land on pixels and the text stays as DirectWrite drew it.
-  float pen = std::round(_left);
-  const float tracking = std::round(_trackingPixels);
-  const float baseline = std::round(_top) + font.ascent;
   const auto width = static_cast<float>(m_atlas.width);
   const auto height = static_cast<float>(m_atlas.height);
-  for (std::size_t index = 0; index < _text.size();)
+  // The line once over: its halos, when it asks for them, or its glyphs, each at the pen, which moves by the glyph's
+  // advance. Whole pixels, so that texels land on pixels and the text stays as DirectWrite drew it.
+  const auto run = [&](bool _halos, const DirectX::XMFLOAT4& _runColor)
   {
-    const GlyphAtlas::Glyph& glyph = font.For(NextCodePoint(_text, index));
-    if (glyph.width > 0)
+    float pen = std::round(_left);
+    const float tracking = std::round(_trackingPixels);
+    const float baseline = std::round(_top) + font.ascent;
+    for (std::size_t index = 0; index < _text.size();)
     {
-      const float left = pen + static_cast<float>(glyph.offsetX);
-      const float top = baseline + static_cast<float>(glyph.offsetY);
-      AddQuad(left, top, left + static_cast<float>(glyph.width), top + static_cast<float>(glyph.height),
-              static_cast<float>(glyph.atlasX) / width, static_cast<float>(glyph.atlasY) / height,
-              static_cast<float>(glyph.atlasX + glyph.width) / width, static_cast<float>(glyph.atlasY + glyph.height) / height, _color);
+      const char32_t character = NextCodePoint(_text, index);
+      const GlyphAtlas::Glyph& glyph = font.For(character);
+      const GlyphAtlas::Glyph* drawn = _halos ? font.HaloFor(character) : &glyph;
+      if (drawn != nullptr && drawn->width > 0)
+      {
+        const float left = pen + static_cast<float>(drawn->offsetX);
+        const float top = baseline + static_cast<float>(drawn->offsetY);
+        AddQuad(left, top, left + static_cast<float>(drawn->width), top + static_cast<float>(drawn->height),
+                static_cast<float>(drawn->atlasX) / width, static_cast<float>(drawn->atlasY) / height,
+                static_cast<float>(drawn->atlasX + drawn->width) / width, static_cast<float>(drawn->atlasY + drawn->height) / height,
+                _runColor);
+      }
+      pen += glyph.advance + tracking;
     }
-    pen += glyph.advance + tracking;
-  }
+  };
+  // Every halo first, so that no character's halo covers the character before it.
+  if (_halo.has_value() && !font.halos.empty())
+    run(true, _halo.value_or(DirectX::XMFLOAT4{}));
+  run(false, _color);
 }
 
 void Neuron::UiPipeline::DrawSprite(std::size_t _sprite, float _left, float _top, float _width, float _height,
@@ -353,7 +367,7 @@ void Neuron::UiPipeline::Draw(const DrawList& _list, const FillStyle& _fills)
     for (std::size_t i = texts.first; i < texts.end; ++i)
     {
       const CanvasText& text = _list.texts[i];
-      DrawText(text.font, text.text, text.left, text.top, text.color, text.trackingPixels);
+      DrawText(text.font, text.text, text.left, text.top, text.color, text.trackingPixels, text.halo);
     }
   }
 }

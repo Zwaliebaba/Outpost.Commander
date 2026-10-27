@@ -427,7 +427,7 @@ public:
   {
     using Hud = Outpost::Hud;
     const std::vector<Neuron::FontDesc> typefaces = Hud::Typefaces();
-    Assert::AreEqual(static_cast<std::size_t>(Hud::Typeface::Detail) + 1, typefaces.size());
+    Assert::AreEqual(static_cast<std::size_t>(Hud::Typeface::Plate) + 1, typefaces.size());
     const Neuron::FontDesc& body = typefaces[static_cast<std::size_t>(Hud::Typeface::Body)];
     Assert::IsTrue(body.families == std::vector<std::wstring>{L"Segoe UI"});
     Assert::AreEqual(Hud::FONT_UNITS, body.emUnits);
@@ -436,19 +436,30 @@ public:
     Assert::AreEqual(600, static_cast<int>(figure.weight), L"semibold");
     for (const Neuron::FontDesc& typeface : typefaces)
       Assert::IsTrue(!typeface.families.empty() && typeface.emUnits > 0.0f);
-    const std::array<std::pair<Hud::Typeface, float>, 7> sizes{{{Hud::Typeface::Body, 20.0f},
+    const std::array<std::pair<Hud::Typeface, float>, 8> sizes{{{Hud::Typeface::Body, 20.0f},
                                                                 {Hud::Typeface::Title, 22.0f},
                                                                 {Hud::Typeface::Label, 13.0f},
                                                                 {Hud::Typeface::Name, 16.0f},
                                                                 {Hud::Typeface::Figure, 14.0f},
                                                                 {Hud::Typeface::LargeFigure, 28.0f},
-                                                                {Hud::Typeface::Detail, 13.0f}}};
+                                                                {Hud::Typeface::Detail, 13.0f},
+                                                                {Hud::Typeface::Plate, 15.0f}}};
     for (const auto& [face, units] : sizes)
     {
       Assert::AreEqual(units, Hud::FaceUnits(face));
       Assert::AreEqual(units, typefaces[static_cast<std::size_t>(face)].emUnits);
     }
-    Assert::AreEqual(static_cast<std::size_t>(Hud::Sprite::Corner) + 1, Hud::Sprites().size());
+    // ADR-101 decision 2: a plate's count is Bahnschrift's bold semicondensed face with a halo, and only it has one.
+    const Neuron::FontDesc& plate = typefaces[static_cast<std::size_t>(Hud::Typeface::Plate)];
+    Assert::IsTrue(plate.families == std::vector<std::wstring>{L"Bahnschrift"} && plate.weight == 700 &&
+                   plate.stretch == Neuron::FontStretch::SemiCondensed);
+    Assert::AreEqual(std::ptrdiff_t{1},
+                     std::ranges::count_if(typefaces, [](const Neuron::FontDesc& _face) { return _face.haloEms > 0.0f; }));
+    const std::vector<Neuron::SpriteDesc> sprites = Hud::Sprites();
+    Assert::AreEqual(static_cast<std::size_t>(Hud::Sprite::Plus) + 1, sprites.size());
+    Assert::IsTrue(sprites[Hud::SpriteOf(Hud::Sprite::PlateDisc)].shape == Neuron::SpriteShape::Disc);
+    Assert::IsTrue(sprites[Hud::SpriteOf(Hud::Sprite::ThreeChevrons)].shape == Neuron::SpriteShape::ThreeChevrons);
+    Assert::IsTrue(sprites[Hud::SpriteOf(Hud::Sprite::Plus)].shape == Neuron::SpriteShape::Plus);
   }
 
   // ADR-031: the designer is a window: at first in the top-right corner, its title bar left of its close box, a bracket at
@@ -2707,22 +2718,32 @@ public:
     }
   }
 
-  // ADR-088 decision 5: a bar shows over a hurt ship or structure, or any while Alt is held, and a build bar over one
-  // unfinished; none over what the player only remembers (ADR-081 decision 4), or what has no hit points.
+  // ADR-088 decision 5: a bar shows over a hurt structure, or any while Alt is held, and a build bar over one unfinished;
+  // none over what the player only remembers (ADR-081 decision 4), or what has no hit points. ADR-101 decision 3: a hurt
+  // ship's shows only close in, where no plate stands for it; the ship under the pointer shows its own, whole or not.
   TEST_METHOD(PutsABarOnlyOverWhatShowsOne)
   {
+    using Rule = Outpost::Hud::BarRule;
     constexpr DirectX::XMFLOAT2 FOOT{120.0f, 340.0f};
     constexpr DirectX::XMFLOAT4 BACK{0.1f, 0.2f, 0.3f, 1.0f};
     Outpost::EntityView ship = Ship(1, SWARM, 19800, 19800);
-    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, false).has_value(), L"whole");
-    const Outpost::Hud::EntityBar every = Outpost::Hud::BarOver(ship, FOOT, BACK, true).value_or(Outpost::Hud::EntityBar{});
-    Assert::AreEqual(1.0f, every.health.value_or(-1.0f), L"any while Alt is held");
+    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, Rule{}).has_value(), L"whole");
+    const Outpost::Hud::EntityBar every =
+      Outpost::Hud::BarOver(ship, FOOT, BACK, Rule{.every = true, .closeIn = false}).value_or(Outpost::Hud::EntityBar{});
+    Assert::AreEqual(1.0f, every.health.value_or(-1.0f), L"any while Alt is held, near or far");
     Assert::IsFalse(every.built.has_value());
     Assert::IsTrue(every.footPixels.x == FOOT.x && every.footPixels.y == FOOT.y && every.back.z == BACK.z);
+    Assert::AreEqual(1.0f,
+                     Outpost::Hud::BarOver(ship, FOOT, BACK, Rule{.closeIn = false, .pointed = true})
+                       .value_or(Outpost::Hud::EntityBar{})
+                       .health.value_or(-1.0f),
+                     L"whole, under the pointer");
     ship.hitPointsHundredths = 9900;
-    Assert::AreEqual(0.5f, Outpost::Hud::BarOver(ship, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f));
+    Assert::AreEqual(0.5f, Outpost::Hud::BarOver(ship, FOOT, BACK, Rule{}).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f),
+                     L"hurt, close in");
+    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, Rule{.closeIn = false}).has_value(), L"hurt, far out: its plate stands for it");
     ship.remembered = true;
-    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, true).has_value(), L"none for a memory");
+    Assert::IsFalse(Outpost::Hud::BarOver(ship, FOOT, BACK, Rule{.every = true}).has_value(), L"none for a memory");
 
     Outpost::EntityView site{.id = Outpost::EntityId{2},
                              .kind = Outpost::EntityKind::Structure,
@@ -2730,16 +2751,193 @@ public:
                              .hitPointsHundredths = 300000,
                              .maxHitPointsHundredths = 300000,
                              .builtPermille = 250};
-    const Outpost::Hud::EntityBar building = Outpost::Hud::BarOver(site, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{});
+    const Outpost::Hud::EntityBar building =
+      Outpost::Hud::BarOver(site, FOOT, BACK, Rule{.closeIn = false}).value_or(Outpost::Hud::EntityBar{});
     Assert::AreEqual(0.25f, building.built.value_or(-1.0f), L"the share built");
     Assert::IsFalse(building.health.has_value(), L"and no health while whole");
     site.hitPointsHundredths = 75000;
-    Assert::AreEqual(0.25f, Outpost::Hud::BarOver(site, FOOT, BACK, false).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f));
+    Assert::AreEqual(
+      0.25f, Outpost::Hud::BarOver(site, FOOT, BACK, Rule{.closeIn = false}).value_or(Outpost::Hud::EntityBar{}).health.value_or(-1.0f),
+      L"a structure keeps its bar far out");
     site.remembered = true;
-    Assert::IsFalse(Outpost::Hud::BarOver(site, FOOT, BACK, true).has_value(), L"none for a memory");
+    Assert::IsFalse(Outpost::Hud::BarOver(site, FOOT, BACK, Rule{.every = true}).has_value(), L"none for a memory");
 
     const Outpost::EntityView rock{.id = Outpost::EntityId{3}, .kind = Outpost::EntityKind::Asteroid};
-    Assert::IsFalse(Outpost::Hud::BarOver(rock, FOOT, BACK, true).has_value(), L"no hit points");
+    Assert::IsFalse(Outpost::Hud::BarOver(rock, FOOT, BACK, Rule{.every = true}).has_value(), L"no hit points");
+  }
+
+  // ADR-101 decision 2: a fleet's plate counts its ships, wears the insignia of its commonest kind, a warship's chevrons by
+  // its hull's size among the match's, the larger hull and a warship winning a tie, carries the share of its hit points
+  // left and its side's color, the pirates' their own, and is the player's own only for its own ships.
+  TEST_METHOD(DescribesAFleetsPlate)
+  {
+    using Hud = Outpost::Hud;
+    Outpost::Snapshot newest = Newest();
+    newest.hulls = {{.id = Outpost::HullId{3}, .nameUtf8 = "Large", .footprintRadiusMeters = 24.0},
+                    {.id = Outpost::HullId{1}, .nameUtf8 = "Small", .footprintRadiusMeters = 8.0},
+                    {.id = Outpost::HullId{2}, .nameUtf8 = "Medium", .footprintRadiusMeters = 14.0}};
+    const auto ship = [](std::uint32_t _id, std::uint32_t _hull, std::int32_t _hundredths, Outpost::PlayerId _owner = PLAYER)
+    {
+      return Outpost::EntityView{.id = Outpost::EntityId{_id},
+                                 .owner = _owner,
+                                 .hull = Outpost::HullId{_hull},
+                                 .role = _hull == 0 ? Outpost::ShipRole::Constructor : Outpost::ShipRole::Warship,
+                                 .hitPointsHundredths = _hundredths,
+                                 .maxHitPointsHundredths = 10000};
+    };
+    const std::vector<Outpost::EntityView> entities{ship(1, 2, 10000),
+                                                    ship(2, 2, 5000),
+                                                    ship(3, 2, 10000),
+                                                    ship(4, 1, 10000),
+                                                    ship(5, 1, 10000),
+                                                    ship(6, 0, 5000),
+                                                    ship(7, 1, 10000),
+                                                    ship(8, 3, 10000),
+                                                    ship(9, 0, 10000),
+                                                    ship(10, 2, 10000, Outpost::PlayerId{2}),
+                                                    ship(11, 2, 10000, Outpost::PIRATES)};
+    const std::vector<Hud::SideColor> colors = SideColors();
+    const auto plateOf = [&](const std::vector<std::uint32_t>& _ships, Outpost::PlayerId _owner = PLAYER)
+    {
+      Outpost::ScreenFleets::Fleet fleet{.id = 7, .owner = _owner, .ships = {}, .footPixels = {300.0f, 400.0f}};
+      for (const std::uint32_t id : _ships)
+        fleet.ships.push_back(Outpost::EntityId{id});
+      return Hud::PlateOver(fleet, newest, entities, colors);
+    };
+
+    const Hud::Plate mixed = plateOf({1, 2, 3, 4, 5, 6});
+    Assert::AreEqual(7u, mixed.fleet);
+    Assert::AreEqual(6u, mixed.count);
+    Assert::IsTrue(mixed.insignia == Hud::Insignia::TwoChevrons, L"three Medium hulls of six ships");
+    Assert::AreEqual(5.0f / 6.0f, mixed.health, 0.0001f);
+    Assert::IsTrue(mixed.own && mixed.footPixels.x == 300.0f && mixed.footPixels.y == 400.0f);
+    const auto own = std::ranges::find(colors, PLAYER, &Hud::SideColor::player);
+    Assert::IsTrue(own != colors.end() && mixed.color.x == own->color.x && mixed.color.y == own->color.y, L"in its side's color");
+
+    Assert::IsTrue(plateOf({4, 5, 8}).insignia == Hud::Insignia::OneChevron, L"two Small hulls over one Large");
+    Assert::IsTrue(plateOf({4, 8}).insignia == Hud::Insignia::ThreeChevrons, L"a tie goes to the larger hull");
+    Assert::IsTrue(plateOf({4, 6}).insignia == Hud::Insignia::OneChevron, L"and to a warship over a Constructor");
+    Assert::IsTrue(plateOf({6, 9}).insignia == Hud::Insignia::Constructor);
+
+    const Hud::Plate enemy = plateOf({10}, Outpost::PlayerId{2});
+    Assert::IsFalse(enemy.own);
+    Assert::AreEqual(1u, enemy.count);
+    const auto theirs = std::ranges::find(colors, Outpost::PlayerId{2}, &Hud::SideColor::player);
+    Assert::IsTrue(theirs != colors.end() && enemy.color.x == theirs->color.x);
+    const Hud::Plate pirates = plateOf({11}, Outpost::PIRATES);
+    Assert::IsTrue(!pirates.own && pirates.color.x != theirs->color.x, L"the pirates' own color");
+  }
+
+  // ADR-101 decision 2: a plate stands a bar's lift above its foot, centered over it: a disc in its side's color, its
+  // insignia in white on the disc, and the ring round it white from the top clockwise for the share of its hit points left
+  // and dark for the rest; over them the count, white on its dark halo at 4.5:1 or more over anything behind it. A plate of
+  // one ship has no count. Only the player's own takes a click, and none under a panel.
+  TEST_METHOD(LaysOutAPlateOverAFleet)
+  {
+    using Hud = Outpost::Hud;
+    Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 0};
+    content.plates = {{.fleet = 3,
+                       .owner = PLAYER,
+                       .footPixels = {500.0f, 600.0f},
+                       .count = 12,
+                       .insignia = Hud::Insignia::TwoChevrons,
+                       .health = 0.5f,
+                       .color = {0.2f, 0.4f, 0.9f, 1.0f},
+                       .own = true},
+                      {.fleet = 4,
+                       .owner = Outpost::PlayerId{2},
+                       .footPixels = {900.0f, 600.0f},
+                       .count = 1,
+                       .insignia = Hud::Insignia::Constructor,
+                       .health = 1.0f,
+                       .color = {0.9f, 0.3f, 0.1f, 1.0f},
+                       .own = false}};
+    const Hud::Layout layout = Lay(content, 1920, 1080);
+    const auto& sprites = layout.plates.sprites;
+    Assert::AreEqual(std::size_t{5}, sprites.size(), L"a disc and an insignia each, and a whole fleet's ring");
+
+    const Hud::SpriteMark& disc = sprites[0];
+    Assert::AreEqual(Hud::SpriteOf(Hud::Sprite::PlateDisc), disc.sprite);
+    Assert::AreEqual(500.0f, disc.area.left + (disc.area.width / 2.0f), 1.0f, L"centered over its foot");
+    Assert::IsTrue(disc.area.top + disc.area.height <= 600.0f - 4.0f, L"a bar's lift above it");
+    Assert::IsTrue(disc.area.color.z == 0.9f && disc.area.color.w == 1.0f, L"in its side's color");
+    const Hud::SpriteMark& insignia = sprites[1];
+    Assert::AreEqual(Hud::SpriteOf(Hud::Sprite::TwoChevrons), insignia.sprite);
+    Assert::IsTrue(insignia.area.left > disc.area.left && insignia.area.left + insignia.area.width < disc.area.left + disc.area.width &&
+                     insignia.area.color.x == 1.0f && insignia.area.color.z == 1.0f,
+                   L"white, on the disc");
+    Assert::AreEqual(Hud::SpriteOf(Hud::Sprite::PlateRing), sprites[2].sprite, L"a whole fleet's ring is one sprite");
+    Assert::IsTrue(sprites[2].area.color.x == 1.0f && sprites[2].area.width == Hud::PLATE_WIDTH_UNITS, L"white, round its disc");
+    Assert::AreEqual(Hud::SpriteOf(Hud::Sprite::Plus), sprites[4].sprite, L"a Constructor's");
+
+    // The count over the disc, white on a halo that reads over white behind it, and none for one ship.
+    Assert::AreEqual(std::size_t{1}, layout.plates.texts.size());
+    const Hud::Text& count = layout.plates.texts.front();
+    Assert::AreEqual(std::string("12"), count.text);
+    Assert::IsTrue(count.font == Hud::FontOf(Hud::Typeface::Plate) && count.halo.has_value());
+    Assert::IsTrue(count.top + 10.0f < disc.area.top, L"over the disc");
+    const DirectX::XMFLOAT4 halo = count.halo.value_or(DirectX::XMFLOAT4{});
+    const float behind = 1.0f - halo.w;
+    Assert::IsTrue(ContrastOf({count.color.x, count.color.y, count.color.z},
+                              {(halo.x * halo.w) + behind, (halo.y * halo.w) + behind, (halo.z * halo.w) + behind}) >= 4.5f,
+                   L"4.5:1 on its halo over white");
+
+    // Half its hit points: the ring's white half runs from the top round the right.
+    const DirectX::XMFLOAT2 center{disc.area.left + (disc.area.width / 2.0f), disc.area.top + (disc.area.height / 2.0f)};
+    float white = 0.0f;
+    float dark = 0.0f;
+    bool rightOfCenter = true;
+    for (const Hud::Line& line : layout.plates.lines)
+    {
+      const float reach = std::hypot(line.segment.from.x - center.x, line.segment.from.y - center.y);
+      if (reach > 30.0f)
+        continue;
+      const float length = std::hypot(line.segment.to.x - line.segment.from.x, line.segment.to.y - line.segment.from.y);
+      if (line.color.x == 1.0f)
+      {
+        white += length;
+        rightOfCenter = rightOfCenter && line.segment.from.x >= center.x - 0.01f && line.segment.to.x >= center.x - 0.01f;
+      }
+      else
+        dark += length;
+    }
+    Assert::IsTrue(white > 0.0f && std::abs(white - dark) < 1.0f, L"half white, half dark");
+    Assert::IsTrue(rightOfCenter, L"from the top, clockwise");
+
+    // Its own plate takes a click, the enemy's and the screen's empty space do not.
+    Assert::AreEqual(3u, layout.PlateAt(500.0f, disc.area.top + 2.0f).value_or(0u));
+    Assert::IsFalse(layout.PlateAt(900.0f, 590.0f).has_value());
+    Assert::IsFalse(layout.PlateAt(700.0f, 300.0f).has_value());
+  }
+
+  // ADR-101 decision 2: plates of two sides that would meet move apart, the higher up and the lower down, until they do not;
+  // plates of one side are one fleet's, which ScreenFleets has joined, so they are not moved. A plate under a panel takes no
+  // click there.
+  TEST_METHOD(MovesPlatesOfTwoSidesApart)
+  {
+    using Hud = Outpost::Hud;
+    const auto plate = [](std::uint32_t _fleet, Outpost::PlayerId _owner, DirectX::XMFLOAT2 _foot) {
+      return Hud::Plate{.fleet = _fleet, .owner = _owner, .footPixels = _foot, .count = 5, .color = {0.5f, 0.5f, 0.5f, 1.0f}, .own = true};
+    };
+    Hud::Content content{.ore = 0, .oreIncomeHundredthsPerSecond = 0};
+    content.plates = {plate(1, PLAYER, {600.0f, 500.0f}), plate(2, Outpost::PlayerId{2}, {610.0f, 505.0f})};
+    const Hud::Layout parted = Lay(content, 1920, 1080);
+    Assert::AreEqual(std::size_t{6}, parted.plates.sprites.size());
+    const Hud::Rect& first = parted.plates.sprites[0].area;
+    const Hud::Rect& second = parted.plates.sprites[3].area;
+    Assert::IsTrue(first.top < second.top, L"the higher up");
+    Assert::IsTrue(second.top - first.top >= Hud::PLATE_HEIGHT_UNITS - 1.0f, L"apart by a whole plate");
+
+    content.plates[1].owner = PLAYER;
+    const Hud::Layout kept = Lay(content, 1920, 1080);
+    Assert::AreEqual(5.0f, kept.plates.sprites[3].area.top - kept.plates.sprites[0].area.top, 1.0f, L"one side's are not moved");
+
+    // Under the Ore's panel at the top left, a plate takes no click.
+    content.plates = {plate(5, PLAYER, {60.0f, 80.0f})};
+    const Hud::Layout covered = Lay(content, 1920, 1080);
+    Assert::IsFalse(covered.plateHits.empty());
+    const Hud::Rect& hit = covered.plateHits.front().first;
+    Assert::IsFalse(covered.PlateAt(hit.left + (hit.width / 2.0f), hit.top + (hit.height / 2.0f)).has_value());
   }
 
   // ADR-088 decision 4: the selection's hit points show as a bar under its lines, as long as the share left, red when low.

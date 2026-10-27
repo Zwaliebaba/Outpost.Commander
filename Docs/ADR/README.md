@@ -34,7 +34,7 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-027 | [Every model is low-poly and shows its ridges as thin lit lines](ADR-027-rock-crease-lines.md) | `rock-meshes`, `crease-lines`, `mesh-line-drawing` |
 | ADR-028 | [The grid is pixel-wide lines, and the brightest stars are crosses](ADR-028-vector-grid-and-crosses.md) | `ground-grid`, `star-crosses` |
 | ADR-029 | [Ships bank in their turns, drawn by the client from the snapshots it already has](ADR-029-ship-banking.md) | `ship-banking`, `bank-limits`, `entity-motions` |
-| ADR-030 | [The interface draws several fonts, a few characters past ASCII, sprites and hatching from one atlas](ADR-030-typography-and-sprites.md) | `interface-fonts`, `font-fallback`, `atlas-characters`, `letter-tracking`, `ui-sprites`, `ui-hatching` |
+| ADR-030 | [The interface draws several fonts, a few characters past ASCII, sprites and hatching from one atlas](ADR-030-typography-and-sprites.md) | `interface-fonts`, `font-fallback`, `atlas-characters`, `letter-tracking`, `ui-sprites`, `ui-hatching`, `text-halos` |
 | ADR-031 | [Windows float over the HUD in layers, their state in a manager and their geometry in the layout](ADR-031-floating-windows.md) | `floating-windows`, `window-state`, `window-placement`, `window-layers`, `window-opening` |
 | ADR-032 | [Graphs are built off the order, a large order plans over two ticks, and a search does less](ADR-032-order-ticks.md) | `path-graph-preparation`, `large-order-split`, `path-search-pruning` |
 | ADR-033 | [Research has tiers opened by the Research Lab's levels, and upgrades of one stat add](ADR-033-research-tiers.md) | `research-tiers`, `upgrade-stacking`, `research-effect-kinds`, `balance-check-exemptions` |
@@ -105,3 +105,4 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-098 | [A state crosses as what changed since the one the client holds](ADR-098-a-state-crosses-as-what-changed.md) | `state-changes`, `held-states` |
 | ADR-099 | [The interface's scale and the places of the windows the player moves are kept from one session to the next](ADR-099-interface-settings-kept.md) | `interface-settings-file`, `kept-window-places`, `kept-interface-scale` |
 | ADR-100 | [The canvas: the interface's display list, layout, interaction and widgets are the engine's](ADR-100-the-canvas.md) | `display-list`, `canvas-layout`, `canvas-interaction`, `canvas-window-stack`, `canvas-theme`, `canvas-widgets`, `windows-on-the-canvas`, `windows-table` |
+| ADR-101 | [Plates over the fleets on the screen](ADR-101-plates-over-the-fleets.md) | `screen-fleets`, `fleet-plates`, `plates-from-view-width` |

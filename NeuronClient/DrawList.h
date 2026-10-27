@@ -27,7 +27,9 @@ struct CanvasRect
   }
 };
 
-// A line of text, in UTF-8, in the atlas's font of index font, with trackingPixels more between each two characters.
+// A line of text, in UTF-8, in the atlas's font of index font, with trackingPixels more between each two characters, and
+// with a halo, its font's halos under it in that color, for text that stands on the scene with no panel behind it
+// (ADR-030 decision 8).
 struct CanvasText
 {
   std::string text;
@@ -36,6 +38,7 @@ struct CanvasText
   DirectX::XMFLOAT4 color{};
   std::size_t font = 0;
   float trackingPixels = 0.0f;
+  std::optional<DirectX::XMFLOAT4> halo;
 };
 
 // The atlas's sprite of index sprite drawn into a rectangle, in the rectangle's color, mirrored when asked (ADR-030).
