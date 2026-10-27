@@ -33,7 +33,8 @@ void Neuron::Interaction::BeginBuild() noexcept
   if (m_dropDown != NO_WIDGET && !m_claimed.contains(m_dropDown))
     m_dropDown = NO_WIDGET;
   m_ids.clear();
-  m_built = std::exchange(m_claimed, {});
+  m_built.swap(m_claimed);
+  m_claimed.clear();
 }
 
 Neuron::WidgetId Neuron::Interaction::IdOf(std::string_view _label) const noexcept
