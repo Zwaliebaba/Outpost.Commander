@@ -26,6 +26,9 @@ constexpr Neuron::WidgetId Named(std::uint64_t _hash) noexcept
 
 void Neuron::Interaction::BeginBuild() noexcept
 {
+  // A field the last build did not build, as one in a window since closed, has given back the keyboard.
+  if (m_focused != NO_WIDGET && !m_claimed.contains(m_focused))
+    m_focused = NO_WIDGET;
   m_ids.clear();
   m_claimed.clear();
 }

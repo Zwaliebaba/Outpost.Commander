@@ -29,7 +29,8 @@ struct FieldStroke
 class Interaction
 {
 public:
-  // Starts a frame's build: no identifier is pushed and none has been claimed.
+  // Starts a frame's build: no identifier is pushed and none has been claimed, and a field the last build did not build no
+  // longer has the keyboard.
   void BeginBuild() noexcept;
   // _label's or _index's identifier under the identifier pushed last, or under none.
   [[nodiscard]] WidgetId IdOf(std::string_view _label) const noexcept;

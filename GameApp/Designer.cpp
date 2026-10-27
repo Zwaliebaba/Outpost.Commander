@@ -100,7 +100,6 @@ void Outpost::Designer::Load(const DesignView& _design) noexcept
   m_module = _design.module;
   m_typed.reset();
   m_retreat.reset();
-  m_editing = false;
 }
 
 Outpost::RetreatThreshold Outpost::Designer::Retreat(const Snapshot& _newest) const noexcept
@@ -218,43 +217,10 @@ std::vector<Outpost::QueueShipCommand> Outpost::Designer::TakeQueueCommands(cons
   return queues;
 }
 
-void Outpost::Designer::BeginEditing(const Snapshot& _newest)
+std::optional<Outpost::SaveDesignCommand> Outpost::Designer::EnterName(const Snapshot& _newest)
 {
-  if (!m_typed.has_value())
-    m_typed = Name(_newest);
-  m_editing = true;
-}
-
-std::optional<Outpost::SaveDesignCommand> Outpost::Designer::Edit(const Neuron::InputEvent& _event, const Snapshot& _newest)
-{
-  if (!m_editing)
-    return std::nullopt;
-  std::string& typed = m_typed.has_value() ? *m_typed : m_typed.emplace();
-  if (_event.kind == Neuron::InputEventKind::Character)
-  {
-    // Only what the HUD's font holds (ADR-015); control characters come as their keys below.
-    if (_event.character >= ' ' && _event.character <= '~' && typed.size() < DESIGN_NAME_LIMIT)
-      typed += static_cast<char>(_event.character);
-    return std::nullopt;
-  }
-  if (_event.kind != Neuron::InputEventKind::KeyDown)
-    return std::nullopt;
-  if (_event.key == VK_BACK && !typed.empty())
-  {
-    typed.pop_back();
-  }
-  else if (_event.key == VK_ESCAPE)
-  {
+  std::optional<SaveDesignCommand> save = SaveCommand(_newest);
+  if (save.has_value())
     m_typed.reset();
-    m_editing = false;
-  }
-  else if (_event.key == VK_RETURN)
-  {
-    m_editing = false;
-    std::optional<SaveDesignCommand> save = SaveCommand(_newest);
-    if (save.has_value())
-      m_typed.reset();
-    return save;
-  }
-  return std::nullopt;
+  return save;
 }

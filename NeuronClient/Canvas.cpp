@@ -43,9 +43,9 @@ std::size_t Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, La
   (void)m_tree.Add({.heightUnits = m_theme.titleBarUnits});
   (void)m_tree.Begin(LayoutKind::Column, _body);
   m_interaction.PushId(_window);
-  m_windows.push_back(_window);
+  m_windows.emplace_back(_window, frame);
   m_draws.emplace_back(
-    [this, frame, titleBar, closeBox, title = std::move(_title)](DrawList& _list) mutable
+    [this, frame, title = std::move(_title)](DrawList& _list) mutable
     {
       const float scale = Scale();
       const CanvasRect body = RectOf(frame, m_theme.windowColor);
@@ -62,8 +62,6 @@ std::size_t Neuron::Canvas::BeginWindow(WidgetId _window, std::string _title, La
         _list.texts.push_back({std::move(title), body.left + (m_theme.titleLeftUnits * scale), body.top + (m_theme.titleTopUnits * scale),
                                m_theme.titleTextColor, m_theme.titleFont, m_theme.titleTrackingUnits * scale});
       Corners(_list, body);
-      _list.regions.push_back({.area = bar, .widget = titleBar});
-      _list.regions.push_back({.area = close, .widget = closeBox});
     });
   return frame;
 }
@@ -74,7 +72,22 @@ void Neuron::Canvas::EndWindow()
   m_tree.End();
   m_tree.End();
   m_interaction.PopId();
+  const WidgetId window = m_windows.back().first;
+  const std::size_t frame = m_windows.back().second;
   m_windows.pop_back();
+  // The title bar's and the close box's regions after what the window holds, so that a widget on the title bar, such as an
+  // arrow, takes a press before the bar does.
+  m_draws.emplace_back(
+    [this, frame, titleBar = TitleBarOf(window), closeBox = CloseBoxOf(window)](DrawList& _list)
+    {
+      const CanvasRect body = RectOf(frame, m_theme.windowColor);
+      const float titleHeight = m_theme.titleBarUnits * Scale();
+      _list.regions.push_back(
+        {.area = {body.left, body.top, body.width - titleHeight, titleHeight, m_theme.titleBarColor, CanvasFill::Hatched},
+         .widget = titleBar});
+      _list.regions.push_back(
+        {.area = {body.left + body.width - titleHeight, body.top, titleHeight, titleHeight, m_theme.closeBoxColor}, .widget = closeBox});
+    });
 }
 
 Neuron::WidgetId Neuron::Canvas::TitleBarOf(WidgetId _window) const noexcept
@@ -107,13 +120,14 @@ void Neuron::Canvas::EndPanel()
 
 std::size_t Neuron::Canvas::BeginBox(const BoxLook& _look, const LayoutStyle& _style)
 {
-  return OpenBox(NO_WIDGET, _look, NO_PAYLOAD, _style);
+  return OpenBox(NO_WIDGET, _look, NO_PAYLOAD, _style, CardPress::Pressed);
 }
 
-Neuron::WidgetId Neuron::Canvas::BeginCard(std::string_view _id, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style)
+Neuron::WidgetId Neuron::Canvas::BeginCard(std::string_view _id, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style,
+                                           CardPress _press)
 {
   const WidgetId card = Claim(_id);
-  (void)OpenBox(card, _look, _payload, _style);
+  (void)OpenBox(card, _look, _payload, _style, _press);
   return card;
 }
 
@@ -314,25 +328,29 @@ Neuron::FieldEnd Neuron::Canvas::TextField(std::string_view _id, std::string& _t
     [this, node, field, focused, _valid, shown = focused ? _text + "_" : _text](DrawList& _list)
     {
       const LayoutNode& box = m_tree.Node(node);
+      const LayoutEdges& padding = box.style.padding;
       const CanvasRect face = RectOf(node, m_theme.fieldColor);
       _list.panels.push_back(face);
       _list.regions.push_back({.area = face, .widget = field});
       Outline(_list, box.leftUnits, box.topUnits, box.widthUnits, box.heightUnits, focused ? m_theme.pickedEdgeColor : m_theme.edgeColor);
-      Text(_list, m_metrics.Fit(m_theme.nameFont, shown, box.widthUnits - (2.0f * m_theme.buttonInsetUnits)),
-           box.leftUnits + m_theme.buttonInsetUnits, box.topUnits + ((box.heightUnits - m_theme.nameLineUnits) / 2.0f),
-           _valid ? m_theme.textColor : m_theme.warningColor, m_theme.nameFont);
+      const float contentHeight = box.heightUnits - padding.top - padding.bottom;
+      Text(_list, m_metrics.Fit(m_theme.nameFont, shown, box.widthUnits - padding.left - padding.right - (2.0f * m_theme.buttonInsetUnits)),
+           box.leftUnits + padding.left + m_theme.buttonInsetUnits,
+           box.topUnits + padding.top + ((contentHeight - m_theme.nameLineUnits) / 2.0f), _valid ? m_theme.textColor : m_theme.warningColor,
+           m_theme.nameFont);
     });
   return end;
 }
 
-// A box's face, its hatch over it, the region a card takes a press in, and its edge, in the order the HUD's helpers draw a
-// card.
-std::size_t Neuron::Canvas::OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style)
+// A box's face, its hatch over it, the region a card takes a press in or answers the pointer in, and its edge, in the order
+// the HUD's helpers draw a card.
+std::size_t Neuron::Canvas::OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style,
+                                    CardPress _press)
 {
   ASSERT(MayFill(m_theme, _look.face) && MayFill(m_theme, _look.edge) && (!_look.hatch.has_value() || MayFill(m_theme, *_look.hatch)));
   const std::size_t box = m_tree.Begin(LayoutKind::Column, _style);
   m_draws.emplace_back(
-    [this, box, _widget, look = _look, _payload](DrawList& _list)
+    [this, box, _widget, look = _look, _payload, _press](DrawList& _list)
     {
       const LayoutNode& node = m_tree.Node(box);
       const CanvasRect face = RectOf(box, look.face);
@@ -340,7 +358,7 @@ std::size_t Neuron::Canvas::OpenBox(WidgetId _widget, const BoxLook& _look, std:
       if (look.hatch.has_value())
         _list.panels.push_back(RectOf(box, *look.hatch, CanvasFill::Hatched));
       if (_payload != NO_PAYLOAD)
-        _list.regions.push_back({.area = face, .widget = _widget, .payload = _payload});
+        _list.regions.push_back({.area = face, .widget = _widget, .payload = _payload, .hoverOnly = _press == CardPress::Previewed});
       Outline(_list, node.leftUnits, node.topUnits, node.widthUnits, node.heightUnits, look.edge);
     });
   return box;

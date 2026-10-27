@@ -603,7 +603,6 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   panel.built = target != nullptr ? target->shipsBuilt : 0;
   panel.ore = _newest.ore;
   panel.name = _designer.Name(_newest);
-  panel.editing = _designer.IsEditing();
   panel.nameValid = Outpost::IsValidDesignName(panel.name);
 
   const Outpost::DesignView* match = _designer.Match(_newest);
@@ -1008,6 +1007,87 @@ constexpr float SMALL_BUTTON_TEXT_TOP = 4.0f;
 // A key's cap on a button (ADR-068 decision 4), and how far down it the letter's line starts.
 constexpr float KEY_CAP_UNITS = 20.0f;
 constexpr float KEY_CAP_TEXT_TOP = 2.0f;
+
+// The header's queue: its slots, ending a little short of the Ore's box, and its label over them.
+constexpr float DESIGNER_SLOT_UNITS = 30.0f;
+constexpr float DESIGNER_SLOT_HEIGHT = 24.0f;
+constexpr float DESIGNER_SLOT_SPACING = 3.0f;
+constexpr float DESIGNER_SLOTS_LEFT = DESIGNER_WIDTH - DESIGNER_INSET - ORE_BOX_WIDTH - 14.0f -
+                                      (static_cast<float>(Outpost::QUEUE_LIMIT) * (DESIGNER_SLOT_UNITS + DESIGNER_SLOT_SPACING)) +
+                                      DESIGNER_SLOT_SPACING;
+constexpr float DESIGNER_QUEUE_TOP = 12.0f;
+// The ships built, ending this far short of the slots, on the title's line.
+constexpr float DESIGNER_BUILT_GAP = 12.0f;
+constexpr float DESIGNER_BUILT_TOP = 44.0f;
+// The target Shipyard's room between its arrows, short of the queue by what "· DESIGNER" takes.
+constexpr float DESIGNER_SHIPYARD_ROOM = DESIGNER_SLOTS_LEFT - DESIGNER_INSET - 120.0f;
+// The name field: its label, the name after it, a unit under the field's middle, and its count at its right; and Save.
+constexpr float NAME_LABEL_LEFT = 12.0f;
+constexpr float NAME_LABEL_TOP = 13.0f;
+constexpr float NAME_TEXT_LEFT = 66.0f;
+constexpr float NAME_TEXT_TOP = 9.0f;
+constexpr float NAME_COUNT_TOP = 12.0f;
+constexpr float SAVE_WIDTH = 68.0f;
+constexpr float SAVE_GAP = 8.0f;
+constexpr float SAVE_TEXT_LEFT = 12.0f;
+// A saved design's chip: its name and its code, inset from its sides, the code a unit lower; the label before them, and
+// the arrows that scroll them at the row's right.
+constexpr float CHIP_GAP = 6.0f;
+constexpr float CHIP_INSET = 8.0f;
+constexpr float CHIP_TEXT_TOP = 6.0f;
+constexpr float CHIP_LABEL_TOP = 7.0f;
+constexpr float CHIP_ARROW_GAP = 4.0f;
+// A slot's label and pick down its row, and its divider's room above and below.
+constexpr float SLOT_LABEL_TOP = 21.0f;
+constexpr float SLOT_PICK_TOP = 39.0f;
+constexpr float SLOT_DIVIDER_INSET = 6.0f;
+// The three part cards and their gaps, which run 10 units into the window's inset, 14 from its edge (ADR-062 decision 4).
+constexpr float CARDS_WIDTH = (static_cast<float>(CARDS_PER_LINE) * CARD_WIDTH) + (static_cast<float>(CARDS_PER_LINE - 1) * CARD_GAP);
+// A part card's name, its cost a little lower, and its lock's box down the lock's line.
+constexpr float CARD_NAME_TOP = 8.0f;
+constexpr float CARD_COST_TOP = 11.0f;
+constexpr float CARD_LOCK_BOX_UNITS = 10.0f;
+constexpr float CARD_LOCK_BOX_TOP = 2.0f;
+// A bar's row: its label a little down, its track, and its value's unit after the value.
+constexpr float BAR_LABEL_TOP = 2.0f;
+constexpr float BAR_TOP = 6.0f;
+constexpr float BAR_HEIGHT = 7.0f;
+constexpr float BAR_UNIT_GAP = 6.0f;
+// A damage card: its hull and armor, its figure for a ship, how many a splash reaches and the change above the figure's
+// line, its rating's bar, and its figure per 100 Ore, each from the card's top-left; and the hint under the cards.
+constexpr float DAMAGE_WIDTH = DESIGNER_WIDTH - DESIGNER_INSET - DAMAGE_LEFT;
+constexpr float DAMAGE_INSET = 10.0f;
+constexpr float DAMAGE_RIGHT_INSET = 8.0f;
+constexpr float DAMAGE_HULL_TOP = 8.0f;
+constexpr float DAMAGE_ARMOR_TOP = 11.0f;
+constexpr float DAMAGE_FIGURE_TOP = 30.0f;
+constexpr float DAMAGE_REACH_TOP = 28.0f;
+constexpr float DAMAGE_CHANGE_TOP = 44.0f;
+constexpr float DAMAGE_BAR_TOP = 66.0f;
+constexpr float DAMAGE_BAR_HEIGHT = 4.0f;
+constexpr float DAMAGE_PER_ORE_TOP = 76.0f;
+constexpr float DAMAGE_HINT_GAP = 10.0f;
+// The footer: Rename, the retreat's label over its row of three, the stepper and its count, and Queue, which takes the
+// rest; each one's text from its top-left.
+constexpr float RENAME_WIDTH = 90.0f;
+constexpr float RENAME_TEXT_LEFT = 14.0f;
+constexpr float RENAME_TEXT_TOP = 16.0f;
+constexpr float RETREAT_LEFT = DESIGNER_INSET + 102.0f;
+constexpr float RETREAT_WIDTH = 206.0f;
+constexpr float RETREAT_CELLS_TOP = 18.0f;
+constexpr float STEPPER_LEFT = 346.0f;
+constexpr float STEP_WIDTH = 36.0f;
+constexpr float COUNT_WIDTH = 42.0f;
+constexpr float STEP_TEXT_LEFT = 13.0f;
+constexpr float COUNT_TEXT_LEFT = 10.0f;
+constexpr float FOOTER_TEXT_TOP = 13.0f;
+constexpr float QUEUE_LEFT = 468.0f;
+constexpr float QUEUE_TEXT_LEFT = 18.0f;
+constexpr float QUEUE_RIGHT_INSET = 16.0f;
+// Queue's label, up to 27 units in the title face, ends above the detail's line at either scale's rounding (ADR-061).
+constexpr float QUEUE_LABEL_TOP = 2.0f;
+constexpr float QUEUE_DETAIL_TOP = 31.0f;
+constexpr float QUEUE_COST_TOP = 10.0f;
 
 // The mockup's colors (owner, 2026-10-03), sampled from it and made linear, as the render target
 // encodes them to sRGB. Those raised so that every text stands at 4.5:1 or more against its panel say so (ADR-062).
@@ -1441,7 +1521,6 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   paint.OreBox(_panel.ore, DESIGNER_WIDTH - DESIGNER_INSET);
 
   // The name, its count against the limit, and Save at the row's right end.
-  constexpr float SAVE_WIDTH = 68.0f;
   constexpr float SAVE_LEFT = DESIGNER_WIDTH - DESIGNER_INSET - SAVE_WIDTH;
   const float fieldWidth = SAVE_LEFT - DESIGNER_INSET - 8.0f;
   const Hud::Rect field = paint.Panel(DESIGNER_INSET, NAME_ROW_TOP, fieldWidth, NAME_ROW_HEIGHT, FIELD_COLOR);
@@ -1621,16 +1700,10 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   // The design's retreat, between Rename and the stepper: RETREAT over a row of three, its setting lit, each a press that
   // sets it (ADR-088 decision 3).
   {
-    constexpr float RETREAT_LEFT = DESIGNER_INSET + 102.0f;
-    constexpr float RETREAT_WIDTH = 206.0f;
-    constexpr float RETREAT_CELLS_TOP = 18.0f;
     paint.Text("RETREAT", RETREAT_LEFT, footer, ROW_LABEL_COLOR, Hud::Typeface::Label, tracking);
     RetreatRow(paint, RETREAT_LEFT, footer + RETREAT_CELLS_TOP, RETREAT_WIDTH, FOOTER_HEIGHT - RETREAT_CELLS_TOP, _panel.retreat,
                Hud::ActionKind::DesignRetreat, Hud::Typeface::Label, tracking, std::nullopt);
   }
-  constexpr float STEPPER_LEFT = 346.0f;
-  constexpr float STEP_WIDTH = 36.0f;
-  constexpr float COUNT_WIDTH = 42.0f;
   const auto step = [&](std::string _mark, float _left, bool _enabled, Hud::ActionKind _kind)
   {
     const Hud::Rect face = paint.Panel(_left, footer, STEP_WIDTH, FOOTER_HEIGHT, _enabled ? CARD_COLOR : FIELD_COLOR);
@@ -1645,7 +1718,6 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   paint.Text(std::format("{}{}", TIMES, _panel.count), STEPPER_LEFT + STEP_WIDTH + 10.0f, footer + 13.0f, TEXT_COLOR, Hud::Typeface::Name);
   step("+", STEPPER_LEFT + STEP_WIDTH + COUNT_WIDTH, _panel.canMore, Hud::ActionKind::MoreShips);
   {
-    constexpr float QUEUE_LEFT = 468.0f;
     const float queueWidth = DESIGNER_WIDTH - DESIGNER_INSET - QUEUE_LEFT;
     const Hud::Button& queue = _panel.queue;
     const Hud::Rect face = paint.Panel(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, queue.enabled ? QUEUE_COLOR : FIELD_COLOR);
@@ -1800,6 +1872,14 @@ std::uint32_t PressOf(Hud::Layout& _layout, const Hud::Action& _action)
   return static_cast<std::uint32_t>(_layout.actions.size() - 1);
 }
 
+// A locked part's card's answer to the pointer: _action at its place among the layout's previews, which the card's region
+// names by its payload (ADR-017 decision 7).
+std::uint32_t PreviewOf(Hud::Layout& _layout, const Hud::Action& _action)
+{
+  _layout.previews.emplace_back(Hud::Rect{}, _action);
+  return static_cast<std::uint32_t>(_layout.previews.size() - 1);
+}
+
 // _button as the canvas draws it (ADR-043 decision 4), naming its action's place among the layout's actions while it is
 // enabled: its label up to a '|', and after one its cost, as Ore's gem and the figure. A '|' gives the button a cost's
 // place, which its reason takes while it is disabled, even with no cost after it; a button without one shows no reason.
@@ -1847,7 +1927,8 @@ std::size_t BeginWindowAt(Neuron::Canvas& _canvas, Neuron::Interaction& _interac
 }
 
 // Draws the window built on _canvas into the layout, and keeps beside it what OpenWindow keeps: the rectangle of each
-// button among the layout's actions from _firstAction, and the window's frame, title bar, close box and corner.
+// button among the layout's actions from _firstAction, and of each card among its previews, and the window's frame, title
+// bar, close box and corner.
 void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _frame, Outpost::WindowKind _kind, std::size_t _firstAction)
 {
   const std::size_t firstRegion = _layout.regions.size();
@@ -1855,8 +1936,8 @@ void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _fr
   for (std::size_t region = firstRegion; region < _layout.regions.size(); ++region)
   {
     const Neuron::CanvasRegion& pressed = _layout.regions[region];
-    if (!pressed.hoverOnly && pressed.payload != Neuron::NO_PAYLOAD)
-      _layout.actions[pressed.payload].first = pressed.area;
+    if (pressed.payload != Neuron::NO_PAYLOAD)
+      (pressed.hoverOnly ? _layout.previews : _layout.actions)[pressed.payload].first = pressed.area;
   }
   const std::size_t panel = _layout.layers.back().firstPanel;
   const Neuron::LayoutNode& frame = _canvas.Tree().Node(_frame);
@@ -2141,6 +2222,8 @@ void LayBuild(const WindowBench& _bench, const Hud::BuildPanel& _panel, const Wi
             });
 }
 
+void LayDesigner(const WindowBench& _bench, const Hud::DesignerPanel& _panel, const WindowPlace& _place);
+
 // How large _window stands holding its most, in the match _newest is of, or the Controls window outside one, for WindowsFit
 // (ADR-070): the away window with as many lines as it shows, the build window with every structure the match offers
 // (ADR-031 decision 6), and the designer with every component of the match, locked or not, as tall as it grows. The
@@ -2166,7 +2249,8 @@ WindowSize LongestOf(Outpost::WindowKind _window, const Outpost::Snapshot* _newe
   {
     Outpost::Designer designer;
     designer.Update(*_newest);
-    return {.widthUnits = DESIGNER_WIDTH, .heightUnits = ExtentOf(DescribeDesigner(*_newest, designer, std::nullopt)).height};
+    const Hud::DesignerPanel panel = DescribeDesigner(*_newest, designer, std::nullopt);
+    return BuiltSize([&](const WindowBench& _bench) { LayDesigner(_bench, panel, corner); });
   }
   case Outpost::WindowKind::Research:
   case Outpost::WindowKind::Production:
@@ -2245,15 +2329,37 @@ void OreAmount(Neuron::Canvas& _canvas, std::int32_t _ore, Hud::Typeface _face, 
   _canvas.Tree().End();
 }
 
-// A window's header (ADR-068 decision 1): the hatched band under the title bar and its edge at its foot; its
-// subject in the title face, between the arrows that step it when it is stepped through; and the player's Ore in its box.
-void Header(Neuron::Canvas& _canvas, Hud::Layout& _layout, const std::string& _subject, std::int32_t _ore, float _widthUnits,
-            std::optional<std::pair<Hud::Action, Hud::Action>> _steps = std::nullopt, bool _canStep = false)
+// A window's header band (ADR-068 decision 1): the hatched band under the title bar and its edge at its foot, a stack that
+// takes what is built at its places in it until the tree's End.
+void BeginHeader(Neuron::Canvas& _canvas, float _widthUnits)
 {
   Neuron::LayoutTree& tree = _canvas.Tree();
   const std::size_t band = tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = DESIGNER_HEADER - Hud::TITLE_BAR_UNITS});
   _canvas.Fill(band, TITLE_HATCH_COLOR, Neuron::CanvasFill::Hatched);
   _canvas.Fill(tree.Add({.widthUnits = _widthUnits, .heightUnits = LINE_UNITS, .anchor = Neuron::LayoutAnchor::BottomLeft}), EDGE_COLOR);
+}
+
+// The player's Ore in its box at a header's right.
+void OreBox(Neuron::Canvas& _canvas, std::int32_t _ore)
+{
+  (void)_canvas.BeginBox({.face = FIELD_COLOR, .edge = EDGE_COLOR},
+                         {.widthUnits = ORE_BOX_WIDTH,
+                          .heightUnits = ORE_BOX_HEIGHT,
+                          .padding = {.top = LINE_UNITS, .right = 10.0f},
+                          .alignX = Neuron::LayoutAlign::End,
+                          .anchor = Neuron::LayoutAnchor::TopRight,
+                          .margin = {.top = ORE_BOX_TOP - Hud::TITLE_BAR_UNITS, .right = WINDOW_INSET}});
+  OreAmount(_canvas, _ore, Hud::Typeface::Title, GOLD_COLOR);
+  _canvas.EndBox();
+}
+
+// A window's header: its band; its subject in the title face, between the arrows that step it when it is stepped through;
+// and the player's Ore in its box.
+void Header(Neuron::Canvas& _canvas, Hud::Layout& _layout, const std::string& _subject, std::int32_t _ore, float _widthUnits,
+            std::optional<std::pair<Hud::Action, Hud::Action>> _steps = std::nullopt, bool _canStep = false)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  BeginHeader(_canvas, _widthUnits);
   const float room = _widthUnits - (2.0f * WINDOW_INSET) - ORE_BOX_WIDTH - FIT_GAP_UNITS;
   if (_steps.has_value())
   {
@@ -2273,15 +2379,7 @@ void Header(Neuron::Canvas& _canvas, Hud::Layout& _layout, const std::string& _s
                          .anchor = Neuron::LayoutAnchor::TopLeft,
                          .margin = {.left = WINDOW_INSET, .top = HEADER_SUBJECT_TOP - Hud::TITLE_BAR_UNITS}});
   }
-  (void)_canvas.BeginBox({.face = FIELD_COLOR, .edge = EDGE_COLOR},
-                         {.widthUnits = ORE_BOX_WIDTH,
-                          .heightUnits = ORE_BOX_HEIGHT,
-                          .padding = {.top = LINE_UNITS, .right = 10.0f},
-                          .alignX = Neuron::LayoutAlign::End,
-                          .anchor = Neuron::LayoutAnchor::TopRight,
-                          .margin = {.top = ORE_BOX_TOP - Hud::TITLE_BAR_UNITS, .right = WINDOW_INSET}});
-  OreAmount(_canvas, _ore, Hud::Typeface::Title, GOLD_COLOR);
-  _canvas.EndBox();
+  OreBox(_canvas, _ore);
   tree.End();
 }
 
@@ -2513,6 +2611,423 @@ void LayResearch(const WindowBench& _bench, const Hud::ResearchPanel& _panel, co
       QueueRows(_canvas, _panel.queue);
       tree.End();
     });
+}
+
+// The designer on the canvas (ADR-100), from the top-left of the window as the owner's mockup places it: the header under
+// the title bar, then the name, the saved designs, a row for each slot, the bars and the damage cards beside them, and the
+// footer, each under the one before.
+
+// A label in the label face, tracked, on a line of _lineUnits.
+Neuron::LayoutText TrackedText(std::string _text, float _lineUnits)
+{
+  return {
+    .text = std::move(_text), .font = Hud::FontOf(Hud::Typeface::Label), .lineUnits = _lineUnits, .trackingUnits = LABEL_TRACKING_UNITS};
+}
+
+// The designer's header: the target Shipyard between the arrows that step it, in the title bar, and the window's name
+// after it; the title; the Shipyard's queue over its slots and the ships it has built beside them; and the Ore.
+void DesignerHeader(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::DesignerPanel& _panel)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  BeginHeader(_canvas, DESIGNER_WIDTH);
+  const std::uint32_t previous = _panel.hasShipyard ? PressOf(_layout, {.kind = Hud::ActionKind::PreviousShipyard}) : Neuron::NO_PAYLOAD;
+  const std::uint32_t next = _panel.hasShipyard ? PressOf(_layout, {.kind = Hud::ActionKind::NextShipyard}) : Neuron::NO_PAYLOAD;
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = ARROW_GAP_UNITS,
+                                             .anchor = Neuron::LayoutAnchor::TopLeft,
+                                             .margin = {.left = DESIGNER_INSET, .top = ARROWS_IN_TITLE_TOP - Hud::TITLE_BAR_UNITS}});
+  _canvas.Stepper("shipyard", TrackedText(_panel.shipyard, NAME_LINE_UNITS), HEADER_LABEL_COLOR, DESIGNER_SHIPYARD_ROOM,
+                  WINDOW_HEADER_TOP - ARROWS_IN_TITLE_TOP, _panel.hasShipyard, previous, next);
+  (void)_canvas.Label(TrackedText(std::format("{}DESIGNER", DOT.substr(1)), NAME_LINE_UNITS), HEADER_LABEL_COLOR,
+                      {.padding = {.top = WINDOW_HEADER_TOP - ARROWS_IN_TITLE_TOP}});
+  tree.End();
+  (void)_canvas.Label(
+    LineText("SHIP DESIGN", Hud::Typeface::Title, TITLE_LINE_UNITS), TEXT_COLOR,
+    {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = DESIGNER_INSET, .top = HEADER_SUBJECT_TOP - Hud::TITLE_BAR_UNITS}});
+  (void)_canvas.Label(
+    TrackedText(QueueLabel(_panel.queued), NAME_LINE_UNITS), HEADER_LABEL_COLOR,
+    {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = DESIGNER_SLOTS_LEFT, .top = DESIGNER_QUEUE_TOP - Hud::TITLE_BAR_UNITS}});
+  (void)_canvas.Label(
+    TrackedText(std::format("BUILT{}{}", DOT, _panel.built), NAME_LINE_UNITS), HEADER_LABEL_COLOR,
+    {.anchor = Neuron::LayoutAnchor::TopRight,
+     .margin = {.top = DESIGNER_BUILT_TOP - Hud::TITLE_BAR_UNITS, .right = DESIGNER_WIDTH - DESIGNER_SLOTS_LEFT + DESIGNER_BUILT_GAP}});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = DESIGNER_SLOT_SPACING,
+                                             .anchor = Neuron::LayoutAnchor::TopLeft,
+                                             .margin = {.left = DESIGNER_SLOTS_LEFT, .top = HEADER_SUBJECT_TOP - Hud::TITLE_BAR_UNITS}});
+  for (std::size_t slot = 0; slot < Outpost::QUEUE_LIMIT; ++slot)
+  {
+    _canvas.Fill(tree.Add({.widthUnits = DESIGNER_SLOT_UNITS, .heightUnits = DESIGNER_SLOT_HEIGHT}),
+                 slot < _panel.queued ? SLOT_FILLED_COLOR : FIELD_COLOR);
+  }
+  tree.End();
+  OreBox(_canvas, _panel.ore);
+  tree.End();
+}
+
+// The name, as the canvas's text field with its label before it and its count against the limit at its right, and Save at
+// the row's right end. What the field did is the layout's, for GameClient to give the designer (ADR-017 decision 8).
+void NameRow(Neuron::Canvas& _canvas, const WindowBench& _bench, const Hud::DesignerPanel& _panel)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  Hud::Layout& layout = *_bench.layout;
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = NAME_ROW_HEIGHT, .gapUnits = SAVE_GAP});
+  (void)tree.Begin(Neuron::LayoutKind::Stack, {.alignX = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
+  (void)_canvas.Label(TrackedText("NAME", NAME_LINE_UNITS), LABEL_COLOR,
+                      {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = NAME_LABEL_LEFT, .top = NAME_LABEL_TOP}});
+  const std::string count = std::format("{}/{}", _panel.name.size(), Outpost::DESIGN_NAME_LIMIT);
+  std::string name = _panel.name;
+  const Neuron::FieldEnd end =
+    _canvas.TextField("name", name, Outpost::DESIGN_NAME_LIMIT, _panel.nameValid,
+                      {.heightUnits = NAME_ROW_HEIGHT,
+                       .padding = {.left = NAME_TEXT_LEFT - BUTTON_INSET,
+                                   .top = (2.0f * NAME_TEXT_TOP) - (NAME_ROW_HEIGHT - NAME_LINE_UNITS),
+                                   .right = _bench.metrics->Width(Hud::Typeface::Figure, count) + FIT_GAP_UNITS}});
+  if (end != Neuron::FieldEnd::Typing || _bench.interaction->Focused() == _bench.interaction->IdOf("name"))
+    layout.typedName = Hud::TypedName{.name = std::move(name), .end = end};
+  (void)_canvas.Label(LineText(count, Hud::Typeface::Figure, FIGURE_LINE_UNITS), LABEL_COLOR,
+                      {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = NAME_COUNT_TOP, .right = NAME_LABEL_LEFT}});
+  tree.End();
+  const Hud::Button& save = _panel.save;
+  (void)_canvas.BeginCard(
+    "save", {.face = save.enabled ? CARD_COLOR : FIELD_COLOR, .edge = save.selected ? QUEUE_EDGE_COLOR : EDGE_COLOR},
+    save.enabled ? PressOf(layout, save.action) : Neuron::NO_PAYLOAD,
+    {.widthUnits = SAVE_WIDTH, .heightUnits = NAME_ROW_HEIGHT, .padding = {.left = SAVE_TEXT_LEFT, .top = NAME_LABEL_TOP}});
+  (void)_canvas.Label(TrackedText(save.label, NAME_LINE_UNITS), save.selected  ? QUEUE_EDGE_COLOR
+                                                                : save.enabled ? TEXT_COLOR
+                                                                               : DIM_TEXT_COLOR);
+  _canvas.EndBox();
+  tree.End();
+}
+
+// The saved designs, as many as fit from the first shown, each a chip with its name and its code, and the arrows that
+// scroll them when they do not all fit.
+void SavedDesigns(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::DesignerPanel& _panel)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = CHIP_HEIGHT, .alignX = Neuron::LayoutAlign::Stretch});
+  (void)_canvas.Label(TrackedText("SAVED", NAME_LINE_UNITS), LABEL_COLOR,
+                      {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.top = CHIP_LABEL_TOP}});
+  (void)tree.Begin(Neuron::LayoutKind::Row,
+                   {.gapUnits = CHIP_GAP, .anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = CHIPS_LEFT - DESIGNER_INSET}});
+  for (std::size_t i = _panel.firstChip, column = 0; i < _panel.chips.size() && column < CHIPS_SHOWN; ++i, ++column)
+  {
+    const Hud::DesignChip& chip = _panel.chips[i];
+    (void)_canvas.BeginCard(std::format("chip {}", i),
+                            {.face = chip.shown ? PICKED_COLOR : CARD_COLOR, .edge = chip.shown ? PICKED_EDGE_COLOR : EDGE_COLOR},
+                            PressOf(_layout, chip.action),
+                            {.widthUnits = CHIP_WIDTH,
+                             .heightUnits = CHIP_HEIGHT,
+                             .padding = {.left = CHIP_INSET, .top = CHIP_TEXT_TOP, .right = CHIP_INSET},
+                             .alignX = Neuron::LayoutAlign::Stretch});
+    (void)tree.Begin(Neuron::LayoutKind::Row, {});
+    (void)_canvas.Label(FittedText(chip.name, Hud::Typeface::Label, NAME_LINE_UNITS), TEXT_COLOR,
+                        {.padding = {.right = FIT_GAP_UNITS}, .grow = 1.0f});
+    (void)_canvas.Label(LineText(chip.code, Hud::Typeface::Detail, NAME_LINE_UNITS), chip.shown ? ACCENT_COLOR : CODE_COLOR,
+                        {.padding = {.top = CHIP_LABEL_TOP - CHIP_TEXT_TOP}});
+    tree.End();
+    _canvas.EndBox();
+  }
+  tree.End();
+  if (_panel.chips.size() > CHIPS_SHOWN)
+  {
+    const bool back = _panel.firstChip > 0;
+    const bool on = _panel.firstChip + CHIPS_SHOWN < _panel.chips.size();
+    const std::uint32_t previous = back ? PressOf(_layout, {.kind = Hud::ActionKind::PreviousDesigns}) : Neuron::NO_PAYLOAD;
+    const std::uint32_t next = on ? PressOf(_layout, {.kind = Hud::ActionKind::NextDesigns}) : Neuron::NO_PAYLOAD;
+    (void)tree.Begin(Neuron::LayoutKind::Row,
+                     {.gapUnits = CHIP_ARROW_GAP, .anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = LINE_UNITS}});
+    (void)_canvas.SmallButton("previous designs", "<", back, previous);
+    (void)_canvas.SmallButton("next designs", ">", on, next);
+    tree.End();
+  }
+  tree.End();
+}
+
+// A part's card (ADR-017 decision 7), a composite of the game's, _heightUnits tall: its name and cost, its numbers, any
+// note, and while research has yet to unlock it, the topic that does at its foot after a lock's box. A locked card is
+// hatched and dimmed, takes no press, and previews what its topic buys under the pointer.
+void PartCardOf(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::PartCard& _card, std::string_view _id, float _heightUnits)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const bool locked = _card.IsLocked();
+  (void)_canvas.BeginCard(_id,
+                          {.face = _card.picked ? PICKED_COLOR
+                                   : locked     ? LOCKED_COLOR
+                                                : CARD_COLOR,
+                           .hatch = locked ? std::optional(LOCKED_HATCH_COLOR) : std::nullopt,
+                           .edge = _card.picked ? PICKED_EDGE_COLOR : EDGE_COLOR},
+                          locked ? PreviewOf(_layout, _card.action) : PressOf(_layout, _card.action),
+                          {.heightUnits = _heightUnits,
+                           .padding = {.left = CARD_TEXT_INSET, .top = CARD_NAME_TOP, .right = CARD_TEXT_INSET},
+                           .alignX = Neuron::LayoutAlign::Stretch},
+                          locked ? Neuron::CardPress::Previewed : Neuron::CardPress::Pressed);
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = CARD_NUMBERS_TOP - CARD_NAME_TOP});
+  (void)_canvas.Label(FittedText(_card.name, Hud::Typeface::Name, NAME_LINE_UNITS), locked ? LOCKED_TEXT_COLOR : TEXT_COLOR,
+                      {.padding = {.right = FIT_GAP_UNITS}, .grow = 1.0f});
+  OreAmount(_canvas, _card.cost, Hud::Typeface::Figure, locked ? LOCKED_TEXT_COLOR : GOLD_COLOR,
+            {.padding = {.top = CARD_COST_TOP - CARD_NAME_TOP}});
+  tree.End();
+  const DirectX::XMFLOAT4& numbersColor = locked ? LOCKED_TEXT_COLOR : NUMBERS_COLOR;
+  (void)_canvas.Label(FittedText(_card.numbers, Hud::Typeface::Detail, CARD_NOTE_TOP - CARD_NUMBERS_TOP), numbersColor);
+  if (!_card.note.empty())
+    (void)_canvas.Label(FittedText(_card.note, Hud::Typeface::Detail, CARD_NOTE_ROOM), numbersColor);
+  if (locked)
+  {
+    (void)tree.Begin(Neuron::LayoutKind::Row, {.widthUnits = CARD_WIDTH - (2.0f * CARD_TEXT_INSET),
+                                               .anchor = Neuron::LayoutAnchor::TopLeft,
+                                               .margin = {.top = _heightUnits - CARD_LOCK_FROM_FOOT - CARD_NAME_TOP}});
+    (void)_canvas.Icon(Hud::SpriteOf(Hud::Sprite::Checkbox), CARD_LOCK_BOX_UNITS, AMBER_COLOR,
+                       {.widthUnits = CARD_LOCK_TEXT_LEFT - CARD_TEXT_INSET, .padding = {.top = CARD_LOCK_BOX_TOP}});
+    (void)_canvas.Label(FittedText(_card.lockedBy, Hud::Typeface::Label, CARD_LOCK_FROM_FOOT), AMBER_COLOR, {.grow = 1.0f});
+    tree.End();
+  }
+  _canvas.EndBox();
+}
+
+// A row for each slot: its label and pick, 18 units apart so that the label's line clears the pick's at 1280x720's
+// rounding, and centered on a line of cards together (ADR-062); a divider; and its cards, three to a line, every one as
+// tall as the tallest, so that a row whose cards have notes is taller (ADR-061).
+void SlotRows(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::DesignerPanel& _panel)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)tree.Begin(Neuron::LayoutKind::Column, {.gapUnits = SLOT_GAP, .alignX = Neuron::LayoutAlign::Stretch});
+  for (std::size_t slot = 0; slot < _panel.slots.size(); ++slot)
+  {
+    const Hud::SlotRow& row = _panel.slots[slot];
+    (void)tree.Begin(Neuron::LayoutKind::Row, {.alignY = Neuron::LayoutAlign::Stretch});
+    (void)tree.Begin(Neuron::LayoutKind::Column, {.widthUnits = SLOT_DIVIDER_LEFT - DESIGNER_INSET,
+                                                  .padding = {.top = SLOT_LABEL_TOP, .right = FIT_GAP_UNITS},
+                                                  .alignX = Neuron::LayoutAlign::Stretch});
+    (void)_canvas.Label(TrackedText(row.label, SLOT_PICK_TOP - SLOT_LABEL_TOP), LABEL_COLOR);
+    (void)_canvas.Label(FittedText(row.picked, Hud::Typeface::Name, NAME_LINE_UNITS), ACCENT_COLOR);
+    tree.End();
+    (void)tree.Begin(Neuron::LayoutKind::Column,
+                     {.widthUnits = CARDS_LEFT - SLOT_DIVIDER_LEFT, .padding = {.top = SLOT_DIVIDER_INSET, .bottom = SLOT_DIVIDER_INSET}});
+    _canvas.Fill(tree.Add({.widthUnits = LINE_UNITS, .grow = 1.0f}), EDGE_COLOR);
+    tree.End();
+    (void)tree.Begin(Neuron::LayoutKind::Grid,
+                     {.widthUnits = CARDS_WIDTH, .gapUnits = CARD_GAP, .alignX = Neuron::LayoutAlign::Stretch, .columns = CARDS_PER_LINE});
+    for (std::size_t card = 0; card < row.cards.size(); ++card)
+      PartCardOf(_canvas, _layout, row.cards[card], std::format("part {} {}", slot, card), CardHeightOf(row));
+    tree.End();
+    tree.End();
+  }
+  tree.End();
+}
+
+// Performance: each number's bar against the best in the game, in room for the six every design has; while a part is
+// hovered, the change it would make, the part of the bar it adds or takes away in the change's color, under what both share.
+void Performance(Neuron::Canvas& _canvas, const Hud::DesignerPanel& _panel)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  constexpr float WIDTH = DAMAGE_LEFT - DESIGNER_INSET;
+  constexpr float BAR_FROM = BAR_LEFT - DESIGNER_INSET;
+  (void)tree.Begin(Neuron::LayoutKind::Column,
+                   {.widthUnits = WIDTH,
+                    .leastHeightUnits = SECTION_LABEL_HEIGHT + (static_cast<float>(BAR_ROWS_OF_EVERY_DESIGN) * BAR_ROW_HEIGHT),
+                    .alignX = Neuron::LayoutAlign::Stretch});
+  (void)_canvas.Label(TrackedText("PERFORMANCE", SECTION_LABEL_HEIGHT), LABEL_COLOR);
+  for (const Hud::StatBar& bar : _panel.bars)
+  {
+    (void)tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = BAR_ROW_HEIGHT});
+    (void)_canvas.Label(LineText(bar.label, Hud::Typeface::Label, BAR_ROW_HEIGHT), ROW_LABEL_COLOR,
+                        {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.top = BAR_LABEL_TOP}});
+    const auto barAt = [&tree](float _share)
+    {
+      return tree.Add({.widthUnits = BAR_WIDTH * _share,
+                       .heightUnits = BAR_HEIGHT,
+                       .anchor = Neuron::LayoutAnchor::TopLeft,
+                       .margin = {.left = BAR_FROM, .top = BAR_TOP}});
+    };
+    _canvas.Fill(barAt(1.0f), BAR_TRACK_COLOR);
+    if (bar.previewShare.has_value() && bar.change != Hud::Change::Same)
+    {
+      _canvas.Fill(barAt(std::max(bar.share, *bar.previewShare)), ChangeColor(bar.change, BAR_FILL_COLOR));
+      _canvas.Fill(barAt(std::min(bar.share, *bar.previewShare)), BAR_FILL_COLOR);
+    }
+    else
+      _canvas.Fill(barAt(bar.share), BAR_FILL_COLOR);
+    (void)_canvas.Label(LineText(bar.previewShare.has_value() ? bar.previewValue : bar.value, Hud::Typeface::Figure, FIGURE_LINE_UNITS),
+                        ChangeColor(bar.change, TEXT_COLOR),
+                        {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.right = DAMAGE_LEFT - BAR_VALUE_RIGHT}});
+    (void)_canvas.Label(
+      LineText(bar.unit, Hud::Typeface::Label, BAR_ROW_HEIGHT), LABEL_COLOR,
+      {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = BAR_VALUE_RIGHT + BAR_UNIT_GAP - DESIGNER_INSET, .top = BAR_LABEL_TOP}});
+    tree.End();
+  }
+  tree.End();
+}
+
+// Damage per second after armor against each hull, a card for each, and the hint under them.
+void Damage(Neuron::Canvas& _canvas, const Hud::DesignerPanel& _panel)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)tree.Begin(Neuron::LayoutKind::Column, {.widthUnits = DAMAGE_WIDTH, .alignX = Neuron::LayoutAlign::Stretch});
+  (void)_canvas.Label(TrackedText(std::format("DAMAGE / S AFTER ARMOR{}VS A FORMATION", DOT), SECTION_LABEL_HEIGHT), LABEL_COLOR);
+  const std::size_t columns = std::max<std::size_t>(1, _panel.damage.size());
+  const auto cards = static_cast<float>(columns);
+  const float cardWidth = (DAMAGE_WIDTH - ((cards - 1.0f) * DAMAGE_CARD_GAP)) / cards;
+  const float inner = cardWidth - (2.0f * DAMAGE_INSET);
+  (void)tree.Begin(
+    Neuron::LayoutKind::Grid,
+    {.leastHeightUnits = DAMAGE_CARD_HEIGHT, .gapUnits = DAMAGE_CARD_GAP, .alignX = Neuron::LayoutAlign::Stretch, .columns = columns});
+  for (const Hud::DamageCard& card : _panel.damage)
+  {
+    (void)_canvas.BeginBox({.face = FIELD_COLOR, .edge = EDGE_COLOR},
+                           {.heightUnits = DAMAGE_CARD_HEIGHT,
+                            .padding = {.left = DAMAGE_INSET, .top = DAMAGE_HULL_TOP, .right = DAMAGE_RIGHT_INSET},
+                            .alignX = Neuron::LayoutAlign::Stretch});
+    const DirectX::XMFLOAT4 changed = ChangeColor(card.change, TEXT_COLOR);
+    (void)tree.Begin(Neuron::LayoutKind::Row, {});
+    (void)_canvas.Label(FittedText(card.hull, Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR,
+                        {.padding = {.right = FIT_GAP_UNITS}, .grow = 1.0f});
+    (void)_canvas.Label(LineText(card.armor, Hud::Typeface::Label, NAME_LINE_UNITS), LABEL_COLOR,
+                        {.padding = {.top = DAMAGE_ARMOR_TOP - DAMAGE_HULL_TOP}});
+    tree.End();
+    // Clear of the hull's line, which the name face sets about 19 units tall, at every scale's rounding.
+    (void)_canvas.Label(LineText(card.perShip, Hud::Typeface::LargeFigure, TITLE_LINE_UNITS), changed,
+                        {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.top = DAMAGE_FIGURE_TOP - DAMAGE_HULL_TOP}});
+    // How many ships a splash reaches, at the card's right above the change.
+    if (!card.reach.empty())
+    {
+      (void)_canvas.Label(LineText(card.reach, Hud::Typeface::Label, NAME_LINE_UNITS), LABEL_COLOR,
+                          {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = DAMAGE_REACH_TOP - DAMAGE_HULL_TOP}});
+    }
+    // A hovered part's change, at the card's right on the large figure's line.
+    if (!card.perShipChange.empty())
+    {
+      (void)_canvas.Label(LineText(card.perShipChange, Hud::Typeface::Figure, FIGURE_LINE_UNITS), changed,
+                          {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = DAMAGE_CHANGE_TOP - DAMAGE_HULL_TOP}});
+    }
+    const auto barAt = [&tree, inner](float _share)
+    {
+      return tree.Add({.widthUnits = inner * _share,
+                       .heightUnits = DAMAGE_BAR_HEIGHT,
+                       .anchor = Neuron::LayoutAnchor::TopLeft,
+                       .margin = {.top = DAMAGE_BAR_TOP - DAMAGE_HULL_TOP}});
+    };
+    _canvas.Fill(barAt(1.0f), BAR_TRACK_COLOR);
+    _canvas.Fill(barAt(card.share), RatingColor(card.rating));
+    (void)_canvas.Label(
+      FittedText(card.perOre, Hud::Typeface::Detail, FIGURE_LINE_UNITS), SOFT_COLOR,
+      {.mostWidthUnits = inner, .anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.top = DAMAGE_PER_ORE_TOP - DAMAGE_HULL_TOP}});
+    _canvas.EndBox();
+  }
+  tree.End();
+  (void)_canvas.Label(FittedText(_panel.hint, Hud::Typeface::Detail, FIGURE_LINE_UNITS), LABEL_COLOR,
+                      {.padding = {.top = DAMAGE_HINT_GAP}});
+  tree.End();
+}
+
+// A card of the footer, _widthUnits wide, with _text at _left and _top in it: its face a card's while it can be pressed and
+// a field's while not, and its edge the windows'.
+void FooterCard(Neuron::Canvas& _canvas, Hud::Layout& _layout, std::string_view _id, Neuron::LayoutText _text, bool _enabled,
+                const Hud::Action& _action, float _widthUnits, float _left, float _top)
+{
+  (void)_canvas.BeginCard(_id, {.face = _enabled ? CARD_COLOR : FIELD_COLOR, .edge = EDGE_COLOR},
+                          _enabled ? PressOf(_layout, _action) : Neuron::NO_PAYLOAD,
+                          {.widthUnits = _widthUnits, .heightUnits = FOOTER_HEIGHT, .padding = {.left = _left, .top = _top}});
+  (void)_canvas.Label(std::move(_text), _enabled ? TEXT_COLOR : DIM_TEXT_COLOR);
+  _canvas.EndBox();
+}
+
+// The bottom row: Rename; the design's retreat, RETREAT over a row of three, its setting lit, each a press that sets it
+// (ADR-088 decision 3); the stepper of how many ships Queue asks for; and Queue, hatched, with the build time of one ship
+// and the cost of all.
+void Footer(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::DesignerPanel& _panel)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = FOOTER_HEIGHT});
+  FooterCard(_canvas, _layout, "rename", TrackedText(_panel.rename.label, NAME_LINE_UNITS), _panel.rename.enabled, _panel.rename.action,
+             RENAME_WIDTH, RENAME_TEXT_LEFT, RENAME_TEXT_TOP);
+  (void)tree.Add({.widthUnits = RETREAT_LEFT - DESIGNER_INSET - RENAME_WIDTH});
+  (void)tree.Begin(Neuron::LayoutKind::Column, {.widthUnits = RETREAT_WIDTH});
+  (void)_canvas.Label(TrackedText("RETREAT", RETREAT_CELLS_TOP), ROW_LABEL_COLOR);
+  std::array<Neuron::LayoutText, RETREAT_CHOICES.size()> words;
+  std::array<std::uint32_t, RETREAT_CHOICES.size()> payloads{};
+  for (std::size_t i = 0; i < RETREAT_CHOICES.size(); ++i)
+  {
+    words[i] =
+      TrackedText(Capitals(RetreatCell(RETREAT_CHOICES[i])), std::round(Hud::FaceUnits(Hud::Typeface::Label) * RETREAT_LINE_SHARE));
+    payloads[i] = PressOf(_layout, {.kind = Hud::ActionKind::DesignRetreat, .retreat = RETREAT_CHOICES[i]});
+  }
+  const auto picked = std::ranges::find(RETREAT_CHOICES, _panel.retreat);
+  _canvas.Cells("retreat", words, payloads,
+                picked == RETREAT_CHOICES.end() ? std::nullopt : std::optional(static_cast<std::size_t>(picked - RETREAT_CHOICES.begin())),
+                FOOTER_HEIGHT - RETREAT_CELLS_TOP, {.widthUnits = RETREAT_WIDTH, .gapUnits = RETREAT_CELL_GAP_UNITS});
+  tree.End();
+  (void)tree.Add({.widthUnits = STEPPER_LEFT - RETREAT_LEFT - RETREAT_WIDTH});
+  FooterCard(_canvas, _layout, "fewer", LineText("-", Hud::Typeface::Name, NAME_LINE_UNITS), _panel.canFewer,
+             {.kind = Hud::ActionKind::FewerShips}, STEP_WIDTH, STEP_TEXT_LEFT, FOOTER_TEXT_TOP);
+  (void)_canvas.BeginBox(
+    {.face = FIELD_COLOR, .edge = EDGE_COLOR},
+    {.widthUnits = COUNT_WIDTH, .heightUnits = FOOTER_HEIGHT, .padding = {.left = COUNT_TEXT_LEFT, .top = FOOTER_TEXT_TOP}});
+  (void)_canvas.Label(LineText(std::format("{}{}", TIMES, _panel.count), Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR);
+  _canvas.EndBox();
+  FooterCard(_canvas, _layout, "more", LineText("+", Hud::Typeface::Name, NAME_LINE_UNITS), _panel.canMore,
+             {.kind = Hud::ActionKind::MoreShips}, STEP_WIDTH, STEP_TEXT_LEFT, FOOTER_TEXT_TOP);
+  (void)tree.Add({.widthUnits = QUEUE_LEFT - STEPPER_LEFT - (2.0f * STEP_WIDTH) - COUNT_WIDTH});
+  const Hud::Button& queue = _panel.queue;
+  const DirectX::XMFLOAT4& color = queue.enabled ? QUEUE_TEXT_COLOR : DIM_TEXT_COLOR;
+  (void)_canvas.BeginCard("queue",
+                          {.face = queue.enabled ? QUEUE_COLOR : FIELD_COLOR,
+                           .hatch = queue.enabled ? std::optional(QUEUE_HATCH_COLOR) : std::nullopt,
+                           .edge = queue.enabled ? QUEUE_EDGE_COLOR : EDGE_COLOR},
+                          queue.enabled ? PressOf(_layout, queue.action) : Neuron::NO_PAYLOAD,
+                          {.widthUnits = DESIGNER_WIDTH - DESIGNER_INSET - QUEUE_LEFT,
+                           .heightUnits = FOOTER_HEIGHT,
+                           .padding = {.left = QUEUE_TEXT_LEFT, .top = QUEUE_LABEL_TOP, .right = QUEUE_RIGHT_INSET},
+                           .alignX = Neuron::LayoutAlign::Stretch});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {});
+  (void)tree.Begin(Neuron::LayoutKind::Column, {.grow = 1.0f});
+  (void)_canvas.Label({.text = queue.label,
+                       .font = Hud::FontOf(Hud::Typeface::Title),
+                       .lineUnits = QUEUE_DETAIL_TOP - QUEUE_LABEL_TOP,
+                       .trackingUnits = LABEL_TRACKING_UNITS},
+                      color);
+  (void)_canvas.Label(LineText(_panel.queueDetail, Hud::Typeface::Detail, FIGURE_LINE_UNITS), color);
+  tree.End();
+  OreAmount(_canvas, _panel.queueCost, Hud::Typeface::Title, queue.enabled ? GOLD_COLOR : DIM_TEXT_COLOR,
+            {.padding = {.top = QUEUE_COST_TOP - QUEUE_LABEL_TOP}});
+  tree.End();
+  _canvas.EndBox();
+  tree.End();
+}
+
+// The designer's window (ADR-017 decision 7), laid out as the owner's mockup, Docs/Mockups/ShipDesigner.png: the header
+// across the window, and under it, inset from its sides, the name, the saved designs, the slots' rows, a line, the bars
+// beside the damage cards, and the footer.
+void LayDesigner(const WindowBench& _bench, const Hud::DesignerPanel& _panel, const WindowPlace& _place)
+{
+  LayWindow(_bench, Outpost::WindowKind::Designer, _place, DESIGNER_WIDTH, QueueWindowBody(),
+            [&](Neuron::Canvas& _canvas)
+            {
+              Neuron::LayoutTree& tree = _canvas.Tree();
+              Hud::Layout& layout = *_bench.layout;
+              DesignerHeader(_canvas, layout, _panel);
+              (void)tree.Begin(
+                Neuron::LayoutKind::Column,
+                {.padding = {.left = DESIGNER_INSET, .top = NAME_ROW_TOP - DESIGNER_HEADER, .right = DESIGNER_INSET, .bottom = SECTION_GAP},
+                 .alignX = Neuron::LayoutAlign::Stretch});
+              NameRow(_canvas, _bench, _panel);
+              (void)tree.Add({.heightUnits = CHIP_ROW_TOP - NAME_ROW_TOP - NAME_ROW_HEIGHT});
+              SavedDesigns(_canvas, layout, _panel);
+              (void)tree.Add({.heightUnits = SLOTS_TOP - CHIP_ROW_TOP - CHIP_HEIGHT});
+              SlotRows(_canvas, layout, _panel);
+              (void)tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = SECTION_GAP});
+              _canvas.Fill(tree.Add({.widthUnits = DESIGNER_WIDTH - (2.0f * DESIGNER_INSET),
+                                     .heightUnits = LINE_UNITS,
+                                     .anchor = Neuron::LayoutAnchor::TopLeft,
+                                     .margin = {.top = SECTION_GAP / 2.0f}}),
+                           EDGE_COLOR);
+              tree.End();
+              (void)tree.Begin(Neuron::LayoutKind::Row, {});
+              Performance(_canvas, _panel);
+              Damage(_canvas, _panel);
+              tree.End();
+              (void)tree.Add({.heightUnits = PADDING});
+              Footer(_canvas, layout, _panel);
+              tree.End();
+            });
 }
 
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
@@ -3499,7 +4014,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                      std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered,
-                     Neuron::Interaction* _interaction)
+                     Neuron::Interaction* _interaction, bool _ported)
 {
   // The windows on the canvas name their widgets afresh each frame (ADR-100).
   Neuron::Interaction unpointed;
@@ -4102,7 +4617,9 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   for (const WindowKind kind : backToFront)
   {
     // The designer, at first in the top-right corner.
-    if (kind == WindowKind::Designer && _content.designer.has_value())
+    if (kind == WindowKind::Designer && _content.designer.has_value() && _ported)
+      LayDesigner(bench, *_content.designer, placed(kind, DESIGNER_WIDTH));
+    else if (kind == WindowKind::Designer && _content.designer.has_value())
     {
       const WindowManager::Point corner =
         place(kind, TopCornerOf(FirstPlaceOf(RowOf(kind).first, screenWidthUnits), DESIGNER_WIDTH, screenWidthUnits), DESIGNER_WIDTH);

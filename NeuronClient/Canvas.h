@@ -28,6 +28,14 @@ struct BoxLook
   DirectX::XMFLOAT4 edge{};
 };
 
+// What a card does under the pointer: takes a press naming its payload, or only answers the pointer with it and takes no
+// press, as a part's card research has yet to unlock previews what it buys (ADR-017 decision 7).
+enum class CardPress : std::uint8_t
+{
+  Pressed,
+  Previewed
+};
+
 // What a text field did with what reached it this frame (ADR-017 decision 8): nothing more than edit its text, or end
 // typing, by Enter, which keeps the text, or by Esc, which drops what was typed.
 enum class FieldEnd : std::uint8_t
@@ -74,9 +82,11 @@ public:
 
   // A box of _style in _look, a column that takes what is built until EndBox, for what the game composes: a frame, such as
   // a queue's row or the Ore's box, or with BeginCard a card the player presses, such as a production option or a topic,
-  // which takes a press naming _payload unless that is NO_PAYLOAD. A card's edge is not lit under the pointer.
+  // which takes a press naming _payload unless that is NO_PAYLOAD, or as _press has it, only answers the pointer with it. A
+  // card's edge is not lit under the pointer.
   std::size_t BeginBox(const BoxLook& _look, const LayoutStyle& _style);
-  WidgetId BeginCard(std::string_view _id, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style);
+  WidgetId BeginCard(std::string_view _id, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style,
+                     CardPress _press = CardPress::Pressed);
   void EndBox();
 
   // A text in _color: one line, one cut short, or wrapped, as _text flows (ADR-061 decision 3).
@@ -110,7 +120,8 @@ public:
   // A field _text is typed into (ADR-017 decision 8): a press on it gives it the keyboard, and while it has it, every
   // character the atlas holds, up to _limitCharacters, and Backspace edit _text, Enter ends typing and keeps it, and Esc
   // ends it and drops what was typed, which the caller puts back. It shows a caret while it has the keyboard, and its text
-  // in the warning's color while it is not _valid.
+  // in the warning's color while it is not _valid. Its text stands in its content box, the theme's inset in from its sides
+  // and in its middle down, so that its padding keeps room for what the caller sets over it, such as a label and a count.
   FieldEnd TextField(std::string_view _id, std::string& _text, std::size_t _limitCharacters, bool _valid, const LayoutStyle& _style);
 
   // A rectangle of _color at a node, for what the game composes of its own, such as a part's card. It may be any color but
@@ -143,14 +154,14 @@ private:
   void DrawButton(DrawList& _list, std::size_t _node, WidgetId _widget, const ButtonContent& _button, bool _hot) const;
   void DrawSmallButton(DrawList& _list, std::size_t _node, WidgetId _widget, const std::string& _mark, bool _enabled,
                        std::uint32_t _payload) const;
-  std::size_t OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style);
+  std::size_t OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style, CardPress _press);
 
   const Theme& m_theme;
   const TextMetrics& m_metrics;
   Interaction& m_interaction;
   LayoutTree m_tree;
   std::vector<Draw> m_draws;
-  // The windows open in the build, the innermost last.
-  std::vector<WidgetId> m_windows;
+  // The windows open in the build, the innermost last, and their frames' nodes.
+  std::vector<std::pair<WidgetId, std::size_t>> m_windows;
 };
 } // namespace Neuron

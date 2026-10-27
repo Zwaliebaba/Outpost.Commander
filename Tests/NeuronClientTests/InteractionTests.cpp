@@ -202,5 +202,20 @@ public:
     ui.BeginBuild();
     Assert::IsTrue(ui.Claim(build), L"once in the next frame");
   }
+
+  // ADR-100: a field keeps the keyboard while each build builds it, and gives it back once one does not, as when the window
+  // it is in closes, so that its keys reach the game again.
+  TEST_METHOD(GivesBackTheKeyboardOfAFieldNoLongerBuilt)
+  {
+    Interaction ui;
+    ui.BeginBuild();
+    Assert::IsTrue(ui.Claim(FIELD));
+    ui.Focus(FIELD);
+    ui.BeginBuild();
+    Assert::IsTrue(ui.TakesKeys(), L"built in the last frame");
+    Assert::IsTrue(ui.Claim(BUTTON));
+    ui.BeginBuild();
+    Assert::IsFalse(ui.TakesKeys(), L"not built in the last frame");
+  }
 };
 } // namespace NeuronClientTests

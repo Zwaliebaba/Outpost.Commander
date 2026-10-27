@@ -725,6 +725,14 @@ public:
     std::size_t firstAction = 0;
   };
 
+  // What the designer's name field did in a frame (ADR-017 decision 8): its text, and whether typing goes on or ended,
+  // keeping it or dropping it.
+  struct TypedName
+  {
+    std::string name;
+    Neuron::FieldEnd end = Neuron::FieldEnd::Typing;
+  };
+
   // The HUD on a back buffer of one size, in its pixels: the engine's display list (ADR-100), in which layer 0 is the HUD
   // and layer i + 1 the window windows[i], and what the game keeps beside it. It is drawn in layers: the HUD, then each
   // window back to front, each layer's panels, then its lines, then its sprites, then its texts. A click belongs to the
@@ -745,6 +753,9 @@ public:
     // The bars over the entities, drawn before every layer, so under every panel and window (ADR-088 decision 5).
     // They take no click and cover nothing, so that a click on one is the world's.
     std::vector<Rect> bars;
+    // The name field's text while it has the keyboard and as typing ends, for GameClient to give the designer; none
+    // otherwise, when the name follows the designer.
+    std::optional<TypedName> typedName;
 
     [[nodiscard]] Span ActionsOf(std::size_t _layer) const noexcept;
     // The front window under a point, if any.
@@ -861,10 +872,12 @@ public:
   // left them; without a manager, every window the content has, at its default place. _hovered is the action under the
   // pointer, which the HUD's button and status line that take it are lit for (ADR-088 decision 1). The windows built on
   // the canvas take what is under the pointer from _interaction (ADR-100), or have nothing under it without one.
+  // _ported, while the designer moves onto the canvas, lays it out as it was before when false.
   [[nodiscard]] static Layout Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels,
                                   std::uint32_t _heightPixels, std::span<const PlanePosition> _view = {},
                                   const WindowManager* _windows = nullptr, float _factor = 1.0f,
-                                  std::optional<Action> _hovered = std::nullopt, Neuron::Interaction* _interaction = nullptr);
+                                  std::optional<Action> _hovered = std::nullopt, Neuron::Interaction* _interaction = nullptr,
+                                  bool _ported = true);
 
   // Where a window _widthUnits wide may stand with its top-left corner at _corner on a screen of this size, in reference
   // units: moved only as far as keeps its title bar on the screen, and WINDOW_KEPT_ON_SCREEN_UNITS of its width.

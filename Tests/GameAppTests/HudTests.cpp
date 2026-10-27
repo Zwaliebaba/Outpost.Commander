@@ -323,6 +323,141 @@ std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::u
   return layouts;
 }
 
+// Temporary, until the layout function the canvas replaces goes: what differs between a layout before the canvas and the
+// same on it, item by item and in order, each place within a hundredth of a pixel, the first few of each list named.
+// A window on the canvas has a region for its title bar and close box, and the name field one, which name nothing, so only
+// the regions that name an action are compared. A text of nothing draws nothing, and the canvas lists none, so only the
+// texts drawn are compared, and a layer's first text is counted among them.
+bool NearPixel(float _a, float _b) noexcept
+{
+  return std::abs(_a - _b) < 0.01f;
+}
+
+bool SameColor(const DirectX::XMFLOAT4& _a, const DirectX::XMFLOAT4& _b) noexcept
+{
+  return _a.x == _b.x && _a.y == _b.y && _a.z == _b.z && _a.w == _b.w;
+}
+
+bool SameRect(const Neuron::CanvasRect& _a, const Neuron::CanvasRect& _b) noexcept
+{
+  return NearPixel(_a.left, _b.left) && NearPixel(_a.top, _b.top) && NearPixel(_a.width, _b.width) && NearPixel(_a.height, _b.height) &&
+         SameColor(_a.color, _b.color) && _a.fill == _b.fill;
+}
+
+template <class T, class Same>
+void DifferInList(std::wstring& _out, const std::wstring& _name, const wchar_t* _list, const std::vector<T>& _before,
+                  const std::vector<T>& _after, Same _same)
+{
+  if (_before.size() != _after.size())
+    _out += std::format(L"{}: {} {} before, {} on the canvas\n", _name, _before.size(), _list, _after.size());
+  std::size_t named = 0;
+  for (std::size_t item = 0; item < std::min(_before.size(), _after.size()) && named < 3; ++item)
+  {
+    if (!_same(_before[item], _after[item]))
+    {
+      _out += std::format(L"{}: {} {} differs\n", _name, _list, item);
+      ++named;
+    }
+  }
+}
+
+bool IsDrawn(const Neuron::CanvasText& _text) noexcept
+{
+  return !_text.text.empty();
+}
+
+std::vector<Neuron::CanvasText> DrawnTexts(const Outpost::Hud::Layout& _layout)
+{
+  std::vector<Neuron::CanvasText> drawn;
+  std::ranges::copy_if(_layout.texts, std::back_inserter(drawn), IsDrawn);
+  return drawn;
+}
+
+std::vector<Neuron::CanvasLayer> LayersAmongDrawn(const Outpost::Hud::Layout& _layout)
+{
+  std::vector<Neuron::CanvasLayer> layers = _layout.layers;
+  for (Neuron::CanvasLayer& layer : layers)
+  {
+    layer.firstText = static_cast<std::size_t>(
+      std::count_if(_layout.texts.begin(), _layout.texts.begin() + static_cast<std::ptrdiff_t>(layer.firstText), IsDrawn));
+  }
+  return layers;
+}
+
+std::vector<Neuron::CanvasRegion> NamingAnAction(const std::vector<Neuron::CanvasRegion>& _regions)
+{
+  std::vector<Neuron::CanvasRegion> naming;
+  std::ranges::copy_if(_regions, std::back_inserter(naming),
+                       [](const Neuron::CanvasRegion& _region) { return _region.payload != Neuron::NO_PAYLOAD; });
+  return naming;
+}
+
+// The old layout without the name field's action, EditName, which the canvas's field does not take: its region and its
+// place among the actions, and every later action's a place sooner.
+void WithoutEditName(Outpost::Hud::Layout& _layout)
+{
+  const auto edit =
+    std::ranges::find(_layout.actions, Outpost::Hud::ActionKind::EditName, [](const auto& _entry) { return _entry.second.kind; });
+  if (edit == _layout.actions.end())
+    return;
+  const auto index = static_cast<std::uint32_t>(edit - _layout.actions.begin());
+  _layout.actions.erase(edit);
+  std::erase_if(_layout.regions, [index](const Neuron::CanvasRegion& _region) { return !_region.hoverOnly && _region.payload == index; });
+  for (Neuron::CanvasRegion& region : _layout.regions)
+  {
+    if (!region.hoverOnly && region.payload != Neuron::NO_PAYLOAD && region.payload > index)
+      --region.payload;
+  }
+  for (Outpost::Hud::Window& window : _layout.windows)
+  {
+    if (window.firstAction > index)
+      --window.firstAction;
+  }
+}
+
+std::wstring Differences(const Outpost::Hud::Layout& _before, const Outpost::Hud::Layout& _after, const std::wstring& _name)
+{
+  std::wstring out;
+  DifferInList(out, _name, L"panel", _before.panels, _after.panels, SameRect);
+  DifferInList(out, _name, L"text", DrawnTexts(_before), DrawnTexts(_after),
+               [](const Neuron::CanvasText& _a, const Neuron::CanvasText& _b)
+               {
+                 return _a.text == _b.text && NearPixel(_a.left, _b.left) && NearPixel(_a.top, _b.top) && SameColor(_a.color, _b.color) &&
+                        _a.font == _b.font && NearPixel(_a.trackingPixels, _b.trackingPixels);
+               });
+  DifferInList(out, _name, L"sprite", _before.sprites, _after.sprites, [](const Neuron::CanvasSprite& _a, const Neuron::CanvasSprite& _b)
+               { return _a.sprite == _b.sprite && SameRect(_a.area, _b.area) && _a.mirrorX == _b.mirrorX && _a.mirrorY == _b.mirrorY; });
+  DifferInList(out, _name, L"line", _before.lines, _after.lines,
+               [](const Neuron::CanvasLine& _a, const Neuron::CanvasLine& _b)
+               {
+                 return NearPixel(_a.segment.from.x, _b.segment.from.x) && NearPixel(_a.segment.from.y, _b.segment.from.y) &&
+                        NearPixel(_a.segment.to.x, _b.segment.to.x) && NearPixel(_a.segment.to.y, _b.segment.to.y) &&
+                        SameColor(_a.color, _b.color);
+               });
+  DifferInList(out, _name, L"layer", LayersAmongDrawn(_before), LayersAmongDrawn(_after),
+               [](const Neuron::CanvasLayer& _a, const Neuron::CanvasLayer& _b)
+               {
+                 return SameRect(_a.frame, _b.frame) && _a.overlay == _b.overlay && _a.firstPanel == _b.firstPanel &&
+                        _a.firstLine == _b.firstLine && _a.firstText == _b.firstText && _a.firstSprite == _b.firstSprite;
+               });
+  const auto samePair =
+    [](const std::pair<Neuron::CanvasRect, Outpost::Hud::Action>& _a, const std::pair<Neuron::CanvasRect, Outpost::Hud::Action>& _b)
+  { return SameRect(_a.first, _b.first) && _a.second == _b.second; };
+  DifferInList(out, _name, L"action", _before.actions, _after.actions, samePair);
+  DifferInList(out, _name, L"preview", _before.previews, _after.previews, samePair);
+  DifferInList(out, _name, L"region", NamingAnAction(_before.regions), NamingAnAction(_after.regions),
+               [](const Neuron::CanvasRegion& _a, const Neuron::CanvasRegion& _b)
+               { return SameRect(_a.area, _b.area) && _a.payload == _b.payload && _a.hoverOnly == _b.hoverOnly; });
+  DifferInList(out, _name, L"window", _before.windows, _after.windows,
+               [](const Outpost::Hud::Window& _a, const Outpost::Hud::Window& _b)
+               {
+                 return _a.kind == _b.kind && SameRect(_a.frame, _b.frame) && SameRect(_a.titleBar, _b.titleBar) &&
+                        SameRect(_a.closeBox, _b.closeBox) && NearPixel(_a.corner.xUnits, _b.corner.xUnits) &&
+                        NearPixel(_a.corner.yUnits, _b.corner.yUnits) && _a.firstAction == _b.firstAction;
+               });
+  return out;
+}
+
 // The fonts a layout of LongestLayouts was set in: its step's, found by its font size.
 std::span<const Neuron::GlyphAtlas::Font> FontsOf(const Outpost::Hud::Layout& _layout, std::uint32_t _widthPixels,
                                                   std::uint32_t _heightPixels)
@@ -479,13 +614,55 @@ public:
                    L"the HUD's sprites are its own panels'");
 
     const Outpost::Hud::Span actions = layout.ActionsOf(1);
-    const auto name = std::ranges::find(layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.first),
+    const auto part = std::ranges::find(layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.first),
                                         layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end),
-                                        Outpost::Hud::ActionKind::EditName, [](const auto& _entry) { return _entry.second.kind; });
-    Assert::IsTrue(name != layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end));
-    Assert::AreEqual(size_t{1}, layout.LayerAt(name->first.left + 5.0f, name->first.top + 5.0f));
-    Assert::IsTrue(layout.WindowAt(name->first.left + 5.0f, name->first.top + 5.0f) == &window);
+                                        Outpost::Hud::ActionKind::PickHull, [](const auto& _entry) { return _entry.second.kind; });
+    Assert::IsTrue(part != layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end));
+    Assert::AreEqual(size_t{1}, layout.LayerAt(part->first.left + 5.0f, part->first.top + 5.0f));
+    Assert::IsTrue(layout.WindowAt(part->first.left + 5.0f, part->first.top + 5.0f) == &window);
     Assert::IsTrue(layout.Covers(window.frame.left + 1.0f, window.frame.top + 1.0f));
+  }
+
+  // ADR-017 decision 8; ADR-100: the name is the canvas's text field. A press on it gives it the keyboard, and the layout
+  // carries what is typed, for GameClient to give the designer, until Enter keeps it or Esc drops it; without the keyboard
+  // it carries nothing, and the name follows the designer.
+  TEST_METHOD(TypesTheDesignsNameOnTheCanvas)
+  {
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Designer);
+    Neuron::Interaction pointer;
+    const auto lay = [&windows, &pointer] { return Lay(WithDesigner(), 1920, 1080, {}, &windows, 1.0f, std::nullopt, &pointer); };
+    const Outpost::Hud::Layout idle = lay();
+    Assert::IsFalse(idle.typedName.has_value());
+    const Neuron::WidgetId field = Neuron::Interaction::IdUnder(Neuron::Interaction().IdOf("designer"), "name");
+    const auto region = std::ranges::find(idle.regions, field, &Neuron::CanvasRegion::widget);
+    if (region == idle.regions.end())
+    {
+      Assert::Fail(L"the name field");
+      return;
+    }
+    const float x = region->area.left + 5.0f;
+    const float y = region->area.top + 5.0f;
+    Assert::IsTrue(pointer.Press(idle, x, y));
+    const Outpost::Hud::Layout pressed = lay();
+    (void)pointer.Release(pressed, x, y);
+    Assert::IsTrue(pressed.typedName.has_value() && pressed.typedName->name == "Swarm" &&
+                     pressed.typedName->end == Neuron::FieldEnd::Typing,
+                   L"the name as it stood");
+    Assert::IsTrue(pointer.Type(U'!'));
+    const Outpost::Hud::Layout typed = lay();
+    Assert::IsTrue(typed.typedName.has_value() && typed.typedName->name == "Swarm!");
+    Assert::IsTrue(pointer.Key(Neuron::FieldKey::Enter));
+    const Outpost::Hud::Layout entered = lay();
+    Assert::IsTrue(entered.typedName.has_value() && entered.typedName->end == Neuron::FieldEnd::Entered);
+    Assert::IsFalse(lay().typedName.has_value(), L"typing has ended");
+
+    Assert::IsTrue(pointer.Press(entered, x, y));
+    (void)lay();
+    (void)pointer.Release(entered, x, y);
+    Assert::IsTrue(pointer.Escape());
+    const Outpost::Hud::Layout dropped = lay();
+    Assert::IsTrue(dropped.typedName.has_value() && dropped.typedName->end == Neuron::FieldEnd::Dropped);
   }
 
   // ADR-031: a dragged window is laid out where it was left; a HUD button under it takes no click; and however far it is
@@ -4383,6 +4560,96 @@ public:
       }
     }
     Assert::IsTrue(offenders.empty(), offenders.c_str());
+  }
+
+  // ADR-100: the designer built on the canvas draws what it drew before, item by item and in order, within a hundredth of
+  // a pixel, with the longest content, at 1920 by 1080 and 1280 by 720 and at every step the windows fit: with its parts
+  // locked and unlocked, a part previewed, locked or not, where it first stands and where the player moved it, typing its
+  // name, and with the pointer on each of its buttons and cards. But for the name field's action, which the canvas's field
+  // does not take, and a retreat's cell under the pointer, which the canvas lights as every cell. Temporary: it goes with
+  // the layout function it compares the canvas's with.
+  TEST_METHOD(BuildsTheDesignerOnTheCanvasAsBefore)
+  {
+    using Outpost::WindowKind;
+    const Outpost::Hud::Action smallHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}};
+    const Outpost::Hud::Action largeHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{3}};
+    const Neuron::WidgetId nameField = Neuron::Interaction::IdUnder(Neuron::Interaction().IdOf("designer"), "name");
+    std::wstring differences;
+    for (const auto& [width, height] : {std::pair{1920u, 1080u}, std::pair{1280u, 720u}})
+    {
+      for (const float factor : ReachableSteps(width, height))
+      {
+        const Outpost::Hud::TextMetrics metrics = MetricsFor(width, height, factor);
+        Outpost::Hud::Content locked;
+        locked.designer = LongestContent(false).designer;
+        Outpost::Hud::Content unlocked;
+        unlocked.designer = LongestContent(true).designer;
+        Outpost::Hud::Content previewing;
+        previewing.designer = LongestContent(true, smallHull).designer;
+        Outpost::Hud::Content previewingLocked;
+        previewingLocked.designer = LongestContent(false, largeHull).designer;
+        Outpost::Hud::Content typing = unlocked;
+        if (!typing.designer.has_value())
+        {
+          Assert::Fail(L"the longest content has the designer");
+          return;
+        }
+        typing.designer->editing = true;
+        Outpost::WindowManager moved;
+        moved.Open(WindowKind::Designer);
+        moved.Place(WindowKind::Designer, {.xUnits = 140.0f, .yUnits = 90.0f});
+        const std::wstring step = std::format(L" at {} by {} at {}%", width, height, std::lround(factor * 100.0f));
+        // Laid out on the canvas and before, each with the pointer, if any, where GameClient finds what is under it: on the
+        // layout drawn last, as the canvas draws it. The name field is built once before it takes the keyboard, as a press
+        // on it gives it.
+        const auto compare = [&](const std::wstring& _name, const Outpost::Hud::Content& _content, const Outpost::WindowManager* _windows,
+                                 std::optional<DirectX::XMFLOAT2> _pointerPixels)
+        {
+          Neuron::Interaction interaction;
+          const Outpost::Hud::Layout drawn =
+            Outpost::Hud::Lay(_content, metrics, width, height, {}, _windows, factor, std::nullopt, &interaction, true);
+          std::optional<Outpost::Hud::Action> hovered;
+          if (_pointerPixels.has_value())
+          {
+            hovered = drawn.HoverAt(_pointerPixels->x, _pointerPixels->y);
+            interaction.Move(drawn, _pointerPixels->x, _pointerPixels->y);
+          }
+          if (_content.designer.has_value() && _content.designer->editing)
+            interaction.Focus(nameField);
+          const Outpost::Hud::Layout after =
+            Outpost::Hud::Lay(_content, metrics, width, height, {}, _windows, factor, hovered, &interaction, true);
+          Outpost::Hud::Layout before =
+            Outpost::Hud::Lay(_content, metrics, width, height, {}, _windows, factor, hovered, &interaction, false);
+          WithoutEditName(before);
+          differences += Differences(before, after, _name + step);
+        };
+        compare(L"locked", locked, nullptr, std::nullopt);
+        compare(L"unlocked", unlocked, nullptr, std::nullopt);
+        compare(L"previewing", previewing, nullptr, std::nullopt);
+        compare(L"previewing a locked part", previewingLocked, nullptr, std::nullopt);
+        compare(L"moved", unlocked, &moved, std::nullopt);
+        compare(L"typing its name", typing, nullptr, std::nullopt);
+        for (const Outpost::Hud::Content& content : {locked, unlocked})
+        {
+          const Outpost::Hud::Layout laid =
+            Outpost::Hud::Lay(content, metrics, width, height, {}, nullptr, factor, std::nullopt, nullptr, true);
+          for (const auto& [area, action] : laid.actions)
+          {
+            if (action.kind != Outpost::Hud::ActionKind::DesignRetreat)
+            {
+              compare(std::format(L"pointing at action {}", static_cast<int>(action.kind)), content, nullptr,
+                      DirectX::XMFLOAT2(area.left + (area.width / 2.0f), area.top + (area.height / 2.0f)));
+            }
+          }
+          for (const auto& [area, action] : laid.previews)
+          {
+            compare(L"pointing at a locked part", content, nullptr,
+                    DirectX::XMFLOAT2(area.left + (area.width / 2.0f), area.top + (area.height / 2.0f)));
+          }
+        }
+      }
+    }
+    Assert::IsTrue(differences.empty(), differences.c_str());
   }
 };
 } // namespace GameAppTests

@@ -737,10 +737,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     if (sole != m_soleSelected && m_windows.IsOpen(WindowKind::Production))
       m_production.Set(sole, m_view.Newest());
     m_soleSelected = sole;
-    // The name takes no more typing once the designer is closed.
     const bool designerOpen = m_windows.IsOpen(WindowKind::Designer);
-    if (!designerOpen)
-      m_designer.EndEditing();
     // A locked part's card answers the pointer with its preview, and takes no click (ADR-017 decision 7).
     const std::optional<Hud::Action> hovered =
       m_hudLayout.HoverAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
@@ -816,6 +813,22 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows, m_interfaceFactor, hovered, &m_interaction);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
+    // What was typed into the designer's name field (ADR-017 decision 8): the name while the field has the keyboard, kept
+    // as it is, and saved by Enter, or dropped by Esc.
+    if (m_hudLayout.typedName.has_value())
+    {
+      Hud::TypedName& typed = *m_hudLayout.typedName;
+      if (typed.end == Neuron::FieldEnd::Dropped)
+        m_designer.DropTypedName();
+      else
+        m_designer.TypeName(std::move(typed.name));
+      if (typed.end == Neuron::FieldEnd::Entered)
+      {
+        if (std::optional<SaveDesignCommand> save = m_designer.EnterName(m_view.Newest()))
+          m_controls.SaveDesign(std::move(*save));
+      }
+      m_hudLayout.typedName.reset();
+    }
   }
   WatchForResponse();
 }
@@ -923,12 +936,20 @@ void Outpost::GameClient::ToggleWindow(WindowKind _window)
 
 void Outpost::GameClient::HandleTyping(Neuron::InputState& _input)
 {
-  if (!m_designer.IsEditing() || m_view.IsEmpty())
+  // A field with the keyboard, the designer's name, takes every character and its keys, and no other key reads one
+  // (ADR-017 decision 8; ADR-100).
+  if (!m_interaction.TakesKeys())
     return;
   for (const Neuron::InputEvent& event : _input.events)
   {
-    if (std::optional<SaveDesignCommand> save = m_designer.Edit(event, m_view.Newest()))
-      m_controls.SaveDesign(std::move(*save));
+    if (event.kind == Neuron::InputEventKind::Character)
+      (void)m_interaction.Type(event.character);
+    else if (event.kind == Neuron::InputEventKind::KeyDown && event.key == VK_BACK)
+      (void)m_interaction.Key(Neuron::FieldKey::Backspace);
+    else if (event.kind == Neuron::InputEventKind::KeyDown && event.key == VK_RETURN)
+      (void)m_interaction.Key(Neuron::FieldKey::Enter);
+    else if (event.kind == Neuron::InputEventKind::KeyDown && event.key == VK_ESCAPE)
+      (void)m_interaction.Escape();
   }
   std::erase_if(_input.events, [](const Neuron::InputEvent& _event)
                 { return _event.kind == Neuron::InputEventKind::KeyDown || _event.kind == Neuron::InputEventKind::Character; });
@@ -972,7 +993,6 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     m_designer.PickModule(_action.module);
     break;
   case Hud::ActionKind::EditName:
-    m_designer.BeginEditing(m_view.Newest());
     break;
   case Hud::ActionKind::SaveDesign:
     if (std::optional<SaveDesignCommand> save = m_designer.SaveCommand(m_view.Newest()))
@@ -1094,9 +1114,13 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
       m_minimapDragging = false;
       KeepDraggedWindow();
       m_windows.Release();
+      (void)m_interaction.Release(m_hudLayout, x, y);
     }
     if (event.kind != Neuron::InputEventKind::ButtonDown)
       continue;
+    // A press reaches the canvas first, which gives the name field the keyboard, or takes it back on a press anywhere else.
+    if (event.key == VK_LBUTTON)
+      (void)m_interaction.Press(m_hudLayout, x, y);
     if (const Hud::Window* window = m_hudLayout.WindowAt(x, y); window != nullptr && event.key == VK_LBUTTON)
     {
       if (window->closeBox.Contains(x, y))
@@ -1115,9 +1139,6 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
     if (event.key == VK_LBUTTON)
     {
       const std::optional<Hud::Action> action = m_hudLayout.ActionAt(x, y);
-      // A press anywhere but the name field stops typing; what was typed stays.
-      if (!action.has_value() || action->kind != Hud::ActionKind::EditName)
-        m_designer.EndEditing();
       if (action.has_value())
       {
         if (!m_view.IsEmpty())

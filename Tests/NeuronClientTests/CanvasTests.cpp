@@ -242,6 +242,29 @@ public:
     Assert::AreEqual(276.0f, canvas.Tree().Node(button).widthUnits, 0.001f, L"across the window less the padding");
   }
 
+  // ADR-100: a widget a window holds on its title bar, such as the designer's arrows, takes a press before the bar, whose
+  // region and the close box's come after what the window holds.
+  TEST_METHOD(PressesAWidgetOnATitleBarBeforeTheBar)
+  {
+    Fixture fixture;
+    Canvas canvas = fixture.Begin();
+    (void)canvas.BeginWindow(7, std::string(), {.xUnits = 100.0f, .yUnits = 50.0f}, 300.0f);
+    (void)canvas.Tree().Begin(LayoutKind::Column, {.anchor = LayoutAnchor::TopLeft, .margin = {.left = 20.0f, .top = -30.0f}});
+    const Neuron::WidgetId arrow = canvas.SmallButton("next", ">", true, 4);
+    canvas.Tree().End();
+    canvas.EndWindow();
+    DrawList list;
+    canvas.Finish(list);
+
+    Assert::AreEqual(size_t{3}, list.regions.size());
+    Assert::AreEqual(canvas.TitleBarOf(7), list.regions[1].widget, L"after the arrow");
+    Assert::AreEqual(canvas.CloseBoxOf(7), list.regions[2].widget);
+    const Neuron::CanvasRegion* pressed = list.HitAt(2.0f * 125.0f, 2.0f * 60.0f);
+    Assert::IsTrue(pressed != nullptr && pressed->widget == arrow && pressed->payload == 4u, L"the arrow, on the bar");
+    const Neuron::CanvasRegion* bar = list.HitAt(2.0f * 200.0f, 2.0f * 60.0f);
+    Assert::IsTrue(bar != nullptr && bar->widget == canvas.TitleBarOf(7), L"the bar beside it");
+  }
+
   // ADR-043 decision 1; ADR-100: a panel of the HUD is a window's body and corners, anchored, as large as what it holds,
   // and in the layer under every window.
   TEST_METHOD(DrawsAPanelOfTheHud)
@@ -367,7 +390,8 @@ public:
   }
 
   // ADR-100: a box the game composes is its face, a hatch over it if it has one, and its edge, under what it holds; a card is
-  // a box that takes a press naming its payload, and none without one; an icon is its sprite at its node's padded corner.
+  // a box that takes a press naming its payload, and none without one, or one that only answers the pointer with it; an icon
+  // is its sprite at its node's padded corner.
   TEST_METHOD(DrawsABoxACardAndAnIcon)
   {
     Fixture fixture;
@@ -384,20 +408,29 @@ public:
     (void)canvas.BeginCard("locked", {.face = theme.fieldColor, .edge = theme.edgeColor}, Neuron::NO_PAYLOAD,
                            {.widthUnits = 100.0f, .heightUnits = 40.0f});
     canvas.EndBox();
+    const Neuron::WidgetId preview = canvas.BeginCard("preview", {.face = theme.fieldColor, .edge = theme.edgeColor}, 7,
+                                                      {.widthUnits = 100.0f, .heightUnits = 40.0f}, Neuron::CardPress::Previewed);
+    canvas.EndBox();
     canvas.Tree().End();
     DrawList list;
     canvas.Finish(list);
 
-    Assert::AreEqual(size_t{16}, list.panels.size(), L"a face, a hatch and an edge's four sides; then a face and four sides twice");
+    Assert::AreEqual(size_t{21}, list.panels.size(), L"a face, a hatch and an edge's four sides; then a face and four sides thrice");
     Assert::IsTrue(RectIs(list.panels[0], 0.0f, 0.0f, 200.0f, 60.0f, theme.fieldColor), L"the box's face");
     Assert::IsTrue(RectIs(list.panels[1], 0.0f, 0.0f, 200.0f, 60.0f, theme.cardColor) && list.panels[1].fill == CanvasFill::Hatched,
                    L"its hatch over it");
     Assert::IsTrue(RectIs(list.panels[2], 0.0f, 0.0f, 200.0f, 2.0f, theme.edgeColor), L"its edge's top");
     Assert::IsTrue(RectIs(list.panels[6], 0.0f, 80.0f, 200.0f, 80.0f, theme.cardColor), L"the card's face");
-    Assert::AreEqual(size_t{1}, list.regions.size(), L"only the card with a payload takes a press");
+    Assert::AreEqual(size_t{2}, list.regions.size(), L"the card with a payload and the one that previews, and none for the card without");
     Assert::IsTrue(RectIs(list.regions[0].area, 0.0f, 80.0f, 200.0f, 80.0f, theme.cardColor));
     Assert::AreEqual(card, list.regions[0].widget);
     Assert::AreEqual(9u, list.regions[0].payload);
+    Assert::IsFalse(list.regions[0].hoverOnly);
+    Assert::AreEqual(preview, list.regions[1].widget);
+    Assert::AreEqual(7u, list.regions[1].payload);
+    Assert::IsTrue(list.regions[1].hoverOnly);
+    Assert::IsTrue(list.HitAt(100.0f, 320.0f) == nullptr, L"which takes no press");
+    Assert::IsTrue(list.PointedAt(100.0f, 320.0f) == &list.regions[1], L"but answers the pointer");
     Assert::AreEqual(size_t{1}, list.sprites.size());
     Assert::AreEqual(GEM, list.sprites[0].sprite);
     Assert::IsTrue(RectIs(list.sprites[0].area, 8.0f, 10.0f, 20.0f, 20.0f, theme.figureColor), L"in the box's padding and its own");
@@ -591,6 +624,25 @@ public:
     DrawList dropped;
     Assert::IsTrue(build(dropped) == FieldEnd::Dropped, L"the caller puts back what it had");
     Assert::IsFalse(fixture.ui.TakesKeys());
+  }
+
+  // ADR-100: a field's text stands in its content box, the theme's inset in from its sides and in its middle down, so that
+  // its padding keeps room for what the caller sets over the field, such as a label before the text and a count after it;
+  // and it is cut short within that room.
+  TEST_METHOD(KeepsAFieldsTextInItsContentBox)
+  {
+    Fixture fixture;
+    const Neuron::Theme& theme = fixture.theme;
+    Canvas canvas = fixture.Begin();
+    std::string name = "Rainy days";
+    (void)canvas.TextField("name", name, 20, true,
+                           {.widthUnits = 200.0f, .heightUnits = 38.0f, .padding = {.left = 50.0f, .top = 4.0f, .right = 60.0f}});
+    DrawList list;
+    canvas.Finish(list);
+
+    Assert::IsTrue(RectIs(list.panels[0], 0.0f, 0.0f, 400.0f, 76.0f, theme.fieldColor), L"the field across its padding");
+    // 66 units of room between the padding, less the inset either side: three letters of 10 and the dots.
+    Assert::IsTrue(TextIs(list.texts[0], "Rai...", 124.0f, 20.0f, theme.textColor, NAME));
   }
 };
 } // namespace NeuronClientTests
