@@ -4,7 +4,7 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-13 gates are open, in 6 documents.
+12 gates are open, in 6 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
@@ -44,7 +44,6 @@ Every owner decision that is still open: each row of a gate table whose Status i
 | D1 | **The overseer's project.** `OutpostOverseer`, a Win32 executable with a row of its own in ADR-002's table, including NeuronCore, NeuronClient, GameProtocol and GameApp; its model and layout in GameApp, tested in GameAppTests, and built on the interface's canvas, which the canvas plan puts in NeuronClient with the game's look in GameApp (its gate C4, decided 2026-10-27), rather than on windows placed by hand. Proposed: as written, so OV3 follows the canvas's widgets. The alternative builds the overseer before the canvas, and moves it onto the canvas after, as the canvas plan moves the game's windows. | OV3, the overseer |
 | D2 | **A new token, written by the server.** New token makes a seat's token afresh, writes it into `Universe.json` and writes the seat's join file again, where ADR-078 decision 2 has the server only read its settings. Proposed: yes, written to a new file and renamed into place, as a save is; or New token stays out of the first version. | OV5, the actions |
 | D3 | **Dropping a link.** Drop link and Hand to deputy become one action, with an option for the deputy to take the seat at once rather than after ADR-079's minute. The game reads a new close reason, `DroppedByOwner`, as one it does not join again after (ADR-078 decision 10), and goes back to the menu saying the server's owner closed the connection. Proposed: as written. | OV5, the actions |
-| D4 | **Full sight on the record.** The universe log writes `overseer <tick> opened` and `closed`, so a friend can see when the owner had full sight open. Proposed: yes. | OV2, the channel |
 | D5 | **Packaged or not.** Proposed: not packaged, as `OutpostServer`, so it runs beside the server on a VM without registering a package. | OV3, the overseer |
 | D6 | **A server without a GPU.** Proposed: the overseer, and not the game, takes the WARP adapter when no hardware adapter qualifies, which amends ADR-006 decision 6 for it alone; or the overseer always runs from a machine with a GPU. | OV3, the overseer |
 | D7 | **A table in the interface.** The style guide has no rule for a table, and the canvas plan's widgets have no table. Proposed: a table widget of the canvas, whose heading sorts on a click and shows the sort's direction, whose picked row takes the picked card's face and edge, and whose cell holds a figure over a detail line, written into the style guide with the ADR that owns them. | OV3, the overseer |
