@@ -896,36 +896,6 @@ void AddCorners(Hud::Layout& _layout, const Hud::Rect& _frame, float _scale)
   }
 }
 
-// Opens a window in the layout: a layer of the display list of its own (ADR-100), its frame, title bar, close box and
-// corners, its place in the layout's lists of buttons and previews, and its title, unless the caller draws its own. The
-// body below the title bar is _bodyHeightUnits tall; what goes in it is the caller's, and returns the body's top in pixels.
-float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _title, Outpost::WindowManager::Point _corner,
-                 float _widthUnits, float _bodyHeightUnits, float _scale)
-{
-  const float left = _corner.xUnits * _scale;
-  const float top = _corner.yUnits * _scale;
-  const float width = _widthUnits * _scale;
-  const float titleHeight = Hud::TITLE_BAR_UNITS * _scale;
-  const Hud::Window window{.kind = _kind,
-                           .frame = {left, top, width, titleHeight + (_bodyHeightUnits * _scale), WINDOW_COLOR},
-                           .titleBar = {left, top, width - titleHeight, titleHeight, TITLE_HATCH_COLOR, Hud::Fill::Hatched},
-                           .closeBox = {left + width - titleHeight, top, titleHeight, titleHeight, CLOSE_BOX_COLOR},
-                           .corner = _corner,
-                           .firstAction = _layout.actions.size()};
-  _layout.BeginLayer(window.frame);
-  _layout.panels.push_back(window.frame);
-  _layout.panels.push_back(window.titleBar);
-  _layout.panels.push_back(window.closeBox);
-  if (!_title.empty())
-    _layout.texts.push_back(
-      {std::move(_title), left + (PADDING * _scale), top + (TITLE_TEXT_INSET * _scale), TEXT_COLOR, Hud::FontOf(Hud::Typeface::Title)});
-  _layout.texts.push_back({std::string(CLOSE_MARK), window.closeBox.left + (CLOSE_TEXT_LEFT * _scale), top + (TITLE_TEXT_INSET * _scale),
-                           TEXT_COLOR, Hud::FontOf(Hud::Typeface::Title)});
-  AddCorners(_layout, window.frame, _scale);
-  _layout.windows.push_back(window);
-  return top + titleHeight;
-}
-
 // A panel of the HUD, in pixels, in a window's look though it is anchored and has no title bar (ADR-043): a window's body
 // and a bracket at each corner. It returns the body.
 Hud::Rect Frame(Hud::Layout& _layout, float _left, float _top, float _width, float _height, float _scale)
@@ -1178,49 +1148,11 @@ std::string QueueLabel(std::size_t _jobs)
 constexpr float ARROWS_IN_TITLE_TOP = 6.0f;
 constexpr float ARROWS_IN_HEADER_TOP = 43.0f;
 
-// How far the designer's sections reach, from its window's top, in reference units.
-struct DesignerExtent
-{
-  // Where each slot's row starts, and where the rows end.
-  std::array<float, std::tuple_size_v<decltype(Hud::DesignerPanel::slots)>> slotTops{};
-  float slotsEnd = 0.0f;
-  float sectionsTop = 0.0f;
-  float footerTop = 0.0f;
-  float height = 0.0f;
-};
-
-float CardLinesOf(const Hud::SlotRow& _slot) noexcept
-{
-  return static_cast<float>(std::max<std::size_t>(1, (_slot.cards.size() + CARDS_PER_LINE - 1) / CARDS_PER_LINE));
-}
-
 // How tall a slot's cards are: taller when any has a note, so that every card of the row stays the same.
 float CardHeightOf(const Hud::SlotRow& _slot) noexcept
 {
   const bool noted = std::ranges::any_of(_slot.cards, [](const Hud::PartCard& _card) { return !_card.note.empty(); });
   return noted ? CARD_HEIGHT + CARD_NOTE_ROOM : CARD_HEIGHT;
-}
-
-DesignerExtent ExtentOf(const Hud::DesignerPanel& _panel) noexcept
-{
-  DesignerExtent extent;
-  float y = SLOTS_TOP;
-  for (std::size_t slot = 0; slot < _panel.slots.size(); ++slot)
-  {
-    extent.slotTops[slot] = y;
-    const float lines = CardLinesOf(_panel.slots[slot]);
-    y += (lines * CardHeightOf(_panel.slots[slot])) + ((lines - 1.0f) * CARD_GAP) + SLOT_GAP;
-  }
-  extent.slotsEnd = y - SLOT_GAP;
-  extent.sectionsTop = extent.slotsEnd + SECTION_GAP;
-  // A row for each bar drawn, and never fewer than the six every design has, so that the window keeps its height while no
-  // design is picked; a module with sight adds the seventh (ADR-058 decision 7).
-  const auto barRows = static_cast<float>(std::max<std::size_t>(_panel.bars.size(), BAR_ROWS_OF_EVERY_DESIGN));
-  const float bars = SECTION_LABEL_HEIGHT + (barRows * BAR_ROW_HEIGHT);
-  const float damage = SECTION_LABEL_HEIGHT + DAMAGE_CARD_HEIGHT + (2.0f * PADDING);
-  extent.footerTop = extent.sectionsTop + std::max(bars, damage) + PADDING;
-  extent.height = extent.footerTop + FOOTER_HEIGHT + SECTION_GAP;
-  return extent;
 }
 
 // Draws into a window of the layout in reference units from the window's top-left corner, as the windows' layouts place
@@ -1241,11 +1173,6 @@ public:
   [[nodiscard]] float Tracking() const noexcept
   {
     return LABEL_TRACKING_UNITS * m_scale;
-  }
-
-  [[nodiscard]] const Hud::TextMetrics& Metrics() const noexcept
-  {
-    return m_metrics;
   }
 
   // How wide _text is set in _face, in reference units, with _trackingPixels more between each two characters.
@@ -1321,39 +1248,6 @@ public:
     m_layout.actions.emplace_back(_rect, _action);
   }
 
-  // An area that answers the pointer with _action's preview and takes no click, as a locked part's card does.
-  void Preview(const Hud::Rect& _rect, const Hud::Action& _action)
-  {
-    m_layout.regions.push_back({.area = _rect, .payload = static_cast<std::uint32_t>(m_layout.previews.size()), .hoverOnly = true});
-    m_layout.previews.emplace_back(_rect, _action);
-  }
-
-  // A small square button with a mark on it, such as an arrow, in its middle.
-  void SmallButton(std::string _mark, float _left, float _top, bool _enabled, const Hud::Action& _action)
-  {
-    const Hud::Rect face = Panel(_left, _top, SMALL_BUTTON_UNITS, SMALL_BUTTON_UNITS, _enabled ? CARD_COLOR : DISABLED_BUTTON_COLOR);
-    if (_enabled)
-      Press(face, _action);
-    const float left = _left + ((SMALL_BUTTON_UNITS - Width(_mark, Hud::Typeface::Label)) / 2.0f);
-    Text(std::move(_mark), left, _top + SMALL_BUTTON_TEXT_TOP, _enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label);
-  }
-
-  // _subject between the arrows that step it, "< SHIPYARD 05 >" (ADR-068 decision 1): the left arrow at _left, the subject cut
-  // short to _roomUnits, and the right arrow after it. _arrowTop places the arrows and _textTop the subject. It returns
-  // where the right arrow ends.
-  float Stepped(const std::string& _subject, float _left, float _arrowTop, float _textTop, float _roomUnits, bool _canStep,
-                const Hud::Action& _previous, const Hud::Action& _next, const DirectX::XMFLOAT4& _color, Hud::Typeface _face,
-                float _tracking = 0.0f)
-  {
-    SmallButton("<", _left, _arrowTop, _canStep, _previous);
-    const float subjectLeft = _left + SMALL_BUTTON_UNITS + ARROW_GAP_UNITS;
-    std::string subject = Fit(_subject, _face, _roomUnits - (2.0f * (SMALL_BUTTON_UNITS + ARROW_GAP_UNITS)), _tracking);
-    const float nextLeft = subjectLeft + Width(subject, _face, _tracking) + ARROW_GAP_UNITS;
-    Text(std::move(subject), subjectLeft, _textTop, _color, _face, _tracking);
-    SmallButton(">", nextLeft, _arrowTop, _canStep, _next);
-    return nextLeft + SMALL_BUTTON_UNITS;
-  }
-
   // How wide an amount of Ore is set, its gem and its figure, in _face.
   [[nodiscard]] float GemAndFigureWidth(std::int32_t _ore, Hud::Typeface _face) const
   {
@@ -1373,21 +1267,6 @@ public:
     const float mark = std::round(sizeUnits * ORE_MARK_SHARE);
     Sprite(Hud::Sprite::OreMark, _left, _top + ((sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
     Text(Outpost::WithThousands(_ore), _left + mark + ORE_MARK_GAP_UNITS, _top, _color, _face);
-  }
-
-  // The hatched band under the title bar that a window's header runs on into, to _bottomUnits, and its edge.
-  void HeaderBand(float _widthUnits, float _bottomUnits)
-  {
-    Panel(0.0f, Hud::TITLE_BAR_UNITS, _widthUnits, _bottomUnits - Hud::TITLE_BAR_UNITS, TITLE_HATCH_COLOR, Hud::Fill::Hatched);
-    Panel(0.0f, _bottomUnits - LINE_UNITS, _widthUnits, LINE_UNITS, EDGE_COLOR);
-  }
-
-  // The player's Ore in a box whose right edge is at _right, as the mockup's header holds it.
-  void OreBox(std::int32_t _ore, float _right)
-  {
-    Panel(_right - ORE_BOX_WIDTH, 38.0f, ORE_BOX_WIDTH, 30.0f, FIELD_COLOR);
-    Outline(_right - ORE_BOX_WIDTH, 38.0f, ORE_BOX_WIDTH, 30.0f, EDGE_COLOR);
-    GemAndFigure(_ore, _right - 10.0f, 39.0f, Hud::Typeface::Title, GOLD_COLOR);
   }
 
 private:
@@ -1487,255 +1366,6 @@ void RetreatRow(Painter& _paint, float _left, float _top, float _widthUnits, flo
   }
 }
 
-void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::DesignerPanel& _panel,
-                 Outpost::WindowManager::Point _corner, float _scale)
-{
-  const DesignerExtent extent = ExtentOf(_panel);
-  (void)OpenWindow(_layout, Outpost::WindowKind::Designer, std::string(), _corner, DESIGNER_WIDTH, extent.height - Hud::TITLE_BAR_UNITS,
-                   _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  const float tracking = paint.Tracking();
-
-  // The header: the target Shipyard between the arrows that step it, the title, the Shipyard's queue over its slots and the
-  // ships it has built beside them, and the Ore.
-  paint.HeaderBand(DESIGNER_WIDTH, DESIGNER_HEADER);
-  // The queue's slots, ending a little short of the Ore's box.
-  constexpr float SLOT_SIZE = 30.0f;
-  constexpr float SLOT_SPACING = 3.0f;
-  constexpr float SLOTS_LEFT = DESIGNER_WIDTH - DESIGNER_INSET - ORE_BOX_WIDTH - 14.0f -
-                               (static_cast<float>(Outpost::QUEUE_LIMIT) * (SLOT_SIZE + SLOT_SPACING)) + SLOT_SPACING;
-  const float steppedEnd = paint.Stepped(_panel.shipyard, DESIGNER_INSET, ARROWS_IN_TITLE_TOP, 11.0f, SLOTS_LEFT - DESIGNER_INSET - 120.0f,
-                                         _panel.hasShipyard, {.kind = Hud::ActionKind::PreviousShipyard},
-                                         {.kind = Hud::ActionKind::NextShipyard}, HEADER_LABEL_COLOR, Hud::Typeface::Label, tracking);
-  paint.Text(std::format("{}DESIGNER", DOT.substr(1)), steppedEnd + ARROW_GAP_UNITS, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label,
-             tracking);
-  paint.Text("SHIP DESIGN", DESIGNER_INSET, 40.0f, TEXT_COLOR, Hud::Typeface::Title);
-  paint.Text(QueueLabel(_panel.queued), SLOTS_LEFT, 12.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, tracking);
-  paint.RightText(std::format("BUILT{}{}", DOT, _panel.built), SLOTS_LEFT - 12.0f, 44.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label,
-                  tracking);
-  for (std::size_t slot = 0; slot < Outpost::QUEUE_LIMIT; ++slot)
-  {
-    paint.Panel(SLOTS_LEFT + (static_cast<float>(slot) * (SLOT_SIZE + SLOT_SPACING)), 40.0f, SLOT_SIZE, 24.0f,
-                slot < _panel.queued ? SLOT_FILLED_COLOR : FIELD_COLOR);
-  }
-  paint.OreBox(_panel.ore, DESIGNER_WIDTH - DESIGNER_INSET);
-
-  // The name, its count against the limit, and Save at the row's right end.
-  constexpr float SAVE_LEFT = DESIGNER_WIDTH - DESIGNER_INSET - SAVE_WIDTH;
-  const float fieldWidth = SAVE_LEFT - DESIGNER_INSET - 8.0f;
-  const Hud::Rect field = paint.Panel(DESIGNER_INSET, NAME_ROW_TOP, fieldWidth, NAME_ROW_HEIGHT, FIELD_COLOR);
-  paint.Press(field, {.kind = Hud::ActionKind::EditName});
-  paint.Outline(DESIGNER_INSET, NAME_ROW_TOP, fieldWidth, NAME_ROW_HEIGHT, _panel.editing ? PICKED_EDGE_COLOR : EDGE_COLOR);
-  paint.Text("NAME", DESIGNER_INSET + 12.0f, NAME_ROW_TOP + 13.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
-  const std::string count = std::format("{}/{}", _panel.name.size(), Outpost::DESIGN_NAME_LIMIT);
-  const float nameRoom = fieldWidth - 66.0f - 12.0f - paint.Width(count, Hud::Typeface::Figure) - FIT_GAP_UNITS;
-  paint.Text(paint.Fit(_panel.editing ? _panel.name + "_" : _panel.name, Hud::Typeface::Name, nameRoom), DESIGNER_INSET + 66.0f,
-             NAME_ROW_TOP + 9.0f, _panel.nameValid ? TEXT_COLOR : WARNING_COLOR, Hud::Typeface::Name);
-  paint.RightText(count, DESIGNER_INSET + fieldWidth - 12.0f, NAME_ROW_TOP + 12.0f, LABEL_COLOR, Hud::Typeface::Figure);
-  {
-    const Hud::Button& save = _panel.save;
-    const Hud::Rect face = paint.Panel(SAVE_LEFT, NAME_ROW_TOP, SAVE_WIDTH, NAME_ROW_HEIGHT, save.enabled ? CARD_COLOR : FIELD_COLOR);
-    paint.Outline(SAVE_LEFT, NAME_ROW_TOP, SAVE_WIDTH, NAME_ROW_HEIGHT, save.selected ? QUEUE_EDGE_COLOR : EDGE_COLOR);
-    if (save.enabled)
-      paint.Press(face, save.action);
-    paint.Text(save.label, SAVE_LEFT + 12.0f, NAME_ROW_TOP + 13.0f,
-               save.selected  ? QUEUE_EDGE_COLOR
-               : save.enabled ? TEXT_COLOR
-                              : DIM_TEXT_COLOR,
-               Hud::Typeface::Label, tracking);
-  }
-
-  // The saved designs, as many as fit from the first shown, and the arrows that scroll them.
-  paint.Text("SAVED", DESIGNER_INSET, CHIP_ROW_TOP + 7.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
-  for (std::size_t i = _panel.firstChip, column = 0; i < _panel.chips.size() && column < CHIPS_SHOWN; ++i, ++column)
-  {
-    const Hud::DesignChip& chip = _panel.chips[i];
-    const float left = CHIPS_LEFT + (static_cast<float>(column) * (CHIP_WIDTH + 6.0f));
-    paint.Press(paint.Panel(left, CHIP_ROW_TOP, CHIP_WIDTH, CHIP_HEIGHT, chip.shown ? PICKED_COLOR : CARD_COLOR), chip.action);
-    paint.Outline(left, CHIP_ROW_TOP, CHIP_WIDTH, CHIP_HEIGHT, chip.shown ? PICKED_EDGE_COLOR : EDGE_COLOR);
-    const float chipNameRoom = CHIP_WIDTH - 16.0f - paint.Width(chip.code, Hud::Typeface::Detail) - FIT_GAP_UNITS;
-    paint.Text(paint.Fit(chip.name, Hud::Typeface::Label, chipNameRoom), left + 8.0f, CHIP_ROW_TOP + 6.0f, TEXT_COLOR,
-               Hud::Typeface::Label);
-    paint.RightText(chip.code, left + CHIP_WIDTH - 8.0f, CHIP_ROW_TOP + 7.0f, chip.shown ? ACCENT_COLOR : CODE_COLOR,
-                    Hud::Typeface::Detail);
-  }
-  if (_panel.chips.size() > CHIPS_SHOWN)
-  {
-    const float arrowsLeft = DESIGNER_WIDTH - DESIGNER_INSET - (2.0f * SMALL_BUTTON_UNITS) - 4.0f;
-    paint.SmallButton("<", arrowsLeft, CHIP_ROW_TOP + 1.0f, _panel.firstChip > 0, {.kind = Hud::ActionKind::PreviousDesigns});
-    paint.SmallButton(">", arrowsLeft + SMALL_BUTTON_UNITS + 4.0f, CHIP_ROW_TOP + 1.0f,
-                      _panel.firstChip + CHIPS_SHOWN < _panel.chips.size(), {.kind = Hud::ActionKind::NextDesigns});
-  }
-
-  // A row for each slot: its label and pick, then its cards, three to a line.
-  for (std::size_t slot = 0; slot < _panel.slots.size(); ++slot)
-  {
-    const Hud::SlotRow& row = _panel.slots[slot];
-    const float top = extent.slotTops[slot];
-    const float lines = CardLinesOf(row);
-    const float cardHeight = CardHeightOf(row);
-    // The label and the pick, 18 units apart so that the label's line clears the pick's at 1280x720's rounding, and centered
-    // on a line of cards together (ADR-062).
-    paint.Text(row.label, DESIGNER_INSET, top + 21.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
-    paint.Text(paint.Fit(row.picked, Hud::Typeface::Name, SLOT_DIVIDER_LEFT - DESIGNER_INSET - FIT_GAP_UNITS), DESIGNER_INSET, top + 39.0f,
-               ACCENT_COLOR, Hud::Typeface::Name);
-    paint.Panel(SLOT_DIVIDER_LEFT, top + 6.0f, LINE_UNITS, (lines * cardHeight) + ((lines - 1.0f) * CARD_GAP) - 12.0f, EDGE_COLOR);
-    for (std::size_t i = 0; i < row.cards.size(); ++i)
-    {
-      const Hud::PartCard& card = row.cards[i];
-      const std::size_t line = i / CARDS_PER_LINE;
-      const std::size_t column = i % CARDS_PER_LINE;
-      const float left = CARDS_LEFT + (static_cast<float>(column) * (CARD_WIDTH + CARD_GAP));
-      const float cardTop = top + (static_cast<float>(line) * (cardHeight + CARD_GAP));
-      const bool locked = card.IsLocked();
-      const Hud::Rect face = paint.Panel(left, cardTop, CARD_WIDTH, cardHeight,
-                                         card.picked ? PICKED_COLOR
-                                         : locked    ? LOCKED_COLOR
-                                                     : CARD_COLOR);
-      // A locked card takes no click, but previews what its topic buys under the pointer (ADR-017 decision 7).
-      if (locked)
-      {
-        paint.Panel(left, cardTop, CARD_WIDTH, cardHeight, LOCKED_HATCH_COLOR, Hud::Fill::Hatched);
-        paint.Preview(face, card.action);
-      }
-      else
-        paint.Press(face, card.action);
-      paint.Outline(left, cardTop, CARD_WIDTH, cardHeight, card.picked ? PICKED_EDGE_COLOR : EDGE_COLOR);
-      const float inner = CARD_WIDTH - (2.0f * CARD_TEXT_INSET);
-      const float costWidth = paint.GemAndFigureWidth(card.cost, Hud::Typeface::Figure);
-      const DirectX::XMFLOAT4& nameColor = locked ? LOCKED_TEXT_COLOR : TEXT_COLOR;
-      paint.Text(paint.Fit(card.name, Hud::Typeface::Name, inner - costWidth - FIT_GAP_UNITS), left + CARD_TEXT_INSET, cardTop + 8.0f,
-                 nameColor, Hud::Typeface::Name);
-      paint.GemAndFigure(card.cost, left + CARD_WIDTH - CARD_TEXT_INSET, cardTop + 11.0f, Hud::Typeface::Figure,
-                         locked ? LOCKED_TEXT_COLOR : GOLD_COLOR);
-      const DirectX::XMFLOAT4& numbersColor = locked ? LOCKED_TEXT_COLOR : NUMBERS_COLOR;
-      paint.Text(paint.Fit(card.numbers, Hud::Typeface::Detail, inner), left + CARD_TEXT_INSET, cardTop + CARD_NUMBERS_TOP, numbersColor,
-                 Hud::Typeface::Detail);
-      if (!card.note.empty())
-      {
-        paint.Text(paint.Fit(card.note, Hud::Typeface::Detail, inner), left + CARD_TEXT_INSET, cardTop + CARD_NOTE_TOP, numbersColor,
-                   Hud::Typeface::Detail);
-      }
-      if (locked)
-      {
-        const float lockTop = cardTop + cardHeight - CARD_LOCK_FROM_FOOT;
-        paint.Sprite(Hud::Sprite::Checkbox, left + CARD_TEXT_INSET, lockTop + 2.0f, 10.0f, AMBER_COLOR);
-        paint.Text(paint.Fit(card.lockedBy, Hud::Typeface::Label, CARD_WIDTH - CARD_LOCK_TEXT_LEFT - CARD_TEXT_INSET),
-                   left + CARD_LOCK_TEXT_LEFT, lockTop, AMBER_COLOR, Hud::Typeface::Label);
-      }
-    }
-  }
-  paint.Panel(DESIGNER_INSET, extent.slotsEnd + (SECTION_GAP / 2.0f), DESIGNER_WIDTH - (2.0f * DESIGNER_INSET), LINE_UNITS, EDGE_COLOR);
-
-  // Performance: each number's bar against the best in the game; while a part is hovered, the change it would make.
-  const float sections = extent.sectionsTop;
-  paint.Text("PERFORMANCE", DESIGNER_INSET, sections, LABEL_COLOR, Hud::Typeface::Label, tracking);
-  for (std::size_t i = 0; i < _panel.bars.size(); ++i)
-  {
-    const Hud::StatBar& bar = _panel.bars[i];
-    const float top = sections + SECTION_LABEL_HEIGHT + (static_cast<float>(i) * BAR_ROW_HEIGHT);
-    paint.Text(bar.label, DESIGNER_INSET, top + 2.0f, ROW_LABEL_COLOR, Hud::Typeface::Label);
-    paint.Panel(BAR_LEFT, top + 6.0f, BAR_WIDTH, 7.0f, BAR_TRACK_COLOR);
-    if (bar.previewShare.has_value() && bar.change != Hud::Change::Same)
-    {
-      // The part of the bar the hovered part adds or takes away, in the change's color, under what both share.
-      paint.Panel(BAR_LEFT, top + 6.0f, BAR_WIDTH * std::max(bar.share, *bar.previewShare), 7.0f, ChangeColor(bar.change, BAR_FILL_COLOR));
-      paint.Panel(BAR_LEFT, top + 6.0f, BAR_WIDTH * std::min(bar.share, *bar.previewShare), 7.0f, BAR_FILL_COLOR);
-    }
-    else
-      paint.Panel(BAR_LEFT, top + 6.0f, BAR_WIDTH * bar.share, 7.0f, BAR_FILL_COLOR);
-    const bool previewing = bar.previewShare.has_value();
-    paint.RightText(previewing ? bar.previewValue : bar.value, BAR_VALUE_RIGHT, top, ChangeColor(bar.change, TEXT_COLOR),
-                    Hud::Typeface::Figure);
-    paint.Text(bar.unit, BAR_VALUE_RIGHT + 6.0f, top + 2.0f, LABEL_COLOR, Hud::Typeface::Label);
-  }
-
-  // Damage per second after armor against each hull, a card for each.
-  const float damageWidth = DESIGNER_WIDTH - DESIGNER_INSET - DAMAGE_LEFT;
-  paint.Text(std::format("DAMAGE / S AFTER ARMOR{}VS A FORMATION", DOT), DAMAGE_LEFT, sections, LABEL_COLOR, Hud::Typeface::Label,
-             tracking);
-  const auto cards = static_cast<float>(std::max<std::size_t>(1, _panel.damage.size()));
-  const float cardWidth = (damageWidth - ((cards - 1.0f) * DAMAGE_CARD_GAP)) / cards;
-  const float cardsTop = sections + SECTION_LABEL_HEIGHT;
-  for (std::size_t i = 0; i < _panel.damage.size(); ++i)
-  {
-    const Hud::DamageCard& card = _panel.damage[i];
-    const float left = DAMAGE_LEFT + (static_cast<float>(i) * (cardWidth + DAMAGE_CARD_GAP));
-    paint.Panel(left, cardsTop, cardWidth, DAMAGE_CARD_HEIGHT, FIELD_COLOR);
-    paint.Outline(left, cardsTop, cardWidth, DAMAGE_CARD_HEIGHT, EDGE_COLOR);
-    const float armorWidth = paint.Width(card.armor, Hud::Typeface::Label);
-    paint.Text(paint.Fit(card.hull, Hud::Typeface::Name, cardWidth - 18.0f - armorWidth - FIT_GAP_UNITS), left + 10.0f, cardsTop + 8.0f,
-               TEXT_COLOR, Hud::Typeface::Name);
-    paint.RightText(card.armor, left + cardWidth - 8.0f, cardsTop + 11.0f, LABEL_COLOR, Hud::Typeface::Label);
-    // Clear of the hull's line, which the name face sets about 19 units tall, at every scale's rounding.
-    paint.Text(card.perShip, left + 10.0f, cardsTop + 30.0f, ChangeColor(card.change, TEXT_COLOR), Hud::Typeface::LargeFigure);
-    // How many ships a splash reaches, at the card's right above the change.
-    if (!card.reach.empty())
-      paint.RightText(card.reach, left + cardWidth - 8.0f, cardsTop + 28.0f, LABEL_COLOR, Hud::Typeface::Label);
-    // A hovered part's change, at the card's right on the large figure's line.
-    if (!card.perShipChange.empty())
-    {
-      paint.RightText(card.perShipChange, left + cardWidth - 8.0f, cardsTop + 44.0f, ChangeColor(card.change, TEXT_COLOR),
-                      Hud::Typeface::Figure);
-    }
-    paint.Panel(left + 10.0f, cardsTop + 66.0f, cardWidth - 20.0f, 4.0f, BAR_TRACK_COLOR);
-    paint.Panel(left + 10.0f, cardsTop + 66.0f, (cardWidth - 20.0f) * card.share, 4.0f, RatingColor(card.rating));
-    paint.Text(paint.Fit(card.perOre, Hud::Typeface::Detail, cardWidth - 20.0f), left + 10.0f, cardsTop + 76.0f, SOFT_COLOR,
-               Hud::Typeface::Detail);
-  }
-  paint.Text(paint.Fit(_panel.hint, Hud::Typeface::Detail, damageWidth), DAMAGE_LEFT, cardsTop + DAMAGE_CARD_HEIGHT + 10.0f, LABEL_COLOR,
-             Hud::Typeface::Detail);
-
-  // The bottom row: Rename, the stepper, and Queue with the build time of one ship and the cost of all.
-  const float footer = extent.footerTop;
-  {
-    const Hud::Button& rename = _panel.rename;
-    const Hud::Rect face = paint.Panel(DESIGNER_INSET, footer, 90.0f, FOOTER_HEIGHT, rename.enabled ? CARD_COLOR : FIELD_COLOR);
-    paint.Outline(DESIGNER_INSET, footer, 90.0f, FOOTER_HEIGHT, EDGE_COLOR);
-    if (rename.enabled)
-      paint.Press(face, rename.action);
-    paint.Text(rename.label, DESIGNER_INSET + 14.0f, footer + 16.0f, rename.enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label,
-               tracking);
-  }
-  // The design's retreat, between Rename and the stepper: RETREAT over a row of three, its setting lit, each a press that
-  // sets it (ADR-088 decision 3).
-  {
-    paint.Text("RETREAT", RETREAT_LEFT, footer, ROW_LABEL_COLOR, Hud::Typeface::Label, tracking);
-    RetreatRow(paint, RETREAT_LEFT, footer + RETREAT_CELLS_TOP, RETREAT_WIDTH, FOOTER_HEIGHT - RETREAT_CELLS_TOP, _panel.retreat,
-               Hud::ActionKind::DesignRetreat, Hud::Typeface::Label, tracking, std::nullopt);
-  }
-  const auto step = [&](std::string _mark, float _left, bool _enabled, Hud::ActionKind _kind)
-  {
-    const Hud::Rect face = paint.Panel(_left, footer, STEP_WIDTH, FOOTER_HEIGHT, _enabled ? CARD_COLOR : FIELD_COLOR);
-    paint.Outline(_left, footer, STEP_WIDTH, FOOTER_HEIGHT, EDGE_COLOR);
-    if (_enabled)
-      paint.Press(face, {.kind = _kind});
-    paint.Text(std::move(_mark), _left + 13.0f, footer + 13.0f, _enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Name);
-  };
-  step("-", STEPPER_LEFT, _panel.canFewer, Hud::ActionKind::FewerShips);
-  paint.Panel(STEPPER_LEFT + STEP_WIDTH, footer, COUNT_WIDTH, FOOTER_HEIGHT, FIELD_COLOR);
-  paint.Outline(STEPPER_LEFT + STEP_WIDTH, footer, COUNT_WIDTH, FOOTER_HEIGHT, EDGE_COLOR);
-  paint.Text(std::format("{}{}", TIMES, _panel.count), STEPPER_LEFT + STEP_WIDTH + 10.0f, footer + 13.0f, TEXT_COLOR, Hud::Typeface::Name);
-  step("+", STEPPER_LEFT + STEP_WIDTH + COUNT_WIDTH, _panel.canMore, Hud::ActionKind::MoreShips);
-  {
-    const float queueWidth = DESIGNER_WIDTH - DESIGNER_INSET - QUEUE_LEFT;
-    const Hud::Button& queue = _panel.queue;
-    const Hud::Rect face = paint.Panel(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, queue.enabled ? QUEUE_COLOR : FIELD_COLOR);
-    if (queue.enabled)
-    {
-      paint.Panel(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, QUEUE_HATCH_COLOR, Hud::Fill::Hatched);
-      paint.Press(face, queue.action);
-    }
-    paint.Outline(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, queue.enabled ? QUEUE_EDGE_COLOR : EDGE_COLOR);
-    const DirectX::XMFLOAT4& color = queue.enabled ? QUEUE_TEXT_COLOR : DIM_TEXT_COLOR;
-    // The label's line, up to 27 units in the title face, ends above the detail's at either scale's rounding (ADR-061).
-    paint.Text(queue.label, QUEUE_LEFT + 18.0f, footer + 2.0f, color, Hud::Typeface::Title, tracking);
-    paint.Text(_panel.queueDetail, QUEUE_LEFT + 18.0f, footer + 31.0f, color, Hud::Typeface::Detail);
-    paint.GemAndFigure(_panel.queueCost, QUEUE_LEFT + queueWidth - 16.0f, footer + 10.0f, Hud::Typeface::Title,
-                       queue.enabled ? GOLD_COLOR : DIM_TEXT_COLOR);
-  }
-}
-
 // The production and research windows, in the designer's look, in reference units from the window's
 // top-left corner: a hatched header with the window's subject and the Ore, the cards that add to the queue, and under them
 // the queue, a row for each job. The cards stay where they are as the queue grows, so that one can be clicked again and
@@ -1746,8 +1376,7 @@ constexpr float PRODUCTION_WINDOW_WIDTH = Hud::REFERENCE_WIDTH_UNITS - (4.0f * M
 constexpr float WINDOW_INSET = 24.0f;
 // Where a window's header, its label in its title bar, stands from the title bar's top.
 constexpr float WINDOW_HEADER_TOP = 11.0f;
-// A section's label, and how far under it what it labels starts.
-constexpr float SECTION_TOP = 84.0f;
+// How far under a section's label what it labels starts.
 constexpr float SECTION_BODY_GAP = 20.0f;
 constexpr float QUEUE_ROW_HEIGHT = 30.0f;
 constexpr float QUEUE_ROW_GAP = 4.0f;
@@ -1926,9 +1555,8 @@ std::size_t BeginWindowAt(Neuron::Canvas& _canvas, Neuron::Interaction& _interac
   return _canvas.BeginWindow(window, std::string(row.title), _place.anchor, _place.margin, _widthUnits, _body);
 }
 
-// Draws the window built on _canvas into the layout, and keeps beside it what OpenWindow keeps: the rectangle of each
-// button among the layout's actions from _firstAction, and of each card among its previews, and the window's frame, title
-// bar, close box and corner.
+// Draws the window built on _canvas into the layout, and keeps beside it the rectangle of each button among the layout's
+// actions from _firstAction, and of each card among its previews, and the window's frame, title bar, close box and corner.
 void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _frame, Outpost::WindowKind _kind, std::size_t _firstAction)
 {
   const std::size_t firstRegion = _layout.regions.size();
@@ -2196,14 +1824,6 @@ WindowPlace FirstPlaceOf(Outpost::FirstPlace _first, float _screenWidthUnits) no
     break;
   }
   return {.anchor = Neuron::LayoutAnchor::Middle, .margin = {.left = MARGIN, .top = MARGIN, .right = MARGIN, .bottom = MARGIN}};
-}
-
-// The top-left corner of a window _widthUnits wide standing at _place's anchor, for a window not yet on the canvas, whose
-// anchor needs no height: one at the top of the screen.
-Outpost::WindowManager::Point TopCornerOf(const WindowPlace& _place, float _widthUnits, float _screenWidthUnits) noexcept
-{
-  const bool right = _place.anchor == Neuron::LayoutAnchor::TopRight;
-  return {.xUnits = right ? _screenWidthUnits - _place.margin.right - _widthUnits : _place.margin.left, .yUnits = _place.margin.top};
 }
 
 // The build window: the structures' buttons in a column, inset from its sides only by the padding, as the buttons' panel
@@ -4014,7 +3634,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                      std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered,
-                     Neuron::Interaction* _interaction, bool _ported)
+                     Neuron::Interaction* _interaction)
 {
   // The windows on the canvas name their widgets afresh each frame (ADR-100).
   Neuron::Interaction unpointed;
@@ -4617,14 +4237,8 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   for (const WindowKind kind : backToFront)
   {
     // The designer, at first in the top-right corner.
-    if (kind == WindowKind::Designer && _content.designer.has_value() && _ported)
+    if (kind == WindowKind::Designer && _content.designer.has_value())
       LayDesigner(bench, *_content.designer, placed(kind, DESIGNER_WIDTH));
-    else if (kind == WindowKind::Designer && _content.designer.has_value())
-    {
-      const WindowManager::Point corner =
-        place(kind, TopCornerOf(FirstPlaceOf(RowOf(kind).first, screenWidthUnits), DESIGNER_WIDTH, screenWidthUnits), DESIGNER_WIDTH);
-      LayDesigner(layout, _metrics, *_content.designer, corner, scale);
-    }
     // Production and research, at first side by side under the Ore and the status panel, clear of the designer.
     else if (kind == WindowKind::Production && _content.production.has_value())
       LayProduction(bench, *_content.production, {.corner = place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH)});

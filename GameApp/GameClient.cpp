@@ -992,8 +992,6 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
   case Hud::ActionKind::PickModule:
     m_designer.PickModule(_action.module);
     break;
-  case Hud::ActionKind::EditName:
-    break;
   case Hud::ActionKind::SaveDesign:
     if (std::optional<SaveDesignCommand> save = m_designer.SaveCommand(m_view.Newest()))
     {
