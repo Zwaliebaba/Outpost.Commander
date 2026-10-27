@@ -95,7 +95,7 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV8.1 | The column under the Ore | CV3.4 | C1 | todo |
 | CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | todo |
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | todo |
-| CV9.1 | The scroll view | CV3.4 | — | in review |
+| CV9.1 | The scroll view | CV3.4 | — | in review, [#153](https://github.com/Zwaliebaba/Outpost.Commander/pull/153) |
 
 ### Milestone order
 
