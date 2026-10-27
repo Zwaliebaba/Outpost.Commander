@@ -68,6 +68,9 @@ public:
   [[nodiscard]] WidgetId Release(const DrawList& _list, float _xPixels, float _yPixels);
   // The wheel turned _units over a point: the canvas's only over a region that scrolls, whose offset takes it.
   [[nodiscard]] bool Wheel(const DrawList& _list, float _xPixels, float _yPixels, float _units);
+  // How far down the pointer has moved since the press, or since this was last taken, in pixels, for a widget dragged
+  // while it is active, such as a scroll's thumb.
+  [[nodiscard]] float TakeDragPixels() noexcept;
 
   // _widget, a text field, takes the keyboard.
   void Focus(WidgetId _widget) noexcept;
@@ -107,6 +110,9 @@ private:
   WidgetId m_active = NO_WIDGET;
   WidgetId m_focused = NO_WIDGET;
   WidgetId m_dropDown = NO_WIDGET;
+  // Where the pointer is down the screen, and where a drag was last taken from.
+  float m_pointerYPixels = 0.0f;
+  float m_dragFromYPixels = 0.0f;
   // The field the strokes are for, which may have given back the keyboard since, as Esc and Enter make it.
   WidgetId m_strokesFor = NO_WIDGET;
   std::vector<FieldStroke> m_strokes;

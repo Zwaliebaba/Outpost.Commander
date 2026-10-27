@@ -2,6 +2,7 @@
 #include "DrawList.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -105,6 +106,37 @@ const Neuron::CanvasRegion* Neuron::DrawList::ScrollAt(float _xPixels, float _yP
       return &regions[i];
   }
   return nullptr;
+}
+
+const Neuron::CanvasRect* Neuron::DrawList::ClipOf(CanvasSpan CanvasClip::*_list, std::size_t _index) const noexcept
+{
+  for (const CanvasClip& clip : clips)
+  {
+    if (_index >= (clip.*_list).first && _index < (clip.*_list).end)
+      return &clip.area;
+  }
+  return nullptr;
+}
+
+std::optional<Neuron::CanvasQuad> Neuron::ClipQuad(const CanvasQuad& _quad, const CanvasRect& _clip) noexcept
+{
+  const float left = std::max(_quad.left, _clip.left);
+  const float top = std::max(_quad.top, _clip.top);
+  const float right = std::min(_quad.right, _clip.left + _clip.width);
+  const float bottom = std::min(_quad.bottom, _clip.top + _clip.height);
+  if (left >= right || top >= bottom)
+    return std::nullopt;
+  // Each coordinate where the cut edge stands between the quad's own, which a quad of no width or height never needs.
+  const auto across = [&_quad](float _x) { return _quad.right > _quad.left ? (_x - _quad.left) / (_quad.right - _quad.left) : 0.0f; };
+  const auto down = [&_quad](float _y) { return _quad.bottom > _quad.top ? (_y - _quad.top) / (_quad.bottom - _quad.top) : 0.0f; };
+  return CanvasQuad{.left = left,
+                    .top = top,
+                    .right = right,
+                    .bottom = bottom,
+                    .u0 = std::lerp(_quad.u0, _quad.u1, across(left)),
+                    .v0 = std::lerp(_quad.v0, _quad.v1, down(top)),
+                    .u1 = std::lerp(_quad.u0, _quad.u1, across(right)),
+                    .v1 = std::lerp(_quad.v0, _quad.v1, down(bottom))};
 }
 
 std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> Neuron::ClipToRect(DirectX::XMFLOAT2 _from, DirectX::XMFLOAT2 _to,

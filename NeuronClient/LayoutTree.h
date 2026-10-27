@@ -4,7 +4,8 @@ namespace Neuron
 {
 // What a node of the layout is (ADR-100): a box, which holds nothing of its own and which a widget draws into, or a spacer
 // when it grows; a column, which sets what it holds one under another; a row, one beside another; a grid, in rows of its
-// columns' count, every cell as wide as the others; a stack, each over the others; or a text.
+// columns' count, every cell as wide as the others; a stack, each over the others; a text; or a scroll, which holds what
+// it holds across it and as tall as that is, however tall it is itself, scrolled by its offset.
 enum class LayoutKind : std::uint8_t
 {
   Box,
@@ -12,7 +13,8 @@ enum class LayoutKind : std::uint8_t
   Row,
   Grid,
   Stack,
-  Text
+  Text,
+  Scroll
 };
 
 // How what a node holds sits across its content box on one axis: against its start, in its middle, against its end, or
@@ -91,6 +93,8 @@ struct LayoutStyle
   // as the cards of a page and those of the pages not shown, measured and not drawn, so that the cards keep their height
   // from page to page. A node of a group holds none of the group's.
   std::uint32_t heightGroup = 0;
+  // A scroll's offset: how far what it holds stands above its top, held so that what it holds still covers it.
+  float scrollUnits = 0.0f;
 };
 
 // What a text node sets: the text, in UTF-8, in the atlas's font of index font, with trackingUnits more between each two
@@ -133,6 +137,11 @@ struct LayoutNode
   // What it would take with the room it is given: its width, before its parent gives it one, and its height, once it has.
   float naturalWidthUnits = 0.0f;
   float naturalHeightUnits = 0.0f;
+  // How tall it is at its least: what it holds, where a column's children that grow give up what room they can and a
+  // scroll holds nothing, which no most makes it shorter than.
+  float shrunkHeightUnits = 0.0f;
+  // A scroll's offset, as it was held once placed.
+  float scrolledUnits = 0.0f;
   // A text's lines, as set.
   std::vector<LayoutLine> lines;
 };

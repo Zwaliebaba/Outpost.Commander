@@ -1328,7 +1328,9 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 ### Scale [§interface.scale]
 
 - **Ctrl+= makes the interface larger and Ctrl+- smaller**, on the keys that read = and - on a US keyboard, in steps of 100%, 110%, 125%, 150%, 175% and 200% of the size that fits the screen (ADR-070 decision 2).
-- **A step up is taken only while the windows of a fixed size still fit the screen between its margins:** in a match, the designer laid out with every component of the match, locked or not, the Controls window, the orders window and the away window; on the menu, the Controls window alone. The production and research windows grow with what they hold, and are not counted (ADR-070 decision 3).
+- **A step up is taken only while the windows of a fixed size still fit the screen between its margins at their least, their scrolling parts giving up the room they can,** and in a match, while the HUD's bottom row, the minimap, the selection and its buttons, fits it at its widest. In a match the windows counted are the designer laid out with every component of the match, locked or not, the Controls window, the orders window, the away window and the build window; on the menu, the Controls window alone. The production and research windows grow with what they hold, and are not counted (ADR-070 decision 3).
+- **So a match reaches 150% on a 16:9, 16:10 or 3:2 screen, and 175% on a 21:9 one; the menu reaches 200%** (ADR-070).
+- **A window stands no taller than the screen lets it:** the designer's part rows and the Controls window's lines scroll, with the wheel over them or by dragging the thumb at their right, while the rest of the window stays put (ADR-100 decisions 6 and 7; Game §interface.windows.designer; Game §interface.windows.controls).
 - **The scale comes down to the largest step that fits** whenever the screen changes size and whenever a match starts or ends, so no window of a fixed size opens taller than the screen (ADR-070 decision 4).
 - **The step the player takes is kept from one session to the next,** and the game starts at it, brought down as far as its screen needs; a step down that a screen or a match makes is not kept. Without one, the scale starts at 100% (ADR-070 decision 5; ADR-099 decision 1).
 - **What is drawn in the world keeps the screen's own scale,** whatever the player sets: the stars, the bars over ships and structures, and the selection's ring (ADR-070 decision 7; ADR-088 decision 5).
@@ -1366,7 +1368,7 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 The HUD stays where it is and never moves with the camera (ADR-015 decision 4; ADR-043 decision 1):
 
 - the Ore at the top left, and under it one column of the status, territory and alerts panels;
-- the hint at the top middle, and the banner under its place once a match ends (Game §session.end);
+- the hint at the top middle, and the banner under its place once a match ends (Game §session.end), or, where the interface's scale crowds the top row, under the Ore's row in the middle of the room right of the column, the banner under the hint (ADR-015 decision 4);
 - the tag that says where the match runs at the top right (Game §interface.hud.tag);
 - the minimap at the bottom left (Game §interface.minimap);
 - the selection at the bottom middle, with its buttons against its right edge.
@@ -1524,13 +1526,14 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **The designer is a window of the owner's mockup:** its title bar names the Shipyard its queue goes to between arrows, "< SHIPYARD 05 > · DESIGNER", over a header with that Shipyard's queue, "QUEUE · 2 / 5", over five slots, the ships it has built, "BUILT · 4", and the player's Ore (ADR-017 decision 7; ADR-068 decision 1).
 - **Under the header it holds, top to bottom:** the name with its count of characters and Save; the saved designs as chips, three at a time with arrows; a row for each slot, hull, drive, weapon and module, of cards three to a line, a locked one hatched with the topic that unlocks it; the performance bars beside the damage per second after armor against each hull; and Rename, the design's retreat, the count of ships, and Queue with one ship's build time and the cost of all (ADR-017 decision 7; ADR-062 decision 4; ADR-088 decision 3).
 - **What a design is, and what saving, renaming, queuing and typing a name do, are Game §ships.designer.**
-- **It is 818 units wide,** and as tall as its rows make it (ADR-062 decision 4).
+- **It is 818 units wide,** and as tall as its rows make it, or as the screen lets it: then its part rows scroll, at least a line of cards of them showing, and the header, name, saved designs, bars, damage and footer stay put, so that a part hovered anywhere in the rows still shows in the bars (ADR-062 decision 4; ADR-100 decision 7).
 
 #### The Controls window [§interface.windows.controls]
 
 - **F1 opens and closes it,** in a match, in the middle of the screen (ADR-068 decision 4).
 - **It lists every key and mouse action the game reads in a match,** under three headings: selecting and orders, the camera, and the windows. Its lines are made from the keys the input code reads, so it cannot name a key the game does not read ([Controls](Reference/Controls.md); ADR-068 decision 4).
 - **The keys that edit a design's name are not listed:** that is typing, not a control of the match (ADR-068).
+- **Its lines scroll where the screen is too short for them all,** at least 440 units of them showing (ADR-100 decision 7).
 
 #### The orders and away windows [§interface.windows.orders]
 

@@ -1474,6 +1474,11 @@ const Neuron::Theme& GameTheme()
     made.checkUnits = SMALL_BUTTON_UNITS;
     made.checkInsetUnits = (SMALL_BUTTON_UNITS - 10.0f) / 2.0f;
     made.checkGapUnits = ARROW_GAP_UNITS;
+    // A scroll view's lane is the room the designer keeps right of its part cards (ADR-062 decision 4), its track and thumb a
+    // small button's width less its mark's, and its thumb at least a small button long.
+    made.scrollLaneUnits = DESIGNER_WIDTH - CARDS_LEFT - CARDS_WIDTH;
+    made.scrollThumbUnits = 6.0f;
+    made.scrollLeastThumbUnits = SMALL_BUTTON_UNITS;
     return made;
   }();
   return THEME;
@@ -1543,16 +1548,43 @@ struct WindowPlace
   Neuron::LayoutEdges margin;
 };
 
-// Opens _kind's window on _canvas where _place puts it, named and titled by its row (ADR-100), its body of _body's style, and
-// returns its frame's node.
+// How tall a window at _place may stand on a screen _screenHeightUnits tall: down to a margin above the screen's foot from
+// its top, where it stands at its corner or at a top anchor; between its anchor's margins, where it stands in the middle;
+// or up to a margin below the screen's top from its foot, at a bottom anchor (ADR-100 decision 7).
+float MostHeightOf(const WindowPlace& _place, float _screenHeightUnits) noexcept
+{
+  if (_place.corner.has_value())
+    return _screenHeightUnits - _place.corner->yUnits - MARGIN;
+  switch (_place.anchor)
+  {
+  case Neuron::LayoutAnchor::TopLeft:
+  case Neuron::LayoutAnchor::Top:
+  case Neuron::LayoutAnchor::TopRight:
+    return _screenHeightUnits - _place.margin.top - MARGIN;
+  case Neuron::LayoutAnchor::BottomLeft:
+  case Neuron::LayoutAnchor::Bottom:
+  case Neuron::LayoutAnchor::BottomRight:
+    return _screenHeightUnits - _place.margin.bottom - MARGIN;
+  case Neuron::LayoutAnchor::Left:
+  case Neuron::LayoutAnchor::Middle:
+  case Neuron::LayoutAnchor::Right:
+    break;
+  }
+  return _screenHeightUnits - _place.margin.top - _place.margin.bottom;
+}
+
+// Opens _kind's window on _canvas where _place puts it, named and titled by its row (ADR-100), its body of _body's style, no
+// taller than the screen of _screenHeightUnits leaves it while a scroll view in it can give up room, and returns its
+// frame's node.
 std::size_t BeginWindowAt(Neuron::Canvas& _canvas, Neuron::Interaction& _interaction, Outpost::WindowKind _kind, const WindowPlace& _place,
-                          float _widthUnits, const Neuron::LayoutStyle& _body)
+                          float _widthUnits, const Neuron::LayoutStyle& _body, float _screenHeightUnits)
 {
   const Outpost::WindowRow& row = Outpost::RowOf(_kind);
   const Neuron::WidgetId window = _interaction.IdOf(row.name);
+  const float most = MostHeightOf(_place, _screenHeightUnits);
   if (_place.corner.has_value())
-    return _canvas.BeginWindow(window, std::string(row.title), *_place.corner, _widthUnits, _body);
-  return _canvas.BeginWindow(window, std::string(row.title), _place.anchor, _place.margin, _widthUnits, _body);
+    return _canvas.BeginWindow(window, std::string(row.title), *_place.corner, _widthUnits, _body, most);
+  return _canvas.BeginWindow(window, std::string(row.title), _place.anchor, _place.margin, _widthUnits, _body, most);
 }
 
 // Draws the window built on _canvas into the layout, and keeps beside it the rectangle of each button among the layout's
@@ -1596,7 +1628,7 @@ void LayWindow(const WindowBench& _bench, Outpost::WindowKind _kind, const Windo
 {
   Neuron::Canvas canvas(GameTheme(), *_bench.metrics, *_bench.interaction, _bench.screenWidthUnits, _bench.screenHeightUnits);
   const std::size_t firstAction = _bench.layout->actions.size();
-  const std::size_t frame = BeginWindowAt(canvas, *_bench.interaction, _kind, _place, _widthUnits, _body);
+  const std::size_t frame = BeginWindowAt(canvas, *_bench.interaction, _kind, _place, _widthUnits, _body, _bench.screenHeightUnits);
   std::forward<Build>(_build)(canvas);
   canvas.EndWindow();
   FinishWindow(*_bench.layout, canvas, frame, _kind, firstAction);
@@ -1620,6 +1652,10 @@ std::size_t Heading(Neuron::Canvas& _canvas, std::string _text, Neuron::LayoutSt
 constexpr float CONTROLS_WINDOW_WIDTH = 700.0f;
 constexpr float CONTROLS_KEYS_WIDTH = 240.0f;
 constexpr float CONTROLS_HEADING_GAP = 10.0f;
+// Its lines scroll, in a view no shorter than leaves the window 500 units tall at its least, so that on the menu, where it
+// is the one window counted, a 16:9 screen, 540 units tall at 200%, holds it between its margins (ADR-070 decision 3); and
+// its view's lane stands in the window's inset at its right.
+constexpr float CONTROLS_LEAST_UNITS = 440.0f;
 
 // The orders window (ADR-080 decision 9): under a label, the seat's scheduled orders, a line each; and under another,
 // the form's rows, each its label and its value between the arrows that step it, the line that says when the order fires,
@@ -1680,6 +1716,9 @@ void LayControls(const WindowBench& _bench, const WindowPlace& _place)
   LayWindow(_bench, Outpost::WindowKind::Controls, _place, CONTROLS_WINDOW_WIDTH, BodyStyle(),
             [&](Neuron::Canvas& _canvas)
             {
+              (void)_canvas.BeginScroll("lines", {.widthUnits = CONTROLS_WINDOW_WIDTH - (2.0f * WINDOW_INSET) + GameTheme().scrollLaneUnits,
+                                                  .leastHeightUnits = CONTROLS_LEAST_UNITS,
+                                                  .grow = 1.0f});
               const std::vector<Outpost::KeyBinding> bindings = Outpost::KeyBindings();
               for (std::size_t line = 0; line < bindings.size(); ++line)
               {
@@ -1697,6 +1736,7 @@ void LayControls(const WindowBench& _bench, const WindowPlace& _place)
                 (void)_canvas.Label(FittedText(binding.does, Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR, {.grow = 1.0f});
                 _canvas.Tree().End();
               }
+              _canvas.EndScroll();
             });
 }
 
@@ -1773,8 +1813,9 @@ struct WindowSize
   float heightUnits = 0.0f;
 };
 
-// How large a window stands once _build has built it on the canvas, which WindowsFit compares with the screen (ADR-070): it
-// is built where nothing else is, with no font, since every line it holds is one line however wide.
+// How large a window stands at its least once _build has built it on the canvas, which WindowsFit compares with the screen
+// (ADR-070): it is built where nothing else is, on a screen of no size, so that its scroll views give up all the room they
+// can, and with no font, since every line it holds is one line however wide.
 template <class Build> WindowSize BuiltSize(Build&& _build)
 {
   Hud::Layout scratch;
@@ -1844,11 +1885,12 @@ void LayBuild(const WindowBench& _bench, const Hud::BuildPanel& _panel, const Wi
 
 void LayDesigner(const WindowBench& _bench, const Hud::DesignerPanel& _panel, const WindowPlace& _place);
 
-// How large _window stands holding its most, in the match _newest is of, or the Controls window outside one, for WindowsFit
-// (ADR-070): the away window with as many lines as it shows, the build window with every structure the match offers
-// (ADR-031 decision 6), and the designer with every component of the match, locked or not, as tall as it grows. The
-// Controls and orders windows are as large whatever they hold. A window its row does not count is not measured.
-WindowSize LongestOf(Outpost::WindowKind _window, const Outpost::Snapshot* _newest)
+// How large _window stands at its least holding its most, in the match _newest is of, or the Controls window outside one,
+// for WindowsFit (ADR-070): the away window with as many lines as it shows, the build window with every structure the match
+// offers (ADR-031 decision 6), and the designer with every component of the match, locked or not, its part rows showing a
+// line of cards. The Controls window, its lines at their least, and the orders window are as large whatever they hold. A
+// window its row does not count is not measured.
+WindowSize LeastOf(Outpost::WindowKind _window, const Outpost::Snapshot* _newest)
 {
   const WindowPlace corner{.corner = Outpost::WindowManager::Point{}};
   switch (_window)
@@ -2405,10 +2447,16 @@ void PartCardOf(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::PartCa
 
 // A row for each slot: its label and pick, 18 units apart so that the label's line clears the pick's at 1280x720's
 // rounding, and centered on a line of cards together (ADR-062); a divider; and its cards, three to a line, every one as
-// tall as the tallest, so that a row whose cards have notes is taller (ADR-061).
+// tall as the tallest, so that a row whose cards have notes is taller (ADR-061). The rows scroll, in a view that shows a
+// line of the tallest cards at least, with its lane in the room right of the cards; nothing above or below them does
+// (ADR-100 decision 7).
 void SlotRows(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::DesignerPanel& _panel)
 {
   Neuron::LayoutTree& tree = _canvas.Tree();
+  float tallest = CARD_HEIGHT;
+  for (const Hud::SlotRow& row : _panel.slots)
+    tallest = std::max(tallest, CardHeightOf(row));
+  (void)_canvas.BeginScroll("parts", {.widthUnits = DESIGNER_WIDTH - DESIGNER_INSET, .leastHeightUnits = tallest, .grow = 1.0f});
   (void)tree.Begin(Neuron::LayoutKind::Column, {.gapUnits = SLOT_GAP, .alignX = Neuron::LayoutAlign::Stretch});
   for (std::size_t slot = 0; slot < _panel.slots.size(); ++slot)
   {
@@ -2432,6 +2480,7 @@ void SlotRows(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::Designer
     tree.End();
   }
   tree.End();
+  _canvas.EndScroll();
 }
 
 // Performance: each number's bar against the best in the game, in room for the six every design has; while a part is
@@ -2627,7 +2676,8 @@ void LayDesigner(const WindowBench& _bench, const Hud::DesignerPanel& _panel, co
               (void)tree.Begin(
                 Neuron::LayoutKind::Column,
                 {.padding = {.left = DESIGNER_INSET, .top = NAME_ROW_TOP - DESIGNER_HEADER, .right = DESIGNER_INSET, .bottom = SECTION_GAP},
-                 .alignX = Neuron::LayoutAlign::Stretch});
+                 .alignX = Neuron::LayoutAlign::Stretch,
+                 .grow = 1.0f});
               NameRow(_canvas, _bench, _panel);
               (void)tree.Add({.heightUnits = CHIP_ROW_TOP - NAME_ROW_TOP - NAME_ROW_HEIGHT});
               SavedDesigns(_canvas, layout, _panel);
@@ -3601,13 +3651,19 @@ bool Hud::WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::u
     return false;
   const float screenWidthUnits = static_cast<float>(_widthPixels) / scale;
   const float screenHeightUnits = static_cast<float>(_heightPixels) / scale;
-  // Each window its row counts, at its most (ADR-100), the Controls window on the menu too and the others only in a match.
+  // In a match, the HUD's bottom row at its widest: the minimap with its margin and the gap after it, the selection panel
+  // and its buttons at their widest, and the margin at the right (ADR-088 decision 2).
+  constexpr float BOTTOM_ROW_UNITS = MARGIN + MINIMAP_SIZE + PANEL_GAP + SELECTION_PANEL_WIDTH + BUTTON_PANEL_WIDTH + MARGIN;
+  if (_newest != nullptr && BOTTOM_ROW_UNITS > screenWidthUnits)
+    return false;
+  // Each window its row counts, at its least, as short as its scroll views let it be (ADR-100), the Controls window on the
+  // menu too and the others only in a match.
   for (const WindowRow& row : WINDOWS)
   {
     if (!row.fits || (_newest == nullptr && row.kind != WindowKind::Controls))
       continue;
-    const WindowSize longest = LongestOf(row.kind, _newest);
-    if (longest.widthUnits + (2.0f * MARGIN) > screenWidthUnits || longest.heightUnits + (2.0f * MARGIN) > screenHeightUnits)
+    const WindowSize least = LeastOf(row.kind, _newest);
+    if (least.widthUnits + (2.0f * MARGIN) > screenWidthUnits || least.heightUnits + (2.0f * MARGIN) > screenHeightUnits)
       return false;
   }
   return true;
@@ -3873,10 +3929,37 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     }
   }
 
+  // The top row's middle (Game §interface.hud; ADR-015 decision 4): the hint, and the banner under it, stand in the middle
+  // of the screen while they clear the column at its left and the tag, at its widest and tallest, at its right. Where they
+  // do not, as the interface's scale grows, they stand aside: under the top row, in the middle of the room right of the
+  // column, the banner under the hint.
+  const bool tagged = _content.connection.has_value();
+  const float tagUnits =
+    tagged ? std::max(CONNECTION_MOST_UNITS, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS)) +
+               (2.0f * PADDING)
+           : 0.0f;
+  const float tagHeightUnits = (2.0f * TERRITORY_INSET_UNITS) + (2.0f * NAME_LINE_UNITS);
+  const float roomLeftUnits = MARGIN + columnUnits + PANEL_GAP;
+  const float roomRightUnits = screenWidthUnits - MARGIN - (tagged ? tagUnits + PANEL_GAP : 0.0f);
+  const float underTopRowUnits = MARGIN + std::max(ORE_PANEL_HEIGHT, tagged ? tagHeightUnits : 0.0f) + PANEL_GAP;
+  const auto clears = [&](float _widthUnits)
+  {
+    const float left = (screenWidthUnits - _widthUnits) / 2.0f;
+    return left >= roomLeftUnits && left + _widthUnits <= roomRightUnits;
+  };
+  const auto asideLeft = [&](float _widthUnits) { return (roomLeftUnits + screenWidthUnits - MARGIN - _widthUnits) / 2.0f; };
+  // Where the banner stands under a hint that stands aside.
+  std::optional<WindowManager::Point> underHint;
+
   // Top-middle anchor: what a click on the ground will do.
   if (!_content.hint.empty())
   {
-    Painter paint = frame({.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+    const WindowManager::Point at = clears(HINT_PANEL_WIDTH)
+                                      ? WindowManager::Point{.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}
+                                      : WindowManager::Point{.xUnits = asideLeft(HINT_PANEL_WIDTH), .yUnits = underTopRowUnits};
+    if (at.yUnits > MARGIN)
+      underHint = WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = at.yUnits + ORE_PANEL_HEIGHT + PANEL_GAP};
+    Painter paint = frame(at, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
     paint.Text(paint.Fit(_content.hint, Typeface::Name, HINT_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
                (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
   }
@@ -3919,7 +4002,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   if (_content.outcome.has_value())
   {
     const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
-    Painter paint = frame({.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = underOreUnits}, BANNER_WIDTH, heightUnits);
+    const WindowManager::Point at = underHint.value_or(
+      clears(BANNER_WIDTH) ? WindowManager::Point{.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = underOreUnits}
+                           : WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = underTopRowUnits});
+    Painter paint = frame(at, BANNER_WIDTH, heightUnits);
     const float room = BANNER_WIDTH - (2.0f * PADDING);
     paint.Text(paint.Fit(_content.outcome->title, Typeface::Title, room), PADDING, PADDING, GOLD_COLOR, Typeface::Title);
     paint.Text(paint.Fit(_content.outcome->detail, Typeface::Name, room), PADDING, PADDING + TITLE_LINE_UNITS, TEXT_COLOR, Typeface::Name);
