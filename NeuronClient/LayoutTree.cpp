@@ -187,8 +187,25 @@ void Neuron::LayoutTree::Arrange(const TextMetrics& _metrics)
   m_nodes[ROOT].widthUnits = m_nodes[ROOT].naturalWidthUnits;
   for (const LayoutNode& node : m_nodes)
     GiveWidths(node);
+  m_tallest.clear();
   for (std::size_t node = m_nodes.size(); node-- > 0;)
     MeasureHeight(m_nodes[node], _metrics);
+  // A height group's nodes are measured again as tall as the tallest of them, and what holds them with them.
+  for (const LayoutNode& node : m_nodes)
+  {
+    if (node.style.heightGroup == 0)
+      continue;
+    const auto group = std::ranges::find(m_tallest, node.style.heightGroup, &std::pair<std::uint32_t, float>::first);
+    if (group == m_tallest.end())
+      m_tallest.emplace_back(node.style.heightGroup, node.naturalHeightUnits);
+    else
+      group->second = std::max(group->second, node.naturalHeightUnits);
+  }
+  if (!m_tallest.empty())
+  {
+    for (std::size_t node = m_nodes.size(); node-- > 0;)
+      MeasureHeight(m_nodes[node], _metrics);
+  }
   m_nodes[ROOT].heightUnits = m_nodes[ROOT].naturalHeightUnits;
   for (LayoutNode& node : m_nodes)
     Place(node);
@@ -348,6 +365,9 @@ void Neuron::LayoutTree::MeasureHeight(LayoutNode& _node, const TextMetrics& _me
   }
   _node.naturalHeightUnits =
     style.heightUnits.value_or(Held(content + style.padding.top + style.padding.bottom, style.leastHeightUnits, style.mostHeightUnits));
+  if (const auto group = std::ranges::find(m_tallest, style.heightGroup, &std::pair<std::uint32_t, float>::first);
+      style.heightGroup != 0 && group != m_tallest.end())
+    _node.naturalHeightUnits = std::max(_node.naturalHeightUnits, group->second);
 }
 
 void Neuron::LayoutTree::Place(LayoutNode& _node)

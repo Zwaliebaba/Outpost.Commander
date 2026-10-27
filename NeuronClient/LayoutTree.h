@@ -87,6 +87,10 @@ struct LayoutStyle
   // room in it. One larger than that box, across or down, stands at its start that way.
   std::optional<LayoutAnchor> anchor;
   LayoutEdges margin;
+  // The nodes of one height group, but group 0, which is none, are as tall as the tallest of them wherever they stand, such
+  // as the cards of a page and those of the pages not shown, measured and not drawn, so that the cards keep their height
+  // from page to page. A node of a group holds none of the group's.
+  std::uint32_t heightGroup = 0;
 };
 
 // What a text node sets: the text, in UTF-8, in the atlas's font of index font, with trackingUnits more between each two
@@ -178,5 +182,7 @@ private:
   std::vector<LayoutNode> m_nodes;
   // The containers open, the innermost last; the root first.
   std::vector<std::size_t> m_open;
+  // Each height group's tallest node, once measured, and how tall it is.
+  std::vector<std::pair<std::uint32_t, float>> m_tallest;
 };
 } // namespace Neuron

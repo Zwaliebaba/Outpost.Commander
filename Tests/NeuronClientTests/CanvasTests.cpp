@@ -366,6 +366,43 @@ public:
     Assert::AreEqual(Neuron::NO_WIDGET, fixture.ui.Active(), L"but presses nothing");
   }
 
+  // ADR-100: a box the game composes is its face, a hatch over it if it has one, and its edge, under what it holds; a card is
+  // a box that takes a press naming its payload, and none without one; an icon is its sprite at its node's padded corner.
+  TEST_METHOD(DrawsABoxACardAndAnIcon)
+  {
+    Fixture fixture;
+    const Neuron::Theme& theme = fixture.theme;
+    Canvas canvas = fixture.Begin();
+    (void)canvas.Tree().Begin(LayoutKind::Column, {.gapUnits = 10.0f});
+    (void)canvas.BeginBox({.face = theme.fieldColor, .hatch = theme.cardColor, .edge = theme.edgeColor},
+                          {.widthUnits = 100.0f, .heightUnits = 30.0f, .padding = {.left = 4.0f, .top = 2.0f}});
+    (void)canvas.Icon(GEM, 10.0f, theme.figureColor, {.padding = {.top = 3.0f}});
+    canvas.EndBox();
+    const Neuron::WidgetId card =
+      canvas.BeginCard("yard", {.face = theme.cardColor, .edge = theme.edgeColor}, 9, {.widthUnits = 100.0f, .heightUnits = 40.0f});
+    canvas.EndBox();
+    (void)canvas.BeginCard("locked", {.face = theme.fieldColor, .edge = theme.edgeColor}, Neuron::NO_PAYLOAD,
+                           {.widthUnits = 100.0f, .heightUnits = 40.0f});
+    canvas.EndBox();
+    canvas.Tree().End();
+    DrawList list;
+    canvas.Finish(list);
+
+    Assert::AreEqual(size_t{16}, list.panels.size(), L"a face, a hatch and an edge's four sides; then a face and four sides twice");
+    Assert::IsTrue(RectIs(list.panels[0], 0.0f, 0.0f, 200.0f, 60.0f, theme.fieldColor), L"the box's face");
+    Assert::IsTrue(RectIs(list.panels[1], 0.0f, 0.0f, 200.0f, 60.0f, theme.cardColor) && list.panels[1].fill == CanvasFill::Hatched,
+                   L"its hatch over it");
+    Assert::IsTrue(RectIs(list.panels[2], 0.0f, 0.0f, 200.0f, 2.0f, theme.edgeColor), L"its edge's top");
+    Assert::IsTrue(RectIs(list.panels[6], 0.0f, 80.0f, 200.0f, 80.0f, theme.cardColor), L"the card's face");
+    Assert::AreEqual(size_t{1}, list.regions.size(), L"only the card with a payload takes a press");
+    Assert::IsTrue(RectIs(list.regions[0].area, 0.0f, 80.0f, 200.0f, 80.0f, theme.cardColor));
+    Assert::AreEqual(card, list.regions[0].widget);
+    Assert::AreEqual(9u, list.regions[0].payload);
+    Assert::AreEqual(size_t{1}, list.sprites.size());
+    Assert::AreEqual(GEM, list.sprites[0].sprite);
+    Assert::IsTrue(RectIs(list.sprites[0].area, 8.0f, 10.0f, 20.0f, 20.0f, theme.figureColor), L"in the box's padding and its own");
+  }
+
   // ADR-068 decision 1; ADR-100: a stepper's subject stands between its arrows, cut short to leave them room, the right
   // arrow just after it; while it cannot step, its arrows are dim and take no press.
   TEST_METHOD(StepsASubjectBetweenItsArrows)

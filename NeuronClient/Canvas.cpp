@@ -105,11 +105,45 @@ void Neuron::Canvas::EndPanel()
   m_tree.End();
 }
 
+std::size_t Neuron::Canvas::BeginBox(const BoxLook& _look, const LayoutStyle& _style)
+{
+  return OpenBox(NO_WIDGET, _look, NO_PAYLOAD, _style);
+}
+
+Neuron::WidgetId Neuron::Canvas::BeginCard(std::string_view _id, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style)
+{
+  const WidgetId card = Claim(_id);
+  (void)OpenBox(card, _look, _payload, _style);
+  return card;
+}
+
+void Neuron::Canvas::EndBox()
+{
+  m_tree.End();
+}
+
 std::size_t Neuron::Canvas::Label(LayoutText _text, const DirectX::XMFLOAT4& _color, const LayoutStyle& _style)
 {
   const std::size_t label = m_tree.AddText(std::move(_text), _style);
   m_draws.emplace_back([this, label, _color](DrawList& _list) { Lines(_list, label, _color); });
   return label;
+}
+
+std::size_t Neuron::Canvas::Icon(std::size_t _sprite, float _sizeUnits, const DirectX::XMFLOAT4& _color, const LayoutStyle& _style)
+{
+  LayoutStyle style = _style;
+  style.widthUnits = style.widthUnits.value_or(_sizeUnits + style.padding.left + style.padding.right);
+  style.heightUnits = style.heightUnits.value_or(_sizeUnits + style.padding.top + style.padding.bottom);
+  const std::size_t icon = m_tree.Add(style);
+  m_draws.emplace_back(
+    [this, icon, _sprite, _sizeUnits, _color](DrawList& _list)
+    {
+      const LayoutNode& node = m_tree.Node(icon);
+      _list.sprites.push_back(
+        {.sprite = _sprite,
+         .area = Area(node.leftUnits + node.style.padding.left, node.topUnits + node.style.padding.top, _sizeUnits, _sizeUnits, _color)});
+    });
+  return icon;
 }
 
 Neuron::WidgetId Neuron::Canvas::Button(std::string_view _id, const ButtonContent& _button, const LayoutStyle& _style)
@@ -289,6 +323,27 @@ Neuron::FieldEnd Neuron::Canvas::TextField(std::string_view _id, std::string& _t
            _valid ? m_theme.textColor : m_theme.warningColor, m_theme.nameFont);
     });
   return end;
+}
+
+// A box's face, its hatch over it, the region a card takes a press in, and its edge, in the order the HUD's helpers draw a
+// card.
+std::size_t Neuron::Canvas::OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style)
+{
+  ASSERT(MayFill(m_theme, _look.face) && MayFill(m_theme, _look.edge) && (!_look.hatch.has_value() || MayFill(m_theme, *_look.hatch)));
+  const std::size_t box = m_tree.Begin(LayoutKind::Column, _style);
+  m_draws.emplace_back(
+    [this, box, _widget, look = _look, _payload](DrawList& _list)
+    {
+      const LayoutNode& node = m_tree.Node(box);
+      const CanvasRect face = RectOf(box, look.face);
+      _list.panels.push_back(face);
+      if (look.hatch.has_value())
+        _list.panels.push_back(RectOf(box, *look.hatch, CanvasFill::Hatched));
+      if (_payload != NO_PAYLOAD)
+        _list.regions.push_back({.area = face, .widget = _widget, .payload = _payload});
+      Outline(_list, node.leftUnits, node.topUnits, node.widthUnits, node.heightUnits, look.edge);
+    });
+  return box;
 }
 
 void Neuron::Canvas::Fill(std::size_t _node, const DirectX::XMFLOAT4& _color, CanvasFill _fill)

@@ -19,6 +19,15 @@ struct ButtonContent
   std::optional<float> progress;
 };
 
+// How a box the game composes looks (ADR-100): its face, a hatch over its face if it has one, and its edge, each any color
+// but the warning's.
+struct BoxLook
+{
+  DirectX::XMFLOAT4 face{};
+  std::optional<DirectX::XMFLOAT4> hatch;
+  DirectX::XMFLOAT4 edge{};
+};
+
 // What a text field did with what reached it this frame (ADR-017 decision 8): nothing more than edit its text, or end
 // typing, by Enter, which keeps the text, or by Esc, which drops what was typed.
 enum class FieldEnd : std::uint8_t
@@ -63,8 +72,18 @@ public:
   std::size_t BeginPanel(const LayoutStyle& _style);
   void EndPanel();
 
+  // A box of _style in _look, a column that takes what is built until EndBox, for what the game composes: a frame, such as
+  // a queue's row or the Ore's box, or with BeginCard a card the player presses, such as a production option or a topic,
+  // which takes a press naming _payload unless that is NO_PAYLOAD. A card's edge is not lit under the pointer.
+  std::size_t BeginBox(const BoxLook& _look, const LayoutStyle& _style);
+  WidgetId BeginCard(std::string_view _id, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style);
+  void EndBox();
+
   // A text in _color: one line, one cut short, or wrapped, as _text flows (ADR-061 decision 3).
   std::size_t Label(LayoutText _text, const DirectX::XMFLOAT4& _color, const LayoutStyle& _style = {});
+  // The atlas's sprite of index _sprite, _sizeUnits square, in _color, at the top-left of its node's content box, such as
+  // Ore's gem before a figure. The node is as large as the sprite and its padding unless _style gives it a size.
+  std::size_t Icon(std::size_t _sprite, float _sizeUnits, const DirectX::XMFLOAT4& _color, const LayoutStyle& _style = {});
   // A button, a card, as _button has it (ADR-043 decision 4): dim and taking no press while disabled, its edge lit under
   // the pointer unless it is picked, whose edge is lit already. The label is cut short only where it would meet the figure,
   // the reason or the cap.
@@ -124,6 +143,7 @@ private:
   void DrawButton(DrawList& _list, std::size_t _node, WidgetId _widget, const ButtonContent& _button, bool _hot) const;
   void DrawSmallButton(DrawList& _list, std::size_t _node, WidgetId _widget, const std::string& _mark, bool _enabled,
                        std::uint32_t _payload) const;
+  std::size_t OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style);
 
   const Theme& m_theme;
   const TextMetrics& m_metrics;

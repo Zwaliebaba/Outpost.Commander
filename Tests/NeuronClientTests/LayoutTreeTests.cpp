@@ -244,6 +244,35 @@ public:
     AssertStands(tree.Node(wide), 10.0f, 410.0f, 980.0f, 50.0f, L"at the left margin across, at the bottom down");
   }
 
+  // ADR-061 decision 4; ADR-100: the nodes of a height group are as tall as the tallest of them, even one that stands
+  // anchored and takes no room, as a card of a page not shown does; what holds them grows with them, and a node outside the
+  // group keeps its own height.
+  TEST_METHOD(MakesAHeightGroupAsTallAsItsTallest)
+  {
+    const TenUnitFont font;
+    LayoutTree tree(1000.0f, 500.0f);
+    const std::size_t row = tree.Begin(LayoutKind::Row, {.gapUnits = 10.0f});
+    const std::size_t one = tree.Begin(LayoutKind::Column, {.widthUnits = 100.0f, .padding = {.top = 5.0f}, .heightGroup = 1});
+    (void)tree.AddText({.text = "One", .lineUnits = 20.0f});
+    tree.End();
+    const std::size_t two = tree.Begin(LayoutKind::Column, {.widthUnits = 100.0f, .heightGroup = 1});
+    (void)tree.AddText({.text = "Two lines of it", .lineUnits = 20.0f, .flow = TextFlow::Wrap});
+    tree.End();
+    const std::size_t alone = tree.Add({.widthUnits = 50.0f, .heightUnits = 15.0f});
+    const std::size_t unshown = tree.Begin(LayoutKind::Column, {.widthUnits = 100.0f, .anchor = LayoutAnchor::TopLeft, .heightGroup = 1});
+    (void)tree.AddText({.text = "Three short lines", .lineUnits = 20.0f, .flow = TextFlow::Wrap});
+    tree.End();
+    tree.End();
+    tree.Arrange(font.metrics);
+
+    Assert::AreEqual(60.0f, tree.Node(unshown).heightUnits, 0.001f, L"three lines of ten characters at most");
+    Assert::AreEqual(60.0f, tree.Node(one).heightUnits, 0.001f, L"one line and padding, as tall as the tallest");
+    Assert::AreEqual(60.0f, tree.Node(two).heightUnits, 0.001f, L"two lines, as tall as the tallest");
+    Assert::AreEqual(15.0f, tree.Node(alone).heightUnits, 0.001f, L"outside the group");
+    Assert::AreEqual(60.0f, tree.Node(row).heightUnits, 0.001f, L"what holds them grows with them");
+    AssertStands(tree.Node(two), 110.0f, 0.0f, 100.0f, 60.0f, L"beside the first, the anchored one taking no room");
+  }
+
   // ADR-061 decision 3; ADR-100: a text wraps to the width it is given, or is cut short with three dots, or is set as it
   // is; it is as tall as its lines, and a line tall with nothing to set, and its lines sit across its box as it aligns them.
   TEST_METHOD(WrapsAndCutsText)
