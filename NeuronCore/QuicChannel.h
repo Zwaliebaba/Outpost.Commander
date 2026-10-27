@@ -82,13 +82,14 @@ public:
   // returns none there.
   [[nodiscard]] std::vector<std::vector<std::byte>> Receive(std::chrono::milliseconds _wait = {});
 
-  // Queues a message of which only the newest matters to the peer, on a unidirectional stream of its own, and returns at once.
-  // While two such messages are on their way, the peer having acknowledged neither whole, it is dropped instead, so that
-  // nothing sent is abandoned; and the bidirectional stream's messages go first when both have something to send. A message
-  // the peer allows no stream for, NEWEST_STREAMS being open, is dropped too, as one on a connection that has gone is. Only a
-  // server's end sends them, since only a client lets its peer open such streams. Throws Neuron::Exception for a message
-  // over the limit. Never from a Receiver.
-  void SendNewest(std::span<const std::byte> _message);
+  // Queues a message of which only the newest matters to the peer, on a unidirectional stream of its own, and returns at once
+  // whether it did. While two such messages are on their way, the peer having acknowledged neither whole, it is dropped
+  // instead, so that nothing sent is abandoned; and the bidirectional stream's messages go first when both have something to
+  // send. A message on a connection that has gone is dropped too, as is one the peer allows no stream for, NEWEST_STREAMS
+  // being open, though that one is found only once this has returned that it queued it. Only a server's end sends them,
+  // since only a client lets its peer open such streams. Throws Neuron::Exception for a message over the limit. Never from a
+  // Receiver.
+  [[nodiscard]] bool SendNewest(std::span<const std::byte> _message);
 
   // The messages of which only the newest matters that arrived whole since the last call, oldest first, each newer than the
   // one before it: one that arrives after a newer one is dropped. A client's end receives them, and a server's none.

@@ -20,9 +20,9 @@ namespace Outpost
 template <typename T>
 concept Record = requires(T& _value) { Fields(_value); };
 
-// Writes values as bytes: integers little-endian in their own width, floats as their bits, a count before the elements of
-// a string or a vector, a flag before an optional value, the alternative's index before a variant's, and a record's fields
-// in the order its Fields lists them (ADR-060 decision 4).
+// Writes values as bytes: integers little-endian in their own width, floats as their bits, a byte as itself, a count before
+// the elements of a string or a vector, a flag before an optional value, the alternative's index before a variant's, and a
+// record's fields in the order its Fields lists them (ADR-060 decision 4).
 class ByteWriter
 {
 public:
@@ -54,6 +54,11 @@ public:
   void Put(double _value)
   {
     PutBits(std::bit_cast<std::uint64_t>(_value));
+  }
+
+  void Put(std::byte _value)
+  {
+    PutBits(std::to_integer<std::uint8_t>(_value));
   }
 
   template <typename E>
@@ -170,6 +175,12 @@ public:
     std::uint64_t bits = 0;
     GetBits(bits);
     _value = std::bit_cast<double>(bits);
+  }
+
+  // A byte is any of its values, though its type is an enumeration.
+  void Get(std::byte& _value)
+  {
+    _value = Take(1).front();
   }
 
   template <typename E>
@@ -326,6 +337,11 @@ private:
   static void Of(std::type_identity<double>, std::string& _out)
   {
     _out += "f64";
+  }
+
+  static void Of(std::type_identity<std::byte>, std::string& _out)
+  {
+    _out += "u8";
   }
 
   template <typename E>

@@ -74,6 +74,26 @@ struct StateMessage
   Snapshot snapshot;
 };
 
+// A tick's state as what changed since one the client holds, which crosses in its place where it is the shorter (ADR-098):
+// the change ChangeOf writes from the state of baseTick, which the client puts together with that state.
+struct StateChangeMessage
+{
+  std::uint32_t orderedSent = 0;
+  std::uint64_t baseTick = 0;
+  std::vector<std::byte> change;
+};
+
+// The tick of the newest state a client holds, which it sends on its stream as each state comes, so that the server sends
+// the next ones as what changed since it (ADR-098).
+struct HeldMessage
+{
+  std::uint64_t tick = 0;
+};
+
+// How many of the states it has sent a seat's connection the server keeps, to send the next as what changed since the one
+// the client holds, and how many the client holds: 1.6 seconds of them at 20 ticks a second (ADR-098).
+inline constexpr std::size_t STATES_KEPT = 32;
+
 // What a tick did that a state alone does not show, which crosses reliably and in order, every tick that has any (ADR-096):
 // the shots fired and the entities destroyed in it, the player's events of it, and its report of a time away.
 struct EventsMessage
@@ -85,9 +105,10 @@ struct EventsMessage
   std::optional<AwayReport> away;
 };
 
-// Everything that crosses a QUIC connection to the server. A client sends a hello and then commands, and the server a
-// welcome and then catalogs, events and states.
-using Message = std::variant<HelloMessage, WelcomeMessage, Command, StateMessage, CatalogMessage, EventsMessage>;
+// Everything that crosses a QUIC connection to the server. A client sends a hello and then commands and the states it
+// holds, and the server a welcome and then catalogs, events, and states whole or as what changed.
+using Message =
+  std::variant<HelloMessage, WelcomeMessage, Command, StateMessage, CatalogMessage, EventsMessage, StateChangeMessage, HeldMessage>;
 
 // Each encodes one message as the bytes that cross the connection: which message it is, and then its fields in the order
 // they are declared, little-endian (ADR-060).
@@ -97,6 +118,8 @@ using Message = std::variant<HelloMessage, WelcomeMessage, Command, StateMessage
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const StateMessage& _state);
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const CatalogMessage& _catalog);
 [[nodiscard]] std::vector<std::byte> EncodeMessage(const EventsMessage& _events);
+[[nodiscard]] std::vector<std::byte> EncodeMessage(const StateChangeMessage& _change);
+[[nodiscard]] std::vector<std::byte> EncodeMessage(const HeldMessage& _held);
 
 // Moves _snapshot's catalogue out of it, leaving its lists empty, its sectors with only what changes in play, and its
 // entities without the asteroid fields: the snapshot as it crosses the wire (ADR-060 decision 9).
@@ -116,6 +139,17 @@ void PutCatalog(CatalogMessage&& _catalog, Snapshot& _snapshot);
 // Adds _events to _snapshot's, after what it holds: a snapshot handed on with the events of every tick since the last
 // (ADR-096).
 void PutEvents(EventsMessage&& _events, Snapshot& _snapshot);
+
+// What changed from _base to _next, two states as they cross the wire (TakeCatalog, TakeEvents): which of the state's
+// fields differ, bit for bit, and each of those whole, but for a list of records with identifiers in increasing order, such
+// as the entities, which changes by its elements: the identifiers of those gone, those changed with the fields of each that
+// differ, and those new, whole (ADR-098).
+[[nodiscard]] std::vector<std::byte> ChangeOf(const Snapshot& _base, const Snapshot& _next);
+
+// Changes _state, the state ChangeOf wrote _change from, to the one it wrote it to. Throws Neuron::Exception when _change is
+// not a change ChangeOf could have written from _state, such as one that changes an entity _state does not hold, and leaves
+// _state changed in part.
+void PutChange(std::span<const std::byte> _change, Snapshot& _state);
 
 // The message _bytes hold. Throws Neuron::Exception when they are not exactly one message, such as when they end early,
 // run on, or hold a value no field can take.

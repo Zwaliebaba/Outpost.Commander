@@ -366,6 +366,22 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, StateChangeMessage>
+auto Fields(Self& _value)
+{
+  auto& [orderedSent, baseTick, change] = _value;
+  return std::tie(orderedSent, baseTick, change);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, HeldMessage>
+auto Fields(Self& _value)
+{
+  auto& [tick] = _value;
+  return std::tie(tick);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, CatalogMessage>
 auto Fields(Self& _value)
 {

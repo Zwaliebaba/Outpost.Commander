@@ -599,7 +599,7 @@ void Neuron::QuicChannel::Send(std::span<const std::byte> _message)
   }
 }
 
-void Neuron::QuicChannel::SendNewest(std::span<const std::byte> _message)
+bool Neuron::QuicChannel::SendNewest(std::span<const std::byte> _message)
 {
   if (_message.size() > MESSAGE_LIMIT_BYTES)
     throw Exception(std::format("A message of {} bytes is over the limit of {}.", _message.size(), MESSAGE_LIMIT_BYTES));
@@ -617,15 +617,16 @@ void Neuron::QuicChannel::SendNewest(std::span<const std::byte> _message)
   // so none waits for a callback while the lock is held, but a close does: a stream that could not start is closed after.
   auto newestStream = std::make_unique<State::NewestStream>(State::NewestStream{.state = &state});
   HQUIC unstarted = nullptr;
+  bool sent = false;
   {
     const std::scoped_lock lock(state.mutex);
     if (state.connection == nullptr || !state.failure.empty() ||
         std::ranges::count_if(state.newestStreams, [](const std::unique_ptr<State::NewestStream>& _stream) { return !_stream->settled; }) >=
           static_cast<std::ptrdiff_t>(NEWEST_ON_THEIR_WAY))
-      return;
+      return false;
     if (QUIC_FAILED(api.StreamOpen(state.connection, QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL, &State::OnNewestStream, newestStream.get(),
                                    &newestStream->handle)))
-      return;
+      return false;
     // A stream the peer allows no more of fails to start, after this returns, and is shut down then, which drops its message;
     // the next goes as usual.
     if (QUIC_FAILED(api.StreamStart(newestStream->handle, QUIC_STREAM_START_FLAG_FAIL_BLOCKED | QUIC_STREAM_START_FLAG_SHUTDOWN_ON_FAIL)))
@@ -640,12 +641,15 @@ void Neuron::QuicChannel::SendNewest(std::span<const std::byte> _message)
         delete sending;
         (void)api.StreamShutdown(newestStream->handle, QUIC_STREAM_SHUTDOWN_FLAG_ABORT_SEND, 0);
       }
+      else
+        sent = true;
       state.newestStreams.push_back(std::move(newestStream));
     }
   }
   // Not in the list, so its last callback leaves it to this.
   if (unstarted != nullptr)
     api.StreamClose(unstarted);
+  return sent;
 }
 
 std::vector<std::vector<std::byte>> Neuron::QuicChannel::ReceiveNewest()

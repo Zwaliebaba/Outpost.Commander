@@ -30,6 +30,8 @@
 #include "Placement.h"
 #include "Transport.h"
 #include "WireFormat.h"
+#include "SentStates.h"
+#include "HeldStates.h"
 #include "QuicTransport.h"
 #include "JoinTicket.h"
 #include "HostedPlayer.h"

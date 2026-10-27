@@ -62,11 +62,11 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW3.2 | A command carries its number | NW3.1 | M7 | merged, [#132](https://github.com/Zwaliebaba/Outpost.Commander/pull/132) |
 | NW4.1 | Events and state cross apart, and the newest state wins | NW3.1 | M4 | merged, [#133](https://github.com/Zwaliebaba/Outpost.Commander/pull/133) and M4's amendment [#135](https://github.com/Zwaliebaba/Outpost.Commander/pull/135); its measurement an owner run |
 | NW5.1 | The view's delay follows the link | NW4.1 | M5 | merged, [#134](https://github.com/Zwaliebaba/Outpost.Commander/pull/134) |
-| NW6.1 | An order is marked as it is given | NW3.2 | M6 | in review |
-| NW6.2 | A universe's lost connection is joined again | NW2.2 | M8 | in review |
-| NW6.3 | The tag gives the round trip | NW2.1 | M10 | in review |
+| NW6.1 | An order is marked as it is given | NW3.2 | M6 | merged, [#136](https://github.com/Zwaliebaba/Outpost.Commander/pull/136) |
+| NW6.2 | A universe's lost connection is joined again | NW2.2 | M8 | merged, [#136](https://github.com/Zwaliebaba/Outpost.Commander/pull/136) |
+| NW6.3 | The tag gives the round trip | NW2.1 | M10 | merged, [#136](https://github.com/Zwaliebaba/Outpost.Commander/pull/136) |
 | NW6.4 | Order to response over a real network, again | NW5.1, NW6.1 | M11 | todo; an owner run |
-| NW7.1 | State crosses as what changed | NW4.1 | F5 of the Horizon plan | todo |
+| NW7.1 | State crosses as what changed | NW4.1 | F5 of the Horizon plan | in review |
 
 ### Milestone order
 
@@ -279,3 +279,8 @@ NW1, NW2, NW3, NW4, NW5, NW6, NW7.
 
 - **Gate:** F5 of [the Horizon plan](ImplementationPlan-Horizon.md).
 - **Outline, scoped with the task:** built ahead of F5's measurement (owner, 2026-10-26). The client acknowledges, on its stream, the newest state it holds. The server sends each entity's changed fields against that state, and a whole state when a seat is taken or the state acknowledged is too old. All of it is in the transport, as NW3.1 is, so that `Snapshot` is still what every reader reads. A moving ship changes about 12 of its 122 bytes a tick (§1 finding 4, computed).
+- **Scope:** `ChangeOf` and `PutChange` in the wire format; `SentStates` on the server's end of a seat and `HeldStates` on the client's; the client's acknowledgement up its stream; and `QuicChannel::SendNewest` saying whether it queued a state, so that the server keeps only the states it sent.
+- **ADR:** [ADR-098](../ADR/ADR-098-a-state-crosses-as-what-changed.md).
+- **Acceptance:** a change put together with the state it changes is the state built, bit for bit, and a change of another state is refused (`WireFormatTests`, `SentStatesTests`, `HeldStatesTests`); two minutes of snapshots over QUIC are the ones the server built (`QuicTransportTests.HandsOnTheSnapshotsTheServerBuilt`); and through the Wi-Fi profile under the measurement load, no more than one state in 20 crosses whole, and the states average under a third of the largest (`ImpairedLinkTests.SendsAStateAsAChangeOfOneTheClientHolds`).
+- **As built:** the changes are of every field the wire lists, not only an entity's: the state's own fields go by the same rule, and so do the sectors and the scheduled orders, which are lists of records with identifiers in order as the entities are. Fields compare by their bits, so that a heading whose zero turns negative crosses, and the snapshot handed on is the one built byte for byte. The server sends the whole state where a change would be the longer, as it is when every entity a state holds is new. In CI's Debug|x64 run of `HoldsASeatsBacklogToTwoStatesOnTheHotspot` on 2026-10-26, a minute of the measurement load on the hotspot carried 833 states of 2,541 bytes on average, 3 of them whole, where whole states had carried 462 of 21,818. The newest state was more than two ticks behind the server in 25.8% of samples, against gate M1's 5%, and an order's response was 284.2 ms at the 95th percentile, against its 150 ms and the 90.8 ms round trip. What still drops a third of the states is no longer the link's bandwidth but gate M4's two on their way: a state counts until its acknowledgement comes, a round trip and MsQuic's delay of an acknowledgement after it is sent, which on the hotspot is more than the two ticks that two states span. That reading is inferred from the figures, not measured apart. The same run's 20 s of `SendsAStateAsAChangeOfOneTheClientHolds` on Wi-Fi found the states 1.3 s later than the server's tick was due at the median, with a 44.9 ms round trip and a longest gap of 327 ms, so the server's ticks ran behind their time there, which the runner's load or a change's cost on the server's thread may explain; the owner's `MeasuresTheProfiles`, run on its own, tells which.
+- **Verify:** the checkers; CI and the container; the owner's `MeasuresTheProfiles`.

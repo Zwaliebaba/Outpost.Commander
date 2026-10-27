@@ -294,11 +294,12 @@ public:
     (void)first.Receive();
     std::this_thread::sleep_for(10s);
     Assert::IsTrue(first.Receive().empty(), L"nothing for 10 s");
-    // A relay carries one client, so the join comes through a link of its own; the first link carries again, so that the
-    // server's close reaches the connection the seat was taken from.
+    // The first link carries again before the join, so that the server's close crosses it to the connection the seat is
+    // taken from: QUIC sends a close again only in answer to the peer, which may say nothing before the server has let the
+    // connection go. A relay carries one client, so the join comes through a link of its own.
+    link.Cut(false);
     const ImpairedLink rejoined(seat.port, CLEAR_LINK, 2);
     Outpost::QuicTransport again(rejoined.Through(seat), BLUE);
-    link.Cut(false);
     const std::vector<Outpost::Snapshot> snapshots = SnapshotsOf(again, 3);
     Assert::IsTrue(snapshots.size() >= 3 && snapshots.back().player == BLUE, L"the seat taken again");
 
@@ -613,9 +614,9 @@ public:
     Assert::IsTrue(server->TakeSeatFigures().empty(), L"each sample is taken once");
   }
 
-  // ADR-060 decision 9, ADR-096: the snapshots a seat's client hands on are the ones the server built, tick by tick, for two
-  // minutes in which the player's research finishes and changes the catalogue, their events whichever snapshot brings them;
-  // and a seat taken again is sent its catalogue before its first state.
+  // ADR-060 decision 9, ADR-096, ADR-098: the snapshots a seat's client hands on are the ones the server built, tick by tick,
+  // for two minutes in which the player's research finishes and changes the catalogue, their events whichever snapshot
+  // brings them and their states whole or as changes; and a seat taken again is sent its catalogue before its first state.
   TEST_METHOD(HandsOnTheSnapshotsTheServerBuilt)
   {
     auto server = QuicServer();
