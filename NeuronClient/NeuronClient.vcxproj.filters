@@ -67,6 +67,9 @@
     <ClInclude Include="TextMetrics.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="LayoutTree.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -113,6 +116,9 @@
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="TextMetrics.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="LayoutTree.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
   </ItemGroup>

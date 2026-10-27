@@ -30,4 +30,5 @@
 #include "ScreenSegment.h"
 #include "DrawList.h"
 #include "TextMetrics.h"
+#include "LayoutTree.h"
 #include "UiPipeline.h"

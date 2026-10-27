@@ -98,6 +98,7 @@
     <ClCompile Include="ScreenSegmentTests.cpp" />
     <ClCompile Include="DrawListTests.cpp" />
     <ClCompile Include="TextMetricsTests.cpp" />
+    <ClCompile Include="LayoutTreeTests.cpp" />
     <ClCompile Include="BloomTests.cpp" />
   </ItemGroup>
   <ItemGroup>

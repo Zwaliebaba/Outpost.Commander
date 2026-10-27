@@ -93,6 +93,7 @@
     <ClInclude Include="ScreenSegment.h" />
     <ClInclude Include="DrawList.h" />
     <ClInclude Include="TextMetrics.h" />
+    <ClInclude Include="LayoutTree.h" />
     <ClInclude Include="GlowPipeline.h" />
     <ClInclude Include="GroundMaskPipeline.h" />
     <ClInclude Include="StarPipeline.h" />
@@ -113,6 +114,7 @@
     <ClCompile Include="ScreenSegment.cpp" />
     <ClCompile Include="DrawList.cpp" />
     <ClCompile Include="TextMetrics.cpp" />
+    <ClCompile Include="LayoutTree.cpp" />
     <ClCompile Include="GlowPipeline.cpp" />
     <ClCompile Include="GroundMaskPipeline.cpp" />
     <ClCompile Include="StarPipeline.cpp" />
