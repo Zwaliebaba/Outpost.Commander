@@ -38,6 +38,19 @@ public:
     Assert::AreEqual(1u, host.Advance(50ms));
   }
 
+  // What a stall cost: the ticks due beyond the limit, which are dropped and never run, counted over every stall.
+  TEST_METHOD(CountsTheTicksItDrops)
+  {
+    Neuron::TickHost host(20, 5);
+    Assert::AreEqual(std::uint64_t{0}, host.DroppedTicks());
+    Assert::AreEqual(5u, host.Advance(250ms));
+    Assert::AreEqual(std::uint64_t{0}, host.DroppedTicks());
+    Assert::AreEqual(5u, host.Advance(1s));
+    Assert::AreEqual(std::uint64_t{15}, host.DroppedTicks());
+    Assert::AreEqual(5u, host.Advance(500ms));
+    Assert::AreEqual(std::uint64_t{20}, host.DroppedTicks());
+  }
+
   // ADR-025: the server's thread sleeps until the next tick is due, which keeps the remainder in view.
   TEST_METHOD(SaysHowLongUntilTheNextTick)
   {

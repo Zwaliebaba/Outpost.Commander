@@ -1285,8 +1285,9 @@ A universe is a match that does not end. It runs on a dedicated server that the 
 
 ### The universe log [§universe.log]
 
-- **The server writes a universe log beside the saves,** a line a record, every time in ticks: the universe's start and each recovery, each save and how long it held up the server's thread, each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart with how long it waited past its hour, every hour each seat's record, and each battle (ADR-082 decision 1).
-- **A seat's hour** is its Ore, its income, its command points against its fleet cap, its nodes and its topics researched, with the seconds of the hour its player and its deputy played it (ADR-082 decision 3).
+- **The server writes a universe log beside the saves,** a line a record, every time in ticks: the universe's start and each recovery, each save and how long it held up the server's thread, and how long writing it took; each hand-over between a player and its deputy, each scheduled order fired, each loss, each wait for a start and each restart with how long it waited past its hour, every hour each seat's record, and each battle (ADR-082 decision 1).
+- **It writes what the server itself goes through:** each minute's longest tick when it took 5 ms or more, with the parts that took most of it, and the ticks the minute dropped after a stall; and what came of every connection to a seat, with the address it came from: welcomed, refused and why, or gone from its seat and how (ADR-082 decision 1).
+- **A seat's hour** is its Ore, its income, its command points against its fleet cap, its nodes and its topics researched, with the seconds of the hour its player and its deputy played it and the commands applied for it and refused it, and, while its player was connected, the connection's round trip, losses, backlog and bytes (ADR-082 decision 3).
 - **A battle** is an engagement between two seats in one sector, ended by 30 seconds without a shot there; a side was present when its player played the seat at any of its shots. Shots at or by the pirates are no battle (ADR-082 decision 2).
 - **The log is not saved:** a recovery writes where the universe came back from, and a battle the server did not see begin is not recorded (ADR-082).
 

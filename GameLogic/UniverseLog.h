@@ -14,14 +14,45 @@ enum class SeatPlay : std::uint8_t
   Ai
 };
 
-// One seat after a tick: its player, who played it, the snapshot the server built for it, and its connection over QUIC
-// when the server sampled it after this tick (ADR-004 decision 6).
+// One seat after a tick: its player, who played it, the snapshot the server built for it, its connection over QUIC when the
+// server sampled it after this tick (ADR-004 decision 6), and how many of its commands the tick applied, whoever gave them:
+// its player, its deputy or the AI.
 struct SeatTick
 {
   PlayerId player;
   SeatPlay play = SeatPlay::Player;
   const Snapshot* snapshot = nullptr;
   std::optional<Neuron::QuicStatistics> connection;
+  std::uint32_t orders = 0;
+};
+
+// What came of a connection to a universe's seat (ADR-082 decision 1).
+enum class JoinOutcome : std::uint8_t
+{
+  // Its hello took the seat.
+  Welcomed,
+  // Refused: a hello of another build; a token that is not the seat's, or a seat that is not open; a message that is no hello,
+  // or a seated client that broke the rules; and a connection that said no hello in time.
+  WrongVersion,
+  SeatRefused,
+  Malformed,
+  Silent,
+  // Gone from its seat: taken by its player's newer connection, closed by the game, or lost without a word, as when MsQuic's
+  // idle timeout ends it.
+  Taken,
+  Closed,
+  Lost
+};
+
+// One join's record: what came of it, the seat's player when it is known, the address the connection came from, the layout
+// a hello of another build named (ADR-060 decision 5), and the code the game closed its connection with.
+struct JoinRecord
+{
+  JoinOutcome outcome = JoinOutcome::Welcomed;
+  PlayerId player;
+  std::string address;
+  std::uint64_t layout = 0;
+  std::uint64_t code = 0;
 };
 
 // A universe's log (ADR-082 decision 1): ADR-038's match log for a universe that keeps running, written by its server
@@ -35,6 +66,19 @@ struct SeatTick
 //                                                  the server came back from the save of that tick and the n commands
 //                                                  logged after it (ADR-077)
 //   save <tick> bytes <n> encode_us <us>           a save, its size, and how long encoding it took the server's thread
+//   written <tick> write_us <us>                   the save of that tick written by the folder's thread, and how long its
+//                                                  write took there, to the system's cache (ADR-077 decision 7)
+//   tick <tick> us <us> over <n> [<part> <us>]...  the minute's longest tick, when it took LONG_TICK or more: its time, how
+//                                                  many of the minute's ticks took that long, and each part of it that took
+//                                                  a quarter of it or more, longest first, by TickPartName
+//   dropped <tick> ticks <n>                       the ticks the minute dropped after stalls, which never ran (ADR-009)
+//   join <tick> welcomed player <p> from <address> a connection's hello took the seat
+//   join <tick> refused <why> [layout <hex>] [player <p>] from <address>
+//                                                  a connection refused: version, with the layout its hello named; seat,
+//                                                  with the player it named; malformed; or silent, for no hello in time
+//   join <tick> gone player <p> <taken, closed <code> or lost> from <address>
+//                                                  a seat's connection gone: taken by a newer one, closed by the game with
+//                                                  its code, or lost without a word
 //   seat <tick> player <p> <player, deputy or ai>  who plays the seat, when it changes, and from the first tick
 //   order <tick> player <p> order <id> <action> <given, held or refused>
 //                                                  a scheduled order fired (ADR-080)
@@ -43,13 +87,16 @@ struct SeatTick
 //   restart <tick> player <p> waited <ticks>       its seat restarted at its start, that long after its hour; the wait
 //                                                  is left out when the server came back in the tick it restarted
 //   hour <tick> player <p> ore <n> income <hundredths a second> fleet <command points> cap <n> nodes <n> researched <n>
-//        present <s> deputy <s>                    every hour of ticks: the seat's bank, income, fleet against its cap,
-//                                                  nodes held and topics researched, and the seconds of the hour its
-//                                                  player and its deputy played it (ADR-082 decision 3)
-//        [rtt_median_us <us> rtt_p95_us <us> sent <n> lost <n> backlog_most <bytes>]
+//        present <s> deputy <s> orders <n> refused <n>
+//                                                  every hour of ticks: the seat's bank, income, fleet against its cap,
+//                                                  nodes held and topics researched, the seconds of the hour its player and
+//                                                  its deputy played it, and the commands the server applied for it and
+//                                                  refused it in the hour (ADR-082 decision 3)
+//        [rtt_median_us <us> rtt_p95_us <us> sent <n> lost <n> backlog_most <bytes> sent_bytes <bytes>]
 //                                                  and, when its player's connection was sampled in the hour, its round
 //                                                  trip at the median and the 95th percentile, the packets sent and lost
-//                                                  in the hour, and its largest backlog (ADR-004 decision 6)
+//                                                  in the hour, its largest backlog, and the bytes sent in the hour
+//                                                  (ADR-004 decision 6)
 //   battle <start> <end> sector <id> player <p> <play> player <p> <play>
 //                                                  two seats' ships firing at each other in one sector within 10 seconds,
 //                                                  until 30 seconds pass with no such shot there, as the match log's
@@ -62,13 +109,24 @@ public:
   static constexpr std::uint32_t BATTLE_WINDOW_SECONDS = 10;
   static constexpr std::uint32_t BATTLE_GAP_SECONDS = 30;
   static constexpr std::uint32_t HOUR_SECONDS = 3600;
+  static constexpr std::uint32_t MINUTE_SECONDS = 60;
+  // A tick this long or longer is a long one: the tick's budget (Docs/Budgets.md).
+  static constexpr std::chrono::microseconds LONG_TICK{5'000};
 
   UniverseLog(std::ostream& _out, std::uint32_t _ticksPerSecond);
 
   void Started(std::uint64_t _tick, std::optional<std::uint64_t> _saveTick, std::size_t _replayed);
   void Saved(std::uint64_t _tick, std::size_t _bytes, std::chrono::microseconds _encode);
+  // The save of _saveTick, written by the folder's thread in _write.
+  void Written(std::uint64_t _saveTick, std::chrono::microseconds _write);
   // After each tick _tick: every seat, each with its own snapshot of the tick.
   void Record(std::uint64_t _tick, std::span<const SeatTick> _seats);
+  // After each tick _tick, last: how long it took, which ends the minute's records when _tick ends a minute.
+  void Timed(std::uint64_t _tick, const TickTiming& _timing);
+  // Ticks the server dropped after a stall, before its next tick, which the minute's records sum.
+  void Dropped(std::uint64_t _ticks);
+  // What came of a connection, at _tick.
+  void Joined(std::uint64_t _tick, const JoinRecord& _join);
 
 private:
   struct SeatState
@@ -80,14 +138,19 @@ private:
     std::optional<std::uint64_t> restartTick;
     std::uint64_t playerTicks = 0;
     std::uint64_t deputyTicks = 0;
-    // The hour's samples of the seat's connection: the round trips, the packets sent and lost, and the largest backlog; and
-    // the counts the last sample read, since each connection counts from its own start.
+    // The hour's commands applied for the seat, and refused it.
+    std::uint64_t orders = 0;
+    std::uint64_t refused = 0;
+    // The hour's samples of the seat's connection: the round trips, the packets sent and lost, the largest backlog and the
+    // bytes sent; and the counts the last sample read, since each connection counts from its own start.
     std::vector<std::uint32_t> roundTripsMicroseconds;
     std::uint64_t packetsSent = 0;
     std::uint64_t packetsLost = 0;
     std::uint64_t backlogMostBytes = 0;
+    std::uint64_t bytesSent = 0;
     std::uint64_t lastPacketsSent = 0;
     std::uint64_t lastPacketsLost = 0;
+    std::uint64_t lastBytesSent = 0;
   };
 
   // A sector's fire: the last tick each seat fired at another there, and the battle under way, if any.
@@ -107,10 +170,16 @@ private:
   [[nodiscard]] static std::string ConnectionWords(SeatState& _state);
   void RecordShots(std::uint64_t _tick, std::span<const SeatTick> _seats);
   void EndBattles(std::uint64_t _tick);
+  // Writes the minute's longest tick and its dropped ticks, when it had either, at _tick, the minute's last.
+  void EndMinute(std::uint64_t _tick);
 
   std::ostream* m_out;
   std::uint32_t m_ticksPerSecond = 0;
   std::vector<SeatState> m_seats;
   std::vector<Battle> m_battles;
+  // The minute's longest tick that took LONG_TICK or more, and its tick; how many took that long; and the ticks dropped.
+  std::optional<std::pair<std::uint64_t, TickTiming>> m_longest;
+  std::uint32_t m_longTicks = 0;
+  std::uint64_t m_droppedTicks = 0;
 };
 } // namespace Outpost

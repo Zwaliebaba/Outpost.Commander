@@ -141,7 +141,7 @@ The new records change ADR-082 decision 1's list, and `Tools/UniverseLog.py` rea
 
 Each would be a milestone of a plan of its own, once the gates it waits on are decided.
 
-1. **OV1 — The server measures** what §5 lists, writes the `join` and `tick` records, and `Tools/UniverseLog.py` reads them. It changes no message, so a universe made before it runs on after it.
+1. **OV1 — The server measures** what §5 lists but the process's figures, which nothing reads before OV2's `Health`; writes the `written`, `tick`, `dropped` and `join` records; and `Tools/UniverseLog.py` reads them. It changes no message, so a universe made before it runs on after it.
 2. **OV2 — The channel:** the listener, `Overseer.json`, the messages of §4 but the actions, `Closing`, and the `Overseer` tick part. It changes no message of the game's. QUIC is checked in CI's Windows run only (ADR-060).
 3. **OV3 — The overseer:** the project, its window, the overview, and the map as one system's sector map, which is all a universe has until the galaxy (the Horizon plan's milestone 42); the galaxy view comes with it. It is run, not only built (AGENTS.md §3), and the owner's run accepts it.
 4. **OV4 — The seat window, the server window and the header states.**

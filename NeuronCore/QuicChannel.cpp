@@ -134,6 +134,8 @@ struct Neuron::QuicChannel::State
   std::uint32_t messageLimit = MESSAGE_LIMIT_BYTES;
   // Whether the peer has sent a whole message, which the listener's Sweep reads.
   std::atomic<bool> spoke = false;
+  // The peer's IP address as text, set before the channel is shared and never again (PeerAddress).
+  std::string peerAddress;
   // The bytes handed to MsQuic that it has not reported sent and acknowledged: Send adds them and the stream's callback takes
   // them away, without the lock, which a callback inside a send would otherwise wait for.
   std::atomic<std::uint64_t> backlogBytes = 0;
@@ -172,9 +174,11 @@ struct Neuron::QuicChannel::State
   std::optional<std::chrono::steady_clock::time_point> connectedAt;
   bool closing = false;
   bool shutDown = false;
-  // Why the connection went, once it has, and the code the peer closed it with, when it was the peer.
+  // Why the connection went, once it has, the code the peer closed it with, when it was the peer, and the code this end
+  // first shut it down with.
   std::string failure;
   std::optional<std::uint64_t> peerErrorCode;
+  std::optional<std::uint64_t> localErrorCode;
 
   [[nodiscard]] bool HasShutDown()
   {
@@ -204,6 +208,8 @@ struct Neuron::QuicChannel::State
   {
     const std::scoped_lock lock(mutex);
     closing = true;
+    if (!localErrorCode.has_value())
+      localErrorCode = _errorCode;
     if (connection != nullptr)
       runtime->Api().ConnectionShutdown(connection, QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, _errorCode);
   }
@@ -513,6 +519,7 @@ std::unique_ptr<Neuron::QuicChannel> Neuron::QuicChannel::Connect(const Desc& _d
   auto state = std::make_unique<State>();
   state->runtime = std::make_shared<QuicRuntime>();
   state->pinned = _desc.serverCertificate;
+  state->peerAddress = _desc.host;
 
   QUIC_SETTINGS settings{};
   settings.HandshakeIdleTimeoutMs = static_cast<std::uint64_t>(_desc.connectTimeout.count());
@@ -693,6 +700,17 @@ std::optional<std::uint64_t> Neuron::QuicChannel::PeerErrorCode() const
   return m_state->peerErrorCode;
 }
 
+std::optional<std::uint64_t> Neuron::QuicChannel::LocalErrorCode() const
+{
+  const std::scoped_lock lock(m_state->mutex);
+  return m_state->localErrorCode;
+}
+
+const std::string& Neuron::QuicChannel::PeerAddress() const noexcept
+{
+  return m_state->peerAddress;
+}
+
 bool Neuron::QuicChannel::HasGone() const
 {
   const std::scoped_lock lock(m_state->mutex);
@@ -720,6 +738,7 @@ Neuron::QuicStatistics Neuron::QuicChannel::Statistics() const
   statistics.packetsSent = quic.SendTotalPackets;
   statistics.packetsLost = quic.SendSuspectedLostPackets - std::min(quic.SendSpuriousLostPackets, quic.SendSuspectedLostPackets);
   statistics.congestionWindowBytes = quic.SendCongestionWindow;
+  statistics.bytesSent = quic.SendTotalBytes;
   return statistics;
 }
 
@@ -805,6 +824,10 @@ QUIC_STATUS QUIC_API Neuron::QuicListener::State::OnListener([[maybe_unused]] HQ
     auto channelState = std::make_unique<QuicChannel::State>();
     channelState->runtime = state.runtime;
     channelState->messageLimit = state.messageLimit;
+    // The client's address, without its port, before the Receiver is made, which may read it.
+    QUIC_ADDR_STR address{};
+    if (_event->NEW_CONNECTION.Info->RemoteAddress != nullptr && QuicAddrIpToString(_event->NEW_CONNECTION.Info->RemoteAddress, &address))
+      channelState->peerAddress = address.Address;
     QuicChannel::State& own = *channelState;
     auto channel = std::make_shared<QuicChannel>(std::move(channelState));
     own.receiver = state.accept(channel);
@@ -895,7 +918,7 @@ const Neuron::CertificateHash& Neuron::QuicListener::Certificate() const noexcep
   return m_state->certificate.Hash();
 }
 
-void Neuron::QuicListener::Sweep(std::chrono::milliseconds _silence, std::uint64_t _errorCode)
+std::vector<std::string> Neuron::QuicListener::Sweep(std::chrono::milliseconds _silence, std::uint64_t _errorCode)
 {
   State& state = *m_state;
   const auto now = std::chrono::steady_clock::now();
@@ -916,8 +939,14 @@ void Neuron::QuicListener::Sweep(std::chrono::milliseconds _silence, std::uint64
   }
   // Outside the listener's lock, which MsQuic's threads take for each new connection: a shutdown takes the channel's own
   // lock, and the channels let go, as they are destroyed on the way out, wait for MsQuic's last callback for each.
+  std::vector<std::string> addresses;
+  addresses.reserve(silent.size());
   for (const std::shared_ptr<QuicChannel>& channel : silent)
+  {
     channel->Shutdown(_errorCode);
+    addresses.push_back(channel->PeerAddress());
+  }
+  return addresses;
 }
 
 std::size_t Neuron::QuicListener::ChannelCount() const

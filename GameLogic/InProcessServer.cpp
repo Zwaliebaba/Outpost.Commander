@@ -255,8 +255,10 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
       if (!commands)
       {
         const std::optional<std::uint32_t> version = PeekHelloVersion(_message);
-        if (version.has_value() && (*version != PROTOCOL_VERSION || PeekHelloLayout(_message) != WireLayoutHash()))
+        const std::optional<std::uint64_t> layout = PeekHelloLayout(_message);
+        if (version.has_value() && (*version != PROTOCOL_VERSION || layout != WireLayoutHash()))
         {
+          KeepJoin({.outcome = JoinOutcome::WrongVersion, .address = _peer.PeerAddress(), .layout = layout.value_or(0)});
           Refuse(_peer, CloseReason::WrongVersion);
           return;
         }
@@ -268,6 +270,7 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
         const auto* held = std::get_if<HeldMessage>(&message);
         if (command == nullptr && held == nullptr)
         {
+          KeepJoin({.outcome = JoinOutcome::Malformed, .player = seated, .address = _peer.PeerAddress()});
           Refuse(_peer, CloseReason::MalformedMessage);
           return;
         }
@@ -291,36 +294,50 @@ Neuron::QuicChannel::Receiver Outpost::InProcessServer::Admit(const std::shared_
             commands->commands.push_back(std::move(*command));
         }
         if (broken)
+        {
+          KeepJoin({.outcome = JoinOutcome::Malformed, .player = seated, .address = _peer.PeerAddress()});
           Refuse(_peer, CloseReason::MalformedMessage);
+        }
         return;
       }
 
       const auto* hello = std::get_if<HelloMessage>(&message);
       if (hello == nullptr)
       {
+        KeepJoin({.outcome = JoinOutcome::Malformed, .address = _peer.PeerAddress()});
         Refuse(_peer, CloseReason::MalformedMessage);
         return;
       }
       if (hello->protocolVersion != PROTOCOL_VERSION || hello->layoutHash != WireLayoutHash())
       {
+        KeepJoin({.outcome = JoinOutcome::WrongVersion, .address = _peer.PeerAddress(), .layout = hello->layoutHash});
         Refuse(_peer, CloseReason::WrongVersion);
         return;
       }
       commands = TakeSeat(hello->player, hello->token, connection.lock());
       if (!commands)
       {
+        KeepJoin({.outcome = JoinOutcome::SeatRefused, .player = hello->player, .address = _peer.PeerAddress()});
         Refuse(_peer, CloseReason::SeatRefused);
         return;
       }
       seated = hello->player;
+      KeepJoin({.outcome = JoinOutcome::Welcomed, .player = seated, .address = _peer.PeerAddress()});
       // A seated client sends commands, which may be longer than a hello (ADR-060).
       _peer.LimitMessages(SEATED_MESSAGE_LIMIT_BYTES);
     }
     catch (const Neuron::Exception&)
     {
+      KeepJoin({.outcome = JoinOutcome::Malformed, .player = seated, .address = _peer.PeerAddress()});
       Refuse(_peer, CloseReason::MalformedMessage);
     }
   };
+}
+
+void Outpost::InProcessServer::KeepJoin(JoinRecord _join)
+{
+  const std::scoped_lock lock(m_reportMutex);
+  m_joins.push_back(std::move(_join));
 }
 
 std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::TakeSeat(PlayerId _player, const SeatToken& _token,
@@ -348,7 +365,10 @@ std::shared_ptr<Outpost::LoopbackChannel> Outpost::InProcessServer::TakeSeat(Pla
   }
   // The connection it had is told why it goes, outside the lock, which its own callbacks take.
   if (replaced)
+  {
+    KeepJoin({.outcome = JoinOutcome::Taken, .player = _player, .address = replaced->PeerAddress()});
     replaced->Shutdown(static_cast<std::uint64_t>(CloseReason::SeatTaken));
+  }
   return commands;
 }
 
@@ -377,7 +397,10 @@ void Outpost::InProcessServer::Advance(std::chrono::nanoseconds _elapsedWallTime
 {
   if (m_thread.joinable())
     throw Neuron::Exception("InProcessServer: a started server runs its own ticks");
+  const std::uint64_t dropped = m_tickHost.DroppedTicks();
   const std::uint32_t ticks = m_tickHost.Advance(_elapsedWallTime);
+  if (m_log && m_tickHost.DroppedTicks() > dropped)
+    m_log->Dropped(m_tickHost.DroppedTicks() - dropped);
   for (std::uint32_t i = 0; i < ticks; ++i)
     RunTick();
 }
@@ -440,8 +463,12 @@ void Outpost::InProcessServer::Run(const std::stop_token& _stop)
       if (_stop.stop_requested())
         return;
       const auto now = std::chrono::steady_clock::now();
+      const std::uint64_t dropped = m_tickHost.DroppedTicks();
       const std::uint32_t ticks = m_tickHost.Advance(now - last);
       last = now;
+      // What a stall cost: ticks that never run, which the universe's log sums for the minute (ADR-009, ADR-082).
+      if (m_log && m_tickHost.DroppedTicks() > dropped)
+        m_log->Dropped(m_tickHost.DroppedTicks() - dropped);
       for (std::uint32_t i = 0; i < ticks; ++i)
         RunTick();
     }
@@ -481,15 +508,17 @@ void Outpost::InProcessServer::RunTick()
   const auto started = std::chrono::steady_clock::now();
   // The listener lets go of the connections that have gone, on this thread and never MsQuic's, and closes the ones that
   // have not said hello in time (ADR-060).
+  std::vector<std::string> silent;
   if (m_listener)
-    m_listener->Sweep(HELLO_TIMEOUT, static_cast<std::uint64_t>(CloseReason::MalformedMessage));
+    silent = m_listener->Sweep(HELLO_TIMEOUT, static_cast<std::uint64_t>(CloseReason::MalformedMessage));
   std::vector<Command> commands;
-  for (const Connection& connection : m_connections)
+  for (Connection& connection : m_connections)
   {
     const std::scoped_lock lock(connection.channel->mutex);
     // A connection's oldest commands, at most COMMANDS_PER_TICK of them; the rest wait for the next tick (ADR-009).
     std::vector<Command>& waiting = connection.channel->commands;
     const std::size_t taken = std::min(waiting.size(), COMMANDS_PER_TICK);
+    connection.orders = static_cast<std::uint32_t>(taken);
     for (Command& command : std::span(waiting).first(taken))
     {
       // The connection says who sent it; what the client wrote there is never trusted (ADR-002). Nor is the tick of a
@@ -546,6 +575,15 @@ void Outpost::InProcessServer::RunTick()
     };
     // Each seat's connection, every SEAT_FIGURES_SECONDS of ticks (ADR-004 decision 6).
     const bool sample = m_simulation.CurrentTick() % (std::uint64_t{SEAT_FIGURES_SECONDS} * TicksPerSecond()) == 0;
+    // What came of the connections since the last tick: those MsQuic's threads kept, the silent ones the listener closed,
+    // and each seat's connection seen gone below, which the server did not close itself (ADR-082 decision 1).
+    std::vector<JoinRecord> joins;
+    {
+      const std::scoped_lock lock(m_reportMutex);
+      joins = std::exchange(m_joins, {});
+    }
+    for (std::string& address : silent)
+      joins.push_back({.outcome = JoinOutcome::Silent, .address = std::move(address)});
     std::vector<Prepared> prepared;
     prepared.reserve(m_connections.size());
     for (Connection& connection : m_connections)
@@ -574,16 +612,44 @@ void Outpost::InProcessServer::RunTick()
         }
         if (sample && next.quic)
           next.figures = next.quic->Statistics();
+        // Its connection gone, once a taking: closed by the game with its code, lost without a word, or closed by the channel
+        // for a broken framing. One the server closed itself was written as it refused it, and one a newer connection took
+        // is no longer the seat's.
+        if (next.quic && next.quic->HasGone() && connection.goneTaking != next.takings)
+        {
+          connection.goneTaking = next.takings;
+          const std::optional<std::uint64_t> local = next.quic->LocalErrorCode();
+          const std::optional<std::uint64_t> code = next.quic->PeerErrorCode();
+          if (local == Neuron::FRAMING_ERROR_CODE)
+            joins.push_back({.outcome = JoinOutcome::Malformed, .player = connection.player, .address = next.quic->PeerAddress()});
+          else if (!local.has_value())
+          {
+            joins.push_back({.outcome = code.has_value() ? JoinOutcome::Closed : JoinOutcome::Lost,
+                             .player = connection.player,
+                             .address = next.quic->PeerAddress(),
+                             .code = code.value_or(0)});
+          }
+        }
       }
       else if (connection.hosted)
         next.play = SeatPlay::Ai;
     }
     if (m_log)
     {
+      for (const JoinRecord& join : joins)
+        m_log->Joined(m_simulation.CurrentTick(), join);
+      for (const WrittenSave& written : m_folder->TakeWritten())
+        m_log->Written(written.tick, written.write);
       std::vector<SeatTick> seats;
       seats.reserve(prepared.size());
       for (const Prepared& seat : prepared)
-        seats.push_back({.player = seat.connection->player, .play = seat.play, .snapshot = &seat.snapshot, .connection = seat.figures});
+      {
+        seats.push_back({.player = seat.connection->player,
+                         .play = seat.play,
+                         .snapshot = &seat.snapshot,
+                         .connection = seat.figures,
+                         .orders = seat.connection->orders});
+      }
       m_log->Record(m_simulation.CurrentTick(), seats);
     }
     if (sample)
@@ -677,6 +743,9 @@ void Outpost::InProcessServer::RunTick()
     }
   }
   const TickTiming timing{.total = std::chrono::steady_clock::now() - started, .parts = m_profiler.Take()};
+  // The minute's longest tick, and its dropped ticks, as the minute ends (ADR-082 decision 1).
+  if (m_log)
+    m_log->Timed(m_simulation.CurrentTick(), timing);
   const std::scoped_lock lock(m_reportMutex);
   m_tickTimings.push_back(timing);
 }

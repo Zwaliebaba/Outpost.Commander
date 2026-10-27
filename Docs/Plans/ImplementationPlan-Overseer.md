@@ -22,10 +22,10 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered C.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| OV1.1 | The minute's longest tick and its dropped ticks are logged | — | — | todo |
-| OV1.2 | A seat's orders, refusals and bytes are in its hour | — | — | todo |
-| OV1.3 | Every join and every link's end is logged | — | — | todo |
-| OV1.4 | A save's write is timed | — | — | todo |
+| OV1.1 | The minute's longest tick and its dropped ticks are logged | — | — | in review |
+| OV1.2 | A seat's orders, refusals and bytes are in its hour | — | — | in review |
+| OV1.3 | Every join and every link's end is logged | — | — | in review |
+| OV1.4 | A save's write is timed | — | — | in review |
 | OV2.1 | The overseer's listener and `Overseer.json` | OV1 | C4 | todo |
 | OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | todo |
 | OV2.3 | The universe's view and the log's stream | OV2.1 | — | todo |
@@ -96,6 +96,11 @@ OV1, OV2, OV3, OV4, OV5.
 - **Acceptance:** `UniverseFolderTests.TimesEachWrite`; `UniverseLogTests.AUniversesServerWritesItsLog` finds the first save's `written` record.
 - **Verify:** the checkers; the container's tests; CI's Debug|x64 run.
 
+### As built
+
+- **Run in the container:** `NeuronServerTests` 12, `GameLogicTests` 337, `GameProtocolTests` 29 and `OpponentTests` 32 pass, built by clang 18 against stand-ins for the Windows headers, C++/WinRT and the test framework; the QUIC tests fail there as before, and `QuicTransportTests` and `ImpairedLink` are not built, since they need Windows sockets. Each new test that runs there was checked against a broken build: a tick of exactly 5 ms not counted, the bytes of a newer connection not counted from its own start, refusals not counted, and dropped ticks not counted.
+- **Not run in the container:** `QuicChannelTests.KnowsItsPeer`, the bytes in `QuicChannelTests.ReportsItsConnection`, the addresses `SweepsAwayWhatHasGoneAndClosesWhatSaysNothing` now reads, and `QuicTransportTests.LogsEveryJoin`. `QuicChannel.cpp` and the two test files compile there against MsQuic 2.6.3's own headers; CI's Debug|x64 run is the first to run them.
+- **The checkers:** `CheckFormat.py` on clang-format 18.1.3, `CheckProjectFiles.py`, `GenerateDocs.py --check` and `CheckCitations.py` pass; clang-tidy 18, with the repository's checks, finds nothing in the changed files. `RunClangTidy.py` itself needs a Developer PowerShell, so CI runs it.
 
 ---
 

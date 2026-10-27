@@ -191,6 +191,12 @@ void Outpost::UniverseFolder::Flush()
     std::rethrow_exception(m_failure);
 }
 
+std::vector<Outpost::WrittenSave> Outpost::UniverseFolder::TakeWritten()
+{
+  const std::scoped_lock lock(m_mutex);
+  return std::exchange(m_written, {});
+}
+
 void Outpost::UniverseFolder::OpenLog(std::uint64_t _tick)
 {
   m_log.close();
@@ -215,6 +221,7 @@ void Outpost::UniverseFolder::Write(const std::stop_token& _stop)
     }
     try
     {
+      const auto started = std::chrono::steady_clock::now();
       const std::filesystem::path path = m_folder / FileName(SAVE_PREFIX, save.first, SAVE_EXTENSION);
       std::filesystem::path partial = path;
       partial += PARTIAL_EXTENSION;
@@ -226,6 +233,11 @@ void Outpost::UniverseFolder::Write(const std::stop_token& _stop)
           throw Neuron::Exception(std::format("The universe's save {} cannot be written.", partial.string()));
       }
       std::filesystem::rename(partial, path);
+      {
+        const std::scoped_lock lock(m_mutex);
+        m_written.push_back(
+          {.tick = save.first, .write = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started)});
+      }
       // The newest saves are kept, and the logs from the oldest of them on: a log begins at its save.
       const auto saves = FilesOf(m_folder, SAVE_PREFIX, SAVE_EXTENSION);
       if (saves.size() > SAVES_KEPT)
