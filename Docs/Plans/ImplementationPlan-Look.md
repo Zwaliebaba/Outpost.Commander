@@ -48,9 +48,9 @@ Task numbers carry the prefix LV, and gates are lettered A.
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | LV3.1 | Beacons | LV2.2 | A5 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
-| LV4.1 | Fleets on the screen | — | A6, A7 | in review |
-| LV4.2 | Plates over the fleets | LV4.1 | A7 | in review |
-| LV4.3 | Health bars where the plates are not | LV4.2 | A7 | in review |
+| LV4.1 | Fleets on the screen | — | A6, A7 | in review, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152) |
+| LV4.2 | Plates over the fleets | LV4.1 | A7 | in review, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152) |
+| LV4.3 | Health bars where the plates are not | LV4.2 | A7 | in review, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152) |
 
 ### Milestone order
 
