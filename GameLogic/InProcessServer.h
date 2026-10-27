@@ -172,7 +172,14 @@ private:
     // plays it as control says. Touched by the thread that steps the server only, once it is set before the start.
     std::unique_ptr<HostedPlayer> hosted;
     std::optional<SeatController> control;
+    // Touched by the thread that steps the server only: the commands the tick took from the connection, and the taking whose
+    // connection was last seen gone, which the universe's log has written (ADR-082 decision 1).
+    std::uint32_t orders = 0;
+    std::optional<std::uint32_t> goneTaking;
   };
+
+  // Keeps what came of a connection for the universe's log, which the next tick writes. Called on MsQuic's thread.
+  void KeepJoin(JoinRecord _join);
 
   // Adds a connection for _player, unless the server has started or the player has one already.
   std::shared_ptr<LoopbackChannel> AddConnection(PlayerId _player, bool _seat, const SeatToken& _token = {});
@@ -208,11 +215,12 @@ private:
   // ends, and the server times its snapshots.
   TickProfiler m_profiler;
   // Guards the tick timings, the seats' figures and the failure, which the started server's thread writes and
-  // TakeTickTimings and TakeSeatFigures read.
+  // TakeTickTimings and TakeSeatFigures read, and what came of the connections, which MsQuic's threads keep and each tick takes.
   std::mutex m_reportMutex;
   std::vector<TickTiming> m_tickTimings;
   std::deque<SeatFigures> m_seatFigures;
   std::exception_ptr m_failure;
+  std::vector<JoinRecord> m_joins;
   // Guards the connections while they can still change: until the server starts, MsQuic's threads seat players as the
   // shell's thread adds them. Each connection's QUIC channel stays guarded after it.
   std::mutex m_seatMutex;

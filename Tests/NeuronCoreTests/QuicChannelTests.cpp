@@ -317,16 +317,18 @@ public:
     // Swept as a server's tick sweeps it, until the one shut down has been let go and the silent one has gone too.
     std::vector<Message> after;
     std::string why;
+    std::vector<std::string> closed;
     const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
     while (std::chrono::steady_clock::now() < deadline && (why.empty() || listener.ChannelCount() != 1))
     {
-      listener.Sweep(200ms, SILENT_CODE);
+      std::ranges::move(listener.Sweep(200ms, SILENT_CODE), std::back_inserter(closed));
       if (why.empty() && silent->HasGone())
         why = FailureOf(*silent, after);
       std::this_thread::sleep_for(10ms);
     }
     Assert::AreEqual(std::format("The peer closed the QUIC connection with error code {}.", SILENT_CODE), why, L"the silent one");
     Assert::AreEqual(size_t{1}, listener.ChannelCount(), L"only the one that spoke is kept");
+    Assert::IsTrue(closed == std::vector<std::string>{"127.0.0.1"}, L"the silent one's address, once");
     talker->Send(Bytes("still here"));
     Assert::IsTrue(Bytes("still here") == ReceiveMessages(*talker, 1).front(), L"and it plays on");
   }
@@ -359,6 +361,7 @@ public:
     Assert::IsTrue(clientFigures.roundTripMicroseconds > 0, L"a round trip, once a message has crossed");
     Assert::IsTrue(clientFigures.leastRoundTripMicroseconds <= clientFigures.roundTripMicroseconds, L"the least no more than the smoothed");
     Assert::IsTrue(clientFigures.packetsSent > 100, L"the packets a long message takes");
+    Assert::IsTrue(clientFigures.bytesSent >= large.size(), L"and its bytes");
     Assert::IsTrue(clientFigures.congestionWindowBytes > 0, L"a congestion window");
 
     std::shared_ptr<Neuron::QuicChannel> server;
@@ -370,6 +373,43 @@ public:
     const Neuron::QuicStatistics serverFigures = Settled(*server);
     Assert::AreEqual(std::uint64_t{0}, serverFigures.backlogBytes, L"the client has the server's answer");
     Assert::IsTrue(serverFigures.roundTripMicroseconds > 0 && serverFigures.packetsSent > 100, L"and its own figures");
+    Assert::IsTrue(serverFigures.bytesSent >= large.size(), L"the bytes of its answer");
+  }
+
+  // Each end knows its peer's address, the server's end as the listener was given it and the client's as it was asked to reach
+  // it, and the code it closed the connection with itself, apart from the code its peer closed it with.
+  TEST_METHOD(KnowsItsPeer)
+  {
+    std::mutex mutex;
+    std::shared_ptr<Neuron::QuicChannel> serverEnd;
+    const Neuron::QuicListener listener({.applicationProtocol = std::string(PROTOCOL)},
+                                        [&](const std::shared_ptr<Neuron::QuicChannel>& _accepted) -> Neuron::QuicChannel::Receiver
+                                        {
+                                          const std::scoped_lock lock(mutex);
+                                          serverEnd = _accepted;
+                                          return [](Neuron::QuicChannel& _channel, const Message& _message) { _channel.Send(_message); };
+                                        });
+    const std::unique_ptr<Neuron::QuicChannel> client = ConnectTo(listener);
+    client->Send(Bytes("hello"));
+    (void)ReceiveMessages(*client, 1);
+    std::shared_ptr<Neuron::QuicChannel> server;
+    {
+      const std::scoped_lock lock(mutex);
+      server = serverEnd;
+    }
+    Assert::IsTrue(server != nullptr, L"the server's end");
+    Assert::AreEqual(std::string("127.0.0.1"), server->PeerAddress(), L"the client's address, without its port");
+    Assert::AreEqual(std::string("127.0.0.1"), client->PeerAddress(), L"the host the client reached");
+    Assert::IsFalse(client->LocalErrorCode().has_value() || server->LocalErrorCode().has_value(), L"nobody has closed it");
+
+    constexpr std::uint64_t CODE = 7;
+    client->Shutdown(CODE);
+    Assert::AreEqual(CODE, client->LocalErrorCode().value_or(0), L"the code it closed with");
+    const auto deadline = std::chrono::steady_clock::now() + PATIENCE;
+    while (!server->HasGone() && std::chrono::steady_clock::now() < deadline)
+      std::this_thread::sleep_for(10ms);
+    Assert::AreEqual(CODE, server->PeerErrorCode().value_or(0), L"is the code its peer heard");
+    Assert::IsFalse(server->LocalErrorCode().has_value(), L"which the peer did not close with itself");
   }
 
   // ADR-096: the server's end sends messages of which only the newest matters, each on a stream of its own beside the

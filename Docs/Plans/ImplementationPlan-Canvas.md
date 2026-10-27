@@ -60,7 +60,7 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 - **Layers.** The bars over the entities, then the HUD, then each window back to front, then an overlay for an open drop-down. The overlay is drawn last and hit-tested first; a press outside it closes it and goes no further.
 - **Keys in one order.** Esc reaches, in turn, the field that has the keyboard, an open drop-down, the front window, and then the controls (ADR-031 decision 5). While a field has the keyboard, no order, group or camera key reads it (ADR-017 decision 8).
 - **A theme.** The Style Guide's roles as one struct: the colors of a window's body, an edge, a hover, a pick, a card, a field, the text, a label, locked text, the warning, a bar's track and fill; which font each role takes; and the paddings, gaps and the title bar's height. `GameApp` fills it from the mockup's colors in `Hud.cpp`. A rule of the Style Guide becomes a rule of the API where it can: a chip is the only widget that sets text on the warning's color ([ADR-085](../ADR/ADR-085-one-meaning-per-color.md) decision 1).
-- **Widgets in the windows' look:** a window's frame, hatched title bar, close box and corners (ADR-031 decision 3); a HUD panel's frame and corners (ADR-043 decision 1); a label that fits or wraps (ADR-061 decision 3); a button as a card, with its cost, its reason or its key's cap (ADR-043 decision 4); a small arrow or close button; a stepper, `< SHIPYARD 05 >`; a row of cells, one lit as the pick (ADR-088 decision 3); a checkbox; a progress bar; a chip; a key cap; a text field; and, as CV7 needs them, a scroll view and a drop-down.
+- **Widgets in the windows' look:** a window's frame, hatched title bar, close box and corners (ADR-031 decision 3); a HUD panel's frame and corners (ADR-043 decision 1); a label that fits or wraps (ADR-061 decision 3); a button as a card, with its cost, its reason or its key's cap (ADR-043 decision 4); a small arrow or close button; a stepper, `< SHIPYARD 05 >`; a row of cells, one lit as the pick (ADR-088 decision 3); a checkbox; a progress bar; a chip; a key cap; a text field; a scroll view, which CV9 adds; and a drop-down, which CV7 adds.
 - **What stays the game's:** the part card, the damage card, a queue's option and its rows, a topic card, a status line, Ore's gem and figure. Each is built from the widgets above.
 - **A window is a row of a table.** Its identifier, its title, the key that toggles it, where it first opens, whether `WindowsFit` counts it and whether its place is kept. Where it first opens is an anchor to a corner, an edge or the middle, kept clear of the HUD's anchored panels at their largest, so that a window not yet moved never opens over them nor moves as they change. Adding one is its panel, its `Describe`, its build, its row and its actions.
 
@@ -90,15 +90,16 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV5.1 | The production window | CV4.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
 | CV5.2 | The research window | CV5.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
 | CV6.1 | The designer | CV5.1 | — | in review, [#148](https://github.com/Zwaliebaba/Outpost.Commander/pull/148) |
-| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1 | C3, C5 | todo |
+| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5 | todo |
 | CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | todo |
 | CV8.1 | The column under the Ore | CV3.4 | C1 | todo |
 | CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | todo |
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | todo |
+| CV9.1 | The scroll view | CV3.4 | — | todo |
 
 ### Milestone order
 
-CV1 to CV8, in their numbers' order.
+CV1 to CV8, in their numbers' order, and CV9 before CV7.
 
 - **CV1 goes first.** It needs nothing of the canvas, it is what the owner meets every session, and it is small.
 - **CV2 goes next, on today's code** (C7). The owner wants the build window before the canvas is built, and CV4.4 moves it onto the canvas with the other small windows.
@@ -106,6 +107,7 @@ CV1 to CV8, in their numbers' order.
 - **The ports go from the smallest window to the largest,** so that the canvas meets the leave window's two buttons before the designer's mockup.
 - **CV7 goes before CV8,** since scrolling needs the designer and the Controls window on the canvas, and nothing of the HUD. CV7.2 can go as soon as CV4.3 is done.
 - **CV8 goes last.** The HUD's panels are anchored and do not move (C1), so porting them buys least. Once it lands, `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
+- **CV9 goes before CV7.1, or before the overseer's OV3.2 if that comes first** ([the overseer's plan](ImplementationPlan-Overseer.md)), as a pull request of its own (owner, 2026-10-27). The overseer needs a scroll view from its first version, for its seat table, its log and its seat window; the game needs one only from CV7.1, after the designer. It is numbered last so that no task is renumbered.
 
 A task whose gate the owner turns down is dropped, and its milestone ships without it.
 
@@ -228,7 +230,7 @@ Nothing on the screen changes in this milestone.
 
 - **Gate:** C4.
 - **Goal:** the windows' look as widgets, so that a window is built and not drawn.
-- **Scope:** the theme's struct, and the widgets "The canvas" lists, but the scroll view and the drop-down, which CV7 adds with their first use. Each draws into the display list exactly what `Painter`, `OpenWindow`, `Frame`, `AddButton` and `RetreatRow` draw now for the same thing. The text field takes ADR-017 decision 8's characters, Backspace, Enter and Esc.
+- **Scope:** the theme's struct, and the widgets "The canvas" lists, but the scroll view and the drop-down, which CV9 and CV7 add. Each draws into the display list exactly what `Painter`, `OpenWindow`, `Frame`, `AddButton` and `RetreatRow` draw now for the same thing. The text field takes ADR-017 decision 8's characters, Backspace, Enter and Esc.
 - **ADR:** the canvas's, and the Style Guide's rules that the API now holds.
 - **Acceptance:** `NeuronClientTests` on each widget's display list, in a theme of the tests' own; a chip the only way onto the warning's color; a button dim and taking no press when disabled, with its reason in its cost's place.
 - **Verify:** CI.
@@ -312,13 +314,12 @@ Each task is a port (rule 5).
 
 - **Gates:** C3, C5.
 - **Goal:** the eighth finding's first half. A window of a fixed size no longer holds the interface's scale under the screen's room.
-- **Scope:** as C3 and C5 answer:
-  - **A scroll view:** its content clipped to it, moved by the wheel over it, and a thumb that is dragged. Clipping is on the CPU in `UiPipeline`: a quad cut to the clip, its texture coordinates with it, so the interface stays one draw call. A hatched quad's stripes are laid on the screen's pixels (ADR-030 decision 6) and need no change. Lines are never clipped by a scroll view; only the minimap draws them.
+- **Scope:** as C3 and C5 answer, on CV9.1's scroll view:
   - **The designer's part rows scroll,** and nothing above or below them. The thumb stands in the 14 units right of the cards (ADR-062 decision 4). The view shows at least one line of cards.
   - **The Controls window's lines scroll,** with a least height. The orders and away windows do not (C5).
   - **`WindowsFit` counts each fixed window at its least height, and the HUD's bottom row at its widest** (C5).
-- **ADR:** the canvas's for the scroll view; ADR-070 decision 3 and its consequences rewritten with the new ceilings, measured from the canvas's measure; Game §interface.scale and Game §interface.windows.designer.
-- **Acceptance:** `NeuronClientTests` for the clip of a solid, a hatched, a sprite and a text quad, and for the scroll view; `HudTests.StepsTheInterfaceAsFarAsItsWindowsFit` with 150% on 16:9, 16:10 and 3:2 and 175% on 21:9; the layout and contrast guards at every new step, which is where the column under the Ore would meet the minimap, a fit this plan has not computed.
+- **ADR:** ADR-070 decision 3 and its consequences rewritten with the new ceilings, measured from the canvas's measure; Game §interface.scale and Game §interface.windows.designer.
+- **Acceptance:** `HudTests.StepsTheInterfaceAsFarAsItsWindowsFit` with 150% on 16:9, 16:10 and 3:2 and 175% on 21:9; the layout and contrast guards at every new step, which is where the column under the Ore would meet the minimap, a fit this plan has not computed.
 - **Verify:** CI; run at every step on 1920×1080 and 2880×1920, a part hovered at the top and the bottom of the rows, a selection at its widest; **owner run.**
 
 ### CV7.2 — Drop-downs in the orders form
@@ -353,6 +354,21 @@ The HUD's panels stay where they are (C1). Each task is a port (rule 5).
 - **Scope:** the minimap's frame, with its marks, fog and view drawn by the game into its leaf; the tag at the top right; the hint; the match's end; the main menu. `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
 - **Acceptance:** the port's comparison; the minimap's and the menu's tests as they stand.
 - **Verify:** CI; run, the menu and a match to its end.
+
+---
+
+## Milestone CV9 — The scroll view
+
+### CV9.1 — The scroll view
+
+- **Goal:** a scroll view in the canvas before its first use, since the game's (CV7.1) and the overseer's ([the overseer's plan](ImplementationPlan-Overseer.md), OV3) can come in either order.
+- **Scope:**
+  - **A scroll view:** its content clipped to it, moved by the wheel over it, and a thumb that is dragged. Clipping is on the CPU in `UiPipeline`: a quad cut to the clip, its texture coordinates with it, so the interface stays one draw call. A hatched quad's stripes are laid on the screen's pixels (ADR-030 decision 6) and need no change. Lines are never clipped by a scroll view; only the minimap draws them.
+  - Its offset is kept in the interaction's store under its identifier (CV3.3), and its content's height is what the layout measures.
+  - No window takes it yet: CV7.1 puts the designer's part rows and the Controls window's lines in it, and the overseer its own lists.
+- **ADR:** the canvas's for the scroll view.
+- **Acceptance:** `NeuronClientTests` for the clip of a solid, a hatched, a sprite and a text quad, and for the scroll view: the wheel over it and off it, the thumb dragged and held at either end, and a content shorter than the view, which does not move.
+- **Verify:** the container's tests; CI. It changes nothing on the screen, so there is nothing to run.
 
 ---
 

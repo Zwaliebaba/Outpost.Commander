@@ -100,6 +100,22 @@ public:
     }
   }
 
+  // ADR-082 decision 1: the folder's thread times each save it writes, for the universe's log, and hands each over once.
+  TEST_METHOD(TimesEachWrite)
+  {
+    const TemporaryFolder folder;
+    Outpost::UniverseFolder universe(folder.Path());
+    universe.Save(0, std::vector<std::byte>(1'000, std::byte{1}));
+    universe.Save(TICKS_PER_SAVE, std::vector<std::byte>(2'000, std::byte{2}));
+    universe.Flush();
+    const std::vector<Outpost::WrittenSave> written = universe.TakeWritten();
+    Assert::AreEqual(std::size_t{2}, written.size());
+    Assert::AreEqual(std::uint64_t{0}, written[0].tick);
+    Assert::AreEqual(std::uint64_t{TICKS_PER_SAVE}, written[1].tick);
+    Assert::IsTrue(written[0].write.count() >= 0 && written[1].write.count() >= 0, L"a time each");
+    Assert::IsTrue(universe.TakeWritten().empty(), L"each handed over once");
+  }
+
   // A save that does not read whole is passed over for the one before it, whose log then brings the universe back all the same.
   TEST_METHOD(ComesBackPastABrokenSave)
   {

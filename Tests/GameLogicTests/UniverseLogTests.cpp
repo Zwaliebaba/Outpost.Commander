@@ -58,7 +58,8 @@ TEST_CLASS(UniverseLogTests)
 {
 public:
   // A seat's records: who plays it when that changes, the orders it fires, its loss, its wait and its restart, and every
-  // hour its bank, income, fleet, nodes, research and how long its player and its deputy played it.
+  // hour its bank, income, fleet, nodes, research, how long its player and its deputy played it, and the commands applied
+  // for it and refused it.
   TEST_METHOD(WritesASeatsRecords)
   {
     std::ostringstream out;
@@ -76,13 +77,17 @@ public:
     snapshot.research = {{.researched = true}, {.researched = false}, {.researched = true}};
     const auto record = [&](std::uint64_t _tick, Outpost::SeatPlay _play)
     {
-      const std::array<Outpost::SeatTick, 1> seats{{{.player = ONE, .play = _play, .snapshot = &snapshot}}};
+      // Two commands applied every thousandth tick, whoever gave them.
+      const std::uint32_t orders = _tick % 1000 == 0 ? 2 : 0;
+      const std::array<Outpost::SeatTick, 1> seats{{{.player = ONE, .play = _play, .snapshot = &snapshot, .orders = orders}}};
       log.Record(_tick, seats);
       snapshot.events.clear();
     };
     const std::uint64_t hour = 3600ull * TICKS_PER_SECOND;
     for (std::uint64_t tick = 1; tick < hour; ++tick)
     {
+      if (tick == 6 || tick == 7)
+        snapshot.events.push_back({.kind = Outpost::EventKind::CommandRefused, .refusal = Outpost::CommandResult::NotEnoughOre});
       if (tick == 4)
       {
         snapshot.events.push_back({.kind = Outpost::EventKind::OrderFired,
@@ -111,14 +116,14 @@ public:
       "waiting 11 player 1",
       "restart 13 player 1 waited 3",
       "seat 1000 player 1 player",
-      std::format("hour {} player 1 ore 500 income 250 fleet 12 cap 20 nodes 1 researched 2 present {} deputy {}", hour,
-                  (hour - 997) / TICKS_PER_SECOND, 997 / TICKS_PER_SECOND)};
+      std::format("hour {} player 1 ore 500 income 250 fleet 12 cap 20 nodes 1 researched 2 present {} deputy {} orders {} refused 2", hour,
+                  (hour - 997) / TICKS_PER_SECOND, 997 / TICKS_PER_SECOND, 2 * (hour / 1000))};
     Assert::IsTrue(lines == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
   }
 
   // ADR-082 decision 3: an hour whose seat's connection was sampled ends with its round trip at the median and the 95th
-  // percentile, the packets sent and lost in the hour, across a newer connection that counts from its own start, and its
-  // largest backlog; an hour without a sample ends as before.
+  // percentile, the packets sent and lost in the hour, across a newer connection that counts from its own start, its
+  // largest backlog, and the bytes sent in the hour, counted as the packets are; an hour without a sample ends as before.
   TEST_METHOD(EndsAnHourWithItsConnection)
   {
     std::ostringstream out;
@@ -126,11 +131,11 @@ public:
     const Outpost::Snapshot snapshot = SnapshotOf(ONE, 0);
     // The third sample finds a packet MsQuic had thought lost, and the fourth is a newer connection's.
     const std::array<Neuron::QuicStatistics, 5> samples{
-      {{.roundTripMicroseconds = 30'000, .packetsSent = 100, .packetsLost = 1, .backlogBytes = 500},
-       {.roundTripMicroseconds = 10'000, .packetsSent = 200, .packetsLost = 3, .backlogBytes = 2'000},
-       {.roundTripMicroseconds = 20'000, .packetsSent = 300, .packetsLost = 2},
-       {.roundTripMicroseconds = 40'000, .packetsSent = 50, .packetsLost = 1, .backlogBytes = 100},
-       {.roundTripMicroseconds = 50'000, .packetsSent = 120, .packetsLost = 1}}};
+      {{.roundTripMicroseconds = 30'000, .packetsSent = 100, .packetsLost = 1, .backlogBytes = 500, .bytesSent = 1'000},
+       {.roundTripMicroseconds = 10'000, .packetsSent = 200, .packetsLost = 3, .backlogBytes = 2'000, .bytesSent = 2'500},
+       {.roundTripMicroseconds = 20'000, .packetsSent = 300, .packetsLost = 2, .bytesSent = 4'000},
+       {.roundTripMicroseconds = 40'000, .packetsSent = 50, .packetsLost = 1, .backlogBytes = 100, .bytesSent = 600},
+       {.roundTripMicroseconds = 50'000, .packetsSent = 120, .packetsLost = 1, .bytesSent = 1'500}}};
     const std::uint64_t hour = 3600ull * TICKS_PER_SECOND;
     for (std::uint64_t tick = 1; tick <= 2 * hour; ++tick)
     {
@@ -143,11 +148,84 @@ public:
     std::vector<std::string> hours;
     std::ranges::copy_if(Lines(out.str()), std::back_inserter(hours), [](const std::string& _line) { return _line.starts_with("hour"); });
     const std::vector<std::string> expected{
-      std::format("hour {} player 1 ore 0 income 0 fleet 0 cap 0 nodes 0 researched 0 present 3600 deputy 0 rtt_median_us 30000 "
-                  "rtt_p95_us 50000 sent 420 lost 4 backlog_most 2000",
+      std::format("hour {} player 1 ore 0 income 0 fleet 0 cap 0 nodes 0 researched 0 present 3600 deputy 0 orders 0 refused 0 "
+                  "rtt_median_us 30000 rtt_p95_us 50000 sent 420 lost 4 backlog_most 2000 sent_bytes 5500",
                   hour),
-      std::format("hour {} player 1 ore 0 income 0 fleet 0 cap 0 nodes 0 researched 0 present 3600 deputy 0", 2 * hour)};
+      std::format("hour {} player 1 ore 0 income 0 fleet 0 cap 0 nodes 0 researched 0 present 3600 deputy 0 orders 0 refused 0", 2 * hour)};
     Assert::IsTrue(hours == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
+  }
+
+  // ADR-082 decision 1: a minute's end writes its longest tick when it took the tick's budget or more, with how many of the
+  // minute's ticks did and the parts that took a quarter of it or more, longest first; and the ticks it dropped after stalls.
+  // A quiet minute writes neither.
+  TEST_METHOD(WritesTheMinutesLongestTickAndItsDroppedTicks)
+  {
+    using namespace std::chrono_literals;
+    std::ostringstream out;
+    Outpost::UniverseLog log(out, TICKS_PER_SECOND);
+    const std::uint64_t minute = 60ull * TICKS_PER_SECOND;
+    const auto timed = [&](std::uint64_t _tick, std::chrono::microseconds _total)
+    {
+      Outpost::TickTiming timing{.total = _total};
+      // The longest tick's commands held a path graph built whole, and a little of its fight.
+      if (_tick == minute + 100)
+      {
+        timing.parts[static_cast<std::size_t>(Outpost::TickPart::Commands)] = 5'600us;
+        timing.parts[static_cast<std::size_t>(Outpost::TickPart::GraphBuild)] = 5'100us;
+        timing.parts[static_cast<std::size_t>(Outpost::TickPart::Fight)] = 200us;
+      }
+      log.Timed(_tick, timing);
+    };
+    for (std::uint64_t tick = 1; tick <= 3 * minute; ++tick)
+    {
+      if (tick == minute + 100)
+        timed(tick, 6'000us);
+      else if (tick == minute + 300)
+        timed(tick, Outpost::UniverseLog::LONG_TICK);
+      else if (tick == minute + 800)
+        timed(tick, Outpost::UniverseLog::LONG_TICK - 1us);
+      else
+        timed(tick, 1'000us);
+      if (tick == minute + 500)
+        log.Dropped(3);
+      if (tick == minute + 900)
+        log.Dropped(2);
+      if (tick == 2 * minute + 10)
+        log.Dropped(7);
+    }
+
+    const std::vector<std::string> expected{std::format("tick {} us 6000 over 2 commands 5600 graph_build 5100", minute + 100),
+                                            std::format("dropped {} ticks 5", 2 * minute), std::format("dropped {} ticks 7", 3 * minute)};
+    Assert::IsTrue(Lines(out.str()) == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
+  }
+
+  // ADR-082 decision 1: what came of each connection, with the address it came from: a welcome; a refusal for another build,
+  // with the layout its hello named, for a seat it may not take, for what is no hello, and for no hello in time; and a seat's
+  // connection gone, taken by a newer one, closed by the game with its code, or lost.
+  TEST_METHOD(WritesEveryJoin)
+  {
+    std::ostringstream out;
+    Outpost::UniverseLog log(out, TICKS_PER_SECOND);
+    log.Joined(5, {.outcome = Outpost::JoinOutcome::Welcomed, .player = ONE, .address = "192.168.1.20"});
+    log.Joined(5, {.outcome = Outpost::JoinOutcome::WrongVersion, .address = "10.0.0.2", .layout = 0x1234'abcd'5678'ef90});
+    log.Joined(6, {.outcome = Outpost::JoinOutcome::SeatRefused, .player = TWO, .address = "10.0.0.3"});
+    log.Joined(6, {.outcome = Outpost::JoinOutcome::Malformed, .address = "10.0.0.4"});
+    log.Joined(6, {.outcome = Outpost::JoinOutcome::Malformed, .player = ONE, .address = "192.168.1.20"});
+    log.Joined(7, {.outcome = Outpost::JoinOutcome::Silent, .address = "203.0.113.9"});
+    log.Joined(8, {.outcome = Outpost::JoinOutcome::Taken, .player = ONE, .address = "192.168.1.20"});
+    log.Joined(9, {.outcome = Outpost::JoinOutcome::Closed, .player = TWO, .address = "::1", .code = 0});
+    log.Joined(9, {.outcome = Outpost::JoinOutcome::Lost, .player = TWO});
+
+    const std::vector<std::string> expected{"join 5 welcomed player 1 from 192.168.1.20",
+                                            "join 5 refused version layout 1234abcd5678ef90 from 10.0.0.2",
+                                            "join 6 refused seat player 2 from 10.0.0.3",
+                                            "join 6 refused malformed from 10.0.0.4",
+                                            "join 6 refused malformed player 1 from 192.168.1.20",
+                                            "join 7 refused silent from 203.0.113.9",
+                                            "join 8 gone player 1 taken from 192.168.1.20",
+                                            "join 9 gone player 2 closed 0 from ::1",
+                                            "join 9 gone player 2 lost from -"};
+    Assert::IsTrue(Lines(out.str()) == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
   }
 
   // A battle is two seats' ships firing at each other in one sector within 10 seconds, until 30 seconds pass without a shot
@@ -188,8 +266,8 @@ public:
     Assert::IsTrue(written == battles, std::wstring(winrt::to_hstring(out.str())).c_str());
   }
 
-  // A universe's server writes its log beside its saves: its start, each save with how long it took, and who plays each seat;
-  // made afresh from its folder, it writes where it came back from (ADR-077).
+  // A universe's server writes its log beside its saves: its start, each save with how long it took to encode and to write,
+  // and who plays each seat; made afresh from its folder, it writes where it came back from (ADR-077).
   TEST_METHOD(AUniversesServerWritesItsLog)
   {
     const PackagedHomeDirectory home;
@@ -214,6 +292,9 @@ public:
     Assert::IsTrue(Has(lines, "seat 1 player 1 ai") && Has(lines, "seat 1 player 2 ai"), L"its AI empires");
     Assert::IsTrue(std::ranges::any_of(lines, [](const std::string& _line) { return _line.starts_with("save 1200 bytes "); }),
                    L"a save a minute");
+    // The first save's write is long done a minute of ticks later; the last one's may still be under way as the server goes.
+    Assert::IsTrue(std::ranges::any_of(lines, [](const std::string& _line) { return _line.starts_with("written 0 write_us "); }),
+                   L"a save written by the folder's thread");
     Assert::IsTrue(std::ranges::any_of(lines, [](const std::string& _line)
                                        { return _line.starts_with("start ") && _line.contains(" recovered save 1200 replayed "); }),
                    L"and where it came back from");
