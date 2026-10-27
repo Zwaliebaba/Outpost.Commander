@@ -444,6 +444,105 @@ std::wstring Named(const std::wstring& _layout, std::uint32_t _widthPixels, cons
 {
   return std::format(L"{} at {} wide: \"{}\"", _layout, _widthPixels, std::wstring(winrt::to_hstring(_text.text)));
 }
+
+// Temporary, until the HUD's layout before the canvas goes (rule 5 of the canvas plan): what differs between a layout before
+// the canvas and the same on it, item by item and in order, each place within a hundredth of a pixel, the first few of each
+// list named. A press's region and its action's rectangle carry no color on the canvas, which nothing reads, so their
+// places alone are compared; and a text of nothing draws nothing, so only the texts drawn are.
+bool NearPixel(float _a, float _b) noexcept
+{
+  return std::abs(_a - _b) < 0.01f;
+}
+
+bool SameColor(const DirectX::XMFLOAT4& _a, const DirectX::XMFLOAT4& _b) noexcept
+{
+  return _a.x == _b.x && _a.y == _b.y && _a.z == _b.z && _a.w == _b.w;
+}
+
+bool SameArea(const Neuron::CanvasRect& _a, const Neuron::CanvasRect& _b) noexcept
+{
+  return NearPixel(_a.left, _b.left) && NearPixel(_a.top, _b.top) && NearPixel(_a.width, _b.width) && NearPixel(_a.height, _b.height);
+}
+
+bool SameRect(const Neuron::CanvasRect& _a, const Neuron::CanvasRect& _b) noexcept
+{
+  return SameArea(_a, _b) && SameColor(_a.color, _b.color) && _a.fill == _b.fill;
+}
+
+template <class T, class Same>
+void DifferInList(std::wstring& _out, const std::wstring& _name, const wchar_t* _list, const std::vector<T>& _before,
+                  const std::vector<T>& _after, Same _same)
+{
+  if (_before.size() != _after.size())
+    _out += std::format(L"{}: {} {} before, {} on the canvas\n", _name, _before.size(), _list, _after.size());
+  std::size_t named = 0;
+  for (std::size_t item = 0; item < std::min(_before.size(), _after.size()) && named < 3; ++item)
+  {
+    if (!_same(_before[item], _after[item]))
+    {
+      _out += std::format(L"{}: {} {} differs\n", _name, _list, item);
+      ++named;
+    }
+  }
+}
+
+std::vector<Neuron::CanvasText> DrawnTexts(const Outpost::Hud::Layout& _layout)
+{
+  std::vector<Neuron::CanvasText> drawn;
+  std::ranges::copy_if(_layout.texts, std::back_inserter(drawn), [](const Neuron::CanvasText& _text) { return !_text.text.empty(); });
+  return drawn;
+}
+
+std::vector<Neuron::CanvasRegion> NamingAnAction(const std::vector<Neuron::CanvasRegion>& _regions)
+{
+  std::vector<Neuron::CanvasRegion> naming;
+  std::ranges::copy_if(_regions, std::back_inserter(naming),
+                       [](const Neuron::CanvasRegion& _region) { return _region.payload != Neuron::NO_PAYLOAD; });
+  return naming;
+}
+
+std::wstring Differences(const Outpost::Hud::Layout& _before, const Outpost::Hud::Layout& _after, const std::wstring& _name)
+{
+  std::wstring out;
+  DifferInList(out, _name, L"panel", _before.panels, _after.panels, SameRect);
+  DifferInList(out, _name, L"text", DrawnTexts(_before), DrawnTexts(_after),
+               [](const Neuron::CanvasText& _a, const Neuron::CanvasText& _b)
+               {
+                 return _a.text == _b.text && NearPixel(_a.left, _b.left) && NearPixel(_a.top, _b.top) && SameColor(_a.color, _b.color) &&
+                        _a.font == _b.font && NearPixel(_a.trackingPixels, _b.trackingPixels);
+               });
+  DifferInList(out, _name, L"sprite", _before.sprites, _after.sprites, [](const Neuron::CanvasSprite& _a, const Neuron::CanvasSprite& _b)
+               { return _a.sprite == _b.sprite && SameRect(_a.area, _b.area) && _a.mirrorX == _b.mirrorX && _a.mirrorY == _b.mirrorY; });
+  DifferInList(out, _name, L"line", _before.lines, _after.lines,
+               [](const Neuron::CanvasLine& _a, const Neuron::CanvasLine& _b)
+               {
+                 return NearPixel(_a.segment.from.x, _b.segment.from.x) && NearPixel(_a.segment.from.y, _b.segment.from.y) &&
+                        NearPixel(_a.segment.to.x, _b.segment.to.x) && NearPixel(_a.segment.to.y, _b.segment.to.y) &&
+                        SameColor(_a.color, _b.color);
+               });
+  DifferInList(out, _name, L"layer", _before.layers, _after.layers,
+               [](const Neuron::CanvasLayer& _a, const Neuron::CanvasLayer& _b)
+               {
+                 return SameRect(_a.frame, _b.frame) && _a.overlay == _b.overlay && _a.firstPanel == _b.firstPanel &&
+                        _a.firstLine == _b.firstLine && _a.firstText == _b.firstText && _a.firstSprite == _b.firstSprite;
+               });
+  DifferInList(
+    out, _name, L"action", _before.actions, _after.actions,
+    [](const std::pair<Neuron::CanvasRect, Outpost::Hud::Action>& _a, const std::pair<Neuron::CanvasRect, Outpost::Hud::Action>& _b)
+    { return SameArea(_a.first, _b.first) && _a.second == _b.second; });
+  DifferInList(out, _name, L"region", NamingAnAction(_before.regions), NamingAnAction(_after.regions),
+               [](const Neuron::CanvasRegion& _a, const Neuron::CanvasRegion& _b)
+               { return SameArea(_a.area, _b.area) && _a.payload == _b.payload && _a.hoverOnly == _b.hoverOnly; });
+  DifferInList(out, _name, L"window", _before.windows, _after.windows,
+               [](const Outpost::Hud::Window& _a, const Outpost::Hud::Window& _b)
+               {
+                 return _a.kind == _b.kind && SameRect(_a.frame, _b.frame) && SameRect(_a.titleBar, _b.titleBar) &&
+                        SameRect(_a.closeBox, _b.closeBox) && _a.firstAction == _b.firstAction;
+               });
+  if (!SameRect(_before.minimap, _after.minimap))
+    out += std::format(L"{}: the minimap's square differs\n", _name);
+  return out;
+}
 } // namespace
 
 TEST_CLASS(HudTests)
@@ -3749,6 +3848,115 @@ public:
                        plain.texts[i].top == lit->texts[i].top);
       Assert::AreEqual(plain.actions.size(), lit->actions.size());
     }
+  }
+
+  // Temporary, until the HUD's layout before the canvas goes (rule 5 of the canvas plan): the HUD's panels and the menu on
+  // the canvas lay out as before, every panel, text, sprite, line, layer, action, press and window, in order, at both sizes
+  // and the steps a match and the menu reach: the longest content, with the parts locked and unlocked; the Ore earning, at a
+  // whole and a fraction; no tag, a local one and one reconnecting; a drain that does not warn, no tickets and no cap; a
+  // structure's one bar, ships going back and one with no health, a retreat set and mixed, and buttons without a retreat; a
+  // map with its marks and the view; the hint in the middle; and the pointer on each of the HUD's presses. The menu plain,
+  // with a universe to join, joining, and with a notice.
+  TEST_METHOD(BuildsTheHudAndTheMenuOnTheCanvasAsBefore)
+  {
+    using Hud = Outpost::Hud;
+    std::vector<std::pair<std::wstring, Hud::Content>> contents{{L"locked", LongestContent(false)}, {L"unlocked", LongestContent(true)}};
+    Hud::Content earning = LongestContent(true);
+    earning.oreIncomeHundredthsPerSecond = 1200;
+    earning.connection.reset();
+    earning.territory->drainWarns = false;
+    earning.territory->ownTickets.reset();
+    earning.territory->cap = 0;
+    earning.retreat = Hud::RetreatChoice{.setting = Outpost::RetreatThreshold::Half};
+    earning.hint = "Placing Shipyard: left-click to build, right-click to cancel";
+    contents.emplace_back(L"earning", earning);
+    Hud::Content fraction = LongestContent(false);
+    fraction.oreIncomeHundredthsPerSecond = 1250;
+    fraction.connection = Hud::Connection{.server = {}, .silentSeconds = 0};
+    fraction.retreat = Hud::RetreatChoice{.mixed = true};
+    fraction.shipBars = {{.ship = Outpost::EntityId{100}, .share = 0.0f},
+                         {.ship = Outpost::EntityId{101}, .share = 0.4f, .retreating = true},
+                         {.ship = Outpost::EntityId{102}, .share = 1.0f}};
+    fraction.outcome.reset();
+    contents.emplace_back(L"fraction", fraction);
+    Hud::Content structure = LongestContent(true);
+    structure.connection = Hud::Connection{.server = "203.0.113.5:4433", .roundTripMilliseconds = 42, .reconnectingSeconds = 5};
+    structure.selection = {"Shipyard 05", "Level 2"};
+    structure.shipBars.clear();
+    structure.selectionHealth = 0.3f;
+    structure.retreat.reset();
+    structure.alerts.clear();
+    structure.territory.reset();
+    structure.hint.clear();
+    structure.mapSizeMeters = 3000.0f;
+    structure.fog = true;
+    structure.player = PLAYER;
+    structure.sectors = {
+      {.minXMeters = -1500.0f, .maxXMeters = 0.0f, .minZMeters = -1500.0f, .maxZMeters = 0.0f, .side = Hud::Side::Own, .holder = PLAYER},
+      {.minXMeters = 0.0f,
+       .maxXMeters = 1500.0f,
+       .minZMeters = 0.0f,
+       .maxZMeters = 1500.0f,
+       .side = Hud::Side::Enemy,
+       .holder = Outpost::PlayerId{2},
+       .suppressed = true,
+       .cutOff = true}};
+    structure.marks = {{.position = {.xMeters = 100.0f, .zMeters = 200.0f}, .side = Hud::Side::Own, .owner = PLAYER},
+                       {.position = {.xMeters = -400.0f, .zMeters = 300.0f}, .radiusMeters = 40.0f, .kind = Outpost::EntityKind::Asteroid},
+                       {.position = {.xMeters = 700.0f, .zMeters = -200.0f},
+                        .side = Hud::Side::Enemy,
+                        .owner = Outpost::PlayerId{2},
+                        .kind = Outpost::EntityKind::Structure,
+                        .remembered = true}};
+    structure.alerts = {{"Shipyard 05 is under attack", Outpost::PlanePosition{.xMeters = 100.0f, .zMeters = 200.0f}}};
+    contents.emplace_back(L"a structure on a map", structure);
+    const std::array<Outpost::PlanePosition, 4> view{{{.xMeters = -300.0f, .zMeters = 300.0f},
+                                                      {.xMeters = 300.0f, .zMeters = 300.0f},
+                                                      {.xMeters = 400.0f, .zMeters = -200.0f},
+                                                      {.xMeters = -400.0f, .zMeters = -200.0f}}};
+
+    std::wstring differences;
+    for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
+    {
+      for (const float factor : ReachableSteps(width, height, true))
+      {
+        for (const auto& [name, content] : contents)
+        {
+          const std::wstring named = std::format(L"{} at {}x{}, {}%", name, width, height, std::lround(factor * 100.0f));
+          const auto lay = [&, &content = content](std::optional<Hud::Action> _hovered, Neuron::Interaction* _pointer, bool _ported) {
+            return Hud::Lay(content, MetricsFor(width, height, factor), width, height, view, nullptr, factor, _hovered, _pointer, _ported);
+          };
+          differences += Differences(lay(std::nullopt, nullptr, false), lay(std::nullopt, nullptr, true), named);
+          // The pointer on each of the HUD's presses, the canvas's under it as it would be after a move.
+          const Hud::Layout pointed = lay(std::nullopt, nullptr, true);
+          const Hud::Span hud = pointed.ActionsOf(0);
+          for (std::size_t action = hud.first; action < hud.end; ++action)
+          {
+            const Hud::Rect& area = pointed.actions[action].first;
+            const float x = area.left + (area.width / 2.0f);
+            const float y = area.top + (area.height / 2.0f);
+            Neuron::Interaction pointer;
+            pointer.Move(pointed, x, y);
+            const std::optional<Hud::Action> hovered = pointed.HoverAt(x, y);
+            differences +=
+              Differences(lay(hovered, &pointer, false), lay(hovered, &pointer, true), std::format(L"{}, pointer on {}", named, action));
+          }
+        }
+      }
+      for (const float factor : ReachableSteps(width, height, false))
+      {
+        const std::wstring named = std::format(L"the menu at {}x{}, {}%", width, height, std::lround(factor * 100.0f));
+        for (const Hud::MenuState& state : {Hud::MenuState{}, Hud::MenuState{.joinUniverse = true},
+                                            Hud::MenuState{.joinUniverse = true, .connecting = "203.0.113.5:4433"},
+                                            Hud::MenuState{.notice = "The server closed the connection: it is shutting down for the night, "
+                                                                     "and will be back in the morning."}})
+        {
+          differences += Differences(Hud::LayMenu(MetricsFor(width, height, factor), width, height, factor, state, false),
+                                     Hud::LayMenu(MetricsFor(width, height, factor), width, height, factor, state, true), named);
+        }
+      }
+    }
+    Assert::IsTrue(differences.empty(), differences.c_str());
   }
 
   // ADR-066: under the Ore, a line for the Research Lab once the player has a finished one, and one for the Shipyards once

@@ -362,6 +362,29 @@ public:
     Assert::IsTrue(OutlineIs(picked, 6, 0.0f, 88.0f, 600.0f, 68.0f, theme.pickedEdgeColor), L"a picked one's edge is lit already");
   }
 
+  // ADR-100: a button the caller says is pointed at has its edge lit as one under the pointer has, as the HUD lights every
+  // button whose action is the one under the pointer (ADR-088 decision 1); and a press at a node is a region naming its
+  // payload that draws nothing, as a line of a panel that takes a click is.
+  TEST_METHOD(LightsAPointedButtonAndPressesANode)
+  {
+    Fixture fixture;
+    Canvas canvas = fixture.Begin();
+    (void)canvas.Tree().Begin(LayoutKind::Column, {.widthUnits = 300.0f, .alignX = LayoutAlign::Stretch});
+    (void)canvas.Button("research", {.label = "Research", .payload = 2, .pointed = true}, {.heightUnits = 34.0f});
+    const std::size_t line = canvas.Tree().Add({.heightUnits = 22.0f});
+    canvas.Press(line, 7);
+    canvas.Tree().End();
+    DrawList list;
+    canvas.Finish(list);
+    Assert::IsTrue(OutlineIs(list, 1, 0.0f, 0.0f, 600.0f, 68.0f, fixture.theme.hoverEdgeColor), L"lit with no pointer over it");
+    Assert::AreEqual(size_t{5}, list.panels.size(), L"the press draws nothing");
+    Assert::AreEqual(size_t{2}, list.regions.size());
+    Assert::IsTrue(Near(list.regions[1].area.top, 68.0f) && Near(list.regions[1].area.height, 44.0f) &&
+                     Near(list.regions[1].area.width, 600.0f),
+                   L"the press at its node");
+    Assert::IsTrue(list.regions[1].payload == 7u && list.regions[1].widget == Neuron::NO_WIDGET);
+  }
+
   // ADR-043 decision 4; ADR-100: a disabled button is dim and takes no press, and its reason stands in its figure's place,
   // or where one would stand on a button without one; without a reason, its figure is dim too.
   TEST_METHOD(DimsADisabledButtonWithItsReason)

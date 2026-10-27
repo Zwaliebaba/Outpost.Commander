@@ -5,7 +5,8 @@ namespace Neuron
 // What a button shows (ADR-043 decision 4): its label; a figure, such as its cost, after the mark it may have, at its
 // right; why it cannot be pressed, in the figure's place while it is disabled; its key, as a cap at its right; and work it
 // started that is under way, from nothing to one, as a bar along its foot. A press on it, while it is enabled, names the
-// caller's payload.
+// caller's payload. Its edge is lit under the pointer, or where the caller says it is pointed at, as the HUD lights each
+// button whose action is the one under the pointer (ADR-088 decision 1).
 struct ButtonContent
 {
   std::string label;
@@ -17,6 +18,7 @@ struct ButtonContent
   bool enabled = true;
   bool picked = false;
   std::optional<float> progress;
+  bool pointed = false;
 };
 
 // How a box the game composes looks (ADR-100): its face, a hatch over its face if it has one, and its edge, each any color
@@ -144,6 +146,9 @@ public:
   // A rectangle of _color at a node, for what the game composes of its own, such as a part's card. It may be any color but
   // the warning's, which only a chip fills.
   void Fill(std::size_t _node, const DirectX::XMFLOAT4& _color, CanvasFill _fill = CanvasFill::Solid);
+  // A press at a node, naming _payload, which draws nothing, for what the game composes of its own, such as a line of a
+  // panel that takes a click.
+  void Press(std::size_t _node, std::uint32_t _payload);
   [[nodiscard]] static bool MayFill(const Theme& _theme, const DirectX::XMFLOAT4& _color) noexcept;
 
   // Measures and places what was built, and draws it into _list, in the order it was built; once, when the build is done.

@@ -1587,6 +1587,18 @@ std::size_t BeginWindowAt(Neuron::Canvas& _canvas, Neuron::Interaction& _interac
   return _canvas.BeginWindow(window, std::string(row.title), _place.anchor, _place.margin, _widthUnits, _body, most);
 }
 
+// The rectangle of each press among the layout's actions, and of each card's answer to the pointer among its previews,
+// from the regions from _firstRegion that name one, once the canvas is finished.
+void PlacePresses(Hud::Layout& _layout, std::size_t _firstRegion)
+{
+  for (std::size_t region = _firstRegion; region < _layout.regions.size(); ++region)
+  {
+    const Neuron::CanvasRegion& pressed = _layout.regions[region];
+    if (pressed.payload != Neuron::NO_PAYLOAD)
+      (pressed.hoverOnly ? _layout.previews : _layout.actions)[pressed.payload].first = pressed.area;
+  }
+}
+
 // Draws the window built on _canvas into the layout, and keeps beside it the rectangle of each button among the layout's
 // actions from _firstAction, and of each card among its previews, and the window's frame, title bar, close box and corner.
 void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _frame, Outpost::WindowKind _kind, std::size_t _firstAction)
@@ -1595,12 +1607,7 @@ void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _fr
   // The window's own layer, which an open drop-down's overlay follows.
   const std::size_t layer = _layout.layers.size();
   _canvas.Finish(_layout);
-  for (std::size_t region = firstRegion; region < _layout.regions.size(); ++region)
-  {
-    const Neuron::CanvasRegion& pressed = _layout.regions[region];
-    if (pressed.payload != Neuron::NO_PAYLOAD)
-      (pressed.hoverOnly ? _layout.previews : _layout.actions)[pressed.payload].first = pressed.area;
-  }
+  PlacePresses(_layout, firstRegion);
   const std::size_t panel = _layout.layers[layer].firstPanel;
   const Neuron::LayoutNode& frame = _canvas.Tree().Node(_frame);
   _layout.windows.push_back({.kind = _kind,
@@ -2732,6 +2739,742 @@ void LayDesigner(const WindowBench& _bench, const Hud::DesignerPanel& _panel, co
             });
 }
 
+// The minimap's marks, fog and view, which the game draws into its square, _layout's minimap, once the canvas has placed
+// it (ADR-100 decision 7): the sectors' washes, the marks, the fog, the sectors' borders and outlines, what the player only
+// remembers, the alerts' places and the camera's view.
+void DrawMap(Hud::Layout& _layout, const Hud::Content& _content, std::span<const Outpost::PlanePosition> _view, float _scale)
+{
+  _layout.mapSizeMeters = _content.mapSizeMeters;
+  _layout.panels.push_back(_layout.minimap);
+
+  const float pixelsPerMeter = _layout.minimap.width / _content.mapSizeMeters;
+  // A sector's square on the minimap, in pixels.
+  const auto sectorRect = [&_layout](const Hud::SectorMark& _sector, DirectX::XMFLOAT4 _color, Hud::Fill _fill)
+  {
+    const DirectX::XMFLOAT2 low = _layout.MinimapPixelOf({.xMeters = _sector.minXMeters, .zMeters = _sector.maxZMeters});
+    const DirectX::XMFLOAT2 high = _layout.MinimapPixelOf({.xMeters = _sector.maxXMeters, .zMeters = _sector.minZMeters});
+    return Hud::Rect{low.x, low.y, high.x - low.x, high.y - low.y, _color, _fill};
+  };
+  for (const Hud::SectorMark& sector : _content.sectors)
+  {
+    if (sector.side != Hud::Side::Neutral)
+      _layout.panels.push_back(sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_WASH_ALPHA), Hud::Fill::Solid));
+  }
+  // The neutral marks first, so that a rig's shows over its asteroid's.
+  std::vector<const Hud::Mark*> marks;
+  marks.reserve(_content.marks.size());
+  for (const bool sided : {false, true})
+  {
+    for (const Hud::Mark& mark : _content.marks)
+    {
+      // A memory is drawn over the fog, below.
+      if ((mark.side != Hud::Side::Neutral) == sided && !mark.remembered)
+        marks.push_back(&mark);
+    }
+  }
+  for (const Hud::Mark* marked : marks)
+  {
+    const Hud::Mark& mark = *marked;
+    const float smallest = (mark.kind == Outpost::EntityKind::Ship       ? SHIP_MARK_UNITS
+                            : mark.kind == Outpost::EntityKind::Asteroid ? ORE_MARK_UNITS
+                                                                         : STRUCTURE_MARK_UNITS) *
+                           _scale;
+    const float side = std::max(smallest, 2.0f * mark.radiusMeters * pixelsPerMeter);
+    const DirectX::XMFLOAT2 at = _layout.MinimapPixelOf(mark.position);
+    const DirectX::XMFLOAT4 color = mark.dry                                          ? DRY_COLOR
+                                    : mark.side != Hud::Side::Neutral                 ? SideColorOf(_content, mark.side, mark.owner)
+                                    : mark.kind == Outpost::EntityKind::Derelict      ? DERELICT_COLOR
+                                    : mark.kind == Outpost::EntityKind::AsteroidField ? ASTEROID_FIELD_COLOR
+                                    : mark.kind == Outpost::EntityKind::Asteroid      ? ORE_ASTEROID_COLOR
+                                                                                      : NEUTRAL_COLOR;
+    const float markLeft = at.x - (side / 2.0f);
+    const float markTop = at.y - (side / 2.0f);
+    if (mark.kind == Outpost::EntityKind::Asteroid && mark.side == Hud::Side::Neutral)
+    {
+      // An ore asteroid, dry or not, as an outline, its top and bottom across the whole square and its sides between them.
+      const float line = ORE_OUTLINE_UNITS * _scale;
+      _layout.panels.push_back({markLeft, markTop, side, line, color});
+      _layout.panels.push_back({markLeft, markTop + side - line, side, line, color});
+      _layout.panels.push_back({markLeft, markTop + line, line, side - (2.0f * line), color});
+      _layout.panels.push_back({markLeft + side - line, markTop + line, line, side - (2.0f * line), color});
+    }
+    else
+      _layout.panels.push_back({markLeft, markTop, side, side, color});
+  }
+
+  // The fog over the marks (ADR-024), filled by the client from the fog's texture across the whole map (ADR-052).
+  if (_content.fog)
+  {
+    _layout.panels.push_back({_layout.minimap.left,
+                              _layout.minimap.top,
+                              _layout.minimap.width,
+                              _layout.minimap.height,
+                              {0.0f, 0.0f, 0.0f, 1.0f},
+                              Hud::Fill::Image});
+  }
+
+  // Over the fog, since both sides know who holds what and where the pirates are: every sector's border, then each held
+  // or guarded sector's outline, dashed while it is cut off, and stripes over a suppressed one.
+  const float sectorLine = SECTOR_LINE_UNITS * _scale;
+  const auto outline = [&_layout, sectorLine](const Hud::Rect& _area)
+  {
+    _layout.panels.push_back({_area.left, _area.top, _area.width, sectorLine, _area.color});
+    _layout.panels.push_back({_area.left, _area.top + _area.height - sectorLine, _area.width, sectorLine, _area.color});
+    _layout.panels.push_back({_area.left, _area.top, sectorLine, _area.height, _area.color});
+    _layout.panels.push_back({_area.left + _area.width - sectorLine, _area.top, sectorLine, _area.height, _area.color});
+  };
+  // Dashes along each side, each side starting with one.
+  const auto dashedOutline = [&_layout, sectorLine, _scale](const Hud::Rect& _area)
+  {
+    const float dash = CUT_OFF_DASH_UNITS * _scale;
+    const float period = (CUT_OFF_DASH_UNITS + CUT_OFF_GAP_UNITS) * _scale;
+    for (int index = 0; static_cast<float>(index) * period < _area.width; ++index)
+    {
+      const float along = static_cast<float>(index) * period;
+      const float length = std::min(dash, _area.width - along);
+      _layout.panels.push_back({_area.left + along, _area.top, length, sectorLine, _area.color});
+      _layout.panels.push_back({_area.left + along, _area.top + _area.height - sectorLine, length, sectorLine, _area.color});
+    }
+    for (int index = 0; static_cast<float>(index) * period < _area.height; ++index)
+    {
+      const float along = static_cast<float>(index) * period;
+      const float length = std::min(dash, _area.height - along);
+      _layout.panels.push_back({_area.left, _area.top + along, sectorLine, length, _area.color});
+      _layout.panels.push_back({_area.left + _area.width - sectorLine, _area.top + along, sectorLine, length, _area.color});
+    }
+  };
+  for (const Hud::SectorMark& sector : _content.sectors)
+    outline(sectorRect(sector, LATTICE_COLOR, Hud::Fill::Solid));
+  for (const Hud::SectorMark& sector : _content.sectors)
+  {
+    if (sector.side == Hud::Side::Neutral)
+      continue;
+    const Hud::Rect area = sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_OUTLINE_ALPHA), Hud::Fill::Solid);
+    if (sector.cutOff)
+      dashedOutline(area);
+    else
+      outline(area);
+    if (sector.suppressed)
+      _layout.panels.push_back(
+        sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_HATCH_ALPHA), Hud::Fill::Hatched));
+  }
+
+  // While the player places a Relay, each sector it could claim now, outlined in its own color inside the border, clear
+  // of the outline of its held sector beside it.
+  const float claimableInset = CLAIMABLE_INSET_UNITS * _scale;
+  const DirectX::XMFLOAT4 ownColor = SideColorOf(_content, Hud::Side::Own, _content.player);
+  for (const Hud::SectorMark& sector : _content.sectors)
+  {
+    if (!sector.claimable)
+      continue;
+    const Hud::Rect area = sectorRect(sector, ownColor, Hud::Fill::Solid);
+    outline({area.left + claimableInset, area.top + claimableInset, area.width - (2.0f * claimableInset),
+             area.height - (2.0f * claimableInset), ownColor});
+  }
+
+  // What the player only remembers, as a cross in its side's color, over the fog that would dim it twice.
+  for (const Hud::Mark& mark : _content.marks)
+  {
+    if (!mark.remembered)
+      continue;
+    const DirectX::XMFLOAT2 at = _layout.MinimapPixelOf(mark.position);
+    const float across = MEMORY_MARK_UNITS * _scale;
+    const float arm = MEMORY_ARM_UNITS * _scale;
+    const DirectX::XMFLOAT4 color = mark.side == Hud::Side::Neutral ? DERELICT_COLOR : SideColorOf(_content, mark.side, mark.owner);
+    _layout.panels.push_back({at.x - (across / 2.0f), at.y - (arm / 2.0f), across, arm, color});
+    _layout.panels.push_back({at.x - (arm / 2.0f), at.y - (across / 2.0f), arm, across, color});
+  }
+
+  // Each alert's place, as an outlined square over everything else (ADR-059); a refusal has none (ADR-094).
+  for (const auto& [text, position] : _content.alerts)
+  {
+    if (!position.has_value())
+      continue;
+    const DirectX::XMFLOAT2 at = _layout.MinimapPixelOf(*position);
+    const float half = ALERT_MARK_UNITS * _scale / 2.0f;
+    const float side = 2.0f * half;
+    _layout.panels.push_back({at.x - half, at.y - half, side, sectorLine, WARNING_COLOR});
+    _layout.panels.push_back({at.x - half, at.y + half - sectorLine, side, sectorLine, WARNING_COLOR});
+    _layout.panels.push_back({at.x - half, at.y - half, sectorLine, side, WARNING_COLOR});
+    _layout.panels.push_back({at.x + half - sectorLine, at.y - half, sectorLine, side, WARNING_COLOR});
+  }
+
+  // The view's outline: the ground the screen's four corners show, joined in turn, so that it shows the near side and the
+  // far and turns with the camera (ADR-015 decision 4). What runs past the map is cut at the minimap's edge.
+  for (std::size_t corner = 0; corner < _view.size(); ++corner)
+  {
+    if (const std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> inside = Neuron::ClipToRect(
+          _layout.MinimapPixelAt(_view[corner]), _layout.MinimapPixelAt(_view[(corner + 1) % _view.size()]), _layout.minimap))
+    {
+      _layout.lines.push_back(
+        {.segment = {.from = inside->first, .to = inside->second, .widthPixels = VIEW_LINE_UNITS * _scale}, .color = VIEW_COLOR});
+    }
+  }
+}
+
+// The HUD on the canvas (Game §interface.hud; ADR-100 decision 7): each panel anchored where it always stands (ADR-043
+// decision 1), what it holds at its places in it, in reference units from the panel's top-left corner, and the panels in
+// the order they are drawn: the column under the Ore, the hint, the tag, the banner, the selection and its buttons, and
+// the minimap.
+
+// What the HUD is built from: the canvas, the layout whose actions its presses name, the measure, the action under the
+// pointer, which lights the status line and the ship's bar that take it (ADR-088 decision 1), and the screen's size.
+struct HudBench
+{
+  Neuron::Canvas* canvas = nullptr;
+  Hud::Layout* layout = nullptr;
+  const Hud::TextMetrics* metrics = nullptr;
+  std::optional<Hud::Action> hovered;
+  float screenWidthUnits = 0.0f;
+  float screenHeightUnits = 0.0f;
+
+  [[nodiscard]] bool IsHovered(const Hud::Action& _action) const noexcept
+  {
+    return hovered.has_value() && *hovered == _action;
+  }
+};
+
+// A button of the HUD as the canvas draws it, lit as under the pointer while it is enabled and its action is the one under
+// the pointer, with every other that takes it (ADR-088 decision 1).
+Neuron::ButtonContent ContentOfHud(const HudBench& _bench, const Hud::Button& _button)
+{
+  Neuron::ButtonContent content = ContentOf(*_bench.layout, _button);
+  content.pointed = _button.enabled && _bench.IsHovered(_button.action);
+  return content;
+}
+
+// A place in a panel: _style anchored at the panel's top-left corner, _leftUnits and _topUnits in.
+Neuron::LayoutStyle At(float _leftUnits, float _topUnits, Neuron::LayoutStyle _style = {})
+{
+  _style.anchor = Neuron::LayoutAnchor::TopLeft;
+  _style.margin = {.left = _leftUnits, .top = _topUnits};
+  return _style;
+}
+
+// A place in a panel whose right edge stands _rightUnits in from the panel's right, _topUnits down.
+Neuron::LayoutStyle EndingAt(float _rightUnits, float _topUnits)
+{
+  return {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = _topUnits, .right = _rightUnits}};
+}
+
+// A panel of the HUD (ADR-043 decision 1), _widthUnits by _heightUnits with its top-left corner at (_leftUnits, _topUnits),
+// which takes what is built until the canvas's EndPanel.
+void BeginHudPanel(Neuron::Canvas& _canvas, float _leftUnits, float _topUnits, float _widthUnits, float _heightUnits)
+{
+  (void)_canvas.BeginPanel(At(_leftUnits, _topUnits, {.widthUnits = _widthUnits, .heightUnits = _heightUnits}));
+}
+
+// A rectangle of _color at a place in a panel, which the game composes of its own, such as a bar; its node.
+std::size_t FillAt(Neuron::Canvas& _canvas, float _leftUnits, float _topUnits, float _widthUnits, float _heightUnits,
+                   const DirectX::XMFLOAT4& _color)
+{
+  const std::size_t node = _canvas.Tree().Add(At(_leftUnits, _topUnits, {.widthUnits = _widthUnits, .heightUnits = _heightUnits}));
+  _canvas.Fill(node, _color);
+  return node;
+}
+
+// The edge round a lit rectangle at a place in a panel: its top, its foot, its left and its right.
+void EdgeAt(Neuron::Canvas& _canvas, float _leftUnits, float _topUnits, float _widthUnits, float _heightUnits,
+            const DirectX::XMFLOAT4& _color)
+{
+  (void)FillAt(_canvas, _leftUnits, _topUnits, _widthUnits, LINE_UNITS, _color);
+  (void)FillAt(_canvas, _leftUnits, _topUnits + _heightUnits - LINE_UNITS, _widthUnits, LINE_UNITS, _color);
+  (void)FillAt(_canvas, _leftUnits, _topUnits, LINE_UNITS, _heightUnits, _color);
+  (void)FillAt(_canvas, _leftUnits + _widthUnits - LINE_UNITS, _topUnits, LINE_UNITS, _heightUnits, _color);
+}
+
+// A warning chip of _text at a place in a panel (ADR-085 decision 1).
+void ChipAt(Neuron::Canvas& _canvas, Neuron::LayoutText _text, const Neuron::LayoutStyle& _place)
+{
+  (void)_canvas.Tree().Begin(Neuron::LayoutKind::Row, _place);
+  (void)_canvas.Chip(std::move(_text));
+  _canvas.Tree().End();
+}
+
+// How wide the column under the Ore is: as wide as its widest fixed line and the longest topic's name with a queue's
+// count after it (ADR-066 decision 3).
+float ColumnUnitsOf(const Hud::Content& _content, const Hud::TextMetrics& _metrics)
+{
+  float columnUnits = COLUMN_LEAST_UNITS;
+  const float queuedUnits = _metrics.Width(Hud::Typeface::Figure, COLUMN_WIDEST_QUEUED) + FIT_GAP_UNITS;
+  for (const std::string& name : _content.researchNames)
+    columnUnits = std::max(columnUnits, _metrics.Width(Hud::Typeface::Name, name) + queuedUnits + (2.0f * PADDING));
+  for (const std::string_view line : COLUMN_WIDEST_LINES)
+    columnUnits = std::max(columnUnits, _metrics.Width(Hud::Typeface::Name, line) + (2.0f * CHIP_PAD_UNITS) + (2.0f * PADDING));
+  return columnUnits;
+}
+
+// The Ore, at the top left, as the windows write it, and what the rigs earn each second, a warning chip when they earn
+// nothing, since then nothing the player spends comes back.
+void OrePanel(const HudBench& _bench, const Hud::Content& _content, float _columnUnits)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  BeginHudPanel(canvas, MARGIN, MARGIN, _columnUnits, ORE_PANEL_HEIGHT);
+  OreAmount(canvas, _content.ore, Hud::Typeface::Title, GOLD_COLOR, At(PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f));
+  const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
+  std::string incomeText = income % Outpost::HUNDREDTHS == 0 ? std::format("+{}/s", income / Outpost::HUNDREDTHS)
+                                                             : std::format("+{:.1f}/s", static_cast<double>(income) / Outpost::HUNDREDTHS);
+  const float incomeTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+  if (income > 0)
+    (void)canvas.Label(LineText(std::move(incomeText), Hud::Typeface::Figure, FIGURE_LINE_UNITS), NUMBERS_COLOR,
+                       EndingAt(PADDING, incomeTop));
+  else
+    ChipAt(canvas, LineText(std::move(incomeText), Hud::Typeface::Figure, FIGURE_LINE_UNITS), EndingAt(PADDING, incomeTop));
+  canvas.EndPanel();
+}
+
+// How many lines the territory panel holds: the nodes, the tickets while both sides have them, and the drain's.
+float TerritoryRows(const Hud::Territory& _territory) noexcept
+{
+  const bool tickets = _territory.ownTickets.has_value() && _territory.enemyTickets.has_value();
+  return 1.0f + (tickets ? 1.0f : 0.0f) + (_territory.drain.empty() ? 0.0f : 1.0f);
+}
+
+// Under the status panel's place: the nodes each side holds and each side's tickets, the player's against the enemy's,
+// "3 : 2", the player's in its color and the enemy's in theirs (ADR-056, ADR-057). Beside "Nodes", in the labels' color,
+// the Command Station's cap of the map's nodes, "cap 10 of 25" (ADR-064 decision 11). Under the tickets, who the drain
+// takes from and when they run out, a warning chip when it is the player (ADR-057 decision 8).
+void TerritoryPanel(const HudBench& _bench, const Hud::Content& _content, const Hud::Territory& _territory, float _columnUnits,
+                    float _topUnits)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  const Hud::TextMetrics& metrics = *_bench.metrics;
+  const bool tickets = _territory.ownTickets.has_value() && _territory.enemyTickets.has_value();
+  BeginHudPanel(canvas, MARGIN, _topUnits, _columnUnits, (2.0f * TERRITORY_INSET_UNITS) + (TerritoryRows(_territory) * NAME_LINE_UNITS));
+  const float right = _columnUnits - PADDING;
+  const auto row = [&](const std::string& _label, const std::string& _note, const std::string& _own, const std::string& _enemy, float _top)
+  {
+    const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+    std::string own = std::format("{} : ", _own);
+    const float ownRight = right - metrics.Width(Hud::Typeface::Figure, _enemy);
+    const float labelRoom = ownRight - metrics.Width(Hud::Typeface::Figure, own) - PADDING - FIT_GAP_UNITS;
+    std::string label = metrics.Fit(Hud::Typeface::Name, _label, labelRoom);
+    const float noteLeft = PADDING + metrics.Width(Hud::Typeface::Name, label) + FIT_GAP_UNITS;
+    (void)canvas.Label(LineText(std::move(label), Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR, At(PADDING, _top));
+    if (!_note.empty())
+    {
+      (void)canvas.Label(
+        LineText(metrics.Fit(Hud::Typeface::Name, _note, PADDING + labelRoom - noteLeft), Hud::Typeface::Name, NAME_LINE_UNITS),
+        LABEL_COLOR, At(noteLeft, _top));
+    }
+    (void)canvas.Label(LineText(_enemy, Hud::Typeface::Figure, FIGURE_LINE_UNITS),
+                       SideColorOf(_content, Hud::Side::Enemy, _territory.enemy), EndingAt(PADDING, figureTop));
+    (void)canvas.Label(LineText(std::move(own), Hud::Typeface::Figure, FIGURE_LINE_UNITS),
+                       SideColorOf(_content, Hud::Side::Own, _content.player), EndingAt(_columnUnits - ownRight, figureTop));
+  };
+  const std::string note =
+    _territory.cap > 0 ? std::format("cap {} of {}", _territory.cap, _territory.nodes) : std::format("of {}", _territory.nodes);
+  row("Nodes", note, std::to_string(_territory.ownNodes), std::to_string(_territory.enemyNodes), TERRITORY_INSET_UNITS);
+  float top = TERRITORY_INSET_UNITS + NAME_LINE_UNITS;
+  if (tickets)
+  {
+    row("Tickets", {}, Outpost::WithThousands(_territory.ownTickets.value_or(0)),
+        Outpost::WithThousands(_territory.enemyTickets.value_or(0)), top);
+    top += NAME_LINE_UNITS;
+  }
+  if (!_territory.drain.empty())
+  {
+    if (_territory.drainWarns)
+    {
+      ChipAt(canvas,
+             LineText(metrics.Fit(Hud::Typeface::Name, _territory.drain, _columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS)),
+                      Hud::Typeface::Name, NAME_LINE_UNITS),
+             At(PADDING - CHIP_PAD_UNITS, top));
+    }
+    else
+    {
+      (void)canvas.Label(
+        LineText(metrics.Fit(Hud::Typeface::Name, _territory.drain, _columnUnits - (2.0f * PADDING)), Hud::Typeface::Name, NAME_LINE_UNITS),
+        TEXT_COLOR, At(PADDING, top));
+    }
+  }
+  canvas.EndPanel();
+}
+
+// Under the territory: the alerts, newest first, the newest a warning chip whose words line up with the others' (ADR-059,
+// ADR-085 decision 1).
+void AlertsPanel(const HudBench& _bench, const Hud::Content& _content, float _columnUnits, float _topUnits)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  const Hud::TextMetrics& metrics = *_bench.metrics;
+  BeginHudPanel(canvas, MARGIN, _topUnits, _columnUnits,
+                (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS));
+  for (std::size_t line = 0; line < _content.alerts.size(); ++line)
+  {
+    const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
+    const std::string& text = _content.alerts[line].first;
+    if (line == 0)
+    {
+      ChipAt(canvas,
+             LineText(metrics.Fit(Hud::Typeface::Name, text, _columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS)),
+                      Hud::Typeface::Name, NAME_LINE_UNITS),
+             At(PADDING - CHIP_PAD_UNITS, top));
+    }
+    else
+    {
+      (void)canvas.Label(
+        LineText(metrics.Fit(Hud::Typeface::Name, text, _columnUnits - (2.0f * PADDING)), Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR,
+        At(PADDING, top));
+    }
+  }
+  canvas.EndPanel();
+}
+
+// The status panel, under the Ore: the Research Lab's line, the Shipyards' and the fleet's, an idle one's IDLE a chip,
+// research's progress and the fleet against its cap as bars, each line a place to click (ADR-066). Under the pointer a
+// line lies on the cards' color, as does any line whose click does the same.
+void StatusPanel(const HudBench& _bench, const Hud::Content& _content, float _columnUnits, float _topUnits)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  const Hud::TextMetrics& metrics = *_bench.metrics;
+  const auto runUnits = [&metrics](const Hud::StatusRun& _run)
+  { return metrics.Width(Hud::Typeface::Name, _run.text) + (_run.chip ? 2.0f * CHIP_PAD_UNITS : 0.0f); };
+  const auto rowUnits = [](const Hud::StatusLine& _line)
+  { return NAME_LINE_UNITS + (_line.bar.has_value() && _line.bar->under ? STATUS_BAR_ROW_UNITS : 0.0f); };
+  float heightUnits = 2.0f * TERRITORY_INSET_UNITS;
+  for (const Hud::StatusLine& line : _content.status)
+    heightUnits += rowUnits(line);
+  BeginHudPanel(canvas, MARGIN, _topUnits, _columnUnits, heightUnits);
+  const float right = _columnUnits - PADDING;
+  float top = TERRITORY_INSET_UNITS;
+  for (std::size_t line = 0; line < _content.status.size(); ++line)
+  {
+    const Hud::StatusLine& status = _content.status[line];
+    const float lineUnits = rowUnits(status);
+    // The line's row across the panel takes the click, the first and the last reaching to the panel's edge.
+    const float rowTop = line == 0 ? 0.0f : top;
+    const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + lineUnits;
+    const std::size_t row = canvas.Tree().Add(At(0.0f, rowTop, {.widthUnits = _columnUnits, .heightUnits = rowBottom - rowTop}));
+    if (_bench.IsHovered(status.action))
+      canvas.Fill(row, CARD_COLOR);
+    canvas.Press(row, PressOf(*_bench.layout, status.action));
+    // A bar's figure at the line's end, which the words stop short of, with room for a bar beside them.
+    float wordsRight = right;
+    if (status.bar.has_value() && !status.bar->figure.empty())
+    {
+      (void)canvas.Label(LineText(status.bar->figure, Hud::Typeface::Figure, FIGURE_LINE_UNITS), NUMBERS_COLOR,
+                         EndingAt(PADDING, top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f));
+      wordsRight -= metrics.Width(Hud::Typeface::Figure, status.bar->figure) + (status.bar->under ? FIT_GAP_UNITS : STATUS_BAR_GAP_UNITS);
+    }
+    // Each run after the one before; a plain run is cut short to leave room for the runs after it, a chip never is.
+    float left = PADDING;
+    for (std::size_t run = 0; run < status.runs.size(); ++run)
+    {
+      const Hud::StatusRun& words = status.runs[run];
+      if (words.chip)
+      {
+        ChipAt(canvas, LineText(words.text, Hud::Typeface::Name, NAME_LINE_UNITS), At(left, top));
+        left += runUnits(words);
+        continue;
+      }
+      float afterUnits = 0.0f;
+      for (std::size_t later = run + 1; later < status.runs.size(); ++later)
+        afterUnits += runUnits(status.runs[later]);
+      std::string text = metrics.Fit(Hud::Typeface::Name, words.text, wordsRight - left - afterUnits);
+      const float textUnitsSet = metrics.Width(Hud::Typeface::Name, text);
+      (void)canvas.Label(LineText(std::move(text), Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR, At(left, top));
+      left += textUnitsSet;
+    }
+    // The bar: under the words, across the panel, or beside them, from their end to its figure; filled for its share.
+    if (status.bar.has_value())
+    {
+      const Hud::StatusBar& bar = *status.bar;
+      const float barLeft = bar.under ? PADDING : left + STATUS_BAR_GAP_UNITS;
+      const float barWidth = (bar.under ? right : wordsRight) - barLeft;
+      const float thickness = bar.under ? STATUS_UNDER_BAR_UNITS : STATUS_BESIDE_BAR_UNITS;
+      const float barTop =
+        bar.under ? top + NAME_LINE_UNITS + ((STATUS_BAR_ROW_UNITS - thickness) / 2.0f) : top + ((NAME_LINE_UNITS - thickness) / 2.0f);
+      if (barWidth > 0.0f)
+      {
+        (void)FillAt(canvas, barLeft, barTop, barWidth, thickness, BAR_TRACK_COLOR);
+        if (bar.share > 0.0f)
+          (void)FillAt(canvas, barLeft, barTop, barWidth * std::min(bar.share, 1.0f), thickness, BAR_FILL_COLOR);
+      }
+    }
+    top += lineUnits;
+  }
+  canvas.EndPanel();
+}
+
+// The hint at the top middle: what a click on the ground will do, or what the pointer is over.
+void HintPanel(const HudBench& _bench, const std::string& _hint, Outpost::WindowManager::Point _at)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  BeginHudPanel(canvas, _at.xUnits, _at.yUnits, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+  (void)canvas.Label(
+    LineText(_bench.metrics->Fit(Hud::Typeface::Name, _hint, HINT_PANEL_WIDTH - (2.0f * PADDING)), Hud::Typeface::Name, NAME_LINE_UNITS),
+    TEXT_COLOR, At(PADDING, (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f));
+  canvas.EndPanel();
+}
+
+// The tag at the top right: where the match runs, "Local skirmish" or "Server 203.0.113.5:4433 · 42 ms", and under it,
+// once no snapshot has come for SILENT_SECONDS, a warning chip, "No word from the server · 5 s" (ADR-086). The round trip
+// is as wide as 999 ms whatever it reads, so that the tag's edge stands still as it changes. It takes no click.
+void TagPanel(const HudBench& _bench, const Hud::Connection& _connection)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  const Hud::TextMetrics& metrics = *_bench.metrics;
+  const std::string where = _connection.server.empty() ? std::string("Local skirmish") : std::format("Server {}", _connection.server);
+  std::string roundTrip;
+  float roundTripUnits = 0.0f;
+  if (_connection.roundTripMilliseconds.has_value())
+  {
+    roundTrip = std::format("{}{} ms", DOT, std::clamp(*_connection.roundTripMilliseconds, 0, 999));
+    roundTripUnits = metrics.Width(Hud::Typeface::Name, CONNECTION_WIDEST_ROUND_TRIP);
+  }
+  // Joining a lost connection again says so in the silence's place (ADR-078 decision 10).
+  const bool silent = _connection.silentSeconds >= Hud::SILENT_SECONDS || _connection.reconnectingSeconds.has_value();
+  // An address too long is cut short, so that with its round trip the tag is no wider than CONNECTION_MOST_UNITS.
+  const float whereUnits = std::min(metrics.Width(Hud::Typeface::Name, where), CONNECTION_MOST_UNITS - roundTripUnits);
+  float textUnits = whereUnits + roundTripUnits;
+  if (silent)
+    textUnits = std::max(textUnits, metrics.Width(Hud::Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS));
+  const float widthUnits = textUnits + (2.0f * PADDING);
+  const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + ((silent ? 2.0f : 1.0f) * NAME_LINE_UNITS);
+  BeginHudPanel(canvas, _bench.screenWidthUnits - MARGIN - widthUnits, MARGIN, widthUnits, heightUnits);
+  (void)canvas.Label(LineText(metrics.Fit(Hud::Typeface::Name, where, whereUnits) + roundTrip, Hud::Typeface::Name, NAME_LINE_UNITS),
+                     TEXT_COLOR, At(PADDING, TERRITORY_INSET_UNITS));
+  if (silent)
+  {
+    std::string warning = _connection.reconnectingSeconds.has_value()
+                            ? std::format("Reconnecting{}{} s", DOT, std::clamp(*_connection.reconnectingSeconds, 0, 999))
+                            : std::format("No word from the server{}{} s", DOT, std::min(_connection.silentSeconds, 999));
+    ChipAt(canvas, LineText(std::move(warning), Hud::Typeface::Name, NAME_LINE_UNITS),
+           At(PADDING - CHIP_PAD_UNITS, TERRITORY_INSET_UNITS + NAME_LINE_UNITS));
+  }
+  canvas.EndPanel();
+}
+
+// The banner under the hint: how the match ended, and the way back to the menu.
+void BannerPanel(const HudBench& _bench, const Hud::Outcome& _outcome, Outpost::WindowManager::Point _at)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  const Hud::TextMetrics& metrics = *_bench.metrics;
+  const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
+  BeginHudPanel(canvas, _at.xUnits, _at.yUnits, BANNER_WIDTH, heightUnits);
+  const float room = BANNER_WIDTH - (2.0f * PADDING);
+  (void)canvas.Label(LineText(metrics.Fit(Hud::Typeface::Title, _outcome.title, room), Hud::Typeface::Title, TITLE_LINE_UNITS), GOLD_COLOR,
+                     At(PADDING, PADDING));
+  (void)canvas.Label(LineText(metrics.Fit(Hud::Typeface::Name, _outcome.detail, room), Hud::Typeface::Name, NAME_LINE_UNITS), TEXT_COLOR,
+                     At(PADDING, PADDING + TITLE_LINE_UNITS));
+  (void)canvas.Button(
+    "back to menu", ContentOfHud(_bench, {.label = "Back to menu", .action = {.kind = Hud::ActionKind::BackToMenu}}),
+    At(PADDING, PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP, {.widthUnits = room, .heightUnits = BUTTON_HEIGHT}));
+  canvas.EndPanel();
+}
+
+// The selection at the bottom middle (ADR-088 decision 2): its first line in the title face and the rest in the name face,
+// cut short to the panel, and under them its ships' bars in rows, or else its one bar. A ship's bar fills from the left as
+// its health does, edged in the text's color while the ship goes back to be repaired, or in the hover's under the pointer
+// otherwise; a click on it selects that ship alone (ADR-088 decision 4).
+void SelectionPanel(const HudBench& _bench, const Hud::Content& _content, float _leftUnits, float _widthUnits)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  const Hud::TextMetrics& metrics = *_bench.metrics;
+  const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
+  const std::size_t barRows = (_content.shipBars.size() + SHIP_BARS_A_ROW - 1) / SHIP_BARS_A_ROW;
+  float barUnits = 0.0f;
+  if (barRows > 0)
+  {
+    const auto rows = static_cast<float>(barRows);
+    barUnits = HEALTH_BAR_GAP_UNITS + (rows * SHIP_BAR_HEIGHT_UNITS) + ((rows - 1.0f) * SHIP_BAR_GAP_UNITS);
+  }
+  else if (_content.selectionHealth.has_value())
+    barUnits = HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS;
+  const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
+  BeginHudPanel(canvas, _leftUnits, _bench.screenHeightUnits - MARGIN - heightUnits, _widthUnits, heightUnits);
+  const float room = _widthUnits - (2.0f * PADDING);
+  (void)canvas.Label(LineText(metrics.Fit(Hud::Typeface::Title, _content.selection.front(), room), Hud::Typeface::Title, TITLE_LINE_UNITS),
+                     TEXT_COLOR, At(PADDING, PADDING));
+  for (std::size_t line = 1; line < _content.selection.size(); ++line)
+  {
+    (void)canvas.Label(LineText(metrics.Fit(Hud::Typeface::Name, _content.selection[line], room), Hud::Typeface::Name, NAME_LINE_UNITS),
+                       NUMBERS_COLOR, At(PADDING, PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1))));
+  }
+  const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
+  for (std::size_t i = 0; i < _content.shipBars.size(); ++i)
+  {
+    const Hud::ShipBar& bar = _content.shipBars[i];
+    const std::size_t row = i / SHIP_BARS_A_ROW;
+    const std::size_t column = i % SHIP_BARS_A_ROW;
+    const float left = PADDING + (static_cast<float>(column) * (SHIP_BAR_WIDTH_UNITS + SHIP_BAR_GAP_UNITS));
+    const float top = barTop + (static_cast<float>(row) * (SHIP_BAR_HEIGHT_UNITS + SHIP_BAR_GAP_UNITS));
+    const Hud::Action select{.kind = Hud::ActionKind::Select, .entity = bar.ship};
+    const std::size_t track = FillAt(canvas, left, top, SHIP_BAR_WIDTH_UNITS, SHIP_BAR_HEIGHT_UNITS, BAR_TRACK_COLOR);
+    const float share = std::clamp(bar.share, 0.0f, 1.0f);
+    if (share > 0.0f)
+      (void)FillAt(canvas, left, top, SHIP_BAR_WIDTH_UNITS * share, SHIP_BAR_HEIGHT_UNITS, HealthColor(share));
+    if (bar.retreating || _bench.IsHovered(select))
+    {
+      EdgeAt(canvas, left - LINE_UNITS, top - LINE_UNITS, SHIP_BAR_WIDTH_UNITS + (2.0f * LINE_UNITS),
+             SHIP_BAR_HEIGHT_UNITS + (2.0f * LINE_UNITS), bar.retreating ? TEXT_COLOR : HOVER_EDGE_COLOR);
+    }
+    canvas.Press(track, PressOf(*_bench.layout, select));
+  }
+  if (barRows == 0 && _content.selectionHealth.has_value())
+  {
+    const float share = std::clamp(*_content.selectionHealth, 0.0f, 1.0f);
+    (void)FillAt(canvas, PADDING, barTop, room, HEALTH_BAR_UNITS, BAR_TRACK_COLOR);
+    if (share > 0.0f)
+      (void)FillAt(canvas, PADDING, barTop, room * share, HEALTH_BAR_UNITS, HealthColor(share));
+  }
+  canvas.EndPanel();
+}
+
+// The buttons against the selection's right edge, stacked from the panel's top, and at its foot the selection's retreat:
+// RETREAT, with MIXED at the right while its ships differ, over a row of three, its setting lit, each a press that sets it
+// for every ship (ADR-088 decisions 2 and 3).
+void ButtonsPanel(const HudBench& _bench, const Hud::Content& _content, float _leftUnits)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  Hud::Layout& layout = *_bench.layout;
+  const auto count = static_cast<float>(_content.buttons.size());
+  const float buttonsHeight = count > 0.0f ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
+  const float retreatTop = PADDING + buttonsHeight + (count > 0.0f ? BUTTON_GAP : 0.0f);
+  const float heightUnits =
+    _content.retreat.has_value() ? retreatTop + RETREAT_LABEL_UNITS + BUTTON_HEIGHT + PADDING : (2.0f * PADDING) + buttonsHeight;
+  BeginHudPanel(canvas, _leftUnits, _bench.screenHeightUnits - MARGIN - heightUnits, BUTTON_PANEL_WIDTH, heightUnits);
+  const float room = BUTTON_PANEL_WIDTH - (2.0f * PADDING);
+  for (std::size_t i = 0; i < _content.buttons.size(); ++i)
+  {
+    (void)canvas.Button(
+      std::format("button {}", i), ContentOfHud(_bench, _content.buttons[i]),
+      At(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)), {.widthUnits = room, .heightUnits = BUTTON_HEIGHT}));
+  }
+  if (_content.retreat.has_value())
+  {
+    const Hud::RetreatChoice& retreat = *_content.retreat;
+    (void)canvas.Label(TrackedText("RETREAT", RETREAT_LABEL_UNITS), ROW_LABEL_COLOR, At(PADDING, retreatTop));
+    if (retreat.mixed)
+      (void)canvas.Label(TrackedText("MIXED", RETREAT_LABEL_UNITS), NUMBERS_COLOR, EndingAt(PADDING, retreatTop));
+    std::array<Neuron::LayoutText, RETREAT_CHOICES.size()> words;
+    std::array<std::uint32_t, RETREAT_CHOICES.size()> payloads{};
+    for (std::size_t i = 0; i < RETREAT_CHOICES.size(); ++i)
+    {
+      words[i] = LineText(std::string(RetreatCell(RETREAT_CHOICES[i])), Hud::Typeface::Name,
+                          std::round(Hud::FaceUnits(Hud::Typeface::Name) * RETREAT_LINE_SHARE));
+      payloads[i] = PressOf(layout, {.kind = Hud::ActionKind::SetRetreat, .retreat = RETREAT_CHOICES[i]});
+    }
+    const auto picked = std::ranges::find(RETREAT_CHOICES, retreat.setting);
+    canvas.Cells("retreat", words, payloads,
+                 retreat.mixed || picked == RETREAT_CHOICES.end()
+                   ? std::nullopt
+                   : std::optional(static_cast<std::size_t>(picked - RETREAT_CHOICES.begin())),
+                 BUTTON_HEIGHT, At(PADDING, retreatTop + RETREAT_LABEL_UNITS, {.widthUnits = room, .gapUnits = RETREAT_CELL_GAP_UNITS}));
+  }
+  canvas.EndPanel();
+}
+
+// The HUD's panels on _bench's canvas, each where it always stands (Game §interface.hud), finished into its layout, and
+// the minimap's marks, fog and view drawn into the minimap's square once the canvas has placed it.
+void LayHud(const HudBench& _bench, const Hud::Content& _content, std::span<const Outpost::PlanePosition> _view, float _scale)
+{
+  Neuron::Canvas& canvas = *_bench.canvas;
+  Hud::Layout& layout = *_bench.layout;
+  const Hud::TextMetrics& metrics = *_bench.metrics;
+  const float screenWidthUnits = _bench.screenWidthUnits;
+  const float screenHeightUnits = _bench.screenHeightUnits;
+
+  // The column under the Ore, its panels one width whatever they hold (ADR-066 decision 3): the Ore, then the territory
+  // and the alerts under the status panel's place, then the status panel, drawn in that order.
+  const float columnUnits = ColumnUnitsOf(_content, metrics);
+  OrePanel(_bench, _content, columnUnits);
+  const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP;
+  const float underStatusUnits = underOreUnits + STATUS_PANEL_KEPT_UNITS + PANEL_GAP;
+  if (_content.territory.has_value())
+    TerritoryPanel(_bench, _content, *_content.territory, columnUnits, underStatusUnits);
+  if (!_content.alerts.empty())
+  {
+    const float territoryUnits = _content.territory.has_value()
+                                   ? (2.0f * TERRITORY_INSET_UNITS) + (TerritoryRows(*_content.territory) * NAME_LINE_UNITS) + PANEL_GAP
+                                   : 0.0f;
+    AlertsPanel(_bench, _content, columnUnits, underStatusUnits + territoryUnits);
+  }
+  if (!_content.status.empty())
+    StatusPanel(_bench, _content, columnUnits, underOreUnits);
+
+  // The top row's middle (Game §interface.hud; ADR-015 decision 4): the hint, and the banner under it, stand in the middle
+  // of the screen while they clear the column at its left and the tag, at its widest and tallest, at its right. Where they
+  // do not, as the interface's scale grows, they stand aside: under the top row, in the middle of the room right of the
+  // column, the banner under the hint.
+  const bool tagged = _content.connection.has_value();
+  const float tagUnits =
+    tagged ? std::max(CONNECTION_MOST_UNITS, metrics.Width(Hud::Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS)) +
+               (2.0f * PADDING)
+           : 0.0f;
+  const float tagHeightUnits = (2.0f * TERRITORY_INSET_UNITS) + (2.0f * NAME_LINE_UNITS);
+  const float roomLeftUnits = MARGIN + columnUnits + PANEL_GAP;
+  const float roomRightUnits = screenWidthUnits - MARGIN - (tagged ? tagUnits + PANEL_GAP : 0.0f);
+  const float underTopRowUnits = MARGIN + std::max(ORE_PANEL_HEIGHT, tagged ? tagHeightUnits : 0.0f) + PANEL_GAP;
+  const auto clears = [&](float _widthUnits)
+  {
+    const float left = (screenWidthUnits - _widthUnits) / 2.0f;
+    return left >= roomLeftUnits && left + _widthUnits <= roomRightUnits;
+  };
+  const auto asideLeft = [&](float _widthUnits) { return (roomLeftUnits + screenWidthUnits - MARGIN - _widthUnits) / 2.0f; };
+  std::optional<Outpost::WindowManager::Point> underHint;
+  if (!_content.hint.empty())
+  {
+    const Outpost::WindowManager::Point at =
+      clears(HINT_PANEL_WIDTH) ? Outpost::WindowManager::Point{.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}
+                               : Outpost::WindowManager::Point{.xUnits = asideLeft(HINT_PANEL_WIDTH), .yUnits = underTopRowUnits};
+    if (at.yUnits > MARGIN)
+      underHint = Outpost::WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = at.yUnits + ORE_PANEL_HEIGHT + PANEL_GAP};
+    HintPanel(_bench, _content.hint, at);
+  }
+  if (_content.connection.has_value())
+    TagPanel(_bench, *_content.connection);
+  if (_content.outcome.has_value())
+  {
+    const Outpost::WindowManager::Point at = underHint.value_or(
+      clears(BANNER_WIDTH) ? Outpost::WindowManager::Point{.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = underOreUnits}
+                           : Outpost::WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = underTopRowUnits});
+    BannerPanel(_bench, *_content.outcome, at);
+  }
+
+  // The bottom middle: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
+  // centered so that the two read as one, and never over the minimap (ADR-088 decision 2). The selection's panel is as
+  // wide as its longest line, within its bounds.
+  float selectionUnits = 0.0f;
+  if (!_content.selection.empty())
+  {
+    float textUnits = 0.0f;
+    for (std::size_t line = 0; line < _content.selection.size(); ++line)
+      textUnits = std::max(textUnits, metrics.Width(line == 0 ? Hud::Typeface::Title : Hud::Typeface::Name, _content.selection[line]));
+    selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+  }
+  // The buttons' panel holds the buttons and, at its foot, the selection's retreat (ADR-088 decision 3).
+  const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
+  float pairLeft = (screenWidthUnits - selectionUnits - (buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f)) / 2.0f;
+  if (_content.mapSizeMeters > 0.0f)
+    pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
+  if (!_content.selection.empty())
+    SelectionPanel(_bench, _content, pairLeft, selectionUnits);
+  if (buttonsPanel)
+    ButtonsPanel(_bench, _content, pairLeft + selectionUnits);
+
+  // The bottom left: the minimap's frame, its square the leaf the game draws the map into.
+  std::size_t map = Neuron::LayoutNode::NO_NODE;
+  if (_content.mapSizeMeters > 0.0f)
+  {
+    BeginHudPanel(canvas, MARGIN, screenHeightUnits - MARGIN - MINIMAP_SIZE, MINIMAP_SIZE, MINIMAP_SIZE);
+    const float inner = MINIMAP_SIZE - (2.0f * MINIMAP_PADDING);
+    map = canvas.Tree().Add(At(MINIMAP_PADDING, MINIMAP_PADDING, {.widthUnits = inner, .heightUnits = inner}));
+    canvas.EndPanel();
+  }
+
+  const std::size_t firstRegion = layout.regions.size();
+  canvas.Finish(layout);
+  PlacePresses(layout, firstRegion);
+  if (map != Neuron::LayoutNode::NO_NODE)
+  {
+    const Neuron::LayoutNode& square = canvas.Tree().Node(map);
+    layout.minimap = {square.leftUnits * _scale, square.topUnits * _scale, square.widthUnits * _scale, square.heightUnits * _scale,
+                      MAP_COLOR};
+    DrawMap(layout, _content, _view, _scale);
+  }
+}
+
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
 std::size_t LayerStart(const Hud::Layout& _layout, std::size_t _window, std::size_t Hud::Window::*_first, std::size_t _total) noexcept
 {
@@ -2953,7 +3696,7 @@ Hud::AwayPanel Hud::DescribeAway(const Snapshot& _newest, const AwayReport& _rep
 }
 
 Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor,
-                         const MenuState& _state)
+                         const MenuState& _state, bool _ported)
 {
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   Layout layout;
@@ -2978,6 +3721,43 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
                             ((count - 1.0f) * BUTTON_GAP);
   const WindowManager::Point corner{.xUnits = (static_cast<float>(_widthPixels) / scale / 2.0f) - (MENU_WIDTH / 2.0f),
                                     .yUnits = (static_cast<float>(_heightPixels) / scale / 2.0f) - (heightUnits / 2.0f)};
+  // The menu is a panel of the canvas in the middle of the screen: its title, its subtitle, what it says, and its buttons,
+  // which nothing lights under the pointer.
+  if (_ported)
+  {
+    Neuron::Interaction unpointed;
+    Neuron::Canvas canvas(GameTheme(), _metrics, unpointed, static_cast<float>(_widthPixels) / scale,
+                          static_cast<float>(_heightPixels) / scale);
+    BeginHudPanel(canvas, corner.xUnits, corner.yUnits, MENU_WIDTH, heightUnits);
+    (void)canvas.Label(LineText("Outpost Commander", Typeface::Title, TITLE_LINE_UNITS), GOLD_COLOR, At(PADDING, PADDING));
+    (void)canvas.Label(LineText("A skirmish against the AI", Typeface::Name, NAME_LINE_UNITS), DIM_TEXT_COLOR,
+                       At(PADDING, PADDING + TITLE_LINE_UNITS));
+    float top = PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS;
+    if (connecting)
+    {
+      (void)canvas.Label(
+        LineText(_metrics.Fit(Typeface::Name, std::format("Connecting to {}...", _state.connecting), MENU_WIDTH - (2.0f * PADDING)),
+                 Typeface::Name, NAME_LINE_UNITS),
+        TEXT_COLOR, At(PADDING, top));
+      top += NAME_LINE_UNITS;
+    }
+    for (const std::string& line : notice)
+    {
+      (void)canvas.Label(LineText(line, Typeface::Name, NAME_LINE_UNITS), WARNING_COLOR, At(PADDING, top));
+      top += NAME_LINE_UNITS;
+    }
+    top += BUTTON_GAP;
+    for (std::size_t button = 0; button < buttons.size(); ++button)
+    {
+      (void)canvas.Button(std::format("menu {}", button), ContentOf(layout, buttons[button]),
+                          At(PADDING, top, {.widthUnits = MENU_WIDTH - (2.0f * PADDING), .heightUnits = BUTTON_HEIGHT}));
+      top += BUTTON_HEIGHT + BUTTON_GAP;
+    }
+    canvas.EndPanel();
+    canvas.Finish(layout);
+    PlacePresses(layout, 0);
+    return layout;
+  }
   (void)Frame(layout, corner.xUnits * scale, corner.yUnits * scale, MENU_WIDTH * scale, heightUnits * scale, scale);
   Painter paint(layout, _metrics, corner, scale);
   paint.Text("Outpost Commander", PADDING, PADDING, GOLD_COLOR, Typeface::Title);
@@ -3722,7 +4502,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                      std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered,
-                     Neuron::Interaction* _interaction)
+                     Neuron::Interaction* _interaction, bool _ported)
 {
   // The windows on the canvas name their widgets afresh each frame (ADR-100).
   Neuron::Interaction unpointed;
@@ -3738,11 +4518,6 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // corner, as a window's content is.
   const float screenWidthUnits = width / scale;
   const float screenHeightUnits = height / scale;
-  const auto frame = [&layout, &_metrics, scale](WindowManager::Point _corner, float _widthUnits, float _heightUnits)
-  {
-    (void)Frame(layout, _corner.xUnits * scale, _corner.yUnits * scale, _widthUnits * scale, _heightUnits * scale, scale);
-    return Painter(layout, _metrics, _corner, scale);
-  };
   // First, under every panel and window, the bars over the entities: each a back of its side's color with its fill from
   // the left, the health bar over the build bar, the pair centered over its foot, a little above it, and set to whole
   // pixels, so that it keeps its size as it moves (ADR-088 decision 5). A pair wholly off the screen is left out.
@@ -3779,544 +4554,405 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     }
   }
 
-  // Whether _action is the one under the pointer, which lights what takes it (ADR-088 decision 1).
-  const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };
-  const auto addButton = [&layout, &_metrics, scale, &hovered](const Rect& _area, const Button& _button)
-  { AddButton(layout, _metrics, scale, _area, _button, _button.enabled && hovered(_button.action)); };
-
-  // The column under the Ore, its panels one width whatever they hold (ADR-066 decision 3).
-  float columnUnits = COLUMN_LEAST_UNITS;
-  const float queuedUnits = _metrics.Width(Typeface::Figure, COLUMN_WIDEST_QUEUED) + FIT_GAP_UNITS;
-  for (const std::string& name : _content.researchNames)
-    columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, name) + queuedUnits + (2.0f * PADDING));
-  for (const std::string_view line : COLUMN_WIDEST_LINES)
-    columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, line) + (2.0f * CHIP_PAD_UNITS) + (2.0f * PADDING));
-
-  // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second, a warning chip when they earn
-  // nothing, since then nothing the player spends comes back.
+  // The HUD's panels on the canvas, or, while it moves onto the canvas, as they were before (_ported).
+  if (_ported)
   {
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, columnUnits, ORE_PANEL_HEIGHT);
-    paint.GemAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
-    const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
-    const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
-                                                            : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
-    const float incomeTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
-    if (income > 0)
-      paint.RightText(incomeText, columnUnits - PADDING, incomeTop, NUMBERS_COLOR, Typeface::Figure);
-    else
-    {
-      const float chipLeft = columnUnits - PADDING - paint.ChipWidth(incomeText, Typeface::Figure);
-      (void)paint.Chip(incomeText, chipLeft, incomeTop, Typeface::Figure, FIGURE_LINE_UNITS);
-    }
+    Neuron::Canvas hud(GameTheme(), _metrics, interaction, screenWidthUnits, screenHeightUnits);
+    LayHud({.canvas = &hud,
+            .layout = &layout,
+            .metrics = &_metrics,
+            .hovered = _hovered,
+            .screenWidthUnits = screenWidthUnits,
+            .screenHeightUnits = screenHeightUnits},
+           _content, _view, scale);
   }
-
-  // Under the Ore: what the Research Lab and the Shipyards are doing (ADR-066).
-  const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP;
-  const float underStatusUnits = underOreUnits + STATUS_PANEL_KEPT_UNITS + PANEL_GAP;
-
-  // Under the status panel's place: the nodes each side holds and each side's tickets, the player's against the enemy's,
-  // "3 : 2", the player's in its color and the enemy's in theirs (ADR-056, ADR-057). Beside "Nodes", in the labels' color,
-  // the Command Station's cap of the map's nodes, "cap 10 of 25" (ADR-064 decision 11). Under the tickets, who the drain
-  // takes from and when they run out, a warning chip when it is the player (ADR-057 decision 8).
-  const auto territoryRows = [](const Territory& _territory)
+  else
   {
-    const bool tickets = _territory.ownTickets.has_value() && _territory.enemyTickets.has_value();
-    return 1.0f + (tickets ? 1.0f : 0.0f) + (_territory.drain.empty() ? 0.0f : 1.0f);
-  };
-  if (_content.territory.has_value())
-  {
-    const Territory& territory = *_content.territory;
-    const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
-    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(territory) * NAME_LINE_UNITS);
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = underStatusUnits}, columnUnits, heightUnits);
-    const auto row =
-      [&](const std::string& _label, const std::string& _note, const std::string& _own, const std::string& _enemy, float _top)
+    const auto frame = [&layout, &_metrics, scale](WindowManager::Point _corner, float _widthUnits, float _heightUnits)
     {
-      const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+      (void)Frame(layout, _corner.xUnits * scale, _corner.yUnits * scale, _widthUnits * scale, _heightUnits * scale, scale);
+      return Painter(layout, _metrics, _corner, scale);
+    };
+    // Whether _action is the one under the pointer, which lights what takes it (ADR-088 decision 1).
+    const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };
+    const auto addButton = [&layout, &_metrics, scale, &hovered](const Rect& _area, const Button& _button)
+    { AddButton(layout, _metrics, scale, _area, _button, _button.enabled && hovered(_button.action)); };
+
+    // The column under the Ore, its panels one width whatever they hold (ADR-066 decision 3).
+    float columnUnits = COLUMN_LEAST_UNITS;
+    const float queuedUnits = _metrics.Width(Typeface::Figure, COLUMN_WIDEST_QUEUED) + FIT_GAP_UNITS;
+    for (const std::string& name : _content.researchNames)
+      columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, name) + queuedUnits + (2.0f * PADDING));
+    for (const std::string_view line : COLUMN_WIDEST_LINES)
+      columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, line) + (2.0f * CHIP_PAD_UNITS) + (2.0f * PADDING));
+
+    // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second, a warning chip when they earn
+    // nothing, since then nothing the player spends comes back.
+    {
+      Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, columnUnits, ORE_PANEL_HEIGHT);
+      paint.GemAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
+      const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
+      const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
+                                                              : std::format("+{:.1f}/s", static_cast<double>(income) / Outpost::HUNDREDTHS);
+      const float incomeTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+      if (income > 0)
+        paint.RightText(incomeText, columnUnits - PADDING, incomeTop, NUMBERS_COLOR, Typeface::Figure);
+      else
+      {
+        const float chipLeft = columnUnits - PADDING - paint.ChipWidth(incomeText, Typeface::Figure);
+        (void)paint.Chip(incomeText, chipLeft, incomeTop, Typeface::Figure, FIGURE_LINE_UNITS);
+      }
+    }
+
+    // Under the Ore: what the Research Lab and the Shipyards are doing (ADR-066).
+    const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP;
+    const float underStatusUnits = underOreUnits + STATUS_PANEL_KEPT_UNITS + PANEL_GAP;
+
+    // Under the status panel's place: the nodes each side holds and each side's tickets, the player's against the enemy's,
+    // "3 : 2", the player's in its color and the enemy's in theirs (ADR-056, ADR-057). Beside "Nodes", in the labels' color,
+    // the Command Station's cap of the map's nodes, "cap 10 of 25" (ADR-064 decision 11). Under the tickets, who the drain
+    // takes from and when they run out, a warning chip when it is the player (ADR-057 decision 8).
+    const auto territoryRows = [](const Territory& _territory)
+    {
+      const bool tickets = _territory.ownTickets.has_value() && _territory.enemyTickets.has_value();
+      return 1.0f + (tickets ? 1.0f : 0.0f) + (_territory.drain.empty() ? 0.0f : 1.0f);
+    };
+    if (_content.territory.has_value())
+    {
+      const Territory& territory = *_content.territory;
+      const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
+      const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(territory) * NAME_LINE_UNITS);
+      Painter paint = frame({.xUnits = MARGIN, .yUnits = underStatusUnits}, columnUnits, heightUnits);
+      const auto row =
+        [&](const std::string& _label, const std::string& _note, const std::string& _own, const std::string& _enemy, float _top)
+      {
+        const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+        const float right = columnUnits - PADDING;
+        std::string own = std::format("{} : ", _own);
+        const float ownRight = right - paint.Width(_enemy, Typeface::Figure);
+        const float labelRoom = ownRight - paint.Width(own, Typeface::Figure) - PADDING - FIT_GAP_UNITS;
+        std::string label = paint.Fit(_label, Typeface::Name, labelRoom);
+        const float noteLeft = PADDING + paint.Width(label, Typeface::Name) + FIT_GAP_UNITS;
+        paint.Text(std::move(label), PADDING, _top, TEXT_COLOR, Typeface::Name);
+        if (!_note.empty())
+          paint.Text(paint.Fit(_note, Typeface::Name, PADDING + labelRoom - noteLeft), noteLeft, _top, LABEL_COLOR, Typeface::Name);
+        paint.RightText(_enemy, right, figureTop, SideColorOf(_content, Side::Enemy, territory.enemy), Typeface::Figure);
+        paint.RightText(std::move(own), ownRight, figureTop, SideColorOf(_content, Side::Own, _content.player), Typeface::Figure);
+      };
+      const std::string note =
+        territory.cap > 0 ? std::format("cap {} of {}", territory.cap, territory.nodes) : std::format("of {}", territory.nodes);
+      row("Nodes", note, std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes), TERRITORY_INSET_UNITS);
+      float top = TERRITORY_INSET_UNITS + NAME_LINE_UNITS;
+      if (tickets)
+      {
+        row("Tickets", {}, WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)), top);
+        top += NAME_LINE_UNITS;
+      }
+      if (!territory.drain.empty())
+      {
+        if (territory.drainWarns)
+        {
+          const std::string drain = paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
+          (void)paint.Chip(drain, PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
+        }
+        else
+          paint.Text(paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR, Typeface::Name);
+      }
+    }
+
+    // Under the territory: the alerts, newest first, the newest a warning chip whose words line up with the others' (ADR-059,
+    // ADR-085 decision 1).
+    if (!_content.alerts.empty())
+    {
+      const float territoryUnits = _content.territory.has_value()
+                                     ? (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(*_content.territory) * NAME_LINE_UNITS) + PANEL_GAP
+                                     : 0.0f;
+      const float topUnits = underStatusUnits + territoryUnits;
+      const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
+      Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, columnUnits, heightUnits);
+      for (size_t line = 0; line < _content.alerts.size(); ++line)
+      {
+        const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
+        if (line == 0)
+        {
+          std::string newest =
+            paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
+          (void)paint.Chip(std::move(newest), PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
+        }
+        else
+          paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR,
+                     Typeface::Name);
+      }
+    }
+    // The status panel: the Research Lab's line, the Shipyards' and the fleet's, an idle one's IDLE a chip, research's progress
+    // and the fleet against its cap as bars, each line a place to click (ADR-066). It is the column's width.
+    if (!_content.status.empty())
+    {
+      const auto runUnits = [&_metrics](const StatusRun& _run)
+      { return _metrics.Width(Typeface::Name, _run.text) + (_run.chip ? 2.0f * CHIP_PAD_UNITS : 0.0f); };
+      const auto rowUnits = [](const StatusLine& _line)
+      { return NAME_LINE_UNITS + (_line.bar.has_value() && _line.bar->under ? STATUS_BAR_ROW_UNITS : 0.0f); };
+      float heightUnits = 2.0f * TERRITORY_INSET_UNITS;
+      for (const StatusLine& line : _content.status)
+        heightUnits += rowUnits(line);
+      Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, columnUnits, heightUnits);
       const float right = columnUnits - PADDING;
-      std::string own = std::format("{} : ", _own);
-      const float ownRight = right - paint.Width(_enemy, Typeface::Figure);
-      const float labelRoom = ownRight - paint.Width(own, Typeface::Figure) - PADDING - FIT_GAP_UNITS;
-      std::string label = paint.Fit(_label, Typeface::Name, labelRoom);
-      const float noteLeft = PADDING + paint.Width(label, Typeface::Name) + FIT_GAP_UNITS;
-      paint.Text(std::move(label), PADDING, _top, TEXT_COLOR, Typeface::Name);
-      if (!_note.empty())
-        paint.Text(paint.Fit(_note, Typeface::Name, PADDING + labelRoom - noteLeft), noteLeft, _top, LABEL_COLOR, Typeface::Name);
-      paint.RightText(_enemy, right, figureTop, SideColorOf(_content, Side::Enemy, territory.enemy), Typeface::Figure);
-      paint.RightText(std::move(own), ownRight, figureTop, SideColorOf(_content, Side::Own, _content.player), Typeface::Figure);
+      float top = TERRITORY_INSET_UNITS;
+      for (size_t line = 0; line < _content.status.size(); ++line)
+      {
+        const StatusLine& status = _content.status[line];
+        const float lineUnits = rowUnits(status);
+        // The line's row across the panel takes the click, the first and the last reaching to the panel's edge. Under the
+        // pointer it lies on the cards' color, as does any line whose click does the same.
+        const float rowTop = line == 0 ? 0.0f : top;
+        const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + lineUnits;
+        const Rect row = hovered(status.action) ? paint.Panel(0.0f, rowTop, columnUnits, rowBottom - rowTop, CARD_COLOR)
+                                                : paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR);
+        paint.Press(row, status.action);
+        // A bar's figure at the line's end, which the words stop short of, with room for a bar beside them.
+        float wordsRight = right;
+        if (status.bar.has_value() && !status.bar->figure.empty())
+        {
+          paint.RightText(status.bar->figure, right, top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR,
+                          Typeface::Figure);
+          wordsRight -= paint.Width(status.bar->figure, Typeface::Figure) + (status.bar->under ? FIT_GAP_UNITS : STATUS_BAR_GAP_UNITS);
+        }
+        // Each run after the one before; a plain run is cut short to leave room for the runs after it, a chip never is.
+        float left = PADDING;
+        for (std::size_t run = 0; run < status.runs.size(); ++run)
+        {
+          const StatusRun& words = status.runs[run];
+          if (words.chip)
+          {
+            left += paint.Chip(words.text, left, top, Typeface::Name, NAME_LINE_UNITS);
+            continue;
+          }
+          float afterUnits = 0.0f;
+          for (std::size_t later = run + 1; later < status.runs.size(); ++later)
+            afterUnits += runUnits(status.runs[later]);
+          std::string text = paint.Fit(words.text, Typeface::Name, wordsRight - left - afterUnits);
+          const float textUnitsSet = paint.Width(text, Typeface::Name);
+          paint.Text(std::move(text), left, top, TEXT_COLOR, Typeface::Name);
+          left += textUnitsSet;
+        }
+        // The bar: under the words, across the panel, or beside them, from their end to its figure; filled for its share.
+        if (status.bar.has_value())
+        {
+          const StatusBar& bar = *status.bar;
+          const float barLeft = bar.under ? PADDING : left + STATUS_BAR_GAP_UNITS;
+          const float barWidth = (bar.under ? right : wordsRight) - barLeft;
+          const float thickness = bar.under ? STATUS_UNDER_BAR_UNITS : STATUS_BESIDE_BAR_UNITS;
+          const float barTop =
+            bar.under ? top + NAME_LINE_UNITS + ((STATUS_BAR_ROW_UNITS - thickness) / 2.0f) : top + ((NAME_LINE_UNITS - thickness) / 2.0f);
+          if (barWidth > 0.0f)
+          {
+            paint.Panel(barLeft, barTop, barWidth, thickness, BAR_TRACK_COLOR);
+            if (bar.share > 0.0f)
+              paint.Panel(barLeft, barTop, barWidth * std::min(bar.share, 1.0f), thickness, BAR_FILL_COLOR);
+          }
+        }
+        top += lineUnits;
+      }
+    }
+
+    // The top row's middle (Game §interface.hud; ADR-015 decision 4): the hint, and the banner under it, stand in the middle
+    // of the screen while they clear the column at its left and the tag, at its widest and tallest, at its right. Where they
+    // do not, as the interface's scale grows, they stand aside: under the top row, in the middle of the room right of the
+    // column, the banner under the hint.
+    const bool tagged = _content.connection.has_value();
+    const float tagUnits =
+      tagged ? std::max(CONNECTION_MOST_UNITS, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS)) +
+                 (2.0f * PADDING)
+             : 0.0f;
+    const float tagHeightUnits = (2.0f * TERRITORY_INSET_UNITS) + (2.0f * NAME_LINE_UNITS);
+    const float roomLeftUnits = MARGIN + columnUnits + PANEL_GAP;
+    const float roomRightUnits = screenWidthUnits - MARGIN - (tagged ? tagUnits + PANEL_GAP : 0.0f);
+    const float underTopRowUnits = MARGIN + std::max(ORE_PANEL_HEIGHT, tagged ? tagHeightUnits : 0.0f) + PANEL_GAP;
+    const auto clears = [&](float _widthUnits)
+    {
+      const float left = (screenWidthUnits - _widthUnits) / 2.0f;
+      return left >= roomLeftUnits && left + _widthUnits <= roomRightUnits;
     };
-    const std::string note =
-      territory.cap > 0 ? std::format("cap {} of {}", territory.cap, territory.nodes) : std::format("of {}", territory.nodes);
-    row("Nodes", note, std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes), TERRITORY_INSET_UNITS);
-    float top = TERRITORY_INSET_UNITS + NAME_LINE_UNITS;
-    if (tickets)
-    {
-      row("Tickets", {}, WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)), top);
-      top += NAME_LINE_UNITS;
-    }
-    if (!territory.drain.empty())
-    {
-      if (territory.drainWarns)
-      {
-        const std::string drain = paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
-        (void)paint.Chip(drain, PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
-      }
-      else
-        paint.Text(paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR, Typeface::Name);
-    }
-  }
+    const auto asideLeft = [&](float _widthUnits) { return (roomLeftUnits + screenWidthUnits - MARGIN - _widthUnits) / 2.0f; };
+    // Where the banner stands under a hint that stands aside.
+    std::optional<WindowManager::Point> underHint;
 
-  // Under the territory: the alerts, newest first, the newest a warning chip whose words line up with the others' (ADR-059,
-  // ADR-085 decision 1).
-  if (!_content.alerts.empty())
-  {
-    const float territoryUnits = _content.territory.has_value()
-                                   ? (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(*_content.territory) * NAME_LINE_UNITS) + PANEL_GAP
-                                   : 0.0f;
-    const float topUnits = underStatusUnits + territoryUnits;
-    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, columnUnits, heightUnits);
-    for (size_t line = 0; line < _content.alerts.size(); ++line)
+    // Top-middle anchor: what a click on the ground will do.
+    if (!_content.hint.empty())
     {
-      const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
-      if (line == 0)
-      {
-        std::string newest =
-          paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
-        (void)paint.Chip(std::move(newest), PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
-      }
-      else
-        paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR,
-                   Typeface::Name);
+      const WindowManager::Point at = clears(HINT_PANEL_WIDTH)
+                                        ? WindowManager::Point{.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}
+                                        : WindowManager::Point{.xUnits = asideLeft(HINT_PANEL_WIDTH), .yUnits = underTopRowUnits};
+      if (at.yUnits > MARGIN)
+        underHint = WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = at.yUnits + ORE_PANEL_HEIGHT + PANEL_GAP};
+      Painter paint = frame(at, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+      paint.Text(paint.Fit(_content.hint, Typeface::Name, HINT_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
+                 (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
     }
-  }
-  // The status panel: the Research Lab's line, the Shipyards' and the fleet's, an idle one's IDLE a chip, research's progress
-  // and the fleet against its cap as bars, each line a place to click (ADR-066). It is the column's width.
-  if (!_content.status.empty())
-  {
-    const auto runUnits = [&_metrics](const StatusRun& _run)
-    { return _metrics.Width(Typeface::Name, _run.text) + (_run.chip ? 2.0f * CHIP_PAD_UNITS : 0.0f); };
-    const auto rowUnits = [](const StatusLine& _line)
-    { return NAME_LINE_UNITS + (_line.bar.has_value() && _line.bar->under ? STATUS_BAR_ROW_UNITS : 0.0f); };
-    float heightUnits = 2.0f * TERRITORY_INSET_UNITS;
-    for (const StatusLine& line : _content.status)
-      heightUnits += rowUnits(line);
-    Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, columnUnits, heightUnits);
-    const float right = columnUnits - PADDING;
-    float top = TERRITORY_INSET_UNITS;
-    for (size_t line = 0; line < _content.status.size(); ++line)
-    {
-      const StatusLine& status = _content.status[line];
-      const float lineUnits = rowUnits(status);
-      // The line's row across the panel takes the click, the first and the last reaching to the panel's edge. Under the
-      // pointer it lies on the cards' color, as does any line whose click does the same.
-      const float rowTop = line == 0 ? 0.0f : top;
-      const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + lineUnits;
-      const Rect row = hovered(status.action) ? paint.Panel(0.0f, rowTop, columnUnits, rowBottom - rowTop, CARD_COLOR)
-                                              : paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR);
-      paint.Press(row, status.action);
-      // A bar's figure at the line's end, which the words stop short of, with room for a bar beside them.
-      float wordsRight = right;
-      if (status.bar.has_value() && !status.bar->figure.empty())
-      {
-        paint.RightText(status.bar->figure, right, top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR,
-                        Typeface::Figure);
-        wordsRight -= paint.Width(status.bar->figure, Typeface::Figure) + (status.bar->under ? FIT_GAP_UNITS : STATUS_BAR_GAP_UNITS);
-      }
-      // Each run after the one before; a plain run is cut short to leave room for the runs after it, a chip never is.
-      float left = PADDING;
-      for (std::size_t run = 0; run < status.runs.size(); ++run)
-      {
-        const StatusRun& words = status.runs[run];
-        if (words.chip)
-        {
-          left += paint.Chip(words.text, left, top, Typeface::Name, NAME_LINE_UNITS);
-          continue;
-        }
-        float afterUnits = 0.0f;
-        for (std::size_t later = run + 1; later < status.runs.size(); ++later)
-          afterUnits += runUnits(status.runs[later]);
-        std::string text = paint.Fit(words.text, Typeface::Name, wordsRight - left - afterUnits);
-        const float textUnitsSet = paint.Width(text, Typeface::Name);
-        paint.Text(std::move(text), left, top, TEXT_COLOR, Typeface::Name);
-        left += textUnitsSet;
-      }
-      // The bar: under the words, across the panel, or beside them, from their end to its figure; filled for its share.
-      if (status.bar.has_value())
-      {
-        const StatusBar& bar = *status.bar;
-        const float barLeft = bar.under ? PADDING : left + STATUS_BAR_GAP_UNITS;
-        const float barWidth = (bar.under ? right : wordsRight) - barLeft;
-        const float thickness = bar.under ? STATUS_UNDER_BAR_UNITS : STATUS_BESIDE_BAR_UNITS;
-        const float barTop =
-          bar.under ? top + NAME_LINE_UNITS + ((STATUS_BAR_ROW_UNITS - thickness) / 2.0f) : top + ((NAME_LINE_UNITS - thickness) / 2.0f);
-        if (barWidth > 0.0f)
-        {
-          paint.Panel(barLeft, barTop, barWidth, thickness, BAR_TRACK_COLOR);
-          if (bar.share > 0.0f)
-            paint.Panel(barLeft, barTop, barWidth * std::min(bar.share, 1.0f), thickness, BAR_FILL_COLOR);
-        }
-      }
-      top += lineUnits;
-    }
-  }
 
-  // The top row's middle (Game §interface.hud; ADR-015 decision 4): the hint, and the banner under it, stand in the middle
-  // of the screen while they clear the column at its left and the tag, at its widest and tallest, at its right. Where they
-  // do not, as the interface's scale grows, they stand aside: under the top row, in the middle of the room right of the
-  // column, the banner under the hint.
-  const bool tagged = _content.connection.has_value();
-  const float tagUnits =
-    tagged ? std::max(CONNECTION_MOST_UNITS, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS)) +
-               (2.0f * PADDING)
-           : 0.0f;
-  const float tagHeightUnits = (2.0f * TERRITORY_INSET_UNITS) + (2.0f * NAME_LINE_UNITS);
-  const float roomLeftUnits = MARGIN + columnUnits + PANEL_GAP;
-  const float roomRightUnits = screenWidthUnits - MARGIN - (tagged ? tagUnits + PANEL_GAP : 0.0f);
-  const float underTopRowUnits = MARGIN + std::max(ORE_PANEL_HEIGHT, tagged ? tagHeightUnits : 0.0f) + PANEL_GAP;
-  const auto clears = [&](float _widthUnits)
-  {
-    const float left = (screenWidthUnits - _widthUnits) / 2.0f;
-    return left >= roomLeftUnits && left + _widthUnits <= roomRightUnits;
-  };
-  const auto asideLeft = [&](float _widthUnits) { return (roomLeftUnits + screenWidthUnits - MARGIN - _widthUnits) / 2.0f; };
-  // Where the banner stands under a hint that stands aside.
-  std::optional<WindowManager::Point> underHint;
-
-  // Top-middle anchor: what a click on the ground will do.
-  if (!_content.hint.empty())
-  {
-    const WindowManager::Point at = clears(HINT_PANEL_WIDTH)
-                                      ? WindowManager::Point{.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}
-                                      : WindowManager::Point{.xUnits = asideLeft(HINT_PANEL_WIDTH), .yUnits = underTopRowUnits};
-    if (at.yUnits > MARGIN)
-      underHint = WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = at.yUnits + ORE_PANEL_HEIGHT + PANEL_GAP};
-    Painter paint = frame(at, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
-    paint.Text(paint.Fit(_content.hint, Typeface::Name, HINT_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
-               (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
-  }
-
-  // Top-right anchor: where the match runs, "Local skirmish" or "Server 203.0.113.5:4433 · 42 ms", and under it, once no
-  // snapshot has come for SILENT_SECONDS, a warning chip, "No word from the server · 5 s" (ADR-086). The round trip is as
-  // wide as 999 ms whatever it reads, so that the tag's edge stands still as it changes. It takes no click.
-  if (_content.connection.has_value())
-  {
-    const Connection& connection = *_content.connection;
-    std::string where = connection.server.empty() ? std::string("Local skirmish") : std::format("Server {}", connection.server);
-    std::string roundTrip;
-    float roundTripUnits = 0.0f;
-    if (connection.roundTripMilliseconds.has_value())
+    // Top-right anchor: where the match runs, "Local skirmish" or "Server 203.0.113.5:4433 · 42 ms", and under it, once no
+    // snapshot has come for SILENT_SECONDS, a warning chip, "No word from the server · 5 s" (ADR-086). The round trip is as
+    // wide as 999 ms whatever it reads, so that the tag's edge stands still as it changes. It takes no click.
+    if (_content.connection.has_value())
     {
-      roundTrip = std::format("{}{} ms", DOT, std::clamp(*connection.roundTripMilliseconds, 0, 999));
-      roundTripUnits = _metrics.Width(Typeface::Name, CONNECTION_WIDEST_ROUND_TRIP);
-    }
-    // Joining a lost connection again says so in the silence's place (ADR-078 decision 10).
-    const bool silent = connection.silentSeconds >= SILENT_SECONDS || connection.reconnectingSeconds.has_value();
-    // An address too long is cut short, so that with its round trip the tag is no wider than CONNECTION_MOST_UNITS.
-    const float whereUnits = std::min(_metrics.Width(Typeface::Name, where), CONNECTION_MOST_UNITS - roundTripUnits);
-    float textUnits = whereUnits + roundTripUnits;
-    if (silent)
-      textUnits = std::max(textUnits, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS));
-    const float widthUnits = textUnits + (2.0f * PADDING);
-    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + ((silent ? 2.0f : 1.0f) * NAME_LINE_UNITS);
-    Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - widthUnits, .yUnits = MARGIN}, widthUnits, heightUnits);
-    paint.Text(paint.Fit(where, Typeface::Name, whereUnits) + roundTrip, PADDING, TERRITORY_INSET_UNITS, TEXT_COLOR, Typeface::Name);
-    if (silent)
-    {
-      const std::string warning = connection.reconnectingSeconds.has_value()
-                                    ? std::format("Reconnecting{}{} s", DOT, std::clamp(*connection.reconnectingSeconds, 0, 999))
-                                    : std::format("No word from the server{}{} s", DOT, std::min(connection.silentSeconds, 999));
-      (void)paint.Chip(warning, PADDING - CHIP_PAD_UNITS, TERRITORY_INSET_UNITS + NAME_LINE_UNITS, Typeface::Name, NAME_LINE_UNITS);
-    }
-  }
-
-  // Top-middle anchor, under the hint: how the match ended, and the way back to the menu.
-  if (_content.outcome.has_value())
-  {
-    const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
-    const WindowManager::Point at = underHint.value_or(
-      clears(BANNER_WIDTH) ? WindowManager::Point{.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = underOreUnits}
-                           : WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = underTopRowUnits});
-    Painter paint = frame(at, BANNER_WIDTH, heightUnits);
-    const float room = BANNER_WIDTH - (2.0f * PADDING);
-    paint.Text(paint.Fit(_content.outcome->title, Typeface::Title, room), PADDING, PADDING, GOLD_COLOR, Typeface::Title);
-    paint.Text(paint.Fit(_content.outcome->detail, Typeface::Name, room), PADDING, PADDING + TITLE_LINE_UNITS, TEXT_COLOR, Typeface::Name);
-    addButton(paint.Area(PADDING, PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP, BANNER_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT,
-                         CARD_COLOR),
-              {.label = "Back to menu", .action = {.kind = ActionKind::BackToMenu}});
-  }
-
-  // Bottom-middle anchor: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
-  // centered at the bottom so that the two read as one, and never over the minimap (ADR-088 decision 2). The
-  // selection's first line is in the title face and the rest in the name face, in a panel as wide as its longest line,
-  // within its bounds; a line longer than the widest panel holds is cut short. A button's label holds the name and the
-  // cost, split at '|', and the buttons stack downward from the panel's top.
-  const auto faceOf = [](size_t _line) { return _line == 0 ? Typeface::Title : Typeface::Name; };
-  float selectionUnits = 0.0f;
-  if (!_content.selection.empty())
-  {
-    float textUnits = 0.0f;
-    for (size_t line = 0; line < _content.selection.size(); ++line)
-      textUnits = std::max(textUnits, _metrics.Width(faceOf(line), _content.selection[line]));
-    selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
-  }
-  // The buttons' panel holds the buttons and, at its foot, the selection's retreat (ADR-088 decision 3).
-  const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
-  const float buttonsUnits = buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f;
-  float pairLeft = (screenWidthUnits - selectionUnits - buttonsUnits) / 2.0f;
-  if (_content.mapSizeMeters > 0.0f)
-    pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
-  if (!_content.selection.empty())
-  {
-    const float widthUnits = selectionUnits;
-    const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
-    // A selection's ships' bars stand in rows under the lines, or else its one bar does.
-    const size_t barRows = (_content.shipBars.size() + SHIP_BARS_A_ROW - 1) / SHIP_BARS_A_ROW;
-    float barUnits = 0.0f;
-    if (barRows > 0)
-    {
-      const auto rows = static_cast<float>(barRows);
-      barUnits = HEALTH_BAR_GAP_UNITS + (rows * SHIP_BAR_HEIGHT_UNITS) + ((rows - 1.0f) * SHIP_BAR_GAP_UNITS);
-    }
-    else if (_content.selectionHealth.has_value())
-      barUnits = HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS;
-    const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
-    Painter paint = frame({.xUnits = pairLeft, .yUnits = screenHeightUnits - MARGIN - heightUnits}, widthUnits, heightUnits);
-    const float room = widthUnits - (2.0f * PADDING);
-    paint.Text(paint.Fit(_content.selection.front(), Typeface::Title, room), PADDING, PADDING, TEXT_COLOR, Typeface::Title);
-    for (size_t line = 1; line < _content.selection.size(); ++line)
-    {
-      paint.Text(paint.Fit(_content.selection[line], Typeface::Name, room), PADDING,
-                 PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1)), NUMBERS_COLOR, Typeface::Name);
-    }
-    const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
-    // A ship's bar fills from the left as its health does, outlined in the text's color while the ship goes back to be
-    // repaired, or in the edge's under the pointer otherwise; a click on it selects that ship alone (ADR-088 decision 4).
-    for (size_t i = 0; i < _content.shipBars.size(); ++i)
-    {
-      const ShipBar& bar = _content.shipBars[i];
-      const size_t row = i / SHIP_BARS_A_ROW;
-      const size_t column = i % SHIP_BARS_A_ROW;
-      const float left = PADDING + (static_cast<float>(column) * (SHIP_BAR_WIDTH_UNITS + SHIP_BAR_GAP_UNITS));
-      const float top = barTop + (static_cast<float>(row) * (SHIP_BAR_HEIGHT_UNITS + SHIP_BAR_GAP_UNITS));
-      const Action select{.kind = ActionKind::Select, .entity = bar.ship};
-      const Rect track = paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS, SHIP_BAR_HEIGHT_UNITS, BAR_TRACK_COLOR);
-      const float share = std::clamp(bar.share, 0.0f, 1.0f);
-      if (share > 0.0f)
-        paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS * share, SHIP_BAR_HEIGHT_UNITS, HealthColor(share));
-      if (bar.retreating || hovered(select))
+      const Connection& connection = *_content.connection;
+      std::string where = connection.server.empty() ? std::string("Local skirmish") : std::format("Server {}", connection.server);
+      std::string roundTrip;
+      float roundTripUnits = 0.0f;
+      if (connection.roundTripMilliseconds.has_value())
       {
-        paint.Outline(left - LINE_UNITS, top - LINE_UNITS, SHIP_BAR_WIDTH_UNITS + (2.0f * LINE_UNITS),
-                      SHIP_BAR_HEIGHT_UNITS + (2.0f * LINE_UNITS), bar.retreating ? TEXT_COLOR : HOVER_EDGE_COLOR);
+        roundTrip = std::format("{}{} ms", DOT, std::clamp(*connection.roundTripMilliseconds, 0, 999));
+        roundTripUnits = _metrics.Width(Typeface::Name, CONNECTION_WIDEST_ROUND_TRIP);
       }
-      paint.Press(track, select);
+      // Joining a lost connection again says so in the silence's place (ADR-078 decision 10).
+      const bool silent = connection.silentSeconds >= SILENT_SECONDS || connection.reconnectingSeconds.has_value();
+      // An address too long is cut short, so that with its round trip the tag is no wider than CONNECTION_MOST_UNITS.
+      const float whereUnits = std::min(_metrics.Width(Typeface::Name, where), CONNECTION_MOST_UNITS - roundTripUnits);
+      float textUnits = whereUnits + roundTripUnits;
+      if (silent)
+        textUnits = std::max(textUnits, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS));
+      const float widthUnits = textUnits + (2.0f * PADDING);
+      const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + ((silent ? 2.0f : 1.0f) * NAME_LINE_UNITS);
+      Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - widthUnits, .yUnits = MARGIN}, widthUnits, heightUnits);
+      paint.Text(paint.Fit(where, Typeface::Name, whereUnits) + roundTrip, PADDING, TERRITORY_INSET_UNITS, TEXT_COLOR, Typeface::Name);
+      if (silent)
+      {
+        const std::string warning = connection.reconnectingSeconds.has_value()
+                                      ? std::format("Reconnecting{}{} s", DOT, std::clamp(*connection.reconnectingSeconds, 0, 999))
+                                      : std::format("No word from the server{}{} s", DOT, std::min(connection.silentSeconds, 999));
+        (void)paint.Chip(warning, PADDING - CHIP_PAD_UNITS, TERRITORY_INSET_UNITS + NAME_LINE_UNITS, Typeface::Name, NAME_LINE_UNITS);
+      }
     }
-    if (barRows == 0 && _content.selectionHealth.has_value())
+
+    // Top-middle anchor, under the hint: how the match ended, and the way back to the menu.
+    if (_content.outcome.has_value())
     {
-      const float share = std::clamp(*_content.selectionHealth, 0.0f, 1.0f);
-      const float barWidth = widthUnits - (2.0f * PADDING);
-      paint.Panel(PADDING, barTop, barWidth, HEALTH_BAR_UNITS, BAR_TRACK_COLOR);
-      if (share > 0.0f)
-        paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS, HealthColor(share));
-    }
-  }
-  if (buttonsPanel)
-  {
-    const auto count = static_cast<float>(_content.buttons.size());
-    const float buttonsHeight = count > 0.0f ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
-    const float retreatTop = PADDING + buttonsHeight + (count > 0.0f ? BUTTON_GAP : 0.0f);
-    const float heightUnits =
-      _content.retreat.has_value() ? retreatTop + RETREAT_LABEL_UNITS + BUTTON_HEIGHT + PADDING : (2.0f * PADDING) + buttonsHeight;
-    Painter paint =
-      frame({.xUnits = pairLeft + selectionUnits, .yUnits = screenHeightUnits - MARGIN - heightUnits}, BUTTON_PANEL_WIDTH, heightUnits);
-    for (size_t i = 0; i < _content.buttons.size(); ++i)
-    {
-      addButton(paint.Area(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)), BUTTON_PANEL_WIDTH - (2.0f * PADDING),
+      const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
+      const WindowManager::Point at = underHint.value_or(
+        clears(BANNER_WIDTH) ? WindowManager::Point{.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = underOreUnits}
+                             : WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = underTopRowUnits});
+      Painter paint = frame(at, BANNER_WIDTH, heightUnits);
+      const float room = BANNER_WIDTH - (2.0f * PADDING);
+      paint.Text(paint.Fit(_content.outcome->title, Typeface::Title, room), PADDING, PADDING, GOLD_COLOR, Typeface::Title);
+      paint.Text(paint.Fit(_content.outcome->detail, Typeface::Name, room), PADDING, PADDING + TITLE_LINE_UNITS, TEXT_COLOR,
+                 Typeface::Name);
+      addButton(paint.Area(PADDING, PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP, BANNER_WIDTH - (2.0f * PADDING),
                            BUTTON_HEIGHT, CARD_COLOR),
-                _content.buttons[i]);
+                {.label = "Back to menu", .action = {.kind = ActionKind::BackToMenu}});
     }
-    // The selection's retreat: RETREAT, with MIXED at the right while its ships differ, over a row of three, its setting
-    // lit, each a press that sets it for every ship.
-    if (_content.retreat.has_value())
-    {
-      const RetreatChoice& retreat = *_content.retreat;
-      paint.Text("RETREAT", PADDING, retreatTop, ROW_LABEL_COLOR, Typeface::Label, paint.Tracking());
-      if (retreat.mixed)
-        paint.RightText("MIXED", BUTTON_PANEL_WIDTH - PADDING, retreatTop, NUMBERS_COLOR, Typeface::Label, paint.Tracking());
-      RetreatRow(paint, PADDING, retreatTop + RETREAT_LABEL_UNITS, BUTTON_PANEL_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT,
-                 retreat.mixed ? std::nullopt : std::optional(retreat.setting), ActionKind::SetRetreat, Typeface::Name, 0.0f, _hovered);
-    }
-  }
 
-  // Bottom-left anchor: the minimap, with every mark and the camera's view.
-  if (_content.mapSizeMeters > 0.0f)
-  {
-    const float size = MINIMAP_SIZE * scale;
-    const float left = MARGIN * scale;
-    const float top = height - ((MARGIN + MINIMAP_SIZE) * scale);
-    (void)Frame(layout, left, top, size, size, scale);
-    const float inner = (MINIMAP_SIZE - (2.0f * MINIMAP_PADDING)) * scale;
-    layout.minimap = {left + (MINIMAP_PADDING * scale), top + (MINIMAP_PADDING * scale), inner, inner, MAP_COLOR};
-    layout.mapSizeMeters = _content.mapSizeMeters;
-    layout.panels.push_back(layout.minimap);
-
-    const float pixelsPerMeter = inner / _content.mapSizeMeters;
-    // A sector's square on the minimap, in pixels.
-    const auto sectorRect = [&layout](const SectorMark& _sector, DirectX::XMFLOAT4 _color, Fill _fill)
+    // Bottom-middle anchor: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
+    // centered at the bottom so that the two read as one, and never over the minimap (ADR-088 decision 2). The
+    // selection's first line is in the title face and the rest in the name face, in a panel as wide as its longest line,
+    // within its bounds; a line longer than the widest panel holds is cut short. A button's label holds the name and the
+    // cost, split at '|', and the buttons stack downward from the panel's top.
+    const auto faceOf = [](size_t _line) { return _line == 0 ? Typeface::Title : Typeface::Name; };
+    float selectionUnits = 0.0f;
+    if (!_content.selection.empty())
     {
-      const DirectX::XMFLOAT2 low = layout.MinimapPixelOf({.xMeters = _sector.minXMeters, .zMeters = _sector.maxZMeters});
-      const DirectX::XMFLOAT2 high = layout.MinimapPixelOf({.xMeters = _sector.maxXMeters, .zMeters = _sector.minZMeters});
-      return Rect{low.x, low.y, high.x - low.x, high.y - low.y, _color, _fill};
-    };
-    for (const SectorMark& sector : _content.sectors)
-    {
-      if (sector.side != Side::Neutral)
-        layout.panels.push_back(sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_WASH_ALPHA), Fill::Solid));
+      float textUnits = 0.0f;
+      for (size_t line = 0; line < _content.selection.size(); ++line)
+        textUnits = std::max(textUnits, _metrics.Width(faceOf(line), _content.selection[line]));
+      selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
     }
-    // The neutral marks first, so that a rig's shows over its asteroid's.
-    std::vector<const Mark*> marks;
-    marks.reserve(_content.marks.size());
-    for (const bool sided : {false, true})
+    // The buttons' panel holds the buttons and, at its foot, the selection's retreat (ADR-088 decision 3).
+    const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
+    const float buttonsUnits = buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f;
+    float pairLeft = (screenWidthUnits - selectionUnits - buttonsUnits) / 2.0f;
+    if (_content.mapSizeMeters > 0.0f)
+      pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
+    if (!_content.selection.empty())
     {
-      for (const Mark& mark : _content.marks)
+      const float widthUnits = selectionUnits;
+      const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
+      // A selection's ships' bars stand in rows under the lines, or else its one bar does.
+      const size_t barRows = (_content.shipBars.size() + SHIP_BARS_A_ROW - 1) / SHIP_BARS_A_ROW;
+      float barUnits = 0.0f;
+      if (barRows > 0)
       {
-        // A memory is drawn over the fog, below.
-        if ((mark.side != Side::Neutral) == sided && !mark.remembered)
-          marks.push_back(&mark);
+        const auto rows = static_cast<float>(barRows);
+        barUnits = HEALTH_BAR_GAP_UNITS + (rows * SHIP_BAR_HEIGHT_UNITS) + ((rows - 1.0f) * SHIP_BAR_GAP_UNITS);
+      }
+      else if (_content.selectionHealth.has_value())
+        barUnits = HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS;
+      const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
+      Painter paint = frame({.xUnits = pairLeft, .yUnits = screenHeightUnits - MARGIN - heightUnits}, widthUnits, heightUnits);
+      const float room = widthUnits - (2.0f * PADDING);
+      paint.Text(paint.Fit(_content.selection.front(), Typeface::Title, room), PADDING, PADDING, TEXT_COLOR, Typeface::Title);
+      for (size_t line = 1; line < _content.selection.size(); ++line)
+      {
+        paint.Text(paint.Fit(_content.selection[line], Typeface::Name, room), PADDING,
+                   PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1)), NUMBERS_COLOR, Typeface::Name);
+      }
+      const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
+      // A ship's bar fills from the left as its health does, outlined in the text's color while the ship goes back to be
+      // repaired, or in the edge's under the pointer otherwise; a click on it selects that ship alone (ADR-088 decision 4).
+      for (size_t i = 0; i < _content.shipBars.size(); ++i)
+      {
+        const ShipBar& bar = _content.shipBars[i];
+        const size_t row = i / SHIP_BARS_A_ROW;
+        const size_t column = i % SHIP_BARS_A_ROW;
+        const float left = PADDING + (static_cast<float>(column) * (SHIP_BAR_WIDTH_UNITS + SHIP_BAR_GAP_UNITS));
+        const float top = barTop + (static_cast<float>(row) * (SHIP_BAR_HEIGHT_UNITS + SHIP_BAR_GAP_UNITS));
+        const Action select{.kind = ActionKind::Select, .entity = bar.ship};
+        const Rect track = paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS, SHIP_BAR_HEIGHT_UNITS, BAR_TRACK_COLOR);
+        const float share = std::clamp(bar.share, 0.0f, 1.0f);
+        if (share > 0.0f)
+          paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS * share, SHIP_BAR_HEIGHT_UNITS, HealthColor(share));
+        if (bar.retreating || hovered(select))
+        {
+          paint.Outline(left - LINE_UNITS, top - LINE_UNITS, SHIP_BAR_WIDTH_UNITS + (2.0f * LINE_UNITS),
+                        SHIP_BAR_HEIGHT_UNITS + (2.0f * LINE_UNITS), bar.retreating ? TEXT_COLOR : HOVER_EDGE_COLOR);
+        }
+        paint.Press(track, select);
+      }
+      if (barRows == 0 && _content.selectionHealth.has_value())
+      {
+        const float share = std::clamp(*_content.selectionHealth, 0.0f, 1.0f);
+        const float barWidth = widthUnits - (2.0f * PADDING);
+        paint.Panel(PADDING, barTop, barWidth, HEALTH_BAR_UNITS, BAR_TRACK_COLOR);
+        if (share > 0.0f)
+          paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS, HealthColor(share));
       }
     }
-    for (const Mark* marked : marks)
+    if (buttonsPanel)
     {
-      const Mark& mark = *marked;
-      const float smallest = (mark.kind == EntityKind::Ship       ? SHIP_MARK_UNITS
-                              : mark.kind == EntityKind::Asteroid ? ORE_MARK_UNITS
-                                                                  : STRUCTURE_MARK_UNITS) *
-                             scale;
-      const float side = std::max(smallest, 2.0f * mark.radiusMeters * pixelsPerMeter);
-      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
-      const DirectX::XMFLOAT4 color = mark.dry                                 ? DRY_COLOR
-                                      : mark.side != Side::Neutral             ? SideColorOf(_content, mark.side, mark.owner)
-                                      : mark.kind == EntityKind::Derelict      ? DERELICT_COLOR
-                                      : mark.kind == EntityKind::AsteroidField ? ASTEROID_FIELD_COLOR
-                                      : mark.kind == EntityKind::Asteroid      ? ORE_ASTEROID_COLOR
-                                                                               : NEUTRAL_COLOR;
-      const float markLeft = at.x - (side / 2.0f);
-      const float markTop = at.y - (side / 2.0f);
-      if (mark.kind == EntityKind::Asteroid && mark.side == Side::Neutral)
+      const auto count = static_cast<float>(_content.buttons.size());
+      const float buttonsHeight = count > 0.0f ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
+      const float retreatTop = PADDING + buttonsHeight + (count > 0.0f ? BUTTON_GAP : 0.0f);
+      const float heightUnits =
+        _content.retreat.has_value() ? retreatTop + RETREAT_LABEL_UNITS + BUTTON_HEIGHT + PADDING : (2.0f * PADDING) + buttonsHeight;
+      Painter paint =
+        frame({.xUnits = pairLeft + selectionUnits, .yUnits = screenHeightUnits - MARGIN - heightUnits}, BUTTON_PANEL_WIDTH, heightUnits);
+      for (size_t i = 0; i < _content.buttons.size(); ++i)
       {
-        // An ore asteroid, dry or not, as an outline, its top and bottom across the whole square and its sides between them.
-        const float line = ORE_OUTLINE_UNITS * scale;
-        layout.panels.push_back({markLeft, markTop, side, line, color});
-        layout.panels.push_back({markLeft, markTop + side - line, side, line, color});
-        layout.panels.push_back({markLeft, markTop + line, line, side - (2.0f * line), color});
-        layout.panels.push_back({markLeft + side - line, markTop + line, line, side - (2.0f * line), color});
+        addButton(paint.Area(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)),
+                             BUTTON_PANEL_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT, CARD_COLOR),
+                  _content.buttons[i]);
       }
-      else
-        layout.panels.push_back({markLeft, markTop, side, side, color});
-    }
-
-    // The fog over the marks (ADR-024), filled by the client from the fog's texture across the whole map (ADR-052).
-    if (_content.fog)
-    {
-      layout.panels.push_back(
-        {layout.minimap.left, layout.minimap.top, layout.minimap.width, layout.minimap.height, {0.0f, 0.0f, 0.0f, 1.0f}, Fill::Image});
-    }
-
-    // Over the fog, since both sides know who holds what and where the pirates are: every sector's border, then each held
-    // or guarded sector's outline, dashed while it is cut off, and stripes over a suppressed one.
-    const float sectorLine = SECTOR_LINE_UNITS * scale;
-    const auto outline = [&layout, sectorLine](const Rect& _area)
-    {
-      layout.panels.push_back({_area.left, _area.top, _area.width, sectorLine, _area.color});
-      layout.panels.push_back({_area.left, _area.top + _area.height - sectorLine, _area.width, sectorLine, _area.color});
-      layout.panels.push_back({_area.left, _area.top, sectorLine, _area.height, _area.color});
-      layout.panels.push_back({_area.left + _area.width - sectorLine, _area.top, sectorLine, _area.height, _area.color});
-    };
-    // Dashes along each side, each side starting with one.
-    const auto dashedOutline = [&layout, sectorLine, scale](const Rect& _area)
-    {
-      const float dash = CUT_OFF_DASH_UNITS * scale;
-      const float period = (CUT_OFF_DASH_UNITS + CUT_OFF_GAP_UNITS) * scale;
-      for (int index = 0; static_cast<float>(index) * period < _area.width; ++index)
+      // The selection's retreat: RETREAT, with MIXED at the right while its ships differ, over a row of three, its setting
+      // lit, each a press that sets it for every ship.
+      if (_content.retreat.has_value())
       {
-        const float along = static_cast<float>(index) * period;
-        const float length = std::min(dash, _area.width - along);
-        layout.panels.push_back({_area.left + along, _area.top, length, sectorLine, _area.color});
-        layout.panels.push_back({_area.left + along, _area.top + _area.height - sectorLine, length, sectorLine, _area.color});
+        const RetreatChoice& retreat = *_content.retreat;
+        paint.Text("RETREAT", PADDING, retreatTop, ROW_LABEL_COLOR, Typeface::Label, paint.Tracking());
+        if (retreat.mixed)
+          paint.RightText("MIXED", BUTTON_PANEL_WIDTH - PADDING, retreatTop, NUMBERS_COLOR, Typeface::Label, paint.Tracking());
+        RetreatRow(paint, PADDING, retreatTop + RETREAT_LABEL_UNITS, BUTTON_PANEL_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT,
+                   retreat.mixed ? std::nullopt : std::optional(retreat.setting), ActionKind::SetRetreat, Typeface::Name, 0.0f, _hovered);
       }
-      for (int index = 0; static_cast<float>(index) * period < _area.height; ++index)
-      {
-        const float along = static_cast<float>(index) * period;
-        const float length = std::min(dash, _area.height - along);
-        layout.panels.push_back({_area.left, _area.top + along, sectorLine, length, _area.color});
-        layout.panels.push_back({_area.left + _area.width - sectorLine, _area.top + along, sectorLine, length, _area.color});
-      }
-    };
-    for (const SectorMark& sector : _content.sectors)
-      outline(sectorRect(sector, LATTICE_COLOR, Fill::Solid));
-    for (const SectorMark& sector : _content.sectors)
-    {
-      if (sector.side == Side::Neutral)
-        continue;
-      const Rect area = sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_OUTLINE_ALPHA), Fill::Solid);
-      if (sector.cutOff)
-        dashedOutline(area);
-      else
-        outline(area);
-      if (sector.suppressed)
-        layout.panels.push_back(sectorRect(sector, SideColorOf(_content, sector.side, sector.holder, SECTOR_HATCH_ALPHA), Fill::Hatched));
     }
 
-    // While the player places a Relay, each sector it could claim now, outlined in its own color inside the border, clear
-    // of the outline of its held sector beside it.
-    const float claimableInset = CLAIMABLE_INSET_UNITS * scale;
-    const DirectX::XMFLOAT4 ownColor = SideColorOf(_content, Side::Own, _content.player);
-    for (const SectorMark& sector : _content.sectors)
+    // Bottom-left anchor: the minimap, with every mark and the camera's view.
+    if (_content.mapSizeMeters > 0.0f)
     {
-      if (!sector.claimable)
-        continue;
-      const Rect area = sectorRect(sector, ownColor, Fill::Solid);
-      outline({area.left + claimableInset, area.top + claimableInset, area.width - (2.0f * claimableInset),
-               area.height - (2.0f * claimableInset), ownColor});
-    }
-
-    // What the player only remembers, as a cross in its side's color, over the fog that would dim it twice.
-    for (const Mark& mark : _content.marks)
-    {
-      if (!mark.remembered)
-        continue;
-      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
-      const float across = MEMORY_MARK_UNITS * scale;
-      const float arm = MEMORY_ARM_UNITS * scale;
-      const DirectX::XMFLOAT4 color = mark.side == Side::Neutral ? DERELICT_COLOR : SideColorOf(_content, mark.side, mark.owner);
-      layout.panels.push_back({at.x - (across / 2.0f), at.y - (arm / 2.0f), across, arm, color});
-      layout.panels.push_back({at.x - (arm / 2.0f), at.y - (across / 2.0f), arm, across, color});
-    }
-
-    // Each alert's place, as an outlined square over everything else (ADR-059); a refusal has none (ADR-094).
-    for (const auto& [text, position] : _content.alerts)
-    {
-      if (!position.has_value())
-        continue;
-      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(*position);
-      const float half = ALERT_MARK_UNITS * scale / 2.0f;
-      const float side = 2.0f * half;
-      layout.panels.push_back({at.x - half, at.y - half, side, sectorLine, WARNING_COLOR});
-      layout.panels.push_back({at.x - half, at.y + half - sectorLine, side, sectorLine, WARNING_COLOR});
-      layout.panels.push_back({at.x - half, at.y - half, sectorLine, side, WARNING_COLOR});
-      layout.panels.push_back({at.x + half - sectorLine, at.y - half, sectorLine, side, WARNING_COLOR});
-    }
-
-    // The view's outline: the ground the screen's four corners show, joined in turn, so that it shows the near side and the
-    // far and turns with the camera (ADR-015 decision 4). What runs past the map is cut at the minimap's edge.
-    for (std::size_t corner = 0; corner < _view.size(); ++corner)
-    {
-      if (const std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> inside = Neuron::ClipToRect(
-            layout.MinimapPixelAt(_view[corner]), layout.MinimapPixelAt(_view[(corner + 1) % _view.size()]), layout.minimap))
-      {
-        layout.lines.push_back(
-          {.segment = {.from = inside->first, .to = inside->second, .widthPixels = VIEW_LINE_UNITS * scale}, .color = VIEW_COLOR});
-      }
+      const float size = MINIMAP_SIZE * scale;
+      const float left = MARGIN * scale;
+      const float top = height - ((MARGIN + MINIMAP_SIZE) * scale);
+      (void)Frame(layout, left, top, size, size, scale);
+      const float inner = (MINIMAP_SIZE - (2.0f * MINIMAP_PADDING)) * scale;
+      layout.minimap = {left + (MINIMAP_PADDING * scale), top + (MINIMAP_PADDING * scale), inner, inner, MAP_COLOR};
+      DrawMap(layout, _content, _view, scale);
     }
   }
 

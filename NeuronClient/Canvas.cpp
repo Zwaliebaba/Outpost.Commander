@@ -290,7 +290,7 @@ Neuron::WidgetId Neuron::Canvas::Button(std::string_view _id, const ButtonConten
 {
   const WidgetId button = Claim(_id);
   const std::size_t node = m_tree.Add(_style);
-  const bool hot = m_interaction.Hot() == button;
+  const bool hot = m_interaction.Hot() == button || _button.pointed;
   // A copy of its own, which the draw moves with it, where a copy of the reference would be const and copied on each move.
   m_draws.emplace_back([this, node, button, content = _button, hot](DrawList& _list) { DrawButton(_list, node, button, content, hot); });
   return button;
@@ -595,6 +595,12 @@ void Neuron::Canvas::Fill(std::size_t _node, const DirectX::XMFLOAT4& _color, Ca
 {
   ASSERT(MayFill(m_theme, _color));
   m_draws.emplace_back([this, _node, _color, _fill](DrawList& _list) { _list.panels.push_back(RectOf(_node, _color, _fill)); });
+}
+
+void Neuron::Canvas::Press(std::size_t _node, std::uint32_t _payload)
+{
+  m_draws.emplace_back([this, _node, _payload](DrawList& _list)
+                       { _list.regions.push_back({.area = RectOf(_node, {}), .payload = _payload}); });
 }
 
 bool Neuron::Canvas::MayFill(const Theme& _theme, const DirectX::XMFLOAT4& _color) noexcept
