@@ -711,6 +711,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_cursorGround =
     m_camera.GroundPointAtPixel(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels), m_viewport);
   HandleHudInput(input);
+  // A window the player moved stands where it was left, from the screen's corner nearest it, whatever the screen's size and
+  // the interface's scale; while it is dragged, it follows the pointer (ADR-099).
+  if (!m_windows.IsDragging())
+    PlaceKeptWindows();
 
   // A press on the HUD is the HUD's, not an order or a selection in the world; releases still reach the controls, so
   // that a drag begun in the world ends wherever it is let go.
@@ -819,7 +823,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
 void Outpost::GameClient::UpdateInterfaceFactor(const Neuron::InputState& _input)
 {
   // Ctrl+= and Ctrl+- step the interface's own scale. It is checked again whenever the screen's size, or whether there is a
-  // match to size the designer by, changes, so that its windows still fit; it lasts until the game closes (ADR-070).
+  // match to size the designer by, changes, so that its windows still fit (ADR-070).
   int step = 0;
   if (_input.active)
   {
@@ -834,8 +838,68 @@ void Outpost::GameClient::UpdateInterfaceFactor(const Neuron::InputState& _input
   if (step == 0 && fit == m_interfaceFit)
     return;
   m_interfaceFit = fit;
+  const float before = m_interfaceFactor;
   m_interfaceFactor =
     Hud::StepInterface(m_interfaceFactor, std::clamp(step, -1, 1), newest, m_viewport.widthPixels, m_viewport.heightPixels);
+  // The step the player takes is kept; a step down that a screen or a match makes is not, nor a step up the screen has no
+  // room for, so that the next session starts at the player's own and comes down only as far as its screen needs
+  // (ADR-099).
+  if (step != 0 && m_interfaceFactor != before)
+  {
+    m_interfaceSettings.scalePercent = ScalePercentOf(m_interfaceFactor);
+    SaveInterface();
+  }
+}
+
+void Outpost::GameClient::KeepInterfaceIn(std::filesystem::path _file)
+{
+  m_interfaceFile = std::move(_file);
+  if (std::optional<InterfaceSettings> kept = LoadInterfaceSettings(m_interfaceFile); kept.has_value())
+  {
+    m_interfaceSettings = *kept;
+    m_interfaceWritten = *kept;
+  }
+  // The kept step comes down to the largest that fits once the next frame knows the screen (ADR-070 decision 4).
+  m_interfaceFactor = ScaleFactorOf(m_interfaceSettings.scalePercent);
+  m_interfaceFit = {};
+}
+
+void Outpost::GameClient::SaveInterface() noexcept
+{
+  if (m_interfaceFile.empty() || m_interfaceWritten == m_interfaceSettings)
+    return;
+  if (SaveInterfaceSettings(m_interfaceSettings, m_interfaceFile))
+    m_interfaceWritten = m_interfaceSettings;
+}
+
+void Outpost::GameClient::PlaceKeptWindows() noexcept
+{
+  const float scale = Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels, m_interfaceFactor);
+  if (scale <= 0.0f)
+    return;
+  const float screenWidthUnits = static_cast<float>(m_viewport.widthPixels) / scale;
+  const float screenHeightUnits = static_cast<float>(m_viewport.heightPixels) / scale;
+  for (std::size_t window = 0; window < WINDOW_KINDS; ++window)
+  {
+    if (const std::optional<InterfaceSettings::Place>& place = m_interfaceSettings.places[window]; place.has_value())
+      m_windows.Place(static_cast<WindowKind>(window), CornerOf(*place, screenWidthUnits, screenHeightUnits));
+  }
+}
+
+void Outpost::GameClient::KeepDraggedWindow() noexcept
+{
+  const std::optional<WindowKind> dragged = m_windows.Grabbed();
+  if (!dragged.has_value() || m_hudLayout.fontPixels <= 0.0f)
+    return;
+  // Where the last frame laid it out, kept on the screen, at that frame's scale, is where the player let go of it.
+  const auto laid = std::ranges::find(m_hudLayout.windows, *dragged, &Hud::Window::kind);
+  if (laid == m_hudLayout.windows.end())
+    return;
+  const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
+  m_interfaceSettings.places[static_cast<std::size_t>(*dragged)] =
+    PlaceOf(laid->corner, laid->frame.width / scale, laid->frame.height / scale, static_cast<float>(m_viewport.widthPixels) / scale,
+            static_cast<float>(m_viewport.heightPixels) / scale);
+  SaveInterface();
 }
 
 void Outpost::GameClient::ToggleWindow(WindowKind _window)
@@ -1027,6 +1091,7 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
     if (event.kind == Neuron::InputEventKind::ButtonUp && event.key == VK_LBUTTON)
     {
       m_minimapDragging = false;
+      KeepDraggedWindow();
       m_windows.Release();
     }
     if (event.kind != Neuron::InputEventKind::ButtonDown)

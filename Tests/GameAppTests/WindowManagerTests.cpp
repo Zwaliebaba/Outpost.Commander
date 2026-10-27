@@ -116,6 +116,26 @@ public:
     Assert::IsTrue(windows.IsOpen(WindowKind::Designer));
   }
 
+  // ADR-099: a place kept from an earlier session stands a window there as it opens, as if the player had moved it, so it
+  // takes no slot; and the window being dragged is named until it is let go.
+  TEST_METHOD(PutsBackAPlaceKeptFromAnEarlierSession)
+  {
+    Outpost::WindowManager windows;
+    windows.Place(WindowKind::Production, {.xUnits = 900.0f, .yUnits = 400.0f});
+    Assert::IsFalse(windows.IsOpen(WindowKind::Production), L"placing opens nothing");
+    windows.Open(WindowKind::Production);
+    windows.Open(WindowKind::Research);
+    Assert::IsTrue(windows.PositionOf(WindowKind::Production) == Point{.xUnits = 900.0f, .yUnits = 400.0f});
+    Assert::IsFalse(windows.SlotOf(WindowKind::Production).has_value());
+    Assert::IsTrue(windows.SlotOf(WindowKind::Research) == std::size_t{0}, L"the slot production would have taken is free");
+
+    Assert::IsFalse(windows.Grabbed().has_value());
+    windows.Grab(WindowKind::Research, {}, {.xUnits = 10.0f, .yUnits = 10.0f});
+    Assert::IsTrue(windows.Grabbed() == WindowKind::Research);
+    windows.Release();
+    Assert::IsFalse(windows.Grabbed().has_value());
+  }
+
   // Closing the window being dragged lets it go.
   TEST_METHOD(ClosingAWindowLetsItGo)
   {

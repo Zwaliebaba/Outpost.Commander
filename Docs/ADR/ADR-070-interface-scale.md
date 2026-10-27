@@ -16,7 +16,7 @@ Owns: interface-scale-factor, interface-fit-check
    - On the menu there is no match, so the Controls window alone.
    - The production window grows with the saved designs and is not counted, nor is research.
 4. **When the screen's size changes, or a match starts or ends, the factor comes down** to the largest step that fits (`Hud::StepInterface` with no step), so a designer never opens taller than the screen.
-5. **The factor lasts until the game closes**, as a window's place does, and nothing is written to disk ([ADR-031](ADR-031-floating-windows.md) decision 1). It starts at 100%.
+5. **The step the player takes is kept from one session to the next** ([ADR-099](ADR-099-interface-settings-kept.md) decision 1), and the game starts at it, brought down as far as decision 4 says. A step down that decision 4 makes is not kept. Without a kept step, the factor starts at 100%.
 6. **The atlas is drawn again at the new scale**, as it is when the scale moves a font by a whole pixel ([ADR-030](ADR-030-typography-and-sprites.md)). `UiPipeline::UseScale` does it before the frame lays out its text.
 7. **What is drawn in the world keeps the screen's own scale:** the stars ([ADR-022](ADR-022-natural-starfield.md) decision 5), the bars over the entities ([ADR-088](ADR-088-selection-and-commands.md) decision 5) and the selection's ring ([ADR-067](ADR-067-selection-ring-at-a-fixed-width.md)).
 
