@@ -117,6 +117,29 @@ public:
     return std::exchange(m_lastMove, std::nullopt);
   }
 
+  // An order's mark on the ground (ADR-097): the point a move, an attack-move, a hold of a sector or a patrol goes to, or
+  // what an attack is at, from as the order is given until MARK_SECONDS have passed; and whether the server refused it.
+  struct OrderMark
+  {
+    std::uint32_t command = 0;
+    std::optional<PlanePosition> point;
+    std::optional<EntityId> target;
+    float ageSeconds = 0.0f;
+    bool refused = false;
+  };
+  // How long a mark shows, shrinking to nothing.
+  static constexpr float MARK_SECONDS = 0.4f;
+
+  // Ages the marks by a frame's wall time, and lets go of those MARK_SECONDS old.
+  void AgeMarks(float _elapsedSeconds);
+  // Turns the mark of the order numbered _command, while it shows: the server refused the order (ADR-094).
+  void Refuse(std::uint32_t _command) noexcept;
+  // The marks showing, oldest first.
+  [[nodiscard]] const std::vector<OrderMark>& Marks() const noexcept
+  {
+    return m_marks;
+  }
+
 private:
   struct Frame
   {
@@ -146,6 +169,7 @@ private:
   // The number of the last order given, which numbers the orders from 1 (ADR-094 decision 1).
   std::uint32_t m_lastCommandNumber = 0;
   std::optional<MoveOrder> m_lastMove;
+  std::vector<OrderMark> m_marks;
   bool m_attackMoveArmed = false;
   std::optional<StandingOrder> m_standingArmed;
   std::optional<StructureKind> m_placing;

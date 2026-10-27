@@ -60,11 +60,11 @@ Each finding cites the code as it stands at `efbfbf2`.
 | NW2.3 | The connection's figures over a real network | NW2.1 | M1 | todo; an owner run |
 | NW3.1 | What does not change crosses once | NW2.2 | M2, M3 | merged, [#132](https://github.com/Zwaliebaba/Outpost.Commander/pull/132) |
 | NW3.2 | A command carries its number | NW3.1 | M7 | merged, [#132](https://github.com/Zwaliebaba/Outpost.Commander/pull/132) |
-| NW4.1 | Events and state cross apart, and the newest state wins | NW3.1 | M4 | merged, [#133](https://github.com/Zwaliebaba/Outpost.Commander/pull/133), with M4's amendment in review; its measurement an owner run |
+| NW4.1 | Events and state cross apart, and the newest state wins | NW3.1 | M4 | merged, [#133](https://github.com/Zwaliebaba/Outpost.Commander/pull/133) and M4's amendment [#135](https://github.com/Zwaliebaba/Outpost.Commander/pull/135); its measurement an owner run |
 | NW5.1 | The view's delay follows the link | NW4.1 | M5 | merged, [#134](https://github.com/Zwaliebaba/Outpost.Commander/pull/134) |
-| NW6.1 | An order is marked as it is given | NW3.2 | M6 | todo |
-| NW6.2 | A universe's lost connection is joined again | NW2.2 | M8 | todo |
-| NW6.3 | The tag gives the round trip | NW2.1 | M10 | todo |
+| NW6.1 | An order is marked as it is given | NW3.2 | M6 | merged, [#136](https://github.com/Zwaliebaba/Outpost.Commander/pull/136) |
+| NW6.2 | A universe's lost connection is joined again | NW2.2 | M8 | merged, [#136](https://github.com/Zwaliebaba/Outpost.Commander/pull/136) |
+| NW6.3 | The tag gives the round trip | NW2.1 | M10 | merged, [#136](https://github.com/Zwaliebaba/Outpost.Commander/pull/136) |
 | NW6.4 | Order to response over a real network, again | NW5.1, NW6.1 | M11 | todo; an owner run |
 | NW7.1 | State crosses as what changed | NW4.1 | F5 of the Horizon plan | in review |
 

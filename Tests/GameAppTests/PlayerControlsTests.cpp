@@ -294,6 +294,49 @@ public:
     Assert::AreEqual(std::uint32_t{2}, commands[0].number);
   }
 
+  // ADR-097: a move, an attack-move, a hold of a sector and a patrol each mark their point as the order is given, and an
+  // attack its target; a stop marks nothing. A refusal of an order's number turns its mark, and a mark is gone after 0.4 s.
+  TEST_METHOD(MarksEachOrderAsItIsGiven)
+  {
+    Driver driver;
+    driver.Click(driver.Entities()[1]);
+    driver.ClickPixel(960, 100, VK_RBUTTON);
+    driver.Click(driver.Entities()[4], VK_RBUTTON);
+    driver.Key('A');
+    driver.ClickPixel(960, 200);
+    driver.Controls().ArmStanding(Outpost::StandingOrder::HoldSector, driver.Entities());
+    driver.ClickPixel(900, 300);
+    driver.Controls().ArmStanding(Outpost::StandingOrder::Patrol, driver.Entities());
+    driver.ClickPixel(1000, 300);
+    driver.Key('S');
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{6}, commands.size());
+    const std::vector<Outpost::PlayerControls::OrderMark>& marks = driver.Controls().Marks();
+    Assert::AreEqual(size_t{5}, marks.size(), L"every order but the stop");
+    for (std::size_t i = 0; i < marks.size(); ++i)
+    {
+      Assert::AreEqual(commands[i].number, marks[i].command, L"each the mark of its order");
+      Assert::AreEqual(0.0f, marks[i].ageSeconds);
+      Assert::IsFalse(marks[i].refused);
+    }
+    Assert::IsTrue(marks[0].point == std::get<Outpost::MoveCommand>(commands[0].order).destination, L"the move's point");
+    Assert::IsTrue(!marks[1].point.has_value() && marks[1].target == Outpost::EntityId{5}, L"the attack's target");
+    Assert::IsTrue(marks[2].point == std::get<Outpost::AttackMoveCommand>(commands[2].order).destination, L"the attack-move's point");
+    Assert::IsTrue(marks[3].point == std::get<Outpost::HoldSectorCommand>(commands[3].order).position, L"the hold's point");
+    Assert::IsTrue(marks[4].point == std::get<Outpost::PatrolCommand>(commands[4].order).destination, L"the patrol's point");
+
+    driver.Controls().Refuse(commands[1].number);
+    driver.Controls().Refuse(commands[5].number);
+    Assert::IsTrue(marks[1].refused, L"the refused attack's mark turns");
+    Assert::AreEqual(size_t{1}, static_cast<std::size_t>(std::ranges::count(marks, true, &Outpost::PlayerControls::OrderMark::refused)),
+                     L"and no other");
+
+    driver.Controls().AgeMarks(0.39f);
+    Assert::AreEqual(size_t{5}, driver.Controls().Marks().size(), L"still there short of 0.4 s");
+    driver.Controls().AgeMarks(0.02f);
+    Assert::IsTrue(driver.Controls().Marks().empty(), L"gone after 0.4 s");
+  }
+
   TEST_METHOD(AThenClickAttackMovesAndSStops)
   {
     Driver driver;
