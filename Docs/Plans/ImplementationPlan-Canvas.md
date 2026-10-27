@@ -1,8 +1,8 @@
 # Outpost Commander — Canvas Plan: One Toolkit for the Interface
 
-Status: **draft, proposed** · 2026-10-27 · gates C1–C6 decided by the owner that day · From the owner's request of 2026-10-27 for a generic canvas layer that gives the game its windows, buttons, drop-downs and other components, and a review of the interface's code made that day against `main` at `94d6aa0`
+Status: **draft, proposed** · 2026-10-27 · gates C1–C7 decided by the owner that day · From the owner's request of 2026-10-27 for a generic canvas layer that gives the game its windows, buttons, drop-downs and other components, and a review of the interface's code made that day against `main` at `94d6aa0`
 
-The interface is drawn well and tested well, and costs too much to add to. Every window is placed by hand in reference units, works out its own size apart from its layout, and threads hover and focus through its parameters. This plan puts a canvas under the interface: a layout that measures, interaction that every widget shares, and a set of widgets in the windows' look. The windows and the HUD are then moved onto it one at a time, each without changing what the screen shows. Window places that last across restarts, scrolling and a drop-down come after.
+The interface is drawn well and tested well, and costs too much to add to. Every window is placed by hand in reference units, works out its own size apart from its layout, and threads hover and focus through its parameters. This plan puts a canvas under the interface: a layout that measures, interaction that every widget shares, and a set of widgets in the windows' look. The windows and the HUD are then moved onto it one at a time, each without changing what the screen shows. Before the canvas, window places start to last across restarts and the Constructors' build buttons become a window of their own; after it, the designer scrolls and the orders form takes drop-downs.
 
 It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -14,7 +14,7 @@ It is a work queue, not an authority: where it disagrees with a design, AGENTS.m
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone (owner, 2026-09-30), in the milestone order below.
 3. **A gate is an owner decision.** The task does not start until the owner has answered, and the answer is written into the gates table, with its date, first.
 4. **ADRs are edited in place** (AGENTS.md §6). A new one takes the next free number when its task lands; this plan reserves none.
-5. **A port changes nothing on the screen.** Milestones CV3 to CV6 move a window or a panel onto the canvas and do nothing else. The PR keeps the old layout function until a temporary test has compared the old and the new display lists item by item, in order, within a hundredth of a pixel, with the longest content, at 1920×1080 and 1280×720 and at every step the windows fit, and found them equal. The same PR then deletes the old function and the test. A difference the port cannot avoid is named in the PR, and the owner's run accepts it.
+5. **A port changes nothing on the screen.** The port milestones, CV4, CV5, CV6 and CV8, move a window or a panel onto the canvas and do nothing else. The PR keeps the old layout function until a temporary test has compared the old and the new display lists item by item, in order, within a hundredth of a pixel, with the longest content, at 1920×1080 and 1280×720 and at every step the windows fit, and found them equal. The same PR then deletes the old function and the test. A difference the port cannot avoid is named in the PR, and the owner's run accepts it.
 6. **The interface plans' guards hold for every task:** no text outside its panel or over another (`KeepsEveryTextInsideItsPanel`, `OverlapsNoTwoTexts`), and every text at 4.5:1 against its panel (`SetsEveryTextAtFourAndAHalfToOne`).
 7. **Every task that changes the screen is presentation.** It is built, its tests run, and the game is run and looked at, at 1920×1080 and at 2880×1920. The owner's run accepts it. An agent in a cloud container has no Windows, no MSBuild and no GPU, so the PR says which ran where.
 
@@ -30,11 +30,12 @@ Every figure was counted with grep or computed from the layout's own arithmetic 
 |---|---|---|
 | 1 | **The windows already move; the HUD does not, by decision.** The designer, production, research, Controls, orders, away and leave windows are dragged by their title bars, come to the front and are kept on the screen ([ADR-031](../ADR/ADR-031-floating-windows.md)). The Ore column, the minimap, the selection panel and its buttons are anchored ([ADR-043](../ADR/ADR-043-hud-in-the-windows-look.md) decision 1). What reads as "the windows are fixed" is the HUD, and places lost when the game closes. | C1, CV1 |
 | 2 | **A window's place and the interface's scale last until the game closes,** by the owner's decision of 2026-10-02 (ADR-031 decision 1; ADR-070 decision 5). A player who arranges the windows does so again every session. | CV1 |
-| 3 | **Every window is placed by hand.** `Hud.cpp` is 3,863 lines and holds 159 `constexpr float`, most of them a place in reference units from a window's corner, which `Painter` scales. A change of one row's height moves every row under it by hand. | CV2.2, CV3–CV6 |
-| 4 | **A window's size is worked out apart from its layout.** Seven functions (`ExtentOf`, `QueueWindowHeight`, `ProductionHeight`, `TopicHeight`, `ControlsHeight`, `AwayHeight`, `LeaveHeight`) and one constant (`ORDERS_WINDOW_HEIGHT`) repeat their layout's arithmetic, and `WindowsFit` uses them a third time. Nothing but the layout tests holds the two in step. | CV2.2 |
-| 5 | **A new window touches eight places:** `WindowKind` and `WINDOW_KINDS`, its optional panel in `Hud::Content`, its `Describe`, its `Lay`, its height, its first place in `Hud::Lay`, `WindowsFit`, and its `ActionKind`s with their cases in `GameClient` (41 kinds, 41 cases). The orders window's names stand 3 times in `Hud.h`, 14 in `Hud.cpp` and 5 in `GameClient.cpp`. | CV3.1 |
-| 6 | **Interaction is threaded by hand.** The pointer's hover reaches a window's layout as a parameter (`_hovered`, `_giveHovered`). The one element that takes keys, the designer's name, reads its own Esc, Backspace and Enter in `Designer.cpp` ([ADR-017](../ADR/ADR-017-research-and-the-designer.md) decision 8). | CV2.3 |
-| 7 | **Nothing scrolls, and nothing stands above a window.** The layers are the HUD and one per window (ADR-031 decision 4), so a list that opens over its window has nowhere to go. The designer, 938 units tall at its most, holds 16:9 screens at 110% (ADR-070), and the Controls window, 806 units for its 33 lines, holds every screen at 125%. The orders form steps a sector, a target, an hour and a minute one press at a time. | CV7.1, CV7.2 |
+| 3 | **The Constructors' build buttons are the HUD's, not a window.** They stand in the buttons' panel against the selection panel's right edge, after any warship's orders, and an order folds them into one Build button (ADR-088 decision 2), so they cannot be moved. | C7, CV2 |
+| 4 | **Every window is placed by hand.** `Hud.cpp` is 3,863 lines and holds 159 `constexpr float`, most of them a place in reference units from a window's corner, which `Painter` scales. A change of one row's height moves every row under it by hand. | CV3.2, CV4–CV8 |
+| 5 | **A window's size is worked out apart from its layout.** Seven functions (`ExtentOf`, `QueueWindowHeight`, `ProductionHeight`, `TopicHeight`, `ControlsHeight`, `AwayHeight`, `LeaveHeight`) and one constant (`ORDERS_WINDOW_HEIGHT`) repeat their layout's arithmetic, and `WindowsFit` uses them a third time. Nothing but the layout tests holds the two in step. | CV3.2 |
+| 6 | **A new window touches eight places:** `WindowKind` and `WINDOW_KINDS`, its optional panel in `Hud::Content`, its `Describe`, its `Lay`, its height, its first place in `Hud::Lay`, `WindowsFit`, and its `ActionKind`s with their cases in `GameClient` (41 kinds, 41 cases). The orders window's names stand 3 times in `Hud.h`, 14 in `Hud.cpp` and 5 in `GameClient.cpp`. | CV4.1 |
+| 7 | **Interaction is threaded by hand.** The pointer's hover reaches a window's layout as a parameter (`_hovered`, `_giveHovered`). The one element that takes keys, the designer's name, reads its own Esc, Backspace and Enter in `Designer.cpp` ([ADR-017](../ADR/ADR-017-research-and-the-designer.md) decision 8). | CV3.3 |
+| 8 | **Nothing scrolls, and nothing stands above a window.** The layers are the HUD and one per window (ADR-031 decision 4), so a list that opens over its window has nowhere to go. The designer, 938 units tall at its most, holds 16:9 screens at 110% (ADR-070), and the Controls window, 806 units for its 33 lines, holds every screen at 125%. The orders form steps a sector, a target, an hour and a minute one press at a time. | CV7.1, CV7.2 |
 
 ---
 
@@ -77,31 +78,34 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | CV1.1 | Window places and the scale kept on disk | — | C2 | todo |
-| CV2.1 | The display list in the engine | — | C4 | todo |
-| CV2.2 | A layout that measures | CV2.1 | C4 | todo |
-| CV2.3 | Interaction every widget shares | CV2.1 | C4 | todo |
-| CV2.4 | The theme and the widgets | CV2.2, CV2.3 | C4 | todo |
-| CV3.1 | The windows' table, and the leave and away windows | CV2.4 | — | todo |
-| CV3.2 | The Controls window | CV3.1 | — | todo |
-| CV3.3 | The orders window | CV3.1 | — | todo |
-| CV4.1 | The production window | CV3.1 | — | todo |
-| CV4.2 | The research window | CV4.1 | — | todo |
-| CV5.1 | The designer | CV4.1 | — | todo |
-| CV6.1 | The column under the Ore | CV2.4 | C1 | todo |
-| CV6.2 | The selection, its buttons and its retreat | CV6.1 | C1 | todo |
-| CV6.3 | The minimap, the tag, the hint, the banner and the menu | CV6.2 | C1 | todo |
-| CV7.1 | Scrolling, and how far the interface scales | CV3.2, CV3.3, CV5.1 | C3, C5 | todo |
-| CV7.2 | Drop-downs in the orders form | CV3.3 | C6 | todo |
+| CV2.1 | The build window | CV1.1 | C7 | todo |
+| CV3.1 | The display list in the engine | — | C4 | todo |
+| CV3.2 | A layout that measures | CV3.1 | C4 | todo |
+| CV3.3 | Interaction every widget shares | CV3.1 | C4 | todo |
+| CV3.4 | The theme and the widgets | CV3.2, CV3.3 | C4 | todo |
+| CV4.1 | The windows' table, and the leave and away windows | CV3.4 | — | todo |
+| CV4.2 | The Controls window | CV4.1 | — | todo |
+| CV4.3 | The orders window | CV4.1 | — | todo |
+| CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | todo |
+| CV5.1 | The production window | CV4.1 | — | todo |
+| CV5.2 | The research window | CV5.1 | — | todo |
+| CV6.1 | The designer | CV5.1 | — | todo |
+| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1 | C3, C5 | todo |
+| CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | todo |
+| CV8.1 | The column under the Ore | CV3.4 | C1 | todo |
+| CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | todo |
+| CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | todo |
 
 ### Milestone order
 
-CV1, CV2, CV3, CV4, CV5, CV7, CV6.
+CV1 to CV8, in their numbers' order.
 
 - **CV1 goes first.** It needs nothing of the canvas, it is what the owner meets every session, and it is small.
-- **CV2 changes nothing on the screen.** It is the engine's, and its tests are `NeuronClientTests`, plus `HudTests` changed only to read the moved types.
+- **CV2 goes next, on today's code** (C7). The owner wants the build window before the canvas is built, and CV4.4 moves it onto the canvas with the other small windows.
+- **CV3 changes nothing on the screen.** It is the engine's, and its tests are `NeuronClientTests`, plus `HudTests` changed only to read the moved types.
 - **The ports go from the smallest window to the largest,** so that the canvas meets the leave window's two buttons before the designer's mockup.
-- **CV7 goes before CV6,** since scrolling needs the designer and the Controls window on the canvas, and nothing of the HUD. CV7.2 can go as soon as CV3.3 is done.
-- **CV6 goes last.** The HUD's panels are anchored and do not move (C1), so porting them buys least. Once it lands, `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
+- **CV7 goes before CV8,** since scrolling needs the designer and the Controls window on the canvas, and nothing of the HUD. CV7.2 can go as soon as CV4.3 is done.
+- **CV8 goes last.** The HUD's panels are anchored and do not move (C1), so porting them buys least. Once it lands, `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
 
 A task whose gate the owner turns down is dropped, and its milestone ships without it.
 
@@ -113,12 +117,13 @@ Each is an owner decision, proposed here and in the task it gates.
 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
-| C1 | **What the player moves.** The floating windows, as now; the HUD's panels stay anchored, with no presets. A player finds the minimap and the selection by where they always are, and a panel dragged over the battlefield hides it. As proposed (owner, 2026-10-27). | this plan | CV6.1, CV6.2, CV6.3 | decided 2026-10-27 |
+| C1 | **What the player moves.** The floating windows, as now; the HUD's panels stay anchored, with no presets. A player finds the minimap and the selection by where they always are, and a panel dragged over the battlefield hides it. The Constructors' build buttons leave the HUD for a window (C7). As proposed (owner, 2026-10-27). | this plan | CV8.1, CV8.2, CV8.3 | decided 2026-10-27 |
 | C2 | **Window places and the interface's scale are kept on disk.** Each window's place, once the player has moved it, and the interface's step, kept across restarts. On a different screen they are clamped as now (`KeepOnScreen`, `StepInterface`). It reverses the owner's decision of 2026-10-02, in ADR-031 decision 1 and ADR-070 decision 5. As proposed (owner, 2026-10-27). | this plan | CV1.1 | decided 2026-10-27 |
 | C3 | **The designer's part rows scroll.** Its title bar, header, name and saved designs above them, and its bars, damage cards and footer below them, stay put, so that hovering a part still previews it in the bars. As proposed (owner, 2026-10-27). | this plan | CV7.1 | decided 2026-10-27 |
-| C4 | **The canvas is in `NeuronClient`** from its first task, in `Neuron`, and the game's look and content stay in `GameApp`. The layout needs no game concept, so R9 puts it in the engine, and its tests are `NeuronClientTests`. As proposed (owner, 2026-10-27). | this plan | CV2.1, CV2.2, CV2.3, CV2.4 | decided 2026-10-27 |
+| C4 | **The canvas is in `NeuronClient`** from its first task, in `Neuron`, and the game's look and content stay in `GameApp`. The layout needs no game concept, so R9 puts it in the engine, and its tests are `NeuronClientTests`. As proposed (owner, 2026-10-27). | this plan | CV3.1, CV3.2, CV3.3, CV3.4 | decided 2026-10-27 |
 | C5 | **How far the interface scales.** C3 alone does not reach 200% on a 16:9 screen. What of the designer cannot scroll is 469 units: 168 above the part rows, and 301 below them with the Sensors bar. One line of cards with a note is 96 more, 565 in all. On 16:9 the room between the margins is 949 units at 110%, 832 at 125%, 688 at 150%, 585 at 175% and 508 at 200%. So the designer reaches 175% on 16:9, and 200% on 16:10 (568) and 3:2 (608). The Controls window, 806 units, holds every screen at 125% unless it scrolls, and the orders window (560) and the away window (530 at its 20 lines) hold 16:9 at 175%. Proposed: the Controls window's lines and the orders and away windows' lists scroll too, so that the designer sets the ceiling, 175% on 16:9 and 200% on 16:10 and 3:2. From then on `WindowsFit` counts the HUD's anchored panels too, since no match has laid them out above 125%. The way to 200% on 16:9 is to scroll the designer's whole body, its bars with it, which loses the preview whenever the bars are scrolled away. Production and research keep growing and paging as now. As proposed (owner, 2026-10-27). | this plan | CV7.1 | decided 2026-10-27 |
 | C6 | **Where a drop-down is used.** A choice among a few is a row of cells, so that the player sees them all and picks in one press (ADR-088 decision 3); a drop-down hides its choices and takes two presses. Proposed: a drop-down only where the choices run long, which is the orders form's sectors, its target, its hour and its minute ([ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md) decision 9). The trigger, the action and the condition keep their steppers. Nothing else in the game takes a drop-down. As proposed (owner, 2026-10-27). | this plan | CV7.2 | decided 2026-10-27 |
+| C7 | **The build window.** The Constructors' build buttons become a floating window of their own, built on today's code right after CV1, and moved onto the canvas in CV4.4. It opens by itself when the selection comes to hold a Constructor, and closes when the selection holds none. Esc closes the front window before it cancels a placement, as now (ADR-031 decision 5), so with a placement armed from the build window, the first Esc closes the window and the second, or a right-click, cancels the placement. The owner's answers of 2026-10-27; proposed were a window opened by the Build button or B, and Esc cancelling a placement before it closes a window. | this plan | CV2.1, CV4.4 | decided 2026-10-27 |
 
 ---
 
@@ -140,11 +145,32 @@ Each is an owner decision, proposed here and in the task it gates.
 
 ---
 
-## Milestone CV2 — The canvas
+## Milestone CV2 — The build window
+
+### CV2.1 — The build window
+
+- **Gate:** C7.
+- **Goal:** the review's third finding. The player puts the Constructors' build buttons where it wants them.
+- **Scope:** as C7 answers. Where C7 leaves a choice, the proposal:
+  - **An eighth window kind,** in the windows' look (ADR-031 decision 3), dragged and kept on the screen as the others are, its place kept by CV1.1.
+  - **It holds what the buttons' panel offers the selected Constructors now:** a button for each structure, with its cost, or its reason in its cost's place, such as ONE PER PLAYER or NODE CAP, dim when the player cannot afford it (ADR-043 decision 4). A press arms the structure's placement, as the button does now, and Shift keeps it armed for another.
+  - **It opens by itself** when a selection comes to hold a Constructor, a mixed one included, and closes when the selection holds none. It opens where it was left, at the front.
+  - **Proposed:** a press on its × or Esc closes it until the selection changes, and the buttons' panel keeps one Build button, which opens it again.
+  - **Proposed:** picking a structure leaves the window open, since the Constructors stay selected.
+  - **The buttons' panel keeps the warships' orders and the retreat row.** The structures are never in it, so ADR-088 decision 2's fold goes.
+  - **Proposed:** it first opens at the bottom right of the screen, clear of the selection and its buttons.
+  - **`WindowsFit` counts it,** with every structure the tuning data has.
+- **ADR:** ADR-031 decisions 2 and 6 for the new window, how it opens and where it first stands, and ADR-088 decision 2 for the buttons' panel, rewritten in place; Game §interface.windows.behavior and Game §interface.hud.buttons.
+- **Acceptance:** `GameAppTests`: opened by a selection with a Constructor, a mixed one included, and closed by one without; kept closed after its × until the selection changes, and opened again by Build; each structure's cost, reason and dim state as the buttons' tests have them now; the buttons' panel without structures; `WindowManagerTests` for the eighth kind; the layout and contrast guards with the window open.
+- **Verify:** CI; run, a base built from the window, the window dragged, closed and opened again; **owner run.**
+
+---
+
+## Milestone CV3 — The canvas
 
 Nothing on the screen changes in this milestone.
 
-### CV2.1 — The display list in the engine
+### CV3.1 — The display list in the engine
 
 - **Gate:** C4.
 - **Goal:** the ground every later task builds on, moved without a change.
@@ -153,14 +179,14 @@ Nothing on the screen changes in this milestone.
   - `GameClient::DrawHud`'s loop becomes an engine function that draws a display list through `UiPipeline`, in the same order.
   - `ClipToRect` moves to the engine beside `ScreenSegment`.
   - `Hud::Layout` holds a display list, the minimap's square and mapping, and the actions its regions' payloads name. `ActionAt` and `HoverAt` keep their meaning.
-- **ADR:** a new one, the canvas. It takes over from ADR-015 decision 4 and ADR-031 decision 4 what moves to the engine, and those decisions are rewritten as AGENTS.md §6 says. CV2.2 to CV2.4 add to it.
+- **ADR:** a new one, the canvas. It takes over from ADR-015 decision 4 and ADR-031 decision 4 what moves to the engine, and those decisions are rewritten as AGENTS.md §6 says. CV3.2 to CV3.4 add to it.
 - **Acceptance:** `NeuronClientTests` for the layers, the hit regions and the clip; `HudTests` change only where they name the moved types, and pass.
 - **Verify:** CI; run, every window open; **a run** by whoever can.
 
-### CV2.2 — A layout that measures
+### CV3.2 — A layout that measures
 
 - **Gate:** C4.
-- **Goal:** the third and fourth findings. A place follows from what stands before it, and a size from what it holds.
+- **Goal:** the fourth and fifth findings. A place follows from what stands before it, and a size from what it holds.
 - **Scope:**
   - The nodes and the two passes of "The canvas", in reference units, with text measured by `TextMetrics`, which moves to the engine.
   - A place is emitted as units times the scale from its window's corner, as `Painter` emits it now, and glyphs stay on whole pixels in `UiPipeline` (ADR-015 decision 3), so that a port can match today's display list.
@@ -169,10 +195,10 @@ Nothing on the screen changes in this milestone.
 - **Acceptance:** `NeuronClientTests`: rows, columns, grids and stacks with padding and gaps; least and most sizes; an anchor to each corner, edge and the middle; text wrapped and cut; a parent measured from its children; the same tree at two scales.
 - **Verify:** CI.
 
-### CV2.3 — Interaction every widget shares
+### CV3.3 — Interaction every widget shares
 
 - **Gate:** C4.
-- **Goal:** the sixth finding. Hover, press, drag and the keyboard reach a widget by its identifier, not by its parameters.
+- **Goal:** the seventh finding. Hover, press, drag and the keyboard reach a widget by its identifier, not by its parameters.
 - **Scope:**
   - Widget identifiers, the hot, active and focused widget, and the store per identifier, as "The canvas" has them.
   - The window stack: the order front to back, grabbing a title bar, dragging, releasing, and the clamp of `KeepOnScreen`, taken from `WindowManager`, which keeps which windows the game has and the places under the Ore (ADR-031 decision 2).
@@ -182,7 +208,7 @@ Nothing on the screen changes in this milestone.
 - **Acceptance:** `NeuronClientTests`: hot and active across frames; a press held through a move off and back; a drag clamped at each edge; the front layer taking a press over a back one; the wheel over and off a scroll region; focus taken and given back, and Esc's order; a duplicate identifier caught. `WindowManagerTests` for what stays the game's.
 - **Verify:** CI.
 
-### CV2.4 — The theme and the widgets
+### CV3.4 — The theme and the widgets
 
 - **Gate:** C4.
 - **Goal:** the windows' look as widgets, so that a window is built and not drawn.
@@ -193,41 +219,47 @@ Nothing on the screen changes in this milestone.
 
 ---
 
-## Milestone CV3 — The small windows
+## Milestone CV4 — The small windows
 
 Each task is a port (rule 5).
 
-### CV3.1 — The windows' table, and the leave and away windows
+### CV4.1 — The windows' table, and the leave and away windows
 
-- **Goal:** the fifth finding, and the first windows on the canvas.
+- **Goal:** the sixth finding, and the first windows on the canvas.
 - **Scope:** the windows' table of "The canvas", replacing what is spread across `WindowKind`'s uses; the leave window and the away window built on the canvas. `LeaveHeight` and `AwayHeight` go, and `WindowsFit` measures the away window instead.
 - **ADR:** the canvas's; ADR-031 decision 2's first places move to the table.
 - **Acceptance:** the port's comparison; `HudTests` and `WindowManagerTests` as they stand.
 - **Verify:** CI; run, both windows open and dragged.
 
-### CV3.2 — The Controls window
+### CV4.2 — The Controls window
 
 - **Scope:** the Controls window on the canvas, its lines still made by `KeyBindings()` (ADR-068 decision 4). `ControlsHeight` goes.
 - **Acceptance:** the port's comparison; `ListsEveryKeyInTheControlsWindow`.
 - **Verify:** CI; run, on the menu and in a match.
 
-### CV3.3 — The orders window
+### CV4.3 — The orders window
 
 - **Scope:** the orders window on the canvas, its form's rows as steppers. `ORDERS_WINDOW_HEIGHT` goes.
 - **Acceptance:** the port's comparison; the orders window's tests as they stand.
 - **Verify:** CI; run, an order given and canceled.
 
+### CV4.4 — The build window on the canvas
+
+- **Scope:** CV2.1's window on the canvas, its buttons the canvas's, its row in the windows' table.
+- **Acceptance:** the port's comparison; CV2.1's tests as they stand.
+- **Verify:** CI; run, a structure placed from it.
+
 ---
 
-## Milestone CV4 — Production and research
+## Milestone CV5 — Production and research
 
-### CV4.1 — The production window
+### CV5.1 — The production window
 
 - **Scope:** production on the canvas: its header's stepper, its cards two to a row, kept still as the queue grows (ADR-043 decision 6), each card a composite of the game's, and the queue under them. `ProductionHeight` and `QueueWindowHeight` go.
 - **Acceptance:** the port's comparison; `KeepsTheCardsStillAsTheQueueGrows`, `SaysWhatAProductionCardBuilds`.
 - **Verify:** CI; run, a queue filled and emptied.
 
-### CV4.2 — The research window
+### CV5.2 — The research window
 
 - **Scope:** research on the canvas, its paging by a row as now, every topic card as tall as the most lines any shown topic needs (ADR-061 decision 4). `TopicHeight` goes.
 - **Acceptance:** the port's comparison; research's tests as they stand.
@@ -235,9 +267,9 @@ Each task is a port (rule 5).
 
 ---
 
-## Milestone CV5 — The designer
+## Milestone CV6 — The designer
 
-### CV5.1 — The designer
+### CV6.1 — The designer
 
 - **Goal:** the largest window, and the one fixed to the owner's mockup, on the canvas.
 - **Scope:** the designer on the canvas: its header, name field as the canvas's text field, saved designs, part rows, bars, damage cards and footer, at [ADR-062](../ADR/ADR-062-type-scale-and-contrast.md) decision 4's widths. `ExtentOf` goes, and `WindowsFit` measures the designer. `Designer.cpp` stops reading keys of its own.
@@ -246,37 +278,13 @@ Each task is a port (rule 5).
 
 ---
 
-## Milestone CV6 — The HUD and the menu
-
-The HUD's panels stay where they are (C1). Each task is a port (rule 5).
-
-### CV6.1 — The column under the Ore
-
-- **Scope:** the Ore, the status, territory and alerts panels as anchored panels on the canvas, the column's width kept for its widest fixed text ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3).
-- **Acceptance:** the port's comparison; the column's tests as they stand.
-- **Verify:** CI; run.
-
-### CV6.2 — The selection, its buttons and its retreat
-
-- **Scope:** the selection panel, as wide as its longest line between its least and most (ADR-043 decision 5), its ship bars, the buttons against its right edge, and the retreat's row of cells (ADR-088 decisions 2 to 4).
-- **Acceptance:** the port's comparison; the selection's tests as they stand.
-- **Verify:** CI; run, a structure, a ship and a fleet selected.
-
-### CV6.3 — The minimap, the tag, the hint, the banner and the menu
-
-- **Scope:** the minimap's frame, with its marks, fog and view drawn by the game into its leaf; the tag at the top right; the hint; the match's end; the main menu. `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
-- **Acceptance:** the port's comparison; the minimap's and the menu's tests as they stand.
-- **Verify:** CI; run, the menu and a match to its end.
-
----
-
 ## Milestone CV7 — What the canvas adds
 
 ### CV7.1 — Scrolling, and how far the interface scales
 
 - **Gates:** C3, C5.
-- **Goal:** the seventh finding's first half. A window of a fixed size no longer holds the interface's scale under the screen's room.
-- **Scope:** as C3 and C5 answer. The proposal:
+- **Goal:** the eighth finding's first half. A window of a fixed size no longer holds the interface's scale under the screen's room.
+- **Scope:** as C3 and C5 answer:
   - **A scroll view:** its content clipped to it, moved by the wheel over it, and a thumb that is dragged. Clipping is on the CPU in `UiPipeline`: a quad cut to the clip, its texture coordinates with it, so the interface stays one draw call. A hatched quad's stripes are laid on the screen's pixels (ADR-030 decision 6) and need no change. Lines are never clipped by a scroll view; only the minimap draws them.
   - **The designer's part rows scroll,** and nothing above or below them. The thumb stands in the 14 units right of the cards (ADR-062 decision 4). The view shows at least one line of cards.
   - **The Controls window's lines and the orders and away windows' lists scroll,** each with a least height.
@@ -288,11 +296,35 @@ The HUD's panels stay where they are (C1). Each task is a port (rule 5).
 ### CV7.2 — Drop-downs in the orders form
 
 - **Gate:** C6.
-- **Goal:** the seventh finding's second half. A sector or an hour is picked, not stepped to.
-- **Scope:** as C6 answers. The proposal: a drop-down widget whose list opens in the overlay layer, under its field or over it where the screen ends, scrolling when it runs past the screen; picked by a press, closed by Esc or a press outside it, which goes no further. The orders form's sector, target, hour and minute fields take it; their arrows stay beside it.
+- **Goal:** the eighth finding's second half. A sector or an hour is picked, not stepped to.
+- **Scope:** as C6 answers: a drop-down widget whose list opens in the overlay layer, under its field or over it where the screen ends, scrolling when it runs past the screen; picked by a press, closed by Esc or a press outside it, which goes no further. The orders form's sector, target, hour and minute fields take it; their arrows stay beside it.
 - **ADR:** the canvas's for the drop-down; [ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md) decision 9 for the form; a Style Guide line beside ADR-088 decision 3's: a choice among many is a drop-down.
 - **Acceptance:** `NeuronClientTests` for opening, picking, Esc, a press outside and the flip at the screen's foot; the orders window's tests with a field picked.
 - **Verify:** CI; run, an order scheduled with every field picked; **owner run.**
+
+---
+
+## Milestone CV8 — The HUD and the menu
+
+The HUD's panels stay where they are (C1). Each task is a port (rule 5).
+
+### CV8.1 — The column under the Ore
+
+- **Scope:** the Ore, the status, territory and alerts panels as anchored panels on the canvas, the column's width kept for its widest fixed text ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3).
+- **Acceptance:** the port's comparison; the column's tests as they stand.
+- **Verify:** CI; run.
+
+### CV8.2 — The selection, its buttons and its retreat
+
+- **Scope:** the selection panel, as wide as its longest line between its least and most (ADR-043 decision 5), its ship bars, the buttons against its right edge, and the retreat's row of cells (ADR-088 decisions 2 to 4).
+- **Acceptance:** the port's comparison; the selection's tests as they stand.
+- **Verify:** CI; run, a structure, a ship and a fleet selected.
+
+### CV8.3 — The minimap, the tag, the hint, the banner and the menu
+
+- **Scope:** the minimap's frame, with its marks, fog and view drawn by the game into its leaf; the tag at the top right; the hint; the match's end; the main menu. `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
+- **Acceptance:** the port's comparison; the minimap's and the menu's tests as they stand.
+- **Verify:** CI; run, the menu and a match to its end.
 
 ---
 
