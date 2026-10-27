@@ -38,6 +38,7 @@
 #include "Designer.h"
 #include "ProductionTarget.h"
 #include "WindowManager.h"
+#include "InterfaceSettings.h"
 #include "KeyBindings.h"
 #include "Hud.h"
 #include "LoadDriver.h"

@@ -92,6 +92,14 @@ public:
     m_offerUniverse = _available;
   }
 
+  // Keeps the interface's scale, and where the player leaves each window it moves, in _file (ADR-099): reads them now, and
+  // writes them when the player takes a step of the scale or lets go of a window. Without it, as in a measurement run,
+  // nothing is read or written.
+  void KeepInterfaceIn(std::filesystem::path _file);
+
+  // Writes the interface's settings, if they changed since they were last written, as the game closes.
+  void SaveInterface() noexcept;
+
   // What the player asked for since the last call, if anything.
   // The difficulty of the last skirmish the player asked for (ADR-065).
   [[nodiscard]] Difficulty RequestedDifficulty() const noexcept
@@ -241,6 +249,11 @@ private:
   void ToggleWindow(WindowKind _window);
   // Steps the interface's own scale from Ctrl+= and Ctrl+-, and keeps it where its windows fit (ADR-070).
   void UpdateInterfaceFactor(const Neuron::InputState& _input);
+  // Stands every window the player has moved where it was left, from the corner of the screen nearest it, at this frame's
+  // size and scale (ADR-099).
+  void PlaceKeptWindows() noexcept;
+  // Keeps where the player let go of the window it was dragging, as the last frame laid it out, and writes it (ADR-099).
+  void KeepDraggedWindow() noexcept;
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   // A faint ring, one pixel wide, in its side's color under every structure that is not selected, fading as the camera comes
@@ -321,7 +334,8 @@ private:
   std::vector<Neuron::MeshPipeline::MeshDraw> m_territoryDraws;
   // This frame's memories' lines, kept so that their storage is not allocated every frame.
   std::vector<Neuron::MeshPipeline::MeshDraw> m_memoryDraws;
-  // The floating windows, which keep their places for as long as the game runs (ADR-031); and what was selected on its own
+  // The floating windows, which keep their places for as long as the game runs (ADR-031), and from one session to the
+  // next once the player has moved them (ADR-099); and what was selected on its own
   // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
   WindowManager m_windows;
   EntityId m_soleSelected;
@@ -353,8 +367,8 @@ private:
   std::vector<EntityView> m_entities;
   std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;
-  // The interface's own scale, a factor on the screen's that lasts until the game closes, and what it was last fitted to: the
-  // screen's size, and whether there was a match to size the designer by (ADR-070).
+  // The interface's own scale, a factor on the screen's whose step the player takes is kept (ADR-099), and what it was last
+  // fitted to: the screen's size, and whether there was a match to size the designer by (ADR-070).
   struct InterfaceFit
   {
     std::uint32_t widthPixels = 0;
@@ -365,6 +379,11 @@ private:
   };
   float m_interfaceFactor = 1.0f;
   InterfaceFit m_interfaceFit;
+  // Where the interface's settings are kept, empty when they are not; what they are now; and what was last written or
+  // read, so that nothing unchanged is written again (ADR-099).
+  std::filesystem::path m_interfaceFile;
+  InterfaceSettings m_interfaceSettings;
+  std::optional<InterfaceSettings> m_interfaceWritten;
   // Every set's models in the catalog's order, each set's after the one before.
   std::vector<LoadedModel> m_models;
   // How long the frame being drawn took to come, which a ship's speed is measured over.

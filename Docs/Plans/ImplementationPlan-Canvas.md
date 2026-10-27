@@ -77,7 +77,7 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| CV1.1 | Window places and the scale kept on disk | — | C2 | todo |
+| CV1.1 | Window places and the scale kept on disk | — | C2 | in review, [#142](https://github.com/Zwaliebaba/Outpost.Commander/pull/142) |
 | CV2.1 | The build window | CV1.1 | C7 | todo |
 | CV3.1 | The display list in the engine | — | C4 | todo |
 | CV3.2 | A layout that measures | CV3.1 | C4 | todo |
@@ -142,6 +142,10 @@ Each is an owner decision, proposed here and in the task it gates.
 - **ADR:** a new one, for the file, its place and its format. ADR-031 decision 1 and ADR-070 decision 5 are rewritten in place, with Game §interface.windows.behavior and Game §interface.scale.
 - **Acceptance:** `GameAppTests`: a round trip of places and step; a missing, truncated, foreign and other-version file each ignored; a place kept from the nearest corner, read back on a wider and a narrower screen and clamped; `WindowManagerTests` for places loaded before a window opens.
 - **Verify:** CI; run, move the windows, step the scale, close and open the game; then at 2880×1920; **owner run.**
+- **As built (2026-10-27):** [ADR-099](../ADR/ADR-099-interface-settings-kept.md).
+  - A place is kept from the corner nearest the window's middle, and stood again every frame of a match, so that a moved window keeps to its corner within a session too, across a step of the scale or a new size of screen.
+  - Only a step the player takes is kept: not a step down that a screen or a match makes, nor a step up the screen has no room for.
+  - `InterfaceSettings` and `WindowManager` with their tests ran in the Linux container against stand-ins for the Windows parts, built with g++ 13 and clang 18 and checked by clang-tidy 18 with the repository's checks. `GameClient` and the shell are CI's to build first. Not yet run on Windows.
 
 ---
 

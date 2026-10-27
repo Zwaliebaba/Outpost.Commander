@@ -103,3 +103,4 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-096 | [A tick's events cross reliably, and its state on a stream of its own that a newer one overtakes](ADR-096-events-and-state-cross-apart.md) | `connection-streams`, `newest-state`, `event-ticks` |
 | ADR-097 | [An order is marked on the ground as it is given](ADR-097-an-order-is-marked-as-it-is-given.md) | `order-marks` |
 | ADR-098 | [A state crosses as what changed since the one the client holds](ADR-098-a-state-crosses-as-what-changed.md) | `state-changes`, `held-states` |
+| ADR-099 | [The interface's scale and the places of the windows the player moves are kept from one session to the next](ADR-099-interface-settings-kept.md) | `interface-settings-file`, `kept-window-places`, `kept-interface-scale` |

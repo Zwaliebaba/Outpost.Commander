@@ -86,6 +86,12 @@ void Outpost::WindowManager::Release() noexcept
   m_grabbed.reset();
 }
 
+void Outpost::WindowManager::Place(WindowKind _window, Point _corner) noexcept
+{
+  m_positions[IndexOf(_window)] = _corner;
+  m_slots[IndexOf(_window)].reset();
+}
+
 void Outpost::WindowManager::BringToFront(WindowKind _window)
 {
   std::erase(m_order, _window);

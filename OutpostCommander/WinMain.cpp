@@ -53,8 +53,11 @@ constexpr std::wstring_view JOIN_SWITCH = L"--join";
 // The matchup switch: --matchup <n> makes every skirmish battle matchup n of Matchups.json, from 1, against the AI's
 // battle behavior; it is the matchups' live half (ADR-083 decision 6), and the match log names the matchup (ADR-038 decision 1).
 constexpr std::wstring_view MATCHUP_SWITCH = L"--matchup";
-constexpr auto JOIN_FOLDER = L"Outpost Commander";
+// The game's own folder, in the player's documents for the join file and in its local application data for the interface's
+// settings.
+constexpr auto GAME_FOLDER = L"Outpost Commander";
 constexpr auto JOIN_FILE = L"Join.json";
+constexpr auto INTERFACE_FILE = L"Interface.json";
 // What the join at launch gives the handshake, so that a player whose server is not there waits no longer for the menu's
 // skirmishes; the menu's Join universe and --join give it the channel's own (ADR-078 decision 9).
 constexpr std::chrono::milliseconds LAUNCH_JOIN_CONNECT_TIMEOUT{3'000};
@@ -126,8 +129,21 @@ std::filesystem::path DocumentsJoinFile()
   const HRESULT found = SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_DEFAULT, nullptr, &documents);
   std::filesystem::path path;
   if (SUCCEEDED(found))
-    path = std::filesystem::path(documents) / JOIN_FOLDER / JOIN_FILE;
+    path = std::filesystem::path(documents) / GAME_FOLDER / JOIN_FILE;
   CoTaskMemFree(documents);
+  return path;
+}
+
+// Where the interface's settings are kept: Outpost Commander\Interface.json in the player's local application data, which a
+// packaged game's Windows keeps in the package's own data (ADR-099). Empty when Windows does not say where that is.
+std::filesystem::path LocalInterfaceFile()
+{
+  PWSTR local = nullptr;
+  const HRESULT found = SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_DEFAULT, nullptr, &local);
+  std::filesystem::path path;
+  if (SUCCEEDED(found))
+    path = std::filesystem::path(local) / GAME_FOLDER / INTERFACE_FILE;
+  CoTaskMemFree(local);
   return path;
 }
 
@@ -340,6 +356,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     logStage("client", std::chrono::steady_clock::now());
     renderer.EndUploads();
     logStage("uploads", std::chrono::steady_clock::now());
+    // A measurement run neither reads nor writes the interface's settings, so that its frames are all measured with the
+    // interface as it first is (ADR-099).
+    if (!skipMenu)
+      client.KeepInterfaceIn(LocalInterfaceFile());
     window.Show();
 
     auto lastFrame = std::chrono::steady_clock::now();
@@ -712,6 +732,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // Quitting from a match leaves it.
     if (match && match->log)
       match->log->Finish();
+    client.SaveInterface();
     return window.ExitCode();
   }
   catch (const winrt::hresult_error& error)

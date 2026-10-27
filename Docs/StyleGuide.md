@@ -56,7 +56,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 - **Hatching is drawn by the pixel shader with `FillHatched`,** so neighboring hatched rectangles line up ([ADR-030](ADR/ADR-030-typography-and-sprites.md) decision 6).
 - **Every panel of the HUD takes a window's look,** a window's body and a bracket at each corner, without a title bar ([ADR-043](ADR/ADR-043-hud-in-the-windows-look.md) decision 1).
 - **A window is a frame, a hatched title bar, a close box and four corner brackets,** with an opaque body ([ADR-031](ADR/ADR-031-floating-windows.md) decision 3, [ADR-068](ADR/ADR-068-interface-polish.md) decision 1).
-- **A window's state is `WindowManager`'s,** its place kept in reference units until the game closes, and `Hud::KeepOnScreen` keeps its title bar on the screen ([ADR-031](ADR/ADR-031-floating-windows.md) decisions 1 and 2).
+- **A window's state is `WindowManager`'s,** its place kept in reference units, and from one session to the next once the player has moved it, from the screen's corner nearest it ([ADR-099](ADR/ADR-099-interface-settings-kept.md) decision 1); `Hud::KeepOnScreen` keeps its title bar on the screen ([ADR-031](ADR/ADR-031-floating-windows.md) decisions 1 and 2).
 - **The HUD and the windows are drawn and clicked in layers,** so a window covers the text behind it and only the front layer takes a click ([ADR-031](ADR/ADR-031-floating-windows.md) decision 4).
 - **A press on a panel or a window is the HUD's,** and a release always reaches the player's controls ([ADR-015](ADR/ADR-015-ui-drawing.md) decision 5).
 - **A structure's window opens from a button on its selection panel and from its key, which also closes it** ([ADR-031](ADR/ADR-031-floating-windows.md) decision 6).

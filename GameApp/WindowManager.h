@@ -24,7 +24,8 @@ inline constexpr std::size_t WINDOW_KINDS = 7;
 // Which windows are open, in what order front to back, where each was left and which is being dragged, all in reference
 // units (ADR-006). It keeps no geometry of its own: the HUD lays each open window out where this says, clamped to the
 // screen, and tells it what a press hit. Positions last for as long as the manager does, which is as long as the game
-// runs (owner, 2026-10-02): nothing is written to disk.
+// runs; GameClient keeps the places the player leaves from one session to the next, and puts them back with Place
+// (ADR-099).
 class WindowManager
 {
 public:
@@ -76,6 +77,14 @@ public:
   {
     return m_grabbed.has_value();
   }
+  // The window being dragged, if any.
+  [[nodiscard]] std::optional<WindowKind> Grabbed() const noexcept
+  {
+    return m_grabbed;
+  }
+  // Stands _window at _corner, as if the player had left it there, without opening it or bringing it to the front: a place
+  // the player left it in is put back so, whatever the screen and the scale (ADR-099). It then takes no slot.
+  void Place(WindowKind _window, Point _corner) noexcept;
 
 private:
   [[nodiscard]] static std::size_t IndexOf(WindowKind _window) noexcept

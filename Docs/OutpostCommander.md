@@ -1330,7 +1330,7 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 - **Ctrl+= makes the interface larger and Ctrl+- smaller**, on the keys that read = and - on a US keyboard, in steps of 100%, 110%, 125%, 150%, 175% and 200% of the size that fits the screen (ADR-070 decision 2).
 - **A step up is taken only while the windows of a fixed size still fit the screen between its margins:** in a match, the designer laid out with every component of the match, locked or not, the Controls window, the orders window and the away window; on the menu, the Controls window alone. The production and research windows grow with what they hold, and are not counted (ADR-070 decision 3).
 - **The scale comes down to the largest step that fits** whenever the screen changes size and whenever a match starts or ends, so no window of a fixed size opens taller than the screen (ADR-070 decision 4).
-- **The scale lasts until the game closes, and starts at 100%.** Nothing is written to disk (ADR-070 decision 5).
+- **The step the player takes is kept from one session to the next,** and the game starts at it, brought down as far as its screen needs; a step down that a screen or a match makes is not kept. Without one, the scale starts at 100% (ADR-070 decision 5; ADR-099 decision 1).
 - **What is drawn in the world keeps the screen's own scale,** whatever the player sets: the stars, the bars over ships and structures, and the selection's ring (ADR-070 decision 7; ADR-088 decision 5).
 
 ### The interface's look [§interface.style]
@@ -1500,7 +1500,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **A window is dragged by its title bar** and kept on the screen: its whole title bar, and 120 units of its width. A smaller screen moves it back as well (ADR-031 decision 2).
 - **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further. With no window open, Esc reaches the controls, and in a universe, with nothing armed, opens the leave window; while the designer's name takes typing, the designer has Esc first (ADR-031 decision 5; ADR-017 decision 8).
 - **Several windows can be open at once,** each drawn whole over the ones behind it (ADR-031 decision 4).
-- **A window opens where it was left,** until the game closes: closing and opening it, or starting another match, puts it back there. Leaving a match closes every window. Nothing is written to disk (ADR-031 decisions 1 and 2).
+- **A window opens where it was left,** in this session and the next: closing and opening it, starting another match or starting the game again puts it back there. It is kept from the corner of the screen nearest it, so that a window left against an edge stays against it on another screen and at another scale. Leaving a match closes every window, and the game starts with every window closed (ADR-031 decisions 1 and 2; ADR-099 decisions 1 and 6).
 - **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls, away and leave windows in the middle of the screen (ADR-031 decision 2; ADR-062 decision 6).
 - **A window has the size its content gives it;** none is resized, docked or minimized (ADR-031).
 

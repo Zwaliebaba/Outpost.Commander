@@ -74,6 +74,9 @@
     <ClInclude Include="WindowManager.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="InterfaceSettings.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
     <ClInclude Include="Starfield.h">
       <Filter>Sky</Filter>
     </ClInclude>
@@ -156,6 +159,9 @@
       <Filter>Models</Filter>
     </ClCompile>
     <ClCompile Include="WindowManager.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="InterfaceSettings.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="Starfield.cpp">
