@@ -13,9 +13,7 @@ namespace Outpost
 //   attack-moves; Escape cancels it. H, then a left-click, holds the sector clicked in, and T, then a left-click, patrols
 //   to the point clicked (ADR-059 decision 7). S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
 //   centers the camera on it. The HUD arms a structure's placement, which the next left-click on the ground orders the
-//   selected Constructors to build, and which right-click or Escape cancels; Shift keeps it armed for another. An order to
-//   the selection folds the Constructors' structures into the HUD's Build button, which opens them again, as selecting
-//   does (ADR-088).
+//   selected Constructors to build, and which right-click or Escape cancels; Shift keeps it armed for another.
 class PlayerControls
 {
 public:
@@ -40,16 +38,6 @@ public:
   {
     return m_placing;
   }
-
-  // Whether the Constructors' structures are folded into the HUD's Build button: from an order to the selection, a placement
-  // with Shift aside, until the button opens them or the player selects again (ADR-088). The retreat is no order.
-  [[nodiscard]] bool IsBuildFolded() const noexcept
-  {
-    return m_buildFolded;
-  }
-
-  // From the HUD's Build button: the structures open again.
-  void OpenBuild() noexcept;
 
   // From the HUD: a job for a Shipyard's or the Command Station's queue.
   void Queue(EntityId _producer, DesignId _design);
@@ -155,7 +143,7 @@ private:
   void OnKey(const Neuron::InputEvent& _event, const Frame& _frame);
   void Select(std::vector<EntityId> _ships, bool _add);
   void Give(Order _order);
-  // Gives an order to the selected ships, which folds the Constructors' structures.
+  // Gives an order to the selected ships.
   void GiveToShips(Order _order);
   // The selection's ships, and the Constructors among them.
   [[nodiscard]] std::vector<EntityId> SelectedShips(std::span<const EntityView> _entities) const;
@@ -173,7 +161,6 @@ private:
   bool m_attackMoveArmed = false;
   std::optional<StandingOrder> m_standingArmed;
   std::optional<StructureKind> m_placing;
-  bool m_buildFolded = false;
 
   // The left press being held, where it went down and whether it has become a drag.
   std::optional<DirectX::XMFLOAT2> m_pressPixels;

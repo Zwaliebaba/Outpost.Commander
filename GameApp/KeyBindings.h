@@ -31,7 +31,9 @@ inline constexpr std::uint8_t KEY_RESEARCH = 'R';
 inline constexpr std::uint8_t KEY_CONTROLS = VK_F1;
 // The orders window, the seat's scheduled orders and the form that gives one (ADR-080 decision 9).
 inline constexpr std::uint8_t KEY_ORDERS = 'O';
-// Closes the front window, and with none open cancels what the controls have armed.
+// The build window, the structures the selected Constructors build (ADR-031 decision 6).
+inline constexpr std::uint8_t KEY_BUILD = 'B';
+// Cancels a structure being placed; else closes the front window, and with none open cancels what the controls have armed.
 inline constexpr std::uint8_t KEY_CANCEL = VK_ESCAPE;
 // Moves the camera to the newest alert (ADR-059).
 inline constexpr std::uint8_t KEY_LATEST_ALERT = VK_SPACE;
@@ -119,6 +121,7 @@ struct KeyBinding
     {.keys = KeyName(KEY_PRODUCTION), .does = "Production"},
     {.keys = KeyName(KEY_RESEARCH), .does = "Research"},
     {.keys = KeyName(KEY_ORDERS), .does = "Scheduled orders"},
+    {.keys = KeyName(KEY_BUILD), .does = "Build, for the selected Constructors"},
     {.keys = KeyName(KEY_CONTROLS), .does = "These controls"},
     {.keys = KeyName(KEY_CANCEL), .does = "Close a window, cancel an order, or leave a universe"},
     {.keys = std::format("{}, held", KeyName(KEY_EVERY_HEALTH_BAR)), .does = "Every health bar"},

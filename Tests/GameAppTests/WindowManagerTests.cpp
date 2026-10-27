@@ -136,6 +136,21 @@ public:
     Assert::IsFalse(windows.Grabbed().has_value());
   }
 
+  // ADR-031 decision 6: the build window is an eighth kind, opened, ordered and closed as the others are, and it takes no
+  // slot.
+  TEST_METHOD(OpensTheBuildWindowAsAnEighthKind)
+  {
+    Outpost::WindowManager windows;
+    windows.Open(WindowKind::Production);
+    windows.Open(WindowKind::Build);
+    Assert::IsTrue(Order(windows) == std::vector{WindowKind::Build, WindowKind::Production});
+    Assert::IsFalse(windows.SlotOf(WindowKind::Build).has_value());
+    Assert::IsTrue(windows.SlotOf(WindowKind::Production) == std::size_t{0});
+    Assert::IsTrue(windows.CloseFront());
+    Assert::IsFalse(windows.IsOpen(WindowKind::Build));
+    Assert::IsTrue(windows.IsOpen(WindowKind::Production));
+  }
+
   // Closing the window being dragged lets it go.
   TEST_METHOD(ClosingAWindowLetsItGo)
   {

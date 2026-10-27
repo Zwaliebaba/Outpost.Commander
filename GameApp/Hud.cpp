@@ -2117,6 +2117,52 @@ void LayLeave(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, Outpost::W
             stay, _hovered == stay.action);
 }
 
+// The build window (ADR-031 decision 6): the structures' buttons in a column, as wide as the buttons' panel held them.
+constexpr float BUILD_WINDOW_WIDTH = BUTTON_PANEL_WIDTH;
+
+// Whether Constructors are offered _type on the map of _newest: a structure the tuning data lets them build, and a Relay only
+// where there are sectors for it to hold (ADR-056).
+bool IsOffered(const Outpost::Snapshot& _newest, const Outpost::StructureTypeView& _type) noexcept
+{
+  return _type.buildable && (_type.structure != Outpost::StructureKind::Relay || !_newest.sectors.empty());
+}
+
+float BuildHeight(std::size_t _structures) noexcept
+{
+  const auto count = static_cast<float>(_structures);
+  const float buttons = _structures > 0 ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
+  return Hud::TITLE_BAR_UNITS + PADDING + buttons + PADDING;
+}
+
+// Where the build window first stands, _heightUnits tall (ADR-031 decision 2): at the bottom right, where the selection and its
+// buttons leave it room at their widest, kept clear of the minimap as they are (ADR-088 decision 2); and where they do not,
+// at the right edge over the bottom row, its foot a gap above the minimap's top, so that it does not move as the selection
+// changes.
+Outpost::WindowManager::Point BuildCorner(float _heightUnits, float _screenWidthUnits, float _screenHeightUnits) noexcept
+{
+  const float left = _screenWidthUnits - MARGIN - BUILD_WINDOW_WIDTH;
+  constexpr float PAIR_WIDTH = SELECTION_PANEL_WIDTH + BUTTON_PANEL_WIDTH;
+  const float pairRight = std::max((_screenWidthUnits - PAIR_WIDTH) / 2.0f, MARGIN + MINIMAP_SIZE + PANEL_GAP) + PAIR_WIDTH;
+  const float foot = left >= pairRight + PANEL_GAP ? _screenHeightUnits - MARGIN : _screenHeightUnits - MARGIN - MINIMAP_SIZE - PANEL_GAP;
+  return {.xUnits = left, .yUnits = foot - _heightUnits};
+}
+
+void LayBuild(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::BuildPanel& _panel, Outpost::WindowManager::Point _corner,
+              float _scale, const std::optional<Hud::Action>& _hovered)
+{
+  (void)OpenWindow(_layout, Outpost::WindowKind::Build, std::string(), _corner, BUILD_WINDOW_WIDTH,
+                   BuildHeight(_panel.structures.size()) - Hud::TITLE_BAR_UNITS, _scale);
+  Painter paint(_layout, _metrics, _corner, _scale);
+  paint.Text("BUILD", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  float top = Hud::TITLE_BAR_UNITS + PADDING;
+  for (const Hud::Button& structure : _panel.structures)
+  {
+    AddButton(_layout, _metrics, _scale, paint.Area(PADDING, top, BUILD_WINDOW_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT, CARD_COLOR),
+              structure, structure.enabled && _hovered == structure.action);
+    top += BUTTON_HEIGHT + BUTTON_GAP;
+  }
+}
+
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
 // The part of the line from _from to _to that lies inside _rect, by Liang and Barsky's clipping; none when none of it does.
 std::optional<std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2>> ClipToRect(DirectX::XMFLOAT2 _from, DirectX::XMFLOAT2 _to,
@@ -2603,7 +2649,7 @@ std::vector<Outpost::Hud::SideColor> Outpost::Hud::SideColorsOf(const ModelCatal
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
                                              const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond,
-                                             std::optional<ActionKind> _armed, bool _buildFolded)
+                                             std::optional<ActionKind> _armed)
 {
   Content content{.ore = _newest.ore,
                   .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
@@ -2959,38 +3005,51 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.buttons.push_back(order("Patrol", ActionKind::Patrol, KEY_PATROL));
     content.buttons.push_back(order("Stop", ActionKind::Stop, KEY_STOP));
   }
-  // Constructors offer every structure they build (Game §structures.building); one Research Lab a player. Once the
-  // selection is given an order they fold into one Build button, which opens them again (ADR-088).
-  if (constructors && _buildFolded)
-    content.buttons.push_back({.label = "Build", .action = {.kind = ActionKind::OpenBuild}});
-  else if (constructors)
-  {
-    const bool hasLab = std::ranges::any_of(_entities,
-                                            [&_newest](const EntityView& _entity) {
-                                              return _entity.kind == EntityKind::Structure &&
-                                                     _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
-                                            });
-    content.buttons.reserve(_newest.structureTypes.size());
-    for (const StructureTypeView& type : _newest.structureTypes)
-    {
-      // A Relay holds a sector, and a map without them has none to hold (ADR-056).
-      if (!type.buildable || (type.structure == StructureKind::Relay && _newest.sectors.empty()))
-        continue;
-      const bool secondLab = type.structure == StructureKind::ResearchLab && hasLab;
-      // A Relay past the Command Station's cap waits for the station's next level (ADR-056 decision 11).
-      const bool capped = type.structure == StructureKind::Relay && capReached;
-      content.buttons.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
-                                 .action = {.kind = ActionKind::Build, .structure = type.structure},
-                                 .enabled = !secondLab && !capped && _newest.ore >= type.cost,
-                                 .note = secondLab ? std::string("ONE PER PLAYER")
-                                         : capped  ? std::string("NODE CAP")
-                                                   : std::string()});
-    }
-  }
+  // Constructors offer one Build button, which opens the build window of the structures they build (ADR-031 decision 6;
+  // ADR-088 decision 2).
+  if (constructors)
+    content.buttons.push_back({.label = "Build", .action = {.kind = ActionKind::OpenBuild}, .key = KeyCap(KEY_BUILD)});
   // The selection's retreat, under the rest, the first ship's and whether the others differ (ADR-088 decision 3).
   if (retreat.has_value())
     content.retreat = RetreatChoice{.setting = *retreat, .mixed = mixedRetreat};
   return content;
+}
+
+Hud::BuildPanel Hud::DescribeBuild(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected)
+{
+  const bool constructors =
+    std::ranges::any_of(_selected,
+                        [&_entities](EntityId _id)
+                        {
+                          const auto ship = std::ranges::find(_entities, _id, &EntityView::id);
+                          return ship != _entities.end() && ship->kind == EntityKind::Ship && ship->role == ShipRole::Constructor;
+                        });
+  const bool hasLab = std::ranges::any_of(_entities,
+                                          [&_newest](const EntityView& _entity) {
+                                            return _entity.kind == EntityKind::Structure &&
+                                                   _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
+                                          });
+  const bool capReached = AtNodeCap(_newest.sectors, _newest.entities, _newest.player, _newest.nodeCap);
+  // Every structure Constructors build (Game §structures.building), one Research Lab a player, each dim without a Constructor
+  // to build it, so that the window keeps its size as the selection changes.
+  BuildPanel panel;
+  panel.structures.reserve(_newest.structureTypes.size());
+  for (const StructureTypeView& type : _newest.structureTypes)
+  {
+    if (!IsOffered(_newest, type))
+      continue;
+    const bool secondLab = type.structure == StructureKind::ResearchLab && hasLab;
+    // A Relay past the Command Station's cap waits for the station's next level (ADR-056 decision 11).
+    const bool capped = type.structure == StructureKind::Relay && capReached;
+    panel.structures.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
+                                .action = {.kind = ActionKind::Build, .structure = type.structure},
+                                .enabled = constructors && !secondLab && !capped && _newest.ore >= type.cost,
+                                .note = !constructors ? std::string("NO CONSTRUCTOR")
+                                        : secondLab   ? std::string("ONE PER PLAYER")
+                                        : capped      ? std::string("NODE CAP")
+                                                      : std::string()});
+  }
+  return panel;
 }
 
 Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const EntityView* _producer)
@@ -3206,6 +3265,11 @@ bool Hud::WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::u
   if (_newest == nullptr)
     return true;
   if (!fits(ORDERS_WINDOW_WIDTH, ORDERS_WINDOW_HEIGHT) || !fits(AWAY_WINDOW_WIDTH, AwayHeight(AWAY_LINES)))
+    return false;
+  // The build window with every structure the match offers (ADR-031 decision 6).
+  const auto structures = static_cast<std::size_t>(
+    std::ranges::count_if(_newest->structureTypes, [_newest](const StructureTypeView& _type) { return IsOffered(*_newest, _type); }));
+  if (!fits(BUILD_WINDOW_WIDTH, BuildHeight(structures)))
     return false;
   // The designer with every component of the match, locked or not, as tall as it grows.
   Designer designer;
@@ -3799,7 +3863,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // The floating windows (ADR-031), over everything else, back to front: those the manager has open, where it left them,
   // or, without a manager, every window the content has at its default place.
   std::vector<WindowKind> backToFront{WindowKind::Production, WindowKind::Research, WindowKind::Designer, WindowKind::Controls,
-                                      WindowKind::Orders,     WindowKind::Away,     WindowKind::Leave};
+                                      WindowKind::Orders,     WindowKind::Away,     WindowKind::Leave,    WindowKind::Build};
   if (_windows != nullptr)
     backToFront.assign(_windows->FrontToBack().rbegin(), _windows->FrontToBack().rend());
   const auto place = [&](WindowKind _kind, WindowManager::Point _default, float _widthUnits)
@@ -3857,6 +3921,12 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       const WindowManager::Point middle{.xUnits = (screenWidthUnits - LEAVE_WINDOW_WIDTH) / 2.0f,
                                         .yUnits = std::max(MARGIN, (screenHeightUnits - LeaveHeight()) / 2.0f)};
       LayLeave(layout, _metrics, place(kind, middle, LEAVE_WINDOW_WIDTH), scale, _hovered);
+    }
+    // The build window, at first at the bottom right (ADR-031 decision 2).
+    else if (kind == WindowKind::Build && _content.build.has_value())
+    {
+      const WindowManager::Point corner = BuildCorner(BuildHeight(_content.build->structures.size()), screenWidthUnits, screenHeightUnits);
+      LayBuild(layout, _metrics, *_content.build, place(kind, corner, BUILD_WINDOW_WIDTH), scale, _hovered);
     }
   }
   return layout;

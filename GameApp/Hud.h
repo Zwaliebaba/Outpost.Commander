@@ -11,11 +11,13 @@ enum class Difficulty : std::uint8_t
 };
 
 // The HUD (Game §interface.hud): the Ore stockpile and income, a panel describing the selection with a
-// structure's construction, the buttons that build structures and open a structure's windows, and the minimap. It is
+// structure's construction, the buttons that give orders and open the build window and a structure's windows, and the
+// minimap. It is
 // laid out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer
 // by one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
 // the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore (ADR-017 decision 9). Over
-// it float the designer, the production queue and the research as windows (ADR-031; Game §interface.windows). The main
+// it float the designer, the production queue, the research and the build window as windows (ADR-031; Game
+// §interface.windows). The main
 // menu, and the banner that says how a match ended, are laid out the same way (ADR-020 decisions 9 and 10).
 class Hud
 {
@@ -96,7 +98,7 @@ public:
   {
     // Arms placing a structure for the selected Constructors.
     Build,
-    // Opens the selected Constructors' structures, folded into one button once the selection was given an order (ADR-088).
+    // Opens and closes the build window, of the structures the selected Constructors build (ADR-031 decision 6).
     OpenBuild,
     // Queues a job at a Shipyard or the Command Station.
     Queue,
@@ -567,6 +569,13 @@ public:
     std::vector<std::string> lines;
   };
 
+  // The build window (ADR-031 decision 6): a button for each structure the selected Constructors build, with its cost, or
+  // why it cannot be built in its cost's place (ADR-043 decision 4), NO CONSTRUCTOR among them while none is selected.
+  struct BuildPanel
+  {
+    std::vector<Button> structures;
+  };
+
   // The away window's lines at most: built, lost, gained and lost sectors, and every order its report keeps.
   static constexpr std::size_t AWAY_LINES = 4 + AwayReport::REPORTED_ORDERS;
 
@@ -640,6 +649,8 @@ public:
     // The orders window's content and the away window's, while they are open (ADR-080 decision 9); GameClient fills them.
     std::optional<OrdersPanel> orders;
     std::optional<AwayPanel> away;
+    // The build window's content, while it is open; GameClient fills it (DescribeBuild).
+    std::optional<BuildPanel> build;
     // Whether the leave window is open, in a universe (ADR-078 decision 11).
     bool leave = false;
     // No minimap when the map's size is not known.
@@ -811,15 +822,20 @@ public:
   // _hovered is the button under the pointer, and a part's previews the design it would make.
   // _ticksPerSecond is the server's rate, which tells how long ago a remembered structure was last seen; with none, its
   // age is not told. _armed is the order the controls have armed for the next left-click, AttackMove, HoldSector or
-  // Patrol, whose button is lit (ADR-088 decision 2). With _buildFolded, the Constructors' structures are one
-  // Build button (ADR-088).
+  // Patrol, whose button is lit (ADR-088 decision 2). A selection that holds a Constructor offers one Build button, which
+  // opens the build window (ADR-031 decision 6).
   // Each player's color, from the set _catalog draws it with.
   [[nodiscard]] static std::vector<SideColor> SideColorsOf(const ModelCatalog& _catalog);
 
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
                                         std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0,
-                                        std::optional<ActionKind> _armed = std::nullopt, bool _buildFolded = false);
+                                        std::optional<ActionKind> _armed = std::nullopt);
+
+  // The build window's content: a button for each structure the player's Constructors build, enabled while _selected among
+  // _entities holds a Constructor and the structure can be built (ADR-031 decision 6).
+  [[nodiscard]] static BuildPanel DescribeBuild(const Snapshot& _newest, std::span<const EntityView> _entities,
+                                                std::span<const EntityId> _selected);
 
   // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
   // (Game §interface.windows.production).

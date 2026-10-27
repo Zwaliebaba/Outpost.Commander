@@ -941,7 +941,7 @@ A player commands its ships by orders, and only by orders. An order is given to 
 ### Constructors' orders [§orders.constructors]
 
 - **A Constructor attacks nothing.** It takes part in moves and attack-moves, and in no attack, standing order or scheduled order other than a rig's (ADR-016 decision 9; ADR-059 decision 3; ADR-080 decision 4).
-- **Build:** a build button arms a placement while the selection holds a Constructor. The next left-click on the ground orders the selected Constructors to build there, and Shift keeps the placement armed for another. Right-click or Esc cancels it. The ghost that follows the pointer is green where the structure may stand and red where not, and a Mining Rig snaps to its asteroid, which must be one the player has seen (ADR-013 decision 5; ADR-046 decision 8). Once the selection has been given an order, its build buttons are folded into one Build button, which opens them again (ADR-088 decision 2; Game §interface.hud.buttons). What may stand where, and what it costs, are Game §structures.
+- **Build:** a structure's button in the build window arms a placement while the selection holds a Constructor (Game §interface.windows.build). The next left-click on the ground orders the selected Constructors to build there, and Shift keeps the placement armed for another. Right-click or Esc cancels it. The ghost that follows the pointer is green where the structure may stand and red where not, and a Mining Rig snaps to its asteroid, which must be one the player has seen (ADR-013 decision 5; ADR-046 decision 8). What may stand where, and what it costs, are Game §structures.
 - **Build and repair:** a right-click on one of the player's own ships or structures that is unfinished or damaged sends the selected Constructors to work on it until it is built and whole, or destroyed. Further Constructors join a site the same way (ADR-016 decision 5; Game §structures.sites).
 - **Salvage:** a right-click on a derelict the player sees or remembers sends the selected Constructors to salvage it (ADR-074 decisions 4 and 10; Game §neutrals.salvage).
 
@@ -1418,8 +1418,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 - **The buttons' panel stands against the selection panel's right edge,** bottom-aligned, and the pair is centered at the bottom so that the two read as one. It moves right only where it would meet the minimap; with no selection beside it, it stands alone at the middle (ADR-088 decision 2).
 - **A selection with a warship offers its orders first:** Attack-move, Hold sector, Patrol and Stop, Hold sector only on a map with sectors. The order armed for the next left-click is lit as a pick until it is given or canceled (ADR-088 decision 2; Game §orders.direct).
-- **A selection with a Constructor offers a button for each structure it builds,** with its cost; the Relay only on a map with sectors. The Research Lab's is dim with ONE PER PLAYER once the player has one, and the Relay's with NODE CAP at the Command Station's cap (ADR-043 decision 4; ADR-056 decision 11; Game §orders.constructors).
-- **An order folds the Constructors' build buttons into one Build button** (owner, 2026-10-25), since a structure is picked once for each order, where a warship's orders are given again and again to the same ships. Any order given to the selected ships folds them: a placement, a move from the world or the minimap, an attack, a repair or build, a salvage, an attack-move, a hold, a patrol, a stop or a scheduled order. A placement with Shift keeps them open, as it keeps the placement armed; setting the retreat and canceling a placement fold nothing. Build opens them again, and so does selecting again, the same ships included. The selection stays, and the warships' orders and the retreat stand as they were. Build has no key (ADR-088 decision 2).
+- **A selection with a Constructor offers one Build button,** a mixed one included, with B's cap, which opens and closes the build window; the structures stand in that window, never among these buttons (ADR-088 decision 2; Game §interface.windows.build).
 - **The player's own finished structure offers its windows:** Production on the Command Station and on a Shipyard, Ship designer on a Shipyard, and Research on the Research Lab, and its Upgrade when it grows (ADR-031 decision 6; ADR-064 decision 7).
 - **A selection of ships ends with its retreat,** a row of three under the buttons (ADR-088 decision 3; Game §orders.retreat.threshold).
 
@@ -1494,14 +1493,14 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 #### How a window behaves [§interface.windows.behavior]
 
-- **The designer, the production window, the research window, the Controls window, the orders window, the away window and the leave window float over the HUD** (ADR-031 decision 6). The HUD stays put under them (ADR-043 decision 1).
-- **D, P, R, F1 and O open and close the designer, production, research, Controls and orders windows** in a match, and the buttons on a structure's panel open its windows. The away window opens by itself when the report of a time away arrives, and Esc opens the leave window in a universe (ADR-031 decision 6; Game §universe.away; Game §interface.windows.leave).
+- **The designer, the production window, the research window, the Controls window, the orders window, the away window, the leave window and the build window float over the HUD** (ADR-031 decision 6). The HUD stays put under them (ADR-043 decision 1).
+- **D, P, R, F1, O and B open and close the designer, production, research, Controls, orders and build windows** in a match, and the buttons on a structure's panel open its windows, as Build does the build window. The away window opens by itself when the report of a time away arrives, and Esc opens the leave window in a universe (ADR-031 decision 6; Game §universe.away; Game §interface.windows.leave).
 - **A window that shows a structure opens on the one selected.** Selecting another Shipyard while the designer is open makes it the designer's target, and selecting another producer while the production window is open shows it there (ADR-031 decision 6).
 - **A window is dragged by its title bar** and kept on the screen: its whole title bar, and 120 units of its width. A smaller screen moves it back as well (ADR-031 decision 2).
-- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further. With no window open, Esc reaches the controls, and in a universe, with nothing armed, opens the leave window; while the designer's name takes typing, the designer has Esc first (ADR-031 decision 5; ADR-017 decision 8).
+- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further, unless a structure is being placed, which Esc cancels first. With no window open, Esc reaches the controls, and in a universe, with nothing armed, opens the leave window; while the designer's name takes typing, the designer has Esc first (ADR-031 decision 5; ADR-017 decision 8).
 - **Several windows can be open at once,** each drawn whole over the ones behind it (ADR-031 decision 4).
 - **A window opens where it was left,** in this session and the next: closing and opening it, starting another match or starting the game again puts it back there. It is kept from the corner of the screen nearest it, so that a window left against an edge stays against it on another screen and at another scale. Leaving a match closes every window, and the game starts with every window closed (ADR-031 decisions 1 and 2; ADR-099 decisions 1 and 6).
-- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls, away and leave windows in the middle of the screen (ADR-031 decision 2; ADR-062 decision 6).
+- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls, away and leave windows in the middle of the screen; the build window at the bottom right, over the selection and its buttons where they leave it no room beside them (ADR-031 decision 2; ADR-062 decision 6).
 - **A window has the size its content gives it;** none is resized, docked or minimized (ADR-031).
 
 #### The production window [§interface.windows.production]
@@ -1537,6 +1536,13 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 - **O opens the orders window,** which lists the seat's scheduled orders and gives the selection a new one; it is Game §orders.scheduled.window (ADR-080 decision 9).
 - **The away window opens by itself when the report of a time away arrives,** and closing it drops the report; it is Game §universe.away (ADR-080 decision 9).
+
+#### The build window [§interface.windows.build]
+
+- **B and the Build button open and close it, and it never opens by itself** (owner, 2026-10-27; ADR-031 decision 6).
+- **It holds a button for each structure the Constructors build,** with its cost; the Relay only on a map with sectors. The Research Lab's is dim with ONE PER PLAYER once the player has one, and the Relay's with NODE CAP at the Command Station's cap. With no Constructor selected, every one is dim and says NO CONSTRUCTOR, and the window keeps its size (ADR-031 decision 6; ADR-043 decision 4; ADR-056 decision 11; Game §orders.constructors).
+- **Picking a structure arms its placement and leaves the window open,** so that another can be picked once it is placed. Esc cancels the placement before it closes any window (ADR-031 decisions 5 and 6).
+- **It first opens at the bottom right,** beside the selection and its buttons where they leave it room at their widest, and over them, its foot a gap above the minimap's top, where they do not, as from 110% on a 16:9 screen (ADR-031 decision 2).
 
 #### The leave window [§interface.windows.leave]
 
