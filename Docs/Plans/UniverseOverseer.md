@@ -55,8 +55,7 @@ The tick split by part over the hour (Server.h's `TickPart`); the longest tick o
 
 | State | When | What it says |
 |---|---|---|
-| Running | `Health` arrives and the tick moves | universe time, uptime, the last save |
-| Recovering | the server replays its command log (ADR-077 decision 8) | the save it came back from, and the commands replayed of those logged |
+| Running | `Health` arrives and the tick moves | universe time, uptime, the last save, and what the server came back from as it started: a new universe, or a save's tick and the commands replayed of those logged (ADR-077 decision 8). It replays them before its listeners exist, so that no state says it is recovering: meanwhile it reads as No word (owner, 2026-10-27) |
 | Stalled | `Health` arrives, and the tick has not moved for 2 s | since when, and how much wall time has gone unrun: the server's thread may be stuck |
 | No word | no `Health` for 3 s, or the link is gone | the last word's time and tick; the overseer joins again every 2 s; everything shown is as it was then |
 | Stopped | `Closing` said the owner or Windows stopped it | when, and the tick of its last save |
