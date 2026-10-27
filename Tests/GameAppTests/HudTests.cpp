@@ -210,9 +210,11 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
                                               .enemy = Outpost::PlayerId{2}};
   content.sideColors = SideColors();
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
-  // The tag at its widest: the longest address the tag holds, and the warning at its most seconds (ADR-086).
-  content.connection =
-    Outpost::Hud::Connection{.server = Outpost::Hud::ServerName("2001:db8:ffff:ffff:ffff:ffff:ffff:ffff", 65535), .silentSeconds = 999};
+  // The tag at its widest: the longest address the tag holds, its round trip at its most, and the warning at its most seconds
+  // (ADR-086).
+  content.connection = Outpost::Hud::Connection{.server = Outpost::Hud::ServerName("2001:db8:ffff:ffff:ffff:ffff:ffff:ffff", 65535),
+                                                .silentSeconds = 999,
+                                                .roundTripMilliseconds = 999};
   content.buttons = {{.label = "Shipyard|300"},
                      {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
                      {.label = "Production", .key = "P"},
@@ -830,7 +832,33 @@ public:
     }
     Assert::IsTrue(std::ranges::all_of(widths, [&](float _width) { return _width == widths.front(); }), L"its edge stands still");
 
-    // An address too long for the tag is cut short, and the tag stays in bounds.
+    // A lost connection joined again (ADR-078 decision 10): the chip says so in the silence's place, at its widest at 30 s,
+    // and the tag keeps its width.
+    content.connection->reconnectingSeconds = 30;
+    const Outpost::Hud::Layout rejoining = Lay(content, 1920, 1080);
+    Assert::IsTrue(IsChip(rejoining, TextOf(rejoining, "Reconnecting \xC2\xB7 30 s")), L"a chip");
+    Assert::IsFalse(std::ranges::any_of(rejoining.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("No word"); }),
+                    L"in the silence's place");
+    Assert::AreEqual(widths.front(), tagOf(rejoining, TextOf(rejoining, "Server 203.0.113.5:4433")).width, L"the tag keeps its width");
+    content.connection->reconnectingSeconds.reset();
+
+    // A universe's round trip follows the address, and the tag is as wide at 42 ms as at 999, and at more, written as 999.
+    content.connection = Outpost::Hud::Connection{.server = Outpost::Hud::ServerName("203.0.113.5", 4433)};
+    std::vector<float> roundTripWidths;
+    for (const std::int32_t milliseconds : {42, 999, 5000})
+    {
+      content.connection->roundTripMilliseconds = milliseconds;
+      const Outpost::Hud::Layout timed = Lay(content, 1920, 1080);
+      const Outpost::Hud::Text& tagged = TextOf(timed, std::format("Server 203.0.113.5:4433 \xC2\xB7 {} ms", std::min(milliseconds, 999)));
+      const Outpost::Hud::Rect tag = tagOf(timed, tagged);
+      Assert::AreEqual(1920.0f - 16.0f, tag.left + tag.width);
+      Assert::IsTrue(tag.width > serverTag.width, L"wider than the address alone");
+      roundTripWidths.push_back(tag.width);
+    }
+    Assert::IsTrue(std::ranges::all_of(roundTripWidths, [&](float _width) { return _width == roundTripWidths.front(); }),
+                   L"its edge stands still as the round trip changes");
+
+    // An address too long for the tag is cut short, and the tag stays in bounds, the round trip after it.
     content.connection = Outpost::Hud::Connection{.server = Outpost::Hud::ServerName(std::string(80, 'h'), 4433)};
     const Outpost::Hud::Layout longest = Lay(content, 1920, 1080);
     const auto cut =
@@ -838,6 +866,12 @@ public:
     Assert::IsTrue(cut != longest.texts.end());
     Assert::IsTrue(cut->text.size() < 80, L"cut short");
     Assert::IsTrue(tagOf(longest, *cut).width <= 360.0f + (2.0f * 12.0f));
+    content.connection->roundTripMilliseconds = 999;
+    const Outpost::Hud::Layout longestTimed = Lay(content, 1920, 1080);
+    const auto cutTimed =
+      std::ranges::find_if(longestTimed.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("Server h"); });
+    Assert::IsTrue(cutTimed != longestTimed.texts.end() && cutTimed->text.ends_with("\xC2\xB7 999 ms"), L"the round trip kept whole");
+    Assert::IsTrue(tagOf(longestTimed, *cutTimed).width <= 360.0f + (2.0f * 12.0f), L"and the tag no wider");
   }
 
   // ADR-086: a server's address is its host and port, an IPv6 host in brackets so that its port reads apart.

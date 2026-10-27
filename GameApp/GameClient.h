@@ -71,6 +71,17 @@ public:
   // (ADR-078).
   void ShowMenu(std::string _notice = {});
 
+  // Gives the tag of a match on a dedicated server the connection's smoothed round trip, as QuicChannel reads it, which the
+  // shell does once a second; none until it is above nothing (ADR-086 decision 1).
+  void ShowRoundTrip(std::uint64_t _microseconds) noexcept;
+
+  // Says on the tag that the lost connection to a universe is being joined again, _seconds after it was lost, or no longer
+  // with none (ADR-078 decision 10). The match stays on the screen meanwhile.
+  void ShowReconnecting(std::optional<std::int32_t> _seconds) noexcept
+  {
+    m_reconnectingSeconds = _seconds;
+  }
+
   // Shows the main menu while a join connects to _server, Hud::ServerName's: it says so, and offers only Quit, until
   // StartMatch or ShowMenu (ADR-078 decision 9).
   void ShowConnecting(std::string _server);
@@ -271,9 +282,11 @@ private:
   bool m_offerUniverse = false;
   // The server a join connects to, while it does.
   std::string m_connecting;
-  // Where the match runs, and how long since its last snapshot came, for the HUD's tag (ADR-086).
+  // Where the match runs, how long since its last snapshot came, and its connection's round trip, for the HUD's tag (ADR-086).
   std::string m_server;
   float m_silentSeconds = 0.0f;
+  std::optional<std::int32_t> m_roundTripMilliseconds;
+  std::optional<std::int32_t> m_reconnectingSeconds;
   Difficulty m_difficulty = Difficulty::Normal;
   std::uint32_t m_ticksPerSecond = 0;
   ModelCatalog m_catalog;

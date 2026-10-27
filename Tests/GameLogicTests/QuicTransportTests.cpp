@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "ImpairedLink.h"
 #include "RepositoryData.h"
 #include "UniverseMatch.h"
 
@@ -271,6 +272,72 @@ public:
     guessed.token.back() ^= 0x80;
     Assert::ExpectException<Neuron::Exception>([&guessed] { Outpost::QuicTransport refused(guessed, BLUE); }, L"but not without its token");
     Assert::IsTrue(!SnapshotsOf(second, 1).empty(), L"and a refused one takes nothing from it");
+  }
+
+  // ADR-078 decision 10: a universe's client whose link has carried nothing for 10 s joins again with its seat's address and
+  // token and takes its seat back, and the server closes the connection it took it from with SeatTaken. A connection the
+  // server closed as SeatTaken, SeatRefused or WrongVersion is not joined again, and one that went any other way is.
+  TEST_METHOD(TakesItsSeatAgainAfterItsLinkWent)
+  {
+    const TemporaryFolder folder;
+    auto server = UniverseServer(folder.Path());
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    (void)server->OpenSeat(RED, Outpost::NewSeatToken());
+    server->Start();
+    ImpairedLink link(seat.port, CLEAR_LINK, 1);
+    Outpost::QuicTransport first(link.Through(seat), BLUE);
+    Assert::IsFalse(SnapshotsOf(first, 3).empty(), L"the seat taken through the link");
+
+    // What crossed before the cut is taken, and then nothing comes for 10 s.
+    link.Cut(true);
+    std::this_thread::sleep_for(100ms);
+    (void)first.Receive();
+    std::this_thread::sleep_for(10s);
+    Assert::IsTrue(first.Receive().empty(), L"nothing for 10 s");
+    // A relay carries one client, so the join comes through a link of its own; the first link carries again, so that the
+    // server's close reaches the connection the seat was taken from.
+    const ImpairedLink rejoined(seat.port, CLEAR_LINK, 2);
+    Outpost::QuicTransport again(rejoined.Through(seat), BLUE);
+    link.Cut(false);
+    const std::vector<Outpost::Snapshot> snapshots = SnapshotsOf(again, 3);
+    Assert::IsTrue(snapshots.size() >= 3 && snapshots.back().player == BLUE, L"the seat taken again");
+
+    std::string why;
+    bool mayJoinAgain = true;
+    const auto deadline = std::chrono::steady_clock::now() + 30s;
+    while (why.empty() && std::chrono::steady_clock::now() < deadline)
+    {
+      try
+      {
+        (void)first.Receive();
+        std::this_thread::sleep_for(10ms);
+      }
+      catch (const Neuron::Exception& error)
+      {
+        why = error.what();
+        mayJoinAgain = Outpost::MayJoinAgain(error);
+      }
+    }
+    Assert::AreEqual(std::string(Outpost::DescribeClose(static_cast<std::uint64_t>(Outpost::CloseReason::SeatTaken)).value_or("")), why,
+                     L"the connection it was taken from is told so");
+    Assert::IsFalse(mayJoinAgain, L"and does not join again");
+
+    for (const Outpost::CloseReason reason : {Outpost::CloseReason::Finished, Outpost::CloseReason::WrongVersion,
+                                              Outpost::CloseReason::SeatRefused, Outpost::CloseReason::SeatTaken})
+      Assert::IsFalse(Outpost::MayJoinAgain(Outpost::ServerClosed(reason, "closed")));
+    Assert::IsTrue(Outpost::MayJoinAgain(Outpost::ServerClosed(Outpost::CloseReason::MalformedMessage, "closed")));
+    Assert::IsTrue(Outpost::MayJoinAgain(Neuron::Exception("The QUIC connection went.")), L"a link that went");
+    Outpost::ServerAddress guessed = seat;
+    guessed.token[0] ^= 0x01;
+    try
+    {
+      Outpost::QuicTransport refused(guessed, BLUE);
+      Assert::Fail(L"another token is refused");
+    }
+    catch (const Neuron::Exception& error)
+    {
+      Assert::IsFalse(Outpost::MayJoinAgain(error), L"and a refused join is not tried again");
+    }
   }
 
   // ADR-079 decision 4: a seat's deputy plays it until its player takes it, watches while the player plays,

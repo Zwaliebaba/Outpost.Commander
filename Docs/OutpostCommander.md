@@ -101,9 +101,10 @@ A session is everything between starting the game and closing it: the menu, a sk
 - **A seat is taken with its token, at any time while the universe runs** (ADR-078 decisions 3 and 4). The first snapshot after the seat is taken shows everything the player sees and remembers; the shots and destructions of the ticks it missed are not shown (ADR-078 decision 4).
 - **The ground explored before is the game's own record and starts afresh:** everything out of sight is drawn as never seen until it is seen again (Game §sight.memory).
 - **A join that fails goes back to the menu, saying why,** after "Could not join the universe:": a join file that cannot be read, a server that cannot be reached, within 3 s at launch and 10 s otherwise, or never seats the player, "The server refused the seat: it is not open there, or the join file's token is not the seat's." for a wrong token, and "The server runs another build of the game." for a game of another build (ADR-078 decisions 3 and 10; ADR-060 decision 5; ADR-086 decision 1).
-- **A connection lost in play takes the player back to the menu, saying why,** after "The connection to the server was lost:", in the server's own words when the server closed it (ADR-078 decision 10).
+- **A connection lost in play is joined again,** with the same join file, at once and then every 2 s for up to 30 s, while the match stays on the screen and the tag says "Reconnecting", counting the seconds; and so is one that has brought nothing for 10 s. Orders given meanwhile go nowhere (ADR-078 decision 10).
+- **A connection the server closed itself, or not joined again in 30 s, takes the player back to the menu, saying why,** after "The connection to the server was lost:", in the server's own words when the server closed it (ADR-078 decision 10).
 - **The newest connection holds the seat.** A second game that joins with the same join file takes the seat, and the first goes back to the menu with "The seat was taken by another connection with its token." (ADR-078 decisions 4 and 10).
-- **A tag in the top-right corner names the server,** "Server" and its host and port as the join file names them, an IPv6 host in brackets. Once no snapshot has come for 2 s it warns, "No word from the server", counting the seconds (ADR-086 decisions 1 and 2).
+- **A tag in the top-right corner names the server,** "Server" and its host and port as the join file names them, an IPv6 host in brackets. Once no snapshot has come for 2 s it warns, "No word from the server", counting the seconds, and "Reconnecting" while a lost connection is joined again (ADR-086 decisions 1 and 2).
 - **The way back to the menu from a universe is Esc, at any time:** with no window open and nothing armed, Esc opens the leave window, "Leave for the menu?", whose Leave universe goes back to the menu and whose Stay closes it. The connection closes at once, and the deputy takes the seat a minute later (ADR-078 decision 11; Game §universe.handover). Once the player's empire has fallen the banner offers the way back too (ADR-084 decision 7; Game §universe.restart). Closing the game leaves the seat to its deputy (Game §universe.handover).
 
 ### Runs without a player [§session.instruments]
@@ -1432,6 +1433,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 #### The tag [§interface.hud.tag]
 
 - **The tag in the top-right corner says where the match runs,** as Game §session.skirmish and Game §session.join have it. It is as wide as its words, 16 units in from the screen's right edge; an address too long for it is cut short, and while it warns it is as wide as its widest warning, so its edge stands still as the seconds count (ADR-086 decisions 1 and 2).
+- **A universe's tag gives the connection's round trip** after the address, "Server 203.0.113.5:4433 · 42 ms", taken once a second, up to 999 ms, and as wide as its widest whatever it reads (ADR-086 decision 1).
 - **It takes no click, and the designer covers it** while it is open (ADR-086 decisions 1 and 3).
 
 ### The minimap [§interface.minimap]
@@ -1450,6 +1452,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 - **The selection is a ring round each selected ship or structure,** 1.3 times its footprint, 3 reference units wide at any zoom at the screen's own scale: green, or amber while attack-move or a standing order waits for its click (ADR-067 decisions 1 and 2). A Mining Rig's selection ring is its asteroid's, since a click anywhere on the rock selects the rig (ADR-042 decision 4).
 - **A drag box is its outline on the ground,** covering the ground the box on the screen covers (ADR-013 decision 5).
+- **An order is marked as it is given:** a move's, an attack-move's, a hold's or a patrol's point, or an attack's target, by a ring as wide as the selection's in its color that shrinks to nothing over 0.4 s, and turns the warning's color if the server refuses the order before it has gone (ADR-097 decisions 1 to 3).
 - **Every structure stands on a faint ring,** a line a pixel wide at 1.3 times its footprint in its side's color, which puts it on the ground and says its size (ADR-042 decision 1).
   - **The ring is for the far view.** It is at its resting strength, faint in its side's color, while its radius is at most 3% of the view's width, and gone from 6.5%, so up close the bases are not ringed (ADR-042 decision 1).
   - **It is at full strength, in its side's ship-line color, a little stronger in hue than the structure's own lines, under the pointer and under every structure while one is placed** (ADR-042 decision 2).

@@ -9,6 +9,16 @@ namespace
 constexpr std::chrono::milliseconds WELCOME_TIMEOUT{10'000};
 } // namespace
 
+bool Outpost::MayJoinAgain(const std::exception& _error) noexcept
+{
+  const auto* closed = dynamic_cast<const ServerClosed*>(&_error);
+  if (closed == nullptr)
+    return true;
+  const CloseReason reason = closed->Reason();
+  return reason != CloseReason::Finished && reason != CloseReason::WrongVersion && reason != CloseReason::SeatRefused &&
+         reason != CloseReason::SeatTaken;
+}
+
 Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _player, std::chrono::milliseconds _connectTimeout)
   : m_channel(Neuron::QuicChannel::Connect({.host = _address.host,
                                             .port = _address.port,
@@ -113,8 +123,8 @@ std::vector<std::vector<std::byte>> Outpost::QuicTransport::ReceiveFromChannel(s
     // The server's own reason, when it closed the connection with one.
     const std::optional<std::uint64_t> code = m_channel->PeerErrorCode();
     const std::optional<std::string_view> reason = code.has_value() ? DescribeClose(*code) : std::nullopt;
-    if (!reason.has_value())
+    if (!code.has_value() || !reason.has_value())
       throw;
-    throw Neuron::Exception(std::string(*reason));
+    throw ServerClosed(static_cast<CloseReason>(*code), std::string(*reason));
   }
 }
