@@ -31,7 +31,7 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 | SP1.2 | The search over the AI's numbers | SP1.1 | — | done, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
 | SP1.3 | The first search, and what it found | SP1.2, SP1.5 | — | todo: owner run |
 | SP1.4 | The search follows Phase 3 | SP1.2, Phase 3's AI | — | done, [#80](https://github.com/Zwaliebaba/Outpost.Commander/pull/80) |
-| SP1.5 | Knobs for Phase 4's AI numbers | SP1.4 | — | in review |
+| SP1.5 | Knobs for Phase 4's AI numbers | SP1.4 | — | in review, [#150](https://github.com/Zwaliebaba/Outpost.Commander/pull/150) |
 | SP2.1 | The network's shape, as an ADR | SP1.3 | S1, N1–N6 | todo |
 | SP2.2 | The network plays | SP2.1, Phase 3 built | — | todo |
 | SP2.3 | Trajectories, the warm start and the trainer | SP2.2 | — | todo |
