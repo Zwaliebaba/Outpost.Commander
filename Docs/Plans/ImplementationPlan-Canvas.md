@@ -1,6 +1,6 @@
 # Outpost Commander — Canvas Plan: One Toolkit for the Interface
 
-Status: **draft, proposed** · 2026-10-27 · gates C1–C7 decided by the owner that day · From the owner's request of 2026-10-27 for a generic canvas layer that gives the game its windows, buttons, drop-downs and other components, and a review of the interface's code made that day against `main` at `94d6aa0`
+Status: **open** · accepted by the owner on 2026-10-27, with gates C1–C7 decided that day · From the owner's request of 2026-10-27 for a generic canvas layer that gives the game its windows, buttons, drop-downs and other components, and a review of the interface's code made that day against `main` at `94d6aa0`
 
 The interface is drawn well and tested well, and costs too much to add to. Every window is placed by hand in reference units, works out its own size apart from its layout, and threads hover and focus through its parameters. This plan puts a canvas under the interface: a layout that measures, interaction that every widget shares, and a set of widgets in the windows' look. The windows and the HUD are then moved onto it one at a time, each without changing what the screen shows. Before the canvas, window places start to last across restarts and the Constructors' build buttons become a window of their own; after it, the designer scrolls and the orders form takes drop-downs.
 
