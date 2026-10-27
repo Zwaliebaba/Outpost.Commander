@@ -16,10 +16,10 @@ Every window of the interface is placed by hand: `Hud.cpp` sets each row a numbe
    - **What the game keeps:** `Hud::Layout` is a display list and what the game keeps beside it. That is the actions and previews that its regions' payloads index, the minimap's square and how it maps the map, its windows, and the bars over the entities. `Hud::FontOf` and `Hud::SpriteOf` give a typeface's and a sprite's index. `GameClient` fills the image from the fog's texture ([ADR-052](ADR-052-fog-texture.md)).
 2. **A layout measures, then places** (`Neuron::LayoutTree`), recorded afresh each frame.
    - **Nodes:** a box, which is a spacer when it grows; a column, a row, a grid of a number of columns, or a stack, each over the others; and a text. The root is the screen.
-   - **Style:** each node has a size given, or a size measured from what it holds and its padding, held between its least and its most. It also has a gap, an alignment across and down, a share of the room left along its parent's axis (`grow`), and an anchor to a corner, an edge's middle or the middle, inset by a margin. An anchored node takes no room in its parent.
+   - **Style:** each node has a size given, or a size measured from what it holds and its padding, held between its least and its most. It also has a gap, an alignment across and down, a share of the room left along its parent's axis (`grow`), and an anchor to a corner, an edge's middle or the middle, inset by a margin. An anchored node takes no room in its parent. One larger than its parent's content box less its margin, across or down, stands at that box's start that way, so that its top-left corner, where a window's title bar is, stays in the box.
    - **Measuring and placing:** `Arrange` measures widths from the leaves up and gives them out from the root down. It then measures heights from the leaves up and places from the root down, so that a text wraps to the width it is given and its parent is as tall as its lines.
    - **Sharing room:** room left or lacked along a column or a row is shared in proportion among what grows. A node held at its least or its most keeps that, and what it could not take is shared again.
-   - **Text:** a text is set as one line, as one line cut short with three dots, or wrapped ([ADR-061](ADR-061-measured-text.md) decision 3). One cut short within a most is as wide as it is then set, so that what follows it stands after its dots.
+   - **Text:** a text is set as one line, as one line cut short with three dots, or wrapped ([ADR-061](ADR-061-measured-text.md) decision 3). One cut short within a most is as wide as it is then set, so that what follows it stands after its dots. A text of nothing, or of which nothing fits, is still a line tall, so that what follows it keeps its place.
    - **The measure:** `Neuron::TextMetrics` measures, cuts and wraps a line as `UiPipeline::DrawText` sets it ([ADR-061](ADR-061-measured-text.md) decision 1), naming a font by its index. `Hud::TextMetrics` is the same measure named by the game's typefaces.
    - **Units:** sizes are reference units, and become pixels as they are drawn, times the scale. A tree measured at another scale, with fonts rasterized at it, stands where it stood in units ([ADR-070](ADR-070-interface-scale.md)).
 3. **What every widget shares is one interaction state** (`Neuron::Interaction`).
@@ -44,10 +44,10 @@ Every window of the interface is placed by hand: `Hud.cpp` sets each row a numbe
    - the warning;
    - a bar's track and its fill.
 
-   It also holds which font a title, a name, a label and a figure take, the corner's and the tick's sprites, and the sizes and gaps the widgets are drawn with, in reference units. The game fills it with its own values.
+   It also holds which font a window's title, its close box's mark, a name, a label and a figure take, the title's color, where it and the mark stand and how far the title is tracked, the corner's and the tick's sprites, and the sizes and gaps the widgets are drawn with, in reference units. The game fills it with its own values (`GameTheme`): a window's title is its header in the label face at the body's inset, as each window drew its own.
 6. **The widgets draw into the display list what the HUD's helpers draw for the same thing** (`Neuron::Canvas`). Each is a node of the layout and what it draws there. The build records them in the order they are drawn, the HUD's first and then each window back to front. `Finish` arranges the layout and draws what was recorded.
    - **The widgets:**
-     - a window (`BeginWindow`), a layer of its own with its frame, hatched title bar, title, close box and its mark, and a bracket at each corner, as `OpenWindow` draws them ([ADR-031](ADR-031-floating-windows.md) decision 3). Its title bar and its close box are regions that name nothing for the caller to do (`NO_PAYLOAD`), by which a press drags or closes it;
+     - a window (`BeginWindow`), a layer of its own with its frame, hatched title bar, close box and its mark, title, and a bracket at each corner, as `OpenWindow` draws them ([ADR-031](ADR-031-floating-windows.md) decision 3). It stands with its top-left corner at a place, or, until it is moved, at an anchor of the screen less a margin (decision 2), and its body stretches across it. Its title bar and its close box are regions that name nothing for the caller to do (`NO_PAYLOAD`), by which a press drags or closes it;
      - a panel of the HUD (`BeginPanel`), a body and its corners, as `Frame` draws it ([ADR-043](ADR-043-hud-in-the-windows-look.md) decision 1);
      - a label, line by line;
      - a button, as `AddButton` draws it ([ADR-043](ADR-043-hud-in-the-windows-look.md) decision 4). It is a card with its label cut short only where it meets its figure, the mark before its figure, its reason in its figure's place while it is disabled, its key's cap and a bar of the work under way. It is dim and takes no press while disabled, and its edge is lit under the pointer unless it is picked;
@@ -67,10 +67,10 @@ Every window of the interface is placed by hand: `Hud.cpp` sets each row a numbe
 - **`NeuronClientTests` tests the canvas without a GPU:**
   - `DrawListTests`: the layers, the regions and the clip.
   - `TextMetricsTests`: the measure.
-  - `LayoutTreeTests`: columns, rows, grids and stacks with padding and gaps; least and most; an anchor to each corner, edge and the middle; text wrapped and cut; a parent measured from its children; and the same tree at two scales.
+  - `LayoutTreeTests`: columns, rows, grids and stacks with padding and gaps; least and most; an anchor to each corner, edge and the middle, and a node too large for its box at the box's start; text wrapped and cut, and a text of nothing a line tall; a parent measured from its children; and the same tree at two scales.
   - `InteractionTests`: hot and active across frames, a press held through a move off and back, the front layer taking a press, the wheel over and off a scroll, focus and Esc's order, a drop-down closed by a press outside it, and an identifier claimed twice.
   - `WindowStackTests`: the order and a drag kept on the screen at each edge.
-  - `CanvasTests`: each widget's display list in a theme of the tests' own.
+  - `CanvasTests`: each widget's display list in a theme of the tests' own, a window at an anchor, and a window's body across its width.
 - **`HudTests` changed only where they name the moved types,** and `WindowManagerTests` not at all.
 - **A widget is a function object a frame,** an allocation each, until `Finish` draws it.
 - **The canvas keeps no widget between frames:** only the interaction's state and the window stack last.

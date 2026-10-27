@@ -324,7 +324,8 @@ void Neuron::LayoutTree::MeasureHeight(LayoutNode& _node, const TextMetrics& _me
       const float width = _metrics.Width(text.font, line, text.trackingUnits);
       _node.lines.push_back({.text = std::move(line), .widthUnits = width});
     }
-    content = static_cast<float>(_node.lines.size()) * text.lineUnits;
+    // A text of nothing, or of which nothing fits, still holds its line, so that what follows it keeps its place.
+    content = static_cast<float>(std::max<std::size_t>(_node.lines.size(), 1)) * text.lineUnits;
     break;
   }
   case LayoutKind::Column:
@@ -453,7 +454,11 @@ void Neuron::LayoutTree::Place(LayoutNode& _node)
     const LayoutEdges& margin = anchored.style.margin;
     const LayoutAnchor anchor = anchored.style.anchor.value_or(LayoutAnchor::TopLeft);
     anchored.heightUnits = anchored.naturalHeightUnits;
-    anchored.leftUnits = left + margin.left + Offset(AnchorX(anchor), roomX - margin.left - margin.right - anchored.widthUnits);
-    anchored.topUnits = top + margin.top + Offset(AnchorY(anchor), roomY - margin.top - margin.bottom - anchored.heightUnits);
+    // One larger than its box stands at the box's start, so that its top-left corner, where a window's title bar is, stays
+    // in it.
+    const float spareX = std::max(0.0f, roomX - margin.left - margin.right - anchored.widthUnits);
+    const float spareY = std::max(0.0f, roomY - margin.top - margin.bottom - anchored.heightUnits);
+    anchored.leftUnits = left + margin.left + Offset(AnchorX(anchor), spareX);
+    anchored.topUnits = top + margin.top + Offset(AnchorY(anchor), spareY);
   }
 }

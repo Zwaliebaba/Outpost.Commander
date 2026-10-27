@@ -84,7 +84,7 @@ struct LayoutStyle
   // A grid's columns.
   std::size_t columns = 1;
   // An anchored node stands out of its parent's flow, at its anchor in its parent's content box less margin, and takes no
-  // room in it.
+  // room in it. One larger than that box, across or down, stands at its start that way.
   std::optional<LayoutAnchor> anchor;
   LayoutEdges margin;
 };
@@ -152,7 +152,7 @@ public:
   std::size_t Add(const LayoutStyle& _style = {});
   // A box that takes _grow's share of the room left, and its index.
   std::size_t AddSpacer(float _grow = 1.0f);
-  // A text under the container open, and its index.
+  // A text under the container open, and its index: as tall as its lines, and as one when nothing of it is set.
   std::size_t AddText(LayoutText _text, const LayoutStyle& _style = {});
 
   // Measures and places every node, each text set as _metrics sets it. Every container begun must have been ended.
