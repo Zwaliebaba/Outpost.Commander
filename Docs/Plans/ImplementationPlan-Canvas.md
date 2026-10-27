@@ -78,7 +78,7 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | CV1.1 | Window places and the scale kept on disk | — | C2 | merged, [#142](https://github.com/Zwaliebaba/Outpost.Commander/pull/142) |
-| CV2.1 | The build window | CV1.1 | C7 | in review, [#144](https://github.com/Zwaliebaba/Outpost.Commander/pull/144) |
+| CV2.1 | The build window | CV1.1 | C7 | merged, [#144](https://github.com/Zwaliebaba/Outpost.Commander/pull/144) |
 | CV3.1 | The display list in the engine | — | C4 | in review, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
 | CV3.2 | A layout that measures | CV3.1 | C4 | in review, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
 | CV3.3 | Interaction every widget shares | CV3.1 | C4 | in review, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
