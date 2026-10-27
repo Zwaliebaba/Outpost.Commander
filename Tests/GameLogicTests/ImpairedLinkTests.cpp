@@ -621,17 +621,17 @@ public:
     }
   }
 
-  // ADR-096 decision 2: on the hotspot profile, whose 4 Mbit/s the measurement load's states all but fill, a seat's backlog
-  // stays at two states, the newest two on their way, and no more than a second of the events, over a minute of the load;
-  // and states keep coming.
-  TEST_METHOD(HoldsASeatsBacklogToTwoStatesOnTheHotspot)
+  // ADR-096 decision 2: on the hotspot profile, whose round trip and loss hold a state on its way for longer than two ticks,
+  // a seat's backlog stays at four states, the newest four on their way, and no more than a second of the events, over a
+  // minute of the measurement load; and three states in four arrive.
+  TEST_METHOD(HoldsASeatsBacklogToFourStatesOnTheHotspot)
   {
     const Measurement measurement =
       Measure(Outpost::LoadTuning(ReadRepositoryTuning()), Outpost::LoadMap(ReadRepositoryMap()), HOTSPOT_LINK, 1min);
     Logger::WriteMessage(measurement.report.c_str());
-    Assert::IsTrue(measurement.backlogMostBytes <= (2 * measurement.stateMostBytes) + measurement.eventsSecondMostBytes,
+    Assert::IsTrue(measurement.backlogMostBytes <= (4 * measurement.stateMostBytes) + measurement.eventsSecondMostBytes,
                    Widen(measurement.report).c_str());
-    Assert::IsTrue(measurement.states > 0 && measurement.states * 4 >= measurement.newestTick, Widen(measurement.report).c_str());
+    Assert::IsTrue(measurement.states > 0 && measurement.states * 4 >= measurement.newestTick * 3, Widen(measurement.report).c_str());
   }
 
   // ADR-098: through the Wi-Fi profile, over 20 seconds of the measurement load, a state crosses whole only until the
