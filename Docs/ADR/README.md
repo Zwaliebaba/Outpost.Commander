@@ -104,4 +104,4 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-097 | [An order is marked on the ground as it is given](ADR-097-an-order-is-marked-as-it-is-given.md) | `order-marks` |
 | ADR-098 | [A state crosses as what changed since the one the client holds](ADR-098-a-state-crosses-as-what-changed.md) | `state-changes`, `held-states` |
 | ADR-099 | [The interface's scale and the places of the windows the player moves are kept from one session to the next](ADR-099-interface-settings-kept.md) | `interface-settings-file`, `kept-window-places`, `kept-interface-scale` |
-| ADR-100 | [The canvas: the interface's display list, layout, interaction and widgets are the engine's](ADR-100-the-canvas.md) | `display-list`, `canvas-layout`, `canvas-interaction`, `canvas-window-stack`, `canvas-theme`, `canvas-widgets` |
+| ADR-100 | [The canvas: the interface's display list, layout, interaction and widgets are the engine's](ADR-100-the-canvas.md) | `display-list`, `canvas-layout`, `canvas-interaction`, `canvas-window-stack`, `canvas-theme`, `canvas-widgets`, `windows-on-the-canvas`, `windows-table` |

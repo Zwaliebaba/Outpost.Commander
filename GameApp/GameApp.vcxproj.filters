@@ -122,6 +122,9 @@
     <ClInclude Include="KeyBindings.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="WindowTable.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />

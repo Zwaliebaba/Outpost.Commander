@@ -1,7 +1,7 @@
 # ADR-100 — The canvas: the interface's display list, layout, interaction and widgets are the engine's
 
 Status: **accepted** · 2026-10-27
-Owns: display-list, canvas-layout, canvas-interaction, canvas-window-stack, canvas-theme, canvas-widgets
+Owns: display-list, canvas-layout, canvas-interaction, canvas-window-stack, canvas-theme, canvas-widgets, windows-on-the-canvas, windows-table
 
 ## Context
 
@@ -60,7 +60,19 @@ Every window of the interface is placed by hand: `Hud.cpp` sets each row a numbe
      - a text field ([ADR-017](ADR-017-research-and-the-designer.md) decision 8), which says whether typing ended with Enter or with Esc, and whose text is in the warning's color while the caller refuses it.
    - **Places:** a place is drawn as reference units times the scale from the screen's corner, where `Painter` adds a window's corner and the place, each times the scale. The two differ only by the rounding of a float. Glyphs stay on whole pixels ([ADR-015](ADR-015-ui-drawing.md) decision 3).
    - **Only a chip fills the warning's color** ([ADR-085](ADR-085-one-meaning-per-color.md) decision 1). `Canvas::Fill`, which the game draws its own composites with, takes any color but that one, and fails on it (`MayFill`).
-7. **No window is built on the canvas yet.** The HUD and its windows draw through the display list (decision 1), and `Painter`, `OpenWindow`, `Frame` and `AddButton` still place them. There is no scroll view and no drop-down among the widgets yet. The regions that scroll, the overlay layer, the offsets and the open drop-down are what they will be built on.
+7. **The leave, away, Controls, orders and build windows are built on the canvas;** the HUD's panels, the menu, the designer, production and research are still placed by `Painter`, `OpenWindow`, `Frame` and `AddButton`, and all of it draws through the display list (decision 1).
+   - **A canvas a window:** each of those windows is built on a canvas of its own, in the game's theme, and drawn into `Hud::Layout` where `OpenWindow` drew it, back to front. A button's payload is its action's place among the layout's actions, and the layout keeps the window's frame, title bar, close box, corner and first action as `OpenWindow` kept them, so that `ActionAt`, `HoverAt`, `WindowAt` and the drag read every window alike.
+   - **What they hold:** the orders window's rows are steppers, and its sections stand in room for their most, so that it does not jump as the form changes. The build window's buttons are inset only by its padding.
+   - **The pointer:** `GameClient` keeps one `Neuron::Interaction` and moves it each frame over the HUD drawn last, before it lays the next out. A button of a window on the canvas is lit while it is the hot widget; the HUD's own buttons are lit from the action under the pointer, as before.
+   - **Not yet:** there is no scroll view and no drop-down among the widgets. The regions that scroll, the overlay layer, the offsets and the open drop-down are what they will be built on.
+8. **Every window is a row of one table** (`Outpost::WINDOWS`, `WindowTable.h`, in `GameApp`): which window it is; its name in the interface's file ([ADR-099](ADR-099-interface-settings-kept.md) decision 3); its title, on its title bar, which the designer has none of, its own standing in its body; the key that opens and closes it ([ADR-031](ADR-031-floating-windows.md) decision 6), which the away and leave windows have none of; where it first stands; whether `WindowsFit` counts it ([ADR-070](ADR-070-interface-scale.md) decision 3); and whether its place is kept from one session to the next ([ADR-099](ADR-099-interface-settings-kept.md) decision 1), which every window's is.
+   - **Where a window first stands** (`FirstPlace`) is an anchor of the screen less a margin, so that a window not yet moved stands there on any screen and at any step, and never moves as the HUD's panels change:
+     - the designer at the top-right corner;
+     - production and research under the Ore, each in the first of the two places under the column's place that no open window held when it opened, which are the window manager's ([ADR-031](ADR-031-floating-windows.md) decisions 1 and 2);
+     - the orders window at the right edge, level with those;
+     - the Controls, away and leave windows in the middle;
+     - the build window at the bottom right, beside the selection and its buttons where they leave it room at their widest, kept clear of the minimap as they are ([ADR-088](ADR-088-selection-and-commands.md) decision 2), and where they do not, at the right edge with its foot a gap above the minimap's top, so that it does not move as the selection changes.
+   - **Fitting:** `WindowsFit` measures each window its row counts at its most: the designer as `ExtentOf` gives it, and a window on the canvas as it is built where nothing else is, with no font, since every line it holds is one line however wide. On the menu, with no match, it measures the Controls window alone.
 
 ## Consequences
 
@@ -71,7 +83,7 @@ Every window of the interface is placed by hand: `Hud.cpp` sets each row a numbe
   - `InteractionTests`: hot and active across frames, a press held through a move off and back, the front layer taking a press, the wheel over and off a scroll, focus and Esc's order, a drop-down closed by a press outside it, and an identifier claimed twice.
   - `WindowStackTests`: the order and a drag kept on the screen at each edge.
   - `CanvasTests`: each widget's display list in a theme of the tests' own, a window at an anchor, and a window's body across its width.
-- **`HudTests` changed only where they name the moved types,** and `WindowManagerTests` not at all.
+- **`HudTests` and `WindowManagerTests` hold the windows on the canvas as they held them before,** the build window's first place at 100% and 125% and the steps the windows fit among them.
 - **A widget is a function object a frame,** an allocation each, until `Finish` draws it.
 - **The canvas keeps no widget between frames:** only the interaction's state and the window stack last.
 

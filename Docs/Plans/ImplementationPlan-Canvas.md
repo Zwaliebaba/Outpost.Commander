@@ -251,24 +251,28 @@ Each task is a port (rule 5).
 - **ADR:** the canvas's; ADR-031 decision 2's first places move to the table.
 - **Acceptance:** the port's comparison; `HudTests` and `WindowManagerTests` as they stand.
 - **Verify:** CI; run, both windows open and dragged.
+- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 7 and 8, and decisions 2, 5 and 6 rewritten; ADR-031 decisions 2 and 3, ADR-070 decision 3 and ADR-099 decisions 1 and 3 rewritten. The table is `Outpost::WINDOWS`, with each window's title, and `WindowsFit` measures the windows its rows count. `GameClient` keeps the canvas's interaction and moves it over the HUD drawn last. The theme's title is the windows' header, in the label face and its own color, so that a window's title bar on the canvas is drawn as `OpenWindow` drew it with its header. The comparison found three things in the engine, fixed in it: a window's body did not stretch across it, an anchored node larger than its box stood off its start, and a text of nothing took no line.
 
 ### CV4.2 — The Controls window
 
 - **Scope:** the Controls window on the canvas, its lines still made by `KeyBindings()` (ADR-068 decision 4). `ControlsHeight` goes.
 - **Acceptance:** the port's comparison; `ListsEveryKeyInTheControlsWindow`.
 - **Verify:** CI; run, on the menu and in a match.
+- **As built (2026-10-27):** ADR-100 decision 7. Each key stands in a column of its own, cut short a gap before it, and what it does takes the rest of the line.
 
 ### CV4.3 — The orders window
 
 - **Scope:** the orders window on the canvas, its form's rows as steppers. `ORDERS_WINDOW_HEIGHT` goes.
 - **Acceptance:** the port's comparison; the orders window's tests as they stand.
 - **Verify:** CI; run, an order given and canceled.
+- **As built (2026-10-27):** ADR-100 decision 7. The scheduled orders and the form's rows stand in room for their most, so that the window keeps its height; each cancel button stands in the middle of its line. The arrows' actions are made before the stepper, in the order they are drawn, since a call's arguments are made in any order.
 
 ### CV4.4 — The build window on the canvas
 
 - **Scope:** CV2.1's window on the canvas, its buttons the canvas's, its row in the windows' table.
 - **Acceptance:** the port's comparison; CV2.1's tests as they stand.
 - **Verify:** CI; run, a structure placed from it.
+- **As built (2026-10-27):** ADR-100 decisions 7 and 8. Its first place is `FirstPlace::BesideTheSelection`, an anchor at the bottom right, and `BuildCorner` goes.
 
 ---
 
