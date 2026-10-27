@@ -70,7 +70,7 @@ inline constexpr std::uint32_t NO_PAYLOAD = std::numeric_limits<std::uint32_t>::
 
 // Where a press or the pointer finds something: the widget it is, if any; the caller's payload, which says what a press
 // does in the caller's own terms, since the canvas knows no game concept (R9); whether it answers the pointer only, taking
-// no press; and whether it scrolls, taking the wheel.
+// no press; whether it scrolls, taking the wheel; and whether it is a drop-down's field, which a press opens.
 struct CanvasRegion
 {
   CanvasRect area;
@@ -78,6 +78,7 @@ struct CanvasRegion
   std::uint32_t payload = NO_PAYLOAD;
   bool hoverOnly = false;
   bool scrolls = false;
+  bool dropsDown = false;
 };
 
 // What is drawn cut to a rectangle, as what a scroll view holds is (ADR-100): the rectangle, in back-buffer pixels, and its

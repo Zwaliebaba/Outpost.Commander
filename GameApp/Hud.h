@@ -156,9 +156,10 @@ public:
     // row of three (ADR-088 decision 3).
     DesignRetreat,
     SetRetreat,
-    // The orders window's form steps a field, and gives its order to the selection, and the window cancels one of the
-    // seat's scheduled orders (ADR-080 decision 9).
+    // The orders window's form steps a field, or picks its value from its drop-down, and gives its order to the selection,
+    // and the window cancels one of the seat's scheduled orders (ADR-080 decision 9).
     StepOrder,
+    PickOrder,
     GiveOrder,
     CancelOrder,
     // Selects one of the player's own entities on its own and moves the camera to it (ADR-066 decision 1; ADR-088 decision 4).
@@ -176,7 +177,7 @@ public:
     ActionKind kind = ActionKind::Build;
     StructureKind structure = StructureKind::CommandStation;
     EntityId producer;
-    // The entity Select selects.
+    // The entity Select selects, or the target PickOrder picks.
     EntityId entity;
     // The design a Shipyard builds; no design for the Command Station's Constructor.
     DesignId design;
@@ -192,9 +193,11 @@ public:
     Difficulty difficulty = Difficulty::Normal;
     // What SetRetreat sets the selected ships to.
     RetreatThreshold retreat = DEFAULT_RETREAT;
-    // The field StepOrder steps, and which way: forward for a positive step.
+    // The field StepOrder steps, and which way: forward for a positive step; or the field PickOrder sets, and to what, an
+    // hour, a minute or a sector's id.
     OrderField field = OrderField::Trigger;
     std::int32_t step = 0;
+    std::int32_t value = 0;
     // The scheduled order CancelOrder cancels.
     std::uint32_t order = 0;
 
@@ -538,12 +541,15 @@ public:
     [[nodiscard]] bool Warns() const noexcept;
   };
 
-  // A row of the orders window's form: what it sets, its value between the arrows that step it, and the field they step.
+  // A row of the orders window's form: what it sets, its value between the arrows that step it, and the field they step;
+  // and, for a field picked from a drop-down, its choices and the one it holds (ADR-080 decision 9).
   struct OrderRow
   {
     std::string label;
     std::string value;
     OrderField field = OrderField::Trigger;
+    std::vector<OrderChoice> choices;
+    std::optional<std::size_t> picked;
   };
 
   // One of the seat's scheduled orders as the orders window lists it, with the order its cancel button cancels.

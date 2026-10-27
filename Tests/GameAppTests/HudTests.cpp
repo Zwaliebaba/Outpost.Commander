@@ -3336,6 +3336,66 @@ public:
     Assert::AreEqual(std::ptrdiff_t{4}, litEdgesOfGive(Lay(content, 1920, 1080, {}, nullptr, 1.0f, std::nullopt, &pointer)));
   }
 
+  // ADR-080 decision 9; ADR-100: the form's hour, minute, sectors and target are picked from a drop-down between their
+  // arrows, which still step. A press on the hour opens its list of every hour over the window, which is no window's; a
+  // press on one names it, and the list closes. A window brought in front of the orders window closes the list.
+  TEST_METHOD(PicksAnOrdersFieldFromItsDropDown)
+  {
+    const Outpost::Snapshot newest = OrdersSnapshot();
+    Outpost::OrderForm form;
+    form.Update(newest, newest.entities);
+    Outpost::Hud::Content content;
+    content.orders = Outpost::Hud::DescribeOrders(newest, newest.entities, {}, form, Outpost::PlayerClock{},
+                                                  std::chrono::sys_seconds{std::chrono::hours{1}});
+    const Outpost::Hud::OrderRow& hour = content.orders->rows[1];
+    Assert::AreEqual(std::size_t{24}, hour.choices.size(), L"every hour");
+    Assert::IsTrue(hour.picked == std::optional<std::size_t>{2}, L"the form's 02");
+    Assert::AreEqual(std::size_t{12}, content.orders->rows[2].choices.size(), L"every fifth minute");
+    Assert::IsTrue(content.orders->rows[0].choices.empty(), L"the trigger only steps");
+
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Orders);
+    Neuron::Interaction pointer;
+    const auto lay = [&] { return Lay(content, 1920, 1080, {}, &windows, 1.0f, std::nullopt, &pointer); };
+    const Outpost::Hud::Layout closed = lay();
+    Assert::IsTrue(std::ranges::any_of(closed.actions,
+                                       [](const auto& _entry)
+                                       {
+                                         return _entry.second == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StepOrder,
+                                                                                      .field = Outpost::OrderField::Hour,
+                                                                                      .step = 1};
+                                       }),
+                   L"its arrows still step it");
+    const Outpost::Hud::Text value = TextOf(closed, "02");
+    Assert::IsTrue(pointer.Press(closed, value.left + 4.0f, value.top + 4.0f), L"a press on the hour");
+    const Outpost::Hud::Layout open = lay();
+    (void)pointer.Release(open, value.left + 4.0f, value.top + 4.0f);
+    Assert::IsTrue(open.LayerCount() == 3 && open.layers.back().overlay, L"its list over the window");
+    Assert::AreEqual(std::size_t{1}, open.windows.size());
+    const auto pick = std::ranges::find(
+      open.actions, Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickOrder, .field = Outpost::OrderField::Hour, .value = 14},
+      [](const auto& _entry) { return _entry.second; });
+    Assert::IsTrue(pick != open.actions.end() && pick->first.width > 0.0f, L"14 among the choices");
+    const float x = pick->first.left + 10.0f;
+    const float y = pick->first.top + 5.0f;
+    Assert::IsNull(open.WindowAt(x, y), L"the list is no window's");
+    Assert::IsTrue(open.ActionAt(x, y) == std::optional<Outpost::Hud::Action>{pick->second}, L"a press on it picks it");
+    Assert::IsTrue(pointer.Press(open, x, y));
+    const Outpost::Hud::Layout picked = lay();
+    (void)pointer.Release(picked, x, y);
+    Assert::AreEqual(Neuron::NO_WIDGET, pointer.DropDown(), L"and closes the list");
+    Assert::AreEqual(std::size_t{2}, picked.LayerCount());
+
+    Assert::IsTrue(pointer.Press(picked, value.left + 4.0f, value.top + 4.0f));
+    (void)lay();
+    Assert::AreNotEqual(Neuron::NO_WIDGET, pointer.DropDown());
+    windows.Open(Outpost::WindowKind::Controls);
+    content.controls = true;
+    const Outpost::Hud::Layout covered = lay();
+    Assert::AreEqual(Neuron::NO_WIDGET, pointer.DropDown(), L"another window in front closes it");
+    Assert::IsFalse(covered.layers.back().overlay);
+  }
+
   // ADR-080 decision 9: the selection's panel names the scheduled order its ship waits on, whole.
   TEST_METHOD(NamesAShipsPendingOrder)
   {

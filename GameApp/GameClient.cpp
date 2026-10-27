@@ -671,6 +671,16 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_controls.Queue(queue.producer, queue.design);
   }
   HandleTyping(input);
+  // While a drop-down is open, Esc closes it, and a press of any button outside its list closes it too, and neither goes
+  // further, to the windows, the HUD or the controls (ADR-100 decision 3).
+  std::erase_if(input.events,
+                [this](const Neuron::InputEvent& _event)
+                {
+                  if (_event.kind == Neuron::InputEventKind::KeyDown && _event.key == KEY_CANCEL)
+                    return m_interaction.Escape();
+                  return _event.kind == Neuron::InputEventKind::ButtonDown &&
+                         m_interaction.Dismiss(m_hudLayout, static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels));
+                });
   // Esc cancels a structure being placed first, which the controls do; else it closes the front window, and then is the
   // window's, not the controls' (ADR-031 decision 5); in a universe, with no window to close and nothing armed for the
   // controls to cancel, it opens the leave window (ADR-078 decision 11). D, P and R open or close the designer, the
@@ -1088,6 +1098,9 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::StepOrder:
     m_orderForm.Step(_action.field, _action.step, m_view.Newest(), m_knownEntities);
+    break;
+  case Hud::ActionKind::PickOrder:
+    m_orderForm.Pick(_action.field, {.value = _action.value, .target = _action.entity}, m_view.Newest(), m_knownEntities);
     break;
   case Hud::ActionKind::GiveOrder:
     m_controls.Schedule(m_orderForm, WallClockNow(), m_clock, m_view.Newest(), m_knownEntities);

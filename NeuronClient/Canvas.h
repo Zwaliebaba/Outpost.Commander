@@ -132,6 +132,14 @@ public:
   // in the warning's color while it is not _valid. Its text stands in its content box, the theme's inset in from its sides
   // and in its middle down, so that its padding keeps room for what the caller sets over it, such as a label and a count.
   FieldEnd TextField(std::string_view _id, std::string& _text, std::size_t _limitCharacters, bool _valid, const LayoutStyle& _style);
+  // A drop-down: a field that shows _value, cut short to leave room for its mark at its right, which a press opens and a
+  // press on it again closes. Its list of _choices, _picked lit, then stands in an overlay over everything else, as wide as
+  // the field and a row as tall as the field for each choice: under the field, or over it where the screen ends under it,
+  // and where it is taller than the room either way, on the side with more, scrolled by the wheel and its thumb. It opens
+  // with the pick at its top, as far as it goes. A press on a choice names the payload _payloadOf gives it and closes the
+  // list; Esc or a press anywhere else closes it and goes no further. The field's node.
+  std::size_t DropDown(std::string_view _id, std::string _value, std::vector<std::string> _choices, std::optional<std::size_t> _picked,
+                       const std::function<std::uint32_t(std::size_t)>& _payloadOf, const LayoutStyle& _style);
 
   // A rectangle of _color at a node, for what the game composes of its own, such as a part's card. It may be any color but
   // the warning's, which only a chip fills.
@@ -187,7 +195,10 @@ private:
   const TextMetrics& m_metrics;
   Interaction& m_interaction;
   LayoutTree m_tree;
+  float m_screenHeightUnits = 0.0f;
   std::vector<Draw> m_draws;
+  // What is drawn once everything else is, over it: an open drop-down's list.
+  std::vector<Draw> m_overlays;
   // The windows open in the build, the innermost last, and their frames' nodes.
   std::vector<std::pair<WidgetId, std::size_t>> m_windows;
   // A scroll view open in the build: its identifier and its thumb's, its node, and where what it holds starts in each list,

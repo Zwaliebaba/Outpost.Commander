@@ -131,6 +131,115 @@ void Outpost::OrderForm::Update(const Snapshot& _newest, std::span<const EntityV
   m_target = TakesTarget() ? KeptAmong(IdsOf(Targets(_newest, _entities)), m_target, EntityId{}) : EntityId{};
 }
 
+bool Outpost::OrderForm::TakesDropDown(OrderField _field) noexcept
+{
+  switch (_field)
+  {
+  case OrderField::Hour:
+  case OrderField::Minute:
+  case OrderField::TriggerSector:
+  case OrderField::ActionSector:
+  case OrderField::Target:
+    return true;
+  case OrderField::Trigger:
+  case OrderField::Action:
+  case OrderField::Condition:
+    break;
+  }
+  return false;
+}
+
+std::vector<Outpost::OrderChoice> Outpost::OrderForm::Choices(OrderField _field, const Snapshot& _newest,
+                                                              std::span<const EntityView> _entities) const
+{
+  std::vector<OrderChoice> choices;
+  switch (_field)
+  {
+  case OrderField::Hour:
+    for (int hour = 0; hour < HOURS; ++hour)
+      choices.push_back({.name = std::format("{:02}", hour), .value = hour});
+    break;
+  case OrderField::Minute:
+    for (int minute = 0; minute < MINUTES; minute += MINUTE_STEP)
+      choices.push_back({.name = std::format("{:02}", minute), .value = minute});
+    break;
+  case OrderField::TriggerSector:
+    for (const SectorView* sector : WatchedSectors(_newest))
+      choices.push_back({.name = sector->nameUtf8, .value = sector->id});
+    break;
+  case OrderField::ActionSector:
+    for (const SectorView& sector : _newest.sectors)
+      choices.push_back({.name = sector.nameUtf8, .value = sector.id});
+    break;
+  case OrderField::Target:
+  {
+    const std::vector<const EntityView*> targets = Targets(_newest, _entities);
+    for (std::size_t at = 0; at < targets.size(); ++at)
+      choices.push_back(
+        {.name = std::format("{} ({} of {})", NameOf(*targets[at], _newest), at + 1, targets.size()), .target = targets[at]->id});
+    break;
+  }
+  case OrderField::Trigger:
+  case OrderField::Action:
+  case OrderField::Condition:
+    break;
+  }
+  return choices;
+}
+
+bool Outpost::OrderForm::Holds(OrderField _field, const OrderChoice& _choice) const noexcept
+{
+  switch (_field)
+  {
+  case OrderField::Hour:
+    return _choice.value == m_hour;
+  case OrderField::Minute:
+    return _choice.value == m_minute;
+  case OrderField::TriggerSector:
+    return _choice.value == m_triggerSector;
+  case OrderField::ActionSector:
+    return _choice.value == m_actionSector;
+  case OrderField::Target:
+    return _choice.target == m_target;
+  case OrderField::Trigger:
+  case OrderField::Action:
+  case OrderField::Condition:
+    break;
+  }
+  return false;
+}
+
+void Outpost::OrderForm::Pick(OrderField _field, const OrderChoice& _choice, const Snapshot& _newest, std::span<const EntityView> _entities)
+{
+  const std::vector<OrderChoice> offered = Choices(_field, _newest, _entities);
+  if (std::ranges::none_of(offered, [&_choice](const OrderChoice& _offered)
+                           { return _offered.value == _choice.value && _offered.target == _choice.target; }))
+    return;
+  switch (_field)
+  {
+  case OrderField::Hour:
+    m_hour = _choice.value;
+    break;
+  case OrderField::Minute:
+    m_minute = _choice.value;
+    break;
+  case OrderField::TriggerSector:
+    m_triggerSector = _choice.value;
+    break;
+  case OrderField::ActionSector:
+    m_actionSector = _choice.value;
+    break;
+  case OrderField::Target:
+    m_target = _choice.target;
+    break;
+  case OrderField::Trigger:
+  case OrderField::Action:
+  case OrderField::Condition:
+    break;
+  }
+  Update(_newest, _entities);
+}
+
 std::vector<const Outpost::SectorView*> Outpost::OrderForm::WatchedSectors(const Snapshot& _newest)
 {
   std::vector<const SectorView*> sectors;

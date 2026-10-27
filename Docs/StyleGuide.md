@@ -67,6 +67,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 - **What the pointer is over lights its edge, and nothing else changes:** no word, place or click ([ADR-088](ADR/ADR-088-selection-and-commands.md) decision 1).
 - **An armed order's button is lit as a pick** until the order is given or canceled ([ADR-088](ADR/ADR-088-selection-and-commands.md) decision 2).
 - **A choice among a few settings is a row of cells, the current one lit as a pick,** so the player sees every choice and picks one in a press ([ADR-088](ADR/ADR-088-selection-and-commands.md) decision 3).
+- **A choice among many is a drop-down,** its list opened by a press on its field and picked by a press, the current one lit, where a row of cells would not fit and stepping would take many presses ([ADR-100](ADR/ADR-100-the-canvas.md) decision 6, [ADR-080](ADR/ADR-080-events-and-scheduled-orders.md) decision 9).
 - **A standing state is a status line, and a place to click** ([ADR-066](ADR/ADR-066-production-status-on-the-hud.md) decisions 1 and 5).
 - **An event is an alert,** raised from the server's events, listed under the territory panel and marked on the minimap ([ADR-059](ADR/ADR-059-alerts-and-standing-orders.md) decisions 1 and 2).
 

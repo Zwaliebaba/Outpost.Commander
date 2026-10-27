@@ -90,8 +90,8 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV5.1 | The production window | CV4.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
 | CV5.2 | The research window | CV5.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
 | CV6.1 | The designer | CV5.1 | — | in review, [#148](https://github.com/Zwaliebaba/Outpost.Commander/pull/148) |
-| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5, C8 | in progress |
-| CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | todo |
+| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5, C8 | in review |
+| CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | in review |
 | CV8.1 | The column under the Ore | CV3.4 | C1 | todo |
 | CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | todo |
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | todo |
@@ -332,6 +332,7 @@ Each task is a port (rule 5).
 - **ADR:** the canvas's for the drop-down; [ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md) decision 9 for the form; a Style Guide line beside ADR-088 decision 3's: a choice among many is a drop-down.
 - **Acceptance:** `NeuronClientTests` for opening, picking, Esc, a press outside and the flip at the screen's foot; the orders window's tests with a field picked.
 - **Verify:** CI; run, an order scheduled with every field picked; **owner run.**
+- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 1, 3, 6 and 7, [ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md) decision 9 and a Style Guide line. The field is as wide as a stepper leaves its value room, between the arrows, with a "v" for its mark in the arrows' face. A press on the field opens it at the press, not at each frame the button is held, so that Esc or another window in front closes it for good. The list is drawn after everything else on its canvas, and the orders window's list closes once another window stands in front of it, so that the overlay is always the front layer. The list opens with the pick at its top as far as it goes. `GameClient` gives Esc and every press to an open drop-down first, and a press outside it goes no further, to the HUD, the windows or the controls. `OrderForm` offers each field's choices in the order its arrows step them, and a pick names the value, a sector's id or a target's entity, not its place, so that a list drawn a frame before the targets moved picks what it showed or nothing.
 
 ---
 

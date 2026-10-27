@@ -1592,6 +1592,8 @@ std::size_t BeginWindowAt(Neuron::Canvas& _canvas, Neuron::Interaction& _interac
 void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _frame, Outpost::WindowKind _kind, std::size_t _firstAction)
 {
   const std::size_t firstRegion = _layout.regions.size();
+  // The window's own layer, which an open drop-down's overlay follows.
+  const std::size_t layer = _layout.layers.size();
   _canvas.Finish(_layout);
   for (std::size_t region = firstRegion; region < _layout.regions.size(); ++region)
   {
@@ -1599,7 +1601,7 @@ void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _fr
     if (pressed.payload != Neuron::NO_PAYLOAD)
       (pressed.hoverOnly ? _layout.previews : _layout.actions)[pressed.payload].first = pressed.area;
   }
-  const std::size_t panel = _layout.layers.back().firstPanel;
+  const std::size_t panel = _layout.layers[layer].firstPanel;
   const Neuron::LayoutNode& frame = _canvas.Tree().Node(_frame);
   _layout.windows.push_back({.kind = _kind,
                              .frame = _layout.panels[panel],
@@ -1744,6 +1746,33 @@ void LayControls(const WindowBench& _bench, const WindowPlace& _place)
 // cancel button at its line's right end, in room for as many as it shows and the line that counts the rest; NEW ORDER FOR
 // THE SELECTION over the form's rows, each its label and its value as a stepper, in room for every row; the line that says
 // when the order fires; and Give.
+// A field of the orders window's form picked from a drop-down, between the arrows that step it as a stepper's do (ADR-080
+// decision 9): as wide as the stepper leaves its value room, and each choice naming the action that picks it.
+void OrderDropDown(Neuron::Canvas& _canvas, Neuron::Interaction& _interaction, Hud::Layout& _layout, std::size_t _row,
+                   const Hud::OrderRow& _order, std::uint32_t _previous, std::uint32_t _next)
+{
+  constexpr float ROOM = ORDERS_WINDOW_WIDTH - WINDOW_INSET - ORDER_VALUE_LEFT;
+  constexpr float ARROWS = 2.0f * (SMALL_BUTTON_UNITS + ARROW_GAP_UNITS);
+  std::vector<std::string> names;
+  names.reserve(_order.choices.size());
+  for (const Outpost::OrderChoice& choice : _order.choices)
+    names.push_back(choice.name);
+  _interaction.PushId(_interaction.IdOf(std::format("row {}", _row)));
+  (void)_canvas.Tree().Begin(Neuron::LayoutKind::Row, {.gapUnits = ARROW_GAP_UNITS});
+  (void)_canvas.SmallButton("<", "<", true, _previous);
+  (void)_canvas.DropDown(
+    "value", _order.value, std::move(names), _order.picked,
+    [&_layout, &_order](std::size_t _choice)
+    {
+      const Outpost::OrderChoice& choice = _order.choices[_choice];
+      return PressOf(_layout, {.kind = Hud::ActionKind::PickOrder, .entity = choice.target, .field = _order.field, .value = choice.value});
+    },
+    {.widthUnits = ROOM - ARROWS, .heightUnits = SMALL_BUTTON_UNITS});
+  (void)_canvas.SmallButton(">", ">", true, _next);
+  _canvas.Tree().End();
+  _interaction.PopId();
+}
+
 void LayOrders(const WindowBench& _bench, const Hud::OrdersPanel& _panel, const WindowPlace& _place)
 {
   LayWindow(
@@ -1792,9 +1821,12 @@ void LayOrders(const WindowBench& _bench, const Hud::OrdersPanel& _panel, const 
         const std::uint32_t previous = PressOf(layout, {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = -1});
         const std::uint32_t next = PressOf(layout, {.kind = Hud::ActionKind::StepOrder, .field = order.field, .step = 1});
         (void)tree.Begin(Neuron::LayoutKind::Column, {.padding = {.top = ORDER_ARROW_TOP}});
-        _canvas.Stepper(std::format("row {}", row),
-                        {.text = order.value, .font = Hud::FontOf(Hud::Typeface::Name), .lineUnits = NAME_LINE_UNITS}, TEXT_COLOR,
-                        ORDERS_WINDOW_WIDTH - WINDOW_INSET - ORDER_VALUE_LEFT, ORDER_TEXT_TOP - ORDER_ARROW_TOP, true, previous, next);
+        if (Outpost::OrderForm::TakesDropDown(order.field))
+          OrderDropDown(_canvas, *_bench.interaction, layout, row, order, previous, next);
+        else
+          _canvas.Stepper(std::format("row {}", row),
+                          {.text = order.value, .font = Hud::FontOf(Hud::Typeface::Name), .lineUnits = NAME_LINE_UNITS}, TEXT_COLOR,
+                          ORDERS_WINDOW_WIDTH - WINDOW_INSET - ORDER_VALUE_LEFT, ORDER_TEXT_TOP - ORDER_ARROW_TOP, true, previous, next);
         tree.End();
         tree.End();
       }
@@ -2841,34 +2873,33 @@ Hud::OrdersPanel Hud::DescribeOrders(const Snapshot& _newest, std::span<const En
     panel.scheduled.push_back({.text = std::format("{}{}{}", text, DOT, ships(order.ships.size())), .order = order.id});
   }
 
-  const auto sectorName = [&_newest](std::int32_t _sector, std::string_view _none)
+  // A field picked from a drop-down: its choices, and the one it holds, which is its value, or _none.
+  const auto picked = [&](std::string _label, OrderField _field, std::string_view _none)
   {
-    const auto sector = std::ranges::find(_newest.sectors, _sector, &SectorView::id);
-    return sector != _newest.sectors.end() ? sector->nameUtf8 : std::string(_none);
+    OrderRow row{
+      .label = std::move(_label), .value = std::string(_none), .field = _field, .choices = _form.Choices(_field, _newest, _entities)};
+    const auto held = std::ranges::find_if(row.choices, [&](const OrderChoice& _choice) { return _form.Holds(_field, _choice); });
+    if (held != row.choices.end())
+    {
+      row.picked = static_cast<std::size_t>(held - row.choices.begin());
+      row.value = held->name;
+    }
+    return row;
   };
   panel.rows.push_back({.label = "WHEN", .value = std::string(OrderForm::NameOf(_form.Trigger())), .field = OrderField::Trigger});
   const bool timed = _form.Trigger() == ScheduledTriggerKind::TimeOfDay;
   if (timed)
   {
-    panel.rows.push_back({.label = "HOUR", .value = std::format("{:02}", _form.Hour()), .field = OrderField::Hour});
-    panel.rows.push_back({.label = "MINUTE", .value = std::format("{:02}", _form.Minute()), .field = OrderField::Minute});
+    panel.rows.push_back(picked("HOUR", OrderField::Hour, ""));
+    panel.rows.push_back(picked("MINUTE", OrderField::Minute, ""));
   }
   else
-    panel.rows.push_back(
-      {.label = "WATCHING", .value = sectorName(_form.TriggerSector(), "None held"), .field = OrderField::TriggerSector});
+    panel.rows.push_back(picked("WATCHING", OrderField::TriggerSector, "None held"));
   panel.rows.push_back({.label = "DO", .value = std::string(OrderForm::NameOf(_form.Action())), .field = OrderField::Action});
   if (!_newest.sectors.empty())
-    panel.rows.push_back({.label = "WHERE", .value = sectorName(_form.ActionSector(), "None"), .field = OrderField::ActionSector});
+    panel.rows.push_back(picked("WHERE", OrderField::ActionSector, "None"));
   if (_form.TakesTarget())
-  {
-    const std::vector<const EntityView*> targets = _form.Targets(_newest, _entities);
-    const auto target = std::ranges::find(targets, _form.Target(), &EntityView::id);
-    panel.rows.push_back({.label = "TARGET",
-                          .value = target != targets.end() ? std::format("{} ({} of {})", OrderForm::NameOf(**target, _newest),
-                                                                         (target - targets.begin()) + 1, targets.size())
-                                                           : std::string("None there"),
-                          .field = OrderField::Target});
-  }
+    panel.rows.push_back(picked("TARGET", OrderField::Target, "None there"));
   const std::optional<std::int32_t> condition = _form.Condition();
   panel.rows.push_back({.label = "UNLESS",
                         .value = condition.has_value() ? std::format("Over {} enemy CP there", *condition) : "Never",
@@ -2988,8 +3019,9 @@ std::optional<Hud::Action> Hud::Layout::HoverAt(float _xPixels, float _yPixels) 
 
 const Hud::Window* Hud::Layout::WindowAt(float _xPixels, float _yPixels) const noexcept
 {
+  // An open drop-down's overlay, the front layer, is no window's.
   const std::size_t layer = LayerAt(_xPixels, _yPixels);
-  return layer == 0 ? nullptr : &windows[layer - 1];
+  return layer == 0 || layer > windows.size() ? nullptr : &windows[layer - 1];
 }
 
 Hud::Span Hud::Layout::ActionsOf(std::size_t _layer) const noexcept
@@ -4294,6 +4326,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
                                       WindowKind::Orders,     WindowKind::Away,     WindowKind::Leave,    WindowKind::Build};
   if (_windows != nullptr)
     backToFront.assign(_windows->FrontToBack().rbegin(), _windows->FrontToBack().rend());
+  // An open drop-down's list stands over every window (ADR-100 decision 6), so it stays open only while the orders window,
+  // the one that holds drop-downs (ADR-080 decision 9), stands in front of every other.
+  if (backToFront.empty() || backToFront.back() != WindowKind::Orders)
+    interaction.CloseDropDown();
   const auto place = [&](WindowKind _kind, WindowManager::Point _default, float _widthUnits)
   {
     const std::optional<WindowManager::Point> moved = _windows != nullptr ? _windows->PositionOf(_kind) : std::nullopt;

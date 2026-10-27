@@ -26,11 +26,14 @@ constexpr Neuron::WidgetId Named(std::uint64_t _hash) noexcept
 
 void Neuron::Interaction::BeginBuild() noexcept
 {
-  // A field the last build did not build, as one in a window since closed, has given back the keyboard.
+  // A field the last build did not build, as one in a window since closed, has given back the keyboard, and a drop-down
+  // it did not build has closed.
   if (m_focused != NO_WIDGET && !m_claimed.contains(m_focused))
     m_focused = NO_WIDGET;
+  if (m_dropDown != NO_WIDGET && !m_claimed.contains(m_dropDown))
+    m_dropDown = NO_WIDGET;
   m_ids.clear();
-  m_claimed.clear();
+  m_built = std::exchange(m_claimed, {});
 }
 
 Neuron::WidgetId Neuron::Interaction::IdOf(std::string_view _label) const noexcept
@@ -70,6 +73,11 @@ bool Neuron::Interaction::Claim(WidgetId _widget)
   return m_claimed.insert(_widget).second;
 }
 
+bool Neuron::Interaction::WasBuilt(WidgetId _widget) const noexcept
+{
+  return m_built.contains(_widget);
+}
+
 void Neuron::Interaction::Move(const DrawList& _list, float _xPixels, float _yPixels)
 {
   m_pointerYPixels = _yPixels;
@@ -79,19 +87,25 @@ void Neuron::Interaction::Move(const DrawList& _list, float _xPixels, float _yPi
     m_hot = NO_WIDGET;
 }
 
+bool Neuron::Interaction::Dismiss(const DrawList& _list, float _xPixels, float _yPixels) noexcept
+{
+  if (m_dropDown == NO_WIDGET)
+    return false;
+  const std::size_t layer = _list.LayerAt(_xPixels, _yPixels);
+  if (layer != 0 && _list.layers[layer - 1].overlay)
+    return false;
+  CloseDropDown();
+  return true;
+}
+
 bool Neuron::Interaction::Press(const DrawList& _list, float _xPixels, float _yPixels)
 {
-  if (m_dropDown != NO_WIDGET)
-  {
-    const std::size_t layer = _list.LayerAt(_xPixels, _yPixels);
-    if (layer == 0 || !_list.layers[layer - 1].overlay)
-    {
-      CloseDropDown();
-      return true;
-    }
-  }
+  if (Dismiss(_list, _xPixels, _yPixels))
+    return true;
   const CanvasRegion* region = _list.Covers(_xPixels, _yPixels) ? _list.HitAt(_xPixels, _yPixels) : nullptr;
   m_active = region == nullptr ? NO_WIDGET : region->widget;
+  if (region != nullptr && region->dropsDown)
+    OpenDropDown(region->widget);
   m_dragFromYPixels = _yPixels;
   if (m_focused != NO_WIDGET && m_focused != m_active)
     m_focused = NO_WIDGET;

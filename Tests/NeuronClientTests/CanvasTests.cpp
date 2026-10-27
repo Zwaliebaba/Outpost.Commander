@@ -699,6 +699,117 @@ public:
     Assert::AreEqual(size_t{3}, fits.regions.size(), L"two rows and the view");
   }
 
+  // ADR-100: a drop-down shows its value and its mark, and a press opens its list in an overlay over everything else, as
+  // wide as the field, a row as tall as the field for each choice, the pick lit: under the field, or over it where the
+  // screen ends under it. A press on a choice names its payload and closes the list; Esc and a press outside it close it.
+  // Taller than the room either way, it stands on the side with more, opens with the pick at its top as far as it goes, and
+  // scrolls with the wheel, its rows cut to it and its thumb in its lane.
+  TEST_METHOD(DropsDownAList)
+  {
+    Fixture fixture;
+    const Neuron::Theme& theme = fixture.theme;
+    // A field 200 by 24 units with its top-left corner at (100, _topUnits), on a screen 540 units tall.
+    const auto build = [&fixture](DrawList& _list, float _topUnits, std::vector<std::string> _choices, std::size_t _picked)
+    {
+      Canvas canvas = fixture.Begin();
+      const std::string value = _choices[_picked];
+      (void)canvas.DropDown(
+        "pick", value, std::move(_choices), _picked, [](std::size_t _choice) { return static_cast<std::uint32_t>(10 + _choice); },
+        {.widthUnits = 200.0f, .heightUnits = 24.0f, .anchor = LayoutAnchor::TopLeft, .margin = {.left = 100.0f, .top = _topUnits}});
+      canvas.Finish(_list);
+    };
+    const std::vector<std::string> three{"One", "Two", "Three"};
+    const Neuron::WidgetId field = fixture.ui.IdOf("pick");
+    const Neuron::WidgetId list = Neuron::Interaction::IdUnder(field, "list");
+
+    DrawList closed;
+    build(closed, 100.0f, three, 1);
+    Assert::AreEqual(size_t{0}, closed.layers.size(), L"no list while it is closed");
+    Assert::IsTrue(RectIs(closed.panels[0], 200.0f, 200.0f, 400.0f, 48.0f, theme.fieldColor));
+    Assert::IsTrue(OutlineIs(closed, 1, 200.0f, 200.0f, 400.0f, 48.0f, theme.edgeColor));
+    Assert::AreEqual(size_t{2}, closed.texts.size());
+    Assert::IsTrue(TextIs(closed.texts[0], "Two", 224.0f, 202.0f, theme.textColor, NAME), L"the value, in its middle down");
+    Assert::IsTrue(TextIs(closed.texts[1], "v", 570.0f, 208.0f, theme.textColor, LABEL), L"the mark in a small button's room");
+    Assert::IsTrue(closed.regions.size() == 1 && closed.regions[0].widget == field);
+
+    Assert::IsTrue(fixture.ui.Press(closed, 300.0f, 210.0f));
+    Assert::AreEqual(field, fixture.ui.DropDown(), L"a press on the field opens it");
+    DrawList open;
+    build(open, 100.0f, three, 1);
+    (void)fixture.ui.Release(open, 300.0f, 210.0f);
+    Assert::IsTrue(open.regions[0].dropsDown, L"the field, which a press opens");
+    Assert::IsTrue(open.layers.size() == 1 && open.layers[0].overlay, L"its list in an overlay");
+    Assert::IsTrue(RectIs(open.layers[0].frame, 200.0f, 248.0f, 400.0f, 144.0f, theme.fieldColor), L"under the field, a row each");
+    Assert::IsTrue(OutlineIs(open, 1, 200.0f, 200.0f, 400.0f, 48.0f, theme.pickedEdgeColor), L"the field's edge lit while it is open");
+    const Neuron::CanvasSpan rows = open.PanelsOf(1);
+    Assert::IsTrue(RectIs(open.panels[rows.first + 1], 200.0f, 248.0f, 400.0f, 48.0f, theme.cardColor));
+    Assert::IsTrue(RectIs(open.panels[rows.first + 2], 200.0f, 296.0f, 400.0f, 48.0f, theme.pickedColor), L"the pick lit");
+    Assert::IsTrue(TextIs(open.texts[open.TextsOf(1).first + 2], "Three", 224.0f, 346.0f, theme.textColor, NAME));
+    const Neuron::CanvasSpan regions = open.RegionsOf(1);
+    Assert::AreEqual(size_t{4}, regions.end - regions.first, L"a row each, and the list, which takes the wheel");
+    Assert::IsTrue(open.regions[regions.first + 3].widget == list && open.regions[regions.first + 3].scrolls);
+
+    const Neuron::CanvasRegion* third = open.HitAt(300.0f, 354.0f);
+    Assert::IsTrue(third != nullptr && third->payload == 12u, L"a choice names its payload");
+    Assert::IsTrue(fixture.ui.Press(open, 300.0f, 354.0f), L"a press in the list is the canvas's");
+    DrawList picked;
+    build(picked, 100.0f, three, 2);
+    (void)fixture.ui.Release(picked, 300.0f, 354.0f);
+    Assert::AreEqual(Neuron::NO_WIDGET, fixture.ui.DropDown(), L"and closes it");
+    Assert::AreEqual(size_t{0}, picked.layers.size());
+
+    // Esc closes it, and a press outside it.
+    Assert::IsTrue(fixture.ui.Press(picked, 300.0f, 210.0f));
+    DrawList again;
+    build(again, 100.0f, three, 2);
+    (void)fixture.ui.Release(again, 300.0f, 210.0f);
+    Assert::IsTrue(fixture.ui.Escape());
+    DrawList escaped;
+    build(escaped, 100.0f, three, 2);
+    Assert::AreEqual(size_t{0}, escaped.layers.size(), L"Esc closes it");
+    Assert::IsTrue(fixture.ui.Press(escaped, 300.0f, 210.0f));
+    DrawList reopened;
+    build(reopened, 100.0f, three, 2);
+    (void)fixture.ui.Release(reopened, 300.0f, 210.0f);
+    Assert::IsTrue(fixture.ui.Dismiss(reopened, 900.0f, 900.0f), L"a press outside it goes no further");
+    Assert::AreEqual(Neuron::NO_WIDGET, fixture.ui.DropDown());
+
+    // At the screen's foot, over the field.
+    Assert::IsTrue(fixture.ui.Press(reopened, 300.0f, 210.0f));
+    DrawList low;
+    build(low, 480.0f, three, 0);
+    (void)fixture.ui.Release(low, 300.0f, 210.0f);
+    Assert::IsTrue(RectIs(low.layers.back().frame, 200.0f, 816.0f, 400.0f, 144.0f, theme.fieldColor), L"over the field");
+
+    // Thirty choices run past the room either way: under the field, where there is more, the twenty-first at the top as far
+    // as the list goes, and scrolled by the wheel.
+    std::vector<std::string> thirty;
+    thirty.reserve(30);
+    for (int choice = 0; choice < 30; ++choice)
+      thirty.push_back(std::format("C{}", choice));
+    Assert::IsTrue(fixture.ui.Escape());
+    DrawList shut;
+    build(shut, 100.0f, thirty, 20);
+    Assert::IsTrue(fixture.ui.Press(shut, 300.0f, 210.0f));
+    DrawList longList;
+    build(longList, 100.0f, thirty, 20);
+    (void)fixture.ui.Release(longList, 300.0f, 210.0f);
+    Assert::IsTrue(RectIs(longList.layers.back().frame, 200.0f, 248.0f, 400.0f, 832.0f, theme.fieldColor), L"416 units, to the foot");
+    Assert::AreEqual(304.0f, fixture.ui.ScrollOf(list), 0.001f, L"720 units of rows, 304 spare");
+    Assert::AreEqual(size_t{1}, longList.clips.size());
+    Assert::IsTrue(RectIs(longList.clips[0].area, 200.0f, 248.0f, 372.0f, 832.0f, {}), L"its rows cut to it, short of its lane");
+    Assert::AreEqual(size_t{20}, longList.RegionsOf(1).end - longList.RegionsOf(1).first, L"rows 12 to 29, the list and the thumb");
+    Assert::IsTrue(RectIs(longList.panels[longList.PanelsOf(1).end - 6], 580.0f, 248.0f, 12.0f, 832.0f, theme.barTrackColor),
+                   L"the track in its lane");
+    Assert::IsTrue(fixture.ui.Wheel(longList, 300.0f, 400.0f, -100.0f), L"the wheel over the list is its");
+    DrawList scrolled;
+    build(scrolled, 100.0f, thirty, 20);
+    Assert::AreEqual(204.0f, fixture.ui.ScrollOf(list), 0.001f);
+    const auto rowTexts = scrolled.texts.begin() + static_cast<std::ptrdiff_t>(scrolled.TextsOf(1).first);
+    const auto twenty = std::ranges::find(rowTexts, scrolled.texts.end(), std::string("C20"), &Neuron::CanvasText::text);
+    Assert::IsTrue(twenty != scrolled.texts.end() && Near(twenty->top, 802.0f), L"the twenty-first row 400 units down");
+  }
+
   // ADR-100: a field's text stands in its content box, the theme's inset in from its sides and in its middle down, so that
   // its padding keeps room for what the caller sets over the field, such as a label before the text and a count after it;
   // and it is cut short within that room.
