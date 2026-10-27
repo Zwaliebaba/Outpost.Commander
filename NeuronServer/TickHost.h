@@ -24,10 +24,17 @@ public:
     return m_ticksPerSecond;
   }
 
+  // How many ticks Advance has dropped since the host was made: those due beyond the bound after a stall, which are never run.
+  [[nodiscard]] std::uint64_t DroppedTicks() const noexcept
+  {
+    return m_droppedTicks;
+  }
+
 private:
   std::uint32_t m_ticksPerSecond = 0;
   std::uint32_t m_maxTicksPerAdvance = 0;
   // Wall time not yet turned into a tick, in nanoseconds times ticks per second: a tick is due at each billion.
   std::uint64_t m_pending = 0;
+  std::uint64_t m_droppedTicks = 0;
 };
 } // namespace Neuron

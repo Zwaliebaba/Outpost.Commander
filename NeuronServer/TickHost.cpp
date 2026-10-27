@@ -31,7 +31,10 @@ std::uint32_t Neuron::TickHost::Advance(std::chrono::nanoseconds _elapsed) noexc
   const std::uint64_t due = m_pending / NANOSECONDS_PER_SECOND;
   m_pending %= NANOSECONDS_PER_SECOND;
   if (due > m_maxTicksPerAdvance)
+  {
+    m_droppedTicks += due - m_maxTicksPerAdvance;
     return m_maxTicksPerAdvance;
+  }
   return static_cast<std::uint32_t>(due);
 }
 

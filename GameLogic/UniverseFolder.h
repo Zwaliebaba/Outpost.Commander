@@ -14,6 +14,14 @@ struct LoggedCommand
 // How often a universe is saved, in seconds of its ticks (ADR-077 decision 7).
 inline constexpr std::uint32_t UNIVERSE_SAVE_SECONDS = 60;
 
+// A save the folder's thread has written: the tick it was made at, and how long its write took there, from opening its file
+// to renaming it into place. The write reaches the system's cache, not the disk.
+struct WrittenSave
+{
+  std::uint64_t tick = 0;
+  std::chrono::microseconds write{};
+};
+
 // A universe's folder (ADR-077): its saves, the newest UniverseFolder::SAVES_KEPT of them, and its command log, a file begun at
 // each save. A thread of the folder's own writes each save to a new file and renames it into place, so a killed process
 // never leaves half a save; the command log is written by the server's thread as each tick applies it.
@@ -54,6 +62,9 @@ public:
   // Waits until every save handed over is written. Throws what the writer's thread met.
   void Flush();
 
+  // The saves written since the last call, oldest first, for the universe's log (ADR-082 decision 1).
+  [[nodiscard]] std::vector<WrittenSave> TakeWritten();
+
 private:
   // The writer's thread: it writes each save handed over, oldest first, and drops the saves and logs no longer kept.
   void Write(const std::stop_token& _stop);
@@ -66,6 +77,7 @@ private:
   std::condition_variable_any m_changed;
   std::deque<std::pair<std::uint64_t, std::vector<std::byte>>> m_pending;
   bool m_writing = false;
+  std::vector<WrittenSave> m_written;
   std::exception_ptr m_failure;
   // Last, so that it is stopped and joined before anything it uses goes.
   std::jthread m_writer;

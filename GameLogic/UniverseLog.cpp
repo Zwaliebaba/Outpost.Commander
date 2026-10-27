@@ -57,6 +57,37 @@ std::string_view OutcomeWord(Outpost::OrderOutcome _outcome) noexcept
   return "given";
 }
 
+// A join's words after its tick, as UniverseLog.h lists them.
+std::string JoinWords(const Outpost::JoinRecord& _join)
+{
+  const std::string player = std::format("player {}", _join.player.value);
+  switch (_join.outcome)
+  {
+  case Outpost::JoinOutcome::Welcomed:
+    return std::format("welcomed {}", player);
+  case Outpost::JoinOutcome::WrongVersion:
+    return std::format("refused version layout {:016x}", _join.layout);
+  case Outpost::JoinOutcome::SeatRefused:
+    return std::format("refused seat {}", player);
+  case Outpost::JoinOutcome::Malformed:
+    return _join.player.IsValid() ? std::format("refused malformed {}", player) : std::string("refused malformed");
+  case Outpost::JoinOutcome::Silent:
+    return "refused silent";
+  case Outpost::JoinOutcome::Taken:
+    return std::format("gone {} taken", player);
+  case Outpost::JoinOutcome::Closed:
+    return std::format("gone {} closed {}", player, _join.code);
+  case Outpost::JoinOutcome::Lost:
+    return std::format("gone {} lost", player);
+  }
+  return "refused malformed";
+}
+
+[[nodiscard]] std::int64_t Microseconds(std::chrono::nanoseconds _time) noexcept
+{
+  return std::chrono::duration_cast<std::chrono::microseconds>(_time).count();
+}
+
 // Whose an entity is, as a snapshot shows it or the destruction it shows; nobody's when it shows neither.
 Outpost::PlayerId OwnerIn(const Outpost::Snapshot& _snapshot, Outpost::EntityId _id)
 {
@@ -81,9 +112,12 @@ void Outpost::UniverseLog::Write(const std::string& _line)
 
 void Outpost::UniverseLog::Started(std::uint64_t _tick, std::optional<std::uint64_t> _saveTick, std::size_t _replayed)
 {
-  // A server made afresh knows nobody's seat, and a battle it did not see the start of is not one it can tell.
+  // A server made afresh knows nobody's seat, and a battle it did not see the start of is not one it can tell; nor a minute.
   m_seats.clear();
   m_battles.clear();
+  m_longest.reset();
+  m_longTicks = 0;
+  m_droppedTicks = 0;
   Write(_saveTick.has_value() ? std::format("start {} recovered save {} replayed {}", _tick, *_saveTick, _replayed)
                               : std::format("start {} new", _tick));
 }
@@ -91,6 +125,60 @@ void Outpost::UniverseLog::Started(std::uint64_t _tick, std::optional<std::uint6
 void Outpost::UniverseLog::Saved(std::uint64_t _tick, std::size_t _bytes, std::chrono::microseconds _encode)
 {
   Write(std::format("save {} bytes {} encode_us {}", _tick, _bytes, _encode.count()));
+}
+
+void Outpost::UniverseLog::Written(std::uint64_t _saveTick, std::chrono::microseconds _write)
+{
+  Write(std::format("written {} write_us {}", _saveTick, _write.count()));
+}
+
+void Outpost::UniverseLog::Timed(std::uint64_t _tick, const TickTiming& _timing)
+{
+  if (_timing.total >= LONG_TICK)
+  {
+    ++m_longTicks;
+    if (!m_longest.has_value() || _timing.total > m_longest->second.total)
+      m_longest.emplace(_tick, _timing);
+  }
+  const std::uint64_t minute = std::uint64_t{MINUTE_SECONDS} * m_ticksPerSecond;
+  if (_tick != 0 && minute != 0 && _tick % minute == 0)
+    EndMinute(_tick);
+}
+
+void Outpost::UniverseLog::Dropped(std::uint64_t _ticks)
+{
+  m_droppedTicks += _ticks;
+}
+
+void Outpost::UniverseLog::EndMinute(std::uint64_t _tick)
+{
+  if (m_longest.has_value())
+  {
+    const auto& [tick, timing] = *m_longest;
+    // Each part that took a quarter of the tick or more, longest first.
+    std::vector<std::size_t> parts;
+    for (std::size_t part = 0; part < TICK_PART_COUNT; ++part)
+    {
+      if (timing.parts[part] * 4 >= timing.total)
+        parts.push_back(part);
+    }
+    std::ranges::stable_sort(parts, std::ranges::greater{}, [&timing](std::size_t _part) { return timing.parts[_part]; });
+    std::string words;
+    for (const std::size_t part : parts)
+      words += std::format(" {} {}", TickPartName(static_cast<TickPart>(part)), Microseconds(timing.parts[part]));
+    Write(std::format("tick {} us {} over {}{}", tick, Microseconds(timing.total), m_longTicks, words));
+  }
+  // The tick that ends the minute stands for the ticks it dropped.
+  if (m_droppedTicks > 0)
+    Write(std::format("dropped {} ticks {}", _tick, m_droppedTicks));
+  m_longest.reset();
+  m_longTicks = 0;
+  m_droppedTicks = 0;
+}
+
+void Outpost::UniverseLog::Joined(std::uint64_t _tick, const JoinRecord& _join)
+{
+  Write(std::format("join {} {} from {}", _tick, JoinWords(_join), _join.address.empty() ? "-" : _join.address));
 }
 
 void Outpost::UniverseLog::Record(std::uint64_t _tick, std::span<const SeatTick> _seats)
@@ -108,12 +196,15 @@ void Outpost::UniverseLog::Record(std::uint64_t _tick, std::span<const SeatTick>
     const auto state = std::ranges::find(m_seats, seat.player, &SeatState::player);
     const auto nodes = std::ranges::count(snapshot.sectors, seat.player, &SectorView::holder);
     const auto researched = std::ranges::count_if(snapshot.research, [](const ResearchTopicView& _topic) { return _topic.researched; });
-    Write(std::format("hour {} player {} ore {} income {} fleet {} cap {} nodes {} researched {} present {} deputy {}{}", _tick,
-                      seat.player.value, snapshot.ore, snapshot.oreIncomeHundredthsPerSecond, snapshot.commandPoints, snapshot.fleetCap,
-                      nodes, researched, state->playerTicks / m_ticksPerSecond, state->deputyTicks / m_ticksPerSecond,
-                      ConnectionWords(*state)));
+    Write(
+      std::format("hour {} player {} ore {} income {} fleet {} cap {} nodes {} researched {} present {} deputy {} orders {} refused {}{}",
+                  _tick, seat.player.value, snapshot.ore, snapshot.oreIncomeHundredthsPerSecond, snapshot.commandPoints, snapshot.fleetCap,
+                  nodes, researched, state->playerTicks / m_ticksPerSecond, state->deputyTicks / m_ticksPerSecond, state->orders,
+                  state->refused, ConnectionWords(*state)));
     state->playerTicks = 0;
     state->deputyTicks = 0;
+    state->orders = 0;
+    state->refused = 0;
   }
 }
 
@@ -136,6 +227,9 @@ void Outpost::UniverseLog::RecordSeat(std::uint64_t _tick, const SeatTick& _seat
     RecordConnection(*state, *_seat.connection);
 
   const Snapshot& snapshot = *_seat.snapshot;
+  // The server tells the seat of each command it refused it, as an event of the tick (ADR-094).
+  state->orders += _seat.orders;
+  state->refused += static_cast<std::uint64_t>(std::ranges::count(snapshot.events, EventKind::CommandRefused, &EventView::kind));
   for (const EventView& event : snapshot.events)
   {
     if (event.kind == EventKind::OrderFired)
@@ -172,9 +266,12 @@ void Outpost::UniverseLog::RecordConnection(SeatState& _state, const Neuron::Qui
     _state.packetsLost += _connection.packetsLost;
   else if (_connection.packetsLost > _state.lastPacketsLost)
     _state.packetsLost += _connection.packetsLost - _state.lastPacketsLost;
+  _state.bytesSent +=
+    newer || _connection.bytesSent < _state.lastBytesSent ? _connection.bytesSent : _connection.bytesSent - _state.lastBytesSent;
   _state.backlogMostBytes = std::max(_state.backlogMostBytes, _connection.backlogBytes);
   _state.lastPacketsSent = _connection.packetsSent;
   _state.lastPacketsLost = _connection.packetsLost;
+  _state.lastBytesSent = _connection.bytesSent;
 }
 
 std::string Outpost::UniverseLog::ConnectionWords(SeatState& _state)
@@ -186,12 +283,13 @@ std::string Outpost::UniverseLog::ConnectionWords(SeatState& _state)
   // The nearest rank, as Tools/FrameTimes.py takes a percentile.
   const auto rank = [&roundTrips](std::size_t _percent)
   { return roundTrips[std::max<std::size_t>(1, ((roundTrips.size() * _percent) + 99) / 100) - 1]; };
-  std::string words = std::format(" rtt_median_us {} rtt_p95_us {} sent {} lost {} backlog_most {}", rank(50), rank(95), _state.packetsSent,
-                                  _state.packetsLost, _state.backlogMostBytes);
+  std::string words = std::format(" rtt_median_us {} rtt_p95_us {} sent {} lost {} backlog_most {} sent_bytes {}", rank(50), rank(95),
+                                  _state.packetsSent, _state.packetsLost, _state.backlogMostBytes, _state.bytesSent);
   roundTrips.clear();
   _state.packetsSent = 0;
   _state.packetsLost = 0;
   _state.backlogMostBytes = 0;
+  _state.bytesSent = 0;
   return words;
 }
 

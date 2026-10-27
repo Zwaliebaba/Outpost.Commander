@@ -25,6 +25,8 @@ struct QuicStatistics
   // The bytes of messages the channel has handed MsQuic that the peer has not yet acknowledged, those still waiting to be sent
   // and those on their way.
   std::uint64_t backlogBytes = 0;
+  // The bytes of every UDP payload the connection has sent since it began.
+  std::uint64_t bytesSent = 0;
 };
 
 // One QUIC connection that carries messages both ways, reliably and in order, on one bidirectional stream (ADR-004,
@@ -105,6 +107,14 @@ public:
   // The error code the peer closed the connection with, once it has; none while it is open, or when it went otherwise.
   [[nodiscard]] std::optional<std::uint64_t> PeerErrorCode() const;
 
+  // The error code this end first shut the connection down with, once it has, by Shutdown or for a broken framing; none until
+  // then.
+  [[nodiscard]] std::optional<std::uint64_t> LocalErrorCode() const;
+
+  // The peer's IP address as text, without its port: the client's, as the listener was given it, at a server's end, and the
+  // host it was asked to reach at a client's. It never changes.
+  [[nodiscard]] const std::string& PeerAddress() const noexcept;
+
   // Whether the connection has gone, whichever end closed it and however: a peer that vanished is gone once MsQuic's idle
   // timeout says so.
   [[nodiscard]] bool HasGone() const;
@@ -162,9 +172,10 @@ public:
   [[nodiscard]] const CertificateHash& Certificate() const noexcept;
 
   // Shuts down, with _errorCode, every connection that completed its handshake more than _silence ago and has sent no
-  // message since, and lets go of every channel whose connection MsQuic has finished with and that nothing else holds.
-  // Never from a Receiver or any other of MsQuic's threads: letting a channel go waits for MsQuic's last callback for it.
-  void Sweep(std::chrono::milliseconds _silence, std::uint64_t _errorCode);
+  // message since, and lets go of every channel whose connection MsQuic has finished with and that nothing else holds. Returns
+  // the peer addresses of the connections it shut down. Never from a Receiver or any other of MsQuic's threads: letting a
+  // channel go waits for MsQuic's last callback for it.
+  std::vector<std::string> Sweep(std::chrono::milliseconds _silence, std::uint64_t _errorCode);
 
   // How many channels it holds: every connection it was given that it has not let go.
   [[nodiscard]] std::size_t ChannelCount() const;

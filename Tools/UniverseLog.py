@@ -1,7 +1,9 @@
 """Summarizes a universe's log, for the owner's week (ADR-082, Game §universe.log): its starts, recoveries and saves, and
 what the log can tell of what a player's presence buys, each seat's income, fleet and research in the hours its player
 played it against the hours its deputy did. It also counts each seat's battles by whether its player was present, and
-the losses, waits and restarts of a universe without an end (ADR-084).
+the losses, waits and restarts of a universe without an end (ADR-084). What it says of the server itself: its saves'
+writes, its minutes with a long tick and the ticks it dropped, every join by its outcome and where it came from, and each
+seat's orders, refusals and bytes an hour.
 
 The dedicated server writes Universe.log in the universe's folder, and --universe-run one in each of its two universes' folders. Each
 line is one record, every time in ticks; UniverseLog.h lists them.
@@ -39,6 +41,10 @@ def summarize(records):
     size = sorted(int(words[3]) for words in saves)
     lines.append(f"W2, {len(saves)} saves: encoding median {statistics.median(encode) / 1000:.2f} ms, at most {encode[-1] / 1000:.2f} ms; "
                  f"{size[0] // 1000}-{size[-1] // 1000} KB")
+  written = sorted(int(words[3]) for words in records if words[0] == "written")
+  if written:
+    lines.append(f"  written by the folder's thread: median {statistics.median(written) / 1000:.2f} ms, at most {written[-1] / 1000:.2f} ms")
+  lines.extend(server_lines(records))
 
   hours = [words for words in records if words[0] == "hour"]
   for player in sorted({words[3] for words in hours}):
@@ -63,6 +69,17 @@ def summarize(records):
 
     rates(present, "its player's hours")
     rates(deputy, "its deputy's hours")
+    # The commands applied for the seat and refused it, and the bytes sent its player, over the hours that have them.
+    def field(words, name):
+      return int(words[words.index(name) + 1])
+    counted = [words for words in seat if "orders" in words]
+    if counted:
+      orders = sum(field(words, "orders") for words in counted)
+      refused = sum(field(words, "refused") for words in counted)
+      lines.append(f"  orders: {orders / len(counted):.0f} an hour, {refused / max(orders, 1):.1%} of them refused")
+    sent = [words for words in seat if "sent_bytes" in words]
+    if sent:
+      lines.append(f"  sent: {statistics.mean(field(words, 'sent_bytes') for words in sent) / 1e6:.1f} MB an hour its player was connected")
     # The player's connection, over the hours it was sampled in (ADR-004).
     sampled = [words for words in seat if "rtt_median_us" in words]
     if sampled:
@@ -90,6 +107,40 @@ def summarize(records):
     if waits:
       lines.append(f"  restarts waited: {sum(1 for wait in waits if wait > 0)} of {len(waits)}, median {statistics.median(waits):.1f} s, "
                    f"at most {waits[-1]:.1f} s")
+  return lines
+
+
+def server_lines(records):
+  """The server's own records: its long minutes and dropped ticks, and every join by its outcome and address."""
+  lines = []
+  long_minutes = [words for words in records if words[0] == "tick"]
+  if long_minutes:
+    longest = max(long_minutes, key=lambda words: int(words[3]))
+    # The part that took most of each minute's longest tick, where one took a quarter of it or more.
+    leading = {}
+    for words in long_minutes:
+      if len(words) > 6:
+        leading[words[6]] = leading.get(words[6], 0) + 1
+    parts = ", ".join(f"{part} {count}" for part, count in sorted(leading.items(), key=lambda item: -item[1]))
+    lines.append(f"{len(long_minutes)} minutes with a tick of 5 ms or more, {sum(int(words[5]) for words in long_minutes)} such ticks; "
+                 f"the longest {int(longest[3]) / 1000:.1f} ms at tick {longest[1]}" + (f"; most of it: {parts}" if parts else ""))
+  dropped = [words for words in records if words[0] == "dropped"]
+  if dropped:
+    ticks = sum(int(words[3]) for words in dropped)
+    lines.append(f"{ticks} ticks dropped after stalls, {ticks / TICKS_PER_SECOND:.1f} s of the universe, in {len(dropped)} minutes")
+  joins = [words for words in records if words[0] == "join"]
+  if joins:
+    outcomes = {}
+    sources = {}
+    for words in joins:
+      # welcomed, refused <why> or gone <how>, and where it came from, the record's last word.
+      outcome = words[2] if words[2] == "welcomed" else f"{words[2]} {words[3] if words[2] == 'refused' else words[5]}"
+      outcomes[outcome] = outcomes.get(outcome, 0) + 1
+      if words[2] == "refused":
+        sources.setdefault(outcome, set()).add(words[-1])
+    lines.append("joins: " + ", ".join(f"{count} {outcome}" for outcome, count in sorted(outcomes.items())))
+    for outcome, addresses in sorted(sources.items()):
+      lines.append(f"  {outcome} from " + ", ".join(sorted(addresses)))
   return lines
 
 

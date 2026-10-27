@@ -549,6 +549,59 @@ public:
     Assert::IsFalse(SnapshotsOf(blue, 3).empty(), L"the client that said hello plays on");
   }
 
+  // ADR-082 decision 1: a universe's log writes what came of every connection, with the address it came from: a hello of
+  // another build, with the layout it named; a wrong token; a welcome; a seat taken by a newer connection; a connection closed
+  // with a code, which the newer one does once its close has gone out whole; and one that says no hello in time.
+  TEST_METHOD(LogsEveryJoin)
+  {
+    const TemporaryFolder folder;
+    auto server = UniverseServer(folder.Path());
+    const Outpost::ServerAddress seat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    (void)server->OpenSeat(RED, Outpost::NewSeatToken());
+    server->Start();
+
+    const std::uint64_t otherLayout = Outpost::WireLayoutHash() + 1;
+    (void)CloseCodeFor(seat, Outpost::EncodeMessage(Outpost::HelloMessage{.layoutHash = otherLayout, .player = BLUE, .token = seat.token}));
+    Outpost::ServerAddress guessed = seat;
+    guessed.token.back() ^= 0x80;
+    Assert::ExpectException<Neuron::Exception>([&guessed] { Outpost::QuicTransport refused(guessed, BLUE); }, L"a wrong token");
+    constexpr std::uint64_t CLOSE_CODE = 9;
+    {
+      Outpost::QuicTransport first(seat, BLUE);
+      Assert::IsFalse(SnapshotsOf(first, 1).empty(), L"the seat taken");
+      // A channel of the engine's own takes the seat again and closes with a code, and waits for its close to have gone: a
+      // close made at once may go without its code, which the server then reads as lost.
+      const std::unique_ptr<Neuron::QuicChannel> second = ChannelTo(seat);
+      second->Send(Outpost::EncodeMessage(Outpost::HelloMessage{.player = BLUE, .token = seat.token}));
+      Assert::IsFalse(WhyItWent(first).empty(), L"the first told it was taken");
+      second->Shutdown(CLOSE_CODE);
+      const auto closing = std::chrono::steady_clock::now() + 10s;
+      while (!second->HasGone() && std::chrono::steady_clock::now() < closing)
+        std::this_thread::sleep_for(10ms);
+      Assert::IsTrue(second->HasGone(), L"and the second closed");
+    }
+    const std::unique_ptr<Neuron::QuicChannel> silent = ChannelTo(seat);
+    (void)CloseCodeOf(*silent, 15s);
+
+    // The server's thread writes each record at its next tick.
+    const std::vector<std::string> expected{std::format(" refused version layout {:016x} from 127.0.0.1", otherLayout),
+                                            " refused seat player 1 from 127.0.0.1",
+                                            " welcomed player 1 from 127.0.0.1",
+                                            " gone player 1 taken from 127.0.0.1",
+                                            std::format(" gone player 1 closed {} from 127.0.0.1", CLOSE_CODE),
+                                            " refused silent from 127.0.0.1"};
+    std::string log;
+    const auto deadline = std::chrono::steady_clock::now() + 20s;
+    const auto holdsAll = [&] { return std::ranges::all_of(expected, [&](const std::string& _words) { return log.contains(_words); }); };
+    while (!holdsAll() && std::chrono::steady_clock::now() < deadline)
+    {
+      std::this_thread::sleep_for(50ms);
+      std::ifstream in(folder.Path() / Outpost::UNIVERSE_LOG_FILE);
+      log.assign(std::istreambuf_iterator<char>(in), {});
+    }
+    Assert::IsTrue(holdsAll(), Wide(log).c_str());
+  }
+
   // ADR-009 decision 6 and ADR-060 decision 2: a seated client with more commands waiting than COMMANDS_WAITING_LIMIT is
   // closed, and so is one that sends a message longer than a seated client's limit.
   TEST_METHOD(ClosesASeatThatFloodsIt)
