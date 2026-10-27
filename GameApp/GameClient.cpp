@@ -73,6 +73,9 @@ constexpr float RIG_FOOT_HEIGHT_SHARE = 0.05f;
 // A beam is its shooter's side's color taken this share of the way to white, so that the player sees whose fire it is
 // and it still reads as light (ADR-034 decision 4).
 constexpr float BEAM_WHITE_SHARE = 0.35f;
+// How far a notch of the wheel scrolls a scroll view of the interface, in reference units: about two of its lines of text
+// (ADR-100).
+constexpr float SCROLL_UNITS_A_NOTCH = 48.0f;
 
 // The selection is a ring on the ground around each selected ship or structure, green, or amber while attack-move waits for
 // its click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it. The
@@ -701,6 +704,12 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     else
       ++event;
   }
+  // The wheel scrolls a scroll view of the interface under the pointer, and zooms the camera everywhere else (ADR-100); a
+  // notch away from the player scrolls up.
+  if (input.wheelNotches != 0.0f &&
+      m_interaction.Wheel(m_hudLayout, static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels),
+                          -input.wheelNotches * SCROLL_UNITS_A_NOTCH))
+    input.wheelNotches = 0.0f;
   m_camera.Update(input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
   m_cursorGround =
