@@ -70,6 +70,12 @@
     <ClInclude Include="LayoutTree.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="WindowStack.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Interaction.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -119,6 +125,12 @@
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="LayoutTree.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowStack.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="Interaction.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
   </ItemGroup>

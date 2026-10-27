@@ -23,22 +23,17 @@ enum class WindowKind : std::uint8_t
 
 inline constexpr std::size_t WINDOW_KINDS = 8;
 
-// Which windows are open, in what order front to back, where each was left and which is being dragged, all in reference
-// units (ADR-006). It keeps no geometry of its own: the HUD lays each open window out where this says, clamped to the
-// screen, and tells it what a press hit. Positions last for as long as the manager does, which is as long as the game
-// runs; GameClient keeps the places the player leaves from one session to the next, and puts them back with Place
-// (ADR-099).
+// The game's windows on the engine's window stack (ADR-100), which keeps which are open, in what order front to back,
+// where each was left and which is being dragged, all in reference units (ADR-006); and which of the places under the
+// Ore an unmoved production or research window stands in, which is the game's. It keeps no geometry of its own: the HUD
+// lays each open window out where this says, clamped to the screen, and tells it what a press hit. Positions last for as
+// long as the manager does, which is as long as the game runs; GameClient keeps the places the player leaves from one
+// session to the next, and puts them back with Place (ADR-099).
 class WindowManager
 {
 public:
   // A point in reference units.
-  struct Point
-  {
-    float xUnits = 0.0f;
-    float yUnits = 0.0f;
-
-    friend bool operator==(const Point&, const Point&) = default;
-  };
+  using Point = Neuron::CanvasPoint;
 
   // How many places the windows that stand under the Ore have, production's and research's (ADR-031 decision 2).
   static constexpr std::size_t SLOTS = 2;
@@ -52,7 +47,7 @@ public:
   // The open windows, the front one first.
   [[nodiscard]] std::span<const WindowKind> FrontToBack() const noexcept
   {
-    return m_order;
+    return m_stack.FrontToBack();
   }
 
   // Closes the front window, as Esc does; false when none is open.
@@ -77,12 +72,12 @@ public:
   void Settle(WindowKind _window, Point _corner) noexcept;
   [[nodiscard]] bool IsDragging() const noexcept
   {
-    return m_grabbed.has_value();
+    return m_stack.IsDragging();
   }
   // The window being dragged, if any.
   [[nodiscard]] std::optional<WindowKind> Grabbed() const noexcept
   {
-    return m_grabbed;
+    return m_stack.Grabbed();
   }
   // Stands _window at _corner, as if the player had left it there, without opening it or bringing it to the front: a place
   // the player left it in is put back so, whatever the screen and the scale (ADR-099). It then takes no slot.
@@ -94,13 +89,7 @@ private:
     return static_cast<std::size_t>(_window);
   }
 
-  void BringToFront(WindowKind _window);
-
-  std::vector<WindowKind> m_order;
-  std::array<std::optional<Point>, WINDOW_KINDS> m_positions{};
+  Neuron::WindowStack<WindowKind, WINDOW_KINDS> m_stack;
   std::array<std::optional<std::size_t>, WINDOW_KINDS> m_slots{};
-  std::optional<WindowKind> m_grabbed;
-  // From the grabbed window's top-left corner to where it was taken hold of.
-  Point m_grabOffset;
 };
 } // namespace Outpost

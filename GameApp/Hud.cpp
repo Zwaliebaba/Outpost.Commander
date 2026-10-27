@@ -2463,9 +2463,7 @@ Hud::Span Hud::Layout::ActionsOf(std::size_t _layer) const noexcept
 Outpost::WindowManager::Point Hud::KeepOnScreen(WindowManager::Point _corner, float _widthUnits, float _screenWidthUnits,
                                                 float _screenHeightUnits) noexcept
 {
-  const float kept = std::min(WINDOW_KEPT_ON_SCREEN_UNITS, _widthUnits);
-  return {.xUnits = std::clamp(_corner.xUnits, kept - _widthUnits, std::max(kept - _widthUnits, _screenWidthUnits - kept)),
-          .yUnits = std::clamp(_corner.yUnits, 0.0f, std::max(0.0f, _screenHeightUnits - TITLE_BAR_UNITS))};
+  return Neuron::KeepOnScreen(_corner, _widthUnits, _screenWidthUnits, _screenHeightUnits, WINDOW_KEPT_ON_SCREEN_UNITS, TITLE_BAR_UNITS);
 }
 
 std::optional<Outpost::PlanePosition> Hud::Layout::MapPointAt(float _xPixels, float _yPixels) const noexcept
