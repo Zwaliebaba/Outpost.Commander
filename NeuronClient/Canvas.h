@@ -1,0 +1,132 @@
+#pragma once
+
+namespace Neuron
+{
+// What a button shows (ADR-043 decision 4): its label; a figure, such as its cost, after the mark it may have, at its
+// right; why it cannot be pressed, in the figure's place while it is disabled; its key, as a cap at its right; and work it
+// started that is under way, from nothing to one, as a bar along its foot. A press on it, while it is enabled, names the
+// caller's payload.
+struct ButtonContent
+{
+  std::string label;
+  std::string figure;
+  std::optional<std::size_t> figureMark;
+  std::string note;
+  std::string key;
+  std::uint32_t payload = NO_PAYLOAD;
+  bool enabled = true;
+  bool picked = false;
+  std::optional<float> progress;
+};
+
+// What a text field did with what reached it this frame (ADR-017 decision 8): nothing more than edit its text, or end
+// typing, by Enter, which keeps the text, or by Esc, which drops what was typed.
+enum class FieldEnd : std::uint8_t
+{
+  Typing,
+  Entered,
+  Dropped
+};
+
+// The canvas a frame's interface is built on (ADR-100): widgets in the theme's look, each a node of the layout and what it
+// draws there, and a window, a layer of its own. The build records them in the order they are drawn: the HUD's first,
+// then each window back to front. Finish measures and places the layout and draws what was recorded into a display
+// list, each place in reference units times the metrics' scale. A widget's identifier is its label's under the window
+// it is in; two in one frame are a failed assertion (ADR-093).
+class Canvas
+{
+public:
+  // The theme, the metrics and the interaction must outlive the canvas.
+  Canvas(const Theme& _theme, const TextMetrics& _metrics, Interaction& _interaction, float _screenWidthUnits, float _screenHeightUnits);
+
+  // The layout the widgets are nodes of, for columns, rows, grids, stacks and spacers.
+  [[nodiscard]] LayoutTree& Tree() noexcept
+  {
+    return m_tree;
+  }
+
+  // A floating window (ADR-031 decision 3): a layer of its own, its frame with its top-left corner at _corner, _widthUnits
+  // wide and as tall as its title bar and its body; its hatched title bar, with _title, and its close box; and a bracket at
+  // each corner. Its body is a column of _body's style, which takes what is built until EndWindow, named under _window.
+  void BeginWindow(WidgetId _window, std::string _title, CanvasPoint _corner, float _widthUnits, const LayoutStyle& _body = {});
+  void EndWindow();
+  // The identifiers of a window's title bar, which a press drags it by, and of its close box.
+  [[nodiscard]] WidgetId TitleBarOf(WidgetId _window) const noexcept;
+  [[nodiscard]] WidgetId CloseBoxOf(WidgetId _window) const noexcept;
+
+  // A panel of the HUD, in a window's look though it has no title bar (ADR-043 decision 1): a column of _style, its body
+  // and a bracket at each corner, which takes what is built until EndPanel.
+  std::size_t BeginPanel(const LayoutStyle& _style);
+  void EndPanel();
+
+  // A text in _color: one line, one cut short, or wrapped, as _text flows (ADR-061 decision 3).
+  std::size_t Label(LayoutText _text, const DirectX::XMFLOAT4& _color, const LayoutStyle& _style = {});
+  // A button, a card, as _button has it (ADR-043 decision 4): dim and taking no press while disabled, its edge lit under
+  // the pointer unless it is picked, whose edge is lit already. The label is cut short only where it would meet the figure,
+  // the reason or the cap.
+  WidgetId Button(std::string_view _id, const ButtonContent& _button, const LayoutStyle& _style);
+  // A small square button with _mark in its middle, such as an arrow.
+  WidgetId SmallButton(std::string_view _id, std::string _mark, bool _enabled, std::uint32_t _payload);
+  // _subject between the arrows that step it, "< SHIPYARD 05 >" (ADR-068 decision 1): cut short to leave the arrows room
+  // within _roomUnits, its line _textTopUnits under the arrows' top. The arrows name _previous and _next, while _canStep.
+  void Stepper(std::string_view _id, LayoutText _subject, const DirectX::XMFLOAT4& _color, float _roomUnits, float _textTopUnits,
+               bool _canStep, std::uint32_t _previous, std::uint32_t _next);
+  // A row of cells, a grid of _style one row long, each cell _heightUnits tall with its words in its middle, the one at
+  // _picked lit, and each naming its payload (ADR-088 decision 3).
+  void Cells(std::string_view _id, std::span<const LayoutText> _words, std::span<const std::uint32_t> _payloads,
+             std::optional<std::size_t> _picked, float _heightUnits, const LayoutStyle& _style);
+  // A box with a tick while _checked, and _label after it; a press on the box names _payload.
+  WidgetId Checkbox(std::string_view _id, LayoutText _label, bool _checked, std::uint32_t _payload);
+  // A bar of _style's size, filled from its left by _share, from nothing to one.
+  std::size_t ProgressBar(float _share, const LayoutStyle& _style);
+  // A warning (ADR-085 decision 1): its words in the window's color on a tag of the warning's, which reaches the theme's pad
+  // beyond them on either side and covers their whole line. Nothing else is filled in the warning's color.
+  std::size_t Chip(LayoutText _text);
+  // A key's letter on a cap (ADR-068 decision 4).
+  std::size_t KeyCap(std::string _key);
+  // A field _text is typed into (ADR-017 decision 8): a press on it gives it the keyboard, and while it has it, every
+  // character the atlas holds, up to _limitCharacters, and Backspace edit _text, Enter ends typing and keeps it, and Esc
+  // ends it and drops what was typed, which the caller puts back. It shows a caret while it has the keyboard, and its text
+  // in the warning's color while it is not _valid.
+  FieldEnd TextField(std::string_view _id, std::string& _text, std::size_t _limitCharacters, bool _valid, const LayoutStyle& _style);
+
+  // A rectangle of _color at a node, for what the game composes of its own, such as a part's card. It may be any color but
+  // the warning's, which only a chip fills.
+  void Fill(std::size_t _node, const DirectX::XMFLOAT4& _color, CanvasFill _fill = CanvasFill::Solid);
+  [[nodiscard]] static bool MayFill(const Theme& _theme, const DirectX::XMFLOAT4& _color) noexcept;
+
+  // Measures and places what was built, and draws it into _list, in the order it was built; once, when the build is done.
+  void Finish(DrawList& _list);
+
+private:
+  using Draw = std::function<void(DrawList&)>;
+
+  // Names _id under the window it is in and claims it for this frame.
+  [[nodiscard]] WidgetId Claim(std::string_view _id);
+  [[nodiscard]] float Scale() const noexcept
+  {
+    return m_metrics.Scale();
+  }
+  [[nodiscard]] CanvasRect RectOf(std::size_t _node, const DirectX::XMFLOAT4& _color, CanvasFill _fill = CanvasFill::Solid) const;
+  [[nodiscard]] CanvasRect Area(float _leftUnits, float _topUnits, float _widthUnits, float _heightUnits, const DirectX::XMFLOAT4& _color,
+                                CanvasFill _fill = CanvasFill::Solid) const noexcept;
+  void Outline(DrawList& _list, float _leftUnits, float _topUnits, float _widthUnits, float _heightUnits,
+               const DirectX::XMFLOAT4& _color) const;
+  void Text(DrawList& _list, std::string _text, float _leftUnits, float _topUnits, const DirectX::XMFLOAT4& _color, std::size_t _font,
+            float _trackingUnits = 0.0f) const;
+  void Lines(DrawList& _list, std::size_t _node, const DirectX::XMFLOAT4& _color) const;
+  void Corners(DrawList& _list, const CanvasRect& _frame) const;
+  void Cap(DrawList& _list, const std::string& _key, float _leftUnits, float _topUnits) const;
+  void DrawButton(DrawList& _list, std::size_t _node, WidgetId _widget, const ButtonContent& _button, bool _hot) const;
+  void DrawSmallButton(DrawList& _list, std::size_t _node, WidgetId _widget, const std::string& _mark, bool _enabled,
+                       std::uint32_t _payload) const;
+
+  const Theme& m_theme;
+  const TextMetrics& m_metrics;
+  Interaction& m_interaction;
+  LayoutTree m_tree;
+  std::vector<Draw> m_draws;
+  // The windows open in the build, the innermost last.
+  std::vector<WidgetId> m_windows;
+};
+} // namespace Neuron

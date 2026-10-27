@@ -36,4 +36,6 @@
 #include "LayoutTree.h"
 #include "WindowStack.h"
 #include "Interaction.h"
+#include "Theme.h"
+#include "Canvas.h"
 #include "UiPipeline.h"

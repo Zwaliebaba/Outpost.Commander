@@ -15,6 +15,7 @@
     <ClCompile Include="LayoutTreeTests.cpp" />
     <ClCompile Include="WindowStackTests.cpp" />
     <ClCompile Include="InteractionTests.cpp" />
+    <ClCompile Include="CanvasTests.cpp" />
     <ClCompile Include="BloomTests.cpp" />
   </ItemGroup>
 </Project>

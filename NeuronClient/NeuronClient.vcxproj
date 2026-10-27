@@ -96,6 +96,8 @@
     <ClInclude Include="LayoutTree.h" />
     <ClInclude Include="WindowStack.h" />
     <ClInclude Include="Interaction.h" />
+    <ClInclude Include="Theme.h" />
+    <ClInclude Include="Canvas.h" />
     <ClInclude Include="GlowPipeline.h" />
     <ClInclude Include="GroundMaskPipeline.h" />
     <ClInclude Include="StarPipeline.h" />
@@ -119,6 +121,7 @@
     <ClCompile Include="LayoutTree.cpp" />
     <ClCompile Include="WindowStack.cpp" />
     <ClCompile Include="Interaction.cpp" />
+    <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="GlowPipeline.cpp" />
     <ClCompile Include="GroundMaskPipeline.cpp" />
     <ClCompile Include="StarPipeline.cpp" />

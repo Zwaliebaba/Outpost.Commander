@@ -76,6 +76,12 @@
     <ClInclude Include="Interaction.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="Theme.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Canvas.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -131,6 +137,9 @@
       <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="Interaction.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="Canvas.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
   </ItemGroup>
