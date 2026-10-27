@@ -76,7 +76,7 @@ Stalled and No word are told apart because `Health` comes from the server's main
 |---|---|---|---|
 | overseer | `OverseerHello` | first | its version and layout hash, and the token |
 | server | `OverseerWelcome` | once | the server's wire layout, protocol and state version; the tick rate; the seats, each a player's or an AI empire's with its difficulty; the systems and their sectors, which never change |
-| server | `Health` | every second, from the main thread | the wall time; the tick reached; ticks run and dropped in the second; the second's tick median, 99th percentile and longest with its largest part; each seat's controller, link figures, bytes out, commands applied and refused and its state; the process's figures; the listener's counts |
+| server | `Health` | every second, from the main thread | the wall time; the tick reached; each tick's time in the second, which lets the overseer take any percentile, the parts summed, the longest tick's largest part, and the ticks dropped; each seat's controller, link figures, bytes out, commands applied and refused and its state; the process's figures; the listener's counts |
 | server | `UniverseView` | twice a second, the newest winning (ADR-096) | every entity as an `EntityView` with its owner, each sector's holder and state, each battle under way: full sight, or one seat's snapshot while `WatchSight` names that seat; as what changed (ADR-098) |
 | server | `LogRecord` | as the universe log writes each record, in order; the last 500 on connecting | the record's line as `Universe.log` holds it |
 | server | `Closing` | before the process ends | how it ends, stopped by the owner, by Windows or by a failure, and the failure's message |

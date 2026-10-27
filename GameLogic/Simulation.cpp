@@ -1141,23 +1141,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
       snapshot.tickets.push_back({.player = player, .tickets = Tickets(player)});
   }
   snapshot.fogOfWar = m_fog;
-  snapshot.sectors.reserve(m_sectors.size());
-  for (const Sector& sector : m_sectors)
-  {
-    const SectorPlacement& placement = sector.placement;
-    snapshot.sectors.push_back({.id = placement.id,
-                                .nameUtf8 = placement.name,
-                                .minXMeters = placement.minXMeters,
-                                .maxXMeters = placement.maxXMeters,
-                                .minZMeters = placement.minZMeters,
-                                .maxZMeters = placement.maxZMeters,
-                                .node = placement.node,
-                                .adjacent = placement.adjacent,
-                                .holder = sector.holder,
-                                .suppressed = sector.suppressed,
-                                .cutOff = sector.cutOff,
-                                .guarded = sector.guarded});
-  }
+  snapshot.sectors = SectorViews();
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
   {
@@ -1204,6 +1188,57 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     std::ranges::inplace_merge(snapshot.entities, snapshot.entities.begin() + seenEnd, {}, &EntityView::id);
   }
   return snapshot;
+}
+
+Outpost::Snapshot Outpost::Simulation::BuildFullSight() const
+{
+  Snapshot snapshot{.tick = m_tick, .shots = m_shots, .destroyed = m_destroyed};
+  snapshot.sectors = SectorViews();
+  snapshot.entities.reserve(m_entities.size());
+  for (const Entity& entity : m_entities)
+  {
+    // Every entity as its owner sees it, and an asteroid's Ore left as it is.
+    EntityView& view = snapshot.entities.emplace_back(EntityViewOf(entity, true));
+    view.shipyardNumber = entity.shipyardNumber;
+    view.shipsBuilt = entity.shipsBuilt;
+    view.order = entity.order;
+    view.standing = entity.standing;
+    view.retreat = entity.retreat;
+    view.retreating = entity.retreating;
+    if (m_fog && entity.owner.IsValid())
+      view.sightMeters = SightMetersOf(entity);
+    if (entity.kind == EntityKind::Asteroid)
+      view.oreReserveHundredths = entity.oreReserveHundredths;
+    else if (entity.kind == EntityKind::Structure && entity.structure == StructureKind::MiningRig && entity.site.IsValid())
+    {
+      if (const Entity* asteroid = FindEntity(entity.site))
+        view.oreReserveHundredths = asteroid->oreReserveHundredths;
+    }
+  }
+  return snapshot;
+}
+
+std::vector<Outpost::SectorView> Outpost::Simulation::SectorViews() const
+{
+  std::vector<SectorView> sectors;
+  sectors.reserve(m_sectors.size());
+  for (const Sector& sector : m_sectors)
+  {
+    const SectorPlacement& placement = sector.placement;
+    sectors.push_back({.id = placement.id,
+                       .nameUtf8 = placement.name,
+                       .minXMeters = placement.minXMeters,
+                       .maxXMeters = placement.maxXMeters,
+                       .minZMeters = placement.minZMeters,
+                       .maxZMeters = placement.maxZMeters,
+                       .node = placement.node,
+                       .adjacent = placement.adjacent,
+                       .holder = sector.holder,
+                       .suppressed = sector.suppressed,
+                       .cutOff = sector.cutOff,
+                       .guarded = sector.guarded});
+  }
+  return sectors;
 }
 
 const Outpost::Entity* Outpost::Simulation::FindEntity(EntityId _id) const noexcept

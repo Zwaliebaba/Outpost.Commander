@@ -319,6 +319,10 @@ public:
   // what the player sees of them and the enemy structures it remembers (ADR-024).
   [[nodiscard]] Snapshot BuildSnapshot(PlayerId _player) const;
 
+  // The universe in full sight, for its overseer (ADR-101): every entity as its owner sees it, every shot and destruction of
+  // the last tick, and every sector with its holder, fog of war or not; no player's own figures, and no player.
+  [[nodiscard]] Snapshot BuildFullSight() const;
+
   // The entity with this identifier, or nullptr.
   [[nodiscard]] const Entity* FindEntity(EntityId _id) const noexcept;
 
@@ -720,6 +724,8 @@ private:
   // The Ore left in an ore asteroid as _player knows it: what it holds without fog of war, and what the player last saw
   // under it. None for one never seen, or one that never runs out.
   [[nodiscard]] std::optional<std::int64_t> ReserveKnownTo(PlayerId _player, EntityId _asteroid) const;
+  // Every sector as a snapshot shows it, with its holder, in the map's order.
+  [[nodiscard]] std::vector<SectorView> SectorViews() const;
   void Mine();
   // Ends the match once a player whose base was placed has no Command Station left.
   void DecideMatch();

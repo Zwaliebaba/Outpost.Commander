@@ -94,6 +94,7 @@
     <ClInclude Include="SeatController.h" />
     <ClInclude Include="AwayReports.h" />
     <ClInclude Include="UniverseLog.h" />
+    <ClInclude Include="OverseerLink.h" />
     <ClInclude Include="UniverseRun.h" />
     <ClInclude Include="UniverseSettings.h" />
   </ItemGroup>
@@ -117,6 +118,7 @@
     <ClCompile Include="SeatController.cpp" />
     <ClCompile Include="AwayReports.cpp" />
     <ClCompile Include="UniverseLog.cpp" />
+    <ClCompile Include="OverseerLink.cpp" />
     <ClCompile Include="UniverseRun.cpp" />
     <ClCompile Include="UniverseSettings.cpp" />
   </ItemGroup>

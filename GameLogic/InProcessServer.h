@@ -131,6 +131,25 @@ public:
   // has them. Throws Neuron::Exception once the server has started, or when the player is not hosted.
   void ReplaceHosted(PlayerId _player, std::unique_ptr<HostedPlayer> _hosted);
 
+  // Match setup for a universe's server, after UseUniverse (ADR-101): its overseer's link, listening on _desc's address with the
+  // universe's kept certificate, which welcomes an overseer with the universe's _seats. Returns where the overseer reaches it:
+  // the host on this machine, the port, the certificate and the token. Throws Neuron::Exception once the server has started,
+  // for a server that is no universe's, or when it cannot listen.
+  [[nodiscard]] ServerAddress Oversee(const OverseerDesc& _desc, std::vector<OverseerSeat> _seats);
+
+  // What Health says (ADR-101), the process aside, which is _process: each tick's time since the last call, the ticks dropped
+  // since, and what the server's thread kept of its seats at the last second of ticks. It takes the tick timings, as
+  // TakeTickTimings does, and so throws again an exception the server's thread met. From the thread that started the server.
+  [[nodiscard]] HealthMessage TakeHealth(const Neuron::ProcessFigures& _process);
+
+  // Once a second, from the thread that started the server: takes Health, and sends it to the overseer, while one holds the
+  // link.
+  void Report(const Neuron::ProcessFigures& _process);
+
+  // Before the server goes, from the thread that started it: tells the overseer, if one holds the link, how the server ends,
+  // with _message for a failure, and the tick of the universe's last save, and waits a second at most for it to hear.
+  void Close(ServerEnding _ending, std::string _message);
+
 private:
   // Runs one tick: the commands that arrived since the last, at most COMMANDS_PER_TICK of each connection's, in connection
   // order and then in the order each client sent them, and then a snapshot for every connected player. A universe's tick
@@ -141,6 +160,9 @@ private:
 
   // Hands a save of the universe as it stands to its folder, which begins its log anew there (ADR-077).
   void SaveUniverse();
+
+  // Ticks the server dropped after a stall, for the universe's log and the next Health.
+  void KeepDropped(std::uint64_t _ticks);
 
   // The started server's thread: it sleeps on a timer until the next tick is due (ADR-055), runs the ticks that are, and
   // stops when asked.
@@ -176,6 +198,23 @@ private:
     // connection was last seen gone, which the universe's log has written (ADR-082 decision 1).
     std::uint32_t orders = 0;
     std::optional<std::uint32_t> goneTaking;
+    // Touched by the thread that steps the server only: the seat's link as last seen, the tick it became so and at which
+    // taking, and the commands applied for it and refused it since the last second of ticks, for the overseer (ADR-101).
+    SeatLink link = SeatLink::None;
+    std::uint64_t linkTick = 0;
+    std::uint32_t linkTaking = 0;
+    std::uint32_t secondOrders = 0;
+    std::uint32_t secondRefused = 0;
+  };
+
+  // What the server's thread keeps for Health each second of ticks (ADR-101).
+  struct KeptSecond
+  {
+    std::uint64_t tick = 0;
+    std::vector<SeatHealth> seats;
+    std::vector<BattleHealth> battles;
+    std::array<std::uint32_t, JOIN_OUTCOME_COUNT> joins{};
+    std::uint32_t connections = 0;
   };
 
   // Keeps what came of a connection for the universe's log, which the next tick writes. Called on MsQuic's thread.
@@ -221,6 +260,12 @@ private:
   std::deque<SeatFigures> m_seatFigures;
   std::exception_ptr m_failure;
   std::vector<JoinRecord> m_joins;
+  // Also guarded by it: what the server's thread kept for Health at the last second of ticks, and the ticks dropped since the
+  // last Health.
+  KeptSecond m_second;
+  std::uint64_t m_healthDropped = 0;
+  // The joins since the server started, by outcome: touched by the thread that steps the server only.
+  std::array<std::uint32_t, JOIN_OUTCOME_COUNT> m_joinCounts{};
   // Guards the connections while they can still change: until the server starts, MsQuic's threads seat players as the
   // shell's thread adds them. Each connection's QUIC channel stays guarded after it.
   std::mutex m_seatMutex;
@@ -230,12 +275,20 @@ private:
   std::unique_ptr<Neuron::QuicListener> m_listener;
   // The host OpenSeat names for the listener, set with it.
   std::string m_listenHost;
+  // A universe's overseer's link, once Oversee has made it (ADR-101).
+  std::unique_ptr<OverseerLink> m_overseer;
   // Touched by the thread that steps the server only.
   AwayReports m_away;
   // A universe's folder and which universe it is, once UseUniverse has made the server a universe's. Destroyed after the thread, so
   // that the saves it was handed are written before the server goes.
   std::unique_ptr<UniverseFolder> m_folder;
   UniverseIdentity m_identity;
+  // The universe's folder, and what it came back from as it started: the save of a tick and the commands replayed, or none.
+  std::filesystem::path m_universeFolder;
+  std::optional<std::uint64_t> m_recoveredSaveTick;
+  std::uint64_t m_replayedCommands = 0;
+  // The tick of the universe's last save, which the server's thread writes and Close reads.
+  std::atomic<std::uint64_t> m_lastSaveTick{0};
   // The universe's log, beside its saves (ADR-082), and the file it writes to.
   std::ofstream m_logFile;
   std::optional<UniverseLog> m_log;

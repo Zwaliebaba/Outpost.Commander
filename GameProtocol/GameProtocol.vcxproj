@@ -89,6 +89,7 @@
     <ClInclude Include="QuicTransport.h" />
     <ClInclude Include="SeatToken.h" />
     <ClInclude Include="JoinTicket.h" />
+    <ClInclude Include="OverseerTicket.h" />
     <ClInclude Include="HostedPlayer.h" />
     <ClInclude Include="WireFormat.h" />
     <ClInclude Include="SentStates.h" />
@@ -96,6 +97,7 @@
     <ClInclude Include="WireFields.h" />
     <ClInclude Include="ByteFormat.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="OverseerProtocol.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +108,8 @@
     <ClCompile Include="QuicTransport.cpp" />
     <ClCompile Include="SeatToken.cpp" />
     <ClCompile Include="JoinTicket.cpp" />
+    <ClCompile Include="OverseerTicket.cpp" />
+    <ClCompile Include="OverseerProtocol.cpp" />
     <ClCompile Include="WireFormat.cpp" />
     <ClCompile Include="SentStates.cpp" />
     <ClCompile Include="HeldStates.cpp" />

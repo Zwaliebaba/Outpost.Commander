@@ -26,10 +26,10 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV1.2 | A seat's orders, refusals and bytes are in its hour | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
 | OV1.3 | Every join and every link's end is logged | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
 | OV1.4 | A save's write is timed | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
-| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | D4 | in progress |
-| OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | in progress |
-| OV2.3 | The universe's view and the log's stream | OV2.1 | — | in progress |
-| OV2.4 | `Closing`, and the server's state | OV2.2 | — | in progress |
+| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | D4 | in review |
+| OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | in review |
+| OV2.3 | The universe's view and the log's stream | OV2.1 | — | in review |
+| OV2.4 | `Closing`, and the server's state | OV2.2 | — | in review |
 | OV3.1 | The overseer's project and window | OV2 | D1, D5, D6 | todo |
 | OV3.2 | The overview: header, tiles, seat table, attention, who played, the log | OV3.1, the canvas plan's CV9.1 | D7 | todo |
 | OV3.3 | The map: one system's sectors, full sight and a seat's | OV3.1 | — | todo |
@@ -131,7 +131,7 @@ The overseer's own channel to the server, as the proposal's §4 has it, but for 
   - `Neuron::ProcessMeter` in `NeuronServer`: the process's working set and private bytes, its CPU since the last measure in hundredths of a core, its threads and handles, how long it has run, and the disk free under a folder, through `GetProcessMemoryInfo`, `GetProcessTimes`, `GetProcessHandleCount`, a Toolhelp snapshot and `GetDiskFreeSpaceExW`. It knows no game concept (R9).
   - The server's thread, each second of ticks, as it samples the seats' connections (ADR-004 decision 6), keeps for the main thread: the tick; each seat's player, who plays it, its link (an AI empire's none, a seat never taken, online since a tick, or gone since a tick and the tick its deputy takes it), its connection's figures, the commands applied for it and refused it in the second, its Ore, income, fleet against its cap, nodes and topics researched, and while it has lost the tick it restarts or that it waits; the battles under way; and the joins by outcome since the server started, with the connections the game's listener holds.
   - The main thread, once a second, sends `Health` while an overseer holds the channel: the wall time; each tick's time in the second, which lets the overseer take any percentile over any window, the parts summed over the second and the longest tick's largest part; the ticks dropped in the second; what the server's thread kept; and the process's figures. A stuck tick still sends `Health`, whose tick then stands still.
-- **ADR:** the overseer's channel's; [ADR-004](../ADR/ADR-004-quic-transport.md) decision 6, a seat's figures taken each second.
+- **ADR:** the overseer's channel's.
 - **Acceptance:** `ProcessMeterTests`; `InProcessServerTests` for what the server's thread keeps each second, from a server stepped by hand; `OverseerLinkTests.SendsHealthEverySecond`.
 - **Verify:** the checkers; the container's tests; CI's Debug|x64 run for the QUIC test and `ProcessMeterTests`, whose calls the container stands in for.
 
@@ -156,6 +156,15 @@ The overseer's own channel to the server, as the proposal's §4 has it, but for 
 - **ADR:** the overseer's channel's.
 - **Acceptance:** `OverseerLinkTests.SaysHowTheServerEnds`, for a stop and a failure, and that the welcome says what the server came back from.
 - **Verify:** the checkers; the container's tests; CI's Debug|x64 run for the QUIC test.
+
+### As built
+
+- **The channel** is [ADR-101](../ADR/ADR-101-the-overseers-channel.md), and [ADR-078](../ADR/ADR-078-dedicated-server.md) decisions 1 and 2 and [ADR-082](../ADR/ADR-082-universe-log-and-universe-run.md) decision 1 are edited for it. ADR-004 decision 6 needed no change: `Health` reads the seats' connections where the server already samples them.
+- **`Health` carries each tick's time** since the last one, not the second's median, 99th percentile and longest as the proposal had it, so that the overseer takes any percentile over any window; the proposal's §4 now says so.
+- **The acceptance's names as built:** `OverseerLinkTests.WelcomesAnOverseerWithTheToken`, `RefusesWhatIsNotItsOverseerAndLogsIt`, `GivesTheChannelToTheNewestOverseer`, `SendsHealthEverySecond`, `SendsTheViewAndTheLog` and `SaysHowTheServerEnds`; `InProcessServerTests.KeepsEachSecondForTheOverseersHealth`; `UniverseLogTests.WritesTheOverseersComingsAndGoings`, `ReadsItsLastRecords` and `TellsTheBattlesUnderWay`; `UniverseSettingsTests.ReadsWhereTheOverseerIsListenedFor` and `WritesTheOverseersFile`.
+- **Run in the container:** `NeuronServerTests` 15, `GameProtocolTests` 37, `OpponentTests` 32 and `GameLogicTests` 345 pass, built by clang 18 against stand-ins for the Windows headers, C++/WinRT and the test framework; `ProcessMeterTests` ran there against stand-ins for its Windows calls, built from Linux's own figures. `KeepsEachSecondForTheOverseersHealth` was checked against two broken builds, one that counted a second's commands into the next and one that lost the dropped ticks, and failed each. The QUIC tests fail there as before, and `OverseerLinkTests` is not built there, since it needs MsQuic.
+- **Not run in the container:** `OverseerLinkTests`, `ProcessMeterTests` against Windows itself, and `OutpostServer`, which the container does not build; `OutpostServer`'s two changed files and `OverseerLinkTests.cpp` compile there against the stand-ins. CI's Debug|x64 run builds and runs them.
+- **The checkers:** `CheckFormat.py` on clang-format 18.1.3, `CheckProjectFiles.py`, `GenerateDocs.py --check` and `CheckCitations.py` pass; clang-tidy 18, with the repository's checks, finds nothing in the changed files.
 
 ---
 

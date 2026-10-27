@@ -94,6 +94,8 @@
     <ClCompile Include="WireFormatTests.cpp" />
     <ClCompile Include="SentStatesTests.cpp" />
     <ClCompile Include="HeldStatesTests.cpp" />
+    <ClCompile Include="OverseerProtocolTests.cpp" />
+    <ClCompile Include="OverseerTicketTests.cpp" />
     <ClCompile Include="IdTests.cpp" />
     <ClCompile Include="PlacementTests.cpp" />
     <ClCompile Include="AwayReportTests.cpp" />

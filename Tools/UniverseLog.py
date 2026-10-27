@@ -2,8 +2,8 @@
 what the log can tell of what a player's presence buys, each seat's income, fleet and research in the hours its player
 played it against the hours its deputy did. It also counts each seat's battles by whether its player was present, and
 the losses, waits and restarts of a universe without an end (ADR-084). What it says of the server itself: its saves'
-writes, its minutes with a long tick and the ticks it dropped, every join by its outcome and where it came from, and each
-seat's orders, refusals and bytes an hour.
+writes, its minutes with a long tick and the ticks it dropped, every join by its outcome and where it came from, each
+seat's orders, refusals and bytes an hour, and the overseer's comings and goings.
 
 The dedicated server writes Universe.log in the universe's folder, and --universe-run one in each of its two universes' folders. Each
 line is one record, every time in ticks; UniverseLog.h lists them.
@@ -141,6 +141,47 @@ def server_lines(records):
     lines.append("joins: " + ", ".join(f"{count} {outcome}" for outcome, count in sorted(outcomes.items())))
     for outcome, addresses in sorted(sources.items()):
       lines.append(f"  {outcome} from " + ", ".join(sorted(addresses)))
+  lines += overseer_lines(records)
+  return lines
+
+
+def overseer_lines(records):
+  """The overseer's comings and goings (ADR-101): how often its channel opened, how long it was open, and every refusal by its
+  reason and address."""
+  if not any(words[0] == "overseer" for words in records):
+    return []
+  openings = 0
+  held = 0
+  since = 0
+  open_ticks = 0
+  refusals = {}
+  sources = {}
+  for words in records:
+    tick = int(words[1])
+    # A server made afresh holds no channel, and the time of one open as it went is not known.
+    if words[0] == "start":
+      held = 0
+    if words[0] != "overseer":
+      continue
+    if words[2] == "opened":
+      openings += 1
+      if held == 0:
+        since = tick
+      held += 1
+    elif words[2] == "closed" and held > 0:
+      held -= 1
+      if held == 0:
+        open_ticks += tick - since
+    elif words[2] == "refused":
+      refusals[words[3]] = refusals.get(words[3], 0) + 1
+      sources.setdefault(words[3], set()).add(words[-1])
+  if held > 0:
+    open_ticks += int(records[-1][1]) - since
+  refused = ", ".join(f"{count} {why}" for why, count in sorted(refusals.items()))
+  lines = [f"overseer: opened {openings} times, open {open_ticks / TICKS_PER_SECOND / HOUR_SECONDS:.1f} h of universe time; refused "
+           + (refused or "none")]
+  for why, addresses in sorted(sources.items()):
+    lines.append(f"  refused {why} from " + ", ".join(sorted(addresses)))
   return lines
 
 

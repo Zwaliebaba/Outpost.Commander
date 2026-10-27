@@ -228,6 +228,71 @@ public:
     Assert::IsTrue(Lines(out.str()) == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
   }
 
+  // ADR-101: the overseer's comings and goings, each with the address it came from (ADR-082 decision 1): its channel opened and closed,
+  // and a connection refused for another build, a token that is not the universe's, what is no hello, and no hello in time.
+  TEST_METHOD(WritesTheOverseersComingsAndGoings)
+  {
+    std::ostringstream out;
+    Outpost::UniverseLog log(out, TICKS_PER_SECOND);
+    log.Oversaw(20, {.outcome = Outpost::OverseerOutcome::Opened, .address = "127.0.0.1"});
+    log.Oversaw(21, {.outcome = Outpost::OverseerOutcome::WrongVersion, .address = "127.0.0.1"});
+    log.Oversaw(22, {.outcome = Outpost::OverseerOutcome::TokenRefused, .address = "10.0.0.9"});
+    log.Oversaw(23, {.outcome = Outpost::OverseerOutcome::Malformed, .address = "::1"});
+    log.Oversaw(24, {.outcome = Outpost::OverseerOutcome::Silent, .address = "::1"});
+    log.Oversaw(25, {.outcome = Outpost::OverseerOutcome::Closed});
+
+    const std::vector<std::string> expected{"overseer 20 opened from 127.0.0.1",       "overseer 21 refused version from 127.0.0.1",
+                                            "overseer 22 refused token from 10.0.0.9", "overseer 23 refused malformed from ::1",
+                                            "overseer 24 refused silent from ::1",     "overseer 25 closed from -"};
+    Assert::IsTrue(Lines(out.str()) == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
+  }
+
+  // ADR-101: once asked, the log keeps what it writes for the overseer's stream; and an overseer that connects is sent its last
+  // records, read from the end of its file, whole lines only.
+  TEST_METHOD(ReadsItsLastRecords)
+  {
+    std::ostringstream out;
+    Outpost::UniverseLog log(out, TICKS_PER_SECOND);
+    log.Saved(1, 10, std::chrono::microseconds{5});
+    log.KeepLines();
+    log.Saved(2, 10, std::chrono::microseconds{5});
+    log.Oversaw(3, {.outcome = Outpost::OverseerOutcome::Opened, .address = "::1"});
+    Assert::IsTrue(log.TakeLines() == std::vector<std::string>{"save 2 bytes 10 encode_us 5", "overseer 3 opened from ::1"});
+    Assert::IsTrue(log.TakeLines().empty(), L"each line taken once");
+
+    // Lines of many lengths, so that the reads from the end start within a line, and a last one still being written.
+    const TemporaryFolder folder;
+    const std::filesystem::path file = folder.Path() / Outpost::UNIVERSE_LOG_FILE;
+    std::vector<std::string> written;
+    {
+      std::ofstream text(file, std::ios::binary);
+      for (std::size_t i = 0; i < 3'000; ++i)
+      {
+        written.push_back(std::format("record {} {}", i, std::string(i % 53, 'x')));
+        text << written.back() << '\n';
+      }
+      text << "a record still being written";
+    }
+    Assert::IsTrue(Outpost::UniverseLog::ReadLastRecords(file, 500) == std::vector<std::string>(written.end() - 500, written.end()));
+    Assert::IsTrue(Outpost::UniverseLog::ReadLastRecords(file, 5'000) == written, L"a log shorter than asked for, whole");
+    Assert::IsTrue(Outpost::UniverseLog::ReadLastRecords(folder.Path() / "None.log", 500).empty(), L"no log");
+  }
+
+  // The battles under way, as the overseer's Health says them (ADR-101): one starts once both sides have fired within the window.
+  TEST_METHOD(TellsTheBattlesUnderWay)
+  {
+    std::ostringstream out;
+    Outpost::UniverseLog log(out, TICKS_PER_SECOND);
+    Record(log, 100, Outpost::SeatPlay::Player, true, false);
+    Assert::IsTrue(log.Battles().empty(), L"one side's fire alone");
+    Record(log, 101, Outpost::SeatPlay::Player, false, true);
+    const std::vector<Outpost::BattleHealth> battles = log.Battles();
+    Assert::AreEqual(std::size_t{1}, battles.size());
+    Assert::AreEqual(std::int32_t{4}, battles[0].sector);
+    Assert::AreEqual(std::uint64_t{101}, battles[0].startTick);
+    Assert::IsTrue(battles[0].players == std::vector<Outpost::PlayerId>{ONE, TWO});
+  }
+
   // A battle is two seats' ships firing at each other in one sector within 10 seconds, until 30 seconds pass without a shot
   // there; each side present when its player played it at a shot of the battle, and otherwise its deputy or the AI. One
   // side's fire alone, or fire too far apart, is none.

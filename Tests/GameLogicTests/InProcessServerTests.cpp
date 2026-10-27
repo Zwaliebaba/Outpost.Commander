@@ -149,6 +149,53 @@ public:
     Assert::IsTrue(refusals(red->Receive()) == std::vector{Refusal{Outpost::CommandResult::NotOwned, 1}});
   }
 
+  // ADR-101: Health, the process aside, from a server stepped by hand: each tick's time since the last Health, the ticks
+  // dropped after a stall, and what the server's thread kept of each seat at the last second of ticks: who plays it, its link,
+  // the commands applied for it and refused it in the second, and its Ore.
+  TEST_METHOD(KeepsEachSecondForTheOverseersHealth)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
+    const Outpost::EntityId blueShip = server.SimulationState().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId redShip = server.SimulationState().SpawnShip(RED, SWARM, SMALL_ION, {.xMeters = 50.0f});
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    server.Host(RED, std::make_unique<Idle>());
+    blue->Send({.order = Outpost::MoveCommand{.ships = {blueShip}, .destination = {.xMeters = 7.0f}}, .number = 1});
+    blue->Send({.order = Outpost::MoveCommand{.ships = {redShip}, .destination = {.xMeters = 5.0f}}, .number = 2});
+    const std::uint32_t second = server.TicksPerSecond();
+    for (std::uint32_t tick = 0; tick < second; ++tick)
+      server.Step();
+
+    const Outpost::HealthMessage health = server.TakeHealth({.workingSetBytes = 7, .uptime = std::chrono::seconds{3}});
+    Assert::AreEqual(std::size_t{second}, health.tickMicroseconds.size(), L"each tick since the last Health");
+    Assert::AreEqual(std::uint64_t{second}, health.tick, L"kept at the second's last tick");
+    Assert::IsTrue(health.wallMilliseconds > 0);
+    Assert::AreEqual(std::uint64_t{7}, health.process.workingSetBytes);
+    Assert::AreEqual(std::uint64_t{3}, health.process.uptimeSeconds);
+    Assert::AreEqual(std::size_t{2}, health.seats.size());
+    const Outpost::SeatHealth& blueSeat = health.seats[0];
+    Assert::IsTrue(blueSeat.player == BLUE && blueSeat.play == Outpost::SeatPlay::Player && blueSeat.link == Outpost::SeatLink::None);
+    Assert::AreEqual(std::uint32_t{2}, blueSeat.orders, L"both of blue's commands applied");
+    Assert::AreEqual(std::uint32_t{1}, blueSeat.refused, L"and one refused");
+    Assert::IsTrue(blueSeat.ore > 0, L"its Ore");
+    Assert::IsFalse(blueSeat.connection.has_value(), L"a loopback has no connection's figures");
+    Assert::IsTrue(health.seats[1].player == RED && health.seats[1].play == Outpost::SeatPlay::Ai);
+
+    // Nothing ran since; then a stall, after which five ticks run and the rest are dropped (ADR-009).
+    Assert::IsTrue(server.TakeHealth({}).tickMicroseconds.empty());
+    server.Advance(2s);
+    const Outpost::HealthMessage stalled = server.TakeHealth({});
+    Assert::AreEqual(std::size_t{5}, stalled.tickMicroseconds.size());
+    Assert::AreEqual(std::uint32_t{(2 * second) - 5}, stalled.droppedTicks);
+    Assert::AreEqual(std::uint32_t{0}, server.TakeHealth({}).droppedTicks, L"each dropped tick told once");
+    // The seats stand as the last second kept them until the next one, which counts its own commands.
+    Assert::AreEqual(std::uint64_t{second}, server.TakeHealth({}).tick);
+    for (std::uint32_t tick = second + 5; tick < 2 * second; ++tick)
+      server.Step();
+    const Outpost::HealthMessage next = server.TakeHealth({});
+    Assert::AreEqual(2 * std::uint64_t{second}, next.tick);
+    Assert::AreEqual(std::uint32_t{0}, next.seats[0].orders, L"each command counted in one second");
+  }
+
   // ADR-080: a scheduled order's time of day becomes the first tick at or after its moment, as the host's wall clock reads
   // now; a moment past is now, and one further than a week ahead a week ahead.
   TEST_METHOD(MakesAMomentItsTick)

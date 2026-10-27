@@ -4,6 +4,10 @@ namespace Outpost
 {
 // The port a new universe's server listens on, unless its owner names another.
 inline constexpr std::uint16_t DEFAULT_UNIVERSE_PORT = 45'000;
+// Where a universe's server listens for its overseer unless its owner names another (ADR-101): the loopback, so that
+// nothing reaches it from another machine until the owner opens it, and the port after the game's.
+inline constexpr std::string_view DEFAULT_OVERSEER_ADDRESS = "127.0.0.1";
+inline constexpr std::uint16_t DEFAULT_OVERSEER_PORT = 45'001;
 // A universe's settings, in its folder.
 inline constexpr std::string_view UNIVERSE_SETTINGS_FILE = "Universe.json";
 
@@ -21,14 +25,17 @@ struct UniverseSeat
 };
 
 // A universe's settings (ADR-078 decision 2), which its owner makes once, with the universe, and the dedicated server
-// reads each time it runs it: the address and port it listens on, the host its players reach it at, the seed the universe
-// was made with, and its seats.
+// reads each time it runs it: the address and port it listens on, those it listens for its overseer on (ADR-101), the host
+// its players reach it at, the seed the universe was made with, and its seats.
 struct UniverseSettings
 {
   // An IPv4 or IPv6 address, or "*", which listens on every interface of both, as a player naming localhost needs: it
   // reaches the server on IPv6.
   std::string address = std::string(Neuron::QuicListener::EVERY_ADDRESS);
   std::uint16_t port = DEFAULT_UNIVERSE_PORT;
+  // An IPv4 or IPv6 address, or "*", as the game's; settings made before the overseer read as the defaults.
+  std::string overseerAddress = std::string(DEFAULT_OVERSEER_ADDRESS);
+  std::uint16_t overseerPort = DEFAULT_OVERSEER_PORT;
   // The name or address a player on another machine reaches the server at, which the join files name.
   std::string host = "localhost";
   std::uint64_t seed = 0;
@@ -43,14 +50,20 @@ struct UniverseSettings
 // difficulty.
 [[nodiscard]] std::string WriteUniverseSettings(const UniverseSettings& _settings);
 
-// What Universe.json's text holds. Throws Neuron::Exception, naming what is wrong, when it is not settings: a member missing
-// or unknown, a port out of range, a seed that is not a number, a token that is not 32 hexadecimal digits, a seat with
+// What Universe.json's text holds, the overseer's address and port their defaults when it names neither. Throws
+// Neuron::Exception, naming what is wrong, when it is not settings: a member missing or unknown, a port out of range, a seed that is not a number, a token that is not 32 hexadecimal digits, a seat with
 // both a token and an AI or neither, a difficulty there is none of, no seat, or two seats for one player.
 [[nodiscard]] UniverseSettings ReadUniverseSettings(std::string_view _text);
 
 // The join file of _seat, whose server presents _certificate on the settings' port, at their host.
 [[nodiscard]] JoinTicket TicketFor(const UniverseSettings& _settings, const UniverseSeat& _seat,
                                    const Neuron::CertificateHash& _certificate);
+
+// The overseer's file of a universe whose server presents _certificate on the settings' overseer port, with _token: at the
+// address it listens for the overseer on, the loopback's when it listens there, and the settings' host when it listens on
+// every address.
+[[nodiscard]] OverseerTicket OverseerTicketFor(const UniverseSettings& _settings, const Neuron::CertificateHash& _certificate,
+                                               const SeatToken& _token);
 
 // The name of _player's join file, in the universe's folder.
 [[nodiscard]] std::string JoinFileName(PlayerId _player);
