@@ -109,7 +109,8 @@ Neuron::WidgetId Neuron::Canvas::Button(std::string_view _id, const ButtonConten
   const WidgetId button = Claim(_id);
   const std::size_t node = m_tree.Add(_style);
   const bool hot = m_interaction.Hot() == button;
-  m_draws.emplace_back([this, node, button, _button, hot](DrawList& _list) { DrawButton(_list, node, button, _button, hot); });
+  // A copy of its own, which the draw moves with it, where a copy of the reference would be const and copied on each move.
+  m_draws.emplace_back([this, node, button, content = _button, hot](DrawList& _list) { DrawButton(_list, node, button, content, hot); });
   return button;
 }
 
