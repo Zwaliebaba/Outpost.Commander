@@ -36,13 +36,14 @@ Outpost::Hud::TextMetrics MetricsFor(std::uint32_t _widthPixels, std::uint32_t _
 }
 
 // The HUD and the menu laid out as GameClient lays them out, with the fonts at the back buffer's scale and the interface's
-// own (ADR-070).
+// own (ADR-070), and what is under the pointer as the HUD's buttons, _hovered, and the canvas's windows, _interaction, find it.
 Outpost::Hud::Layout Lay(const Outpost::Hud::Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                          std::span<const Outpost::PlanePosition> _view = {}, const Outpost::WindowManager* _windows = nullptr,
-                         float _factor = 1.0f, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
+                         float _factor = 1.0f, std::optional<Outpost::Hud::Action> _hovered = std::nullopt,
+                         Neuron::Interaction* _interaction = nullptr)
 {
   return Outpost::Hud::Lay(_content, MetricsFor(_widthPixels, _heightPixels, _factor), _widthPixels, _heightPixels, _view, _windows,
-                           _factor, _hovered);
+                           _factor, _hovered, _interaction);
 }
 
 Outpost::Hud::Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f,
@@ -3320,7 +3321,8 @@ public:
     layout = Lay(content, 1920, 1080);
     Assert::IsTrue(gives());
 
-    // Give lights under the pointer as the HUD's own buttons do (ADR-088 decision 1): its four edges, and none without it.
+    // Give lights under the pointer, as a button of a window on the canvas does (ADR-088 decision 1; ADR-100 decision 7):
+    // its four edges, and none without it. The pointer stands in Give's middle, found on the layout drawn last.
     const auto litEdgesOfGive = [&panel](const Outpost::Hud::Layout& _layout)
     {
       const auto give = std::ranges::find(_layout.actions, panel.give.action, [](const auto& _press) { return _press.second; });
@@ -3336,7 +3338,11 @@ public:
       return std::ranges::count_if(_layout.panels, litInside);
     };
     Assert::AreEqual(std::ptrdiff_t{0}, litEdgesOfGive(layout), L"unlit without the pointer");
-    Assert::AreEqual(std::ptrdiff_t{4}, litEdgesOfGive(Lay(content, 1920, 1080, {}, nullptr, 1.0f, panel.give.action)));
+    const auto give = std::ranges::find(layout.actions, panel.give.action, [](const auto& _press) { return _press.second; });
+    Assert::IsTrue(give != layout.actions.end());
+    Neuron::Interaction pointer;
+    pointer.Move(layout, give->first.left + (give->first.width / 2.0f), give->first.top + (give->first.height / 2.0f));
+    Assert::AreEqual(std::ptrdiff_t{4}, litEdgesOfGive(Lay(content, 1920, 1080, {}, nullptr, 1.0f, std::nullopt, &pointer)));
   }
 
   // ADR-080 decision 9: the selection's panel names the scheduled order its ship waits on, whole.

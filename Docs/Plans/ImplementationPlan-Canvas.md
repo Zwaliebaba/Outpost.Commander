@@ -265,7 +265,7 @@ Each task is a port (rule 5).
 - **Scope:** the orders window on the canvas, its form's rows as steppers. `ORDERS_WINDOW_HEIGHT` goes.
 - **Acceptance:** the port's comparison; the orders window's tests as they stand.
 - **Verify:** CI; run, an order given and canceled.
-- **As built (2026-10-27):** ADR-100 decision 7. The scheduled orders and the form's rows stand in room for their most, so that the window keeps its height; each cancel button stands in the middle of its line. The arrows' actions are made before the stepper, in the order they are drawn, since a call's arguments are made in any order.
+- **As built (2026-10-27):** ADR-100 decision 7. The scheduled orders and the form's rows stand in room for their most, so that the window keeps its height; each cancel button stands in the middle of its line. The arrows' actions are made before the stepper, in the order they are drawn, since a call's arguments are made in any order. `LaysOutTheOrdersWindow` points at Give with the canvas's pointer rather than naming Give's action as the one under it, since a button on the canvas is lit as the widget under the pointer; what it holds, that Give lights under the pointer and not without it, is as it stood.
 
 ### CV4.4 — The build window on the canvas
 
