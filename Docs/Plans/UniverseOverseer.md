@@ -1,6 +1,6 @@
 # The Universe Overseer — Proposal
 
-Status: **proposal** · 2026-10-27 · From the owner's request of 2026-10-27 for a management console of the dedicated server: a separate application, with a channel of its own to the server, that oversees the whole universe, its health, where its players are, and what goes wrong in running it. Nothing here is decided until its ADRs, and the owner's questions are gates C1 to C7 (§9).
+Status: **proposal** · 2026-10-27 · From the owner's request of 2026-10-27 for a management console of the dedicated server: a separate application, with a channel of its own to the server, that oversees the whole universe, its health, where its players are, and what goes wrong in running it. Nothing here is decided until its ADRs, and the owner's questions are gates D1 to D7 (§9).
 
 This document proposes what the overseer shows, how it reaches the server, what the server has to start measuring for it, and where it sits in the code. The mock-ups are on [the owner's canvas](https://claude.ai/artifact/FBWqgZ69SS3dSNa2r2phY4), which only the owner can open; every figure on them is illustrative, not measured.
 
@@ -19,7 +19,7 @@ It is the owner's instrument, not a player: it never sends a command to the simu
 ## 2. What the owner decided (2026-10-27)
 
 - **A separate application with a channel of its own to the server** (owner, 2026-10-27). It earns its cost twice: it watches a server on a Windows Server VM (ADR-078), and it sees a server die or hang from outside, which a view in the server's own console window cannot report.
-- **Full sight** (owner, 2026-10-27). The overseer sees every entity through every player's fog. ADR-002 applies fog on the server so that no client holds what its player cannot see, and the overseer is the one client that does: open beside the owner's own game, it shows the owner what the owner's rivals hide. The owner accepted that. Gate C4 proposes putting it on the record.
+- **Full sight** (owner, 2026-10-27). The overseer sees every entity through every player's fog. ADR-002 applies fog on the server so that no client holds what its player cannot see, and the overseer is the one client that does: open beside the owner's own game, it shows the owner what the owner's rivals hide. The owner accepted that. Gate D4 proposes putting it on the record.
 - **It watches, and acts only on the server, never on the simulation** (owner, 2026-10-27): save now, stop, drop a seat's link, and issue a seat a new token. Nothing it does reaches `Simulation`, so a universe replays from its seed and its log as it does today (ADR-009, ADR-077). Giving Ore, changing an AI's difficulty or restarting a seat stay out, and so does a pause, which the horizon rules out (its §12).
 - **Native, drawn with the game's own interface** (owner, 2026-10-27): a Win32 executable that draws with `NeuronClient`, in the game's look (Game §interface.style; [the style guide](../StyleGuide.md)). No web page: that would reopen ADR-001 and R14, as horizon O7 says.
 - **Reached from the same machine or the LAN** (owner, 2026-10-27): its listener is on the loopback unless the owner names another address.
@@ -83,7 +83,7 @@ Stalled and No word are told apart because `Health` comes from the server's main
 | server | `Closing` | before the process ends | how it ends, stopped by the owner, by Windows or by a failure, and the failure's message |
 | server | `ActionResult` | after each action | done, or refused and why |
 | overseer | `WatchSight` | when the owner picks | full sight, or a seat |
-| overseer | `SaveNow`, `Stop`, `DropLink`, `NewToken` | when the owner presses | the seat, for the last two, and for `DropLink` whether its deputy takes it at once (gate C3) |
+| overseer | `SaveNow`, `Stop`, `DropLink`, `NewToken` | when the owner presses | the seat, for the last two, and for `DropLink` whether its deputy takes it at once (gate D3) |
 
 **Threads.** The listener hands each message to its Receiver on MsQuic's thread, which queues it for the main thread and does nothing else. The main thread, which already wakes every second (ADR-078 decision 1), builds `Health` from `Server::TakeTickTimings` and `Server::TakeSeatFigures`, which today it discards and never takes, and from the process; it carries out Stop as Ctrl+C does, and hands SaveNow to the server's thread. The server's thread builds `UniverseView` after every tenth tick at 20 Hz, and only while an overseer is connected, timed as a tick part of its own, `Overseer`. "Sight of" a seat costs nothing more: that seat's snapshot is built every tick already.
 
@@ -103,11 +103,12 @@ The new records change ADR-082 decision 1's list, and `Tools/UniverseLog.py` rea
 
 ## 6. Where it sits
 
-- **`OutpostOverseer`, a Win32 executable** (gate C1), with a row of its own in ADR-002's table: it includes `NeuronCore`, `NeuronClient`, `GameProtocol` and `GameApp`. Its model and its layout live in `GameApp`, beside the HUD whose painter, measured text and windows they use, so `GameAppTests` lays them out without a GPU, as `HudTests` lays out the HUD; the executable is its shell. Neither the game nor the server includes it.
-- **Not packaged** (gate C5), as `OutpostServer` (ADR-078 decision 1).
+- **`OutpostOverseer`, a Win32 executable** (gate D1), with a row of its own in ADR-002's table: it includes `NeuronCore`, `NeuronClient`, `GameProtocol` and `GameApp`. Its model and its layout live in `GameApp`, beside the HUD whose painter, measured text and windows they use, so `GameAppTests` lays them out without a GPU, as `HudTests` lays out the HUD; the executable is its shell. Neither the game nor the server includes it.
+- **It is built on the interface's canvas.** The canvas plan (pull request 140, open as this is written) puts a layout that measures, interaction every widget shares and a set of widgets under the game's interface, in `NeuronClient`. The overseer's tables, tiles and windows are what that canvas is for, so OV3 builds on it rather than placing its elements by hand (gate D1).
+- **Not packaged** (gate D5), as `OutpostServer` (ADR-078 decision 1).
 - **The server's side** is in `GameLogic`, which owns the listeners and the seats, and in `OutpostServer`, whose main thread adds the process's figures.
 - **No new dependency** (R14): QUIC is MsQuic's, already in `NeuronCore` (ADR-004), and the rest is the Windows SDK.
-- **The look is the game's.** Two things the overseer draws have no rule yet: a table (gate C7), and colors for more than two sides, which the friends' seats decide (gate F1 of [the Horizon plan](ImplementationPlan-Horizon.md); ADR-085). The overseer draws each seat in its set's color, whatever those become.
+- **The look is the game's.** Two things the overseer draws have no rule yet: a table (gate D7), and colors for more than two sides, which the friends' seats decide (gate F1 of [the Horizon plan](ImplementationPlan-Horizon.md); ADR-085). The overseer draws each seat in its set's color, whatever those become.
 
 ## 7. What it forecloses
 
@@ -119,23 +120,23 @@ The new records change ADR-082 decision 1's list, and `Tools/UniverseLog.py` rea
 
 ## 8. What could go wrong
 
-- **Full sight while the owner plays.** The owner sees through the fog the rivals rely on. Accepted (§2); gate C4 makes it visible to them.
+- **Full sight while the owner plays.** The owner sees through the fog the rivals rely on. Accepted (§2); gate D4 makes it visible to them.
 - **The overseer costs the tick.** The full-sight view is a snapshot of everything, built on the server's thread. It is timed as its own part, and the tick's budget of a 5 ms 99th percentile holds with it in ([the budgets](../Budgets.md)); its measurement goes there.
 - **A second door.** The listener is closed to other machines by default, and opened only by the owner's own setting and firewall.
-- **A server VM without a GPU.** ADR-006 decision 6 skips software adapters, so the overseer cannot run over RDP on a Windows Server VM that has no GPU (gate C6). Run from the owner's PC across the LAN, it needs none.
+- **A server VM without a GPU.** ADR-006 decision 6 skips software adapters, so the overseer cannot run over RDP on a Windows Server VM that has no GPU (gate D6). Run from the owner's PC across the LAN, it needs none.
 - **One taker of the seat figures.** `Server::TakeSeatFigures` hands each sample once. The main thread becomes its taker; the universe log reads its own samples through `SeatTick` (ADR-082 decision 3), and is untouched.
 
 ## 9. The owner's questions
 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
-| C1 | **The overseer's project.** `OutpostOverseer`, a Win32 executable with a row of its own in ADR-002's table, including NeuronCore, NeuronClient, GameProtocol and GameApp; its model and layout in GameApp, tested in GameAppTests. Proposed: as written. The alternative moves the HUD's painter and measured text down into NeuronClient first, so that the overseer does not include GameApp. | this document, §6 | OV3, the overseer | open |
-| C2 | **A new token, written by the server.** New token makes a seat's token afresh, writes it into `Universe.json` and writes the seat's join file again, where ADR-078 decision 2 has the server only read its settings. Proposed: yes, written to a new file and renamed into place, as a save is; or New token stays out of the first version. | this document, §4 | OV5, the actions | open |
-| C3 | **Dropping a link.** Drop link and Hand to deputy become one action, with an option for the deputy to take the seat at once rather than after ADR-079's minute. The game reads a new close reason, `DroppedByOwner`, as one it does not join again after (ADR-078 decision 10), and goes back to the menu saying the server's owner closed the connection. Proposed: as written. | this document, §4 | OV5, the actions | open |
-| C4 | **Full sight on the record.** The universe log writes `overseer <tick> opened` and `closed`, so a friend can see when the owner had full sight open. Proposed: yes. | this document, §2 | OV2, the channel | open |
-| C5 | **Packaged or not.** Proposed: not packaged, as `OutpostServer`, so it runs beside the server on a VM without registering a package. | this document, §6 | OV3, the overseer | open |
-| C6 | **A server without a GPU.** Proposed: the overseer, and not the game, takes the WARP adapter when no hardware adapter qualifies, which amends ADR-006 decision 6 for it alone; or the overseer always runs from a machine with a GPU. | this document, §8 | OV3, the overseer | open |
-| C7 | **A table in the interface.** The style guide has no rule for a table. Proposed: a heading sorts on a click and shows the sort's direction, the picked row takes the picked card's face and edge, and a cell holds a figure over a detail line, written into the style guide with the ADR that owns them. | this document, §6 | OV3, the overseer | open |
+| D1 | **The overseer's project.** `OutpostOverseer`, a Win32 executable with a row of its own in ADR-002's table, including NeuronCore, NeuronClient, GameProtocol and GameApp; its model and layout in GameApp, tested in GameAppTests, and built on the interface's canvas, which the canvas plan puts in NeuronClient with the game's look in GameApp (its gate C4, decided 2026-10-27), rather than on windows placed by hand. Proposed: as written, so OV3 follows the canvas's widgets. The alternative builds the overseer before the canvas, and moves it onto the canvas after, as the canvas plan moves the game's windows. | this document, §6 | OV3, the overseer | open |
+| D2 | **A new token, written by the server.** New token makes a seat's token afresh, writes it into `Universe.json` and writes the seat's join file again, where ADR-078 decision 2 has the server only read its settings. Proposed: yes, written to a new file and renamed into place, as a save is; or New token stays out of the first version. | this document, §4 | OV5, the actions | open |
+| D3 | **Dropping a link.** Drop link and Hand to deputy become one action, with an option for the deputy to take the seat at once rather than after ADR-079's minute. The game reads a new close reason, `DroppedByOwner`, as one it does not join again after (ADR-078 decision 10), and goes back to the menu saying the server's owner closed the connection. Proposed: as written. | this document, §4 | OV5, the actions | open |
+| D4 | **Full sight on the record.** The universe log writes `overseer <tick> opened` and `closed`, so a friend can see when the owner had full sight open. Proposed: yes. | this document, §2 | OV2, the channel | open |
+| D5 | **Packaged or not.** Proposed: not packaged, as `OutpostServer`, so it runs beside the server on a VM without registering a package. | this document, §6 | OV3, the overseer | open |
+| D6 | **A server without a GPU.** Proposed: the overseer, and not the game, takes the WARP adapter when no hardware adapter qualifies, which amends ADR-006 decision 6 for it alone; or the overseer always runs from a machine with a GPU. | this document, §8 | OV3, the overseer | open |
+| D7 | **A table in the interface.** The style guide has no rule for a table, and the canvas plan's widgets have no table. Proposed: a table widget of the canvas, whose heading sorts on a click and shows the sort's direction, whose picked row takes the picked card's face and edge, and whose cell holds a figure over a detail line, written into the style guide with the ADR that owns them. | this document, §6 | OV3, the overseer | open |
 
 ## 10. The work, in order
 
@@ -145,9 +146,9 @@ Each would be a milestone of a plan of its own, once the gates it waits on are d
 2. **OV2 — The channel:** the listener, `Overseer.json`, the messages of §4 but the actions, `Closing`, and the `Overseer` tick part. It changes no message of the game's. QUIC is checked in CI's Windows run only (ADR-060).
 3. **OV3 — The overseer:** the project, its window, the overview, and the map as one system's sector map, which is all a universe has until the galaxy (the Horizon plan's milestone 42); the galaxy view comes with it. It is run, not only built (AGENTS.md §3), and the owner's run accepts it.
 4. **OV4 — The seat window, the server window and the header states.**
-5. **OV5 — The actions:** Save now and Stop, then Drop link and New token as gates C2 and C3 decide.
+5. **OV5 — The actions:** Save now and Stop, then Drop link and New token as gates D2 and D3 decide.
 
-The ADRs that would record it: a new one for the overseer, its project, its channel, its messages and `Overseer.json`; and amendments to ADR-002 (its row), ADR-004 decision 6 (bytes sent and the address), ADR-078 (the settings' two keys, and gates C2 and C3), ADR-082 decision 1 (the records), the server's tick parts (Server.h's `TickPart`), and ADR-006 decision 6 if gate C6 is taken.
+The ADRs that would record it: a new one for the overseer, its project, its channel, its messages and `Overseer.json`; and amendments to ADR-002 (its row), ADR-004 decision 6 (bytes sent and the address), ADR-078 (the settings' two keys, and gates D2 and D3), ADR-082 decision 1 (the records), the server's tick parts (Server.h's `TickPart`), and ADR-006 decision 6 if gate D6 is taken.
 
 ## References
 
