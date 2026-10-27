@@ -667,10 +667,11 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_controls.Queue(queue.producer, queue.design);
   }
   HandleTyping(input);
-  // Esc closes the front window, and then is the window's, not the controls' (ADR-031 decision 5); in a universe, with no
-  // window to close and nothing armed for the controls to cancel, it opens the leave window (ADR-078 decision 11). D, P
-  // and R open or close the designer, the production window and the research window, F1 the Controls window (ADR-068
-  // decision 4), and O the orders window (ADR-080 decision 9). Space moves the camera to the newest alert (ADR-059).
+  // Esc cancels a structure being placed first, which the controls do; else it closes the front window, and then is the
+  // window's, not the controls' (ADR-031 decision 5); in a universe, with no window to close and nothing armed for the
+  // controls to cancel, it opens the leave window (ADR-078 decision 11). D, P and R open or close the designer, the
+  // production window and the research window, F1 the Controls window (ADR-068 decision 4), O the orders window (ADR-080
+  // decision 9), and B the build window (ADR-031 decision 6). Space moves the camera to the newest alert (ADR-059).
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
@@ -685,7 +686,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       toggled = WindowKind::Controls;
     else if (keyDown && event->key == KEY_ORDERS)
       toggled = WindowKind::Orders;
-    if (keyDown && event->key == KEY_CANCEL && m_windows.CloseFront())
+    else if (keyDown && event->key == KEY_BUILD)
+      toggled = WindowKind::Build;
+    if (keyDown && event->key == KEY_CANCEL && !m_controls.Placing().has_value() && m_windows.CloseFront())
       event = input.events.erase(event);
     else if (keyDown && event->key == KEY_CANCEL && !m_server.empty() && !m_controls.IsArmed())
     {
@@ -756,7 +759,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     else if (const std::optional<StandingOrder> standing = m_controls.ArmedStanding(); standing.has_value())
       armed = *standing == StandingOrder::HoldSector ? Hud::ActionKind::HoldSector : Hud::ActionKind::Patrol;
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr,
-                                         hovered, m_ticksPerSecond, armed, m_controls.IsBuildFolded());
+                                         hovered, m_ticksPerSecond, armed);
     content.fog = m_fog.CellsPerSide() > 0;
     content.sideColors = Hud::SideColorsOf(m_catalog);
     // The bars over the entities that show one, each placed by the camera above its model on the screen, for the HUD to lay
@@ -809,6 +812,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_away.reset();
     if (m_away.has_value())
       content.away = Hud::DescribeAway(m_view.Newest(), *m_away, m_awayTick, m_ticksPerSecond);
+    // The structures the selected Constructors build, while the build window is open (ADR-031 decision 6).
+    if (m_windows.IsOpen(WindowKind::Build))
+      content.build = Hud::DescribeBuild(m_view.Newest(), m_entities, selected);
     // The scheduled order the selected ships wait on, on their panel (ADR-080 decision 9).
     if (std::optional<std::string> pending = PendingOrderLine(selected, m_entities, m_view.Newest(), m_clock);
         pending.has_value() && !content.selection.empty())
@@ -946,7 +952,7 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     m_controls.ArmPlacement(_action.structure, m_entities);
     break;
   case Hud::ActionKind::OpenBuild:
-    m_controls.OpenBuild();
+    ToggleWindow(WindowKind::Build);
     break;
   case Hud::ActionKind::Queue:
     for (std::uint32_t ship = 0; ship < _action.count; ++ship)

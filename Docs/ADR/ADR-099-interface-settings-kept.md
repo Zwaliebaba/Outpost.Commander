@@ -30,7 +30,7 @@ The game is packaged as MSIX ([ADR-001](ADR-001-win32-shell.md)). Windows keeps 
    }
    ```
 
-   - The windows' names are `designer`, `research`, `production`, `controls`, `orders`, `away` and `leave`, and a corner's are `topLeft`, `topRight`, `bottomLeft` and `bottomRight`. A name is never changed, since a file an earlier build wrote names its windows so.
+   - The windows' names are `designer`, `research`, `production`, `controls`, `orders`, `away`, `leave` and `build`, and a corner's are `topLeft`, `topRight`, `bottomLeft` and `bottomRight`. A name is never changed, since a file an earlier build wrote names its windows so.
    - A file of another version, or with none, is not read (`ReadInterfaceSettings`).
    - A member that is not as the game writes it is left out, and the rest is read: a scale that is no step, a corner with no name, a distance that is no number or more than 100,000 units from its corner. So is a window this build does not have, so that a file a later build wrote still gives what this one knows.
 4. **When:** the file is read once, as the shell starts the client and before its window shows. It is written when the player lets go of a window, when a step the player takes changes the scale, and as the game closes, and only when what it would hold has changed since it was last written or read. It is written to `Interface.json.new` beside it, which then replaces it, so that a crash never leaves half a file.

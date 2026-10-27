@@ -13,8 +13,8 @@ using Outpost::InterfaceSettings;
 // The windows' names in the file, in WindowKind's order. A name is never changed, since a file an earlier build wrote names
 // its windows so.
 constexpr std::array<std::string_view, Outpost::WINDOW_KINDS> WINDOW_NAMES{"designer", "research", "production", "controls",
-                                                                           "orders",   "away",     "leave"};
-static_assert(static_cast<std::size_t>(Outpost::WindowKind::Leave) + 1 == Outpost::WINDOW_KINDS, "a name for every window");
+                                                                           "orders",   "away",     "leave",      "build"};
+static_assert(static_cast<std::size_t>(Outpost::WindowKind::Build) + 1 == Outpost::WINDOW_KINDS, "a name for every window");
 
 // The corner a place is measured from, by its fromBottom and then its fromRight.
 constexpr std::array<std::string_view, 4> CORNER_NAMES{"topLeft", "topRight", "bottomLeft", "bottomRight"};

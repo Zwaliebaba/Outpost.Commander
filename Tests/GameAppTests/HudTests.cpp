@@ -278,6 +278,14 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
     away.lines.push_back("Order held back: attack-move to " + LongestName('A') + " and " + LongestName('B'));
   content.away = away;
   content.leave = true;
+  // The build window with every structure the tuning data has, the longest name among them, and each of the reasons a
+  // structure cannot be built in its cost's place (ADR-031 decision 6).
+  content.build = Outpost::Hud::BuildPanel{.structures = {{.label = "Shipyard|300"},
+                                                          {.label = "Research Lab|200", .enabled = false, .note = "ONE PER PLAYER"},
+                                                          {.label = "Mining Rig|50"},
+                                                          {.label = "Defence Platform|1500", .enabled = false},
+                                                          {.label = "Relay|200", .enabled = false, .note = "NODE CAP"},
+                                                          {.label = "Repair Bay|300", .enabled = false, .note = "NO CONSTRUCTOR"}}};
   return content;
 }
 
@@ -882,8 +890,9 @@ public:
     Assert::AreEqual(std::string("[2001:db8::5]:4433"), Outpost::Hud::ServerName("2001:db8::5", 4433));
   }
 
-  // ADR-043 decision 4: selected Constructors offer every structure they build, with its cost, dim when the player cannot
-  // afford it or already has its one Research Lab; the Command Station is not built.
+  // ADR-043 decision 4: the build window offers every structure the selected Constructors build, with its cost, dim when the
+  // player cannot afford it or already has its one Research Lab; the Command Station is not built. The HUD offers the
+  // Constructors one Build button for it, with B's cap (ADR-031 decision 6).
   TEST_METHOD(OffersTheStructuresToConstructors)
   {
     Outpost::Snapshot newest = Newest();
@@ -899,26 +908,39 @@ public:
 
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::AreEqual(std::string("Constructor"), content.selection.front());
-    Assert::AreEqual(size_t{3}, content.buttons.size(), L"the three it builds");
-    Assert::IsTrue(content.retreat.has_value(), L"and its retreat, under them");
-    Assert::AreEqual(std::string("Shipyard|300"), content.buttons[0].label);
-    Assert::IsFalse(content.buttons[0].enabled, L"250 Ore does not buy a Shipyard");
-    Assert::IsTrue(content.buttons[1].enabled);
-    Assert::IsTrue(content.buttons[2].action ==
+    Assert::AreEqual(size_t{1}, content.buttons.size(), L"one Build button");
+    Assert::IsTrue(content.buttons[0].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenBuild});
+    Assert::AreEqual(std::string("Build"), content.buttons[0].label);
+    Assert::AreEqual(std::string("B"), content.buttons[0].key);
+    Assert::IsTrue(content.retreat.has_value(), L"and its retreat, under it");
+
+    Outpost::Hud::BuildPanel build = Outpost::Hud::DescribeBuild(newest, entities, selected);
+    Assert::AreEqual(size_t{3}, build.structures.size(), L"the three it builds");
+    Assert::AreEqual(std::string("Shipyard|300"), build.structures[0].label);
+    Assert::IsFalse(build.structures[0].enabled, L"250 Ore does not buy a Shipyard");
+    Assert::IsTrue(build.structures[1].enabled);
+    Assert::IsTrue(build.structures[2].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::MiningRig});
 
     entities.push_back({.id = Outpost::EntityId{20},
                         .kind = Outpost::EntityKind::Structure,
                         .owner = PLAYER,
                         .structure = Outpost::StructureKind::ResearchLab});
-    content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::IsFalse(content.buttons[1].enabled, L"one Research Lab a player");
+    build = Outpost::Hud::DescribeBuild(newest, entities, selected);
+    Assert::IsFalse(build.structures[1].enabled, L"one Research Lab a player");
     // ADR-043 decision 4: the button says so in place of its cost; a button the player only cannot afford says nothing more.
-    Assert::AreEqual(std::string("ONE PER PLAYER"), content.buttons[1].note);
-    Assert::IsTrue(content.buttons[0].note.empty());
+    Assert::AreEqual(std::string("ONE PER PLAYER"), build.structures[1].note);
+    Assert::IsTrue(build.structures[0].note.empty());
+    content.build = build;
     const Outpost::Hud::Layout noted = Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "ONE PER PLAYER"; }));
     Assert::IsFalse(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "200"; }));
+
+    // With no Constructor selected, every structure is dim and says so, and the window keeps its size.
+    const Outpost::Hud::BuildPanel none = Outpost::Hud::DescribeBuild(newest, entities, {});
+    Assert::AreEqual(size_t{3}, none.structures.size());
+    Assert::IsTrue(std::ranges::all_of(none.structures, [](const Outpost::Hud::Button& _structure)
+                                       { return !_structure.enabled && _structure.note == "NO CONSTRUCTOR"; }));
 
     // While a placement is armed, a hint says what a click does.
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::MiningRig);
@@ -935,18 +957,19 @@ public:
     constructor.role = Outpost::ShipRole::Constructor;
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}};
-    Assert::AreEqual(size_t{1}, Outpost::Hud::Describe(newest, entities, selected).buttons.size(), L"the Shipyard");
+    Assert::AreEqual(size_t{1}, Outpost::Hud::DescribeBuild(newest, entities, selected).structures.size(), L"the Shipyard");
 
     newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
-    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{2}, content.buttons.size(), L"the Shipyard and the Relay");
-    Assert::IsTrue(content.buttons[1].action ==
+    const Outpost::Hud::BuildPanel build = Outpost::Hud::DescribeBuild(newest, entities, selected);
+    Assert::AreEqual(size_t{2}, build.structures.size(), L"the Shipyard and the Relay");
+    Assert::IsTrue(build.structures[1].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
   }
 
-  // ADR-088: once the selection is given an order, the Constructors' structures fold into one Build button, which opens
-  // them again; a warship's orders and the retreat stay, and a selection without a Constructor has no Build.
-  TEST_METHOD(FoldsTheStructuresIntoBuild)
+  // ADR-031 decision 6 and ADR-088 decision 2: a selection that holds a Constructor offers one Build button, after a
+  // warship's orders and over the retreat, which opens the build window; the structures are never among the HUD's buttons,
+  // and a selection without a Constructor has no Build.
+  TEST_METHOD(OffersOneBuildButtonForTheWindow)
   {
     Outpost::Snapshot newest = Newest();
     newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .buildable = true, .cost = 300},
@@ -955,8 +978,7 @@ public:
     constructor.role = Outpost::ShipRole::Constructor;
     std::vector<Outpost::EntityView> entities{Ship(1, LINE, 100, 100), constructor};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{1}, Outpost::EntityId{9}};
-    const auto describe = [&](bool _folded)
-    { return Outpost::Hud::Describe(newest, entities, selected, std::nullopt, nullptr, std::nullopt, 0, std::nullopt, _folded); };
+    const auto describe = [&] { return Outpost::Hud::Describe(newest, entities, selected); };
     const auto labels = [](const Outpost::Hud::Content& _content)
     {
       std::vector<std::string> words;
@@ -967,15 +989,15 @@ public:
     };
     const Outpost::Hud::Action openBuild{.kind = Outpost::Hud::ActionKind::OpenBuild};
 
-    Assert::IsTrue(labels(describe(false)) == std::vector<std::string>{"Attack-move", "Patrol", "Stop", "Shipyard|300", "Mining Rig|50"});
-    const Outpost::Hud::Content folded = describe(true);
-    Assert::IsTrue(labels(folded) == std::vector<std::string>{"Attack-move", "Patrol", "Stop", "Build"});
-    Assert::IsTrue(folded.buttons.back().action == openBuild);
-    Assert::IsTrue(folded.buttons.back().enabled);
-    Assert::IsTrue(folded.retreat.has_value(), L"the retreat stays under it");
+    const Outpost::Hud::Content offered = describe();
+    Assert::IsTrue(labels(offered) == std::vector<std::string>{"Attack-move", "Patrol", "Stop", "Build"});
+    Assert::IsTrue(offered.buttons.back().action == openBuild);
+    Assert::IsTrue(offered.buttons.back().enabled);
+    Assert::AreEqual(Outpost::KeyCap(Outpost::KEY_BUILD), offered.buttons.back().key, L"B's cap");
+    Assert::IsTrue(offered.retreat.has_value(), L"the retreat stays under it");
 
     // A button to press, round its word.
-    const Outpost::Hud::Layout layout = Lay(folded, 1920, 1080);
+    const Outpost::Hud::Layout layout = Lay(offered, 1920, 1080);
     const auto pressed = std::ranges::find(layout.actions, openBuild, [](const auto& _entry) { return _entry.second; });
     Assert::IsTrue(pressed != layout.actions.end());
     const Outpost::Hud::Rect& area = pressed->first;
@@ -984,7 +1006,47 @@ public:
     Assert::IsTrue(layout.ActionAt(area.left + 5.0f, area.top + 5.0f) == openBuild);
 
     entities.pop_back();
-    Assert::IsTrue(labels(describe(true)) == std::vector<std::string>{"Attack-move", "Patrol", "Stop"}, L"no Constructor, no Build");
+    Assert::IsTrue(labels(describe()) == std::vector<std::string>{"Attack-move", "Patrol", "Stop"}, L"no Constructor, no Build");
+  }
+
+  // ADR-031 decisions 2 and 6: the build window first stands at the bottom right, beside the selection and its buttons where
+  // they leave it room at their widest, as at 100%, and over them, its foot a gap above the minimap's top, where they do not,
+  // as at 125%; a press on one of its structures arms it, and one that cannot be built takes no press.
+  TEST_METHOD(LaysOutTheBuildWindow)
+  {
+    const Outpost::Hud::Action shipyard{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
+    const Outpost::Hud::Action relay{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay};
+    Outpost::Hud::Content content;
+    content.build = Outpost::Hud::BuildPanel{.structures = {{.label = "Shipyard|300", .action = shipyard},
+                                                            {.label = "Relay|200", .action = relay, .enabled = false, .note = "NODE CAP"}}};
+    // The window: its title bar, padding, two buttons of 34 units 6 apart, and padding.
+    constexpr float HEIGHT_UNITS = 36.0f + 12.0f + 34.0f + 6.0f + 34.0f + 12.0f;
+    constexpr float WIDTH_UNITS = 380.0f;
+
+    const Outpost::Hud::Layout full = Lay(content, 1920, 1080);
+    Assert::AreEqual(size_t{1}, full.windows.size());
+    const Outpost::Hud::Window& window = full.windows.front();
+    Assert::IsTrue(window.kind == Outpost::WindowKind::Build);
+    Assert::AreEqual(WIDTH_UNITS, window.frame.width, 0.01f);
+    Assert::AreEqual(HEIGHT_UNITS, window.frame.height, 0.01f);
+    Assert::AreEqual(1920.0f - 16.0f, window.frame.left + window.frame.width, 0.01f, L"against the right margin");
+    Assert::AreEqual(1080.0f - 16.0f, window.frame.top + window.frame.height, 0.01f, L"on the bottom margin");
+    Assert::IsTrue(window.frame.left >= ((1920.0f + 560.0f + 380.0f) / 2.0f) + 8.0f, L"clear of the selection and its buttons");
+
+    const auto pressed = std::ranges::find(full.actions, shipyard, [](const auto& _entry) { return _entry.second; });
+    Assert::IsTrue(pressed != full.actions.end(), L"the Shipyard takes a press");
+    Assert::IsTrue(full.ActionAt(pressed->first.left + 5.0f, pressed->first.top + 5.0f) == shipyard);
+    Assert::IsTrue(std::ranges::none_of(full.actions, [&relay](const auto& _entry) { return _entry.second == relay; }),
+                   L"the Relay at its cap takes none");
+    Assert::IsTrue(std::ranges::any_of(full.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "NODE CAP"; }));
+
+    // At 125% the screen is 1,536 units wide, and the selection and its buttons at their widest leave the window no room
+    // beside them: it stands over them, its foot a gap above the minimap's top, 16 + 300 + 8 units over the screen's foot.
+    constexpr float FACTOR = 1.25f;
+    const Outpost::Hud::Layout larger = Lay(content, 1920, 1080, {}, nullptr, FACTOR);
+    const Outpost::Hud::Window& over = larger.windows.front();
+    Assert::AreEqual((1536.0f - 16.0f) * FACTOR, over.frame.left + over.frame.width, 0.01f);
+    Assert::AreEqual((864.0f - 16.0f - 300.0f - 8.0f) * FACTOR, over.frame.top + over.frame.height, 0.01f);
   }
 
   // ADR-073: a sector the pirates guard is shown as theirs on the minimap, and counts for neither side; their ships and
@@ -1528,16 +1590,16 @@ public:
     constructor.role = Outpost::ShipRole::Constructor;
     const std::vector<Outpost::EntityView> entities{constructor};
     const std::vector<Outpost::EntityId> selected{constructor.id};
-    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::AreEqual(size_t{1}, content.buttons.size(), L"the Relay");
-    Assert::IsFalse(content.buttons[0].enabled);
-    Assert::AreEqual(std::string("NODE CAP"), content.buttons[0].note);
-    content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
+    std::vector<Outpost::Hud::Button> structures = Outpost::Hud::DescribeBuild(newest, entities, selected).structures;
+    Assert::AreEqual(size_t{1}, structures.size(), L"the Relay");
+    Assert::IsFalse(structures[0].enabled);
+    Assert::AreEqual(std::string("NODE CAP"), structures[0].note);
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
     Assert::AreEqual(std::string("Relay: at the node cap; upgrade the Command Station to claim more"), content.hint);
 
     newest.nodeCap = 2;
-    content = Outpost::Hud::Describe(newest, entities, selected);
-    Assert::IsTrue(content.buttons[0].enabled && content.buttons[0].note.empty(), L"below the cap");
+    structures = Outpost::Hud::DescribeBuild(newest, entities, selected).structures;
+    Assert::IsTrue(structures[0].enabled && structures[0].note.empty(), L"below the cap");
   }
 
   // Game §interface.windows.production: the production window shows one producer: the Command Station's Constructor or a
@@ -4139,6 +4201,7 @@ public:
                                    Outpost::KEY_DESIGNER,
                                    Outpost::KEY_PRODUCTION,
                                    Outpost::KEY_RESEARCH,
+                                   Outpost::KEY_BUILD,
                                    Outpost::KEY_CONTROLS,
                                    Outpost::KEY_CANCEL,
                                    Outpost::KEY_LATEST_ALERT,

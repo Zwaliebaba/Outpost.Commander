@@ -84,11 +84,6 @@ void Outpost::PlayerControls::ArmPlacement(StructureKind _structure, std::span<c
     m_placing = _structure;
 }
 
-void Outpost::PlayerControls::OpenBuild() noexcept
-{
-  m_buildFolded = false;
-}
-
 void Outpost::PlayerControls::Queue(EntityId _producer, DesignId _design)
 {
   Give(QueueShipCommand{.producer = _producer, .design = _design});
@@ -438,8 +433,6 @@ void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Fram
 
 void Outpost::PlayerControls::Select(std::vector<EntityId> _ships, bool _add)
 {
-  // Selecting again, even the same ships, opens the Constructors' structures (ADR-088).
-  m_buildFolded = false;
   if (_add)
     _ships.insert(_ships.end(), m_selected.begin(), m_selected.end());
   std::ranges::sort(_ships);
@@ -454,7 +447,6 @@ void Outpost::PlayerControls::SelectAlone(EntityId _entity)
   m_attackMoveArmed = false;
   m_standingArmed.reset();
   m_placing.reset();
-  m_buildFolded = false;
   m_lastClickedShip.reset();
 }
 
@@ -494,8 +486,6 @@ void Outpost::PlayerControls::Refuse(std::uint32_t _command) noexcept
 void Outpost::PlayerControls::GiveToShips(Order _order)
 {
   Give(std::move(_order));
-  // The Constructors have been told what to do, so their structures fold into the HUD's Build button until asked for.
-  m_buildFolded = true;
 }
 
 void Outpost::PlayerControls::Prune(const Frame& _frame)

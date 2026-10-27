@@ -41,7 +41,13 @@ The orders window, the seat's scheduled orders and the form that gives one (ADR-
 |---|---|
 | `O` | `KEY_ORDERS` |
 
-Closes the front window, and with none open cancels what the controls have armed.
+The build window, the structures the selected Constructors build (ADR-031 decision 6).
+
+| Key | Constant |
+|---|---|
+| `B` | `KEY_BUILD` |
+
+Cancels a structure being placed; else closes the front window, and with none open cancels what the controls have armed.
 
 | Key | Constant |
 |---|---|

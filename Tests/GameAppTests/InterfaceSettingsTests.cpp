@@ -57,13 +57,15 @@ private:
   std::filesystem::path m_path;
 };
 
-// Settings as a player leaves them: a step up, the designer against the top-right corner and production low on the left.
+// Settings as a player leaves them: a step up, the designer against the top-right corner, production low on the left and
+// the build window in the bottom-right corner.
 InterfaceSettings Kept()
 {
   InterfaceSettings settings;
   settings.scalePercent = 125;
   settings.places[IndexOf(WindowKind::Designer)] = Place{.fromRight = true, .fromBottom = false, .xUnits = 834.0f, .yUnits = 16.0f};
   settings.places[IndexOf(WindowKind::Production)] = Place{.fromRight = false, .fromBottom = true, .xUnits = 16.0f, .yUnits = 380.5f};
+  settings.places[IndexOf(WindowKind::Build)] = Place{.fromRight = true, .fromBottom = true, .xUnits = 396.0f, .yUnits = 310.0f};
   return settings;
 }
 } // namespace
@@ -122,7 +124,7 @@ public:
   "version": 1,
   "scalePercent": 130,
   "windows": {
-    "build": {"from": "topLeft", "xUnits": 10, "yUnits": 10},
+    "fleet": {"from": "topLeft", "xUnits": 10, "yUnits": 10},
     "designer": {"from": "middle", "xUnits": 1, "yUnits": 1},
     "research": {"from": "topLeft", "xUnits": "16", "yUnits": 1},
     "away": {"from": "topLeft", "xUnits": 1e9, "yUnits": 0},

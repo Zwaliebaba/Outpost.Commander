@@ -16,10 +16,12 @@ enum class WindowKind : std::uint8_t
   Orders,
   Away,
   // In a universe, whether to leave it for the menu (ADR-078 decision 11).
-  Leave
+  Leave,
+  // The structures the selected Constructors build (ADR-031 decision 6).
+  Build
 };
 
-inline constexpr std::size_t WINDOW_KINDS = 7;
+inline constexpr std::size_t WINDOW_KINDS = 8;
 
 // Which windows are open, in what order front to back, where each was left and which is being dragged, all in reference
 // units (ADR-006). It keeps no geometry of its own: the HUD lays each open window out where this says, clamped to the
