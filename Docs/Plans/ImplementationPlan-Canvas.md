@@ -190,6 +190,9 @@ Nothing on the screen changes in this milestone.
 - **ADR:** a new one, the canvas. It takes over from ADR-015 decision 4 and ADR-031 decision 4 what moves to the engine, and those decisions are rewritten as AGENTS.md §6 says. CV3.2 to CV3.4 add to it.
 - **Acceptance:** `NeuronClientTests` for the layers, the hit regions and the clip; `HudTests` change only where they name the moved types, and pass.
 - **Verify:** CI; run, every window open; **a run** by whoever can.
+- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decision 1; ADR-015 decisions 1 and 4, ADR-031 decisions 3 and 4 and ADR-052 decision 4 rewritten.
+  - `Hud::Layout` is a `Neuron::DrawList` with the game's lists beside it. A press and the pointer find a region, whose payload indexes `actions` or, for one that answers the pointer only, `previews`. `Hud::Window::firstAction` stays for `Layout::ActionsOf`, which `HudTests` read.
+  - A region also carries the widget it is and whether it scrolls, and a layer whether it is an overlay, which CV3.3 needs; a region that names nothing is `NO_PAYLOAD`.
 
 ### CV3.2 — A layout that measures
 
@@ -202,6 +205,7 @@ Nothing on the screen changes in this milestone.
 - **ADR:** the canvas's.
 - **Acceptance:** `NeuronClientTests`: rows, columns, grids and stacks with padding and gaps; least and most sizes; an anchor to each corner, edge and the middle; text wrapped and cut; a parent measured from its children; the same tree at two scales.
 - **Verify:** CI.
+- **As built (2026-10-27):** ADR-100 decision 2. `Neuron::LayoutTree` arranges in four passes, widths up and then down, heights up and then places down. A text cut short within a most is measured as it is set, so that a stepper's right arrow stands just after the dots, as `Painter::Stepped` puts it. `TextMetrics::Wrap` takes a tracking.
 
 ### CV3.3 — Interaction every widget shares
 
@@ -215,6 +219,10 @@ Nothing on the screen changes in this milestone.
 - **ADR:** the canvas's; ADR-031 decisions 1 and 5 rewritten for what moves.
 - **Acceptance:** `NeuronClientTests`: hot and active across frames; a press held through a move off and back; a drag clamped at each edge; the front layer taking a press over a back one; the wheel over and off a scroll region; focus taken and given back, and Esc's order; a duplicate identifier caught. `WindowManagerTests` for what stays the game's.
 - **Verify:** CI.
+- **As built (2026-10-27):** ADR-100 decisions 3 and 4; ADR-031 decision 1 rewritten.
+  - `Neuron::WindowStack` is a template over a window's name and their count, its places in a fixed array as `WindowManager`'s were, so that `Place` and `Settle` stay `noexcept`. `WindowManager` keeps its interface, and `WindowManagerTests` did not change.
+  - A field's characters and keys reach it as one stream (`FieldStroke`), since a Backspace between two characters takes back the first.
+  - ADR-031 decision 5 is unchanged: `GameClient` still resolves the windows' input, since no window is on the canvas yet.
 
 ### CV3.4 — The theme and the widgets
 
@@ -224,6 +232,11 @@ Nothing on the screen changes in this milestone.
 - **ADR:** the canvas's, and the Style Guide's rules that the API now holds.
 - **Acceptance:** `NeuronClientTests` on each widget's display list, in a theme of the tests' own; a chip the only way onto the warning's color; a button dim and taking no press when disabled, with its reason in its cost's place.
 - **Verify:** CI.
+- **As built (2026-10-27):** ADR-100 decisions 5 to 7.
+  - A window's title bar and close box are regions of its own, which `OpenWindow` does not add; a port names them.
+  - The checkbox has no counterpart in today's windows.
+  - The game's own theme is not filled yet; the first port fills it from `Hud.cpp`'s values.
+  - The engine's canvas and its tests ran in the Linux container, built with g++ 13 and clang 18 against stand-ins for `DirectXMath` and the test framework: 35 tests pass and clang-tidy 18 finds nothing. Fifteen bugs planted in the layout, the interaction and the widgets each fail a test: four survived at first, and the tests were strengthened until none did. `WindowManagerTests` ran there against the new `WindowManager`. `Hud`, `GameClient` and `HudTests` are CI's to build first. Not yet run on Windows.
 
 ---
 

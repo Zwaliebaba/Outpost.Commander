@@ -24,9 +24,9 @@ Both the ground and the minimap draw the fog. The ground's pixel shader reads th
    - `SetShades` writes the bytes into this frame's slot of an upload buffer and records a copy into the frame's command list, between barriers. `GameClient` calls it only when the revision differs from the one the texture holds, with the fog's changed rows, and clears them: only those rows are written and copied, one region for each run of them, and the rest of the texture keeps what it had. A grid of a new size is written whole.
    - The texture's view is in the renderer's shader-visible heap (ADR-051).
 3. **The ground mask samples the texture with a bilinear, clamped sampler.** Its pixel shader holds the point between the first and the last cell's centers, then samples at that point's texel center, which gives what four loads and a blend would, down to the sampler's filtering precision. It then maps the shade through the knee the caller sets ([ADR-081](ADR-081-territory-and-memory-over-the-fog.md) decision 6).
-4. **The minimap's fog is one panel of `Hud::Fill::Fog`** over the whole minimap, after the marks.
+4. **The minimap's fog is one panel of the display list's image fill** (`Neuron::CanvasFill::Image`, [ADR-100](ADR-100-the-canvas.md) decision 1) over the whole minimap, after the marks.
    - `Hud::Content` says only whether there is fog, not what it is.
-   - `GameClient` fills the panel with `UiPipeline::DrawImage` from the same texture, the minimap's top at the map's far z.
+   - `GameClient` has `UiPipeline::Draw` fill the panel from the same texture, the minimap's top at the map's far z, and it is the display list's only image.
    - `UiPipeline` takes the image through a second descriptor table. Its pixel shader tells an image quad from an atlas quad by a `u` past 2, as it tells a hatched one by a negative `u` (ADR-030).
 
 ## Consequences
