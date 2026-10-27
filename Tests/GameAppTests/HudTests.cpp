@@ -4462,8 +4462,10 @@ public:
 
   // ADR-100: the leave, away, Controls, orders and build windows built on the canvas draw what they drew before, item by
   // item and in order, within a hundredth of a pixel, with the longest content, at 1920 by 1080 and 1280 by 720 and at every
-  // step their windows fit: where they first stand, where the player moved them, and with the pointer on each of their
-  // buttons, Give enabled. Temporary: it goes with the layout functions it compares the canvas's with.
+  // step their windows fit: where they first stand and where the player moved them; and with the pointer on each of their
+  // buttons, Give enabled and each button pressing what Describe gives it, since a button on the canvas is lit as the one
+  // under the pointer and not as one of those whose action is the same. Temporary: it goes with the layout functions it
+  // compares the canvas's with.
   TEST_METHOD(BuildsTheSmallWindowsOnTheCanvasAsBefore)
   {
     using Outpost::WindowKind;
@@ -4475,9 +4477,17 @@ public:
       for (const float factor : ReachableSteps(width, height))
       {
         const Outpost::Hud::TextMetrics metrics = MetricsFor(width, height, factor);
-        Outpost::Hud::Content content = LongestContent(true);
-        content.orders->give.enabled = true;
-        content.orders->give.note.clear();
+        const Outpost::Hud::Content longest = LongestContent(true);
+        Outpost::Hud::Content pointed = longest;
+        pointed.orders->give.enabled = true;
+        pointed.orders->give.note.clear();
+        pointed.orders->give.action = {.kind = Outpost::Hud::ActionKind::GiveOrder};
+        constexpr std::array<Outpost::StructureKind, 6> STRUCTURES{
+          Outpost::StructureKind::Shipyard,        Outpost::StructureKind::ResearchLab, Outpost::StructureKind::MiningRig,
+          Outpost::StructureKind::DefensePlatform, Outpost::StructureKind::Relay,       Outpost::StructureKind::RepairBay};
+        Assert::AreEqual(STRUCTURES.size(), pointed.build->structures.size());
+        for (std::size_t structure = 0; structure < STRUCTURES.size(); ++structure)
+          pointed.build->structures[structure].action = {.kind = Outpost::Hud::ActionKind::Build, .structure = STRUCTURES[structure]};
         Outpost::WindowManager moved;
         for (const WindowKind kind : PORTED)
         {
@@ -4487,28 +4497,28 @@ public:
         const std::wstring step = std::format(L" at {} by {} at {}%", width, height, std::lround(factor * 100.0f));
         // Laid out before and on the canvas, with the pointer, if any, where GameClient finds what is under it: on the
         // layout drawn last.
-        const auto compare =
-          [&](const std::wstring& _name, const Outpost::WindowManager* _windows, std::optional<DirectX::XMFLOAT2> _pointerPixels)
+        const auto compare = [&](const std::wstring& _name, const Outpost::Hud::Content& _content, const Outpost::WindowManager* _windows,
+                                 std::optional<DirectX::XMFLOAT2> _pointerPixels)
         {
           Neuron::Interaction interaction;
           std::optional<Outpost::Hud::Action> hovered;
           if (_pointerPixels.has_value())
           {
-            hovered = Outpost::Hud::Lay(content, metrics, width, height, {}, _windows, factor, std::nullopt, nullptr, false)
+            hovered = Outpost::Hud::Lay(_content, metrics, width, height, {}, _windows, factor, std::nullopt, nullptr, false)
                         .HoverAt(_pointerPixels->x, _pointerPixels->y);
-            interaction.Move(Outpost::Hud::Lay(content, metrics, width, height, {}, _windows, factor, hovered, &interaction, true),
+            interaction.Move(Outpost::Hud::Lay(_content, metrics, width, height, {}, _windows, factor, hovered, &interaction, true),
                              _pointerPixels->x, _pointerPixels->y);
           }
           const Outpost::Hud::Layout before =
-            Outpost::Hud::Lay(content, metrics, width, height, {}, _windows, factor, hovered, nullptr, false);
+            Outpost::Hud::Lay(_content, metrics, width, height, {}, _windows, factor, hovered, nullptr, false);
           const Outpost::Hud::Layout after =
-            Outpost::Hud::Lay(content, metrics, width, height, {}, _windows, factor, hovered, &interaction, true);
+            Outpost::Hud::Lay(_content, metrics, width, height, {}, _windows, factor, hovered, &interaction, true);
           differences += Differences(before, after, _name + step);
         };
-        compare(L"where they first stand", nullptr, std::nullopt);
-        compare(L"moved", &moved, std::nullopt);
+        compare(L"where they first stand", longest, nullptr, std::nullopt);
+        compare(L"moved", longest, &moved, std::nullopt);
         const Outpost::Hud::Layout laid =
-          Outpost::Hud::Lay(content, metrics, width, height, {}, nullptr, factor, std::nullopt, nullptr, false);
+          Outpost::Hud::Lay(pointed, metrics, width, height, {}, nullptr, factor, std::nullopt, nullptr, false);
         for (std::size_t window = 0; window < laid.windows.size(); ++window)
         {
           if (std::ranges::find(PORTED, laid.windows[window].kind) == PORTED.end())
@@ -4517,7 +4527,7 @@ public:
           for (std::size_t action = laid.windows[window].firstAction; action < end; ++action)
           {
             const Neuron::CanvasRect& button = laid.actions[action].first;
-            compare(std::format(L"pointing at action {}", action), nullptr,
+            compare(std::format(L"pointing at action {}", action), pointed, nullptr,
                     DirectX::XMFLOAT2(button.left + (button.width / 2.0f), button.top + (button.height / 2.0f)));
           }
         }
