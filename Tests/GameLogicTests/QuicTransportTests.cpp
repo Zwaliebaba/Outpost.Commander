@@ -550,8 +550,8 @@ public:
   }
 
   // ADR-082 decision 1: a universe's log writes what came of every connection, with the address it came from: a hello of
-  // another build, with the layout it named; a wrong token; a welcome; a seat taken by a newer connection; a connection the game
-  // closes; and one that says no hello in time.
+  // another build, with the layout it named; a wrong token; a welcome; a seat taken by a newer connection; a connection closed
+  // with a code, which the newer one does once its close has gone out whole; and one that says no hello in time.
   TEST_METHOD(LogsEveryJoin)
   {
     const TemporaryFolder folder;
@@ -565,12 +565,20 @@ public:
     Outpost::ServerAddress guessed = seat;
     guessed.token.back() ^= 0x80;
     Assert::ExpectException<Neuron::Exception>([&guessed] { Outpost::QuicTransport refused(guessed, BLUE); }, L"a wrong token");
+    constexpr std::uint64_t CLOSE_CODE = 9;
     {
       Outpost::QuicTransport first(seat, BLUE);
       Assert::IsFalse(SnapshotsOf(first, 1).empty(), L"the seat taken");
-      Outpost::QuicTransport second(seat, BLUE);
-      (void)WhyItWent(first);
-      Assert::IsFalse(SnapshotsOf(second, 1).empty(), L"and taken again");
+      // A channel of the engine's own takes the seat again and closes with a code, and waits for its close to have gone: a
+      // close made at once may go without its code, which the server then reads as lost.
+      const std::unique_ptr<Neuron::QuicChannel> second = ChannelTo(seat);
+      second->Send(Outpost::EncodeMessage(Outpost::HelloMessage{.player = BLUE, .token = seat.token}));
+      Assert::IsFalse(WhyItWent(first).empty(), L"the first told it was taken");
+      second->Shutdown(CLOSE_CODE);
+      const auto closing = std::chrono::steady_clock::now() + 10s;
+      while (!second->HasGone() && std::chrono::steady_clock::now() < closing)
+        std::this_thread::sleep_for(10ms);
+      Assert::IsTrue(second->HasGone(), L"and the second closed");
     }
     const std::unique_ptr<Neuron::QuicChannel> silent = ChannelTo(seat);
     (void)CloseCodeOf(*silent, 15s);
@@ -580,7 +588,7 @@ public:
                                             " refused seat player 1 from 127.0.0.1",
                                             " welcomed player 1 from 127.0.0.1",
                                             " gone player 1 taken from 127.0.0.1",
-                                            " gone player 1 closed 0 from 127.0.0.1",
+                                            std::format(" gone player 1 closed {} from 127.0.0.1", CLOSE_CODE),
                                             " refused silent from 127.0.0.1"};
     std::string log;
     const auto deadline = std::chrono::steady_clock::now() + 20s;
