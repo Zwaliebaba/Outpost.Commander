@@ -1,6 +1,6 @@
 # Outpost Commander — The Universe Overseer
 
-Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, C1 to C7, all open
+Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D7, all open
 
 The overseer is the dedicated server's management console: a separate application, with a channel of its own to the server, that oversees the whole universe (Game §session.server). What it shows, how it reaches the server and what the server has to measure for it are [the proposal](UniverseOverseer.md)'s. This plan is the order the work is done in. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -14,7 +14,7 @@ The overseer is the dedicated server's management console: a separate applicatio
 4. **QUIC is checked in CI's Debug|x64 run only** (ADR-060), since the Linux container has no Schannel. A task that changes `QuicChannel`, `QuicListener` or the server's seats is verified there, and says so; the container runs the rest.
 5. **A task that touches rendering, input or presentation is run, not only built**, and the owner's run accepts it.
 
-Task numbers carry the prefix OV, and the gates are the proposal's, lettered C.
+Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 
 ---
 
@@ -26,16 +26,16 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered C.
 | OV1.2 | A seat's orders, refusals and bytes are in its hour | — | — | todo |
 | OV1.3 | Every join and every link's end is logged | — | — | todo |
 | OV1.4 | A save's write is timed | — | — | todo |
-| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | C4 | todo |
+| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | D4 | todo |
 | OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | todo |
 | OV2.3 | The universe's view and the log's stream | OV2.1 | — | todo |
 | OV2.4 | `Closing`, and the server's state | OV2.2 | — | todo |
-| OV3.1 | The overseer's project and window | OV2 | C1, C5, C6 | todo |
-| OV3.2 | The overview: header, tiles, seat table, attention, who played, the log | OV3.1 | C7 | todo |
+| OV3.1 | The overseer's project and window | OV2 | D1, D5, D6 | todo |
+| OV3.2 | The overview: header, tiles, seat table, attention, who played, the log | OV3.1 | D7 | todo |
 | OV3.3 | The map: one system's sectors, full sight and a seat's | OV3.1 | — | todo |
 | OV4.1 | The seat window, the server window and the header states | OV3 | — | todo |
 | OV5.1 | Save now and Stop | OV4 | — | todo |
-| OV5.2 | Drop link and New token | OV5.1 | C2, C3 | todo |
+| OV5.2 | Drop link and New token | OV5.1 | D2, D3 | todo |
 
 ### Milestone order
 
@@ -44,6 +44,7 @@ OV1, OV2, OV3, OV4, OV5.
 - **OV1 changes no message and nothing a universe saves,** so a universe made before it runs on after it. It is the server's own instrument, written to `Universe.log` whether or not an overseer ever connects, and it waits on no gate.
 - **The process's figures are OV2.2's,** not OV1's as the proposal's §10 has it: nothing reads them before `Health` does.
 - **The galaxy view comes with the galaxy** (the Horizon plan's milestone 42). Until then a universe is one system, and OV3.3's map is its sector map.
+- **OV3 follows the canvas** (gate D1): the overseer is built on the widgets the canvas plan puts in `NeuronClient`, so it waits on that plan's widget milestone, not on the windows the canvas replaces. OV1 and OV2 need nothing of it.
 
 ---
 
@@ -106,4 +107,4 @@ Each is laid out task by task when the one before it is merged, and its gates ar
 - **OV2 — The channel** (proposal §4): the second listener, `Overseer.json`, the messages but the actions, the `Overseer` tick part, and the process's figures. It changes no message of the game's.
 - **OV3 — The overseer** (proposal §3 and §6): the project, its window, the overview and the map.
 - **OV4 — The seat window, the server window and the header states.**
-- **OV5 — The actions:** Save now and Stop, then Drop link and New token as gates C2 and C3 decide.
+- **OV5 — The actions:** Save now and Stop, then Drop link and New token as gates D2 and D3 decide.
