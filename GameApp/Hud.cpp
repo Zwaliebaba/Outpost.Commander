@@ -1701,256 +1701,12 @@ constexpr float CARD_SPACING = 8.0f;
 constexpr float CARD_INSET = 12.0f;
 // Where the production and research windows stand at first: under the Ore panel and the status panel's place (ADR-066).
 constexpr float WINDOWS_TOP = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP + STATUS_PANEL_KEPT_UNITS + MARGIN;
-constexpr float CARDS_TOP = SECTION_TOP + SECTION_BODY_GAP;
-
-// The foot of _lines lines of cards _cardHeight tall, at least one.
-float CardsBottom(std::size_t _lines, float _cardHeight) noexcept
-{
-  const auto lines = static_cast<float>(std::max<std::size_t>(_lines, 1));
-  return CARDS_TOP + (lines * (_cardHeight + CARD_SPACING)) - CARD_SPACING;
-}
-
-// The queue's label stands under cards whose foot is at _cardsBottom; the window ends under its _jobs rows.
-float QueueTop(float _cardsBottom) noexcept
-{
-  return _cardsBottom + SECTION_GAP;
-}
-
-float QueueWindowHeight(float _cardsBottom, std::size_t _jobs) noexcept
-{
-  return QueueTop(_cardsBottom) + SECTION_BODY_GAP + (static_cast<float>(_jobs) * (QUEUE_ROW_HEIGHT + QUEUE_ROW_GAP)) + SECTION_GAP;
-}
-
-// A window's header: its subject in the title face, and the Ore. A subject that is stepped through, such as production's
-// producer, stands between the arrows that step it (ADR-068 decision 1).
-void Header(Painter& _paint, const std::string& _subject, std::int32_t _ore, float _widthUnits,
-            std::optional<std::pair<Hud::Action, Hud::Action>> _steps = std::nullopt, bool _canStep = false)
-{
-  _paint.HeaderBand(_widthUnits, DESIGNER_HEADER);
-  const float room = _widthUnits - (2.0f * WINDOW_INSET) - ORE_BOX_WIDTH - FIT_GAP_UNITS;
-  if (_steps.has_value())
-  {
-    (void)_paint.Stepped(_subject, WINDOW_INSET, ARROWS_IN_HEADER_TOP, 40.0f, room, _canStep, _steps->first, _steps->second, TEXT_COLOR,
-                         Hud::Typeface::Title);
-  }
-  else
-    _paint.Text(_paint.Fit(_subject, Hud::Typeface::Title, room), WINDOW_INSET, 40.0f, TEXT_COLOR, Hud::Typeface::Title);
-  _paint.OreBox(_ore, _widthUnits - WINDOW_INSET);
-}
-
-// A queue under its label at _top: a row for each job, with its name, and the front one's progress or its wait for Ore.
-// The label counts the jobs against the queue's limit, which says how many more it takes.
-void QueueRows(Painter& _paint, const std::vector<Hud::QueueLine>& _queue, float _widthUnits, float _top)
-{
-  _paint.Text(QueueLabel(_queue.size()), WINDOW_INSET, _top, LABEL_COLOR, Hud::Typeface::Label, _paint.Tracking());
-  const float width = _widthUnits - (2.0f * WINDOW_INSET);
-  for (std::size_t slot = 0; slot < _queue.size(); ++slot)
-  {
-    const float top = _top + SECTION_BODY_GAP + (static_cast<float>(slot) * (QUEUE_ROW_HEIGHT + QUEUE_ROW_GAP));
-    _paint.Panel(WINDOW_INSET, top, width, QUEUE_ROW_HEIGHT, CARD_COLOR);
-    _paint.Outline(WINDOW_INSET, top, width, QUEUE_ROW_HEIGHT, EDGE_COLOR);
-    _paint.Text(std::to_string(slot + 1), WINDOW_INSET + 10.0f, top + 7.0f, LABEL_COLOR, Hud::Typeface::Figure);
-    const Hud::QueueLine& line = _queue[slot];
-    const float right = WINDOW_INSET + width - 10.0f;
-    const float barLeft = right - QUEUE_BAR_WIDTH - 44.0f;
-    // The name runs up to the front job's progress or its wait, for Ore or for the fleet cap (ADR-071 decision 4).
-    const std::string_view waiting = line.capped ? "WAITING FOR FLEET CAP" : "WAITING FOR ORE";
-    const float nameLeft = WINDOW_INSET + 32.0f;
-    const float nameRight = line.waiting ? right - _paint.Width(waiting, Hud::Typeface::Label) : line.front ? barLeft : right;
-    _paint.Text(_paint.Fit(line.name, Hud::Typeface::Name, nameRight - nameLeft - FIT_GAP_UNITS), nameLeft, top + 5.0f, TEXT_COLOR,
-                Hud::Typeface::Name);
-    if (line.waiting)
-      _paint.RightText(std::string(waiting), right, top + 9.0f, AMBER_COLOR, Hud::Typeface::Label);
-    else if (line.front)
-    {
-      _paint.Panel(barLeft, top + 12.0f, QUEUE_BAR_WIDTH, 6.0f, BAR_TRACK_COLOR);
-      _paint.Panel(barLeft, top + 12.0f,
-                   QUEUE_BAR_WIDTH * static_cast<float>(std::clamp(line.permille, 0, Outpost::PERMILLE)) /
-                     static_cast<float>(Outpost::PERMILLE),
-                   6.0f, BAR_FILL_COLOR);
-      _paint.RightText(std::format("{}%", line.permille / 10), right, top + 7.0f, TEXT_COLOR, Hud::Typeface::Figure);
-    }
-  }
-}
-
-std::size_t OptionLines(const Hud::ProductionPanel& _panel) noexcept
-{
-  return (_panel.options.size() + 1) / 2;
-}
-
-float ProductionHeight(const Hud::ProductionPanel& _panel) noexcept
-{
-  return QueueWindowHeight(CardsBottom(OptionLines(_panel), OPTION_HEIGHT), _panel.queue.size());
-}
-
-// The production window: the producer with arrows to the others, a card for each thing it builds, and its queue.
-void LayProduction(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::ProductionPanel& _panel,
-                   Outpost::WindowManager::Point _corner, float _scale)
-{
-  (void)OpenWindow(_layout, Outpost::WindowKind::Production, std::string(), _corner, PRODUCTION_WINDOW_WIDTH,
-                   ProductionHeight(_panel) - Hud::TITLE_BAR_UNITS, _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text(std::string(Outpost::RowOf(Outpost::WindowKind::Production).title), WINDOW_INSET, WINDOW_HEADER_TOP, HEADER_LABEL_COLOR,
-             Hud::Typeface::Label, paint.Tracking());
-  Header(paint, _panel.producer, _panel.ore, PRODUCTION_WINDOW_WIDTH,
-         std::pair{Hud::Action{.kind = Hud::ActionKind::PreviousProducer}, Hud::Action{.kind = Hud::ActionKind::NextProducer}},
-         _panel.canStep);
-
-  paint.Text("BUILD", WINDOW_INSET, SECTION_TOP, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  const float width = (PRODUCTION_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - CARD_SPACING) / 2.0f;
-  const float inner = width - (2.0f * CARD_INSET);
-  for (std::size_t i = 0; i < _panel.options.size(); ++i)
-  {
-    const Hud::QueueOption& option = _panel.options[i];
-    const std::size_t line = i / 2;
-    const std::size_t column = i % 2;
-    const float left = WINDOW_INSET + (static_cast<float>(column) * (width + CARD_SPACING));
-    const float cardTop = CARDS_TOP + (static_cast<float>(line) * (OPTION_HEIGHT + CARD_SPACING));
-    const Hud::Rect face = paint.Panel(left, cardTop, width, OPTION_HEIGHT, option.enabled ? CARD_COLOR : FIELD_COLOR);
-    if (option.enabled)
-      paint.Press(face, option.action);
-    paint.Outline(left, cardTop, width, OPTION_HEIGHT, EDGE_COLOR);
-    // A design's name is cut short only where it would run past its card, and its abbreviation where it would meet the cost.
-    paint.Text(paint.Fit(option.name, Hud::Typeface::Name, inner), left + CARD_INSET, cardTop + 6.0f,
-               option.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Name);
-    const float costWidth = paint.GemAndFigureWidth(option.cost, Hud::Typeface::Figure);
-    paint.Text(paint.Fit(option.detail, Hud::Typeface::Detail, inner - costWidth - FIT_GAP_UNITS), left + CARD_INSET, cardTop + 28.0f,
-               option.enabled ? CODE_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
-    paint.GemAndFigure(option.cost, left + width - CARD_INSET, cardTop + 28.0f, Hud::Typeface::Figure,
-                       option.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
-    // How long one takes, and how it does against each hull: three segments a hull, three lit for Good, two for Fair and
-    // one for Poor, so that the bars read without their colors (ADR-068).
-    const float thirdTop = cardTop + OPTION_THIRD_LINE_TOP;
-    paint.Text(option.time, left + CARD_INSET, thirdTop, option.enabled ? LABEL_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
-    const float segmentsWidth =
-      (static_cast<float>(STRENGTH_SEGMENTS) * (STRENGTH_SEGMENT_UNITS + STRENGTH_SEGMENT_GAP)) - STRENGTH_SEGMENT_GAP;
-    float groupsWidth = 0.0f;
-    for (const Hud::HullRating& strength : option.strengths)
-      groupsWidth += paint.Width(strength.hull, Hud::Typeface::Label) + STRENGTH_LETTER_GAP + segmentsWidth + STRENGTH_GROUP_GAP;
-    float x = left + width - CARD_INSET - std::max(0.0f, groupsWidth - STRENGTH_GROUP_GAP);
-    for (const Hud::HullRating& strength : option.strengths)
-    {
-      paint.Text(strength.hull, x, thirdTop, option.enabled ? ROW_LABEL_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Label);
-      x += paint.Width(strength.hull, Hud::Typeface::Label) + STRENGTH_LETTER_GAP;
-      const auto lit = static_cast<std::size_t>(strength.rating) + 1;
-      for (std::size_t segment = 0; segment < STRENGTH_SEGMENTS; ++segment)
-      {
-        const DirectX::XMFLOAT4& color = segment >= lit   ? BAR_TRACK_COLOR
-                                         : option.enabled ? RatingColor(strength.rating)
-                                                          : LOCKED_TEXT_COLOR;
-        paint.Panel(x, thirdTop + 5.0f, STRENGTH_SEGMENT_UNITS, STRENGTH_SEGMENT_HEIGHT, color);
-        x += STRENGTH_SEGMENT_UNITS + STRENGTH_SEGMENT_GAP;
-      }
-      x += STRENGTH_GROUP_GAP - STRENGTH_SEGMENT_GAP;
-    }
-  }
-  if (!_panel.hint.empty())
-  {
-    paint.Text(paint.Fit(_panel.hint, Hud::Typeface::Detail, PRODUCTION_WINDOW_WIDTH - (2.0f * WINDOW_INSET)), WINDOW_INSET,
-               CARDS_TOP + 16.0f, LABEL_COLOR, Hud::Typeface::Detail);
-  }
-  QueueRows(paint, _panel.queue, PRODUCTION_WINDOW_WIDTH, QueueTop(CardsBottom(OptionLines(_panel), OPTION_HEIGHT)));
-}
-
-std::size_t TopicLines(const Hud::ResearchPanel& _panel) noexcept
-{
-  const std::size_t shown = std::min(Hud::TOPICS_SHOWN, _panel.topics.size() - std::min(_panel.firstTopic, _panel.topics.size()));
-  return (shown + Hud::TOPIC_COLUMNS - 1) / Hud::TOPIC_COLUMNS;
-}
 
 // How wide a topic card is: the research window's width shared among its columns.
 float TopicWidth() noexcept
 {
   const auto columns = static_cast<float>(Hud::TOPIC_COLUMNS);
   return (RESEARCH_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - ((columns - 1.0f) * CARD_SPACING)) / columns;
-}
-
-// A topic's effect as its card sets it, broken into lines that fit the card.
-std::vector<std::string> EffectLines(const Hud::TopicCard& _topic, const Hud::TextMetrics& _metrics)
-{
-  return _metrics.Wrap(Hud::Typeface::Detail, _topic.effect, TopicWidth() - (2.0f * CARD_INSET));
-}
-
-// How tall every topic card is: as many lines as any topic needs under its name, its effect's and then its prerequisites'
-// or its tier's, so that the cards keep their places as the window scrolls.
-float TopicHeight(const Hud::ResearchPanel& _panel, const Hud::TextMetrics& _metrics)
-{
-  std::size_t lines = TOPIC_LEAST_LINES;
-  for (const Hud::TopicCard& topic : _panel.topics)
-    lines = std::max(lines, EffectLines(topic, _metrics).size() + std::max<std::size_t>(1, topic.needs.size()));
-  return TOPIC_LINES_TOP + (static_cast<float>(lines) * TOPIC_LINE_UNITS) + TOPIC_FOOT_UNITS;
-}
-
-// The research window: the Research Lab, a card for each topic not researched or queued yet, a page of them at a time with
-// arrows to scroll by a row, and its queue.
-void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::ResearchPanel& _panel,
-                 Outpost::WindowManager::Point _corner, float _scale)
-{
-  const float topicHeight = TopicHeight(_panel, _metrics);
-  const float cardsBottom = CardsBottom(TopicLines(_panel), topicHeight);
-  (void)OpenWindow(_layout, Outpost::WindowKind::Research, std::string(), _corner, RESEARCH_WINDOW_WIDTH,
-                   QueueWindowHeight(cardsBottom, _panel.queue.size()) - Hud::TITLE_BAR_UNITS, _scale);
-  Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text(std::string(Outpost::RowOf(Outpost::WindowKind::Research).title), WINDOW_INSET, WINDOW_HEADER_TOP, HEADER_LABEL_COLOR,
-             Hud::Typeface::Label, paint.Tracking());
-  Header(paint, _panel.lab, _panel.ore, RESEARCH_WINDOW_WIDTH);
-
-  // Where the page is among the topics, "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030; ADR-068 decision 1).
-  const std::size_t pageEnd = std::min(_panel.firstTopic + Hud::TOPICS_SHOWN, _panel.topics.size());
-  paint.Text(_panel.topics.empty() ? std::string("TOPICS")
-                                   : std::format("TOPICS{}{}-{} OF {}", DOT, _panel.firstTopic + 1, pageEnd, _panel.topics.size()),
-             WINDOW_INSET, SECTION_TOP, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  if (_panel.topics.size() > Hud::TOPICS_SHOWN)
-  {
-    const float arrowsLeft = RESEARCH_WINDOW_WIDTH - WINDOW_INSET - (2.0f * SMALL_BUTTON_UNITS) - 4.0f;
-    const float arrowsTop = SECTION_TOP - 6.0f;
-    paint.SmallButton("<", arrowsLeft, arrowsTop, _panel.firstTopic > 0, {.kind = Hud::ActionKind::PreviousTopics});
-    paint.SmallButton(">", arrowsLeft + SMALL_BUTTON_UNITS + 4.0f, arrowsTop, _panel.firstTopic + Hud::TOPICS_SHOWN < _panel.topics.size(),
-                      {.kind = Hud::ActionKind::NextTopics});
-  }
-  const float width = TopicWidth();
-  for (std::size_t i = _panel.firstTopic, shown = 0; i < _panel.topics.size() && shown < Hud::TOPICS_SHOWN; ++i, ++shown)
-  {
-    const Hud::TopicCard& topic = _panel.topics[i];
-    const std::size_t line = shown / Hud::TOPIC_COLUMNS;
-    const std::size_t column = shown % Hud::TOPIC_COLUMNS;
-    const float left = WINDOW_INSET + (static_cast<float>(column) * (width + CARD_SPACING));
-    const float cardTop = CARDS_TOP + (static_cast<float>(line) * (topicHeight + CARD_SPACING));
-    const bool blocked = !topic.needs.empty();
-    const Hud::Rect face = paint.Panel(left, cardTop, width, topicHeight,
-                                       blocked         ? LOCKED_COLOR
-                                       : topic.enabled ? CARD_COLOR
-                                                       : FIELD_COLOR);
-    if (blocked)
-      paint.Panel(left, cardTop, width, topicHeight, LOCKED_HATCH_COLOR, Hud::Fill::Hatched);
-    if (topic.enabled)
-      paint.Press(face, topic.action);
-    paint.Outline(left, cardTop, width, topicHeight, EDGE_COLOR);
-    const DirectX::XMFLOAT4& color = topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
-    const float costWidth = paint.GemAndFigureWidth(topic.cost, Hud::Typeface::Figure);
-    paint.Text(paint.Fit(topic.name, Hud::Typeface::Name, width - (2.0f * CARD_INSET) - costWidth - FIT_GAP_UNITS), left + CARD_INSET,
-               cardTop + 6.0f, color, Hud::Typeface::Name);
-    paint.GemAndFigure(topic.cost, left + width - CARD_INSET, cardTop + 9.0f, Hud::Typeface::Figure,
-                       topic.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
-    float lineTop = cardTop + TOPIC_LINES_TOP;
-    for (std::string& effect : EffectLines(topic, _metrics))
-    {
-      paint.Text(std::move(effect), left + CARD_INSET, lineTop, topic.enabled ? NUMBERS_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
-      lineTop += TOPIC_LINE_UNITS;
-    }
-    // Each prerequisite on a line of its own, with its box: "NEEDS · IMPROVED EXTRACTION", then "+ HULL PLATING".
-    for (std::size_t need = 0; need < topic.needs.size(); ++need)
-    {
-      paint.Sprite(Hud::Sprite::Checkbox, left + CARD_INSET, lineTop + 2.0f, 10.0f, AMBER_COLOR);
-      const std::string needs = need == 0 ? std::format("NEEDS{}{}", DOT, topic.needs[need]) : std::format("+ {}", topic.needs[need]);
-      paint.Text(paint.Fit(needs, Hud::Typeface::Label, width - 28.0f - CARD_INSET), left + 28.0f, lineTop, AMBER_COLOR,
-                 Hud::Typeface::Label);
-      lineTop += TOPIC_LINE_UNITS;
-    }
-    if (!blocked)
-      paint.Text(topic.time, left + CARD_INSET, lineTop, topic.enabled ? LABEL_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
-  }
-  QueueRows(paint, _panel.queue, RESEARCH_WINDOW_WIDTH, QueueTop(cardsBottom));
 }
 
 // The windows on the canvas (ADR-100). The game's look as the canvas's theme: the windows' colors, typefaces and sizes
@@ -2489,10 +2245,10 @@ void OreAmount(Neuron::Canvas& _canvas, std::int32_t _ore, Hud::Typeface _face, 
   _canvas.Tree().End();
 }
 
-// A window's header on the canvas (ADR-068 decision 1): the hatched band under the title bar and its edge at its foot; its
+// A window's header (ADR-068 decision 1): the hatched band under the title bar and its edge at its foot; its
 // subject in the title face, between the arrows that step it when it is stepped through; and the player's Ore in its box.
-void HeaderOnCanvas(Neuron::Canvas& _canvas, Hud::Layout& _layout, const std::string& _subject, std::int32_t _ore, float _widthUnits,
-                    std::optional<std::pair<Hud::Action, Hud::Action>> _steps = std::nullopt, bool _canStep = false)
+void Header(Neuron::Canvas& _canvas, Hud::Layout& _layout, const std::string& _subject, std::int32_t _ore, float _widthUnits,
+            std::optional<std::pair<Hud::Action, Hud::Action>> _steps = std::nullopt, bool _canStep = false)
 {
   Neuron::LayoutTree& tree = _canvas.Tree();
   const std::size_t band = tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = DESIGNER_HEADER - Hud::TITLE_BAR_UNITS});
@@ -2529,9 +2285,9 @@ void HeaderOnCanvas(Neuron::Canvas& _canvas, Hud::Layout& _layout, const std::st
   tree.End();
 }
 
-// A queue on the canvas: its label, then a row for each job, a box in the cards' look with the job's number, its name, and
+// A queue: its label, then a row for each job, a box in the cards' look with the job's number, its name, and
 // the front one's progress or its wait, for Ore or for the fleet cap (ADR-071 decision 4), at its right.
-void QueueOnCanvas(Neuron::Canvas& _canvas, const std::vector<Hud::QueueLine>& _queue)
+void QueueRows(Neuron::Canvas& _canvas, const std::vector<Hud::QueueLine>& _queue)
 {
   Neuron::LayoutTree& tree = _canvas.Tree();
   (void)_canvas.Label(SectionText(QueueLabel(_queue.size())), LABEL_COLOR);
@@ -2611,19 +2367,18 @@ void OptionCard(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::QueueO
   _canvas.EndBox();
 }
 
-// The production window on the canvas: the producer between the arrows that step through the others, a card for each thing
+// The production window: the producer between the arrows that step through the others, a card for each thing
 // it builds, two to a row and at least a row's room, kept still as the queue under them grows (ADR-043 decision 6), with
 // the hint over them when there is one, and the queue.
-void LayProductionOnCanvas(const WindowBench& _bench, const Hud::ProductionPanel& _panel, const WindowPlace& _place)
+void LayProduction(const WindowBench& _bench, const Hud::ProductionPanel& _panel, const WindowPlace& _place)
 {
   LayWindow(_bench, Outpost::WindowKind::Production, _place, PRODUCTION_WINDOW_WIDTH, QueueWindowBody(),
             [&](Neuron::Canvas& _canvas)
             {
               Neuron::LayoutTree& tree = _canvas.Tree();
-              HeaderOnCanvas(
-                _canvas, *_bench.layout, _panel.producer, _panel.ore, PRODUCTION_WINDOW_WIDTH,
-                std::pair{Hud::Action{.kind = Hud::ActionKind::PreviousProducer}, Hud::Action{.kind = Hud::ActionKind::NextProducer}},
-                _panel.canStep);
+              Header(_canvas, *_bench.layout, _panel.producer, _panel.ore, PRODUCTION_WINDOW_WIDTH,
+                     std::pair{Hud::Action{.kind = Hud::ActionKind::PreviousProducer}, Hud::Action{.kind = Hud::ActionKind::NextProducer}},
+                     _panel.canStep);
               (void)tree.Begin(Neuron::LayoutKind::Column, UnderHeader());
               (void)_canvas.Label(SectionText("BUILD"), LABEL_COLOR);
               (void)tree.Begin(Neuron::LayoutKind::Stack, {.leastHeightUnits = OPTION_HEIGHT, .alignX = Neuron::LayoutAlign::Stretch});
@@ -2638,7 +2393,7 @@ void LayProductionOnCanvas(const WindowBench& _bench, const Hud::ProductionPanel
               }
               tree.End();
               (void)tree.Add({.heightUnits = SECTION_GAP});
-              QueueOnCanvas(_canvas, _panel.queue);
+              QueueRows(_canvas, _panel.queue);
               tree.End();
             });
 }
@@ -2647,7 +2402,7 @@ void LayProductionOnCanvas(const WindowBench& _bench, const Hud::ProductionPanel
 // each prerequisite neither researched nor queued on a line of its own with its box, "NEEDS · RESEARCH LAB L2", then
 // "+ HULL PLATING", and hatched and dimmed while it has one (ADR-061 decision 4); or else its tier and time. Every topic's
 // card is as tall as the most lines any topic needs, in the height group TopicMeasure measures the others in.
-void TopicCardOnCanvas(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::TopicCard& _topic, std::size_t _index)
+void TopicCardOf(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::TopicCard& _topic, std::size_t _index)
 {
   Neuron::LayoutTree& tree = _canvas.Tree();
   const bool blocked = !_topic.needs.empty();
@@ -2710,9 +2465,9 @@ void TopicMeasure(Neuron::LayoutTree& _tree, const Hud::TopicCard& _topic)
   _tree.End();
 }
 
-// The research window on the canvas: the Research Lab, where the page stands among the topics with the arrows that scroll a
+// The research window: the Research Lab, where the page stands among the topics with the arrows that scroll a
 // row at a time when they do not all fit, a page of topic cards and the others measured with them, and the queue.
-void LayResearchOnCanvas(const WindowBench& _bench, const Hud::ResearchPanel& _panel, const WindowPlace& _place)
+void LayResearch(const WindowBench& _bench, const Hud::ResearchPanel& _panel, const WindowPlace& _place)
 {
   LayWindow(
     _bench, Outpost::WindowKind::Research, _place, RESEARCH_WINDOW_WIDTH, QueueWindowBody(),
@@ -2720,7 +2475,7 @@ void LayResearchOnCanvas(const WindowBench& _bench, const Hud::ResearchPanel& _p
     {
       Neuron::LayoutTree& tree = _canvas.Tree();
       Hud::Layout& layout = *_bench.layout;
-      HeaderOnCanvas(_canvas, layout, _panel.lab, _panel.ore, RESEARCH_WINDOW_WIDTH);
+      Header(_canvas, layout, _panel.lab, _panel.ore, RESEARCH_WINDOW_WIDTH);
       (void)tree.Begin(Neuron::LayoutKind::Column, UnderHeader());
       // Where the page is among the topics, "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030; ADR-068 decision 1).
       const std::size_t pageEnd = std::min(_panel.firstTopic + Hud::TOPICS_SHOWN, _panel.topics.size());
@@ -2744,7 +2499,7 @@ void LayResearchOnCanvas(const WindowBench& _bench, const Hud::ResearchPanel& _p
       (void)tree.Begin(Neuron::LayoutKind::Grid,
                        {.gapUnits = CARD_SPACING, .alignX = Neuron::LayoutAlign::Stretch, .columns = Hud::TOPIC_COLUMNS});
       for (std::size_t topic = _panel.firstTopic; topic < pageEnd; ++topic)
-        TopicCardOnCanvas(_canvas, layout, _panel.topics[topic], topic);
+        TopicCardOf(_canvas, layout, _panel.topics[topic], topic);
       // With no card on the page, a card's room still.
       if (_panel.firstTopic >= pageEnd)
         (void)tree.Add({.leastHeightUnits = TOPIC_LEAST_UNITS, .heightGroup = TOPIC_CARDS});
@@ -2755,7 +2510,7 @@ void LayResearchOnCanvas(const WindowBench& _bench, const Hud::ResearchPanel& _p
       }
       tree.End();
       (void)tree.Add({.heightUnits = SECTION_GAP});
-      QueueOnCanvas(_canvas, _panel.queue);
+      QueueRows(_canvas, _panel.queue);
       tree.End();
     });
 }
@@ -3744,7 +3499,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                      std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered,
-                     Neuron::Interaction* _interaction, bool _ported)
+                     Neuron::Interaction* _interaction)
 {
   // The windows on the canvas name their widgets afresh each frame (ADR-100).
   Neuron::Interaction unpointed;
@@ -4354,14 +4109,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       LayDesigner(layout, _metrics, *_content.designer, corner, scale);
     }
     // Production and research, at first side by side under the Ore and the status panel, clear of the designer.
-    else if (kind == WindowKind::Production && _content.production.has_value() && _ported)
-      LayProductionOnCanvas(bench, *_content.production, {.corner = place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH)});
-    else if (kind == WindowKind::Research && _content.laboratory.has_value() && _ported)
-      LayResearchOnCanvas(bench, *_content.laboratory, {.corner = place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH)});
     else if (kind == WindowKind::Production && _content.production.has_value())
-      LayProduction(layout, _metrics, *_content.production, place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH), scale);
+      LayProduction(bench, *_content.production, {.corner = place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH)});
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
-      LayResearch(layout, _metrics, *_content.laboratory, place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH), scale);
+      LayResearch(bench, *_content.laboratory, {.corner = place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH)});
     // The windows on the canvas, each at first where its row puts it (ADR-100 decision 8): the Controls, away and leave
     // windows in the middle, the orders window at the right under the Ore's line, and the build window at the bottom right.
     else if (kind == WindowKind::Controls && _content.controls)

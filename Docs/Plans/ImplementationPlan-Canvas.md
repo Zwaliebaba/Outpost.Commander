@@ -87,8 +87,8 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV4.2 | The Controls window | CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
 | CV4.3 | The orders window | CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
 | CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
-| CV5.1 | The production window | CV4.1 | — | todo |
-| CV5.2 | The research window | CV5.1 | — | todo |
+| CV5.1 | The production window | CV4.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
+| CV5.2 | The research window | CV5.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
 | CV6.1 | The designer | CV5.1 | — | todo |
 | CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1 | C3, C5 | todo |
 | CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | todo |
@@ -283,7 +283,7 @@ Each task is a port (rule 5).
 - **Scope:** production on the canvas: its header's stepper, its cards two to a row, kept still as the queue grows (ADR-043 decision 6), each card a composite of the game's, and the queue under them. `ProductionHeight` and `QueueWindowHeight` go.
 - **Acceptance:** the port's comparison; `KeepsTheCardsStillAsTheQueueGrows`, `SaysWhatAProductionCardBuilds`.
 - **Verify:** CI; run, a queue filled and emptied.
-- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 6 and 7. The canvas gains a box, a card and an icon, which the cards, the queue's rows and the Ore's box are composed of; a card is not lit under the pointer, as the old ones were not. The header is `HeaderOnCanvas`, which the designer takes in CV6.
+- **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 6 and 7. The canvas gains a box, a card and an icon, which the cards, the queue's rows and the Ore's box are composed of; a card is not lit under the pointer, as the old ones were not. Production's and research's header is `Header`, on the canvas; the designer draws its own until CV6.
 
 ### CV5.2 — The research window
 
