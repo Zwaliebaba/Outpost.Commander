@@ -83,10 +83,10 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV3.2 | A layout that measures | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
 | CV3.3 | Interaction every widget shares | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
 | CV3.4 | The theme and the widgets | CV3.2, CV3.3 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV4.1 | The windows' table, and the leave and away windows | CV3.4 | — | todo |
-| CV4.2 | The Controls window | CV4.1 | — | todo |
-| CV4.3 | The orders window | CV4.1 | — | todo |
-| CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | todo |
+| CV4.1 | The windows' table, and the leave and away windows | CV3.4 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
+| CV4.2 | The Controls window | CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
+| CV4.3 | The orders window | CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
+| CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | in review, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
 | CV5.1 | The production window | CV4.1 | — | todo |
 | CV5.2 | The research window | CV5.1 | — | todo |
 | CV6.1 | The designer | CV5.1 | — | todo |
