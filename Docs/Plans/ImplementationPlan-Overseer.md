@@ -36,7 +36,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV4.2 | Needs attention and who played | OV4.1 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162); awaiting the owner's run |
 | OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162); awaiting the owner's run |
 | OV5.1 | A day of the windows' records at the welcome, and each away seat's report | OV4 | D8, D9 | built, on OV5's branch |
-| OV5.2 | The header states | OV4 | — | todo |
+| OV5.2 | The header states | OV4 | — | built, on OV5's branch; awaiting the owner's run |
 | OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | todo |
 | OV5.4 | The seat window | OV5.3 | D8, D9, D10 | todo |
 | OV6.1 | Save now and Stop | OV5 | — | todo |

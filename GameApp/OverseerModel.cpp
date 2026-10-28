@@ -17,6 +17,7 @@ void Outpost::OverseerModel::Take(std::span<const std::byte> _message, std::chro
     m_views = HeldStates();
     m_records.clear();
     m_closing.reset();
+    m_closingAt.reset();
     m_lostWhy.reset();
     m_lostAt.reset();
     return;
@@ -52,6 +53,7 @@ void Outpost::OverseerModel::Take(std::span<const std::byte> _message, std::chro
   if (auto* closing = std::get_if<ClosingMessage>(&message))
   {
     m_closing = std::move(*closing);
+    m_closingAt = _now;
     return;
   }
   throw Neuron::Exception("The server sent the overseer a message only an overseer sends.");

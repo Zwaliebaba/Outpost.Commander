@@ -29,6 +29,8 @@ class OverseerScreen
 public:
   // How long the server may go without a Health before the header says No word.
   static constexpr std::chrono::seconds NO_WORD_AFTER{3};
+  // How long the tick may stand still while Health comes before the header says Stalled.
+  static constexpr std::chrono::seconds STALLED_AFTER{2};
   // The tick's budget, which its 99th percentile over the last minute is told against (the budgets).
   static constexpr std::uint32_t TICK_BUDGET_MICROSECONDS = 5'000;
   // How many Health a minute is, one a second, which the tick's percentile and a seat's orders a minute are taken over.

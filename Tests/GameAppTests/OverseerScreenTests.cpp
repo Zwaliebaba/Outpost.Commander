@@ -273,7 +273,8 @@ public:
     Assert::IsTrue(Shows(Lay(model, Link(), START + std::chrono::milliseconds{2'900}), "Running"), L"until then");
   }
 
-  // ADR-103: a connection gone says why, and that the overseer joins again; what the server said as it ended says how.
+  // ADR-103: a connection gone says why, and that the overseer joins again; once the server said it was stopped, the header says
+  // Stopped, when, and the save it comes back from.
   TEST_METHOD(SaysWhyTheConnectionWent)
   {
     Outpost::OverseerModel model;
@@ -289,7 +290,50 @@ public:
     model.Take(
       Outpost::EncodeOverseerMessage(Outpost::ClosingMessage{.ending = Outpost::ServerEnding::StoppedByOwner, .lastSaveTick = 380}), START);
     const Neuron::DrawList stopped = Lay(model, gone, START + std::chrono::seconds{1});
-    Assert::IsTrue(Shows(stopped, "The server was stopped by its owner; its last save is of tick 380."), Texts(stopped).c_str());
+    Assert::IsTrue(Shows(stopped, "Stopped") && !Shows(stopped, "No word"), Texts(stopped).c_str());
+    Assert::IsTrue(Shows(stopped, "Stopped by its owner 0:01 ago.") && Shows(stopped, "Its last save is of tick 380."),
+                   Texts(stopped).c_str());
+    Assert::IsTrue(Shows(stopped, "Joining 127.0.0.1:45001 every 2 s."), Texts(stopped).c_str());
+  }
+
+  // ADR-103 decision 7: Stalled while Health comes and its tick has stood for STALLED_AFTER, which a stuck server's thread does
+  // while its main thread still reports; Running again once the tick moves. Failed once the server said so, with its message,
+  // and Stopped by Windows; each until a newer connection's welcome.
+  TEST_METHOD(SaysStalledFailedAndStoppedByWindows)
+  {
+    Outpost::OverseerModel model;
+    model.Take(Outpost::EncodeOverseerMessage(Welcome()), START);
+    for (int second = 0; second <= 1; ++second)
+      model.Take(Outpost::EncodeOverseerMessage(Outpost::HealthMessage{.tick = 400}), START + std::chrono::seconds{second});
+    Assert::IsTrue(Shows(Lay(model, Link(), START + std::chrono::milliseconds{2'900}), "Running"),
+                   L"a tick that stood a second, and no Health since: not yet No word, and not Stalled");
+    model.Take(Outpost::EncodeOverseerMessage(Outpost::HealthMessage{.tick = 400}), START + std::chrono::seconds{2});
+    const Neuron::DrawList stalled = Lay(model, Link(), START + std::chrono::seconds{2});
+    Assert::IsTrue(Shows(stalled, "Stalled"), Texts(stalled).c_str());
+    Assert::IsTrue(Shows(stalled, "Tick 400 has stood for 0:02; that time goes unrun."), Texts(stalled).c_str());
+    model.Take(Outpost::EncodeOverseerMessage(Outpost::HealthMessage{.tick = 420}), START + std::chrono::seconds{3});
+    Assert::IsTrue(Shows(Lay(model, Link(), START + std::chrono::seconds{3}), "Running"), L"the tick moves again");
+
+    Outpost::OverseerLink gone = Link();
+    gone.connected = false;
+    model.Take(Outpost::EncodeOverseerMessage(Outpost::ClosingMessage{
+                 .ending = Outpost::ServerEnding::Failed, .messageUtf8 = "The save could not be written.", .lastSaveTick = 380}),
+               START + std::chrono::seconds{4});
+    const Neuron::DrawList failed = Lay(model, gone, START + std::chrono::seconds{9});
+    Assert::IsTrue(Shows(failed, "Failed"), Texts(failed).c_str());
+    Assert::IsTrue(Shows(failed, "The save could not be written."), Texts(failed).c_str());
+    Assert::IsTrue(Shows(failed, "Failed 0:05 ago; it comes back from the save of tick 380."), Texts(failed).c_str());
+
+    model.Take(Outpost::EncodeOverseerMessage(Welcome()), START + std::chrono::seconds{10});
+    model.Take(Outpost::EncodeOverseerMessage(Outpost::HealthMessage{.tick = 380}), START + std::chrono::seconds{10});
+    Assert::IsTrue(Shows(Lay(model, Link(), START + std::chrono::seconds{10}), "Running"), L"a newer connection's welcome");
+    model.Take(
+      Outpost::EncodeOverseerMessage(Outpost::ClosingMessage{.ending = Outpost::ServerEnding::StoppedByWindows, .lastSaveTick = 1'200}),
+      START + std::chrono::seconds{11});
+    const Neuron::DrawList windows = Lay(model, Link(), START + std::chrono::seconds{11});
+    Assert::IsTrue(Shows(windows, "Stopped"), L"while the connection still stands");
+    Assert::IsTrue(Shows(windows, "Stopped by Windows 0:00 ago, as it signed out or shut down."), Texts(windows).c_str());
+    Assert::IsTrue(Shows(windows, "Its last save is of tick 1,200."), Texts(windows).c_str());
   }
 
   // ADR-103: before any connection, the overseer says whom it joins, and shows no seat.

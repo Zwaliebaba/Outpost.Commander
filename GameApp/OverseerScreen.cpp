@@ -191,17 +191,27 @@ struct HeaderState
   std::vector<std::string> lines;
 };
 
-// What the server said as it ended.
-std::string EndingOf(const Outpost::ClosingMessage& _closing)
+// How long ago _then was at _now, in minutes and seconds.
+std::string AgoText(std::chrono::steady_clock::time_point _then, std::chrono::steady_clock::time_point _now)
 {
+  const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(_now - _then).count();
+  return std::format("{} ago", Outpost::MinutesAndSeconds(static_cast<std::uint64_t>(std::max<std::int64_t>(seconds, 0))));
+}
+
+// What the server said as it ended (ADR-101 decision 8): who stopped it, or its failure; when; and the save it comes back from.
+std::vector<std::string> EndingOf(const Outpost::ClosingMessage& _closing, std::chrono::steady_clock::time_point _heard,
+                                  std::chrono::steady_clock::time_point _now)
+{
+  const std::string save = Outpost::WithThousands(static_cast<std::int64_t>(_closing.lastSaveTick));
   switch (_closing.ending)
   {
   case Outpost::ServerEnding::StoppedByOwner:
-    return "The server was stopped by its owner";
+    return {std::format("Stopped by its owner {}.", AgoText(_heard, _now)), std::format("Its last save is of tick {}.", save)};
   case Outpost::ServerEnding::StoppedByWindows:
-    return "The server was stopped by Windows";
+    return {std::format("Stopped by Windows {}, as it signed out or shut down.", AgoText(_heard, _now)),
+            std::format("Its last save is of tick {}.", save)};
   case Outpost::ServerEnding::Failed:
-    return std::format("The server failed: {}", _closing.messageUtf8);
+    return {_closing.messageUtf8, std::format("Failed {}; it comes back from the save of tick {}.", AgoText(_heard, _now), save)};
   }
   return {};
 }
@@ -219,28 +229,48 @@ HeaderState StateOf(const Outpost::OverseerModel& _model, const Outpost::Oversee
 {
   const Outpost::HeardHealth* latest = _model.LatestHealth();
   const std::optional<Outpost::OverseerWelcomeMessage>& welcome = _model.Welcome();
+  const std::string joining = std::format("Joining {} every {} s.", _link.server, Outpost::OverseerClient::REJOIN_INTERVAL.count());
+  // Stopped or Failed, as the server said, until a newer connection's welcome.
+  if (const std::optional<Outpost::ClosingMessage>& closing = _model.Closing())
+  {
+    HeaderState state{.name = closing->ending == Outpost::ServerEnding::Failed ? "Failed" : "Stopped",
+                      .lines = EndingOf(*closing, _model.ClosingAt().value_or(_now), _now)};
+    if (!_link.connected)
+      state.lines.push_back(joining);
+    return state;
+  }
   if (_link.connected && welcome.has_value() && latest != nullptr && _now - latest->heard < OverseerScreen::NO_WORD_AFTER)
   {
+    // Health comes from the server's main thread and its tick from the server's thread (ADR-025): a tick that stands still
+    // while Health keeps coming is a stuck server's thread, from the first Health heard at it to the latest. Health that stops
+    // coming is No word's to tell.
+    const std::deque<Outpost::HeardHealth>& healths = _model.Healths();
+    auto standing = healths.rbegin();
+    while (std::next(standing) != healths.rend() && std::next(standing)->health.tick == latest->health.tick)
+      ++standing;
+    if (latest->heard - standing->heard >= OverseerScreen::STALLED_AFTER)
+    {
+      const auto stood = std::chrono::duration_cast<std::chrono::seconds>(latest->heard - standing->heard).count();
+      return {.name = "Stalled",
+              .lines = {std::format("Tick {} has stood for {}; that time goes unrun.",
+                                    Outpost::WithThousands(static_cast<std::int64_t>(latest->health.tick)),
+                                    Outpost::MinutesAndSeconds(static_cast<std::uint64_t>(stood))),
+                        "The server's thread may be stuck; Health still comes."}};
+    }
     std::string up = std::format("Up {}", Outpost::MinutesAndSeconds(latest->health.process.uptimeSeconds));
     if (_link.roundTrip.has_value())
       up += std::format("; the overseer's round trip {}", MillisecondsText(static_cast<std::uint32_t>(_link.roundTrip->count())));
     return {.name = "Running", .lines = {up + ".", CameBackFrom(*welcome)}};
   }
   HeaderState state{.name = "No word", .lines = {}};
-  if (const std::optional<Outpost::ClosingMessage>& closing = _model.Closing())
-    state.lines.push_back(std::format("{}; its last save is of tick {}.", EndingOf(*closing), closing->lastSaveTick));
-  else if (const std::optional<std::string>& why = _model.LostWhy())
+  if (const std::optional<std::string>& why = _model.LostWhy())
     state.lines.push_back(std::format("The connection went: {}", *why));
   else if (_link.connected)
     state.lines.push_back(std::format("Connected; no Health for {} s.", OverseerScreen::NO_WORD_AFTER.count()));
   if (!_link.connected)
-    state.lines.push_back(std::format("Joining {} every {} s.", _link.server, Outpost::OverseerClient::REJOIN_INTERVAL.count()));
+    state.lines.push_back(joining);
   if (latest != nullptr)
-  {
-    const auto since = std::chrono::duration_cast<std::chrono::seconds>(_now - latest->heard).count();
-    state.lines.push_back(std::format("The last word was {} ago, at tick {}.",
-                                      Outpost::MinutesAndSeconds(static_cast<std::uint64_t>(since)), latest->health.tick));
-  }
+    state.lines.push_back(std::format("The last word was {}, at tick {}.", AgoText(latest->heard, _now), latest->health.tick));
   return state;
 }
 

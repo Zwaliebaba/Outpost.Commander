@@ -78,9 +78,15 @@ public:
     return m_view;
   }
 
+  // How the server said it ended, and when the overseer heard it, until a newer connection's welcome.
   [[nodiscard]] const std::optional<ClosingMessage>& Closing() const noexcept
   {
     return m_closing;
+  }
+
+  [[nodiscard]] std::optional<std::chrono::steady_clock::time_point> ClosingAt() const noexcept
+  {
+    return m_closingAt;
   }
 
   // Why the last connection went and when, while no newer one has been welcomed.
@@ -111,6 +117,7 @@ private:
   HeldStates m_views;
   std::optional<Snapshot> m_view;
   std::optional<ClosingMessage> m_closing;
+  std::optional<std::chrono::steady_clock::time_point> m_closingAt;
   std::optional<std::string> m_lostWhy;
   std::optional<std::chrono::steady_clock::time_point> m_lostAt;
 };
