@@ -6,6 +6,7 @@
 #include <chrono>
 #include <deque>
 #include <functional>
+#include <future>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -46,3 +47,6 @@
 #include "LoadDriver.h"
 #include "MatchLog.h"
 #include "GameClient.h"
+#include "OverseerModel.h"
+#include "OverseerClient.h"
+#include "OverseerScreen.h"

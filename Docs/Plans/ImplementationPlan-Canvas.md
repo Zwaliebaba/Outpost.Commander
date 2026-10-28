@@ -404,7 +404,7 @@ The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three 
 - **As built (2026-10-28):** [ADR-068](../ADR/ADR-068-interface-polish.md) decision 1 and [ADR-061](../ADR/ADR-061-measured-text.md) decision 5.
   - **The row:** the label is measured as the canvas sets it, with its tracking, and the first chip starts a chip's gap after it where its place, 46 units into the row, is too near; the three chips narrow as much as keeps the third's end, so the arrows keep their gap.
   - **The test:** `HudTests.LeavesTheSavedLabelItsRoom`, at every step the windows fit on 1920×1080 and 2880×1920. On `main`'s layout it failed at 100% in the Linux harness, whose stand-in font sets the label 45 units wide.
-  - **The guard:** `KeepsEveryTextInsideItsPanel` also fails a text that runs into a panel of its layer it does not start in, but a line two pixels thin or less. On `main` it caught the label, at 125% in the harness; with the change it finds nothing else, the one other text it met being a divider the "16 s each" line's box grazes by 0.7 pixels, which the thin-line exception leaves out.
+  - **The guard:** `TextsPastTheirPanels` (`LayoutGuards.h`), which `KeepsEveryTextInsideItsPanel` and the overseer's `HoldsTheLayoutAndContrastGuards` run, also fails a text that runs into a panel of its layer it does not start in, but a line two pixels thin or less. On `main` it caught the label, at 125% in the harness; with the change it finds nothing else, the one other text it met being a divider the "16 s each" line's box grazes by 0.7 pixels, which the thin-line exception leaves out.
 
 ### CV10.3 — The windows open clear of the column under the Ore
 

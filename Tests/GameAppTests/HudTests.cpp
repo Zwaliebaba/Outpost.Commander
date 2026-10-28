@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "LayoutGuards.h"
 #include "RepositoryAssets.h"
 
 #include <algorithm>
@@ -14,26 +15,6 @@ namespace
 constexpr Outpost::PlayerId PLAYER{1};
 constexpr Outpost::DesignId SWARM{1};
 constexpr Outpost::DesignId LINE{2};
-
-// The HUD's fonts as the game rasterizes them for a back buffer of this size, kept for the run, since a TextMetrics reads
-// them where they are (ADR-061). A font that is not installed throws, as ADR-030 has it: the tests never guess a width.
-std::span<const Neuron::GlyphAtlas::Font> FontsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f)
-{
-  static std::map<float, std::vector<Neuron::GlyphAtlas::Font>> g_fontsByScale;
-  const float scale = Outpost::Hud::Scale(_widthPixels, _heightPixels, _factor);
-  auto found = g_fontsByScale.find(scale);
-  if (found == g_fontsByScale.end())
-  {
-    found =
-      g_fontsByScale.emplace(scale, Neuron::RasterizeUiAtlas(Outpost::Hud::Typefaces(), Outpost::Hud::Sprites(), scale).glyphs.fonts).first;
-  }
-  return found->second;
-}
-
-Outpost::Hud::TextMetrics MetricsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor = 1.0f)
-{
-  return {FontsFor(_widthPixels, _heightPixels, _factor), Outpost::Hud::Scale(_widthPixels, _heightPixels, _factor)};
-}
 
 // The HUD and the menu laid out as GameClient lays them out, with the fonts at the back buffer's scale and the interface's
 // own (ADR-070), and what is under the pointer as the HUD's buttons, _hovered, and the canvas's windows, _interaction, find it.
@@ -342,88 +323,6 @@ std::span<const Neuron::GlyphAtlas::Font> FontsOf(const Outpost::Hud::Layout& _l
                   _layout.fontPixels / Outpost::Hud::FONT_UNITS / Outpost::Hud::Scale(_widthPixels, _heightPixels));
 }
 
-// The box a text's line is set in, in pixels, as UiPipeline::DrawText sets it: from its pen, rounded to a pixel, as wide as
-// its characters' advances and its tracking, and a line of its font tall.
-Outpost::Hud::Rect LineBoxOf(const Outpost::Hud::Text& _text, std::span<const Neuron::GlyphAtlas::Font> _fonts)
-{
-  const Neuron::GlyphAtlas::Font& font = _fonts[_text.font];
-  return {.left = std::round(_text.left),
-          .top = std::round(_text.top),
-          .width = font.Width(_text.text, std::round(_text.trackingPixels)),
-          .height = font.lineHeight};
-}
-
-// _rect cut to _clip, if it has one, as UiPipeline draws what a scroll view holds (ADR-100): of no size where none of it is
-// inside.
-Outpost::Hud::Rect CutTo(Outpost::Hud::Rect _rect, const Neuron::CanvasRect* _clip)
-{
-  if (_clip == nullptr)
-    return _rect;
-  const float left = std::max(_rect.left, _clip->left);
-  const float top = std::max(_rect.top, _clip->top);
-  _rect.width = std::max(0.0f, std::min(_rect.left + _rect.width, _clip->left + _clip->width) - left);
-  _rect.height = std::max(0.0f, std::min(_rect.top + _rect.height, _clip->top + _clip->height) - top);
-  _rect.left = left;
-  _rect.top = top;
-  return _rect;
-}
-
-// What of the text and the panel of these places in _layout is drawn: its line's box, and the panel, each cut to its clip.
-Outpost::Hud::Rect DrawnBoxOf(const Outpost::Hud::Layout& _layout, std::size_t _text, std::span<const Neuron::GlyphAtlas::Font> _fonts)
-{
-  return CutTo(LineBoxOf(_layout.texts[_text], _fonts), _layout.ClipOf(&Neuron::CanvasClip::texts, _text));
-}
-
-Outpost::Hud::Rect DrawnPanelOf(const Outpost::Hud::Layout& _layout, std::size_t _panel)
-{
-  return CutTo(_layout.panels[_panel], _layout.ClipOf(&Neuron::CanvasClip::panels, _panel));
-}
-
-// WCAG's relative luminance of a linear color, which the render target encodes to sRGB, as the review computed it.
-float LuminanceOf(const DirectX::XMFLOAT3& _color) noexcept
-{
-  return (0.2126f * _color.x) + (0.7152f * _color.y) + (0.0722f * _color.z);
-}
-
-// WCAG's contrast ratio between two linear colors.
-float ContrastOf(const DirectX::XMFLOAT3& _first, const DirectX::XMFLOAT3& _second) noexcept
-{
-  const float first = LuminanceOf(_first) + 0.05f;
-  const float second = LuminanceOf(_second) + 0.05f;
-  return std::max(first, second) / std::min(first, second);
-}
-
-// What a text can stand on: the panels of its layer under its first pixel, laid over each other in the order they are
-// drawn, at their alpha, over black, each as far as it is drawn. A hatched panel covers some pixels and not others, so it
-// is taken both ways.
-std::vector<DirectX::XMFLOAT3> GroundsOf(const Outpost::Hud::Layout& _layout, std::size_t _layer, const Outpost::Hud::Text& _text)
-{
-  const Outpost::Hud::Span panels = _layout.PanelsOf(_layer);
-  const float x = std::round(_text.left) + 0.5f;
-  const float y = std::round(_text.top) + 0.5f;
-  std::vector<DirectX::XMFLOAT3> grounds{{0.0f, 0.0f, 0.0f}};
-  for (std::size_t p = panels.first; p < panels.end; ++p)
-  {
-    const Outpost::Hud::Rect panel = DrawnPanelOf(_layout, p);
-    if (!panel.Contains(x, y))
-      continue;
-    const float alpha = panel.color.w;
-    const std::size_t count = grounds.size();
-    for (std::size_t g = 0; g < count; ++g)
-    {
-      const DirectX::XMFLOAT3 under = grounds[g];
-      const DirectX::XMFLOAT3 covered{(panel.color.x * alpha) + (under.x * (1.0f - alpha)),
-                                      (panel.color.y * alpha) + (under.y * (1.0f - alpha)),
-                                      (panel.color.z * alpha) + (under.z * (1.0f - alpha))};
-      if (panel.fill == Outpost::Hud::Fill::Solid)
-        grounds[g] = covered;
-      else
-        grounds.push_back(covered);
-    }
-  }
-  return grounds;
-}
-
 // Whether _text is a warning chip (ADR-085 decision 1): its words dark, on a panel of the warning's color under its first
 // pixel.
 bool IsChip(const Outpost::Hud::Layout& _layout, const Outpost::Hud::Text& _text)
@@ -461,12 +360,6 @@ std::vector<Outpost::Hud::Rect> ColumnOf(const Outpost::Hud::Layout& _layout, st
       column.push_back(panel);
   }
   return column;
-}
-
-// A text named for a failure: its layout, the back buffer's width and what it says.
-std::wstring Named(const std::wstring& _layout, std::uint32_t _widthPixels, const Outpost::Hud::Text& _text)
-{
-  return std::format(L"{} at {} wide: \"{}\"", _layout, _widthPixels, std::wstring(winrt::to_hstring(_text.text)));
 }
 
 } // namespace
@@ -4988,46 +4881,7 @@ public:
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
       for (const auto& [name, layout] : LongestLayouts(width, height))
-      {
-        const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsOf(layout, width, height);
-        for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
-        {
-          const Outpost::Hud::Span texts = layout.TextsOf(layer);
-          const Outpost::Hud::Span panels = layout.PanelsOf(layer);
-          for (std::size_t t = texts.first; t < texts.end; ++t)
-          {
-            const Outpost::Hud::Text& text = layout.texts[t];
-            const Outpost::Hud::Rect box = DrawnBoxOf(layout, t, fonts);
-            if (text.text.empty() || box.height <= 0.0f)
-              continue;
-            Outpost::Hud::Rect smallest{};
-            float smallestArea = std::numeric_limits<float>::infinity();
-            for (std::size_t p = panels.first; p < panels.end; ++p)
-            {
-              const Outpost::Hud::Rect panel = DrawnPanelOf(layout, p);
-              if (panel.Contains(box.left + 0.5f, box.top + 0.5f) && panel.width * panel.height < smallestArea)
-              {
-                smallest = panel;
-                smallestArea = panel.width * panel.height;
-              }
-            }
-            if (std::isinf(smallestArea))
-              offenders += std::format(L"{} starts in no panel\n", Named(name, width, text));
-            else if (const float past = box.left + box.width - smallest.left - smallest.width; past > 0.5f)
-              offenders += std::format(L"{} runs {} px past its panel\n", Named(name, width, text), past);
-            for (std::size_t p = panels.first; p < panels.end; ++p)
-            {
-              const Outpost::Hud::Rect panel = DrawnPanelOf(layout, p);
-              if (panel.width <= 2.0f || panel.height <= 2.0f || panel.Contains(box.left + 0.5f, box.top + 0.5f))
-                continue;
-              const float across = std::min(box.left + box.width, panel.left + panel.width) - std::max(box.left, panel.left);
-              const float down = std::min(box.top + box.height, panel.top + panel.height) - std::max(box.top, panel.top);
-              if (across > 0.5f && down > 0.5f)
-                offenders += std::format(L"{} runs {} px into a panel it does not start in\n", Named(name, width, text), across);
-            }
-          }
-        }
-      }
+        offenders += TextsPastTheirPanels(layout, FontsOf(layout, width, height), std::format(L"{} at {} wide", name, width));
     }
     Assert::IsTrue(offenders.empty(), offenders.c_str());
   }
@@ -5040,29 +4894,7 @@ public:
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
       for (const auto& [name, layout] : LongestLayouts(width, height))
-      {
-        const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsOf(layout, width, height);
-        for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
-        {
-          const Outpost::Hud::Span texts = layout.TextsOf(layer);
-          for (std::size_t a = texts.first; a < texts.end; ++a)
-          {
-            const Outpost::Hud::Rect first = DrawnBoxOf(layout, a, fonts);
-            for (std::size_t b = a + 1; b < texts.end; ++b)
-            {
-              const Outpost::Hud::Rect second = DrawnBoxOf(layout, b, fonts);
-              const bool meet = first.width > 0.0f && second.width > 0.0f && first.height > 0.0f && second.height > 0.0f &&
-                                first.left < second.left + second.width && second.left < first.left + first.width &&
-                                first.top < second.top + second.height && second.top < first.top + first.height;
-              if (meet)
-              {
-                offenders += std::format(L"{} meets \"{}\"\n", Named(name, width, layout.texts[a]),
-                                         std::wstring(winrt::to_hstring(layout.texts[b].text)));
-              }
-            }
-          }
-        }
-      }
+        offenders += TextsThatMeet(layout, FontsOf(layout, width, height), std::format(L"{} at {} wide", name, width));
     }
     Assert::IsTrue(offenders.empty(), offenders.c_str());
   }
@@ -5074,26 +4906,7 @@ public:
   {
     std::wstring offenders;
     for (const auto& [name, layout] : LongestLayouts(1920, 1080))
-    {
-      for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
-      {
-        const Outpost::Hud::Span texts = layout.TextsOf(layer);
-        for (std::size_t t = texts.first; t < texts.end; ++t)
-        {
-          const Outpost::Hud::Text& text = layout.texts[t];
-          const Outpost::Hud::Rect box = DrawnBoxOf(layout, t, FontsOf(layout, 1920, 1080));
-          if (text.text.empty() || box.height <= 0.0f)
-            continue;
-          const DirectX::XMFLOAT3 ink{text.color.x, text.color.y, text.color.z};
-          float least = std::numeric_limits<float>::max();
-          // Its first pixel drawn, which a scroll view may cut below its line's top.
-          for (const DirectX::XMFLOAT3& ground : GroundsOf(layout, layer, {.text = text.text, .left = box.left, .top = box.top}))
-            least = std::min(least, ContrastOf(ink, ground));
-          if (least < 4.5f)
-            offenders += std::format(L"{} stands at {:.2f}:1\n", Named(name, 1920, text), least);
-        }
-      }
-    }
+      offenders += TextsUnderContrast(layout, FontsOf(layout, 1920, 1080), std::format(L"{} at 1920 wide", name));
     Assert::IsTrue(offenders.empty(), offenders.c_str());
   }
 };

@@ -34,6 +34,7 @@ The game is **server-authoritative**. Its server runs inside the game's process 
     ├── NeuronServer (static lib)    ── server engine: the tick host and the pinned PRNG (ADR-009). → NeuronCore
     └── NeuronCore   (static lib)    ── engine code shared by client and server, including QUIC (ADR-004)
    OutpostServer (exe, console)     ── the dedicated server: runs a universe from its folder (ADR-078), its AI empires and deputies (ADR-079). → GameLogic, NeuronServer, Opponent
+   OutpostOverseer (exe, Win32)     ── the overseer: watches a universe's server over its own channel (ADR-101, ADR-103). → GameApp, NeuronClient, GameProtocol
    GameLogicTests (test DLL)         ── drives GameLogic through GameProtocol: the balance check's battles, and the AI playing the real server (ADR-020)
    GameAppTests (test DLL)           ── drives GameApp's camera math, model data and interface without a GPU
    NeuronCoreTests, NeuronServerTests, NeuronClientTests, GameProtocolTests, OpponentTests (test DLLs)
@@ -57,6 +58,7 @@ The game is **server-authoritative**. Its server runs inside the game's process 
    | GameApp | NeuronCore, NeuronClient, GameProtocol | — |
    | OutpostCommander | NeuronCore, NeuronClient, GameProtocol, Opponent, GameApp | all seven libraries |
    | OutpostServer | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent |
+   | OutpostOverseer | NeuronCore, NeuronClient, GameProtocol, GameApp | NeuronCore, NeuronClient, GameProtocol, GameApp |
    | GameLogicTests | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent, and the unit-test framework's folder in the Visual Studio install | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent |
    | GameAppTests | NeuronCore, NeuronClient, GameProtocol, GameApp, and the unit-test framework's folder | NeuronCore, NeuronClient, GameProtocol, GameApp |
    | NeuronCoreTests | NeuronCore, and the unit-test framework's folder | NeuronCore |
@@ -65,7 +67,7 @@ The game is **server-authoritative**. Its server runs inside the game's process 
 
    Neither `GameApp`, `Opponent` nor the executable lists `GameLogic` or `NeuronServer`, so a client or AI file that includes a server header does not compile: adding `#include "GameLogic.h"` to `GameApp` or to `Opponent` fails with C1083. A quoted include is also resolved relative to the including file, so `#include "../GameLogic/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Together, these make the build, not review, hold the server boundary. The executable still links `GameLogic` and `NeuronServer`, because the in-process server has to be in the executable. It gets the server through the factory declared in `GameProtocol` and defined in `GameLogic`. A test project for `GameLogic` may list `GameLogic` as well, because it is a test and not a client. `GameLogicTests` also lists `Opponent`, so that the AI plays the real server headlessly ([ADR-020](ADR-020-ai-and-match-flow.md)), and so does `OutpostServer`, which hands the server its AI empires and deputies through `HostedPlayer`, declared in `GameProtocol` ([ADR-079](ADR-079-seat-controller-and-deputy.md)); the AI's own files still cannot include `GameLogic`, and `GameLogic` cannot include `Opponent`.
 
-   `NeuronClient` and `NeuronServer` do not reference each other, and neither do `GameApp` and `GameLogic`. `Opponent` and `GameLogic` share only `GameProtocol`. The dedicated server, `OutpostServer`, is a second executable that links `GameLogic`, `NeuronServer` and `Opponent` and none of the client libraries, and the client side changes only the address its `QuicTransport` connects to ([ADR-060](ADR-060-quic-in-process.md), [ADR-078](ADR-078-dedicated-server.md)).
+   `NeuronClient` and `NeuronServer` do not reference each other, and neither do `GameApp` and `GameLogic`. `Opponent` and `GameLogic` share only `GameProtocol`. The dedicated server, `OutpostServer`, is a second executable that links `GameLogic`, `NeuronServer` and `Opponent` and none of the client libraries, and the client side changes only the address its `QuicTransport` connects to ([ADR-060](ADR-060-quic-in-process.md), [ADR-078](ADR-078-dedicated-server.md)). The overseer, `OutpostOverseer`, is a third that links the client's libraries and none of the server's, so that it reaches the server over its channel and nothing else ([ADR-103](ADR-103-the-overseer-application.md)).
 
 ## Consequences
 
