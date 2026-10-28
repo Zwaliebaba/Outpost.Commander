@@ -165,8 +165,9 @@ std::string LongestName(char _last)
 // of five weapons, every part locked or every part unlocked; a full queue at a Shipyard and at the Lab; a page of topics,
 // among them Relay Archives with both its prerequisites to do; a placement's hint, the status panel's lines, the alerts,
 // the territory and the banner. The Ore is five figures, more than any match in the review banked. With _hovered, the
-// designer previews the part under the pointer.
-Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
+// designer previews the part under the pointer. The command card holds the longest of what each of its cells takes, its
+// retreat mixed, or while _building, every structure in build mode (ADR-088 decision 2).
+Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt, bool _building = false)
 {
   Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
   newest.ore = 99999;
@@ -216,11 +217,12 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
   content.connection = Outpost::Hud::Connection{.server = Outpost::Hud::ServerName("2001:db8:ffff:ffff:ffff:ffff:ffff:ffff", 65535),
                                                 .silentSeconds = 999,
                                                 .roundTripMilliseconds = 999};
-  content.buttons = {{.label = "Shipyard|300"},
-                     {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
-                     {.label = "Production", .key = "P"},
-                     {.label = "Ship designer", .key = "D"},
-                     {.label = "Research", .key = "R"}};
+  content.buttons = {{.label = "Attack-move", .key = "A"},
+                     {.label = "Ship designer", .key = "D", .cell = 1},
+                     {.label = "Patrol", .key = "T", .cell = 2},
+                     {.label = "Stop", .key = "S", .cell = 3},
+                     {.label = "Upgrade to L3 \xC2\xB7 59:59|9999", .enabled = false, .note = "NEEDS RESEARCH", .cell = 4, .wide = true}};
+  content.retreat = Outpost::Hud::RetreatChoice{.mixed = true};
 
   Outpost::Hud::ProductionPanel production{.producer = "SHIPYARD 05", .hasProducer = true, .canStep = true, .ore = newest.ore};
   for (const Outpost::DesignView& design : newest.designs)
@@ -279,14 +281,18 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
     away.lines.push_back("Order held back: attack-move to " + LongestName('A') + " and " + LongestName('B'));
   content.away = away;
   content.leave = true;
-  // The build window with every structure the tuning data has, the longest name among them, and each of the reasons a
-  // structure cannot be built in its cost's place (ADR-031 decision 6).
-  content.build = Outpost::Hud::BuildPanel{.structures = {{.label = "Shipyard|300"},
-                                                          {.label = "Research Lab|200", .enabled = false, .note = "ONE PER PLAYER"},
-                                                          {.label = "Mining Rig|50"},
-                                                          {.label = "Defence Platform|1500", .enabled = false},
-                                                          {.label = "Relay|200", .enabled = false, .note = "NODE CAP"},
-                                                          {.label = "Repair Bay|300", .enabled = false, .note = "NO CONSTRUCTOR"}}};
+  // Build mode with every structure the tuning data has, the longest name among them, and each of the reasons a structure
+  // cannot be built in its cost's place.
+  if (_building)
+  {
+    content.build =
+      Outpost::Hud::BuildPanel{.structures = {{.label = "Shipyard|300"},
+                                              {.label = "Research Lab|200", .enabled = false, .note = "ONE PER PLAYER", .cell = 1},
+                                              {.label = "Mining Rig|50", .cell = 2},
+                                              {.label = "Defence Platform|1500", .enabled = false, .cell = 3},
+                                              {.label = "Relay|200", .enabled = false, .note = "NODE CAP", .cell = 4},
+                                              {.label = "Repair Bay|300", .cell = 5}}};
+  }
   return content;
 }
 
@@ -322,6 +328,8 @@ std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::u
     layouts.emplace_back(L"previewing" + step, Lay(LongestContent(true, smallHull), _widthPixels, _heightPixels, {}, nullptr, factor));
     layouts.emplace_back(L"previewing a locked part" + step,
                          Lay(LongestContent(false, largeHull), _widthPixels, _heightPixels, {}, nullptr, factor));
+    layouts.emplace_back(L"building" + step,
+                         Lay(LongestContent(true, std::nullopt, true), _widthPixels, _heightPixels, {}, nullptr, factor));
   }
   return layouts;
 }
@@ -975,9 +983,10 @@ public:
     Assert::AreEqual(std::string("[2001:db8::5]:4433"), Outpost::Hud::ServerName("2001:db8::5", 4433));
   }
 
-  // ADR-043 decision 4: the build window offers every structure the selected Constructors build, with its cost, dim when the
-  // player cannot afford it or already has its one Research Lab; the Command Station is not built. The HUD offers the
-  // Constructors one Build button for it, with B's cap (ADR-031 decision 6).
+  // ADR-043 decision 4: build mode offers every structure the selected Constructors build, with its cost, dim when the player
+  // cannot afford it or already has its one Research Lab, each in a cell of the command card in the order they come; the
+  // Command Station is not built. The command card offers the Constructors one Build button for it, with B's cap, in the
+  // left cell of its last row (ADR-088 decision 2).
   TEST_METHOD(OffersTheStructuresToConstructors)
   {
     Outpost::Snapshot newest = Newest();
@@ -997,6 +1006,7 @@ public:
     Assert::IsTrue(content.buttons[0].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenBuild});
     Assert::AreEqual(std::string("Build"), content.buttons[0].label);
     Assert::AreEqual(std::string("B"), content.buttons[0].key);
+    Assert::AreEqual(4, static_cast<int>(content.buttons[0].cell), L"the last row's left cell");
     Assert::IsTrue(content.retreat.has_value(), L"and its retreat, under it");
 
     Outpost::Hud::BuildPanel build = Outpost::Hud::DescribeBuild(newest, entities, selected);
@@ -1006,6 +1016,8 @@ public:
     Assert::IsTrue(build.structures[1].enabled);
     Assert::IsTrue(build.structures[2].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::MiningRig});
+    Assert::IsTrue(build.structures[0].cell == 0 && build.structures[1].cell == 1 && build.structures[2].cell == 2,
+                   L"in the order they come, the Command Station's taking none");
 
     entities.push_back({.id = Outpost::EntityId{20},
                         .kind = Outpost::EntityKind::Structure,
@@ -1021,18 +1033,18 @@ public:
     Assert::IsTrue(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "ONE PER PLAYER"; }));
     Assert::IsFalse(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "200"; }));
 
-    // With no Constructor selected, every structure is dim and says so, and the window keeps its size.
+    // With no Constructor selected, nothing can be built.
     const Outpost::Hud::BuildPanel none = Outpost::Hud::DescribeBuild(newest, entities, {});
     Assert::AreEqual(size_t{3}, none.structures.size());
-    Assert::IsTrue(std::ranges::all_of(none.structures, [](const Outpost::Hud::Button& _structure)
-                                       { return !_structure.enabled && _structure.note == "NO CONSTRUCTOR"; }));
+    Assert::IsTrue(std::ranges::none_of(none.structures, &Outpost::Hud::Button::enabled));
 
     // While a placement is armed, a hint says what a click does.
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::MiningRig);
     Assert::AreEqual(std::string("Placing Mining Rig: left-click to build, right-click to cancel"), content.hint);
   }
 
-  // ADR-056: a Constructor offers the Relay only on a map with sectors, which it holds.
+  // ADR-056: a Constructor offers the Relay only on a map with sectors, which it holds; without them its cell of the command
+  // card stands empty (ADR-088 decision 2).
   TEST_METHOD(OffersTheRelayOnlyWithSectors)
   {
     Outpost::Snapshot newest = Newest();
@@ -1049,12 +1061,18 @@ public:
     Assert::AreEqual(size_t{2}, build.structures.size(), L"the Shipyard and the Relay");
     Assert::IsTrue(build.structures[1].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
+    Assert::AreEqual(1, static_cast<int>(build.structures[1].cell), L"the cell it takes, empty without sectors");
+
+    // A structure past the cells of the card is not offered: the card holds six.
+    const Outpost::StructureTypeView shipyard = newest.structureTypes.front();
+    newest.structureTypes.resize(Outpost::Hud::CARD_CELLS + 1, shipyard);
+    Assert::AreEqual(size_t{Outpost::Hud::CARD_CELLS}, Outpost::Hud::DescribeBuild(newest, entities, selected).structures.size());
   }
 
-  // ADR-031 decision 6 and ADR-088 decision 2: a selection that holds a Constructor offers one Build button, after a
-  // warship's orders and over the retreat, which opens the build window; the structures are never among the HUD's buttons,
-  // and a selection without a Constructor has no Build.
-  TEST_METHOD(OffersOneBuildButtonForTheWindow)
+  // ADR-088 decision 2: a selection that holds a Constructor offers one Build button, in the left cell of the command card's
+  // last row, under a warship's orders, each in its cell, and over the retreat, which turns build mode on; the structures
+  // are never among the card's buttons, and a selection without a Constructor has no Build.
+  TEST_METHOD(OffersOneBuildButtonForBuildMode)
   {
     Outpost::Snapshot newest = Newest();
     newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .buildable = true, .cost = 300},
@@ -1076,6 +1094,11 @@ public:
 
     const Outpost::Hud::Content offered = describe();
     Assert::IsTrue(labels(offered) == std::vector<std::string>{"Attack-move", "Patrol", "Stop", "Build"});
+    std::vector<int> cells;
+    cells.reserve(offered.buttons.size());
+    for (const Outpost::Hud::Button& button : offered.buttons)
+      cells.push_back(button.cell);
+    Assert::IsTrue(cells == std::vector<int>{0, 2, 3, 4}, L"Hold sector's cell empty on a map without sectors");
     Assert::IsTrue(offered.buttons.back().action == openBuild);
     Assert::IsTrue(offered.buttons.back().enabled);
     Assert::AreEqual(Outpost::KeyCap(Outpost::KEY_BUILD), offered.buttons.back().key, L"B's cap");
@@ -1094,44 +1117,122 @@ public:
     Assert::IsTrue(labels(describe()) == std::vector<std::string>{"Attack-move", "Patrol", "Stop"}, L"no Constructor, no Build");
   }
 
-  // ADR-031 decisions 2 and 6: the build window first stands at the bottom right, beside the selection and its buttons where
-  // they leave it room at their widest, as at 100%, and over them, its foot a gap above the minimap's top, where they do not,
-  // as at 125%; a press on one of its structures arms it, and one that cannot be built takes no press.
-  TEST_METHOD(LaysOutTheBuildWindow)
+  // ADR-088 decision 2: the command card stands in the bottom-right corner, 380 by 209 units whatever it holds, each button in
+  // the cell it always takes, a wide one across its row, a cell no button takes empty, and the retreat at its foot; its feet
+  // and the selection's and the minimap's stand on one line.
+  TEST_METHOD(LaysOutTheCommandCardInCells)
+  {
+    const Outpost::Hud::Action attack{.kind = Outpost::Hud::ActionKind::AttackMove};
+    const Outpost::Hud::Action stop{.kind = Outpost::Hud::ActionKind::Stop};
+    const Outpost::Hud::Action upgrade{.kind = Outpost::Hud::ActionKind::Upgrade};
+    Outpost::Hud::Content content{.selection = {"Lancer"}, .mapSizeMeters = 10000.0f};
+    content.buttons = {{.label = "Attack-move", .action = attack, .key = "A"},
+                       {.label = "Stop", .action = stop, .key = "S", .cell = 3},
+                       {.label = "Upgrade to L2|600", .action = upgrade, .cell = 4, .wide = true}};
+    content.retreat = Outpost::Hud::RetreatChoice{};
+    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
+    const auto areaOf = [&layout](const Outpost::Hud::Action& _action)
+    {
+      const auto found = std::ranges::find(layout.actions, _action, [](const auto& _entry) { return _entry.second; });
+      Assert::IsTrue(found != layout.actions.end());
+      return found->first;
+    };
+    const auto isAt = [](const Outpost::Hud::Rect& _area, float _left, float _top, float _width, float _height)
+    {
+      return std::abs(_area.left - _left) < 0.01f && std::abs(_area.top - _top) < 0.01f && std::abs(_area.width - _width) < 0.01f &&
+             std::abs(_area.height - _height) < 0.01f;
+    };
+    // The card from 1,524 units to the right margin and from 855 to the bottom margin; its cells 175 units wide, 6 apart,
+    // inside its padding of 12.
+    Assert::IsTrue(std::ranges::any_of(layout.panels,
+                                       [&isAt](const Outpost::Hud::Rect& _panel) { return isAt(_panel, 1524.0f, 855.0f, 380.0f, 209.0f); }),
+                   L"the card in the corner");
+    Assert::IsTrue(isAt(areaOf(attack), 1536.0f, 867.0f, 175.0f, 34.0f), L"Attack-move, the first row's left cell");
+    Assert::IsTrue(isAt(areaOf(stop), 1717.0f, 907.0f, 175.0f, 34.0f), L"Stop, the second row's right cell");
+    Assert::IsTrue(isAt(areaOf(upgrade), 1536.0f, 947.0f, 356.0f, 34.0f), L"the Upgrade across the last row");
+    Assert::IsFalse(layout.ActionAt(1720.0f, 870.0f).has_value(), L"no button in the first row's right cell");
+    // The retreat's label under the last row, and its three cells at the card's foot.
+    Assert::IsTrue(TextOf(layout, "RETREAT").top >= 947.0f + 34.0f);
+    int retreats = 0;
+    for (const auto& [area, action] : layout.actions)
+    {
+      if (action.kind == Outpost::Hud::ActionKind::SetRetreat)
+      {
+        Assert::AreEqual(1064.0f - 12.0f - 34.0f, area.top, 0.01f);
+        ++retreats;
+      }
+    }
+    Assert::AreEqual(3, retreats);
+
+    // The same card with a lone Constructor's Build and nothing else: as tall, in the same corner.
+    content.buttons = {{.label = "Build", .action = {.kind = Outpost::Hud::ActionKind::OpenBuild}, .key = "B", .cell = 4}};
+    const Outpost::Hud::Layout lone = Lay(content, 1920, 1080);
+    Assert::IsTrue(std::ranges::any_of(lone.panels, [&isAt](const Outpost::Hud::Rect& _panel)
+                                       { return isAt(_panel, 1524.0f, 855.0f, 380.0f, 209.0f); }));
+    // The minimap, the selection, in the middle, and the card end on the bottom margin's line.
+    const auto standsOnTheLine = [&lone](float _left, float _width)
+    {
+      return std::ranges::any_of(lone.panels,
+                                 [&](const Outpost::Hud::Rect& _panel)
+                                 {
+                                   return std::abs(_panel.left - _left) < 0.01f && std::abs(_panel.width - _width) < 0.01f &&
+                                          std::abs(_panel.top + _panel.height - 1064.0f) < 0.01f;
+                                 });
+    };
+    Assert::IsTrue(standsOnTheLine(16.0f, 300.0f), L"the minimap");
+    Assert::IsTrue(standsOnTheLine((1920.0f - 280.0f) / 2.0f, 280.0f), L"the selection");
+    Assert::IsTrue(standsOnTheLine(1524.0f, 380.0f), L"the card");
+  }
+
+  // ADR-088 decision 2: in build mode the command card, in the same corner and as tall, holds BUILD with B's cap over the
+  // structures, each in its cell on two lines, its name over its cost or why it cannot be built, and neither the card's
+  // buttons nor the retreat; a press on a structure arms it, and one that cannot be built takes no press. It is no window.
+  TEST_METHOD(LaysOutTheCommandCardInBuildMode)
   {
     const Outpost::Hud::Action shipyard{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
     const Outpost::Hud::Action relay{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay};
     Outpost::Hud::Content content;
-    content.build = Outpost::Hud::BuildPanel{.structures = {{.label = "Shipyard|300", .action = shipyard},
-                                                            {.label = "Relay|200", .action = relay, .enabled = false, .note = "NODE CAP"}}};
-    // The window: its title bar, padding, two buttons of 34 units 6 apart, and padding.
-    constexpr float HEIGHT_UNITS = 36.0f + 12.0f + 34.0f + 6.0f + 34.0f + 12.0f;
-    constexpr float WIDTH_UNITS = 380.0f;
+    content.buttons = {{.label = "Attack-move", .action = {.kind = Outpost::Hud::ActionKind::AttackMove}, .key = "A"}};
+    content.retreat = Outpost::Hud::RetreatChoice{};
+    content.build =
+      Outpost::Hud::BuildPanel{.structures = {{.label = "Shipyard|300", .action = shipyard},
+                                              {.label = "Relay|200", .action = relay, .enabled = false, .note = "NODE CAP", .cell = 4}}};
+    // The card: its padding, BUILD's line, three rows of 51 units 6 apart, and its padding.
+    constexpr float HEIGHT_UNITS = 12.0f + 20.0f + (3.0f * 51.0f) + (2.0f * 6.0f) + 12.0f;
+    for (const float factor : {1.0f, 1.5f})
+    {
+      const Outpost::Hud::Layout layout = Lay(content, 1920, 1080, {}, nullptr, factor);
+      Assert::IsTrue(layout.windows.empty(), L"no window");
+      const float right = 1920.0f - (16.0f * factor);
+      const float top = 1080.0f - ((16.0f + HEIGHT_UNITS) * factor);
+      Assert::IsTrue(std::ranges::any_of(layout.panels,
+                                         [&](const Outpost::Hud::Rect& _panel)
+                                         {
+                                           return std::abs(_panel.left + _panel.width - right) < 0.01f &&
+                                                  std::abs(_panel.top - top) < 0.01f && std::abs(_panel.width - (380.0f * factor)) < 0.01f;
+                                         }),
+                     L"the card in the corner, as tall as ever");
+      Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "BUILD"; }));
+      Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "B"; }), L"B's cap");
+      Assert::IsTrue(std::ranges::none_of(layout.texts, [](const Outpost::Hud::Text& _text)
+                                          { return _text.text == "Attack-move" || _text.text == "RETREAT"; }),
+                     L"neither the buttons nor the retreat");
 
-    const Outpost::Hud::Layout full = Lay(content, 1920, 1080);
-    Assert::AreEqual(size_t{1}, full.windows.size());
-    const Outpost::Hud::Window& window = full.windows.front();
-    Assert::IsTrue(window.kind == Outpost::WindowKind::Build);
-    Assert::AreEqual(WIDTH_UNITS, window.frame.width, 0.01f);
-    Assert::AreEqual(HEIGHT_UNITS, window.frame.height, 0.01f);
-    Assert::AreEqual(1920.0f - 16.0f, window.frame.left + window.frame.width, 0.01f, L"against the right margin");
-    Assert::AreEqual(1080.0f - 16.0f, window.frame.top + window.frame.height, 0.01f, L"on the bottom margin");
-    Assert::IsTrue(window.frame.left >= ((1920.0f + 560.0f + 380.0f) / 2.0f) + 8.0f, L"clear of the selection and its buttons");
-
-    const auto pressed = std::ranges::find(full.actions, shipyard, [](const auto& _entry) { return _entry.second; });
-    Assert::IsTrue(pressed != full.actions.end(), L"the Shipyard takes a press");
-    Assert::IsTrue(full.ActionAt(pressed->first.left + 5.0f, pressed->first.top + 5.0f) == shipyard);
-    Assert::IsTrue(std::ranges::none_of(full.actions, [&relay](const auto& _entry) { return _entry.second == relay; }),
-                   L"the Relay at its cap takes none");
-    Assert::IsTrue(std::ranges::any_of(full.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "NODE CAP"; }));
-
-    // At 125% the screen is 1,536 units wide, and the selection and its buttons at their widest leave the window no room
-    // beside them: it stands over them, its foot a gap above the minimap's top, 16 + 300 + 8 units over the screen's foot.
-    constexpr float FACTOR = 1.25f;
-    const Outpost::Hud::Layout larger = Lay(content, 1920, 1080, {}, nullptr, FACTOR);
-    const Outpost::Hud::Window& over = larger.windows.front();
-    Assert::AreEqual((1536.0f - 16.0f) * FACTOR, over.frame.left + over.frame.width, 0.01f);
-    Assert::AreEqual((864.0f - 16.0f - 300.0f - 8.0f) * FACTOR, over.frame.top + over.frame.height, 0.01f);
+      const auto pressed = std::ranges::find(layout.actions, shipyard, [](const auto& _entry) { return _entry.second; });
+      Assert::IsTrue(pressed != layout.actions.end(), L"the Shipyard takes a press");
+      Assert::AreEqual(right - ((380.0f - 12.0f) * factor), pressed->first.left, 0.01f);
+      Assert::AreEqual(top + ((12.0f + 20.0f) * factor), pressed->first.top, 0.01f);
+      Assert::AreEqual(51.0f * factor, pressed->first.height, 0.01f);
+      Assert::IsTrue(layout.ActionAt(pressed->first.left + 5.0f, pressed->first.top + 5.0f) == shipyard);
+      Assert::IsTrue(std::ranges::none_of(layout.actions, [&relay](const auto& _entry) { return _entry.second == relay; }),
+                     L"the Relay at its cap takes none");
+      // On two lines: the reason under the name, from the same left, in the last row's left cell.
+      const Outpost::Hud::Text& name = TextOf(layout, "Relay");
+      const Outpost::Hud::Text& reason = TextOf(layout, "NODE CAP");
+      Assert::AreEqual(name.left, reason.left, 0.01f);
+      Assert::IsTrue(reason.top > name.top);
+      Assert::IsTrue(name.top > top + ((12.0f + 20.0f + (2.0f * 57.0f)) * factor));
+    }
   }
 
   // ADR-073: a sector the pirates guard is shown as theirs on the minimap, and counts for neither side; their ships and
@@ -1742,18 +1843,19 @@ public:
     Assert::IsTrue(panel.options.empty() && !panel.hint.empty());
   }
 
-  // ADR-015: an enabled button is a place to click, at the bottom's middle beside the selection, where there is one
-  // (ADR-088 decision 2); a dim one is not.
+  // ADR-015: an enabled button is a place to click, in its cell of the command card at the bottom right, with a selection
+  // or without one (ADR-088 decision 2); a dim one is not.
   TEST_METHOD(LaysOutButtonsForClicks)
   {
     const Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
     const Outpost::Hud::Content content{
-      .ore = 0, .buttons = {{.label = "Shipyard|300", .action = build}, {.label = "Research Lab|200", .action = build, .enabled = false}}};
+      .ore = 0,
+      .buttons = {{.label = "Shipyard|300", .action = build}, {.label = "Research Lab|200", .action = build, .enabled = false, .cell = 1}}};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, layout.actions.size());
     const Outpost::Hud::Rect& area = layout.actions.front().first;
-    Assert::AreEqual(1920.0f / 2.0f, area.left + (area.width / 2.0f), 0.5f, L"centered at the bottom, with no selection beside it");
-    Assert::IsTrue(area.top > 1080.0f - 200.0f);
+    Assert::AreEqual(1920.0f - 16.0f - 380.0f + 12.0f, area.left, 0.01f, L"the card's first cell, with no selection");
+    Assert::AreEqual(1080.0f - 16.0f - 209.0f + 12.0f, area.top, 0.01f);
     Assert::IsTrue(layout.ActionAt(area.left + 5.0f, area.top + 5.0f) == build);
     Assert::IsFalse(layout.ActionAt(area.left + 5.0f, area.top + area.height + 10.0f).has_value());
     Assert::IsTrue(layout.Covers(area.left + 5.0f, area.top + 5.0f));
@@ -3125,12 +3227,16 @@ public:
     Assert::AreEqual(empty.windows.front().frame.top, busy.windows.front().frame.top, 0.01f);
   }
 
-  // ADR-043: the selection panel is as wide as its longest line, within bounds, and stays centered.
+  // ADR-043 and ADR-088 decision 2: the selection panel is as wide as its longest line, within bounds, and stands in the
+  // middle of the screen, moved only as far as keeps it a gap clear of the minimap and the command card. At its widest it is
+  // the room a 16:9 screen at 150% leaves between them, where it stands against the gap after the minimap.
   TEST_METHOD(FitsTheSelectionPanelToItsLines)
   {
-    const auto panelOf = [](std::vector<std::string> _lines)
+    const auto panelOf = [](std::vector<std::string> _lines, float _factor = 1.0f)
     {
-      const Outpost::Hud::Layout layout = Lay({.ore = 0, .oreIncomeHundredthsPerSecond = 650, .selection = std::move(_lines)}, 1920, 1080);
+      const Outpost::Hud::Layout layout =
+        Lay({.ore = 0, .oreIncomeHundredthsPerSecond = 650, .selection = std::move(_lines), .mapSizeMeters = 10000.0f}, 1920, 1080, {},
+            nullptr, _factor);
       return layout.panels[1];
     };
     const Outpost::Hud::Rect narrow = panelOf({"Shipyard", "Hit points 3,000 / 3,000"});
@@ -3138,9 +3244,16 @@ public:
     const Outpost::Hud::Rect widest = panelOf({"40 ships", std::string(80, 'x')});
     Assert::IsTrue(narrow.width < wide.width && wide.width < widest.width);
     Assert::AreEqual(280.0f, narrow.width, 0.01f, L"no narrower than this");
-    Assert::AreEqual(560.0f, widest.width, 0.01f, L"no wider than it was");
-    Assert::AreEqual(960.0f, wide.left + (wide.width / 2.0f), 0.01f);
+    Assert::AreEqual(552.0f, widest.width, 0.01f, L"no wider than this");
+    Assert::AreEqual(960.0f, wide.left + (wide.width / 2.0f), 0.01f, L"in the middle");
+    Assert::AreEqual(960.0f, widest.left + (widest.width / 2.0f), 0.01f);
     Assert::IsTrue(wide.height > narrow.height);
+
+    // At 150% the screen is 1,280 units wide, and the widest selection fills the room from the gap after the minimap, at 324
+    // units, to the gap before the card, at 876.
+    const Outpost::Hud::Rect crowded = panelOf({"40 ships", std::string(80, 'x')}, 1.5f);
+    Assert::AreEqual(324.0f * 1.5f, crowded.left, 0.01f);
+    Assert::AreEqual(552.0f * 1.5f, crowded.width, 0.01f);
   }
 
   // ADR-024, ADR-052: under fog of war the minimap draws the fog over its marks, as one panel over the whole minimap that the
@@ -3812,10 +3925,11 @@ public:
     Assert::AreEqual(size_t{4}, plain.actions.size(), L"without a join file, no Join universe");
   }
 
-  // ADR-088 decision 2: a selection with a warship offers its orders first, each with its key's cap, Hold sector
-  // only where the map has sectors and the armed one lit; a selection of Constructors alone offers none. The buttons stand
-  // against the selection panel's right edge, bottom-aligned, the pair centered, at every width the selection panel takes.
-  TEST_METHOD(OffersTheOrdersBesideTheSelection)
+  // ADR-088 decision 2: a selection with a warship offers its orders, each with its key's cap in the command card's cell it
+  // always takes, Hold sector only where the map has sectors and the armed one lit; a selection of Constructors alone offers
+  // none. The card stands in the bottom-right corner, and the selection in the middle, their feet on one line, at every
+  // width the selection panel takes.
+  TEST_METHOD(OffersTheOrdersOnTheCommandCard)
   {
     Outpost::Snapshot newest = Newest();
     std::vector<Outpost::EntityView> entities{Ship(1, LINE, 100, 100)};
@@ -3838,6 +3952,8 @@ public:
     Assert::IsTrue(words.size() >= 4 && std::vector<std::string>(words.begin(), words.begin() + 4) ==
                                           std::vector<std::string>{"Attack-move/A", "Hold sector/H", "Patrol/T", "Stop/S"});
     Assert::IsTrue(warship.buttons[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::HoldSector});
+    for (std::size_t order = 0; order < 4; ++order)
+      Assert::AreEqual(static_cast<int>(order), static_cast<int>(warship.buttons[order].cell), L"the first two rows, in order");
     Assert::IsFalse(std::ranges::any_of(warship.buttons, &Outpost::Hud::Button::selected), L"nothing armed");
 
     const Outpost::Hud::Content armed =
@@ -3873,12 +3989,14 @@ public:
         const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
         const Outpost::Hud::Layout layout = Lay(content, width, height);
         const Outpost::Hud::Rect selection = frameOf(layout, content.selection.front());
-        const Outpost::Hud::Rect orders = frameOf(layout, "Attack-move");
+        const Outpost::Hud::Rect card = frameOf(layout, "Attack-move");
         const std::wstring what = std::format(L"{} at {} wide", std::wstring(winrt::to_hstring(name)), width);
-        Assert::AreEqual(selection.left + selection.width, orders.left, 0.01f, what.c_str());
-        Assert::AreEqual(selection.top + selection.height, orders.top + orders.height, 0.01f, L"bottom-aligned");
-        Assert::AreEqual(static_cast<float>(width) / 2.0f, (selection.left + orders.left + orders.width) / 2.0f, 0.5f,
-                         L"the pair centered");
+        const float scale = static_cast<float>(width) / 1920.0f;
+        Assert::AreEqual(static_cast<float>(width) - (16.0f * scale), card.left + card.width, 0.01f, what.c_str());
+        Assert::AreEqual(static_cast<float>(height) - (16.0f * scale), card.top + card.height, 0.01f, L"in the corner");
+        Assert::AreEqual(209.0f * scale, card.height, 0.01f, L"as tall whatever is selected");
+        Assert::AreEqual(card.top + card.height, selection.top + selection.height, 0.01f, L"on one line");
+        Assert::AreEqual(static_cast<float>(width) / 2.0f, selection.left + (selection.width / 2.0f), 0.5f, L"the selection in the middle");
       }
     }
   }
@@ -4224,7 +4342,8 @@ public:
                                         .buttons = {{.label = "Shipyard|300", .action = {.kind = Outpost::Hud::ActionKind::Build}},
                                                     {.label = "Production",
                                                      .action = {.kind = Outpost::Hud::ActionKind::OpenProduction},
-                                                     .key = Outpost::KeyCap(Outpost::KEY_PRODUCTION)}}};
+                                                     .key = Outpost::KeyCap(Outpost::KEY_PRODUCTION),
+                                                     .cell = 1}}};
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{2}, layout.actions.size());
     const Outpost::Hud::Rect& build = layout.actions[0].first;

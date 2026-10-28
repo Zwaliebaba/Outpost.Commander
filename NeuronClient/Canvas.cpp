@@ -714,8 +714,11 @@ void Neuron::Canvas::DrawButton(DrawList& _list, std::size_t _node, WidgetId _wi
       Area(left + theme.barInsetUnits, barTop, barWidth * std::clamp(*_button.progress, 0.0f, 1.0f), theme.barUnits, theme.barFillColor));
   }
   const DirectX::XMFLOAT4& labelColor = _button.enabled ? theme.textColor : theme.lockedTextColor;
-  const float labelTop = top + ((height - theme.nameLineUnits) / 2.0f);
-  const float figureTop = top + ((height - theme.figureLineUnits) / 2.0f);
+  // Stacked, the label and the line under it stand in the button's middle together.
+  const float stackTop = top + ((height - theme.nameLineUnits - theme.figureLineUnits) / 2.0f);
+  const float labelTop = _button.stacked ? stackTop : top + ((height - theme.nameLineUnits) / 2.0f);
+  const float figureTop = _button.stacked ? stackTop + theme.nameLineUnits : top + ((height - theme.figureLineUnits) / 2.0f);
+  const float textLeft = left + theme.buttonInsetUnits;
   const float right = left + width - theme.buttonInsetUnits;
   float room = width - (2.0f * theme.buttonInsetUnits);
   if (!_button.key.empty())
@@ -727,23 +730,23 @@ void Neuron::Canvas::DrawButton(DrawList& _list, std::size_t _node, WidgetId _wi
   {
     // The reason it cannot be pressed stands in its figure's place, or where one would stand on a button without one.
     const float noteWidth = m_metrics.Width(theme.labelFont, _button.note);
-    Text(_list, _button.note, right - noteWidth, figureTop, theme.labelColor, theme.labelFont);
-    Text(_list, m_metrics.Fit(theme.nameFont, _button.label, room - noteWidth - theme.fitGapUnits), left + theme.buttonInsetUnits, labelTop,
-         labelColor, theme.nameFont);
+    Text(_list, _button.note, _button.stacked ? textLeft : right - noteWidth, figureTop, theme.labelColor, theme.labelFont);
+    Text(_list, m_metrics.Fit(theme.nameFont, _button.label, _button.stacked ? room : room - noteWidth - theme.fitGapUnits), textLeft,
+         labelTop, labelColor, theme.nameFont);
     return;
   }
   if (_button.figure.empty())
   {
-    Text(_list, m_metrics.Fit(theme.nameFont, _button.label, room), left + theme.buttonInsetUnits, labelTop, labelColor, theme.nameFont);
+    Text(_list, m_metrics.Fit(theme.nameFont, _button.label, room), textLeft, labelTop, labelColor, theme.nameFont);
     return;
   }
   const float mark = _button.figureMark.has_value() ? theme.figureMarkUnits : 0.0f;
   const float markGap = _button.figureMark.has_value() ? theme.figureMarkGapUnits : 0.0f;
   const float figureWidth = mark + markGap + m_metrics.Width(theme.figureFont, _button.figure);
-  Text(_list, m_metrics.Fit(theme.nameFont, _button.label, room - figureWidth - theme.fitGapUnits), left + theme.buttonInsetUnits, labelTop,
-       labelColor, theme.nameFont);
+  Text(_list, m_metrics.Fit(theme.nameFont, _button.label, _button.stacked ? room : room - figureWidth - theme.fitGapUnits), textLeft,
+       labelTop, labelColor, theme.nameFont);
   const DirectX::XMFLOAT4& figureColor = _button.enabled ? theme.figureColor : theme.lockedTextColor;
-  const float figureLeft = right - figureWidth;
+  const float figureLeft = _button.stacked ? textLeft : right - figureWidth;
   if (_button.figureMark.has_value())
     _list.sprites.push_back(
       {.sprite = *_button.figureMark, .area = Area(figureLeft, figureTop + theme.figureMarkTopUnits, mark, mark, figureColor)});

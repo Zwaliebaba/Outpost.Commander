@@ -5,15 +5,13 @@ namespace Outpost
 // Where a window first stands, before the player moves it (ADR-100 decision 8), each an anchor of the screen less a margin,
 // so that a window not yet moved stands there on any screen and at any step, and never moves as the HUD's panels change: in
 // the top-right corner; in one of the places under the Ore that production and research take; at the right edge, level with
-// those; in the middle of the screen; or at the bottom right, beside the selection and its buttons, or over the bottom row
-// where they leave it no room.
+// those; or in the middle of the screen.
 enum class FirstPlace : std::uint8_t
 {
   TopRight,
   UnderTheOre,
   RightUnderTheOre,
-  Middle,
-  BesideTheSelection
+  Middle
 };
 
 // A window of the game, as a row of one table (ADR-100): which it is; its name in the interface's file, which is never
@@ -33,7 +31,8 @@ struct WindowRow
 
 // Every window, in WindowKind's order. The designer's title stands in its body, over its name, and not on its bar. Esc opens
 // the leave window in a universe, and the away window opens by itself when a report of a time away arrives, so neither has a
-// key of its own.
+// key of its own. The name "build" was the build window's, which the command card's build mode took the place of
+// (ADR-088 decision 2), and is never given to another window (ADR-099 decision 3).
 inline constexpr std::array<WindowRow, WINDOW_KINDS> WINDOWS{{
   {.kind = WindowKind::Designer,
    .name = "designer",
@@ -83,13 +82,6 @@ inline constexpr std::array<WindowRow, WINDOW_KINDS> WINDOWS{{
    .key = 0,
    .first = FirstPlace::Middle,
    .fits = false,
-   .kept = true},
-  {.kind = WindowKind::Build,
-   .name = "build",
-   .title = "BUILD",
-   .key = KEY_BUILD,
-   .first = FirstPlace::BesideTheSelection,
-   .fits = true,
    .kept = true},
 }};
 

@@ -4,9 +4,11 @@ namespace Neuron
 {
 // What a button shows (ADR-043 decision 4): its label; a figure, such as its cost, after the mark it may have, at its
 // right; why it cannot be pressed, in the figure's place while it is disabled; its key, as a cap at its right; and work it
-// started that is under way, from nothing to one, as a bar along its foot. A press on it, while it is enabled, names the
-// caller's payload. Its edge is lit under the pointer, or where the caller says it is pointed at, as the HUD lights each
-// button whose action is the one under the pointer (ADR-088 decision 1).
+// started that is under way, from nothing to one, as a bar along its foot. Stacked, the figure or the reason stands under
+// the label instead, both from the button's left, for a button too narrow for the two on one line, such as a structure's
+// on the command card (ADR-088 decision 2). A press on it, while it is enabled, names the caller's payload. Its edge is lit
+// under the pointer, or where the caller says it is pointed at, as the HUD lights each button whose action is the one
+// under the pointer (ADR-088 decision 1).
 struct ButtonContent
 {
   std::string label;
@@ -19,6 +21,7 @@ struct ButtonContent
   bool picked = false;
   std::optional<float> progress;
   bool pointed = false;
+  bool stacked = false;
 };
 
 // How a box the game composes looks (ADR-100): its face, a hatch over its face if it has one, and its edge, each any color
