@@ -23,21 +23,25 @@ constexpr std::uint64_t HOUR_TICK = std::uint64_t{20} * 3'600;
 
 Outpost::OverseerWelcomeMessage Welcome()
 {
-  return {.wireLayoutHash = 0x1234'5678'9abc'def0,
-          .protocolVersion = 1,
-          .stateVersion = 1,
-          .ticksPerSecond = 20,
-          .folderUtf8 = "C:\\Users\\Owner\\Documents\\Outpost Commander\\Universe",
-          .seats = {{.player = Outpost::PlayerId{1}, .ai = {}},
-                    {.player = Outpost::PlayerId{2}, .ai = "Normal"},
-                    {.player = Outpost::PlayerId{3}, .ai = {}},
-                    {.player = Outpost::PlayerId{4}, .ai = "Hard"}},
-          .recoveredSaveTick = 1'200,
-          .replayedCommands = 7,
-          .dayRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
-                         "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
-                         "battle 70000 70100 sector 3 player 3 deputy player 2 ai", "tick 60000 us 7200 over 3 move 4000 fight 2000",
-                         "dropped 61000 ticks 3"}};
+  return {
+    .wireLayoutHash = 0x1234'5678'9abc'def0,
+    .protocolVersion = 1,
+    .stateVersion = 1,
+    .ticksPerSecond = 20,
+    .folderUtf8 = "C:\\Users\\Owner\\Documents\\Outpost Commander\\Universe",
+    .seats = {{.player = Outpost::PlayerId{1}, .ai = {}},
+              {.player = Outpost::PlayerId{2}, .ai = "Normal"},
+              {.player = Outpost::PlayerId{3}, .ai = {}},
+              {.player = Outpost::PlayerId{4}, .ai = "Hard"}},
+    .recoveredSaveTick = 1'200,
+    .replayedCommands = 7,
+    .dayRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
+                   "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
+                   "battle 70000 70100 sector 3 player 3 deputy player 2 ai", "tick 60000 us 7200 over 3 move 4000 fight 2000",
+                   "dropped 61000 ticks 3", "join 30000 welcomed player 1 from 10.0.0.5", "join 40000 gone player 1 lost from 10.0.0.5",
+                   "join 41200 welcomed player 1 from 10.0.0.5",
+                   "hour 72000 player 1 ore 12000 income 4050 fleet 120 cap 200 nodes 6 researched 9 present 3500 deputy 100 orders 7200 "
+                   "refused 3 rtt_median_us 38000 rtt_p95_us 120000 sent 360000 lost 720 backlog_most 2048 sent_bytes 36864000"}};
 }
 
 // _model welcomed at START, and told a Health of _tick at _heard.
@@ -74,7 +78,13 @@ std::vector<Outpost::SeatHealth> SeatsAt(std::uint64_t _second)
      .linkTick = HOUR_TICK - (std::uint64_t{20} * 600),
      .deputyTick = HOUR_TICK - (std::uint64_t{20} * 540),
      .ore = 800,
-     .nodes = 2},
+     .nodes = 2,
+     .away = Outpost::AwayReport{.sinceTick = HOUR_TICK - (std::uint64_t{20} * 540),
+                                 .shipsBuilt = 2,
+                                 .structuresBuilt = 1,
+                                 .shipsLost = 3,
+                                 .sectorsGained = {4},
+                                 .sectorsLost = {2, 5}}},
     {.player = Outpost::PlayerId{4}, .play = Outpost::SeatPlay::Ai, .ore = 300, .restartTick = HOUR_TICK + (std::uint64_t{20} * 300)}};
 }
 
@@ -494,6 +504,7 @@ public:
       OverseerScreen screen({{.player = Outpost::PlayerId{1}, .color = BLUE}});
       screen.Pick(Outpost::PlayerId{1});
       screen.OpenServerWindow();
+      screen.OpenSeatWindow(Outpost::PlayerId{1});
       const Neuron::DrawList& layout = Lay(screen, model, NOW, Link(), width, height);
       const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
       const std::wstring name = std::format(L"the overview at {} wide", width);
@@ -668,6 +679,53 @@ public:
     const Neuron::CanvasText close = LastText(moved, Outpost::Hud::Theme().closeMark);
     screen.Input(ButtonAt(close.left + 2.0f, close.top + 2.0f, Neuron::InputEventKind::ButtonDown));
     Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Server), L"closed by its close box");
+  }
+
+  // ADR-103 decision 7: a picked seat has an action bar under the table, whose Seat button opens the seat window: who plays it;
+  // its link over the last four hours from its hours, the last hour a minute at a time and the time it was down; its joins and
+  // its hours of the day; and what waits for its player. Another seat picked and opened, the window shows it.
+  TEST_METHOD(ShowsTheSeatWindow)
+  {
+    Scripted scripted;
+    OverseerScreen screen({{.player = Outpost::PlayerId{1}, .color = BLUE}});
+    Assert::IsFalse(Shows(Lay(screen, scripted.model, NOW), "Seat 1 picked"), L"no action bar before a pick");
+    screen.Pick(Outpost::PlayerId{1});
+    constexpr std::uint32_t SEAT = 7u << 16;
+    const Neuron::DrawList& picked = Lay(screen, scripted.model, NOW);
+    Assert::IsTrue(Shows(picked, "Seat 1 picked"), Texts(picked).c_str());
+    screen.Input(PressOn(picked, [](const Neuron::CanvasRegion& _region) { return _region.payload == SEAT; }));
+    Assert::IsTrue(screen.IsOpen(Outpost::OverseerWindow::Seat) && screen.SeatShown() == Outpost::PlayerId{1}, L"the Seat button");
+    const Neuron::DrawList& one = Lay(screen, scripted.model, NOW);
+    for (const std::string_view text :
+         {"SEAT 1", "Played by its player \xC2\xB7 Online, for 2:05", "THE LINK, THE LAST FOUR HOURS",
+          "1:00:00 \xC2\xB7 round trip 38.00 ms median, 120.00 ms at the 95th",
+          "loss 0.2% \xC2\xB7 backlog at most 2.0 KB \xC2\xB7 35.2 MB sent",
+          "The line is 250.00 ms; the hour's slowest minute ran 38.00 ms at the 95th percentile.",
+          "Its link was down 1:00 of the four hours, 1 time.", "JOINS, THE LAST DAY", "0:34:20 \xC2\xB7 welcomed from 10.0.0.5",
+          "0:33:20 \xC2\xB7 gone lost from 10.0.0.5", "0:25:00 \xC2\xB7 welcomed from 10.0.0.5", "ITS HOURS, THE DAY",
+          "1:00:00 \xC2\xB7 Ore 12,000 \xC2\xB7 +40.50 a second \xC2\xB7 fleet 120 / 200 \xC2\xB7 6 nodes \xC2\xB7 9 researched",
+          "its player 58:20, its deputy 1:40 \xC2\xB7 7,200 orders, 3 refused", "WHAT WAITS FOR ITS PLAYER",
+          "Nothing waits: its player plays it.", "Its scheduled orders show once its sight comes."})
+      Assert::IsTrue(Shows(one, text), (std::wstring(winrt::to_hstring(text)) + L" | " + Texts(one)).c_str());
+
+    // Seat 3, away while its deputy plays it, its sight come with a scheduled order.
+    screen.Pick(Outpost::PlayerId{3});
+    Outpost::Snapshot sight{.tick = HOUR_TICK, .player = Outpost::PlayerId{3}};
+    sight.mapSizeMeters = 4'000.0f;
+    sight.scheduled = {{.id = 4,
+                        .ships = {Outpost::EntityId{7}, Outpost::EntityId{8}},
+                        .trigger = {.kind = Outpost::ScheduledTriggerKind::EnemyInSector, .sector = 2},
+                        .action = {.kind = Outpost::ScheduledActionKind::Patrol}}};
+    Assert::IsTrue(scripted.model.TakeView(Outpost::EncodeMessage(Outpost::StateMessage{.snapshot = std::move(sight)})).has_value());
+    screen.Input(PressOn(Lay(screen, scripted.model, NOW), [](const Neuron::CanvasRegion& _region) { return _region.payload == SEAT; }));
+    Assert::IsTrue(screen.SeatShown() == Outpost::PlayerId{3}, L"the window shows the seat last opened");
+    const Neuron::DrawList& three = Lay(screen, scripted.model, NOW);
+    for (const std::string_view text :
+         {"SEAT 3", "No hour of its link in the four hours.", "No link heard in the last hour.", "Its link was not down in the four hours.",
+          "No join in the day.", "No hour of it in the day yet.", "Its deputy has played it since 0:51:00, for 9:00.",
+          "Built 2 ships and 1 structures; lost 3 ships and 0 structures.", "Sectors gained: 4; lost: 2, 5.",
+          "No scheduled order of its fired.", "Order 4 \xC2\xB7 Patrol \xC2\xB7 when an enemy enters sector 2 \xC2\xB7 2 ships"})
+      Assert::IsTrue(Shows(three, text), (std::wstring(winrt::to_hstring(text)) + L" | " + Texts(three)).c_str());
   }
 
   TEST_METHOD(WritesUniverseTimeAndBytes)

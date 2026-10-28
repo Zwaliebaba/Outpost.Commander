@@ -38,7 +38,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV5.1 | A day of the windows' records at the welcome, and each away seat's report | OV4 | D8, D9 | built, on OV5's branch |
 | OV5.2 | The header states | OV4 | — | built, on OV5's branch; awaiting the owner's run |
 | OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | built, on OV5's branch; awaiting the owner's run |
-| OV5.4 | The seat window | OV5.3 | D8, D9, D10 | todo |
+| OV5.4 | The seat window | OV5.3 | D8, D9, D10 | built, on OV5's branch; awaiting the owner's run |
 | OV6.1 | Save now and Stop | OV5 | — | todo |
 | OV6.2 | Drop link and New token | OV6.1 | D2, D3 | todo |
 
@@ -315,6 +315,18 @@ What the overseer lacks after OV4: the server's state told whole in the header, 
 - **ADR:** ADR-103 decision 7.
 - **Acceptance:** `OverseerScreenTests`: the action bar under the picked row and its Seat button, each section from a scripted model, a seat with no records and one away, and the guards with the window open.
 - **Verify:** the checkers; the container's tests; CI; the owner's run against a running universe.
+
+### As built
+
+- **The lanes' records became the day's records,** `DayRecords.h` with `IsDayRecord`, `KeepDayRecords` and `DAY_RECORDS_SECONDS`, the welcome's `dayRecords` and the model's `DayRecords()`, since they now hold a seat's joins and hours and the server's long and dropped ticks beside the lanes'.
+- **An away seat's report reaches the overseer from `AwayReports`,** copied into the seat's `SeatHealth` as the server's thread keeps its second; a seat its player has never held has none.
+- **Stalled is measured between the `Health` that still comes,** from the first heard at the tick that stands to the latest, so that `Health` that stops coming reads as Running until No word, never as Stalled. No word no longer says how the server ended: Stopped and Failed do.
+- **The picked seat's action bar stands at the seat table's foot,** not under its row as gate D10 has it: the canvas's table has no room between its rows, and giving it some is a change to the table under ADR-100 that the bar does not need. It names the picked seat, "Seat 3 picked", beside its Seat button.
+- **One seat window, which shows the seat last opened,** rather than one a seat: each is as wide as the server window, and two would stand over each other.
+- **Each window is a canvas of its own,** laid out after the overview's canvas and the map, as the game's windows are, so that the map's drawing, which comes after the overview's canvas is finished, stays in the overview's layer under them.
+- **The acceptance's names as built:** `DayRecordsTests`, four, `KnowsTheDaysKinds` among them; `UniverseLogTests.ReadsTheDayRecords`; `OverseerProtocolTests`, with a seat's report; `OverseerLinkTests.WelcomesWithTheDayRecords`, with a join; `QuicTransportTests.TellsTheOverseerWhatAnAwayPlayerMisses`; `OverseerModelTests.KeepsTheDayRecords` and `TakesNoDayRecordTwice`; and `OverseerScreenTests.SaysStalledFailedAndStoppedByWindows`, `ShowsTheServerWindow`, `DragsAndClosesTheServerWindow` and `ShowsTheSeatWindow`, with `HoldsTheLayoutAndContrastGuards` run with both windows open.
+- **Run in the container:** the server's suites and `GameAppTests`' overseer suites pass on the clang 18 harnesses, but the QUIC tests, which `QuicTransportTests.cpp` and `OverseerLinkTests.cpp` compile against the stand-ins without running; `HudTests.LaysOutTheOrdersWindow` and `KeepsEveryTextInsideItsPanel` fail there on the stand-in fonts, on `main` alone as on this branch. The overview's display list at 1920×1080 with each window open, written out as an image layer by layer with the stand-in fonts, shows each window over the overview and its sections where they are laid out.
+- **Not run in the container:** the QUIC tests, the executable, and the guards with the fonts Windows installs. CI's run 729, of `eed5deb`, OV5.1, passed all six jobs, the QUIC tests among them.
 
 ---
 

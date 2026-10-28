@@ -56,6 +56,7 @@ constexpr float HEADER_BUTTON_UNITS = 120.0f;
 // The overseer's windows (ADR-103 decision 7): how wide the server's stands, and how far down the screen a window first
 // opens, at the screen's right.
 constexpr float SERVER_WINDOW_UNITS = 860.0f;
+constexpr float SEAT_WINDOW_UNITS = 860.0f;
 constexpr float WINDOW_TOP_UNITS = 140.0f;
 // The server window's sections: a tick part's name and its figures, either side of its bar; a chart's height and the gap
 // between its bars; and how many of the day's long ticks and of the saves it lists.
@@ -69,6 +70,9 @@ constexpr std::size_t SAVES_SHOWN = 10;
 // A minute of Health, one a second, which the longest tick of each minute is taken over, and the hour's minutes.
 constexpr std::size_t HEALTHS_A_MINUTE = 60;
 constexpr std::size_t MINUTES_AN_HOUR = 60;
+// The seat window's reach back over its link (ADR-103 decision 7), and the scheduled orders' actions as it names them.
+constexpr std::uint64_t LINK_SECONDS = std::uint64_t{4} * 3'600;
+constexpr std::array<std::string_view, 6> ACTION_NAMES{"Move", "Attack-move", "Attack", "Hold sector", "Patrol", "Build a rig"};
 // What came of the joins, by JoinOutcome, as the server window writes them.
 constexpr std::array<std::string_view, Outpost::JOIN_OUTCOME_COUNT> JOIN_OUTCOME_NAMES{
   "welcomed", "another build", "seat refused", "malformed", "silent", "taken", "closed", "lost"};
@@ -86,7 +90,8 @@ enum class PressKind : std::uint32_t
   Seat,
   LogFilter,
   FullSight,
-  ServerWindow
+  ServerWindow,
+  SeatWindow
 };
 
 constexpr std::uint32_t PayloadOf(PressKind _kind, std::uint32_t _which) noexcept
@@ -1109,6 +1114,296 @@ void LayServerWindow(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _mod
   _canvas.EndScroll();
 }
 
+// A signed number after _key among _words, as an hour's Ore and income may be below nothing.
+std::optional<std::int64_t> SignedAfter(std::span<const std::string_view> _words, std::string_view _key)
+{
+  const auto key = std::ranges::find(_words, _key);
+  if (key == _words.end() || key + 1 == _words.end())
+    return std::nullopt;
+  std::int64_t value = 0;
+  const std::string_view word = *(key + 1);
+  const auto [end, error] = std::from_chars(word.data(), word.data() + word.size(), value);
+  return error == std::errc{} && end == word.data() + word.size() ? std::optional<std::int64_t>{value} : std::nullopt;
+}
+
+// Whether _words, a record's, are of _kind and name _seat's player ("player <p>").
+bool IsSeatsRecord(std::span<const std::string_view> _words, std::string_view _kind, Outpost::PlayerId _seat)
+{
+  return _words.size() >= 2 && _words.front() == _kind && NumberAfter(_words, "player") == std::uint64_t{_seat.value};
+}
+
+// How a scheduled order fires, as the seat window writes it.
+std::string TriggerText(const Outpost::ScheduledTrigger& _trigger, std::uint32_t _ticksPerSecond)
+{
+  switch (_trigger.kind)
+  {
+  case Outpost::ScheduledTriggerKind::TimeOfDay:
+    return std::format("at {}", Outpost::UniverseTime(_trigger.tick, _ticksPerSecond));
+  case Outpost::ScheduledTriggerKind::EnemyInSector:
+    return std::format("when an enemy enters sector {}", _trigger.sector);
+  case Outpost::ScheduledTriggerKind::RelayThreatened:
+    return std::format("when its Relay in sector {} is threatened", _trigger.sector);
+  case Outpost::ScheduledTriggerKind::RigLost:
+    return std::format("when a rig of its in sector {} is lost", _trigger.sector);
+  }
+  return {};
+}
+
+// The sectors of _sectors, "4, 7", or none.
+std::string SectorsText(std::span<const std::int32_t> _sectors)
+{
+  std::string text;
+  for (const std::int32_t sector : _sectors)
+    text += std::format("{}{}", text.empty() ? "" : ", ", sector);
+  return text.empty() ? std::string("none") : text;
+}
+
+// The seat window (ADR-103 decision 7), its body _innerUnits wide: who plays _seat and how it stands; its link over the last
+// four hours, from its hour records and the last hour of Health, and how long it was down, from its joins; its joins of the
+// day; its hours of the day; and what waits for its player, its report of the time away and its scheduled orders.
+void LaySeatWindow(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, Outpost::PlayerId _seat, float _innerUnits)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const std::optional<Outpost::OverseerWelcomeMessage>& welcome = _model.Welcome();
+  const std::uint32_t perSecond = welcome.has_value() ? welcome->ticksPerSecond : 0;
+  const Outpost::HeardHealth* latest = _model.LatestHealth();
+  const Outpost::SeatHealth* seat = nullptr;
+  if (latest != nullptr)
+  {
+    if (const auto found = std::ranges::find(latest->health.seats, _seat, &Outpost::SeatHealth::player);
+        found != latest->health.seats.end())
+      seat = &*found;
+  }
+  std::string difficulty;
+  if (welcome.has_value())
+  {
+    if (const auto found = std::ranges::find(welcome->seats, _seat, &Outpost::OverseerSeat::player); found != welcome->seats.end())
+      difficulty = found->ai;
+  }
+  const bool ai = seat != nullptr ? seat->play == Outpost::SeatPlay::Ai : !difficulty.empty();
+  const std::uint64_t newest = _model.NewestTick();
+  const std::deque<std::string>& records = _model.DayRecords();
+  (void)_canvas.BeginScroll("seat window body", {.grow = 1.0f});
+  (void)tree.Begin(Neuron::LayoutKind::Column, {.gapUnits = CELL_GAP_UNITS, .alignX = Neuron::LayoutAlign::Stretch});
+
+  // Who plays it, and how it stands.
+  if (seat != nullptr)
+  {
+    const SeatStatus status = StatusOf(*seat, latest->health.tick, perSecond);
+    WindowLine(_canvas, std::format("Played by its {}{}{}, {}", WhoPlays(*seat, difficulty), DOT, status.name, status.detail),
+               theme.textColor);
+  }
+  else
+    WindowLine(_canvas, "No Health of it yet.", theme.dimTextColor);
+
+  // Its link over the last four hours: its hours, the last hour heard a minute at a time, and how long it was down.
+  Heading(_canvas, "THE LINK, THE LAST FOUR HOURS");
+  const std::uint64_t linkSpan = LINK_SECONDS * perSecond;
+  const std::uint64_t linkFrom = newest > linkSpan ? newest - linkSpan : 0;
+  if (ai)
+    WindowLine(_canvas, "An AI empire's seat has no link.", theme.dimTextColor);
+  else
+  {
+    std::size_t hours = 0;
+    for (auto record = records.rbegin(); record != records.rend(); ++record)
+    {
+      const std::vector<std::string_view> words = WordsOf(*record);
+      if (!IsSeatsRecord(words, "hour", _seat) || NumberOf(words[1]).value_or(0) < linkFrom)
+        continue;
+      const std::uint64_t tick = NumberOf(words[1]).value_or(0);
+      ++hours;
+      if (!NumberAfter(words, "rtt_median_us").has_value())
+      {
+        WindowLine(_canvas, std::format("{}{}its player was not connected in the hour", Outpost::UniverseTime(tick, perSecond), DOT),
+                   theme.dimTextColor);
+        continue;
+      }
+      const std::uint64_t sent = NumberAfter(words, "sent").value_or(0);
+      const std::uint64_t lost = NumberAfter(words, "lost").value_or(0);
+      WindowLine(_canvas,
+                 std::format("{}{}round trip {} median, {} at the 95th", Outpost::UniverseTime(tick, perSecond), DOT,
+                             MillisecondsText(static_cast<std::uint32_t>(NumberAfter(words, "rtt_median_us").value_or(0))),
+                             MillisecondsText(static_cast<std::uint32_t>(NumberAfter(words, "rtt_p95_us").value_or(0)))),
+                 theme.textColor);
+      WindowLine(_canvas,
+                 std::format("loss {:.1f}%{}backlog at most {}{}{} sent",
+                             sent > 0 ? 100.0 * static_cast<double>(lost) / static_cast<double>(sent) : 0.0, DOT,
+                             Outpost::BytesText(NumberAfter(words, "backlog_most").value_or(0)), DOT,
+                             Outpost::BytesText(NumberAfter(words, "sent_bytes").value_or(0))),
+                 theme.dimTextColor);
+    }
+    if (hours == 0)
+      WindowLine(_canvas, "No hour of its link in the four hours.", theme.dimTextColor);
+
+    // The last hour heard, a minute a bar: the minute's round trip at the 95th percentile, against what needs attention.
+    const std::deque<Outpost::HeardHealth>& healths = _model.Healths();
+    std::vector<std::uint32_t> minutes;
+    for (std::size_t end = healths.size(); end > 0;)
+    {
+      const std::size_t begin = end > HEALTHS_A_MINUTE ? end - HEALTHS_A_MINUTE : 0;
+      std::vector<std::uint32_t> trips;
+      for (std::size_t index = begin; index < end; ++index)
+      {
+        const std::vector<Outpost::SeatHealth>& seats = healths[index].health.seats;
+        if (const auto found = std::ranges::find(seats, _seat, &Outpost::SeatHealth::player);
+            found != seats.end() && found->connection.has_value())
+          trips.push_back(found->connection.value_or(Outpost::LinkFigures{}).roundTripMicroseconds);
+      }
+      std::ranges::sort(trips);
+      minutes.push_back(
+        trips.empty() ? 0 : trips[std::max<std::size_t>(1, ((trips.size() * Outpost::ATTENTION_ROUND_TRIP_PERCENTILE) + 99) / 100) - 1]);
+      end = begin;
+    }
+    std::ranges::reverse(minutes);
+    if (std::ranges::all_of(minutes, [](std::uint32_t _trip) { return _trip == 0; }))
+      WindowLine(_canvas, "No link heard in the last hour.", theme.dimTextColor);
+    else
+    {
+      const std::uint32_t slowest = std::ranges::max(minutes);
+      BarChart(_canvas, minutes, MINUTES_AN_HOUR, std::max(2 * Outpost::ATTENTION_ROUND_TRIP_MICROSECONDS, slowest),
+               Outpost::ATTENTION_ROUND_TRIP_MICROSECONDS, _innerUnits - theme.scrollLaneUnits);
+      WindowLine(_canvas,
+                 std::format("The line is {}; the hour's slowest minute ran {} at the {}th percentile.",
+                             MillisecondsText(Outpost::ATTENTION_ROUND_TRIP_MICROSECONDS), MillisecondsText(slowest),
+                             Outpost::ATTENTION_ROUND_TRIP_PERCENTILE),
+                 theme.dimTextColor);
+    }
+
+    // How long its link was down in the four hours: from each connection gone to the next welcomed.
+    std::uint64_t down = 0;
+    std::uint64_t times = 0;
+    std::optional<std::uint64_t> goneAt;
+    for (const std::string& record : records)
+    {
+      const std::vector<std::string_view> words = WordsOf(record);
+      if (!IsSeatsRecord(words, "join", _seat))
+        continue;
+      const std::uint64_t tick = std::max(NumberOf(words[1]).value_or(0), linkFrom);
+      if (words.size() > 2 && words[2] == "gone" && !goneAt.has_value())
+      {
+        goneAt = tick;
+        ++times;
+      }
+      else if (words.size() > 2 && words[2] == "welcomed" && goneAt.has_value())
+      {
+        down += tick - std::min(tick, goneAt.value_or(tick));
+        goneAt.reset();
+      }
+    }
+    if (goneAt.has_value())
+      down += newest - std::min(newest, goneAt.value_or(newest));
+    WindowLine(_canvas,
+               times == 0
+                 ? std::string("Its link was not down in the four hours.")
+                 : std::format("Its link was down {} of the four hours, {} {}.",
+                               Outpost::MinutesAndSeconds(perSecond > 0 ? down / perSecond : 0), times, times == 1 ? "time" : "times"),
+               times == 0 ? theme.dimTextColor : theme.textColor);
+  }
+
+  // Its joins of the day, the newest first: what came of each, and the address it came from.
+  SectionHeading(_canvas, "JOINS, THE LAST DAY");
+  std::size_t joins = 0;
+  for (auto record = records.rbegin(); record != records.rend(); ++record)
+  {
+    const std::vector<std::string_view> words = WordsOf(*record);
+    if (!IsSeatsRecord(words, "join", _seat))
+      continue;
+    std::string what;
+    for (std::size_t word = 2; word < words.size(); ++word)
+    {
+      if (words[word] == "player" && word + 1 < words.size())
+      {
+        ++word;
+        continue;
+      }
+      what += std::format("{}{}", what.empty() ? "" : " ", words[word]);
+    }
+    WindowLine(_canvas, std::format("{}{}{}", Outpost::UniverseTime(NumberOf(words[1]).value_or(0), perSecond), DOT, what),
+               theme.textColor);
+    ++joins;
+  }
+  if (joins == 0)
+    WindowLine(_canvas, "No join in the day.", theme.dimTextColor);
+
+  // Its hours of the day, the newest first.
+  SectionHeading(_canvas, "ITS HOURS, THE DAY");
+  std::size_t hours = 0;
+  for (auto record = records.rbegin(); record != records.rend(); ++record)
+  {
+    const std::vector<std::string_view> words = WordsOf(*record);
+    if (!IsSeatsRecord(words, "hour", _seat))
+      continue;
+    WindowLine(_canvas,
+               std::format("{}{}Ore {}{}{:+.2f} a second{}fleet {} / {}{}{} nodes{}{} researched",
+                           Outpost::UniverseTime(NumberOf(words[1]).value_or(0), perSecond), DOT,
+                           Outpost::WithThousands(SignedAfter(words, "ore").value_or(0)), DOT,
+                           static_cast<double>(SignedAfter(words, "income").value_or(0)) / 100.0, DOT,
+                           NumberAfter(words, "fleet").value_or(0), NumberAfter(words, "cap").value_or(0), DOT,
+                           NumberAfter(words, "nodes").value_or(0), DOT, NumberAfter(words, "researched").value_or(0)),
+               theme.textColor);
+    WindowLine(_canvas,
+               std::format("its player {}, its deputy {}{}{} orders, {} refused",
+                           Outpost::MinutesAndSeconds(NumberAfter(words, "present").value_or(0)),
+                           Outpost::MinutesAndSeconds(NumberAfter(words, "deputy").value_or(0)), DOT,
+                           Outpost::WithThousands(static_cast<std::int64_t>(NumberAfter(words, "orders").value_or(0))),
+                           NumberAfter(words, "refused").value_or(0)),
+               theme.dimTextColor);
+    ++hours;
+  }
+  if (hours == 0)
+    WindowLine(_canvas, "No hour of it in the day yet.", theme.dimTextColor);
+
+  // What waits for its player: the report the server keeps while its deputy plays it, and its scheduled orders.
+  SectionHeading(_canvas, "WHAT WAITS FOR ITS PLAYER");
+  if (seat != nullptr && seat->away.has_value())
+  {
+    const Outpost::AwayReport& away = *seat->away;
+    WindowLine(_canvas,
+               std::format("Its deputy has played it since {}, for {}.", Outpost::UniverseTime(away.sinceTick, perSecond),
+                           SpanText(away.sinceTick, latest->health.tick, perSecond)),
+               theme.textColor);
+    WindowLine(_canvas,
+               std::format("Built {} ships and {} structures; lost {} ships and {} structures.", away.shipsBuilt, away.structuresBuilt,
+                           away.shipsLost, away.structuresLost),
+               theme.textColor);
+    WindowLine(_canvas, std::format("Sectors gained: {}; lost: {}.", SectorsText(away.sectorsGained), SectorsText(away.sectorsLost)),
+               theme.textColor);
+    WindowLine(_canvas,
+               away.ordersFired.empty() ? std::string("No scheduled order of its fired.")
+                                        : std::format("{} of its scheduled orders fired.", away.ordersFired.size()),
+               theme.textColor);
+  }
+  else if (ai)
+    WindowLine(_canvas, "An AI empire's seat has no player.", theme.dimTextColor);
+  else if (seat != nullptr && seat->play == Outpost::SeatPlay::Player)
+    WindowLine(_canvas, "Nothing waits: its player plays it.", theme.dimTextColor);
+  else
+    WindowLine(_canvas, "Nothing waits: its player has not held it since its deputy took it.", theme.dimTextColor);
+  if (!ai)
+  {
+    const std::optional<Outpost::Snapshot>& view = _model.View();
+    if (!view.has_value() || view->player != _seat)
+      WindowLine(_canvas, "Its scheduled orders show once its sight comes.", theme.dimTextColor);
+    else if (view->scheduled.empty())
+      WindowLine(_canvas, "No scheduled order waits.", theme.dimTextColor);
+    else
+    {
+      for (const Outpost::ScheduledOrderView& order : view->scheduled)
+      {
+        const auto action = static_cast<std::size_t>(order.action.kind);
+        WindowLine(_canvas,
+                   std::format("Order {}{}{}{}{}{}{} ships", order.id, DOT,
+                               action < ACTION_NAMES.size() ? ACTION_NAMES[action] : "an order", DOT, TriggerText(order.trigger, perSecond),
+                               DOT, order.ships.size()),
+                   theme.textColor);
+      }
+    }
+  }
+  tree.End();
+  _canvas.EndScroll();
+}
+
 } // namespace
 
 Outpost::OverseerScreen::OverseerScreen(std::vector<Hud::SideColor> _seatColors)
@@ -1180,6 +1475,17 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
     "seats", columns,
     Neuron::TableSorted{.column = sortColumn, .sort = m_sortDescending ? Neuron::TableSort::Descending : Neuron::TableSort::Ascending},
     rows, {.grow = 1.0f});
+  // The picked seat's action bar, at the table's foot (owner, 2026-10-28): its window, and the seat's actions to come.
+  if (m_picked.has_value())
+  {
+    (void)tree.Add({.heightUnits = CELL_GAP_UNITS});
+    (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Center});
+    (void)canvas.Label(Fitted(std::format("Seat {} picked", m_picked->value), Hud::Typeface::Name, NAME_LINE_UNITS), Hud::Theme().textColor,
+                       {.grow = 1.0f});
+    (void)canvas.Button("seat button", {.label = "Seat", .payload = PayloadOf(PressKind::SeatWindow, 0)},
+                        {.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS});
+    tree.End();
+  }
   canvas.EndPanel();
   tree.End();
 
@@ -1234,9 +1540,10 @@ void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerMo
   const auto index = static_cast<std::size_t>(_window);
   const Neuron::Theme& theme = Hud::Theme();
   Neuron::Canvas canvas(theme, _metrics, m_interaction, _screenWidthUnits, _screenHeightUnits);
-  const Neuron::WidgetId widget = m_interaction.IdOf("server window");
-  const std::string title = "SERVER";
-  const float width = SERVER_WINDOW_UNITS;
+  const bool server = _window == OverseerWindow::Server;
+  const Neuron::WidgetId widget = m_interaction.IdOf(server ? "server window" : "seat window");
+  const std::string title = server ? std::string("SERVER") : std::format("SEAT {}", m_seatShown.value);
+  const float width = server ? SERVER_WINDOW_UNITS : SEAT_WINDOW_UNITS;
   m_titleBars[index] = canvas.TitleBarOf(widget);
   m_closeBoxes[index] = canvas.CloseBoxOf(widget);
   const Neuron::LayoutStyle body{.padding = {.left = PADDING, .top = PADDING, .right = PADDING, .bottom = PADDING},
@@ -1251,10 +1558,15 @@ void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerMo
     m_windows.Settle(_window, corner);
     frame = canvas.BeginWindow(widget, title, corner, width, body, most);
   }
-  else
+  else if (server)
     frame =
       canvas.BeginWindow(widget, title, Neuron::LayoutAnchor::TopRight, {.top = WINDOW_TOP_UNITS, .right = MARGIN}, width, body, most);
-  LayServerWindow(canvas, _model, width - (2.0f * PADDING));
+  else
+    frame = canvas.BeginWindow(widget, title, Neuron::LayoutAnchor::TopLeft, {.left = MARGIN, .top = WINDOW_TOP_UNITS}, width, body, most);
+  if (server)
+    LayServerWindow(canvas, _model, width - (2.0f * PADDING));
+  else
+    LaySeatWindow(canvas, _model, m_seatShown, width - (2.0f * PADDING));
   canvas.EndWindow();
   m_windowLayers[index] = m_layout.LayerCount();
   canvas.Finish(m_layout);
@@ -1340,6 +1652,10 @@ void Outpost::OverseerScreen::Press(std::uint32_t _payload)
   case PressKind::ServerWindow:
     OpenServerWindow();
     break;
+  case PressKind::SeatWindow:
+    if (m_picked.has_value())
+      OpenSeatWindow(*m_picked);
+    break;
   }
 }
 
@@ -1375,6 +1691,12 @@ void Outpost::OverseerScreen::WatchFullSight()
 void Outpost::OverseerScreen::OpenServerWindow()
 {
   m_windows.Open(OverseerWindow::Server);
+}
+
+void Outpost::OverseerScreen::OpenSeatWindow(PlayerId _seat)
+{
+  m_seatShown = _seat;
+  m_windows.Open(OverseerWindow::Seat);
 }
 
 void Outpost::OverseerScreen::CloseWindow(OverseerWindow _window) noexcept

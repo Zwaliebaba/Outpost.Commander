@@ -107,12 +107,20 @@ public:
   // Full sight again, and no seat picked, as the map's All cell gives it.
   void WatchFullSight();
 
-  // Opens the server window at the front, as the header's Server button does, or closes a window, as its close box does.
+  // Opens the server window at the front, as the header's Server button does; the seat window on _seat, as the Seat button
+  // of the picked row's action bar does; or closes a window, as its close box does.
   void OpenServerWindow();
+  void OpenSeatWindow(PlayerId _seat);
   void CloseWindow(OverseerWindow _window) noexcept;
   [[nodiscard]] bool IsOpen(OverseerWindow _window) const noexcept
   {
     return m_windows.IsOpen(_window);
+  }
+
+  // The seat the seat window shows.
+  [[nodiscard]] PlayerId SeatShown() const noexcept
+  {
+    return m_seatShown;
   }
   void FilterLog(LogFilter _filter);
 
@@ -159,6 +167,7 @@ private:
   SeatFilter m_filter = SeatFilter::All;
   LogFilter m_logFilter = LogFilter::All;
   std::optional<PlayerId> m_picked;
+  PlayerId m_seatShown;
   std::optional<PlayerId> m_sightPicked;
 };
 
