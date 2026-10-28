@@ -97,9 +97,9 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | merged, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
 | CV9.1 | The scroll view | CV3.4 | — | merged, [#153](https://github.com/Zwaliebaba/Outpost.Commander/pull/153) |
 | CV10.1 | The hint clear of the build window | CV8.3 | C9 | dropped (owner, 2026-10-28): the console plan's CN1 deleted the build window, [#158](https://github.com/Zwaliebaba/Outpost.Commander/pull/158) |
-| CV10.2 | The designer's "SAVED" label has its room | CV7.1 | — | in review |
-| CV10.3 | The windows open clear of the column under the Ore | CV8.1 | C10 | in review |
-| CV10.4 | The hint and the banner over the windows | CV8.3 | C11 | in review |
+| CV10.2 | The designer's "SAVED" label has its room | CV7.1 | — | in review, [#164](https://github.com/Zwaliebaba/Outpost.Commander/pull/164) |
+| CV10.3 | The windows open clear of the column under the Ore | CV8.1 | C10 | in review, [#164](https://github.com/Zwaliebaba/Outpost.Commander/pull/164) |
+| CV10.4 | The hint and the banner over the windows | CV8.3 | C11 | in review, [#164](https://github.com/Zwaliebaba/Outpost.Commander/pull/164) |
 
 ### Milestone order
 
