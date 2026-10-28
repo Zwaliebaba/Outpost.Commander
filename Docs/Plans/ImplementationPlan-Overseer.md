@@ -34,7 +34,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | in review; awaiting the owner's run |
 | OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | built, on OV4's branch |
 | OV4.2 | Needs attention and who played | OV4.1 | — | built, on OV4's branch; awaiting the owner's run |
-| OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | todo |
+| OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | built, on OV4's branch; awaiting the owner's run |
 | OV5.1 | The seat window, the server window and the header states | OV4 | — | todo |
 | OV6.1 | Save now and Stop | OV5 | — | todo |
 | OV6.2 | Drop link and New token | OV6.1 | D2, D3 | todo |
@@ -259,9 +259,11 @@ What the overview lacks after OV3: what needs the owner's attention, who played 
 
 - **The overseer's model takes no lanes' record twice.** The log's last records, which the server sends again after the welcome, held lanes' records the welcome gave and older ones the day had dropped, and an old `start 0 new` among them went back past every record of the day; a lanes' record the stream brings is now taken only when it is of the day and not yet kept.
 - **A hand-over to the play a seat already has continues its span,** and only a recovery's `start` is a mark across the lanes: a new universe's is where its lanes begin.
-- **The overview's body:** the middle column holds a row 360 units tall over the seat table, what needs attention in it now, the map beside it with OV4.3; the right column, 560 units wide, holds who played over the universe log.
-- **The acceptance's names as built:** `LaneRecordsTests`, three; `UniverseLogTests.ReadsTheLanesRecords`; `OverseerLinkTests.WelcomesWithTheLanesRecords`; `OverseerModelTests.KeepsADayOfTheLanesRecords` and `TakesNoLanesRecordTwice`; `OverseerAttentionTests`, four; and `OverseerScreenTests.ShowsWhatNeedsAttention`, `FiltersTheSeatsThatNeedALook` and `DrawsWhoPlayed`.
-- **Run in the container:** the server's suites, and `GameAppTests`' overseer suites, pass on the clang 18 harnesses OV3 used, but the QUIC tests and `NeuronCoreTests`' two `FileSysTests`, which this milestone does not touch and the Linux harness fails; `HudTests.LaysOutTheOrdersWindow` still fails there on the stand-in fonts, at OV4's base as after it.
+- **The overview's body:** the middle column holds a row 360 units tall over the seat table, the map at its left, 330 units wide around a square of 306, and what needs attention beside it; the right column, 560 units wide, holds who played over the universe log.
+- **Full sight carries the map's size,** which `Simulation::BuildFullSight` had left at zero, so that the map had nothing to be drawn to; a seat's snapshot carried it already.
+- **The map's heading says whose sight the view shows,** from the view's own player, not the pick: a pick reads as full sight until the seat's first view comes.
+- **The acceptance's names as built:** `LaneRecordsTests`, three; `UniverseLogTests.ReadsTheLanesRecords`; `OverseerLinkTests.WelcomesWithTheLanesRecords`; `OverseerModelTests.KeepsADayOfTheLanesRecords` and `TakesNoLanesRecordTwice`; `OverseerAttentionTests`, four; `OverseerScreenTests.ShowsWhatNeedsAttention`, `FiltersTheSeatsThatNeedALook`, `DrawsWhoPlayed` and `DrawsTheMap`, with `HoldsTheLayoutAndContrastGuards` run over a view; and `FogTests.FullSightSeesThroughTheFog`, with the map's size.
+- **Run in the container:** the server's suites, and `GameAppTests`' overseer suites, pass on the clang 18 harnesses OV3 used, but the QUIC tests and `NeuronCoreTests`' two `FileSysTests`, which this milestone does not touch and the Linux harness fails; `HudTests.LaysOutTheOrdersWindow` still fails there on the stand-in fonts, at OV4's base as after it. The overview's display list at 1920×1080, written out as an image with the stand-in fonts, shows each region where it is laid out, the map's sector washes and marks in the seats' colors, and the lanes.
 - **Not run in the container:** the QUIC tests, the executable, and the guards with the fonts Windows installs.
 
 ---

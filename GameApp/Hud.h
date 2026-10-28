@@ -794,6 +794,10 @@ public:
   // Each player's color, from the set _catalog draws it with.
   [[nodiscard]] static std::vector<SideColor> SideColorsOf(const ModelCatalog& _catalog);
 
+  // The minimap's drawing (ADR-100 decision 7) into _square of _layout, in pixels, which becomes its minimap: _content's
+  // sectors, marks and fog at _scale, without the camera's view, as the overseer draws its map (ADR-102 decision 7).
+  static void DrawMinimap(Layout& _layout, const Rect& _square, const Content& _content, float _scale);
+
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
                                         std::optional<Action> _hovered = std::nullopt, std::uint32_t _ticksPerSecond = 0,

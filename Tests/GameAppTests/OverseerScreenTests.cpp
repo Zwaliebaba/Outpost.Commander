@@ -34,7 +34,7 @@ Outpost::OverseerWelcomeMessage Welcome()
                     {.player = Outpost::PlayerId{4}, .ai = "Hard"}},
           .recoveredSaveTick = 1'200,
           .replayedCommands = 7,
-          .laneRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 36000 player 1 player",
+          .laneRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
                           "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
                           "battle 70000 70100 sector 3 player 3 deputy player 2 ai"}};
 }
@@ -197,6 +197,46 @@ const Neuron::CanvasRect& RowFaceOf(const Neuron::DrawList& _layout, std::uint32
 bool Same(const DirectX::XMFLOAT4& _first, const DirectX::XMFLOAT4& _second) noexcept
 {
   return _first.x == _second.x && _first.y == _second.y && _first.z == _second.z && _first.w == _second.w;
+}
+
+// _model given a view of a map 4 km across, in full sight or _seat's: the sector at its south-west held by seat 1, seat 1's
+// ship in it, and seat 3's structure in the north-east.
+void TellView(Outpost::OverseerModel& _model, Outpost::PlayerId _seat)
+{
+  Outpost::Snapshot view{.tick = HOUR_TICK, .player = _seat};
+  view.mapSizeMeters = 4'000.0f;
+  view.sectors = {
+    {.id = 1, .minXMeters = -2'000.0f, .maxXMeters = 0.0f, .minZMeters = -2'000.0f, .maxZMeters = 0.0f, .holder = Outpost::PlayerId{1}},
+    {.id = 2, .minXMeters = 0.0f, .maxXMeters = 2'000.0f, .minZMeters = 0.0f, .maxZMeters = 2'000.0f}};
+  view.entities = {{.id = Outpost::EntityId{1},
+                    .kind = Outpost::EntityKind::Ship,
+                    .owner = Outpost::PlayerId{1},
+                    .position = {.xMeters = -1'000.0f, .zMeters = -1'000.0f},
+                    .radiusMeters = 10.0f},
+                   {.id = Outpost::EntityId{2},
+                    .kind = Outpost::EntityKind::Structure,
+                    .owner = Outpost::PlayerId{3},
+                    .position = {.xMeters = 1'000.0f, .zMeters = 1'000.0f},
+                    .radiusMeters = 40.0f}};
+  Assert::IsTrue(_model.TakeView(Outpost::EncodeMessage(Outpost::StateMessage{.snapshot = std::move(view)})).has_value());
+}
+
+// The map's square at 1920×1080, 306 units across, and how many of the panels drawn in it are of _color.
+const Neuron::CanvasRect* MapSquareOf(const Neuron::DrawList& _layout)
+{
+  const auto square = std::ranges::find_if(_layout.panels, [](const Neuron::CanvasRect& _panel)
+                                           { return _panel.width == 306.0f && _panel.height == 306.0f; });
+  return square != _layout.panels.end() ? &*square : nullptr;
+}
+
+std::ptrdiff_t MarksIn(const Neuron::DrawList& _layout, const Neuron::CanvasRect& _square, const DirectX::XMFLOAT4& _color)
+{
+  return std::ranges::count_if(_layout.panels,
+                               [&](const Neuron::CanvasRect& _panel)
+                               {
+                                 return Same(_panel.color, _color) && _panel.width < _square.width &&
+                                        _square.Contains(_panel.left + (_panel.width / 2.0f), _panel.top + (_panel.height / 2.0f));
+                               });
 }
 } // namespace
 
@@ -373,7 +413,8 @@ public:
   // meet, and each stands at 4.5:1, with a seat picked.
   TEST_METHOD(HoldsTheLayoutAndContrastGuards)
   {
-    const Scripted scripted;
+    Scripted scripted;
+    TellView(scripted.model, Outpost::PlayerId{});
     const Outpost::OverseerModel& model = scripted.model;
     std::wstring offenders;
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
@@ -446,7 +487,8 @@ public:
     };
     Assert::AreEqual(std::ptrdiff_t{1}, drawn(BLUE, Neuron::CanvasFill::Solid), L"seat 1's player, from tick 36,000");
     Assert::AreEqual(std::ptrdiff_t{1}, drawn(BLUE, Neuron::CanvasFill::Hatched), L"seat 1's deputy, before it");
-    Assert::AreEqual(std::ptrdiff_t{1}, drawn(Outpost::OVERSEER_SEAT_PALETTE[0], Neuron::CanvasFill::Hatched), L"seat 3's deputy, all day");
+    Assert::AreEqual(std::ptrdiff_t{1}, drawn(Outpost::OVERSEER_SEAT_PALETTE[0], Neuron::CanvasFill::Hatched),
+                     L"seat 3's deputy, all day, its hand-over to its deputy at 71,000 going on");
     const Neuron::Theme& theme = Outpost::Hud::Theme();
     const auto marks = [&layout, &theme](float _width, float _height)
     {
@@ -459,6 +501,39 @@ public:
                      std::ranges::count_if(layout.panels, [&theme](const Neuron::CanvasRect& _panel)
                                            { return Same(_panel.color, theme.labelColor) && _panel.width == 2.0f; }),
                      L"the recovery's mark across each player's lane");
+  }
+
+  // ADR-102 decision 7: the map draws the view, every seat in the color the seat table marks it with, under a heading that says
+  // whose sight it shows; a seat's pick shows once its sight comes, and the All cell gives full sight back.
+  TEST_METHOD(DrawsTheMap)
+  {
+    Scripted scripted;
+    OverseerScreen screen({{.player = Outpost::PlayerId{1}, .color = BLUE}});
+    const Neuron::DrawList& before = Lay(screen, scripted.model, NOW);
+    Assert::IsTrue(Shows(before, "MAP \xC2\xB7 FULL SIGHT") && Shows(before, "No view yet."), Texts(before).c_str());
+    Assert::IsNull(MapSquareOf(before), L"no map without a view");
+
+    TellView(scripted.model, Outpost::PlayerId{});
+    const Neuron::DrawList& full = Lay(screen, scripted.model, NOW);
+    const Neuron::CanvasRect* square = MapSquareOf(full);
+    Assert::IsNotNull(square, L"the map's square");
+    Assert::IsTrue(MarksIn(full, *square, BLUE) >= 1, L"seat 1's ship in its set's color");
+    Assert::IsTrue(MarksIn(full, *square, Outpost::OVERSEER_SEAT_PALETTE[0]) >= 1, L"seat 3's structure in the overseer's");
+    Assert::IsFalse(Shows(full, "No view yet."));
+
+    screen.Pick(Outpost::PlayerId{3});
+    Assert::IsTrue(screen.TakeSight() == Outpost::PlayerId{3});
+    Assert::IsTrue(Shows(Lay(screen, scripted.model, NOW), "MAP \xC2\xB7 FULL SIGHT"), L"what the view shows, until the seat's comes");
+    TellView(scripted.model, Outpost::PlayerId{3});
+    const Neuron::DrawList& seat = Lay(screen, scripted.model, NOW);
+    Assert::IsTrue(Shows(seat, "MAP \xC2\xB7 SEAT 3'S SIGHT"), Texts(seat).c_str());
+
+    constexpr std::uint32_t ALL = 5u << 16;
+    screen.Input(PressOn(seat, [](const Neuron::CanvasRegion& _region) { return _region.payload == ALL; }));
+    Assert::IsTrue(screen.TakeSight() == Outpost::PlayerId{}, L"full sight again");
+    Assert::IsFalse(screen.Picked().has_value());
+    screen.Input(PressOn(Lay(screen, scripted.model, NOW), [](const Neuron::CanvasRegion& _region) { return _region.payload == ALL; }));
+    Assert::IsFalse(screen.TakeSight().has_value(), L"pressed in full sight, nothing changes");
   }
 
   TEST_METHOD(WritesUniverseTimeAndBytes)

@@ -22,8 +22,8 @@ inline constexpr std::array<DirectX::XMFLOAT4, 6> OVERSEER_SEAT_PALETTE{{{0.1f, 
 
 // The overseer's overview (ADR-102; Game §session.overseer), built on the canvas in the game's look (ADR-100) and laid out on
 // the 1920×1080 reference frame scaled to the window, as the HUD is (ADR-006 decision 5), from what its model knows: the
-// header, the health tiles, what needs attention, the seat table, who played over the last day, and the universe log. It keeps what its widgets share and what the owner picked
-// on it, and no GPU state: the shell draws its display list.
+// header, the health tiles, the map, what needs attention, the seat table, who played over the last day, and the universe log.
+// It keeps what its widgets share and what the owner picked on it, and no GPU state: the shell draws its display list.
 class OverseerScreen
 {
 public:
@@ -81,7 +81,7 @@ public:
                               const Hud::TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels);
 
   // The frame's input, against the overview as it was last laid out: where the pointer is, its presses and the wheel. A press
-  // on a heading, a filter's cell or a row does what the matching call below does.
+  // on a heading, a filter's cell, a row or the map's All cell does what the matching call below does.
   void Input(const Neuron::InputState& _input);
 
   // The seat table sorted by _column, ascending, or the other way when it sorts by it already.
@@ -89,6 +89,8 @@ public:
   void Filter(SeatFilter _filter);
   // _seat picked, whose sight the server sends from here on; or, picked already, full sight again.
   void Pick(PlayerId _seat);
+  // Full sight again, and no seat picked, as the map's All cell gives it.
+  void WatchFullSight();
   void FilterLog(LogFilter _filter);
 
   // The sight the owner picked since the last call, which the link tells the server: a seat's, or full sight with no player;
@@ -114,7 +116,8 @@ private:
 
   std::vector<Hud::SideColor> m_seatColors;
   Neuron::Interaction m_interaction;
-  Neuron::DrawList m_layout;
+  // A HUD's layout, since the map is the minimap's drawing (Hud::DrawMinimap).
+  Hud::Layout m_layout;
   SeatColumn m_sortColumn = SeatColumn::Seat;
   bool m_sortDescending = false;
   SeatFilter m_filter = SeatFilter::All;

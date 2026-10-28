@@ -44,6 +44,11 @@ constexpr float BATTLE_MARK_UNITS = 8.0f;
 constexpr float START_MARK_UNITS = 2.0f;
 // The filters' cells, this far apart, and the gap under them.
 constexpr float CELL_GAP_UNITS = 4.0f;
+// The map, at the top row's left: its square, as tall as the row leaves under the map's heading, its panel around it, and the
+// cell that gives full sight back.
+constexpr float MAP_SQUARE_UNITS = TOP_ROW_UNITS - (2.0f * PADDING) - CELL_UNITS - CELL_GAP_UNITS;
+constexpr float MAP_PANEL_UNITS = MAP_SQUARE_UNITS + (2.0f * PADDING);
+constexpr float ALL_CELL_UNITS = 56.0f;
 // How far a notch of the wheel scrolls the table and the log: three name lines.
 constexpr float WHEEL_NOTCH_UNITS = 3.0f * NAME_LINE_UNITS;
 
@@ -56,7 +61,8 @@ enum class PressKind : std::uint32_t
   Sort = 1,
   Filter,
   Seat,
-  LogFilter
+  LogFilter,
+  FullSight
 };
 
 constexpr std::uint32_t PayloadOf(PressKind _kind, std::uint32_t _which) noexcept
@@ -577,6 +583,53 @@ void LayAttention(Neuron::Canvas& _canvas, std::span<const Outpost::Attention> _
   _canvas.EndPanel();
 }
 
+// The map (ADR-102 decision 7): the heading says whose sight the view shows, full sight or a seat's, beside a cell that gives
+// full sight back, lit while no seat is picked; under them the square the minimap's drawing goes into once the canvas has
+// placed it, which this returns, none while there is no view to draw.
+std::size_t LayMap(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, const OverseerScreen& _screen)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const std::optional<Outpost::Snapshot>& view = _model.View();
+  (void)BeginPanel(_canvas, {.widthUnits = MAP_PANEL_UNITS});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = CELL_UNITS, .gapUnits = CELL_GAP_UNITS, .alignY = Neuron::LayoutAlign::Center});
+  const std::string sight =
+    view.has_value() && view->player.IsValid() ? std::format("SEAT {}'S SIGHT", view->player.value) : std::string("FULL SIGHT");
+  (void)_canvas.Label({.text = std::format("MAP{}{}", DOT, sight),
+                       .font = Hud::FontOf(Hud::Typeface::Label),
+                       .lineUnits = NAME_LINE_UNITS,
+                       .trackingUnits = LABEL_TRACKING_UNITS,
+                       .flow = Neuron::TextFlow::Fit},
+                      theme.labelColor, {.grow = 1.0f});
+  const std::array<Neuron::LayoutText, 1> all{
+    Neuron::LayoutText{.text = "All", .font = Hud::FontOf(Hud::Typeface::Label), .lineUnits = DETAIL_LINE_UNITS}};
+  const std::array<std::uint32_t, 1> payload{PayloadOf(PressKind::FullSight, 0)};
+  _canvas.Cells("full sight", all, payload, _screen.Picked().has_value() ? std::nullopt : std::optional<std::size_t>{0}, CELL_UNITS,
+                {.widthUnits = ALL_CELL_UNITS});
+  tree.End();
+  (void)tree.Add({.heightUnits = CELL_GAP_UNITS});
+  std::size_t square = Neuron::LayoutNode::NO_NODE;
+  if (view.has_value() && view->mapSizeMeters > 0.0f)
+    square = tree.Add({.widthUnits = MAP_SQUARE_UNITS, .heightUnits = MAP_SQUARE_UNITS});
+  else
+    (void)_canvas.Label(Fitted("No view yet.", Hud::Typeface::Name, NAME_LINE_UNITS), theme.dimTextColor);
+  _canvas.EndPanel();
+  return square;
+}
+
+// What the map draws of _view: the minimap's content, every seat in the color the seat table marks it with, and no fog, since
+// a seat's own snapshot holds only what the seat sees, and full sight sees through it.
+Hud::Content MapContentOf(const Outpost::Snapshot& _view, const Outpost::OverseerWelcomeMessage& _welcome, const OverseerScreen& _screen)
+{
+  Hud::Content content = Hud::Describe(_view, _view.entities, {});
+  content.sideColors.clear();
+  content.sideColors.reserve(_welcome.seats.size());
+  for (const Outpost::OverseerSeat& seat : _welcome.seats)
+    content.sideColors.push_back({.player = seat.player, .color = _screen.SeatColor(seat.player)});
+  content.fog = false;
+  return content;
+}
+
 // Who played a seat in a span of its lane, from one tick to another.
 struct LaneSpan
 {
@@ -776,9 +829,10 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
   (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
   (void)tree.Begin(Neuron::LayoutKind::Column, {.gapUnits = MARGIN, .alignX = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
 
-  // Over the seat table, what needs attention.
+  // Over the seat table, the map and what needs attention.
   const std::vector<Attention> attention = AttentionOf(_model);
   (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = TOP_ROW_UNITS, .gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Stretch});
+  const std::size_t mapSquare = LayMap(canvas, _model, *this);
   LayAttention(canvas, attention, _model.LatestHealth() != nullptr);
   tree.End();
 
@@ -850,6 +904,15 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
   tree.End();
   m_layout = {};
   canvas.Finish(m_layout);
+  // The map's drawing, into its square as the canvas placed it, as the HUD draws its minimap.
+  const std::optional<Snapshot>& view = _model.View();
+  const std::optional<OverseerWelcomeMessage>& welcome = _model.Welcome();
+  if (mapSquare != Neuron::LayoutNode::NO_NODE && view.has_value() && welcome.has_value())
+  {
+    const Neuron::LayoutNode& square = tree.Node(mapSquare);
+    Hud::DrawMinimap(m_layout, {square.leftUnits * scale, square.topUnits * scale, square.widthUnits * scale, square.heightUnits * scale},
+                     MapContentOf(*view, *welcome, *this), scale);
+  }
   return m_layout;
 }
 
@@ -900,6 +963,9 @@ void Outpost::OverseerScreen::Press(std::uint32_t _payload)
     if (which < LOG_FILTERS.size())
       FilterLog(static_cast<LogFilter>(which));
     break;
+  case PressKind::FullSight:
+    WatchFullSight();
+    break;
   }
 }
 
@@ -924,6 +990,12 @@ void Outpost::OverseerScreen::Pick(PlayerId _seat)
   }
   m_picked = _seat;
   m_sightPicked = _seat;
+}
+
+void Outpost::OverseerScreen::WatchFullSight()
+{
+  if (m_picked.has_value())
+    Pick(*m_picked);
 }
 
 void Outpost::OverseerScreen::FilterLog(LogFilter _filter)

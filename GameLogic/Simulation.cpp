@@ -1194,6 +1194,7 @@ Outpost::Snapshot Outpost::Simulation::BuildFullSight() const
 {
   Snapshot snapshot{.tick = m_tick, .shots = m_shots, .destroyed = m_destroyed};
   snapshot.sectors = SectorViews();
+  snapshot.mapSizeMeters = 2.0f * m_mapHalfSizeMeters;
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
   {
