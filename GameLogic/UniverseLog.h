@@ -137,9 +137,9 @@ public:
   // The last _count lines of the log in _file, oldest first, read from its end; none when it cannot be read.
   [[nodiscard]] static std::vector<std::string> ReadLastRecords(const std::filesystem::path& _file, std::size_t _count);
 
-  // The records of the log in _file that the overseer's lanes are drawn from, as KeepLaneRecords keeps them since _sinceTick;
+  // The records of the log in _file that the overseer's lanes and windows are drawn from, as KeepDayRecords keeps them since _sinceTick;
   // none when it cannot be read. It reads the whole log, once, as the overseer's link is made.
-  [[nodiscard]] static std::deque<std::string> ReadLaneRecords(const std::filesystem::path& _file, std::uint64_t _sinceTick);
+  [[nodiscard]] static std::deque<std::string> ReadDayRecords(const std::filesystem::path& _file, std::uint64_t _sinceTick);
 
 private:
   struct SeatState

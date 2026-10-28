@@ -1,6 +1,6 @@
 # Outpost Commander — The Universe Overseer
 
-Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D7, of which D1, D4, D5, D6 and D7 are decided
+Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D10, of which D1 and D4 to D10 are decided
 
 The overseer is the dedicated server's management console: a separate application, with a channel of its own to the server, that oversees the whole universe (Game §session.server). What it shows, how it reaches the server and what the server has to measure for it are [the proposal](UniverseOverseer.md)'s. This plan is the order the work is done in. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -30,12 +30,15 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
 | OV2.3 | The universe's view and the log's stream | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
 | OV2.4 | `Closing`, and the server's state | OV2.2 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
-| OV3.1 | The overseer's project, its window and its link | OV2 | D1, D5, D6 | in review; awaiting the owner's run |
-| OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | in review; awaiting the owner's run |
-| OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | built, on OV4's branch |
-| OV4.2 | Needs attention and who played | OV4.1 | — | built, on OV4's branch; awaiting the owner's run |
-| OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | built, on OV4's branch; awaiting the owner's run |
-| OV5.1 | The seat window, the server window and the header states | OV4 | — | todo |
+| OV3.1 | The overseer's project, its window and its link | OV2 | D1, D5, D6 | merged, [#161](https://github.com/Zwaliebaba/Outpost.Commander/pull/161); awaiting the owner's run |
+| OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | merged, [#161](https://github.com/Zwaliebaba/Outpost.Commander/pull/161); awaiting the owner's run |
+| OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162) |
+| OV4.2 | Needs attention and who played | OV4.1 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162); awaiting the owner's run |
+| OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162); awaiting the owner's run |
+| OV5.1 | A day of the windows' records at the welcome, and each away seat's report | OV4 | D8, D9 | built, on OV5's branch |
+| OV5.2 | The header states | OV4 | — | built, on OV5's branch; awaiting the owner's run |
+| OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | built, on OV5's branch; awaiting the owner's run |
+| OV5.4 | The seat window | OV5.3 | D8, D9, D10 | built, on OV5's branch; awaiting the owner's run |
 | OV6.1 | Save now and Stop | OV5 | — | todo |
 | OV6.2 | Drop link and New token | OV6.1 | D2, D3 | todo |
 
@@ -268,9 +271,67 @@ What the overview lacks after OV3: what needs the owner's attention, who played 
 
 ---
 
+## Milestone OV5 — The seat window, the server window and the header states
+
+What the overseer lacks after OV4: the server's state told whole in the header, and the two windows the proposal's §3 has, one a seat's and one the server's, which reach back over the day. One PR, laid out once OV4 merged (owner, 2026-10-28).
+
+### OV5.1 — A day of the windows' records at the welcome, and each away seat's report
+
+- **Proposal:** §3, the seat window and the server window; §4, the welcome and `Health`.
+- **Scope:**
+  - **The welcome's day of records reaches the windows' kinds** (gate D8): beside the lanes' `seat`, `start` and `battle`, each seat's `join` and `hour` records, and the server's `tick` and `dropped`, of the last day of universe time, which the server reads from the whole of `Universe.log` once and keeps as the log writes them, as OV4.1 keeps the lanes'. The lanes' records become the day's records under one helper, whose rule does not change: a recovery's `start` drops what was written past its tick, and each seat's last hand-over before the day stays. Saves, one a minute, are not among them: the log's last records hold hours of them.
+  - **Each away seat's report rides in its `SeatHealth`** (gate D9): what the server keeps for its player while its deputy plays it (ADR-080 decision 7), the tick the deputy took it, ships and structures built and lost, sectors gained and lost, and the scheduled orders that fired. The server's thread keeps it with the seat's second.
+  - **The overseer's model keeps the day's records** as it keeps the lanes', for the day that ends at the newest tick.
+- **ADR:** [ADR-101](../ADR/ADR-101-the-overseers-channel.md) decisions 5 and 7; [ADR-103](../ADR/ADR-103-the-overseer-application.md) decision 6.
+- **Acceptance:** the day's records' tests in `GameProtocolTests`, with joins, hours, long and dropped ticks kept for the day and a save not; `OverseerProtocolTests` with a seat's report; `UniverseLogTests`, the day's records read from a whole log; `InProcessServerTests.KeepsEachSecondForTheOverseersHealth`, with an away seat's report; `OverseerLinkTests`, the welcome's day of records, over QUIC; `OverseerModelTests`.
+- **Verify:** the checkers; the container's tests; CI's Debug|x64 run for the QUIC test.
+
+### OV5.2 — The header states
+
+- **Proposal:** §3, header states.
+- **Scope:** the header tells the server's state as the proposal's table has it: Running while `Health` comes and the tick moves; Stalled while `Health` comes and the tick has not moved for 2 s, since when and how much wall time has gone unrun; No word after 3 s without `Health` or without a connection, the last word's time and tick, and that the overseer joins again every 2 s; Stopped, once `Closing` said the owner or Windows stopped the server, when and the tick of its last save; and Failed, once `Closing` carried a failure, its message and the save it comes back from. Stopped and Failed hold until a connection's welcome.
+- **ADR:** ADR-103 decision 7.
+- **Acceptance:** `OverseerScreenTests`: each state from a scripted model, Stalled told from Running by the tick and from No word by `Health` still coming, and the guards.
+- **Verify:** the checkers; the container's tests; CI; the owner's run.
+
+### OV5.3 — The overseer's windows, and the server window
+
+- **Proposal:** §3, the server window; §6, a window stack of its own.
+- **Scope:**
+  - **The overseer's windows** stand over the overview on a `WindowStack` of the overseer's own, as the game's do (ADR-100), dragged by their title bars and closed by their close boxes: the server window, and the seat window, which shows the seat last opened.
+  - **The header's Server button opens the server window** (gate D10); OV6 sets Save now and Stop beside it.
+  - **The server window:** the tick split by part over the hour of `Health` the overseer holds; the longest tick of each minute of it against the 5 ms budget; the day's long ticks from the `tick` records, each with the parts that took most of it, and the ticks dropped from the `dropped` records; the saves the log's records hold, each with its size, encoding and write; the game's listener's connections and its joins by outcome since the server started; and the process.
+  - **Its charts are composites of the overseer's own,** bars filled on the canvas as who played's lanes are, so that the canvas gains no widget; the style guide gains their rule.
+- **ADR:** ADR-103 decision 7.
+- **Acceptance:** `OverseerScreenTests`: the Server button opening the window and its close box closing it, a drag, each section from a scripted model, and the guards with the window open.
+- **Verify:** the checkers; the container's tests; CI; the owner's run.
+
+### OV5.4 — The seat window
+
+- **Proposal:** §3, the seat window.
+- **Scope:**
+  - **Picking a seat's row sets an action bar under it,** whose Seat button opens the seat's window (gate D10); OV6 sets Drop link and New token on it.
+  - **The seat window:** the link over the last four hours, from the seat's `hour` records, the round trip at the median and the 95th percentile, loss, the largest backlog and the bytes sent of each hour, with the last hour heard a minute at a time from `Health`, and the time the link was down from its `join` records; every join of the last day with its outcome, the address it came from and the layout a game of another build named; the seat's hour records of the day; and what waits for its player, its report of the time away from `Health` (gate D9) and its scheduled orders, from its own view, which picking it watches.
+- **ADR:** ADR-103 decision 7.
+- **Acceptance:** `OverseerScreenTests`: the action bar under the picked row and its Seat button, each section from a scripted model, a seat with no records and one away, and the guards with the window open.
+- **Verify:** the checkers; the container's tests; CI; the owner's run against a running universe.
+
+### As built
+
+- **The lanes' records became the day's records,** `DayRecords.h` with `IsDayRecord`, `KeepDayRecords` and `DAY_RECORDS_SECONDS`, the welcome's `dayRecords` and the model's `DayRecords()`, since they now hold a seat's joins and hours and the server's long and dropped ticks beside the lanes'.
+- **An away seat's report reaches the overseer from `AwayReports`,** copied into the seat's `SeatHealth` as the server's thread keeps its second; a seat its player has never held has none.
+- **Stalled is measured between the `Health` that still comes,** from the first heard at the tick that stands to the latest, so that `Health` that stops coming reads as Running until No word, never as Stalled. No word no longer says how the server ended: Stopped and Failed do.
+- **The picked seat's action bar stands at the seat table's foot,** not under its row as gate D10 has it: the canvas's table has no room between its rows, and giving it some is a change to the table under ADR-100 that the bar does not need. It names the picked seat, "Seat 3 picked", beside its Seat button.
+- **One seat window, which shows the seat last opened,** rather than one a seat: each is as wide as the server window, and two would stand over each other.
+- **Each window is a canvas of its own,** laid out after the overview's canvas and the map, as the game's windows are, so that the map's drawing, which comes after the overview's canvas is finished, stays in the overview's layer under them.
+- **The acceptance's names as built:** `DayRecordsTests`, four, `KnowsTheDaysKinds` among them; `UniverseLogTests.ReadsTheDayRecords`; `OverseerProtocolTests`, with a seat's report; `OverseerLinkTests.WelcomesWithTheDayRecords`, with a join; `QuicTransportTests.TellsTheOverseerWhatAnAwayPlayerMisses`; `OverseerModelTests.KeepsTheDayRecords` and `TakesNoDayRecordTwice`; and `OverseerScreenTests.SaysStalledFailedAndStoppedByWindows`, `ShowsTheServerWindow`, `DragsAndClosesTheServerWindow` and `ShowsTheSeatWindow`, with `HoldsTheLayoutAndContrastGuards` run with both windows open.
+- **Run in the container:** the server's suites and `GameAppTests`' overseer suites pass on the clang 18 harnesses, but the QUIC tests, which `QuicTransportTests.cpp` and `OverseerLinkTests.cpp` compile against the stand-ins without running; `HudTests.LaysOutTheOrdersWindow` and `KeepsEveryTextInsideItsPanel` fail there on the stand-in fonts, on `main` alone as on this branch. The overview's display list at 1920×1080 with each window open, written out as an image layer by layer with the stand-in fonts, shows each window over the overview and its sections where they are laid out.
+- **Not run in the container:** the QUIC tests, the executable, and the guards with the fonts Windows installs. CI's run 729, of `eed5deb`, OV5.1, passed all six jobs, the QUIC tests among them.
+
+---
+
 ## Later milestones
 
 Each is laid out task by task when the one before it is merged, and its gates are decided.
 
-- **OV5 — The seat window, the server window and the header states.**
 - **OV6 — The actions:** Save now and Stop, then Drop link and New token as gates D2 and D3 decide.

@@ -317,9 +317,10 @@ public:
     Assert::IsTrue(online.connections >= 1, L"the game's listener holds its connection");
   }
 
-  // ADR-101 decision 7 (owner, 2026-10-28): each welcome carries the lanes' records of the last day of universe time, those the
-  // log held as the link was made and those written since, and how many seconds of ticks go between two saves.
-  TEST_METHOD(WelcomesWithTheLanesRecords)
+  // ADR-101 decision 7 (owner, 2026-10-28): each welcome carries the day's records of the last day of universe time, those the
+  // log held as the link was made and those written since, a join's among them, and how many seconds of ticks go between two
+  // saves.
+  TEST_METHOD(WelcomesWithTheDayRecords)
   {
     const PackagedHomeDirectory home;
     const TemporaryFolder folder;
@@ -342,15 +343,18 @@ public:
     { return _record.starts_with("seat ") && _record.ends_with(" player 1 player"); };
     Outpost::OverseerWelcomeMessage later;
     const auto deadline = std::chrono::steady_clock::now() + 10s;
-    while (!std::ranges::any_of(later.laneRecords, handedOver) && std::chrono::steady_clock::now() < deadline)
+    while (!std::ranges::any_of(later.dayRecords, handedOver) && std::chrono::steady_clock::now() < deadline)
     {
       (void)blue.Receive();
       std::this_thread::sleep_for(500ms);
       later = welcomed();
     }
-    Assert::IsTrue(std::ranges::any_of(later.laneRecords, handedOver), L"the hand-over written since the link was made");
-    Assert::IsTrue(std::ranges::any_of(later.laneRecords, starts), L"and the universe's start");
-    Assert::IsTrue(std::ranges::none_of(later.laneRecords, [](const std::string& _record) { return _record.starts_with("overseer "); }),
+    Assert::IsTrue(std::ranges::any_of(later.dayRecords, handedOver), L"the hand-over written since the link was made");
+    Assert::IsTrue(std::ranges::any_of(later.dayRecords, starts), L"and the universe's start");
+    Assert::IsTrue(std::ranges::any_of(later.dayRecords, [](const std::string& _record)
+                                       { return _record.starts_with("join ") && _record.contains(" welcomed player 1 "); }),
+                   L"and the join that took the seat");
+    Assert::IsTrue(std::ranges::none_of(later.dayRecords, [](const std::string& _record) { return _record.starts_with("overseer "); }),
                    L"and no record of another kind");
   }
 

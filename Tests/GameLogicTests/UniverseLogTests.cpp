@@ -247,20 +247,22 @@ public:
     Assert::IsTrue(Lines(out.str()) == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
   }
 
-  // ADR-101 decision 7: the lanes' records, read from the whole log as the overseer's link is made, of the day since a tick and
-  // each seat's last hand-over before it, a line ending in a carriage return read as its record.
-  TEST_METHOD(ReadsTheLanesRecords)
+  // ADR-101 decision 7: the day's records, read from the whole log as the overseer's link is made, of the day since a tick and
+  // each seat's last hand-over before it, a line ending in a carriage return read as its record; a save is not one.
+  TEST_METHOD(ReadsTheDayRecords)
   {
     const TemporaryFolder folder;
     const std::filesystem::path file = folder.Path() / Outpost::UNIVERSE_LOG_FILE;
     std::ofstream(file, std::ios::binary)
-      << "start 0 new\r\nseat 10 player 1 deputy\r\nsave 60 bytes 10 encode_us 5\r\n"
-         "seat 120 player 1 player\r\nbattle 130 150 sector 2 player 1 present\r\nhour 200 player 1\r\n";
-    Assert::IsTrue(Outpost::UniverseLog::ReadLaneRecords(file, 100) == std::deque<std::string>{"seat 10 player 1 deputy",
-                                                                                               "seat 120 player 1 player",
-                                                                                               "battle 130 150 sector 2 player 1 present"},
-                   L"the seat's hand-over before the day, and the day's");
-    Assert::IsTrue(Outpost::UniverseLog::ReadLaneRecords(folder.Path() / "None.log", 0).empty(), L"no log");
+      << "start 0 new\r\nseat 10 player 1 deputy\r\njoin 50 welcomed player 1 from 10.0.0.5\r\nsave 60 bytes 10 encode_us 5\r\n"
+         "seat 120 player 1 player\r\njoin 120 welcomed player 1 from 10.0.0.5\r\nbattle 130 150 sector 2 player 1 present\r\n"
+         "save 160 bytes 10 encode_us 5\r\ntick 180 us 7200 over 1 Movement 5000\r\ndropped 180 ticks 2\r\nhour 200 player 1\r\n";
+    Assert::IsTrue(Outpost::UniverseLog::ReadDayRecords(file, 100) ==
+                     std::deque<std::string>{"seat 10 player 1 deputy", "seat 120 player 1 player",
+                                             "join 120 welcomed player 1 from 10.0.0.5", "battle 130 150 sector 2 player 1 present",
+                                             "tick 180 us 7200 over 1 Movement 5000", "dropped 180 ticks 2", "hour 200 player 1"},
+                   L"the seat's hand-over before the day, and the day's, without its saves");
+    Assert::IsTrue(Outpost::UniverseLog::ReadDayRecords(folder.Path() / "None.log", 0).empty(), L"no log");
   }
 
   // ADR-101: once asked, the log keeps what it writes for the overseer's stream; and an overseer that connects is sent its last

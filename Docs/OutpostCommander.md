@@ -102,8 +102,10 @@ A session is everything between starting the game and closing it: the menu, a sk
 - **It needs a graphics card that runs Direct3D 12,** as the game does. On a server without one, the owner runs it from a PC on the server's network, with the universe's `Overseer.json` and the server's overseer address opened to that network (ADR-103 decision 4).
 - **It joins the server every 2 s while it has no connection,** and shows what it was last told meanwhile (ADR-103 decisions 5 and 6).
 - **Its header names the universe's folder and its server, says how the server is, and tells universe time and its tick** (ADR-103 decision 7):
-  - **Running** while the server says how it is, once a second.
-  - **No word** once 3 s have gone without that, or while there is no connection, saying how the server ended when it said so, why the connection went, and when the last word came.
+  - **Running** while the server says how it is, once a second, and its tick moves.
+  - **Stalled** while the server says how it is but its tick has stood for 2 s: its simulation's thread may be stuck, and the time it stands goes unrun.
+  - **No word** once 3 s have gone without word from the server, or while there is no connection, saying why the connection went and when the last word came.
+  - **Stopped** or **Failed** once the server said it was stopped, by its owner or by Windows, or failed, with the failure's message, when, and the save it comes back from, until the overseer joins it again.
 - **Its tiles tell how the server keeps up** (ADR-103 decision 7): the slowest of a hundred ticks over the last minute against the 5 ms budget, and the hour's slowest; the ticks a second and those dropped in the hour; the last save, how long ago, its size and how long it took; the bytes sent to the seats a second; and the server's memory, its share of a processor core and the disk free.
 - **Its seat table has a row a seat,** marked in the seat's color, its set's for the first two seats and the overseer's own for the rest: who plays it, whether its player is online, away or gone and since when, or that it fell and when it restarts, its connection's round trip, its orders over the last minute, its Ore and income, its fleet against its cap, its nodes and its research. It shows every seat, the players', the AI empires', the seats whose player is away or those that need a look; a press on a heading sorts it, and a press on a row watches that seat's sight, until it is pressed again (ADR-103 decision 7).
 - **Its map draws the universe's system as the game's minimap does,** the sectors by holder and every seat's ships and structures in the seat's color, in full sight or, while a seat is picked, as that seat sees it; its heading says whose sight it shows, and its All cell gives full sight back (ADR-103 decision 7).
@@ -113,6 +115,9 @@ A session is everything between starting the game and closing it: the menu, a sk
   - **With neither, All well,** and each check that passed.
 - **Its Who played panel draws the last day of universe time,** a lane a player's seat, solid in its color while its player played and hatched while its deputy did, each recovery a mark across them, and a lane of battles, filled where a player was present (ADR-103 decision 7).
 - **Its universe log** shows the log's records as they are written, the newest first, every record or the seats', the saves', the battles' or the server's own (ADR-103 decision 7).
+- **Its windows stand over the overview,** dragged by their title bars and closed by their close boxes (ADR-103 decision 7).
+- **A picked seat's Seat button, at the seat table's foot, opens its window** (ADR-103 decision 7): who plays it and how it stands; its link over the last four hours, each hour's round trip, loss, largest backlog and bytes sent, the last hour a minute at a time, and how long it was down; its joins of the last day, what came of each and where from; its hours of the day; and what waits for its player, what happened while its deputy played and its scheduled orders. It shows the seat last opened.
+- **The header's Server button opens the server window** (ADR-103 decision 7): where the tick's time goes, by part, over the last hour; the longest tick of each minute of the hour against the 5 ms budget; the day's long ticks and dropped ticks; the saves, each with its size and how long it took to encode and to write; the connections and the joins since the server started, by what came of them; and the server's process.
 
 ### Joining a universe [§session.join]
 

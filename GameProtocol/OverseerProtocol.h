@@ -87,7 +87,7 @@ struct OverseerSeat
 // protocol and universe state version, the tick rate, the universe's folder, its seats, its sectors without who holds them,
 // its asteroid fields, what it came back from as it started, the save of a tick and the commands logged after it that it
 // replayed, or none for a new universe (ADR-077), and how many seconds of ticks go between two saves; and the universe log's
-// records the overseer's lanes are drawn from, of the last LANE_SECONDS of universe time (KeepLaneRecords).
+// records the overseer's lanes and windows are drawn from, of the last DAY_RECORDS_SECONDS of universe time (KeepDayRecords).
 struct OverseerWelcomeMessage
 {
   std::uint64_t wireLayoutHash = 0;
@@ -101,7 +101,7 @@ struct OverseerWelcomeMessage
   std::optional<std::uint64_t> recoveredSaveTick;
   std::uint64_t replayedCommands = 0;
   std::uint32_t saveSeconds = 0;
-  std::vector<std::string> laneRecords;
+  std::vector<std::string> dayRecords;
 };
 
 // A seat's link to its player: none for an AI empire's seat, open while no connection has taken it, online while the player's
@@ -131,8 +131,9 @@ struct LinkFigures
 // One seat, as the server's thread last saw it, each second of ticks: its player and who plays it; its link and the tick it
 // became so, and, while it is gone and its player still plays, the tick the deputy takes it (ADR-079 decision 4); its
 // connection's figures; the commands applied for it and refused it in the second (ADR-094); its Ore, income in hundredths a
-// second, fleet in command points against its cap, nodes held and topics researched; and, while it has lost, the tick it
-// restarts at, or has waited since for its start to be free (ADR-084 decision 4).
+// second, fleet in command points against its cap, nodes held and topics researched; while it has lost, the tick it restarts
+// at, or has waited since for its start to be free (ADR-084 decision 4); and, while its deputy plays it for its player, the
+// report the server keeps of what its player misses, which its player is handed on coming back (ADR-080 decision 7).
 struct SeatHealth
 {
   PlayerId player;
@@ -150,6 +151,7 @@ struct SeatHealth
   std::int32_t nodes = 0;
   std::int32_t researched = 0;
   std::optional<std::uint64_t> restartTick;
+  std::optional<AwayReport> away;
 };
 
 // A battle under way, as the universe log keeps it (ADR-082): its sector, 0 for none, the tick it began, and the seats

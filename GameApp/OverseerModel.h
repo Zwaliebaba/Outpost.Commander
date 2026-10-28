@@ -10,9 +10,9 @@ struct HeardHealth
 };
 
 // What the overseer knows of its universe, from what the server said on its channel (ADR-101, ADR-103): the welcome; the
-// newest Health and the last hour of them; the universe log's records, and those its lanes are drawn from over the last day;
-// the newest view, whole; and how the server ended, once it has said. It holds no connection, so that a test hands it messages as bytes, and what it knew stays as it was
-// while no connection brings more. One thread at a time.
+// newest Health and the last hour of them; the universe log's records, and the day's records its lanes and windows are drawn
+// from; the newest view, whole; and how the server ended, once it has said. It holds no connection, so that a test hands it
+// messages as bytes, and what it knew stays as it was while no connection brings more. One thread at a time.
 class OverseerModel : Neuron::NonCopyable
 {
 public:
@@ -59,11 +59,11 @@ public:
     return m_records;
   }
 
-  // The records the lanes of who played are drawn from, the welcome's and those written since, as KeepLaneRecords keeps them
-  // for the day of universe time that ends at the newest tick the overseer was told of, oldest first.
-  [[nodiscard]] const std::deque<std::string>& LaneRecords() const noexcept
+  // The day's records, which the lanes of who played and the windows are drawn from, the welcome's and those written since, as
+  // KeepDayRecords keeps them for the day of universe time that ends at the newest tick the overseer was told of, oldest first.
+  [[nodiscard]] const std::deque<std::string>& DayRecords() const noexcept
   {
-    return m_lanes;
+    return m_dayRecords;
   }
 
   // The newest tick the overseer was told of, by a Health or a record.
@@ -78,9 +78,15 @@ public:
     return m_view;
   }
 
+  // How the server said it ended, and when the overseer heard it, until a newer connection's welcome.
   [[nodiscard]] const std::optional<ClosingMessage>& Closing() const noexcept
   {
     return m_closing;
+  }
+
+  [[nodiscard]] std::optional<std::chrono::steady_clock::time_point> ClosingAt() const noexcept
+  {
+    return m_closingAt;
   }
 
   // Why the last connection went and when, while no newer one has been welcomed.
@@ -95,7 +101,7 @@ public:
   }
 
 private:
-  // The first tick of the day that ends at the newest tick, and letting go of the lanes' records from before it.
+  // The first tick of the day that ends at the newest tick, and letting go of the day's records from before it.
   [[nodiscard]] std::uint64_t DayStart() const noexcept;
   void KeepTheDay();
 
@@ -106,11 +112,12 @@ private:
   CatalogMessage m_catalog;
   std::deque<HeardHealth> m_health;
   std::deque<std::string> m_records;
-  std::deque<std::string> m_lanes;
+  std::deque<std::string> m_dayRecords;
   std::uint64_t m_newestTick = 0;
   HeldStates m_views;
   std::optional<Snapshot> m_view;
   std::optional<ClosingMessage> m_closing;
+  std::optional<std::chrono::steady_clock::time_point> m_closingAt;
   std::optional<std::string> m_lostWhy;
   std::optional<std::chrono::steady_clock::time_point> m_lostAt;
 };
