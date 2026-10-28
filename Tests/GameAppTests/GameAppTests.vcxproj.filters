@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="LayoutGuards.h" />
     <ClInclude Include="RepositoryAssets.h" />
   </ItemGroup>
   <ItemGroup>
@@ -29,6 +30,9 @@
     <ClCompile Include="FieldLayoutTests.cpp" />
     <ClCompile Include="AlertsTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
+    <ClCompile Include="OverseerModelTests.cpp" />
+    <ClCompile Include="OverseerScreenTests.cpp" />
+    <ClCompile Include="OverseerClientTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />
     <ClCompile Include="DesignerTests.cpp" />
     <ClCompile Include="SceneShadingTests.cpp" />

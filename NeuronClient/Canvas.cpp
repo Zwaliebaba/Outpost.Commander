@@ -12,6 +12,17 @@ bool SameColor(const DirectX::XMFLOAT4& _first, const DirectX::XMFLOAT4& _second
 
 // A drop-down's mark, in the face a small button's arrows take, as "<" and ">" step.
 constexpr std::string_view DROP_MARK = "v";
+// The marks a table's sorting heading takes after its words, in the label's face, for which way its rows run.
+constexpr std::string_view ASCENDING_MARK = "^";
+constexpr std::string_view DESCENDING_MARK = "v";
+
+// A table's cell, in its row or among its headings: its column's width, or its share of what the others leave.
+Neuron::LayoutStyle CellStyle(const Neuron::TableColumn& _column) noexcept
+{
+  if (_column.widthUnits.has_value())
+    return {.widthUnits = _column.widthUnits};
+  return {.grow = _column.grow};
+}
 } // namespace
 
 Neuron::Canvas::Canvas(const Theme& _theme, const TextMetrics& _metrics, Interaction& _interaction, float _screenWidthUnits,
@@ -570,6 +581,74 @@ std::size_t Neuron::Canvas::DropDown(std::string_view _id, std::string _value, s
   return node;
 }
 
+std::size_t Neuron::Canvas::Table(std::string_view _id, std::span<const TableColumn> _columns, std::optional<TableSorted> _sorted,
+                                  std::span<const TableRow> _rows, const LayoutStyle& _style)
+{
+  m_interaction.PushId(m_interaction.IdOf(_id));
+  LayoutStyle style = _style;
+  style.alignX = LayoutAlign::Stretch;
+  const std::size_t table = m_tree.Begin(LayoutKind::Column, style);
+  // The headings, as wide as the rows: they keep the scroll view's lane at their right.
+  (void)m_tree.Begin(
+    LayoutKind::Row,
+    {.heightUnits = m_theme.tableHeadingUnits, .padding = {.right = m_theme.scrollLaneUnits}, .alignY = LayoutAlign::Stretch});
+  for (std::size_t column = 0; column < _columns.size(); ++column)
+  {
+    const TableColumn& heading = _columns[column];
+    const std::size_t node = m_tree.Add(CellStyle(heading));
+    const WidgetId widget = m_interaction.IdOf(std::format("heading {}", column));
+    const bool claimed = m_interaction.Claim(widget);
+    ASSERT(claimed);
+    const bool sorted = _sorted.has_value() && _sorted->column == column;
+    std::string mark;
+    if (sorted)
+      mark = _sorted->sort == TableSort::Ascending ? ASCENDING_MARK : DESCENDING_MARK;
+    const bool lit = sorted || m_interaction.Hot() == widget;
+    m_draws.emplace_back(
+      [this, node, widget, words = heading.heading, mark = std::move(mark), payload = heading.payload, lit](DrawList& _list)
+      {
+        const LayoutNode& box = m_tree.Node(node);
+        if (payload != NO_PAYLOAD)
+          _list.regions.push_back({.area = RectOf(node, {}), .widget = widget, .payload = payload});
+        const float inset = m_theme.buttonInsetUnits;
+        const float tracking = m_theme.titleTrackingUnits;
+        const float markRoom = mark.empty() ? 0.0f : m_metrics.Width(m_theme.labelFont, mark) + m_theme.fitGapUnits;
+        const std::string fitted = m_metrics.Fit(m_theme.labelFont, words, box.widthUnits - (2.0f * inset) - markRoom, tracking);
+        const float top = box.topUnits + ((box.heightUnits - m_theme.figureLineUnits) / 2.0f);
+        const DirectX::XMFLOAT4& color = lit ? m_theme.textColor : m_theme.labelColor;
+        if (!mark.empty())
+          Text(_list, mark, box.leftUnits + inset + m_metrics.Width(m_theme.labelFont, fitted, tracking) + m_theme.fitGapUnits, top, color,
+               m_theme.labelFont);
+        Text(_list, fitted, box.leftUnits + inset, top, color, m_theme.labelFont, tracking);
+      });
+  }
+  m_tree.End();
+  // The rows, in a view that takes the table's height, a card each with a gap between each two.
+  (void)BeginScroll("rows", {.grow = 1.0f});
+  for (std::size_t index = 0; index < _rows.size(); ++index)
+  {
+    if (index > 0)
+      (void)m_tree.Add({.heightUnits = m_theme.tableRowGapUnits});
+    const TableRow& row = _rows[index];
+    ASSERT(!row.mark.has_value() || MayFill(m_theme, *row.mark));
+    const WidgetId widget = m_interaction.IdOf(std::format("row {}", index));
+    const bool claimed = m_interaction.Claim(widget);
+    ASSERT(claimed);
+    const std::size_t node = m_tree.Begin(LayoutKind::Row, {.heightUnits = m_theme.tableRowUnits, .alignY = LayoutAlign::Stretch});
+    std::vector<std::size_t> cells;
+    cells.reserve(_columns.size());
+    for (const TableColumn& column : _columns)
+      cells.push_back(m_tree.Add(CellStyle(column)));
+    m_tree.End();
+    m_draws.emplace_back([this, node, cells = std::move(cells), widget, content = row, hot = m_interaction.Hot() == widget](DrawList& _list)
+                         { DrawRow(_list, node, cells, widget, content, hot); });
+  }
+  EndScroll();
+  m_tree.End();
+  m_interaction.PopId();
+  return table;
+}
+
 // A box's face, its hatch over it, the region a card takes a press in or answers the pointer in, and its edge, in the order
 // the HUD's helpers draw a card.
 std::size_t Neuron::Canvas::OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style,
@@ -751,6 +830,38 @@ void Neuron::Canvas::DrawButton(DrawList& _list, std::size_t _node, WidgetId _wi
     _list.sprites.push_back(
       {.sprite = *_button.figureMark, .area = Area(figureLeft, figureTop + theme.figureMarkTopUnits, mark, mark, figureColor)});
   Text(_list, _button.figure, figureLeft + mark + markGap, figureTop, figureColor, theme.figureFont);
+}
+
+void Neuron::Canvas::DrawRow(DrawList& _list, std::size_t _node, std::span<const std::size_t> _cells, WidgetId _widget,
+                             const TableRow& _row, bool _hot) const
+{
+  const LayoutNode& node = m_tree.Node(_node);
+  const CanvasRect face = RectOf(_node, _row.picked ? m_theme.pickedColor : m_theme.cardColor);
+  _list.panels.push_back(face);
+  if (_row.payload != NO_PAYLOAD)
+    _list.regions.push_back({.area = face, .widget = _widget, .payload = _row.payload});
+  if (_row.mark.has_value())
+    _list.panels.push_back(Area(node.leftUnits, node.topUnits, m_theme.tableMarkUnits, node.heightUnits, *_row.mark));
+  Outline(_list, node.leftUnits, node.topUnits, node.widthUnits, node.heightUnits,
+          _row.picked ? m_theme.pickedEdgeColor
+          : _hot      ? m_theme.hoverEdgeColor
+                      : m_theme.edgeColor);
+  // A figure over a detail line, each cut short to its column.
+  const float inset = m_theme.buttonInsetUnits;
+  const float figureTop = node.topUnits + m_theme.tableFigureTopUnits;
+  const float detailTop = node.topUnits + m_theme.tableDetailTopUnits;
+  for (std::size_t cell = 0; cell < _cells.size() && cell < _row.cells.size(); ++cell)
+  {
+    const LayoutNode& box = m_tree.Node(_cells[cell]);
+    const TableCell& content = _row.cells[cell];
+    const float room = std::max(0.0f, box.widthUnits - (2.0f * inset));
+    if (!content.figure.empty())
+      Text(_list, m_metrics.Fit(m_theme.figureFont, content.figure, room), box.leftUnits + inset, figureTop,
+           content.color.value_or(m_theme.textColor), m_theme.figureFont);
+    if (!content.detail.empty())
+      Text(_list, m_metrics.Fit(m_theme.detailFont, content.detail, room), box.leftUnits + inset, detailTop, m_theme.detailColor,
+           m_theme.detailFont);
+  }
 }
 
 void Neuron::Canvas::DrawSmallButton(DrawList& _list, std::size_t _node, WidgetId _widget, const std::string& _mark, bool _enabled,
