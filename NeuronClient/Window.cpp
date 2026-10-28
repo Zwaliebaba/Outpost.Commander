@@ -106,7 +106,8 @@ void PlaceWindow(HWND _hwnd, DWORD _style, const RECT& _frame) noexcept
 Neuron::Window::Window(const Desc& _desc)
   : m_instance(GetModuleHandleW(nullptr)),
     m_windowedClientWidthPixels(_desc.windowedClientWidthPixels),
-    m_windowedClientHeightPixels(_desc.windowedClientHeightPixels)
+    m_windowedClientHeightPixels(_desc.windowedClientHeightPixels),
+    m_holdsCursor(_desc.holdsCursor)
 {
   // Borderless full screen (ADR-006): a popup exactly covering the primary monitor. Measured before the class is
   // registered, so that nothing is left to undo if it throws.
@@ -136,6 +137,15 @@ Neuron::Window::Window(const Desc& _desc)
     const DWORD error = GetLastError();
     UnregisterClassW(WINDOW_CLASS_NAME, m_instance);
     winrt::throw_hresult(HRESULT_FROM_WIN32(error));
+  }
+  // A window asked to open windowed takes its frame now, centered on the monitor and still hidden, as Alt+Enter would place it.
+  if (!_desc.fullScreen)
+  {
+    m_windowedFrame = CenteredWindowedFrame(m_hwnd, m_windowedClientWidthPixels, m_windowedClientHeightPixels);
+    SetWindowLongPtrW(m_hwnd, GWL_STYLE, WINDOWED_STYLE);
+    SetWindowPos(m_hwnd, nullptr, m_windowedFrame.left, m_windowedFrame.top, m_windowedFrame.right - m_windowedFrame.left,
+                 m_windowedFrame.bottom - m_windowedFrame.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    m_fullScreen = false;
   }
 }
 
@@ -241,8 +251,8 @@ Neuron::InputState Neuron::Window::ReadInput() noexcept
 
   // Full screen and in the foreground, the cursor stays on the game's monitor, so that edge scroll works beside another
   // monitor. Windowed, it is free, because the window's edge is not the screen's (ADR-012). Windows can drop the clip
-  // behind the game's back, so it is set again every frame.
-  if (input.active && m_fullScreen)
+  // behind the game's back, so it is set again every frame. A window that does not hold it leaves it free either way.
+  if (input.active && m_fullScreen && m_holdsCursor)
   {
     RECT area = ClientArea(m_hwnd);
     MapWindowPoints(m_hwnd, nullptr, reinterpret_cast<POINT*>(&area), 2);

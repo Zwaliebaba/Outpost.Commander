@@ -34,6 +34,9 @@
     <Filter Include="Models">
       <UniqueIdentifier>{c5a73e18-9f42-4b6d-8e01-3d27b6f9a4c5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Overseer">
+      <UniqueIdentifier>{32a71c9b-dc05-48a5-ad9c-657cbdc83013}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -125,6 +128,15 @@
     <ClInclude Include="WindowTable.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="OverseerModel.h">
+      <Filter>Overseer</Filter>
+    </ClInclude>
+    <ClInclude Include="OverseerClient.h">
+      <Filter>Overseer</Filter>
+    </ClInclude>
+    <ClInclude Include="OverseerScreen.h">
+      <Filter>Overseer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -205,6 +217,15 @@
     </ClCompile>
     <ClCompile Include="Alerts.cpp">
       <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="OverseerModel.cpp">
+      <Filter>Overseer</Filter>
+    </ClCompile>
+    <ClCompile Include="OverseerClient.cpp">
+      <Filter>Overseer</Filter>
+    </ClCompile>
+    <ClCompile Include="OverseerScreen.cpp">
+      <Filter>Overseer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

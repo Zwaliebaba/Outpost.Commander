@@ -106,6 +106,9 @@
     <ClInclude Include="KeyBindings.h" />
     <ClInclude Include="WindowTable.h" />
     <ClInclude Include="Hud.h" />
+    <ClInclude Include="OverseerModel.h" />
+    <ClInclude Include="OverseerClient.h" />
+    <ClInclude Include="OverseerScreen.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -137,6 +140,9 @@
     <ClCompile Include="OrderForm.cpp" />
     <ClCompile Include="PlayerClock.cpp" />
     <ClCompile Include="Hud.cpp" />
+    <ClCompile Include="OverseerModel.cpp" />
+    <ClCompile Include="OverseerClient.cpp" />
+    <ClCompile Include="OverseerScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

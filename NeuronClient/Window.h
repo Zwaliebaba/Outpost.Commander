@@ -56,8 +56,8 @@ struct InputState
   }
 };
 
-// The top-level window the game presents into (ADR-006). It opens borderless and full screen on the primary monitor,
-// and Alt+Enter toggles it to a resizable window and back. Alt alone does not open the window's menu, so that a game may
+// The top-level window the game presents into (ADR-006). It opens borderless and full screen on the primary monitor, or in a
+// resizable window when its Desc asks, and Alt+Enter toggles between the two. Alt alone does not open the window's menu, so that a game may
 // read it as a key. It knows no game concept: its title and windowed size come from the caller.
 class Window : NonCopyable
 {
@@ -68,10 +68,15 @@ public:
     // The client area the window gets the first time it leaves full screen, centered on its monitor's work area.
     std::uint32_t windowedClientWidthPixels;
     std::uint32_t windowedClientHeightPixels;
+    // Whether it opens full screen, as the game does, or in its window, as the overseer does (ADR-102).
+    bool fullScreen = true;
+    // Whether it holds the cursor on its monitor while full screen, as the game does for its edge scroll (ADR-012), or lets
+    // it go, as the overseer does, which has none (ADR-102).
+    bool holdsCursor = true;
   };
 
-  // Registers the window class and creates the window over the primary monitor, hidden until Show, so that the game can
-  // load behind it and report a failure before the screen goes full screen (ADR-049). Throws winrt::hresult_error on
+  // Registers the window class and creates the window over the primary monitor, or centered on it windowed, hidden until
+  // Show, so that the game can load behind it and report a failure before the screen goes full screen (ADR-049). Throws winrt::hresult_error on
   // failure.
   explicit Window(const Desc& _desc);
   ~Window();
@@ -86,7 +91,7 @@ public:
   [[nodiscard]] bool ProcessMessages();
 
   // The input for this frame, after ProcessMessages. It also holds the cursor inside the window while the game is in the
-  // foreground and full screen, and lets it go otherwise (ADR-012). The wheel's movement is counted once.
+  // foreground and full screen, when its Desc asks, and lets it go otherwise (ADR-012). The wheel's movement is counted once.
   [[nodiscard]] InputState ReadInput() noexcept;
 
   [[nodiscard]] int ExitCode() const noexcept
@@ -127,6 +132,7 @@ private:
   std::uint32_t m_windowedClientHeightPixels = 0;
   int m_exitCode = 0;
   bool m_fullScreen = true;
+  bool m_holdsCursor = true;
   bool m_cursorClipped = false;
 };
 } // namespace Neuron

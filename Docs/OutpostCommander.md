@@ -94,6 +94,17 @@ A session is everything between starting the game and closing it: the menu, a sk
 - **A universe's certificate is kept in its folder,** so a player pins it once; its hash changes only when its key is lost or after five years (ADR-078 decision 7).
 - **Reaching the port from another machine is the owner's to arrange,** through the firewall and the router (ADR-078).
 
+### The overseer [§session.overseer]
+
+- **The overseer is `OutpostOverseer`, a program of its own that is not packaged,** which watches a universe's server over the server's channel for it and changes nothing in the universe (ADR-102 decision 1; ADR-101).
+- **`OutpostOverseer <folder>` oversees the universe whose `Overseer.json` the folder holds,** or the file it names; with neither, the default universe's in the owner's documents. With no file there it says where it looked and ends (ADR-102 decision 2).
+- **It opens in a window of its own,** which Alt+Enter turns full screen and back, and leaves the cursor free (ADR-102 decision 3).
+- **It needs a graphics card that runs Direct3D 12,** as the game does. On a server without one, the owner runs it from a PC on the server's network, with the universe's `Overseer.json` and the server's overseer address opened to that network (ADR-102 decision 4).
+- **It joins the server every 2 s while it has no connection,** and shows what it was last told meanwhile (ADR-102 decisions 5 and 6).
+- **Its header names the universe's folder and its server, says how the server is, and tells universe time and its tick** (ADR-102 decision 7):
+  - **Running** while the server says how it is, once a second.
+  - **No word** once 3 s have gone without that, or while there is no connection, saying how the server ended when it said so, why the connection went, and when the last word came.
+
 ### Joining a universe [§session.join]
 
 - **The game joins a universe from a join file:** `--join <file>`, or the menu's Join universe, which reads `Outpost Commander\Join.json` in the player's documents; and at launch, once, when the documents hold that file (ADR-078 decision 9; Game §session.launch).

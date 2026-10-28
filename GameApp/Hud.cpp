@@ -4178,6 +4178,11 @@ std::vector<Neuron::FontDesc> Hud::Typefaces()
   };
 }
 
+const Neuron::Theme& Hud::Theme()
+{
+  return GameTheme();
+}
+
 std::vector<Neuron::SpriteDesc> Hud::Sprites()
 {
   return {

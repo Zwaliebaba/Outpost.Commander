@@ -75,6 +75,10 @@ public:
     return static_cast<std::size_t>(_sprite);
   }
 
+  // The game's look as the canvas's theme (ADR-100): its windows' colors, typefaces and sizes, which the overseer is drawn in
+  // too (ADR-102).
+  [[nodiscard]] static const Neuron::Theme& Theme();
+
   // How wide the interface's text is set, as the atlas it is drawn from sets it (ADR-061): the engine's measure (ADR-100) of
   // the fonts Typefaces names, in its order, rasterized for a back buffer at _scale pixels to a reference unit, each named
   // by its typeface. The layout measures every line it places with it, so that a line is cut short, wrapped or given room
