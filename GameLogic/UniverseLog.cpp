@@ -105,6 +105,8 @@ std::string JoinWords(const Outpost::JoinRecord& _join)
     return std::format("gone {} closed {}", player, _join.code);
   case Outpost::JoinOutcome::Lost:
     return std::format("gone {} lost", player);
+  case Outpost::JoinOutcome::Dropped:
+    return std::format("gone {} dropped", player);
   }
   return "refused malformed";
 }

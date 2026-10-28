@@ -15,10 +15,15 @@ public:
   // them by a connection that has gone when _gone.
   [[nodiscard]] bool DeputyPlays(std::uint64_t _tick, std::uint32_t _takings, bool _gone) noexcept;
 
+  // The connection of the seat's _takings dropped by the server's owner at _tick (ADR-104): its deputy plays the seat from its
+  // going, with _deputyAtOnce, and otherwise DEPUTY_DELAY_SECONDS after it, as for any connection gone.
+  void Dropped(std::uint64_t _tick, std::uint32_t _takings, bool _deputyAtOnce) noexcept;
+
 private:
   std::uint64_t m_delayTicks = 0;
-  // The taking whose connection was first seen gone, and the tick it was seen.
+  // The taking whose connection was first seen gone, or dropped, the tick it was, and whether the deputy takes it at once.
   std::uint32_t m_goneTaking = 0;
   std::uint64_t m_goneTick = 0;
+  bool m_atOnce = false;
 };
 } // namespace Outpost

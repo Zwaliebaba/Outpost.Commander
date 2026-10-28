@@ -76,7 +76,7 @@ struct OverseerAct
 //   join <tick> refused <why> [layout <hex>] [player <p>] from <address>
 //                                                  a connection refused: version, with the layout its hello named; seat,
 //                                                  with the player it named; malformed; or silent, for no hello in time
-//   join <tick> gone player <p> <taken, closed <code> or lost> from <address>
+//   join <tick> gone player <p> <taken, closed <code>, lost or dropped> from <address>
 //                                                  a seat's connection gone: taken by a newer one, closed by the game with
 //                                                  its code, or lost without a word
 //   overseer <tick> opened from <address>          the overseer's channel opened, or closed, by the overseer, lost or taken

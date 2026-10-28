@@ -457,6 +457,9 @@ public:
     };
     Assert::IsTrue(disabled("Save now") && disabled("Keep running") == false, L"Save now dims, and Keep running does not");
     asksNothing("stalled");
+    screen.AskForNewToken(Outpost::PlayerId{1});
+    Assert::IsTrue(screen.Confirming().value_or(Outpost::ActionMessage{}).action == Outpost::OverseerAction::Stop,
+                   L"nor a seat's action of a stalled server");
 
     const Neuron::DrawList& quiet = Lay(screen, model, START + std::chrono::seconds{2} + OverseerScreen::NO_WORD_AFTER);
     Assert::IsTrue(Shows(quiet, "No word"), Texts(quiet).c_str());
@@ -468,6 +471,81 @@ public:
     asksNothing("stopped");
     screen.AskToStop();
     Assert::IsTrue(screen.IsOpen(Outpost::OverseerWindow::Confirm), L"the window it was open on stays, its Stop dim");
+  }
+
+  // ADR-104 (owner, 2026-10-28): a player's seat picked, its action bar has Drop link, while its link is online, and New token,
+  // each opening the confirm window: Drop link's with the deputy's choice, after its minute unless the owner picks at once;
+  // New token's saying the old join file joins no more. An AI empire's seat has neither.
+  TEST_METHOD(AsksToDropALinkAndForANewToken)
+  {
+    const Scripted scripted;
+    OverseerScreen screen({});
+    constexpr std::uint32_t CONFIRM = 10u << 16;
+    constexpr std::uint32_t CANCEL = 11u << 16;
+    constexpr std::uint32_t DROP_LINK = 12u << 16;
+    constexpr std::uint32_t NEW_TOKEN = 13u << 16;
+    constexpr std::uint32_t AT_ONCE = (14u << 16) | 1;
+    const auto on = [](std::uint32_t _payload)
+    { return [_payload](const Neuron::CanvasRegion& _region) { return _region.payload == _payload; }; };
+    const auto enabled = [](const Neuron::DrawList& _layout, std::string_view _label)
+    { return Same(LastText(_layout, _label).color, Outpost::Hud::Theme().textColor); };
+
+    // Seat 1, online.
+    screen.Pick(Outpost::PlayerId{1});
+    const Neuron::DrawList& online = Lay(screen, scripted.model, NOW);
+    Assert::IsTrue(enabled(online, "Drop link") && enabled(online, "New token"), Texts(online).c_str());
+    screen.Input(PressOn(online, on(DROP_LINK)));
+    Assert::IsTrue(screen.IsOpen(Outpost::OverseerWindow::Confirm), L"Drop link opens its window");
+    const Neuron::DrawList& drop = Lay(screen, scripted.model, NOW);
+    // Too long for one literal of a line.
+    const std::string closes = std::string("The server closes seat 1's connection. Its game goes back to its menu, saying the server's ") +
+                               "owner closed it, and does not join again by itself; its player joins again from the menu with the same " +
+                               "join file.";
+    for (const std::string_view text :
+         {std::string_view("DROP SEAT 1'S LINK"), std::string_view(closes), std::string_view("Its deputy takes the seat:"),
+          std::string_view("In 60 s"), std::string_view("At once"), std::string_view("Keep the link")})
+      Assert::IsTrue(ShowsWords(drop, text), (std::wstring(winrt::to_hstring(text)) + L" | " + Texts(drop)).c_str());
+    Assert::IsFalse(screen.Confirming().value_or(Outpost::ActionMessage{}).deputyAtOnce, L"after its minute, unless picked");
+    screen.Input(PressOn(drop, on(AT_ONCE)));
+    screen.Input(PressOn(Lay(screen, scripted.model, NOW), on(CONFIRM)));
+    std::vector<Outpost::ActionMessage> asked = screen.TakeActions();
+    Assert::IsTrue(asked.size() == 1 && asked.front().action == Outpost::OverseerAction::DropLink &&
+                     asked.front().seat == Outpost::PlayerId{1} && asked.front().deputyAtOnce,
+                   L"Drop link for seat 1, its deputy at once");
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Confirm));
+
+    // Seat 3, away while its link is gone: no link to drop, and a new token.
+    screen.Pick(Outpost::PlayerId{3});
+    const Neuron::DrawList& away = Lay(screen, scripted.model, NOW);
+    Assert::IsFalse(enabled(away, "Drop link"), L"no link to drop");
+    screen.AskToDropLink(Outpost::PlayerId{3});
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Confirm));
+    screen.Input(PressOn(away, on(NEW_TOKEN)));
+    const Neuron::DrawList& token = Lay(screen, scripted.model, NOW);
+    const std::string writes = std::string("The server makes seat 3 a new token, and writes it into Universe.json and the seat's join ") +
+                               "file, in the universe's folder. The old join file joins no more.";
+    for (const std::string_view text :
+         {std::string_view("NEW TOKEN FOR SEAT 3"), std::string_view(writes),
+          std::string_view(
+            "Whoever holds the seat now is dropped, and its deputy plays it at once, until its player joins with the new join file."),
+          std::string_view("Keep the token")})
+      Assert::IsTrue(ShowsWords(token, text), (std::wstring(winrt::to_hstring(text)) + L" | " + Texts(token)).c_str());
+    Assert::IsFalse(ShowsWords(token, "At once"), L"no deputy's choice");
+    screen.Input(PressOn(token, on(CANCEL)));
+    Assert::IsTrue(screen.TakeActions().empty() && !screen.IsOpen(Outpost::OverseerWindow::Confirm), L"Keep the token asks nothing");
+    screen.AskForNewToken(Outpost::PlayerId{3});
+    screen.Confirm();
+    asked = screen.TakeActions();
+    Assert::IsTrue(asked.size() == 1 && asked.front().action == Outpost::OverseerAction::NewToken &&
+                     asked.front().seat == Outpost::PlayerId{3},
+                   L"New token for seat 3");
+
+    // Seat 2, an AI empire's.
+    screen.Pick(Outpost::PlayerId{2});
+    const Neuron::DrawList& ai = Lay(screen, scripted.model, NOW);
+    Assert::IsTrue(Shows(ai, "Seat 2 picked") && !Shows(ai, "Drop link") && !Shows(ai, "New token"), Texts(ai).c_str());
+    screen.AskForNewToken(Outpost::PlayerId{2});
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Confirm), L"no token of an AI empire's");
   }
 
   // ADR-104: what came of the latest action is told under the header's state while the server is up, a refusal in the
@@ -639,7 +717,8 @@ public:
       screen.OpenServerWindow();
       screen.OpenSeatWindow(Outpost::PlayerId{1});
       (void)Lay(screen, model, NOW, Link(), width, height);
-      screen.AskToStop();
+      // The confirm window with the most it holds: Drop link's, with its deputy's choice.
+      screen.AskToDropLink(Outpost::PlayerId{1});
       const Neuron::DrawList& layout = Lay(screen, model, NOW, Link(), width, height);
       const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
       const std::wstring name = std::format(L"the overview at {} wide", width);

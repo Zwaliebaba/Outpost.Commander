@@ -323,8 +323,9 @@ public:
                      L"the connection it was taken from is told so");
     Assert::IsFalse(mayJoinAgain, L"and does not join again");
 
-    for (const Outpost::CloseReason reason : {Outpost::CloseReason::Finished, Outpost::CloseReason::WrongVersion,
-                                              Outpost::CloseReason::SeatRefused, Outpost::CloseReason::SeatTaken})
+    for (const Outpost::CloseReason reason :
+         {Outpost::CloseReason::Finished, Outpost::CloseReason::WrongVersion, Outpost::CloseReason::SeatRefused,
+          Outpost::CloseReason::SeatTaken, Outpost::CloseReason::DroppedByOwner})
       Assert::IsFalse(Outpost::MayJoinAgain(Outpost::ServerClosed(reason, "closed")));
     Assert::IsTrue(Outpost::MayJoinAgain(Outpost::ServerClosed(Outpost::CloseReason::MalformedMessage, "closed")));
     Assert::IsTrue(Outpost::MayJoinAgain(Neuron::Exception("The QUIC connection went.")), L"a link that went");

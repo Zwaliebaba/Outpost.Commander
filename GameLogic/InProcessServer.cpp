@@ -954,10 +954,73 @@ bool Outpost::InProcessServer::Act(const ActionMessage& _action, bool _saveAsked
     return false;
   case OverseerAction::DropLink:
   case OverseerAction::NewToken:
-    answer(false, "The server cannot do that yet.");
+    break;
+  }
+  // The link took only a player's seat of the universe's (OverseerLink::MayAsk).
+  const auto seat = std::ranges::find_if(m_connections, [&_action](const Connection& _connection)
+                                         { return _connection.seat && _connection.player == _action.seat; });
+  if (seat == m_connections.end())
+  {
+    answer(false, std::format("Player {} has no seat here.", _action.seat.value));
     return false;
   }
+  if (_action.action == OverseerAction::DropLink)
+  {
+    if (!DropLink(*seat, _action.deputyAtOnce))
+      answer(false, std::format("Seat {} has no link to drop.", _action.seat.value));
+    else if (_action.deputyAtOnce)
+      answer(true, std::format("Seat {}'s link dropped; its deputy plays it now.", _action.seat.value));
+    else
+      answer(true, std::format("Seat {}'s link dropped; its deputy plays it in {} s unless its player joins again.", _action.seat.value,
+                               DEPUTY_DELAY_SECONDS));
+    return false;
+  }
+  // A new token: written into the universe's files first, so that the server takes it only once they hold it, and then the
+  // link of whoever joined with the old one dropped, the seat's deputy playing it at once (owner, 2026-10-28).
+  if (!m_listener)
+  {
+    answer(false, "The server takes no player over QUIC.");
+    return false;
+  }
+  const SeatToken token = NewSeatToken();
+  std::filesystem::path joinFile;
+  try
+  {
+    joinFile = WriteSeatToken(m_universeFolder, _action.seat, token, m_listener->Certificate());
+  }
+  catch (const Neuron::Exception& error)
+  {
+    answer(false, error.what());
+    return false;
+  }
+  {
+    const std::scoped_lock lock(m_seatMutex);
+    seat->token = token;
+  }
+  (void)DropLink(*seat, true);
+  const std::u8string file = joinFile.u8string();
+  answer(true, std::format("Seat {} has a new token, and its join file is written again: {}", _action.seat.value,
+                           std::string(reinterpret_cast<const char*>(file.data()), file.size())));
   return false;
+}
+
+bool Outpost::InProcessServer::DropLink(Connection& _connection, bool _deputyAtOnce)
+{
+  std::shared_ptr<Neuron::QuicChannel> quic;
+  std::uint32_t takings = 0;
+  {
+    const std::scoped_lock lock(m_seatMutex);
+    quic = _connection.quic;
+    takings = _connection.takings;
+  }
+  if (!quic || quic->HasGone())
+    return false;
+  // The server closed it itself, so the tick that sees it gone writes nothing more of it.
+  KeepJoin({.outcome = JoinOutcome::Dropped, .player = _connection.player, .address = quic->PeerAddress()});
+  quic->Shutdown(static_cast<std::uint64_t>(CloseReason::DroppedByOwner));
+  if (_connection.control.has_value())
+    _connection.control->Dropped(m_simulation.CurrentTick(), takings, _deputyAtOnce);
+  return true;
 }
 
 Outpost::ServerAddress Outpost::InProcessServer::Oversee(const OverseerDesc& _desc, std::vector<OverseerSeat> _seats)

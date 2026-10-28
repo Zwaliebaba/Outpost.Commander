@@ -186,7 +186,7 @@ private:
     PlayerId player;
     std::shared_ptr<LoopbackChannel> channel;
     bool seat = false;
-    // What a hello shows to take the seat (ADR-078).
+    // What a hello shows to take the seat (ADR-078), which a new token replaces (ADR-104): guarded by m_seatMutex.
     SeatToken token{};
     // Guarded by m_seatMutex: MsQuic's thread sets it when the player's hello takes the seat, and again when a newer
     // connection takes it, and counts how often it has.
@@ -230,6 +230,11 @@ private:
 
   // Keeps what came of a connection for the universe's log, which the next tick writes. Called on MsQuic's thread.
   void KeepJoin(JoinRecord _join);
+
+  // Closes the connection that holds _connection's seat with CloseReason::DroppedByOwner, its deputy taking the seat at once
+  // with _deputyAtOnce and otherwise after DEPUTY_DELAY_SECONDS (ADR-104), and keeps its going for the universe's log.
+  // Returns whether there was a link to drop. The server's thread's.
+  [[nodiscard]] bool DropLink(Connection& _connection, bool _deputyAtOnce);
 
   // Adds a connection for _player, unless the server has started or the player has one already.
   std::shared_ptr<LoopbackChannel> AddConnection(PlayerId _player, bool _seat, const SeatToken& _token = {});

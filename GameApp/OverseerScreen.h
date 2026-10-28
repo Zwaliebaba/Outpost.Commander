@@ -125,10 +125,15 @@ public:
   }
 
   // The server's actions (ADR-104), asked only of a running server, as the overview was last laid out: Save now, as the
-  // header's button asks for it; Stop, which the header's button opens the confirm window on; and the action the confirm
-  // window shows, asked for as its first button does, which closes it. Closing the window asks for nothing.
+  // header's button asks for it; Stop, which the header's button opens the confirm window on; Drop link, for a player's seat
+  // whose link is online, and New token, for a player's seat, which the picked seat's action bar opens the window on; the
+  // deputy's choice in Drop link's window, at once or after DEPUTY_DELAY_SECONDS; and the action the window shows, asked for as
+  // its first button does, which closes it. Closing the window asks for nothing.
   void SaveNow();
   void AskToStop();
+  void AskToDropLink(PlayerId _seat);
+  void AskForNewToken(PlayerId _seat);
+  void PickDeputyAtOnce(bool _atOnce) noexcept;
   void Confirm();
   [[nodiscard]] const std::optional<ActionMessage>& Confirming() const noexcept
   {
@@ -175,9 +180,12 @@ private:
   std::array<std::size_t, OVERSEER_WINDOW_COUNT> m_windowLayers{};
   std::array<Neuron::CanvasPoint, OVERSEER_WINDOW_COUNT> m_windowCorners{};
   float m_scale = 1.0f;
-  // Whether the server ran as the overview was last laid out, which the actions are asked of only then; the action the
-  // confirm window shows; and the actions asked for that TakeActions has yet to take.
+  // Whether the server ran as the overview was last laid out, which the actions are asked of only then, and its players'
+  // seats and those whose link was online then; the action the confirm window shows; and the actions asked for that
+  // TakeActions has yet to take.
   bool m_running = false;
+  std::vector<PlayerId> m_playerSeats;
+  std::vector<PlayerId> m_onlineSeats;
   std::optional<ActionMessage> m_confirming;
   std::vector<ActionMessage> m_actions;
   // A HUD's layout, since the map is the minimap's drawing (Hud::DrawMinimap).

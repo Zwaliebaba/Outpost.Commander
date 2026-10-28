@@ -16,7 +16,7 @@ bool Outpost::MayJoinAgain(const std::exception& _error) noexcept
     return true;
   const CloseReason reason = closed->Reason();
   return reason != CloseReason::Finished && reason != CloseReason::WrongVersion && reason != CloseReason::SeatRefused &&
-         reason != CloseReason::SeatTaken;
+         reason != CloseReason::SeatTaken && reason != CloseReason::DroppedByOwner;
 }
 
 Outpost::QuicTransport::QuicTransport(const ServerAddress& _address, PlayerId _player, std::chrono::milliseconds _connectTimeout)

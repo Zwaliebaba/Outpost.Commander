@@ -23,6 +23,30 @@ std::uint64_t ReadSeed(Neuron::JsonObjectReader& _reader, std::string_view _name
     Neuron::JsonFail(_reader.PathOf(_name), "expected a string of the seed's decimal digits");
   return seed;
 }
+
+std::string Utf8Of(const std::filesystem::path& _path)
+{
+  const std::u8string text = _path.u8string();
+  return {reinterpret_cast<const char*>(text.data()), text.size()};
+}
+
+// Writes _text to _path whole: to a file beside it first, renamed over it once written.
+void WriteWhole(const std::filesystem::path& _path, std::string_view _text)
+{
+  std::filesystem::path partial = _path;
+  partial += ".partial";
+  {
+    std::ofstream file(partial, std::ios::binary | std::ios::trunc);
+    file.write(_text.data(), static_cast<std::streamsize>(_text.size()));
+    file.close();
+    if (!file)
+      throw Neuron::Exception(std::format("{} cannot be written.", Utf8Of(partial)));
+  }
+  std::error_code error;
+  std::filesystem::rename(partial, _path, error);
+  if (error)
+    throw Neuron::Exception(std::format("{} cannot be replaced: {}", Utf8Of(_path), error.message()));
+}
 } // namespace
 
 Outpost::UniverseSettings Outpost::NewUniverseSettings(std::uint64_t _seed, std::size_t _seats)
@@ -127,4 +151,27 @@ Outpost::OverseerTicket Outpost::OverseerTicketFor(const UniverseSettings& _sett
 std::string Outpost::JoinFileName(PlayerId _player)
 {
   return std::format("Join-Player{}.json", _player.value);
+}
+
+std::filesystem::path Outpost::WriteSeatToken(const std::filesystem::path& _folder, PlayerId _player, const SeatToken& _token,
+                                              const Neuron::CertificateHash& _certificate)
+{
+  const std::filesystem::path settingsFile = _folder / UNIVERSE_SETTINGS_FILE;
+  std::string text;
+  {
+    // Closed before the file is renamed over, which Windows refuses while it is open.
+    std::ifstream file(settingsFile, std::ios::binary);
+    if (!file)
+      throw Neuron::Exception(std::format("{} cannot be read.", Utf8Of(settingsFile)));
+    text.assign(std::istreambuf_iterator<char>(file), {});
+  }
+  UniverseSettings settings = ReadUniverseSettings(text);
+  const auto seat = std::ranges::find(settings.seats, _player, &UniverseSeat::player);
+  if (seat == settings.seats.end() || !seat->ai.empty())
+    throw Neuron::Exception(std::format("{} holds no player's seat for player {}.", Utf8Of(settingsFile), _player.value));
+  seat->token = _token;
+  WriteWhole(settingsFile, WriteUniverseSettings(settings));
+  const std::filesystem::path joinFile = _folder / JoinFileName(_player);
+  WriteWhole(joinFile, WriteJoinTicket(TicketFor(settings, *seat, _certificate)));
+  return joinFile;
 }

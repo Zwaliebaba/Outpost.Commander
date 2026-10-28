@@ -77,7 +77,7 @@ constexpr std::uint64_t LINK_SECONDS = std::uint64_t{4} * 3'600;
 constexpr std::array<std::string_view, 6> ACTION_NAMES{"Move", "Attack-move", "Attack", "Hold sector", "Patrol", "Build a rig"};
 // What came of the joins, by JoinOutcome, as the server window writes them.
 constexpr std::array<std::string_view, Outpost::JOIN_OUTCOME_COUNT> JOIN_OUTCOME_NAMES{
-  "welcomed", "another build", "seat refused", "malformed", "silent", "taken", "closed", "lost"};
+  "welcomed", "another build", "seat refused", "malformed", "silent", "taken", "closed", "lost", "dropped"};
 // How far a notch of the wheel scrolls the table and the log: three name lines.
 constexpr float WHEEL_NOTCH_UNITS = 3.0f * NAME_LINE_UNITS;
 
@@ -97,7 +97,10 @@ enum class PressKind : std::uint32_t
   SaveNow,
   Stop,
   Confirm,
-  Cancel
+  Cancel,
+  DropLink,
+  NewToken,
+  DeputyAtOnce
 };
 
 constexpr std::uint32_t PayloadOf(PressKind _kind, std::uint32_t _which) noexcept
@@ -1448,47 +1451,70 @@ void LaySeatWindow(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model
 
 } // namespace
 
-// The confirm window's title for _action, and what it says the action does.
-std::string ConfirmTitle(const Outpost::ActionMessage& _action)
+// What the confirm window says of an action (ADR-104): its title, what the action does, and its two buttons' labels, the one
+// that asks for it and the one that leaves it.
+struct ConfirmText
 {
+  std::string title;
+  std::vector<std::string> words;
+  std::string_view ask;
+  std::string_view leave;
+};
+
+ConfirmText ConfirmOf(const Outpost::ActionMessage& _action)
+{
+  const std::uint32_t seat = _action.seat.value;
   switch (_action.action)
   {
   case Outpost::OverseerAction::Stop:
-    return "STOP THE SERVER";
-  case Outpost::OverseerAction::SaveNow:
+    return {.title = "STOP THE SERVER",
+            .words = {"Stopping ends the server as Ctrl+C does. No tick runs until it is started again, on its own machine.",
+                      "It comes back from its folder: from its last save, with the commands logged since.",
+                      "Its players lose their connection until then, and their deputies do not play."},
+            .ask = "Stop",
+            .leave = "Keep running"};
   case Outpost::OverseerAction::DropLink:
+    return {
+      .title = std::format("DROP SEAT {}'S LINK", seat),
+      .words = {std::format("The server closes seat {}'s connection. Its game goes back to its menu, saying the server's owner closed "
+                            "it, and does not join again by itself; its player joins again from the menu with the same join file.",
+                            seat),
+                "Its deputy takes the seat:"},
+      .ask = "Drop link",
+      .leave = "Keep the link"};
   case Outpost::OverseerAction::NewToken:
+    return {.title = std::format("NEW TOKEN FOR SEAT {}", seat),
+            .words = {std::format("The server makes seat {} a new token, and writes it into Universe.json and the seat's join file, in the "
+                                  "universe's folder. The old join file joins no more.",
+                                  seat),
+                      "Whoever holds the seat now is dropped, and its deputy plays it at once, until its player joins with the new "
+                      "join file."},
+            .ask = "New token",
+            .leave = "Keep the token"};
+  case Outpost::OverseerAction::SaveNow:
     break;
   }
   return {};
 }
 
-std::vector<std::string> ConfirmWords(const Outpost::ActionMessage& _action)
-{
-  switch (_action.action)
-  {
-  case Outpost::OverseerAction::Stop:
-    return {"Stopping ends the server as Ctrl+C does. No tick runs until it is started again, on its own machine.",
-            "It comes back from its folder: from its last save, with the commands logged since.",
-            "Its players lose their connection until then, and their deputies do not play."};
-  case Outpost::OverseerAction::SaveNow:
-  case Outpost::OverseerAction::DropLink:
-  case Outpost::OverseerAction::NewToken:
-    break;
-  }
-  return {};
-}
-
-// The confirm window (ADR-104): what the action does, and the buttons that ask for it, only of a running server, or leave it.
-void LayConfirmWindow(Neuron::Canvas& _canvas, const Outpost::ActionMessage& _action, bool _running)
+// The confirm window (ADR-104): what the action does, Drop link's choice of when the deputy takes the seat, and the buttons
+// that ask for it, only of a running server, or leave it.
+void LayConfirmWindow(Neuron::Canvas& _canvas, const Outpost::ActionMessage& _action, const ConfirmText& _text, bool _running)
 {
   const Neuron::Theme& theme = Hud::Theme();
   Neuron::LayoutTree& tree = _canvas.Tree();
-  for (std::string& words : ConfirmWords(_action))
+  for (const std::string& words : _text.words)
   {
     (void)_canvas.Label(
-      {.text = std::move(words), .font = Hud::FontOf(Hud::Typeface::Name), .lineUnits = NAME_LINE_UNITS, .flow = Neuron::TextFlow::Wrap},
+      {.text = words, .font = Hud::FontOf(Hud::Typeface::Name), .lineUnits = NAME_LINE_UNITS, .flow = Neuron::TextFlow::Wrap},
       theme.textColor);
+  }
+  // Drop link's choice of when the deputy takes the seat, by whether it is at once.
+  if (_action.action == Outpost::OverseerAction::DropLink)
+  {
+    const std::string later = std::format("In {} s", Outpost::DEPUTY_DELAY_SECONDS);
+    FilterCells(_canvas, "deputy cells", std::array<std::string_view, 2>{later, "At once"}, _action.deputyAtOnce ? 1 : 0,
+                PressKind::DeputyAtOnce);
   }
   if (!_running)
     WindowLine(_canvas, "The server is not running, so nothing can be asked of it.", theme.dimTextColor);
@@ -1496,8 +1522,9 @@ void LayConfirmWindow(Neuron::Canvas& _canvas, const Outpost::ActionMessage& _ac
   (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN});
   (void)tree.Add({.grow = 1.0f});
   const Neuron::LayoutStyle button{.widthUnits = CONFIRM_BUTTON_UNITS, .heightUnits = BUTTON_UNITS};
-  (void)_canvas.Button("confirm button", {.label = "Stop", .payload = PayloadOf(PressKind::Confirm, 0), .enabled = _running}, button);
-  (void)_canvas.Button("cancel button", {.label = "Keep running", .payload = PayloadOf(PressKind::Cancel, 0)}, button);
+  (void)_canvas.Button("confirm button",
+                       {.label = std::string(_text.ask), .payload = PayloadOf(PressKind::Confirm, 0), .enabled = _running}, button);
+  (void)_canvas.Button("cancel button", {.label = std::string(_text.leave), .payload = PayloadOf(PressKind::Cancel, 0)}, button);
   tree.End();
 }
 
@@ -1523,6 +1550,25 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
                                                 .alignX = Neuron::LayoutAlign::Stretch});
   const HeaderState state = StateOf(_model, _link, _now);
   m_running = state.running;
+  // The players' seats, which Drop link and New token are for, and those whose link the newest Health says is online.
+  m_playerSeats.clear();
+  m_onlineSeats.clear();
+  if (const std::optional<OverseerWelcomeMessage>& told = _model.Welcome())
+  {
+    for (const OverseerSeat& seat : told->seats)
+    {
+      if (seat.ai.empty())
+        m_playerSeats.push_back(seat.player);
+    }
+  }
+  if (const HeardHealth* latest = _model.LatestHealth())
+  {
+    for (const SeatHealth& seat : latest->health.seats)
+    {
+      if (seat.link == SeatLink::Online)
+        m_onlineSeats.push_back(seat.player);
+    }
+  }
   LayHeader(canvas, _model, _link, state, _now);
   LayTiles(canvas, _model);
   (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
@@ -1572,15 +1618,26 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
     "seats", columns,
     Neuron::TableSorted{.column = sortColumn, .sort = m_sortDescending ? Neuron::TableSort::Descending : Neuron::TableSort::Ascending},
     rows, {.grow = 1.0f});
-  // The picked seat's action bar, at the table's foot (owner, 2026-10-28): its window, and the seat's actions to come.
+  // The picked seat's action bar, at the table's foot (owner, 2026-10-28): its window, and for a player's seat its actions,
+  // asked only of a running server, Drop link only while the seat's link is online (ADR-104).
   if (m_picked.has_value())
   {
+    const Neuron::LayoutStyle button{.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS};
     (void)tree.Add({.heightUnits = CELL_GAP_UNITS});
     (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Center});
     (void)canvas.Label(Fitted(std::format("Seat {} picked", m_picked->value), Hud::Typeface::Name, NAME_LINE_UNITS), Hud::Theme().textColor,
                        {.grow = 1.0f});
-    (void)canvas.Button("seat button", {.label = "Seat", .payload = PayloadOf(PressKind::SeatWindow, 0)},
-                        {.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS});
+    (void)canvas.Button("seat button", {.label = "Seat", .payload = PayloadOf(PressKind::SeatWindow, 0)}, button);
+    if (std::ranges::contains(m_playerSeats, *m_picked))
+    {
+      (void)canvas.Button("drop link button",
+                          {.label = "Drop link",
+                           .payload = PayloadOf(PressKind::DropLink, 0),
+                           .enabled = m_running && std::ranges::contains(m_onlineSeats, *m_picked)},
+                          button);
+      (void)canvas.Button("new token button", {.label = "New token", .payload = PayloadOf(PressKind::NewToken, 0), .enabled = m_running},
+                          button);
+    }
     tree.End();
   }
   canvas.EndPanel();
@@ -1638,6 +1695,7 @@ void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerMo
   const Neuron::Theme& theme = Hud::Theme();
   Neuron::Canvas canvas(theme, _metrics, m_interaction, _screenWidthUnits, _screenHeightUnits);
   const ActionMessage confirming = m_confirming.value_or(ActionMessage{});
+  const ConfirmText confirmText = ConfirmOf(confirming);
   Neuron::WidgetId widget = m_interaction.IdOf("server window");
   std::string title = "SERVER";
   float width = SERVER_WINDOW_UNITS;
@@ -1650,7 +1708,7 @@ void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerMo
   else if (_window == OverseerWindow::Confirm)
   {
     widget = m_interaction.IdOf("confirm window");
-    title = ConfirmTitle(confirming);
+    title = confirmText.title;
     width = CONFIRM_WINDOW_UNITS;
   }
   m_titleBars[index] = canvas.TitleBarOf(widget);
@@ -1683,7 +1741,7 @@ void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerMo
     LaySeatWindow(canvas, _model, m_seatShown, width - (2.0f * PADDING));
     break;
   case OverseerWindow::Confirm:
-    LayConfirmWindow(canvas, confirming, m_running);
+    LayConfirmWindow(canvas, confirming, confirmText, m_running);
     break;
   }
   canvas.EndWindow();
@@ -1787,6 +1845,17 @@ void Outpost::OverseerScreen::Press(std::uint32_t _payload)
   case PressKind::Cancel:
     CloseWindow(OverseerWindow::Confirm);
     break;
+  case PressKind::DropLink:
+    if (m_picked.has_value())
+      AskToDropLink(*m_picked);
+    break;
+  case PressKind::NewToken:
+    if (m_picked.has_value())
+      AskForNewToken(*m_picked);
+    break;
+  case PressKind::DeputyAtOnce:
+    PickDeputyAtOnce(which == 1);
+    break;
   }
 }
 
@@ -1848,6 +1917,28 @@ void Outpost::OverseerScreen::AskToStop()
     return;
   m_confirming = ActionMessage{.action = OverseerAction::Stop};
   m_windows.Open(OverseerWindow::Confirm);
+}
+
+void Outpost::OverseerScreen::AskToDropLink(PlayerId _seat)
+{
+  if (!m_running || !std::ranges::contains(m_onlineSeats, _seat))
+    return;
+  m_confirming = ActionMessage{.action = OverseerAction::DropLink, .seat = _seat};
+  m_windows.Open(OverseerWindow::Confirm);
+}
+
+void Outpost::OverseerScreen::AskForNewToken(PlayerId _seat)
+{
+  if (!m_running || !std::ranges::contains(m_playerSeats, _seat))
+    return;
+  m_confirming = ActionMessage{.action = OverseerAction::NewToken, .seat = _seat};
+  m_windows.Open(OverseerWindow::Confirm);
+}
+
+void Outpost::OverseerScreen::PickDeputyAtOnce(bool _atOnce) noexcept
+{
+  if (m_confirming.has_value() && m_confirming->action == OverseerAction::DropLink)
+    m_confirming->deputyAtOnce = _atOnce;
 }
 
 void Outpost::OverseerScreen::Confirm()

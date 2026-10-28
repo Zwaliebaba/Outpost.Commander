@@ -40,7 +40,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
 | OV5.4 | The seat window | OV5.3 | D8, D9, D10 | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
 | OV6.1 | The actions' messages, Save now and Stop | OV5 | D11, D12 | done |
-| OV6.2 | Drop link and New token | OV6.1 | D2, D3, D12 | todo |
+| OV6.2 | Drop link and New token | OV6.1 | D2, D3, D12 | done |
 
 ### Milestone order
 
@@ -357,3 +357,15 @@ What the overseer does on the server, which never reaches the simulation (the pr
 - **ADR:** the overseer's actions; [ADR-078](../ADR/ADR-078-dedicated-server.md) decisions 2 and 10; [ADR-060](../ADR/ADR-060-quic-in-process.md)'s close reasons where they are listed; ADR-103 decision 7.
 - **Acceptance:** the game's close reasons with `DroppedByOwner` and its rejoin rule; `UniverseSettingsTests`, a seat's token written back; the server's Drop link, both ways, and New token over QUIC, the old token refused and the new one taken; `OverseerScreenTests`: the action bar's buttons and their windows, and the guards.
 - **Verify:** the checkers; the container's tests; CI's Debug|x64 run for the QUIC tests; the owner's run against a running universe.
+
+### As built
+
+- **One message for the four actions,** `ActionMessage` with the action's kind, and one answer, `ActionResultMessage`, rather than the proposal's message an action: the four share every field but Drop link's deputy choice.
+- **Every action is carried out by the server's thread between two ticks,** Stop included: it marks the server asked, and the main thread stops it at its next second's look, so the log writes the stop at the tick it was carried out. A Stalled server carries out none, so the overseer asks for them only while the header says Running, a guard the gates did not name.
+- **A dropped link is a `join` record of its own,** `gone player <p> dropped`, a ninth `JoinOutcome`, so that the server window's joins and the seat window's time down count it beside the `overseer` record of what was asked.
+- **Drop link is dimmed unless the newest `Health` says the seat's link is online,** and the server refuses one with no link open.
+- **New token's window says the join file is in the universe's folder** rather than naming its path: the file's name is `GameLogic`'s (`JoinFileName`), which the overseer does not include (ADR-002); the answer names the path the server wrote.
+- **One confirm window,** which shows the action last asked for, rather than a window each.
+- **The acceptance's names as built:** `OverseerProtocolTests.CarriesEveryMessageAsItWasSent`, with an action and its answer; `UniverseLogTests.WritesTheOverseersActions`; `SeatControllerTests.ALinkTheOwnerDroppedHandsTheSeatOverAsPicked`; `UniverseSettingsTests.WritesASeatsTokenBack`; `QuicTransportTests`, `DroppedByOwner` among the closes not joined again; `OverseerLinkTests.SavesNowWhenAsked`, `SavesOneAskedSaveAtATime`, `StopsWhenAsked`, `RefusesAnActionThatNamesWhatItMayNot`, `DropsASeatsLinkAsTheOwnerPicks` and `GivesASeatANewToken`; `OverseerModelTests.KeepsTheLatestActionsResult`; and `OverseerScreenTests.AsksForSaveNowAndStop`, `AsksNothingOfAServerThatDoesNotRun`, `TellsWhatCameOfTheLatestAction` and `AsksToDropALinkAndForANewToken`, with `HoldsTheLayoutAndContrastGuards` run with Drop link's window open.
+- **Run in the container:** the server's suites and `GameAppTests` pass on the clang 18 harnesses, but the QUIC tests, which compile there without running; `HudTests.LaysOutTheOrdersWindow` and `KeepsEveryTextInsideItsPanel` fail there on the stand-in fonts, on `main` alone as on this branch. The overview's display list at 1920×1080 with Stop's window and with Drop link's window open, written out as an image with the stand-in fonts, shows each window in the middle of the screen over the overview, the header's buttons beside Server, a refusal wrapped under the state, and the action bar's buttons.
+- **Not run in the container:** the QUIC tests, the executables, and the guards with the fonts Windows installs. CI's run 734, of `e2c745a`, OV6.1, passed all six jobs, the QUIC tests among them.

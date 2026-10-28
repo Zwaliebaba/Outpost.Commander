@@ -58,14 +58,15 @@ enum class JoinOutcome : std::uint8_t
   SeatRefused,
   Malformed,
   Silent,
-  // Gone from its seat: taken by its player's newer connection, closed by the game, or lost without a word, as when MsQuic's
-  // idle timeout ends it.
+  // Gone from its seat: taken by its player's newer connection, closed by the game, lost without a word, as when MsQuic's
+  // idle timeout ends it, or dropped by the server's owner from the overseer (ADR-104).
   Taken,
   Closed,
-  Lost
+  Lost,
+  Dropped
 };
 
-inline constexpr std::size_t JOIN_OUTCOME_COUNT = 8;
+inline constexpr std::size_t JOIN_OUTCOME_COUNT = 9;
 
 // The overseer's first message: the version it speaks and how its messages are laid out, which stay its first two fields so
 // that a server of another build can still read them, then the universe's overseer token (ADR-101).

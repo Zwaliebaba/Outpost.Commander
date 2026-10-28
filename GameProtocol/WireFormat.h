@@ -23,7 +23,9 @@ enum class CloseReason : std::uint8_t
   SeatRefused,
   MalformedMessage,
   // The seat was taken again, with its token, by another connection: the player's newest connection holds it (ADR-078).
-  SeatTaken
+  SeatTaken,
+  // The server's owner dropped the seat's link from the overseer (ADR-104), which the game does not join again after.
+  DroppedByOwner
 };
 
 // What the server's close says to a player, by its QUIC error code; none for a code that is no CloseReason.

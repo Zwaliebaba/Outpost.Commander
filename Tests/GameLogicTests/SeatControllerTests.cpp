@@ -44,6 +44,26 @@ public:
     Assert::IsTrue(control.DeputyPlays(DELAY_TICKS * 3, 2, true));
   }
 
+  // ADR-104: a link the server's owner dropped hands the seat to its deputy as the owner picked, at once once the connection
+  // is seen gone or after the delay from the drop; a newer connection takes it back, and one that goes waits out the delay.
+  TEST_METHOD(ALinkTheOwnerDroppedHandsTheSeatOverAsPicked)
+  {
+    Outpost::SeatController atOnce(TICKS_PER_SECOND);
+    Assert::IsFalse(atOnce.DeputyPlays(100, 1, false));
+    atOnce.Dropped(101, 1, true);
+    Assert::IsFalse(atOnce.DeputyPlays(101, 1, false), L"its player plays until the connection is seen gone");
+    Assert::IsTrue(atOnce.DeputyPlays(102, 1, true), L"and then its deputy, at once");
+    Assert::IsFalse(atOnce.DeputyPlays(103, 2, false), L"until its player joins again");
+    Assert::IsFalse(atOnce.DeputyPlays(104, 2, true), L"a newer connection that goes waits out the delay");
+    Assert::IsTrue(atOnce.DeputyPlays(104 + DELAY_TICKS, 2, true));
+
+    Outpost::SeatController later(TICKS_PER_SECOND);
+    later.Dropped(10, 1, false);
+    Assert::IsFalse(later.DeputyPlays(11, 1, true));
+    Assert::IsFalse(later.DeputyPlays(10 + DELAY_TICKS - 1, 1, true), L"a tick short of the delay from the drop");
+    Assert::IsTrue(later.DeputyPlays(10 + DELAY_TICKS, 1, true));
+  }
+
   TEST_METHOD(AConnectionTakenUpAgainInTimeNeverSeesTheDeputy)
   {
     Outpost::SeatController control(TICKS_PER_SECOND);
