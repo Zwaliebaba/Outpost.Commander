@@ -96,9 +96,10 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | merged, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | merged, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
 | CV9.1 | The scroll view | CV3.4 | — | merged, [#153](https://github.com/Zwaliebaba/Outpost.Commander/pull/153) |
-| CV10.1 | The hint clear of the build window | CV8.3 | C9 | todo |
+| CV10.1 | The hint clear of the build window | CV8.3 | C9 | dropped (owner, 2026-10-28): the console plan's CN1 deleted the build window, [#158](https://github.com/Zwaliebaba/Outpost.Commander/pull/158) |
 | CV10.2 | The designer's "SAVED" label has its room | CV7.1 | — | todo |
 | CV10.3 | The windows open clear of the column under the Ore | CV8.1 | C10 | todo |
+| CV10.4 | The hint and the banner over the windows | CV8.3 | C11 | todo |
 
 ### Milestone order
 
@@ -111,7 +112,7 @@ CV1 to CV8, in their numbers' order, and CV9 before CV7; then CV10.
 - **CV7 goes before CV8,** since scrolling needs the designer and the Controls window on the canvas, and nothing of the HUD. CV7.2 can go as soon as CV4.3 is done.
 - **CV8 goes last.** The HUD's panels are anchored and do not move (C1), so porting them buys least. Once it lands, `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
 - **CV9 goes before CV7.1, or before the overseer's OV3.2 if that comes first** ([the overseer's plan](ImplementationPlan-Overseer.md)), as a pull request of its own (owner, 2026-10-27). The overseer needs a scroll view from its first version, for its seat table, its log and its seat window; the game needs one only from CV7.1, after the designer. It is numbered last so that no task is renumbered.
-- **CV10 is what the owner's run of 2026-10-28 found** ([PlaytestLog.md](../Records/PlaytestLog.md), that day), at 1920×1080. CV10.2 needs no gate and can go at once; CV10.1 and CV10.3 wait for C9 and C10.
+- **CV10 is what the owner's run of 2026-10-28 found** ([PlaytestLog.md](../Records/PlaytestLog.md), that day), at 1920×1080. CV10.2 needs no gate; C10 and C11, which CV10.3 and CV10.4 waited for, are decided. CV10.1 is dropped, since the build window it kept clear of the hint is gone.
 
 A task whose gate the owner turns down is dropped, and its milestone ships without it.
 
@@ -131,8 +132,9 @@ Each is an owner decision, proposed here and in the task it gates.
 | C6 | **Where a drop-down is used.** A choice among a few is a row of cells, so that the player sees them all and picks in one press (ADR-088 decision 3); a drop-down hides its choices and takes two presses. Proposed: a drop-down only where the choices run long, which is the orders form's sectors, its target, its hour and its minute ([ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md) decision 9). The trigger, the action and the condition keep their steppers. Nothing else in the game takes a drop-down. As proposed (owner, 2026-10-27). | this plan | CV7.2 | decided 2026-10-27 |
 | C7 | **The build window.** The Constructors' build buttons become a floating window of their own, built on today's code right after CV1, and moved onto the canvas in CV4.4. It opens and closes on demand, with B or with one Build button that takes the structures' place beside the selection, and never by itself. Esc cancels an armed placement before it closes a window, so that the first Esc cancels a placement armed from the build window. Picking a structure leaves the window open. It first opens at the bottom right. The owner's answers of 2026-10-27, revised the same day to these: at first the window opened by itself as a Constructor was selected, and Esc closed it before it canceled a placement, which left the placement armed. | this plan | CV2.1, CV4.4 | decided 2026-10-27 |
 | C8 | **Where the hint and the banner stand when the top row is crowded.** At 125% on a 16:9 screen the hint, 640 units wide in the middle, meets the column under the Ore, and at 150% the tag at the top right too. They stay in the middle of the top row while they clear the column and the tag at its widest, so that 100% and 110% are as now; where they do not, they stand under the top row, in the middle of the room right of the column, the banner under the hint. Moving them aside, as proposed, over shrinking them or letting them overlap (owner, 2026-10-27). | CV7.1 | CV7.1 | decided 2026-10-27 |
-| C9 | **The build window and the hint.** At 150% on a 1920×1080 screen the hint stands under the top row (C8), and the build window at its first place, above the bottom row at the right (C7), covers the hint's right end: "right-click to cancel" is hidden while a placement armed from the window is live. Proposed: at a step where the hint and the banner stand under the top row, the build window's first place keeps below them; a window the player has moved keeps its place (C2). The alternative is the hint and the banner drawn over the windows. | CV10.1 | CV10.1 | open |
-| C10 | **Where the production and research windows open.** They open at 178 units from the top, under the place the status panel keeps ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3), which is over the territory panel and the alerts: while either is open the nodes, the tickets and the drain are hidden. Proposed: their first slot stands under the foot of the whole column under the Ore, the alerts included, as the column is at the time; where that leaves a window too little room, it opens beside the column instead. It rewrites ADR-066 decision 3's place, and a window the player has moved keeps its place (C2). | CV10.3 | CV10.3 | open |
+| C9 | **The build window and the hint.** At 150% on a 1920×1080 screen the hint stands under the top row (C8), and the build window at its first place, above the bottom row at the right (C7), covers the hint's right end: "right-click to cancel" is hidden while a placement armed from the window is live. Proposed: at a step where the hint and the banner stand under the top row, the build window's first place keeps below them; a window the player has moved keeps its place (C2). The alternative is the hint and the banner drawn over the windows. Dropped (owner, 2026-10-28): the console plan's CN1 deleted the build window, [#158](https://github.com/Zwaliebaba/Outpost.Commander/pull/158), and build mode stands in the command card at the bottom right, clear of the top row. | CV10.1 | CV10.1 | decided 2026-10-28 |
+| C10 | **Where the production and research windows open.** They open at 178 units from the top, under the place the status panel keeps ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3), which is over the territory panel and the alerts: while either is open the nodes, the tickets and the drain are hidden. Proposed: their first slot stands under the foot of the whole column under the Ore, the alerts included, as the column is at the time; where that leaves a window too little room, it opens beside the column instead. It rewrites ADR-066 decision 3's place, and a window the player has moved keeps its place (C2). Decided otherwise (owner, 2026-10-28): **beside the column, always.** Production is 654 units tall and research 796, and the column ends at 256 units with no alerts and at 372 with four (`main` at `fa252b1`, the longest content, in the Linux harness), so on 16:9 research would stand beside the column at 100% with an alert and from 110% with none, and production from 110% with an alert and from 125% with none; and a window under the column as it was when it opened would cover an alert that came after. So both first open side by side right of the column, the first a gap clear of it, at 178 units from the top as now, a place that moves with nothing; where the second would run past the screen's edge, it is kept on the screen, over the first. | CV10.3 | CV10.3 | decided 2026-10-28 |
+| C11 | **The hint and the banner over the windows.** A window at its first place covers the hint, and the banner under it. The designer, which first opens at the top right, covers the hint's right 30% at 100% and 44% at 110% on 16:9, 16:10 and 3:2, and from 125% the whole hint and the whole banner, its way back to the menu included; on 21:9 it covers 20% of the hint at 125%, 89% at 150% and all of it at 175%. Measured with `main`'s layout at `fa252b1`, the longest content and the designer open at its first place, in the Linux harness; the designer is 818 units wide whatever the font. No first place clears them from 125%, where the designer stands from the top margin to the bottom one. Proposed: the hint and the banner are a layer of their own over the windows and under an open drop-down's overlay, drawn after the front window and taking a press before it, so that the way back takes its press whatever window stands over its place. The hint of what the pointer is over is empty while the pointer is over a window, so the hint covers a window only while the pointer is on the battlefield or a placement is armed. The alternative is the windows closing when the match ends, which leaves the hint covered. As proposed (owner, 2026-10-28). | CV10.4 | CV10.4 | decided 2026-10-28 |
 
 ---
 
@@ -387,16 +389,11 @@ The HUD's panels stay where they are (C1). Each task is a port (rule 5).
 
 ## Milestone CV10 — What the owner's run found
 
-The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three things in the layout ([PlaytestLog.md](../Records/PlaytestLog.md), that day). Each is a task here.
+The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three things in the layout ([PlaytestLog.md](../Records/PlaytestLog.md), that day). Each is a task here. CV10.4 is what a check of the designer against the hint found the same day, at the owner's request, once CV10.1 was dropped.
 
 ### CV10.1 — The hint clear of the build window
 
-- **Gate:** C9.
-- **Goal:** at 150% on 1920×1080, the build window at its first place covers the right end of the placement hint, so the way to cancel a placement armed from it is hidden.
-- **Scope, as proposed:** at a step where the hint and the banner stand under the top row (C8), the build window's first place keeps below them. A window the player has moved keeps its place (C2).
-- **ADR:** [ADR-099](../ADR/ADR-099-interface-settings-kept.md), where the windows' first places are, edited in place.
-- **Acceptance:** `HudTests`: at every step the windows fit on 16:9, 16:10 and 3:2, the build window at its first place overlaps neither the hint nor the banner; the test fails on today's layout at 150% on 16:9.
-- **Verify:** the container's tests; CI; the owner's run at 150%, with a placement armed from the build window.
+- **Dropped** (owner, 2026-10-28), with gate C9: the console plan's CN1 deleted the build window, [#158](https://github.com/Zwaliebaba/Outpost.Commander/pull/158). The structures are the command card's build mode, at the bottom right.
 
 ### CV10.2 — The designer's "SAVED" label has its room
 
@@ -409,10 +406,19 @@ The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three 
 
 - **Gate:** C10.
 - **Goal:** the production and research windows open over the territory panel and the alerts, hiding the nodes, the tickets and the drain while either is open.
-- **Scope, as proposed:** their first slot stands under the foot of the whole column under the Ore, as the column is at the time; where that leaves a window too little room, it opens beside the column. A window the player has moved keeps its place (C2).
+- **Scope, as decided:** production and research first open side by side right of the column under the Ore, the first slot a gap clear of the column and the second beside the window in the first, at 178 units from the top as now; a window that would run past the screen's edge is kept on it. A window the player has moved keeps its place (C2).
 - **ADR:** [ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3, the place, edited in place.
 - **Acceptance:** `HudTests`: at every step the windows fit, production and research at their first places overlap none of the column's panels, with the alerts at their longest.
 - **Verify:** the container's tests; CI; the owner's run with production and research open together.
+
+### CV10.4 — The hint and the banner over the windows
+
+- **Gate:** C11.
+- **Goal:** a window at its first place covers the hint, and from 125% the match's end banner and its way back: the designer, which first opens at the top right, covers the whole of both at 125% and 150% on 16:9, 16:10 and 3:2 (C11 has the measure).
+- **Scope, as proposed:** the hint and the banner are laid out in a layer over the windows and under an open drop-down's overlay, drawn after the front window and searched before it by `LayerAt` and `ActionAt`, so that the way back takes its press whatever window stands over its place. Their places are unchanged (C8).
+- **ADR:** [ADR-031](../ADR/ADR-031-floating-windows.md) decision 4 and [ADR-100](../ADR/ADR-100-the-canvas.md) decision 7, the layers, and [ADR-015](../ADR/ADR-015-ui-drawing.md) decision 4, the hint and the banner, edited in place.
+- **Acceptance:** `HudTests`: at every step the windows fit on 16:9, 16:10, 3:2 and 21:9, with the designer open at its first place and the longest content, `LayerAt` at the hint's and the way back's middles is the hint and the banner's layer, and `ActionAt` at the way back's middle is `BackToMenu`; the test fails on today's layout at 125% on 16:9.
+- **Verify:** the container's tests; CI; the owner's run at 150% on 1920×1080 with the designer open, a placement armed and then a match ended.
 
 ---
 
