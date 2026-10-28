@@ -15,12 +15,16 @@ constexpr std::chrono::seconds FINISH_WAIT{5};
 std::mutex g_mutex;
 std::condition_variable g_changed;
 bool g_stopAsked = false;
+bool g_byWindows = false;
 bool g_finished = false;
 
 BOOL WINAPI OnControl(DWORD _event) noexcept
 {
   std::unique_lock lock(g_mutex);
   g_stopAsked = true;
+  // Signing out and shutting down are Windows'; Ctrl+C, Ctrl+Break and closing the window are the owner's.
+  if (_event == CTRL_LOGOFF_EVENT || _event == CTRL_SHUTDOWN_EVENT)
+    g_byWindows = true;
   g_changed.notify_all();
   // After a close, a sign-out or a shutdown, Windows ends the process as this returns.
   if (_event == CTRL_CLOSE_EVENT || _event == CTRL_LOGOFF_EVENT || _event == CTRL_SHUTDOWN_EVENT)
@@ -51,6 +55,12 @@ bool Outpost::ServerConsole::WaitForStop(std::chrono::milliseconds _wait)
 {
   std::unique_lock lock(g_mutex);
   return g_changed.wait_for(lock, _wait, [] { return g_stopAsked; });
+}
+
+bool Outpost::ServerConsole::StoppedByWindows() const
+{
+  const std::scoped_lock lock(g_mutex);
+  return g_byWindows;
 }
 
 void Outpost::ServerConsole::Finished() noexcept

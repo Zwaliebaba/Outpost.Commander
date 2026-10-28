@@ -17,6 +17,8 @@ constexpr std::string_view MAP_FILE = "Map.json";
 constexpr std::string_view MATCHUPS_FILE = "Matchups.json";
 // Where a seat's player connects: the listener takes connections on the loopback address only (ADR-060).
 constexpr std::string_view LOOPBACK_HOST = "127.0.0.1";
+// How long Close waits for the overseer to hear how the server ends.
+constexpr std::chrono::seconds CLOSING_WAIT{1};
 
 void Refuse(Neuron::QuicChannel& _channel, Outpost::CloseReason _reason) noexcept
 {
@@ -399,10 +401,21 @@ void Outpost::InProcessServer::Advance(std::chrono::nanoseconds _elapsedWallTime
     throw Neuron::Exception("InProcessServer: a started server runs its own ticks");
   const std::uint64_t dropped = m_tickHost.DroppedTicks();
   const std::uint32_t ticks = m_tickHost.Advance(_elapsedWallTime);
-  if (m_log && m_tickHost.DroppedTicks() > dropped)
-    m_log->Dropped(m_tickHost.DroppedTicks() - dropped);
+  KeepDropped(m_tickHost.DroppedTicks() - dropped);
   for (std::uint32_t i = 0; i < ticks; ++i)
     RunTick();
+}
+
+void Outpost::InProcessServer::KeepDropped(std::uint64_t _ticks)
+{
+  if (_ticks == 0)
+    return;
+  // What a stall cost: ticks that never run, which the universe's log sums for the minute and Health for the second
+  // (ADR-009, ADR-082, ADR-101).
+  if (m_log)
+    m_log->Dropped(_ticks);
+  const std::scoped_lock lock(m_reportMutex);
+  m_healthDropped += _ticks;
 }
 
 void Outpost::InProcessServer::Step()
@@ -466,9 +479,7 @@ void Outpost::InProcessServer::Run(const std::stop_token& _stop)
       const std::uint64_t dropped = m_tickHost.DroppedTicks();
       const std::uint32_t ticks = m_tickHost.Advance(now - last);
       last = now;
-      // What a stall cost: ticks that never run, which the universe's log sums for the minute (ADR-009, ADR-082).
-      if (m_log && m_tickHost.DroppedTicks() > dropped)
-        m_log->Dropped(m_tickHost.DroppedTicks() - dropped);
+      KeepDropped(m_tickHost.DroppedTicks() - dropped);
       for (std::uint32_t i = 0; i < ticks; ++i)
         RunTick();
     }
@@ -511,6 +522,10 @@ void Outpost::InProcessServer::RunTick()
   std::vector<std::string> silent;
   if (m_listener)
     silent = m_listener->Sweep(HELLO_TIMEOUT, static_cast<std::uint64_t>(CloseReason::MalformedMessage));
+  // And the overseer's, whose comings and goings the universe's log writes (ADR-101).
+  std::vector<OverseerRecord> overseen;
+  if (m_overseer)
+    overseen = m_overseer->Sweep();
   std::vector<Command> commands;
   for (Connection& connection : m_connections)
   {
@@ -561,6 +576,8 @@ void Outpost::InProcessServer::RunTick()
     bool plays = true;
   };
   std::vector<HostedTurn> turns;
+  bool viewDue = false;
+  std::optional<Snapshot> view;
   {
     const ObservedPart part(&m_profiler, TickPart::Snapshots);
     // Every connection's snapshot, and who plays its seat, first, for the universe's log to read them all.
@@ -584,12 +601,17 @@ void Outpost::InProcessServer::RunTick()
     }
     for (std::string& address : silent)
       joins.push_back({.outcome = JoinOutcome::Silent, .address = std::move(address)});
+    const std::uint64_t tick = m_simulation.CurrentTick();
     std::vector<Prepared> prepared;
     prepared.reserve(m_connections.size());
     for (Connection& connection : m_connections)
     {
       Prepared& next =
         prepared.emplace_back(Prepared{.connection = &connection, .snapshot = m_simulation.BuildSnapshot(connection.player)});
+      // The second's commands applied for the seat and refused it, which the server tells it of as events (ADR-094).
+      connection.secondOrders += connection.orders;
+      connection.secondRefused +=
+        static_cast<std::uint32_t>(std::ranges::count(next.snapshot.events, EventKind::CommandRefused, &EventView::kind));
       if (connection.seat)
       {
         // A seat not yet taken has nobody to send to.
@@ -597,6 +619,14 @@ void Outpost::InProcessServer::RunTick()
           const std::scoped_lock lock(m_seatMutex);
           next.quic = connection.quic;
           next.takings = connection.takings;
+        }
+        // Its link, and since when it has been so, by the connection that holds it now.
+        const SeatLink link = !next.quic ? SeatLink::Open : (next.quic->HasGone() ? SeatLink::Gone : SeatLink::Online);
+        if (link != connection.link || next.takings != connection.linkTaking)
+        {
+          connection.link = link;
+          connection.linkTick = tick;
+          connection.linkTaking = next.takings;
         }
         // A seat's deputy comes with the controller that says when it plays (Host). While it does, the seat's report of what
         // its player misses grows, and the player's first snapshot once it plays again carries it (ADR-080).
@@ -634,10 +664,14 @@ void Outpost::InProcessServer::RunTick()
       else if (connection.hosted)
         next.play = SeatPlay::Ai;
     }
+    for (const JoinRecord& join : joins)
+      ++m_joinCounts[static_cast<std::size_t>(join.outcome)];
     if (m_log)
     {
       for (const JoinRecord& join : joins)
         m_log->Joined(m_simulation.CurrentTick(), join);
+      for (const OverseerRecord& record : overseen)
+        m_log->Oversaw(m_simulation.CurrentTick(), record);
       for (const WrittenSave& written : m_folder->TakeWritten())
         m_log->Written(written.tick, written.write);
       std::vector<SeatTick> seats;
@@ -662,6 +696,49 @@ void Outpost::InProcessServer::RunTick()
       }
       while (m_seatFigures.size() > SEAT_FIGURES_KEPT)
         m_seatFigures.pop_front();
+    }
+    // What Health says of the seats, kept each second of ticks with their figures, while their snapshots are whole (ADR-101).
+    if (sample)
+    {
+      KeptSecond second{.tick = tick, .joins = m_joinCounts, .connections = static_cast<std::uint32_t>(ListenerConnections())};
+      if (m_log)
+        second.battles = m_log->Battles();
+      for (const Prepared& seat : prepared)
+      {
+        Connection& connection = *seat.connection;
+        const Snapshot& snapshot = seat.snapshot;
+        SeatHealth& health = second.seats.emplace_back(
+          SeatHealth{.player = connection.player,
+                     .play = seat.play,
+                     .link = connection.link,
+                     .linkTick = connection.linkTick,
+                     .orders = std::exchange(connection.secondOrders, 0u),
+                     .refused = std::exchange(connection.secondRefused, 0u),
+                     .ore = snapshot.ore,
+                     .incomeHundredthsPerSecond = snapshot.oreIncomeHundredthsPerSecond,
+                     .commandPoints = snapshot.commandPoints,
+                     .fleetCap = snapshot.fleetCap,
+                     .nodes = static_cast<std::int32_t>(std::ranges::count(snapshot.sectors, connection.player, &SectorView::holder)),
+                     .researched = static_cast<std::int32_t>(
+                       std::ranges::count_if(snapshot.research, [](const ResearchTopicView& _topic) { return _topic.researched; })),
+                     .restartTick = snapshot.restartTick});
+        // Its player still plays a seat whose link has gone, until its deputy takes it (ADR-079 decision 4).
+        if (connection.link == SeatLink::Gone && seat.play == SeatPlay::Player && connection.control.has_value())
+          health.deputyTick = connection.linkTick + (std::uint64_t{DEPUTY_DELAY_SECONDS} * TicksPerSecond());
+        if (seat.figures.has_value())
+          health.connection = FiguresOf(*seat.figures);
+      }
+      const std::scoped_lock lock(m_reportMutex);
+      m_second = std::move(second);
+    }
+    // The overseer's view, every tick of OVERSEER_VIEWS_PER_SECOND: full sight, or a copy of the snapshot of the seat it watches.
+    viewDue = m_overseer && tick % std::max<std::uint64_t>(1, TicksPerSecond() / OVERSEER_VIEWS_PER_SECOND) == 0 && m_overseer->Held();
+    if (viewDue)
+    {
+      const PlayerId sight = m_overseer->Sight();
+      const auto watched = std::ranges::find_if(prepared, [sight](const Prepared& _seat) { return _seat.connection->player == sight; });
+      if (sight.IsValid() && watched != prepared.end())
+        view = watched->snapshot;
     }
     for (Prepared& seat : prepared)
     {
@@ -742,10 +819,18 @@ void Outpost::InProcessServer::RunTick()
                                             turn.connection->player.value, COMMANDS_WAITING_LIMIT));
     }
   }
+  if (viewDue)
+  {
+    const ObservedPart part(&m_profiler, TickPart::Overseer);
+    m_overseer->SendView(view.has_value() ? std::move(*view) : m_simulation.BuildFullSight());
+  }
   const TickTiming timing{.total = std::chrono::steady_clock::now() - started, .parts = m_profiler.Take()};
   // The minute's longest tick, and its dropped ticks, as the minute ends (ADR-082 decision 1).
   if (m_log)
     m_log->Timed(m_simulation.CurrentTick(), timing);
+  // Every record the tick wrote, to the overseer as it was written (ADR-101).
+  if (m_overseer && m_log)
+    m_overseer->SendRecords(m_log->TakeLines());
   const std::scoped_lock lock(m_reportMutex);
   m_tickTimings.push_back(timing);
 }
@@ -780,6 +865,9 @@ void Outpost::InProcessServer::UseUniverse(const std::filesystem::path& _folder,
       (void)m_simulation.Tick(commands);
     }
   }
+  m_universeFolder = _folder;
+  m_recoveredSaveTick = savedTick;
+  m_replayedCommands = replayed;
   m_folder = std::make_unique<UniverseFolder>(_folder);
   m_logFile.open(_folder / UNIVERSE_LOG_FILE, std::ios::app);
   if (!m_logFile)
@@ -810,10 +898,98 @@ void Outpost::InProcessServer::SaveUniverse()
   const auto encode = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started);
   const std::size_t bytes = save.size();
   m_folder->Save(m_simulation.CurrentTick(), std::move(save));
+  m_lastSaveTick.store(m_simulation.CurrentTick());
   if (m_log)
     m_log->Saved(m_simulation.CurrentTick(), bytes, encode);
   // The universe's folder keeps the commands from here on.
   m_commandLog.clear();
+}
+
+Outpost::ServerAddress Outpost::InProcessServer::Oversee(const OverseerDesc& _desc, std::vector<OverseerSeat> _seats)
+{
+  if (m_thread.joinable())
+    throw Neuron::Exception("InProcessServer: the overseer's link is made before the server starts");
+  if (!m_folder || !m_log)
+    throw Neuron::Exception("InProcessServer: only a universe's server has an overseer");
+  if (m_overseer)
+    throw Neuron::Exception("InProcessServer: the server has its overseer's link already");
+  // The sectors' shapes and the asteroid fields never change, so the welcome carries them once, as a catalogue does (ADR-060
+  // decision 9).
+  Snapshot sight = m_simulation.BuildFullSight();
+  CatalogMessage catalog = TakeCatalog(sight);
+  const std::u8string folder = m_universeFolder.u8string();
+  const OverseerWelcomeMessage welcome{.wireLayoutHash = WireLayoutHash(),
+                                       .protocolVersion = PROTOCOL_VERSION,
+                                       .stateVersion = UNIVERSE_STATE_VERSION,
+                                       .ticksPerSecond = TicksPerSecond(),
+                                       .folderUtf8 = std::string(reinterpret_cast<const char*>(folder.data()), folder.size()),
+                                       .seats = std::move(_seats),
+                                       .sectors = std::move(catalog.sectors),
+                                       .fields = std::move(catalog.fields),
+                                       .recoveredSaveTick = m_recoveredSaveTick,
+                                       .replayedCommands = m_replayedCommands};
+  m_overseer = std::make_unique<OverseerLink>(_desc, m_universeFolder, welcome,
+                                              UniverseLog::ReadLastRecords(m_universeFolder / UNIVERSE_LOG_FILE, OVERSEER_RECORDS_KEPT));
+  m_log->KeepLines();
+  return {.host = ListenHost(_desc.address), .port = m_overseer->Port(), .certificate = m_overseer->Certificate(), .token = _desc.token};
+}
+
+Outpost::HealthMessage Outpost::InProcessServer::TakeHealth(const Neuron::ProcessFigures& _process)
+{
+  const std::vector<TickTiming> timings = TakeTickTimings();
+  HealthMessage health{
+    .wallMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
+  {
+    const std::scoped_lock lock(m_reportMutex);
+    health.tick = m_second.tick;
+    health.seats = m_second.seats;
+    health.battles = m_second.battles;
+    health.joins = m_second.joins;
+    health.connections = m_second.connections;
+    health.droppedTicks = static_cast<std::uint32_t>(
+      std::min<std::uint64_t>(std::exchange(m_healthDropped, std::uint64_t{0}), std::numeric_limits<std::uint32_t>::max()));
+  }
+  // Each tick's time and the parts summed, in whole microseconds, and the largest part of the longest tick.
+  const auto microseconds = [](std::chrono::nanoseconds _time)
+  { return static_cast<std::uint64_t>(std::max<std::int64_t>(0, std::chrono::duration_cast<std::chrono::microseconds>(_time).count())); };
+  std::array<std::uint64_t, TICK_PART_COUNT> parts{};
+  std::optional<std::chrono::nanoseconds> longest;
+  for (const TickTiming& timing : timings)
+  {
+    health.tickMicroseconds.push_back(
+      static_cast<std::uint32_t>(std::min<std::uint64_t>(microseconds(timing.total), std::numeric_limits<std::uint32_t>::max())));
+    for (std::size_t part = 0; part < TICK_PART_COUNT; ++part)
+      parts[part] += microseconds(timing.parts[part]);
+    if (!longest.has_value() || timing.total > *longest)
+    {
+      longest = timing.total;
+      health.longestPart = static_cast<TickPart>(std::ranges::max_element(timing.parts) - timing.parts.begin());
+    }
+  }
+  for (std::size_t part = 0; part < TICK_PART_COUNT; ++part)
+    health.partMicroseconds[part] =
+      static_cast<std::uint32_t>(std::min<std::uint64_t>(parts[part], std::numeric_limits<std::uint32_t>::max()));
+  health.process = {.workingSetBytes = _process.workingSetBytes,
+                    .privateBytes = _process.privateBytes,
+                    .cpuHundredths = _process.cpuHundredths,
+                    .threads = _process.threads,
+                    .handles = _process.handles,
+                    .uptimeSeconds = static_cast<std::uint64_t>(std::max<std::int64_t>(0, _process.uptime.count())),
+                    .diskFreeBytes = _process.diskFreeBytes};
+  return health;
+}
+
+void Outpost::InProcessServer::Report(const Neuron::ProcessFigures& _process)
+{
+  const HealthMessage health = TakeHealth(_process);
+  if (m_overseer && m_overseer->Held())
+    m_overseer->SendHealth(health);
+}
+
+void Outpost::InProcessServer::Close(ServerEnding _ending, std::string _message)
+{
+  if (m_overseer)
+    m_overseer->SendClosing({.ending = _ending, .messageUtf8 = std::move(_message), .lastSaveTick = m_lastSaveTick.load()}, CLOSING_WAIT);
 }
 
 void Outpost::InProcessServer::StartStressLoad()

@@ -4,6 +4,9 @@
     <Filter Include="Simulation">
       <UniqueIdentifier>{5722b586-f7e3-47d9-a7b9-48ee6ec6539e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Process">
+      <UniqueIdentifier>{5d08c12e-d9d4-49eb-adcd-e8e5224f3333}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -14,6 +17,9 @@
     <ClInclude Include="TickHost.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="ProcessMeter.h">
+      <Filter>Process</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -22,6 +28,9 @@
     </ClCompile>
     <ClCompile Include="TickHost.cpp">
       <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessMeter.cpp">
+      <Filter>Process</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -5,15 +5,6 @@ namespace Outpost
 // The universe's log, in its folder beside its saves (ADR-082).
 inline constexpr std::string_view UNIVERSE_LOG_FILE = "Universe.log";
 
-// Who plays a seat in a tick of a universe: its player, its deputy while the player is away (ADR-079), or
-// the AI, when the seat is an AI empire's.
-enum class SeatPlay : std::uint8_t
-{
-  Player,
-  Deputy,
-  Ai
-};
-
 // One seat after a tick: its player, who played it, the snapshot the server built for it, its connection over QUIC when the
 // server sampled it after this tick (ADR-004 decision 6), and how many of its commands the tick applied, whoever gave them:
 // its player, its deputy or the AI.
@@ -26,24 +17,6 @@ struct SeatTick
   std::uint32_t orders = 0;
 };
 
-// What came of a connection to a universe's seat (ADR-082 decision 1).
-enum class JoinOutcome : std::uint8_t
-{
-  // Its hello took the seat.
-  Welcomed,
-  // Refused: a hello of another build; a token that is not the seat's, or a seat that is not open; a message that is no hello,
-  // or a seated client that broke the rules; and a connection that said no hello in time.
-  WrongVersion,
-  SeatRefused,
-  Malformed,
-  Silent,
-  // Gone from its seat: taken by its player's newer connection, closed by the game, or lost without a word, as when MsQuic's
-  // idle timeout ends it.
-  Taken,
-  Closed,
-  Lost
-};
-
 // One join's record: what came of it, the seat's player when it is known, the address the connection came from, the layout
 // a hello of another build named (ADR-060 decision 5), and the code the game closed its connection with.
 struct JoinRecord
@@ -53,6 +26,26 @@ struct JoinRecord
   std::string address;
   std::uint64_t layout = 0;
   std::uint64_t code = 0;
+};
+
+// What came of a connection to the overseer's listener (ADR-101): it opened the overseer's channel; it closed, by the
+// overseer, lost or taken by a newer one; or it was refused, for another build, a token that is not the universe's, a message
+// that is no hello, or no hello in time.
+enum class OverseerOutcome : std::uint8_t
+{
+  Opened,
+  Closed,
+  WrongVersion,
+  TokenRefused,
+  Malformed,
+  Silent
+};
+
+// One of the overseer's comings and goings, and the address it came from.
+struct OverseerRecord
+{
+  OverseerOutcome outcome = OverseerOutcome::Opened;
+  std::string address;
 };
 
 // A universe's log (ADR-082 decision 1): ADR-038's match log for a universe that keeps running, written by its server
@@ -79,6 +72,10 @@ struct JoinRecord
 //   join <tick> gone player <p> <taken, closed <code> or lost> from <address>
 //                                                  a seat's connection gone: taken by a newer one, closed by the game with
 //                                                  its code, or lost without a word
+//   overseer <tick> opened from <address>          the overseer's channel opened, or closed, by the overseer, lost or taken
+//   overseer <tick> closed from <address>          by a newer one (ADR-101)
+//   overseer <tick> refused <why> from <address>   a connection to the overseer's listener refused: version, token,
+//                                                  malformed, or silent for no hello in time
 //   seat <tick> player <p> <player, deputy or ai>  who plays the seat, when it changes, and from the first tick
 //   order <tick> player <p> order <id> <action> <given, held or refused>
 //                                                  a scheduled order fired (ADR-080)
@@ -127,6 +124,18 @@ public:
   void Dropped(std::uint64_t _ticks);
   // What came of a connection, at _tick.
   void Joined(std::uint64_t _tick, const JoinRecord& _join);
+  // The overseer's coming or going, at _tick.
+  void Oversaw(std::uint64_t _tick, const OverseerRecord& _record);
+
+  // From here on, keeps each line it writes until TakeLines, for the overseer's stream (ADR-101).
+  void KeepLines() noexcept;
+  // The lines written since the last call, oldest first.
+  [[nodiscard]] std::vector<std::string> TakeLines() noexcept;
+  // The battles under way, each with the seats fighting in it.
+  [[nodiscard]] std::vector<BattleHealth> Battles() const;
+
+  // The last _count lines of the log in _file, oldest first, read from its end; none when it cannot be read.
+  [[nodiscard]] static std::vector<std::string> ReadLastRecords(const std::filesystem::path& _file, std::size_t _count);
 
 private:
   struct SeatState
@@ -181,5 +190,8 @@ private:
   std::optional<std::pair<std::uint64_t, TickTiming>> m_longest;
   std::uint32_t m_longTicks = 0;
   std::uint64_t m_droppedTicks = 0;
+  // The lines written since TakeLines, once KeepLines has asked for them.
+  bool m_keepLines = false;
+  std::vector<std::string> m_lines;
 };
 } // namespace Outpost

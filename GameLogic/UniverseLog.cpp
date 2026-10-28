@@ -1,8 +1,34 @@
 #include "pch.h"
 #include "UniverseLog.h"
 
+#include <algorithm>
+#include <fstream>
+
 namespace
 {
+// How much of a log's end ReadLastRecords reads at a time.
+constexpr std::streamoff RECORDS_CHUNK_BYTES = 64 * std::streamoff{1024};
+
+std::string_view OverseerWords(Outpost::OverseerOutcome _outcome) noexcept
+{
+  switch (_outcome)
+  {
+  case Outpost::OverseerOutcome::Opened:
+    return "opened";
+  case Outpost::OverseerOutcome::Closed:
+    return "closed";
+  case Outpost::OverseerOutcome::WrongVersion:
+    return "refused version";
+  case Outpost::OverseerOutcome::TokenRefused:
+    return "refused token";
+  case Outpost::OverseerOutcome::Malformed:
+    return "refused malformed";
+  case Outpost::OverseerOutcome::Silent:
+    return "refused silent";
+  }
+  return "refused malformed";
+}
+
 std::string_view PlayWord(Outpost::SeatPlay _play) noexcept
 {
   switch (_play)
@@ -108,6 +134,69 @@ void Outpost::UniverseLog::Write(const std::string& _line)
 {
   *m_out << _line << '\n';
   m_out->flush();
+  if (m_keepLines)
+    m_lines.push_back(_line);
+}
+
+void Outpost::UniverseLog::KeepLines() noexcept
+{
+  m_keepLines = true;
+}
+
+std::vector<std::string> Outpost::UniverseLog::TakeLines() noexcept
+{
+  return std::exchange(m_lines, {});
+}
+
+std::vector<Outpost::BattleHealth> Outpost::UniverseLog::Battles() const
+{
+  std::vector<BattleHealth> battles;
+  for (const Battle& battle : m_battles)
+  {
+    if (!battle.start.has_value())
+      continue;
+    BattleHealth& under = battles.emplace_back(BattleHealth{.sector = battle.sector, .startTick = *battle.start});
+    for (const auto& side : battle.sides)
+      under.players.push_back(side.first);
+  }
+  return battles;
+}
+
+std::vector<std::string> Outpost::UniverseLog::ReadLastRecords(const std::filesystem::path& _file, std::size_t _count)
+{
+  std::ifstream file(_file, std::ios::binary);
+  if (!file || _count == 0)
+    return {};
+  file.seekg(0, std::ios::end);
+  const std::streamoff size = file.tellg();
+  // Chunks from the end, until they hold more line ends than records asked for, or the whole file.
+  std::string tail;
+  std::streamoff start = size;
+  while (start > 0 && static_cast<std::size_t>(std::ranges::count(tail, '\n')) <= _count)
+  {
+    const std::streamoff read = std::min(start, RECORDS_CHUNK_BYTES);
+    start -= read;
+    std::string chunk(static_cast<std::size_t>(read), '\0');
+    file.seekg(start);
+    if (!file.read(chunk.data(), read))
+      return {};
+    tail.insert(0, chunk);
+  }
+  std::vector<std::string> lines;
+  std::size_t begin = 0;
+  for (std::size_t end = tail.find('\n'); end != std::string::npos; begin = end + 1, end = tail.find('\n', begin))
+  {
+    // A log written on Windows ends its lines with a carriage return too, which is no part of the record.
+    std::string& line = lines.emplace_back(tail, begin, end - begin);
+    if (line.ends_with('\r'))
+      line.pop_back();
+  }
+  // The first line of a chunk that starts within the file may be cut short, and a last line with no end is still being written.
+  if (start > 0 && !lines.empty())
+    lines.erase(lines.begin());
+  if (lines.size() > _count)
+    lines.erase(lines.begin(), lines.end() - static_cast<std::ptrdiff_t>(_count));
+  return lines;
 }
 
 void Outpost::UniverseLog::Started(std::uint64_t _tick, std::optional<std::uint64_t> _saveTick, std::size_t _replayed)
@@ -179,6 +268,11 @@ void Outpost::UniverseLog::EndMinute(std::uint64_t _tick)
 void Outpost::UniverseLog::Joined(std::uint64_t _tick, const JoinRecord& _join)
 {
   Write(std::format("join {} {} from {}", _tick, JoinWords(_join), _join.address.empty() ? "-" : _join.address));
+}
+
+void Outpost::UniverseLog::Oversaw(std::uint64_t _tick, const OverseerRecord& _record)
+{
+  Write(std::format("overseer {} {} from {}", _tick, OverseerWords(_record.outcome), _record.address.empty() ? "-" : _record.address));
 }
 
 void Outpost::UniverseLog::Record(std::uint64_t _tick, std::span<const SeatTick> _seats)

@@ -40,6 +40,34 @@ void StageBattle(MatchArena& _arena)
 TEST_CLASS(FogTests)
 {
 public:
+  // ADR-101: the overseer's full sight sees every entity, under fog of war or not, each as its owner sees it, with every shot
+  // of the tick; it is no player's, and holds none of a player's own figures.
+  TEST_METHOD(FullSightSeesThroughTheFog)
+  {
+    MatchArena arena;
+    const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1000.0f, .zMeters = -1000.0f});
+    const Outpost::EntityId distant = arena.SimulationState().SpawnConstructor(RED, {.xMeters = 1000.0f, .zMeters = 1000.0f});
+    arena.SimulationState().UseFog();
+    StageBattle(arena);
+    for (int tick = 0; tick < 200 && arena.SimulationState().BuildFullSight().shots.empty(); ++tick)
+      (void)arena.Tick({});
+
+    const Outpost::Snapshot blue = arena.SimulationState().BuildSnapshot(BLUE);
+    const Outpost::Snapshot full = arena.SimulationState().BuildFullSight();
+    Assert::IsNull(FindView(blue, distant), L"Blue does not see Red's distant Constructor");
+    Assert::IsNotNull(FindView(full, distant), L"full sight does");
+    Assert::AreEqual(arena.SimulationState().Entities().size(), full.entities.size(), L"every entity, nothing remembered");
+    Assert::IsTrue(std::ranges::is_sorted(full.entities, {}, &Outpost::EntityView::id), L"in identifier order");
+    Assert::IsTrue(std::ranges::none_of(full.entities, &Outpost::EntityView::remembered));
+    Assert::IsTrue(FindView(full, distant)->owner == RED);
+    Assert::IsTrue(FindView(full, distant)->sightMeters > 0.0f, L"each as its owner sees it");
+    Assert::IsTrue(FindView(full, scout)->sightMeters > 0.0f);
+    Assert::IsFalse(full.shots.empty(), L"the battle's shots");
+    Assert::IsFalse(full.player.IsValid(), L"no player's");
+    Assert::IsTrue(full.designs.empty() && full.research.empty() && full.ore == 0, L"none of a player's own");
+    Assert::AreEqual(blue.sectors.size(), full.sectors.size());
+  }
+
   // A player sees an enemy within its own entities' sight, measured to the enemy's edge, and not beyond; the map is always
   // seen. Without fog it sees everything.
   TEST_METHOD(SeesWhatItsShipsAndStructuresSee)
