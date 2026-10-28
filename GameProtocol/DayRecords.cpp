@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "LaneRecords.h"
+#include "DayRecords.h"
 
 #include <charconv>
 #include <map>
@@ -45,12 +45,13 @@ std::optional<Outpost::RecordHead> Outpost::HeadOf(std::string_view _record) noe
   return RecordHead{.kind = kind, .tick = *tick};
 }
 
-bool Outpost::IsLaneRecord(std::string_view _kind) noexcept
+bool Outpost::IsDayRecord(std::string_view _kind) noexcept
 {
-  return _kind == "seat" || _kind == "start" || _kind == "battle";
+  return _kind == "seat" || _kind == "start" || _kind == "battle" || _kind == "join" || _kind == "hour" || _kind == "tick" ||
+         _kind == "dropped";
 }
 
-void Outpost::KeepLaneRecords(std::deque<std::string>& _records, std::uint64_t _sinceTick)
+void Outpost::KeepDayRecords(std::deque<std::string>& _records, std::uint64_t _sinceTick)
 {
   // A start goes back to its tick: what was written past it before it belongs to a universe that did not go on.
   std::vector<std::string> ordered;
@@ -58,7 +59,7 @@ void Outpost::KeepLaneRecords(std::deque<std::string>& _records, std::uint64_t _
   for (std::string& record : _records)
   {
     const std::optional<RecordHead> head = HeadOf(record);
-    if (!head.has_value() || !IsLaneRecord(head->kind))
+    if (!head.has_value() || !IsDayRecord(head->kind))
       continue;
     if (head->kind == "start")
     {

@@ -20,17 +20,17 @@ bool SameToken(const Outpost::SeatToken& _a, const Outpost::SeatToken& _b) noexc
 } // namespace
 
 Outpost::OverseerLink::OverseerLink(const OverseerDesc& _desc, const std::filesystem::path& _identity, OverseerWelcomeMessage _welcome,
-                                    std::deque<std::string> _lanes, std::vector<std::string> _records)
+                                    std::deque<std::string> _dayRecords, std::vector<std::string> _records)
   : m_token(_desc.token),
     m_welcome(std::move(_welcome)),
-    m_lanes(std::move(_lanes))
+    m_dayRecords(std::move(_dayRecords))
 {
-  m_welcome.laneRecords.clear();
+  m_welcome.dayRecords.clear();
   for (const OverseerSeat& seat : m_welcome.seats)
     m_seats.push_back(seat.player);
-  // The day the lanes cover ends at the newest record written, among them and the log's last records.
-  for (const std::string& lane : m_lanes)
-    m_newestTick = std::max(m_newestTick, HeadOf(lane).value_or(RecordHead{}).tick);
+  // The day the day's records cover ends at the newest record written, among them and the log's last records.
+  for (const std::string& record : m_dayRecords)
+    m_newestTick = std::max(m_newestTick, HeadOf(record).value_or(RecordHead{}).tick);
   for (const std::string& record : _records)
     m_newestTick = std::max(m_newestTick, HeadOf(record).value_or(RecordHead{}).tick);
   for (std::string& record : _records)
@@ -130,10 +130,10 @@ void Outpost::OverseerLink::Welcome(std::shared_ptr<Neuron::QuicChannel> _channe
   std::shared_ptr<Neuron::QuicChannel> replaced;
   {
     const std::scoped_lock lock(m_mutex);
-    // The lanes' records as of the newest record written, made into the welcome here, on MsQuic's thread.
-    KeepLaneRecords(m_lanes, LaneDayStart());
+    // The day's records as of the newest record written, made into the welcome here, on MsQuic's thread.
+    KeepDayRecords(m_dayRecords, DayStart());
     OverseerWelcomeMessage welcome = m_welcome;
-    welcome.laneRecords.assign(m_lanes.begin(), m_lanes.end());
+    welcome.dayRecords.assign(m_dayRecords.begin(), m_dayRecords.end());
     _channel->Send(EncodeOverseerMessage(welcome));
     if (!m_records.empty())
       _channel->Send(EncodeOverseerMessage(LogRecordsMessage{.lines = std::vector<std::string>(m_records.begin(), m_records.end())}));
@@ -221,9 +221,9 @@ void Outpost::OverseerLink::SendView(Snapshot _view)
     m_viewsSent.Keep(state.snapshot);
 }
 
-std::uint64_t Outpost::OverseerLink::LaneDayStart() const noexcept
+std::uint64_t Outpost::OverseerLink::DayStart() const noexcept
 {
-  const std::uint64_t day = LANE_SECONDS * m_welcome.ticksPerSecond;
+  const std::uint64_t day = DAY_RECORDS_SECONDS * m_welcome.ticksPerSecond;
   return m_newestTick > day ? m_newestTick - day : 0;
 }
 
@@ -232,22 +232,22 @@ void Outpost::OverseerLink::SendRecords(std::vector<std::string> _lines)
   if (_lines.empty())
     return;
   const std::scoped_lock lock(m_mutex);
-  bool lanes = false;
+  bool kept = false;
   for (const std::string& line : _lines)
   {
     m_records.push_back(line);
     if (const std::optional<RecordHead> head = HeadOf(line))
     {
       m_newestTick = std::max(m_newestTick, head->tick);
-      if (IsLaneRecord(head->kind))
+      if (IsDayRecord(head->kind))
       {
-        m_lanes.push_back(line);
-        lanes = true;
+        m_dayRecords.push_back(line);
+        kept = true;
       }
     }
   }
-  if (lanes)
-    KeepLaneRecords(m_lanes, LaneDayStart());
+  if (kept)
+    KeepDayRecords(m_dayRecords, DayStart());
   while (m_records.size() > OVERSEER_RECORDS_KEPT)
     m_records.pop_front();
   if (m_overseer)

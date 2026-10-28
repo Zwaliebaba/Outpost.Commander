@@ -89,7 +89,7 @@
     <ClInclude Include="ByteFormat.h">
       <Filter>Connection</Filter>
     </ClInclude>
-    <ClInclude Include="LaneRecords.h">
+    <ClInclude Include="DayRecords.h">
       <Filter>Connection</Filter>
     </ClInclude>
   </ItemGroup>
@@ -122,7 +122,7 @@
     <ClCompile Include="HeldStates.cpp">
       <Filter>Connection</Filter>
     </ClCompile>
-    <ClCompile Include="LaneRecords.cpp">
+    <ClCompile Include="DayRecords.cpp">
       <Filter>Connection</Filter>
     </ClCompile>
   </ItemGroup>

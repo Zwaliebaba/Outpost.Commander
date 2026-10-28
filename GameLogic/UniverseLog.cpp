@@ -199,7 +199,7 @@ std::vector<std::string> Outpost::UniverseLog::ReadLastRecords(const std::filesy
   return lines;
 }
 
-std::deque<std::string> Outpost::UniverseLog::ReadLaneRecords(const std::filesystem::path& _file, std::uint64_t _sinceTick)
+std::deque<std::string> Outpost::UniverseLog::ReadDayRecords(const std::filesystem::path& _file, std::uint64_t _sinceTick)
 {
   std::ifstream file(_file, std::ios::binary);
   std::deque<std::string> records;
@@ -208,10 +208,10 @@ std::deque<std::string> Outpost::UniverseLog::ReadLaneRecords(const std::filesys
     // A log written on Windows ends its lines with a carriage return too, which is no part of the record.
     if (line.ends_with('\r'))
       line.pop_back();
-    if (const std::optional<RecordHead> head = HeadOf(line); head.has_value() && IsLaneRecord(head->kind))
+    if (const std::optional<RecordHead> head = HeadOf(line); head.has_value() && IsDayRecord(head->kind))
       records.push_back(std::move(line));
   }
-  KeepLaneRecords(records, _sinceTick);
+  KeepDayRecords(records, _sinceTick);
   return records;
 }
 

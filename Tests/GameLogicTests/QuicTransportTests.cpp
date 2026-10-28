@@ -386,6 +386,43 @@ public:
     Assert::IsTrue(!next.empty() && !next.back().away.has_value(), L"once");
   }
 
+  // ADR-101 decision 5, ADR-080 decision 7: while a seat's deputy plays it for a player who has held it, the overseer's Health
+  // carries the report the server keeps for that player, from the tick the deputy took the seat; a seat its player plays has none.
+  TEST_METHOD(TellsTheOverseerWhatAnAwayPlayerMisses)
+  {
+    const TemporaryFolder folder;
+    auto server = UniverseServer(folder.Path());
+    const Outpost::ServerAddress blueSeat = server->OpenSeat(BLUE, Outpost::NewSeatToken());
+    auto counter = std::make_unique<Counter>();
+    const Counter& deputy = *counter;
+    server->Host(BLUE, std::move(counter));
+    const std::uint32_t second = server->TicksPerSecond();
+    {
+      Outpost::QuicTransport blue(blueSeat, BLUE);
+      for (std::uint32_t tick = 0; tick < second; ++tick)
+        server->Step();
+      const Outpost::HealthMessage present = server->TakeHealth({});
+      const auto seat = std::ranges::find(present.seats, BLUE, &Outpost::SeatHealth::player);
+      Assert::IsTrue(seat != present.seats.end() && seat->play == Outpost::SeatPlay::Player && !seat->away.has_value(),
+                     L"no report while its player plays it");
+    }
+    // The connection has gone; a minute of ticks after, the deputy takes the seat (ADR-079 decision 4).
+    std::this_thread::sleep_for(1s);
+    const std::uint64_t played = deputy.plays;
+    const std::uint64_t ticksPerMinute = std::uint64_t{Outpost::DEPUTY_DELAY_SECONDS} * second;
+    for (std::uint64_t tick = 0; tick <= ticksPerMinute + second && deputy.plays == played; ++tick)
+      server->Step();
+    Assert::IsTrue(deputy.plays > played, L"the deputy takes the seat");
+    const std::uint64_t tookOver = deputy.lastPlayed;
+    for (std::uint32_t tick = 0; tick < second; ++tick)
+      server->Step();
+    const Outpost::HealthMessage away = server->TakeHealth({});
+    const auto seat = std::ranges::find(away.seats, BLUE, &Outpost::SeatHealth::player);
+    Assert::IsTrue(seat != away.seats.end() && seat->play == Outpost::SeatPlay::Deputy, L"its deputy plays it");
+    Assert::IsTrue(seat->away.has_value(), L"and the overseer is told what its player misses");
+    Assert::AreEqual(tookOver, seat->away.value_or(Outpost::AwayReport{}).sinceTick, L"from the tick the deputy took the seat");
+  }
+
   // ADR-078: a universe's server keeps its certificate in the universe's folder, so that a player pins it once.
   TEST_METHOD(AUniverseKeepsItsCertificate)
   {

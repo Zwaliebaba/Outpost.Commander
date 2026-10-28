@@ -725,7 +725,7 @@ void LayWhoPlayed(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model,
   const std::optional<Outpost::OverseerWelcomeMessage>& welcome = _model.Welcome();
   const Outpost::HeardHealth* latest = _model.LatestHealth();
   const std::uint64_t dayEnd = _model.NewestTick();
-  const std::uint64_t day = Outpost::LANE_SECONDS * (welcome.has_value() ? welcome->ticksPerSecond : 0);
+  const std::uint64_t day = Outpost::DAY_RECORDS_SECONDS * (welcome.has_value() ? welcome->ticksPerSecond : 0);
   const std::uint64_t dayStart = dayEnd > day ? dayEnd - day : 0;
   if (!welcome.has_value() || dayEnd <= dayStart)
   {
@@ -735,7 +735,7 @@ void LayWhoPlayed(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model,
   }
   const auto across = [dayStart, dayEnd](std::uint64_t _tick)
   { return LANE_WIDTH_UNITS * static_cast<float>(std::clamp(_tick, dayStart, dayEnd) - dayStart) / static_cast<float>(dayEnd - dayStart); };
-  const std::deque<std::string>& records = _model.LaneRecords();
+  const std::deque<std::string>& records = _model.DayRecords();
   // The recoveries of the day: a new universe's start is where its lanes begin, not a mark across them.
   std::vector<std::uint64_t> starts;
   for (const std::string& record : records)

@@ -34,9 +34,9 @@ Outpost::OverseerWelcomeMessage Welcome()
                     {.player = Outpost::PlayerId{4}, .ai = "Hard"}},
           .recoveredSaveTick = 1'200,
           .replayedCommands = 7,
-          .laneRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
-                          "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
-                          "battle 70000 70100 sector 3 player 3 deputy player 2 ai"}};
+          .dayRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
+                         "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
+                         "battle 70000 70100 sector 3 player 3 deputy player 2 ai"}};
 }
 
 // _model welcomed at START, and told a Health of _tick at _heard.

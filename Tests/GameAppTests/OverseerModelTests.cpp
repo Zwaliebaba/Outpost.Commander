@@ -141,42 +141,44 @@ public:
     Assert::IsTrue(model.Records().empty(), L"a new connection's welcome replaces them");
   }
 
-  // ADR-103 decision 6, ADR-101 decision 7: the lanes' records, the welcome's and those the log writes since, kept for the day of
-  // universe time that ends at the newest tick, with each seat's last hand-over before it; records of other kinds are not lanes.
-  TEST_METHOD(KeepsADayOfTheLanesRecords)
+  // ADR-103 decision 6, ADR-101 decision 7: the day's records, the welcome's and those the log writes since, kept for the day of
+  // universe time that ends at the newest tick, with each seat's last hand-over before it; a save is not one of them.
+  TEST_METHOD(KeepsTheDayRecords)
   {
     Outpost::OverseerModel model;
     Outpost::OverseerWelcomeMessage welcome = Welcome();
-    welcome.laneRecords = {"start 0 new", "seat 10 player 1 deputy"};
+    welcome.dayRecords = {"start 0 new", "seat 10 player 1 deputy"};
     model.Take(Outpost::EncodeOverseerMessage(welcome), START);
-    Assert::IsTrue(model.LaneRecords() == std::deque<std::string>{"start 0 new", "seat 10 player 1 deputy"}, L"the welcome's");
-    model.Take(Bytes(Outpost::LogRecordsMessage{.lines = {"seat 2000 player 1 player", "hour 2000 player 1 ore 0"}}), START);
-    Assert::AreEqual(std::size_t{3}, model.LaneRecords().size(), L"and the hand-over written since, but not the hour");
+    Assert::IsTrue(model.DayRecords() == std::deque<std::string>{"start 0 new", "seat 10 player 1 deputy"}, L"the welcome's");
+    model.Take(Bytes(Outpost::LogRecordsMessage{
+                 .lines = {"seat 2000 player 1 player", "hour 2000 player 1 ore 0", "save 2000 bytes 10 encode_us 5"}}),
+               START);
+    Assert::AreEqual(std::size_t{4}, model.DayRecords().size(), L"and the hand-over and the hour written since, but not the save");
     Assert::AreEqual(std::uint64_t{2'000}, model.NewestTick());
 
-    // A day and 3,000 ticks on, at 20 a second: the start and the first hand-over are older than the day, and only the last
-    // hand-over before it stays.
-    model.Take(Bytes(HealthAt((std::uint64_t{20} * Outpost::LANE_SECONDS) + 3'000)), START);
-    Assert::IsTrue(model.LaneRecords() == std::deque<std::string>{"seat 2000 player 1 player"});
+    // A day and 3,000 ticks on, at 20 a second: the start, the first hand-over and the hour are older than the day, and only the
+    // last hand-over before it stays.
+    model.Take(Bytes(HealthAt((std::uint64_t{20} * Outpost::DAY_RECORDS_SECONDS) + 3'000)), START);
+    Assert::IsTrue(model.DayRecords() == std::deque<std::string>{"seat 2000 player 1 player"});
   }
 
-  // ADR-101 decision 7: the log's last records, sent after the welcome, give again lanes' records the welcome gave, and older
+  // ADR-101 decision 7: the log's last records, sent after the welcome, give again day's records the welcome gave, and older
   // ones the day dropped; neither is taken again, so an old start does not go back past the day's records.
-  TEST_METHOD(TakesNoLanesRecordTwice)
+  TEST_METHOD(TakesNoDayRecordTwice)
   {
     Outpost::OverseerModel model;
     Outpost::OverseerWelcomeMessage welcome = Welcome();
-    const std::uint64_t dayLater = (std::uint64_t{20} * Outpost::LANE_SECONDS) + 3'000;
-    welcome.laneRecords = {"seat 2000 player 1 player", std::format("seat {} player 1 deputy", dayLater)};
+    const std::uint64_t dayLater = (std::uint64_t{20} * Outpost::DAY_RECORDS_SECONDS) + 3'000;
+    welcome.dayRecords = {"seat 2000 player 1 player", std::format("seat {} player 1 deputy", dayLater)};
     model.Take(Outpost::EncodeOverseerMessage(welcome), START);
     model.Take(Bytes(Outpost::LogRecordsMessage{.lines = {"start 0 new", "seat 10 player 1 deputy", "seat 2000 player 1 player",
                                                           std::format("seat {} player 1 deputy", dayLater)}}),
                START);
-    Assert::IsTrue(model.LaneRecords() ==
+    Assert::IsTrue(model.DayRecords() ==
                      std::deque<std::string>{"seat 2000 player 1 player", std::format("seat {} player 1 deputy", dayLater)},
                    L"the welcome's, once each, and nothing of before the day");
     model.Take(Bytes(Outpost::LogRecordsMessage{.lines = {std::format("seat {} player 1 player", dayLater + 20)}}), START);
-    Assert::AreEqual(std::size_t{3}, model.LaneRecords().size(), L"a hand-over written since is new");
+    Assert::AreEqual(std::size_t{3}, model.DayRecords().size(), L"a hand-over written since is new");
   }
 
   // ADR-103, ADR-101 decision 6: a view crosses whole and then as what changed since the one the overseer holds, and is put

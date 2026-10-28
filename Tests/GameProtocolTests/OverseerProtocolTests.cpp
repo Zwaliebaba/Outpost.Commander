@@ -61,7 +61,14 @@ Outpost::HealthMessage FullHealth()
                           .fleetCap = 32,
                           .nodes = 33,
                           .researched = 34,
-                          .restartTick = 35});
+                          .restartTick = 35,
+                          .away = Outpost::AwayReport{.sinceTick = 1'219,
+                                                      .shipsBuilt = 38,
+                                                      .structuresBuilt = 39,
+                                                      .shipsLost = 40,
+                                                      .structuresLost = 41,
+                                                      .sectorsGained = {42},
+                                                      .sectorsLost = {43, 44}}});
   health.seats.push_back({.player = Outpost::PlayerId{3}, .play = Outpost::SeatPlay::Ai});
   health.battles.push_back({.sector = 36, .startTick = 37, .players = {Outpost::PlayerId{2}, Outpost::PlayerId{3}}});
   return health;
@@ -90,7 +97,7 @@ public:
                                             .recoveredSaveTick = 1'200,
                                             .replayedCommands = 4,
                                             .saveSeconds = 60,
-                                            .laneRecords = {"seat 100 player 1 deputy", "battle 140 160 sector 3 player 1 deputy"}};
+                                            .dayRecords = {"seat 100 player 1 deputy", "battle 140 160 sector 3 player 1 deputy"}};
     welcome.sectors.push_back({.id = 5, .nameUtf8 = "Home", .minXMeters = -6.0f, .node = {.xMeters = 7.0f}, .adjacent = {8, 9}});
     welcome.fields.push_back({.id = Outpost::EntityId{10}, .kind = Outpost::EntityKind::AsteroidField, .radiusMeters = 11.0f});
     AssertCrosses(welcome);
@@ -107,13 +114,17 @@ public:
     Assert::IsTrue(health.longestPart == Outpost::TickPart::Overseer);
     Assert::AreEqual(std::uint64_t{1'219}, health.seats.at(0).deputyTick.value_or(0));
     Assert::AreEqual(std::uint64_t{26}, health.seats.at(0).connection.value_or(Outpost::LinkFigures{}).bytesSent);
+    const Outpost::AwayReport away = health.seats.at(0).away.value_or(Outpost::AwayReport{});
+    Assert::AreEqual(std::uint32_t{41}, away.structuresLost, L"an away seat's report");
+    Assert::IsTrue(away.sectorsLost == std::vector<std::int32_t>{43, 44});
+    Assert::IsFalse(health.seats.at(1).away.has_value());
     Assert::IsTrue(health.seats.at(1).play == Outpost::SeatPlay::Ai);
     Assert::AreEqual(std::uint32_t{18}, health.joins.back());
     const auto decodedWelcome = Decoded<Outpost::OverseerWelcomeMessage>(Outpost::EncodeOverseerMessage(welcome));
     Assert::AreEqual(std::string("Hard"), decodedWelcome.seats.at(1).ai);
     Assert::AreEqual(std::uint64_t{1'200}, decodedWelcome.recoveredSaveTick.value_or(0));
     Assert::AreEqual(std::uint32_t{60}, decodedWelcome.saveSeconds);
-    Assert::IsTrue(decodedWelcome.laneRecords == welcome.laneRecords, L"the lanes' records");
+    Assert::IsTrue(decodedWelcome.dayRecords == welcome.dayRecords, L"the day's records");
   }
 
   TEST_METHOD(ReadsAHelloOfAnotherBuildBeforeItDecodes)
