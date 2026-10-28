@@ -140,6 +140,14 @@ Neuron::Theme TestTheme()
   theme.scrollLaneUnits = 14.0f;
   theme.scrollThumbUnits = 6.0f;
   theme.scrollLeastThumbUnits = 12.0f;
+  theme.detailColor = Role(0.22f);
+  theme.detailFont = NAME;
+  theme.tableHeadingUnits = 28.0f;
+  theme.tableRowUnits = 44.0f;
+  theme.tableFigureTopUnits = 6.0f;
+  theme.tableDetailTopUnits = 24.0f;
+  theme.tableRowGapUnits = 4.0f;
+  theme.tableMarkUnits = 4.0f;
   return theme;
 }
 
@@ -885,6 +893,106 @@ public:
     Assert::IsTrue(RectIs(list.panels[0], 0.0f, 0.0f, 400.0f, 76.0f, theme.fieldColor), L"the field across its padding");
     // 66 units of room between the padding, less the inset either side: three letters of 10 and the dots.
     Assert::IsTrue(TextIs(list.texts[0], "Rai...", 124.0f, 20.0f, theme.textColor, NAME));
+  }
+
+  // ADR-100: a table's headings stand in a row as wide as its rows, each in the label's face, the column that sorts it lit with
+  // its mark after its words, and a press on a heading that sorts names its column's payload. Each row is a card that takes a
+  // press naming its payload, its mark at its left, the picked one in the picked card's face and edge, and each cell a figure
+  // over a detail line in the row's middle, cut short to its column.
+  TEST_METHOD(SetsATableUnderItsHeadings)
+  {
+    Fixture fixture;
+    const Neuron::Theme& theme = fixture.theme;
+    const std::array<Neuron::TableColumn, 3> columns{{{.heading = "SEAT", .widthUnits = 100.0f, .payload = 1},
+                                                      {.heading = "ORE", .payload = 2},
+                                                      {.heading = "NOTE", .widthUnits = 80.0f}}};
+    const std::array<Neuron::TableRow, 2> rows{
+      {{.cells = {{.figure = "Commander Shepard", .detail = "player"}, {.figure = "12,000", .detail = "+40/s"}, {}},
+        .payload = 7,
+        .mark = Role(0.3f)},
+       {.cells = {{.figure = "2", .detail = "Normal AI", .color = Role(0.31f)}, {.figure = "800"}, {}}, .payload = 8, .picked = true}}};
+    Canvas canvas = fixture.Begin();
+    (void)canvas.Table("seats", columns, Neuron::TableSorted{.column = 1, .sort = Neuron::TableSort::Descending}, rows,
+                       {.widthUnits = 400.0f});
+    DrawList list;
+    canvas.Finish(list);
+
+    // The headings: 386 units of the 400 less the lane, SEAT 100, NOTE 80, and ORE the 206 left; each 12 in, and 5.5 down.
+    Assert::IsTrue(TextIs(list.texts[0], "SEAT", 24.0f, 11.0f, theme.labelColor, LABEL));
+    Assert::AreEqual(4.0f, list.texts[0].trackingPixels, 0.001f, L"tracked as a title is");
+    Assert::IsTrue(TextIs(list.texts[1], "v", 280.0f, 11.0f, theme.textColor, LABEL), L"descending, after ORE's 22 units and a gap");
+    Assert::IsTrue(TextIs(list.texts[2], "ORE", 224.0f, 11.0f, theme.textColor, LABEL), L"the sorting column lit");
+    Assert::IsTrue(TextIs(list.texts[3], "NOTE", 636.0f, 11.0f, theme.labelColor, LABEL));
+    Assert::IsTrue(list.regions[0].payload == 1 && RectIs(list.regions[0].area, 0.0f, 0.0f, 200.0f, 56.0f, {}), L"SEAT sorts");
+    Assert::AreEqual(std::uint32_t{2}, list.regions[1].payload);
+    Assert::IsNull(list.HitAt(700.0f, 20.0f), L"NOTE does not sort");
+
+    // The rows: 386 wide, 44 tall, 4 apart, under the headings.
+    Assert::IsTrue(RectIs(list.panels[0], 0.0f, 56.0f, 772.0f, 88.0f, theme.cardColor));
+    Assert::IsTrue(RectIs(list.panels[1], 0.0f, 56.0f, 8.0f, 88.0f, Role(0.3f)), L"its mark at its left");
+    Assert::IsTrue(OutlineIs(list, 2, 0.0f, 56.0f, 772.0f, 88.0f, theme.edgeColor));
+    Assert::IsTrue(RectIs(list.panels[6], 0.0f, 152.0f, 772.0f, 88.0f, theme.pickedColor), L"the picked row");
+    Assert::IsTrue(OutlineIs(list, 7, 0.0f, 152.0f, 772.0f, 88.0f, theme.pickedEdgeColor));
+    Assert::IsTrue(list.regions[2].payload == 7 && RectIs(list.regions[2].area, 0.0f, 56.0f, 772.0f, 88.0f, theme.cardColor));
+    Assert::AreEqual(std::uint32_t{8}, list.regions[3].payload);
+
+    // Each figure 6 units down its row and its detail line 24, cut short to 76 units of the column's 100.
+    Assert::IsTrue(TextIs(list.texts[4], "Comman...", 24.0f, 68.0f, theme.textColor, FIGURE));
+    Assert::IsTrue(TextIs(list.texts[5], "player", 24.0f, 104.0f, theme.detailColor, NAME));
+    Assert::IsTrue(TextIs(list.texts[6], "12,000", 224.0f, 68.0f, theme.textColor, FIGURE));
+    Assert::IsTrue(TextIs(list.texts[7], "+40/s", 224.0f, 104.0f, theme.detailColor, NAME));
+    Assert::IsTrue(TextIs(list.texts[8], "2", 24.0f, 164.0f, Role(0.31f), FIGURE), L"in the caller's color");
+    Assert::IsTrue(TextIs(list.texts[9], "Norm...", 24.0f, 200.0f, theme.detailColor, NAME));
+    Assert::AreEqual(size_t{11}, list.texts.size(), L"nothing for an empty cell");
+
+    fixture.ui.Move(list, 100.0f, 100.0f);
+    Canvas pointed = fixture.Begin();
+    (void)pointed.Table("seats", columns, std::nullopt, rows, {.widthUnits = 400.0f});
+    DrawList lit;
+    pointed.Finish(lit);
+    Assert::IsTrue(OutlineIs(lit, 2, 0.0f, 56.0f, 772.0f, 88.0f, theme.hoverEdgeColor), L"the row under the pointer lit");
+    Assert::IsTrue(TextIs(lit.texts[1], "ORE", 224.0f, 11.0f, theme.labelColor, LABEL), L"unsorted, no mark");
+  }
+
+  // ADR-100: a table given a height scrolls its rows past it, under its headings, which stay; what lies outside the view takes
+  // no press.
+  TEST_METHOD(ScrollsATablesRowsUnderItsHeadings)
+  {
+    Fixture fixture;
+    const std::array<Neuron::TableColumn, 1> columns{{{.heading = "SEAT", .payload = 1}}};
+    std::vector<Neuron::TableRow> rows;
+    rows.reserve(5);
+    for (std::uint32_t row = 0; row < 5; ++row)
+      rows.push_back({.cells = {{.figure = std::format("Seat {}", row + 1)}}, .payload = 10 + row});
+    const auto build = [&](DrawList& _list)
+    {
+      Canvas canvas = fixture.Begin();
+      (void)canvas.Table("seats", columns, std::nullopt, rows, {.widthUnits = 400.0f, .heightUnits = 128.0f});
+      canvas.Finish(_list);
+    };
+    const auto rowPayloads = [](const DrawList& _list)
+    {
+      std::vector<std::uint32_t> payloads;
+      for (const Neuron::CanvasRegion& region : _list.regions)
+      {
+        if (region.payload >= 10 && region.payload != Neuron::NO_PAYLOAD)
+          payloads.push_back(region.payload);
+      }
+      return payloads;
+    };
+
+    DrawList top;
+    build(top);
+    Assert::IsTrue(rowPayloads(top) == std::vector<std::uint32_t>{10, 11, 12}, L"the rows at 0, 48 and 96 of the view's 100");
+    Assert::AreEqual(std::string("SEAT"), top.texts[0].text, L"the heading");
+    Assert::AreEqual(size_t{1}, top.clips.size(), L"the rows cut to the view");
+
+    Assert::IsTrue(fixture.ui.Wheel(top, 100.0f, 150.0f, 100.0f), L"the wheel over the rows");
+    DrawList moved;
+    build(moved);
+    Assert::IsTrue(rowPayloads(moved) == std::vector<std::uint32_t>{12, 13, 14}, L"100 down: the rows from 96");
+    Assert::AreEqual(std::string("SEAT"), moved.texts[0].text, L"the heading stays");
+    Assert::AreEqual(11.0f, moved.texts[0].top, 0.001f);
   }
 };
 } // namespace NeuronClientTests

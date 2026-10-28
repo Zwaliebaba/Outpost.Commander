@@ -1177,6 +1177,16 @@ float TopicWidth() noexcept
   return (RESEARCH_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - ((columns - 1.0f) * CARD_SPACING)) / columns;
 }
 
+// A table on the canvas (ADR-100; the Style Guide's table): its headings' row, as tall as a figure's line with room above and
+// below it; a row, its figure's line 5 down, 3 over its detail line, which ends 4 above its foot; the gap between two rows;
+// and how wide the mark at a row's left is.
+constexpr float TABLE_HEADING_UNITS = 28.0f;
+constexpr float TABLE_FIGURE_TOP_UNITS = 5.0f;
+constexpr float TABLE_DETAIL_TOP_UNITS = TABLE_FIGURE_TOP_UNITS + FIGURE_LINE_UNITS + 3.0f;
+constexpr float TABLE_ROW_UNITS = TABLE_DETAIL_TOP_UNITS + FIGURE_LINE_UNITS + 4.0f;
+constexpr float TABLE_ROW_GAP_UNITS = 4.0f;
+constexpr float TABLE_MARK_UNITS = 4.0f;
+
 // The windows on the canvas (ADR-100). The game's look as the canvas's theme: the windows' colors, typefaces and sizes
 // above, and a window's header in the label face at the body's inset, as each window has drawn its own.
 const Neuron::Theme& GameTheme()
@@ -1205,11 +1215,13 @@ const Neuron::Theme& GameTheme()
     made.warningColor = WARNING_COLOR;
     made.barTrackColor = BAR_TRACK_COLOR;
     made.barFillColor = BAR_FILL_COLOR;
+    made.detailColor = ROW_LABEL_COLOR;
     made.titleFont = Hud::FontOf(Hud::Typeface::Label);
     made.closeMarkFont = Hud::FontOf(Hud::Typeface::Title);
     made.nameFont = Hud::FontOf(Hud::Typeface::Name);
     made.labelFont = Hud::FontOf(Hud::Typeface::Label);
     made.figureFont = Hud::FontOf(Hud::Typeface::Figure);
+    made.detailFont = Hud::FontOf(Hud::Typeface::Detail);
     made.cornerSprite = Hud::SpriteOf(Hud::Sprite::Corner);
     made.checkSprite = Hud::SpriteOf(Hud::Sprite::Checkbox);
     made.titleBarUnits = Hud::TITLE_BAR_UNITS;
@@ -1246,6 +1258,12 @@ const Neuron::Theme& GameTheme()
     made.scrollLaneUnits = DESIGNER_WIDTH - CARDS_LEFT - CARDS_WIDTH;
     made.scrollThumbUnits = 6.0f;
     made.scrollLeastThumbUnits = SMALL_BUTTON_UNITS;
+    made.tableHeadingUnits = TABLE_HEADING_UNITS;
+    made.tableRowUnits = TABLE_ROW_UNITS;
+    made.tableFigureTopUnits = TABLE_FIGURE_TOP_UNITS;
+    made.tableDetailTopUnits = TABLE_DETAIL_TOP_UNITS;
+    made.tableRowGapUnits = TABLE_ROW_GAP_UNITS;
+    made.tableMarkUnits = TABLE_MARK_UNITS;
     return made;
   }();
   return THEME;
@@ -4424,6 +4442,11 @@ std::vector<Neuron::FontDesc> Hud::Typefaces()
      .emUnits = FaceUnits(Typeface::Plate),
      .haloEms = PLATE_HALO_EMS},
   };
+}
+
+const Neuron::Theme& Hud::Theme()
+{
+  return GameTheme();
 }
 
 std::vector<Neuron::SpriteDesc> Hud::Sprites()
