@@ -41,11 +41,10 @@ public:
 
   // Finds this frame's fleets among _ships, _elapsedSeconds after the last frame's. Two ships of one owner are of one fleet
   // when their plates, _platePixels wide and tall, would meet on the screen, or when they stand as near on the ground as a
-  // formation of their side's widest ship keeps its ships;
-  // and two fleets of one owner whose plates would meet become one. A fleet takes the identifier of the last frame's fleet
-  // it shares the most ships with, unless a fleet sharing more has taken it, and a new identifier otherwise. A kept fleet's
-  // plate moves with its ships, and when one joins, leaves or is lost it starts where it stood and settles over
-  // SETTLE_SECONDS.
+  // formation of their side's widest ship keeps its ships; and two fleets of one owner whose plates would meet become one.
+  // A fleet takes the identifier of the last frame's fleet it shares the most ships with, unless a fleet sharing more has
+  // taken it, and a new identifier otherwise. A kept fleet's plate moves with its ships, and when one joins, leaves or is
+  // lost it starts where it stood and settles over SETTLE_SECONDS.
   void Update(std::span<const Ship> _ships, DirectX::XMFLOAT2 _platePixels, float _elapsedSeconds);
 
   // Forgets every fleet, as when no plate is shown.

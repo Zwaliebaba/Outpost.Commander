@@ -51,17 +51,18 @@ public:
     Outpost::Camera camera(Outpost::LoadCameraSettings(ReadRepositoryAssetText("Camera.json")));
     camera.SetFocus(80.0f, 0.0f);
 
-    Outpost::ScreenFleets near;
-    near.Update(Seen(camera, positions), PLATE, 0.0f);
-    Assert::AreEqual(std::size_t{2}, near.Fleets().size(), L"apart at the default view");
-    Assert::AreEqual(std::size_t{4}, near.Fleets()[0].ships.size(), L"a formation is one fleet");
-    Assert::AreEqual(std::size_t{4}, near.Fleets()[1].ships.size());
+    // Not "near" and "far", which Windows.h defines away.
+    Outpost::ScreenFleets closeIn;
+    closeIn.Update(Seen(camera, positions), PLATE, 0.0f);
+    Assert::AreEqual(std::size_t{2}, closeIn.Fleets().size(), L"apart at the default view");
+    Assert::AreEqual(std::size_t{4}, closeIn.Fleets()[0].ships.size(), L"a formation is one fleet");
+    Assert::AreEqual(std::size_t{4}, closeIn.Fleets()[1].ships.size());
 
     camera.Zoom(-20.0f);
-    Outpost::ScreenFleets far;
-    far.Update(Seen(camera, positions), PLATE, 0.0f);
-    Assert::AreEqual(std::size_t{1}, far.Fleets().size(), L"one as the camera pulls back");
-    Assert::AreEqual(std::size_t{8}, far.Fleets()[0].ships.size());
+    Outpost::ScreenFleets pulledBack;
+    pulledBack.Update(Seen(camera, positions), PLATE, 0.0f);
+    Assert::AreEqual(std::size_t{1}, pulledBack.Fleets().size(), L"one as the camera pulls back");
+    Assert::AreEqual(std::size_t{8}, pulledBack.Fleets()[0].ships.size());
   }
 
   // ADR-101 decision 1: a formation keeps three of its widest ship's radii between neighbors (ADR-010 decision 4), so two
