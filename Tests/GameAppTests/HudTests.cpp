@@ -4713,7 +4713,9 @@ public:
                                                 { return _text.text == "SAVED" && _text.top >= chips.front().top - 0.5f; });
         Assert::IsTrue(saved != layout.texts.end(), (L"the label" + step).c_str());
         const Outpost::Hud::Rect label = LineBoxOf(*saved, FontsFor(width, height, factor));
-        Assert::IsTrue(label.left + label.width + (6.0f * scale) <= chips.front().left + 0.5f,
+        // The label's pen is rounded to a pixel, which moves it right by half a pixel at most; and a hundredth of one for the
+        // sums' own rounding.
+        Assert::IsTrue(label.left + label.width + (6.0f * scale) <= chips.front().left + 0.51f,
                        (L"the row's gap after the label" + step).c_str());
         // < stands an arrow and the arrows' gap before >.
         const float previousLeft = next->first.left - ((24.0f + 4.0f) * scale);
