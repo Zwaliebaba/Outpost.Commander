@@ -115,6 +115,22 @@ auto Fields(Self& _value)
   return std::tie(tick);
 }
 
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, ActionMessage>
+auto Fields(Self& _value)
+{
+  auto& [action, seat, deputyAtOnce] = _value;
+  return std::tie(action, seat, deputyAtOnce);
+}
+
+template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, ActionResultMessage>
+auto Fields(Self& _value)
+{
+  auto& [action, seat, done, wordsUtf8] = _value;
+  return std::tie(action, seat, done, wordsUtf8);
+}
+
 // Each enumeration's last value, which ByteReader refuses any value past.
 constexpr TickPart LastOf(TickPart) noexcept
 {
@@ -134,6 +150,11 @@ constexpr SeatLink LastOf(SeatLink) noexcept
 constexpr ServerEnding LastOf(ServerEnding) noexcept
 {
   return ServerEnding::Failed;
+}
+
+constexpr OverseerAction LastOf(OverseerAction) noexcept
+{
+  return OverseerAction::NewToken;
 }
 
 namespace
@@ -255,6 +276,16 @@ std::vector<std::byte> EncodeOverseerMessage(const WatchSightMessage& _sight)
 std::vector<std::byte> EncodeOverseerMessage(const ViewHeldMessage& _held)
 {
   return Encode(_held);
+}
+
+std::vector<std::byte> EncodeOverseerMessage(const ActionMessage& _action)
+{
+  return Encode(_action);
+}
+
+std::vector<std::byte> EncodeOverseerMessage(const ActionResultMessage& _result)
+{
+  return Encode(_result);
 }
 
 OverseerMessage DecodeOverseerMessage(std::span<const std::byte> _bytes)

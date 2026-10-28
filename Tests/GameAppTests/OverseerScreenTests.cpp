@@ -167,6 +167,15 @@ std::wstring Texts(const Neuron::DrawList& _layout)
   return all;
 }
 
+// Whether the layout's texts, each line of a wrapped one joined to the next by a space, hold _words.
+bool ShowsWords(const Neuron::DrawList& _layout, std::string_view _words)
+{
+  std::string all;
+  for (const Neuron::CanvasText& text : _layout.texts)
+    all += text.text + " ";
+  return all.contains(_words);
+}
+
 // Where _text first stands among the layout's texts, which the order they are drawn in follows.
 std::size_t IndexOf(const Neuron::DrawList& _layout, std::string_view _text)
 {
@@ -376,6 +385,124 @@ public:
     Assert::IsTrue(Shows(windows, "Its last save is of tick 1,200."), Texts(windows).c_str());
   }
 
+  // ADR-104 (owner, 2026-10-28): Save now beside the Server button asks for a save at once; Stop opens a window that says what
+  // stopping does, whose Keep running closes it asking nothing and whose Stop asks for the stop and closes it.
+  TEST_METHOD(AsksForSaveNowAndStop)
+  {
+    const Scripted scripted;
+    OverseerScreen screen({});
+    constexpr std::uint32_t SAVE_NOW = 8u << 16;
+    constexpr std::uint32_t STOP = 9u << 16;
+    constexpr std::uint32_t CONFIRM = 10u << 16;
+    constexpr std::uint32_t CANCEL = 11u << 16;
+    const auto on = [](std::uint32_t _payload)
+    { return [_payload](const Neuron::CanvasRegion& _region) { return _region.payload == _payload; }; };
+    const Neuron::DrawList& running = Lay(screen, scripted.model, NOW);
+    Assert::IsTrue(Shows(running, "Save now") && Shows(running, "Stop") && Shows(running, "Server"), Texts(running).c_str());
+    screen.Input(PressOn(running, on(SAVE_NOW)));
+    std::vector<Outpost::ActionMessage> asked = screen.TakeActions();
+    Assert::IsTrue(asked.size() == 1 && asked.front().action == Outpost::OverseerAction::SaveNow, L"Save now, with no window");
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Confirm));
+
+    screen.Input(PressOn(Lay(screen, scripted.model, NOW), on(STOP)));
+    Assert::IsTrue(screen.IsOpen(Outpost::OverseerWindow::Confirm), L"Stop opens its window");
+    Assert::IsTrue(screen.TakeActions().empty(), L"and asks nothing yet");
+    const Neuron::DrawList& window = Lay(screen, scripted.model, NOW);
+    for (const std::string_view text :
+         {"STOP THE SERVER", "Stopping ends the server as Ctrl+C does. No tick runs until it is started again, on its own machine.",
+          "It comes back from its folder: from its last save, with the commands logged since.",
+          "Its players lose their connection until then, and their deputies do not play.", "Keep running"})
+      Assert::IsTrue(ShowsWords(window, text), (std::wstring(winrt::to_hstring(text)) + L" | " + Texts(window)).c_str());
+    const Neuron::CanvasText& title = LastText(window, "STOP THE SERVER");
+    Assert::AreEqual(960.0f, title.left + 310.0f, 40.0f, L"in the middle of the screen");
+    screen.Input(PressOn(window, on(CANCEL)));
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Confirm), L"Keep running closes it");
+    Assert::IsTrue(screen.TakeActions().empty(), L"asking nothing");
+
+    screen.Input(PressOn(Lay(screen, scripted.model, NOW), on(STOP)));
+    screen.Input(PressOn(Lay(screen, scripted.model, NOW), on(CONFIRM)));
+    asked = screen.TakeActions();
+    Assert::IsTrue(asked.size() == 1 && asked.front().action == Outpost::OverseerAction::Stop, L"its Stop asks for the stop");
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Confirm), L"and closes it");
+  }
+
+  // ADR-104: the actions are asked only of a running server, the buttons dim and taking no press otherwise: not of one Stalled,
+  // whose thread may never carry them out, nor of one heard from no more, nor of one stopped; and the confirm window's Stop
+  // dims with them, saying why.
+  TEST_METHOD(AsksNothingOfAServerThatDoesNotRun)
+  {
+    Outpost::OverseerModel model;
+    model.Take(Outpost::EncodeOverseerMessage(Welcome()), START);
+    model.Take(Outpost::EncodeOverseerMessage(Outpost::HealthMessage{.tick = 400}), START);
+    OverseerScreen screen({});
+    (void)Lay(screen, model, START);
+    screen.AskToStop();
+    Assert::IsTrue(screen.IsOpen(Outpost::OverseerWindow::Confirm));
+    const auto asksNothing = [&screen](std::string_view _when)
+    {
+      screen.SaveNow();
+      screen.Confirm();
+      Assert::IsTrue(screen.TakeActions().empty(), std::wstring(winrt::to_hstring(_when)).c_str());
+    };
+
+    for (int second = 1; second <= 2; ++second)
+      model.Take(Outpost::EncodeOverseerMessage(Outpost::HealthMessage{.tick = 400}), START + std::chrono::seconds{second});
+    const Neuron::DrawList& stalled = Lay(screen, model, START + std::chrono::seconds{2});
+    Assert::IsTrue(Shows(stalled, "Stalled"), Texts(stalled).c_str());
+    Assert::IsTrue(Shows(stalled, "The server is not running, so nothing can be asked of it."), Texts(stalled).c_str());
+    const auto disabled = [&stalled](std::string_view _label)
+    {
+      const Neuron::CanvasText& label = LastText(stalled, _label);
+      return Same(label.color, Outpost::Hud::Theme().lockedTextColor);
+    };
+    Assert::IsTrue(disabled("Save now") && disabled("Keep running") == false, L"Save now dims, and Keep running does not");
+    asksNothing("stalled");
+
+    const Neuron::DrawList& quiet = Lay(screen, model, START + std::chrono::seconds{2} + OverseerScreen::NO_WORD_AFTER);
+    Assert::IsTrue(Shows(quiet, "No word"), Texts(quiet).c_str());
+    asksNothing("no word");
+
+    model.Take(
+      Outpost::EncodeOverseerMessage(Outpost::ClosingMessage{.ending = Outpost::ServerEnding::StoppedByOwner, .lastSaveTick = 380}), START);
+    (void)Lay(screen, model, START + std::chrono::seconds{2});
+    asksNothing("stopped");
+    screen.AskToStop();
+    Assert::IsTrue(screen.IsOpen(Outpost::OverseerWindow::Confirm), L"the window it was open on stays, its Stop dim");
+  }
+
+  // ADR-104: what came of the latest action is told under the header's state while the server is up, a refusal in the
+  // warning's color.
+  TEST_METHOD(TellsWhatCameOfTheLatestAction)
+  {
+    Scripted scripted;
+    scripted.model.Take(
+      Outpost::EncodeOverseerMessage(Outpost::ActionResultMessage{
+        .action = Outpost::OverseerAction::SaveNow, .done = true, .wordsUtf8 = "Saved at tick 72000, written in 0.9 ms."}),
+      NOW - std::chrono::seconds{12});
+    const Neuron::DrawList done = Lay(scripted.model, Link(), NOW);
+    const std::string saved = "Save now, 0:12 ago: Saved at tick 72000, written in 0.9 ms.";
+    Assert::IsTrue(Shows(done, saved), Texts(done).c_str());
+    Assert::IsTrue(Same(LastText(done, saved).color, Outpost::Hud::Theme().textColor));
+    Assert::IsTrue(IndexOf(done, "It came back from the save of tick 1,200, replaying 7 commands.") < IndexOf(done, saved),
+                   L"under the state's lines");
+
+    scripted.model.Take(
+      Outpost::EncodeOverseerMessage(Outpost::ActionResultMessage{.action = Outpost::OverseerAction::SaveNow,
+                                                                  .wordsUtf8 = "The save asked for at tick 72000 is still being written."}),
+      NOW);
+    const Neuron::DrawList refused = Lay(scripted.model, Link(), NOW);
+    const std::string written = "Save now, 0:00 ago: The save asked for at tick 72000 is still being written.";
+    Assert::IsTrue(ShowsWords(refused, written), L"wrapped, as long as it is");
+    const auto first =
+      std::ranges::find_if(refused.texts, [](const Neuron::CanvasText& _text) { return _text.text.starts_with("Save now, 0:00"); });
+    Assert::IsTrue(first != refused.texts.end() && Same(first->color, Outpost::Hud::Theme().warningColor), Texts(refused).c_str());
+    Assert::IsFalse(ShowsWords(refused, saved), L"the latest only");
+
+    Outpost::OverseerLink gone = Link();
+    gone.connected = false;
+    Assert::IsFalse(ShowsWords(Lay(scripted.model, gone, NOW), "Save now, 0:00 ago"), L"not while no word comes");
+  }
+
   // ADR-103: before any connection, the overseer says whom it joins, and shows no seat.
   TEST_METHOD(SaysWhomItJoinsBeforeAnyConnection)
   {
@@ -499,6 +626,10 @@ public:
   {
     Scripted scripted;
     TellView(scripted.model, Outpost::PlayerId{});
+    scripted.model.Take(
+      Outpost::EncodeOverseerMessage(Outpost::ActionResultMessage{.action = Outpost::OverseerAction::SaveNow,
+                                                                  .wordsUtf8 = "The save asked for at tick 72000 is still being written."}),
+      NOW);
     const Outpost::OverseerModel& model = scripted.model;
     std::wstring offenders;
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
@@ -507,6 +638,8 @@ public:
       screen.Pick(Outpost::PlayerId{1});
       screen.OpenServerWindow();
       screen.OpenSeatWindow(Outpost::PlayerId{1});
+      (void)Lay(screen, model, NOW, Link(), width, height);
+      screen.AskToStop();
       const Neuron::DrawList& layout = Lay(screen, model, NOW, Link(), width, height);
       const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
       const std::wstring name = std::format(L"the overview at {} wide", width);

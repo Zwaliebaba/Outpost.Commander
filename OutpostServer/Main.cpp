@@ -268,7 +268,8 @@ int RunUniverse(const std::filesystem::path& _folder)
   Neuron::ProcessMeter meter;
   try
   {
-    while (!console.WaitForStop(CHECK_INTERVAL))
+    // The overseer may ask for the stop too (ADR-104).
+    while (!console.WaitForStop(CHECK_INTERVAL) && !server->StopAsked())
       server->Report(meter.Measure(_folder));
   }
   catch (const winrt::hresult_error& error)
@@ -282,6 +283,8 @@ int RunUniverse(const std::filesystem::path& _folder)
     throw;
   }
   server->Close(console.StoppedByWindows() ? Outpost::ServerEnding::StoppedByWindows : Outpost::ServerEnding::StoppedByOwner, {});
+  if (server->StopAsked())
+    Outpost::ServerConsole::Print("The overseer asked the server to stop.");
   Outpost::ServerConsole::Print("Stopping: the universe's last save is written as the server goes.");
   server.reset();
   console.Finished();

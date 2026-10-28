@@ -150,6 +150,13 @@ public:
   // with _message for a failure, and the tick of the universe's last save, and waits a second at most for it to hear.
   void Close(ServerEnding _ending, std::string _message);
 
+  // Whether the overseer has asked the server to stop (ADR-104), which the thread that started it stops it for as Ctrl+C
+  // does. Any thread's.
+  [[nodiscard]] bool StopAsked() const noexcept
+  {
+    return m_stopAsked.load();
+  }
+
 private:
   // Runs one tick: the commands that arrived since the last, at most COMMANDS_PER_TICK of each connection's, in connection
   // order and then in the order each client sent them, and then a snapshot for every connected player. A universe's tick
@@ -160,6 +167,10 @@ private:
 
   // Hands a save of the universe as it stands to its folder, which begins its log anew there (ADR-077).
   void SaveUniverse();
+
+  // Carries out an action the overseer asked for at this tick (ADR-104), and returns whether it asks for a save, which the
+  // tick makes as it makes one due; _saveAsked says whether an action before it at this tick asked for one.
+  [[nodiscard]] bool Act(const ActionMessage& _action, bool _saveAsked);
 
   // Ticks the server dropped after a stall, for the universe's log and the next Health.
   void KeepDropped(std::uint64_t _ticks);
@@ -289,6 +300,10 @@ private:
   std::uint64_t m_replayedCommands = 0;
   // The tick of the universe's last save, which the server's thread writes and Close reads.
   std::atomic<std::uint64_t> m_lastSaveTick{0};
+  // The tick of the save the overseer asked for, until its folder has written it: touched by the thread that steps the server
+  // only. And whether the overseer has asked the server to stop, which its thread sets and the thread that started it reads.
+  std::optional<std::uint64_t> m_askedSaveTick;
+  std::atomic<bool> m_stopAsked{false};
   // The universe's log, beside its saves (ADR-082), and the file it writes to.
   std::ofstream m_logFile;
   std::optional<UniverseLog> m_log;

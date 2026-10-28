@@ -16,8 +16,9 @@ struct OverseerDesc
 // universe's kept certificate, and the one overseer that holds the channel, the newest connection to show the token. It
 // welcomes an overseer on MsQuic's thread with what it was made with and the day's records it keeps, so that it does while
 // the server's thread is stuck.
-// The server's main thread sends Health and Closing through it, and the server's thread the views and the log's records.
-// Every member may be called from any thread, apart from where it says otherwise.
+// The server's main thread sends Health and Closing through it, and the server's thread the views, the log's records and
+// what came of the actions the overseer asked for (ADR-104). Every member may be called from any thread, apart from where it
+// says otherwise.
 class OverseerLink : Neuron::NonCopyable
 {
 public:
@@ -40,6 +41,13 @@ public:
   [[nodiscard]] bool Held() const;
   [[nodiscard]] PlayerId Sight() const;
 
+  // The actions the overseer asked for since the last call, in the order it asked, each with the address it asked from
+  // (ADR-104): the server's thread's, once a tick.
+  [[nodiscard]] std::vector<OverseerAct> TakeActs();
+
+  // What came of an action, to the overseer that holds the channel, if one does.
+  void SendResult(const ActionResultMessage& _result);
+
   // A view of the universe, without its catalogue and its events, as the game's own state message: whole, or as what changed
   // since the newest view the overseer holds (ADR-098), on a stream of its own that a newer view abandons (ADR-096). The
   // server's thread's.
@@ -59,8 +67,11 @@ public:
 
 private:
   // What the listener does with a connection: its first message is a hello that shows the token, and every message after it
-  // a sight or the view it holds. Called on MsQuic's thread.
+  // a sight, the view it holds or an action. Called on MsQuic's thread.
   [[nodiscard]] Neuron::QuicChannel::Receiver Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel);
+
+  // Whether _action names what it may: a player's seat for Drop link and New token, and no seat for the others.
+  [[nodiscard]] bool MayAsk(const ActionMessage& _action) const noexcept;
 
   // Gives the channel to _channel, sending it the welcome and the records kept, and closes the overseer that held it.
   void Welcome(std::shared_ptr<Neuron::QuicChannel> _channel);
@@ -75,15 +86,17 @@ private:
   [[nodiscard]] std::uint64_t DayStart() const noexcept;
 
   SeatToken m_token{};
-  // The welcome, without the day's records, which are added to it as it is sent; and the seats a sight may name.
+  // The welcome, without the day's records, which are added to it as it is sent; the seats a sight may name, and the
+  // players' seats among them, which Drop link and New token may.
   OverseerWelcomeMessage m_welcome;
   std::vector<PlayerId> m_seats;
+  std::vector<PlayerId> m_playerSeats;
 
   // Guards what follows it, which MsQuic's threads and the server's two threads all touch. Every message to the overseer's
   // stream is sent under it, so that the welcome comes first and the records kept follow it before any newer one.
   mutable std::mutex m_mutex;
   // The overseer that holds the channel, and how many have taken it; the sight it watches and the tick of the newest view it
-  // holds; the universe log's last records; and the comings and goings Sweep has yet to take.
+  // holds; the universe log's last records; the comings and goings Sweep has yet to take, and the actions TakeActs has.
   std::shared_ptr<Neuron::QuicChannel> m_overseer;
   std::uint32_t m_takings = 0;
   PlayerId m_sight;
@@ -93,6 +106,7 @@ private:
   std::deque<std::string> m_dayRecords;
   std::uint64_t m_newestTick = 0;
   std::vector<OverseerRecord> m_comings;
+  std::vector<OverseerAct> m_acts;
 
   // The views sent to the overseer of one taking, which the next is sent as a change of: the server's thread's alone.
   SentStates m_viewsSent;

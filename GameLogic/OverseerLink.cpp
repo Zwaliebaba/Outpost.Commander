@@ -27,7 +27,11 @@ Outpost::OverseerLink::OverseerLink(const OverseerDesc& _desc, const std::filesy
 {
   m_welcome.dayRecords.clear();
   for (const OverseerSeat& seat : m_welcome.seats)
+  {
     m_seats.push_back(seat.player);
+    if (seat.ai.empty())
+      m_playerSeats.push_back(seat.player);
+  }
   // The day the day's records cover ends at the newest record written, among them and the log's last records.
   for (const std::string& record : m_dayRecords)
     m_newestTick = std::max(m_newestTick, HeadOf(record).value_or(RecordHead{}).tick);
@@ -113,6 +117,18 @@ Neuron::QuicChannel::Receiver Outpost::OverseerLink::Admit(const std::shared_ptr
         m_held = std::max(m_held.value_or(0), held->tick);
         return;
       }
+      // The server's thread carries an action out at its next tick (ADR-104).
+      if (const auto* action = std::get_if<ActionMessage>(&message))
+      {
+        if (!MayAsk(*action))
+        {
+          Refuse(_peer, OverseerOutcome::Malformed, OverseerCloseReason::MalformedMessage);
+          return;
+        }
+        const std::scoped_lock lock(m_mutex);
+        m_acts.push_back({.action = *action, .address = _peer.PeerAddress()});
+        return;
+      }
       Refuse(_peer, OverseerOutcome::Malformed, OverseerCloseReason::MalformedMessage);
     }
     catch (const Neuron::Exception&)
@@ -120,6 +136,20 @@ Neuron::QuicChannel::Receiver Outpost::OverseerLink::Admit(const std::shared_ptr
       Refuse(_peer, OverseerOutcome::Malformed, OverseerCloseReason::MalformedMessage);
     }
   };
+}
+
+bool Outpost::OverseerLink::MayAsk(const ActionMessage& _action) const noexcept
+{
+  switch (_action.action)
+  {
+  case OverseerAction::DropLink:
+  case OverseerAction::NewToken:
+    return std::ranges::contains(m_playerSeats, _action.seat);
+  case OverseerAction::SaveNow:
+  case OverseerAction::Stop:
+    return !_action.seat.IsValid();
+  }
+  return false;
 }
 
 void Outpost::OverseerLink::Welcome(std::shared_ptr<Neuron::QuicChannel> _channel)
@@ -219,6 +249,20 @@ void Outpost::OverseerLink::SendView(Snapshot _view)
   StateMessage state{.snapshot = std::move(_view)};
   if (overseer->SendNewest(m_viewsSent.Encode(state, held)))
     m_viewsSent.Keep(state.snapshot);
+}
+
+std::vector<Outpost::OverseerAct> Outpost::OverseerLink::TakeActs()
+{
+  const std::scoped_lock lock(m_mutex);
+  return std::exchange(m_acts, {});
+}
+
+void Outpost::OverseerLink::SendResult(const ActionResultMessage& _result)
+{
+  const std::vector<std::byte> encoded = EncodeOverseerMessage(_result);
+  const std::scoped_lock lock(m_mutex);
+  if (m_overseer)
+    m_overseer->Send(encoded);
 }
 
 std::uint64_t Outpost::OverseerLink::DayStart() const noexcept

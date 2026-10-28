@@ -108,3 +108,4 @@ Every ADR, by number: its title, and the subjects it owns. An ADR holds one engi
 | ADR-101 | [A universe's overseer has a channel of its own to the server, which tells it the universe and changes nothing](ADR-101-the-overseers-channel.md) | `overseer-channel`, `overseer-messages`, `overseer-file`, `overseer-health`, `universe-view`, `process-figures` |
 | ADR-102 | [Plates over the fleets on the screen](ADR-102-plates-over-the-fleets.md) | `screen-fleets`, `fleet-plates`, `plates-from-view-width` |
 | ADR-103 | [The overseer is a windowed executable of its own, drawn on the canvas, whose model and link are GameApp's](ADR-103-the-overseer-application.md) | `overseer-application`, `overseer-link`, `overseer-model`, `overseer-overview` |
+| ADR-104 | [The overseer asks the server for actions on its channel, which the server's thread carries out between two ticks](ADR-104-the-overseers-actions.md) | `overseer-actions` |

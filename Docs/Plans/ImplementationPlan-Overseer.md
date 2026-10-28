@@ -39,7 +39,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV5.2 | The header states | OV4 | — | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
 | OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
 | OV5.4 | The seat window | OV5.3 | D8, D9, D10 | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
-| OV6.1 | The actions' messages, Save now and Stop | OV5 | D11, D12 | todo |
+| OV6.1 | The actions' messages, Save now and Stop | OV5 | D11, D12 | done |
 | OV6.2 | Drop link and New token | OV6.1 | D2, D3, D12 | todo |
 
 ### Milestone order

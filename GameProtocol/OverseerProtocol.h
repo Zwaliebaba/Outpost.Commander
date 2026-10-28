@@ -233,11 +233,40 @@ struct ViewHeldMessage
   std::uint64_t tick = 0;
 };
 
-// Everything that crosses the overseer's own stream. The overseer sends a hello, then which sight it watches and the views it
-// holds; the server a welcome, then Health, the log's records and, last, Closing. The universe's view crosses apart, as the
-// game's StateMessage or StateChangeMessage on a stream of its own (ADR-096), which HeldStates puts together.
+// What the overseer may ask of the server, which never reaches the simulation (ADR-104): save the universe now, stop the
+// server, drop a seat's link, or give a seat a new token.
+enum class OverseerAction : std::uint8_t
+{
+  SaveNow,
+  Stop,
+  DropLink,
+  NewToken
+};
+
+// An action the overseer asks of the server (ADR-104): which; the seat it is for, for Drop link and New token, and no player
+// for the others; and, for Drop link, whether the seat's deputy takes it at once rather than after DEPUTY_DELAY_SECONDS.
+struct ActionMessage
+{
+  OverseerAction action = OverseerAction::SaveNow;
+  PlayerId seat;
+  bool deputyAtOnce = false;
+};
+
+// What came of an action (ADR-104): which, and its seat; whether the server did it or refused it; and what it says of it.
+struct ActionResultMessage
+{
+  OverseerAction action = OverseerAction::SaveNow;
+  PlayerId seat;
+  bool done = false;
+  std::string wordsUtf8;
+};
+
+// Everything that crosses the overseer's own stream. The overseer sends a hello, then which sight it watches, the views it
+// holds and the actions it asks for; the server a welcome, then Health, the log's records, each action's result and, last,
+// Closing. The universe's view crosses apart, as the game's StateMessage or StateChangeMessage on a stream of its own
+// (ADR-096), which HeldStates puts together.
 using OverseerMessage = std::variant<OverseerHelloMessage, OverseerWelcomeMessage, HealthMessage, LogRecordsMessage, ClosingMessage,
-                                     WatchSightMessage, ViewHeldMessage>;
+                                     WatchSightMessage, ViewHeldMessage, ActionMessage, ActionResultMessage>;
 
 // Each encodes one message as the bytes that cross the overseer's stream, as the game's are (ADR-060 decision 4).
 [[nodiscard]] std::vector<std::byte> EncodeOverseerMessage(const OverseerHelloMessage& _hello);
@@ -247,6 +276,8 @@ using OverseerMessage = std::variant<OverseerHelloMessage, OverseerWelcomeMessag
 [[nodiscard]] std::vector<std::byte> EncodeOverseerMessage(const ClosingMessage& _closing);
 [[nodiscard]] std::vector<std::byte> EncodeOverseerMessage(const WatchSightMessage& _sight);
 [[nodiscard]] std::vector<std::byte> EncodeOverseerMessage(const ViewHeldMessage& _held);
+[[nodiscard]] std::vector<std::byte> EncodeOverseerMessage(const ActionMessage& _action);
+[[nodiscard]] std::vector<std::byte> EncodeOverseerMessage(const ActionResultMessage& _result);
 
 // The message _bytes hold. Throws Neuron::Exception when they are not exactly one message.
 [[nodiscard]] OverseerMessage DecodeOverseerMessage(std::span<const std::byte> _bytes);

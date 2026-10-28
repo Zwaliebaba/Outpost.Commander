@@ -224,6 +224,26 @@ public:
     Assert::IsFalse(model.Closing().has_value(), L"a server that welcomes the overseer again runs");
   }
 
+  // ADR-104: what came of the latest action, and when it was heard, until a newer connection's welcome.
+  TEST_METHOD(KeepsTheLatestActionsResult)
+  {
+    Outpost::OverseerModel model;
+    model.Take(Bytes(Welcome()), START);
+    Assert::IsFalse(model.LatestResult().has_value());
+    model.Take(Outpost::EncodeOverseerMessage(Outpost::ActionResultMessage{
+                 .action = Outpost::OverseerAction::SaveNow, .done = true, .wordsUtf8 = "Saved at tick 40, written in 0.9 ms."}),
+               START);
+    model.Take(Outpost::EncodeOverseerMessage(Outpost::ActionResultMessage{
+                 .action = Outpost::OverseerAction::SaveNow, .wordsUtf8 = "The save asked for at tick 40 is still being written."}),
+               START + std::chrono::seconds{2});
+    const Outpost::HeardResult heard = model.LatestResult().value_or(Outpost::HeardResult{});
+    Assert::IsTrue(heard.heard == START + std::chrono::seconds{2}, L"the newer");
+    Assert::IsFalse(heard.result.done);
+    Assert::AreEqual(std::string("The save asked for at tick 40 is still being written."), heard.result.wordsUtf8);
+    model.Take(Bytes(Welcome()), START);
+    Assert::IsFalse(model.LatestResult().has_value(), L"a newer connection's welcome");
+  }
+
   // ADR-103: a connection gone leaves what the model knew as it was then, and says why and when; no view is taken until the next
   // connection's welcome, whose views the server sends whole first, and that welcome forgets why the last went.
   TEST_METHOD(KeepsWhatItKnewWhenTheConnectionGoes)
@@ -255,6 +275,7 @@ public:
     const auto take = [&model](const std::vector<std::byte>& _bytes) { model.Take(_bytes, START); };
     Assert::ExpectException<Neuron::Exception>([&] { take(Outpost::EncodeOverseerMessage(Outpost::OverseerHelloMessage{})); });
     Assert::ExpectException<Neuron::Exception>([&] { take(Outpost::EncodeOverseerMessage(Outpost::ViewHeldMessage{.tick = 3})); });
+    Assert::ExpectException<Neuron::Exception>([&] { take(Outpost::EncodeOverseerMessage(Outpost::ActionMessage{})); });
     Assert::ExpectException<Neuron::Exception>([&] { take({std::byte{0xFF}}); });
   }
 };

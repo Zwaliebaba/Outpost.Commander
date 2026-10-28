@@ -2,6 +2,7 @@
 #include "RepositoryData.h"
 #include "UniverseMatch.h"
 
+#include <charconv>
 #include <sstream>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -84,6 +85,27 @@ public:
     }
   }
 
+  // The next message of the server's that is a T, those before it passed over, from a server stepped by hand: _server steps a
+  // tick between each look, for 10 s at most.
+  template <typename T> T NextStepping(Outpost::InProcessServer& _server)
+  {
+    const auto deadline = std::chrono::steady_clock::now() + 10s;
+    while (true)
+    {
+      while (!m_pending.empty())
+      {
+        Outpost::OverseerMessage message = Outpost::DecodeOverseerMessage(m_pending.front());
+        m_pending.pop_front();
+        if (auto* found = std::get_if<T>(&message))
+          return std::move(*found);
+      }
+      Assert::IsTrue(std::chrono::steady_clock::now() < deadline, L"the server's message came in time");
+      _server.Step();
+      for (std::vector<std::byte>& bytes : m_channel->Receive(10ms))
+        m_pending.push_back(std::move(bytes));
+    }
+  }
+
   // The views that came whole within _wait, each put together with the view it changes and told back as held (ADR-098).
   std::vector<Outpost::Snapshot> Views(std::chrono::milliseconds _wait)
   {
@@ -126,6 +148,18 @@ private:
   std::deque<std::vector<std::byte>> m_pending;
   Outpost::HeldStates m_held;
 };
+
+// The tick of the save that _words of Save now's result tell, or none.
+std::optional<std::uint64_t> SavedTick(std::string_view _words)
+{
+  constexpr std::string_view SAVED = "Saved at tick ";
+  if (!_words.starts_with(SAVED))
+    return std::nullopt;
+  _words.remove_prefix(SAVED.size());
+  std::uint64_t tick = 0;
+  const auto [end, error] = std::from_chars(_words.data(), _words.data() + _words.size(), tick);
+  return error == std::errc{} && end != _words.data() ? std::optional(tick) : std::nullopt;
+}
 
 // How many of _log's lines end with _words.
 std::size_t LinesEndingWith(const std::string& _log, std::string_view _words)
@@ -401,6 +435,103 @@ public:
                                   { return _line.starts_with("overseer ") && _line.ends_with(" opened from 127.0.0.1"); });
     }
     Assert::IsTrue(heard, L"a new record as it was written");
+  }
+
+  // ADR-104: Save now saves the universe at the server's next tick, as it saves each minute, and is answered once the folder
+  // has written it; the universe log writes what was asked, and Closing's last save is that one.
+  TEST_METHOD(SavesNowWhenAsked)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    universe.server->Start();
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::SaveNow});
+    const auto result = overseer.Next<Outpost::ActionResultMessage>();
+    Assert::IsTrue(result.action == Outpost::OverseerAction::SaveNow && result.done, Widen(result.wordsUtf8).c_str());
+    const std::uint64_t saved = SavedTick(result.wordsUtf8).value_or(0);
+    Assert::IsTrue(saved > 0, Widen(result.wordsUtf8).c_str());
+    Assert::IsTrue(result.wordsUtf8.ends_with(" ms."), L"and how long it took to write");
+
+    std::string log;
+    const std::vector<std::string> expected{std::format("overseer {} save from 127.0.0.1", saved), std::format("save {} bytes ", saved),
+                                            std::format("written {} write_us ", saved)};
+    Assert::IsTrue(LogHolds(folder.Path(), expected, log), Widen(log).c_str());
+    universe.server->Close(Outpost::ServerEnding::StoppedByOwner, {});
+    Assert::AreEqual(saved, overseer.Next<Outpost::ClosingMessage>().lastSaveTick, L"the universe's last save");
+  }
+
+  // One save asked for at a time: a second, asked for at the same tick, is refused while the first is written, and the first is
+  // answered once it is.
+  TEST_METHOD(SavesOneAskedSaveAtATime)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+
+    // Both have come before the server, stepped by hand, ticks again.
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::SaveNow});
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::SaveNow});
+    std::this_thread::sleep_for(1s);
+    const auto refused = overseer.NextStepping<Outpost::ActionResultMessage>(*universe.server);
+    Assert::IsFalse(refused.done, Widen(refused.wordsUtf8).c_str());
+    Assert::IsTrue(refused.wordsUtf8.contains("still being written"), Widen(refused.wordsUtf8).c_str());
+    const auto saved = overseer.NextStepping<Outpost::ActionResultMessage>(*universe.server);
+    Assert::IsTrue(saved.done, Widen(saved.wordsUtf8).c_str());
+    Assert::AreEqual(std::uint64_t{1}, SavedTick(saved.wordsUtf8).value_or(0), L"the first tick stepped");
+  }
+
+  // ADR-104: Stop has the server say it is stopping, for the thread that started it to stop it as Ctrl+C does, and the universe
+  // log writes what was asked.
+  TEST_METHOD(StopsWhenAsked)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+    Assert::IsFalse(universe.server->StopAsked());
+
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::Stop});
+    const auto result = overseer.NextStepping<Outpost::ActionResultMessage>(*universe.server);
+    Assert::IsTrue(result.action == Outpost::OverseerAction::Stop && result.done, Widen(result.wordsUtf8).c_str());
+    Assert::IsTrue(universe.server->StopAsked(), L"the server asked to stop");
+    std::string log;
+    const std::vector<std::string> expected{" stop from 127.0.0.1"};
+    Assert::IsTrue(LogHolds(folder.Path(), expected, log), Widen(log).c_str());
+  }
+
+  // An action that names what it may not, a seat for Stop or an AI empire's seat for Drop link, is no message of an overseer's.
+  TEST_METHOD(RefusesAnActionThatNamesWhatItMayNot)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    universe.server->Start();
+    const auto refused = [&universe, &token](const Outpost::ActionMessage& _action)
+    {
+      Overseer overseer(universe.overseer);
+      overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+      (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+      overseer.Say(_action);
+      return overseer.CloseCode();
+    };
+    const std::uint64_t malformed = static_cast<std::uint64_t>(Outpost::OverseerCloseReason::MalformedMessage);
+    Assert::AreEqual(malformed, refused({.action = Outpost::OverseerAction::Stop, .seat = BLUE}));
+    Assert::AreEqual(malformed, refused({.action = Outpost::OverseerAction::DropLink, .seat = RED}));
+    Assert::AreEqual(malformed, refused({.action = Outpost::OverseerAction::NewToken}));
+    Assert::IsFalse(universe.server->StopAsked());
   }
 
   // Closing says how the server ends, with a failure's message and its last save's tick, and the channel then closes; and the

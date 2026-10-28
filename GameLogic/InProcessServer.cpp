@@ -522,10 +522,14 @@ void Outpost::InProcessServer::RunTick()
   std::vector<std::string> silent;
   if (m_listener)
     silent = m_listener->Sweep(HELLO_TIMEOUT, static_cast<std::uint64_t>(CloseReason::MalformedMessage));
-  // And the overseer's, whose comings and goings the universe's log writes (ADR-101).
+  // And the overseer's, whose comings and goings the universe's log writes (ADR-101), with the actions it asked for (ADR-104).
   std::vector<OverseerRecord> overseen;
+  std::vector<OverseerAct> acts;
   if (m_overseer)
+  {
     overseen = m_overseer->Sweep();
+    acts = m_overseer->TakeActs();
+  }
   std::vector<Command> commands;
   for (Connection& connection : m_connections)
   {
@@ -564,8 +568,14 @@ void Outpost::InProcessServer::RunTick()
     m_folder->Log(m_simulation.CurrentTick(), commands);
   // A refused command changes nothing, and its player hears why in its snapshot (ADR-094).
   (void)m_simulation.Tick(commands, &m_profiler);
-  if (m_folder && m_simulation.CurrentTick() % (std::uint64_t{UNIVERSE_SAVE_SECONDS} * TicksPerSecond()) == 0)
+  // The overseer's actions never reach the simulation (ADR-104). A save it asks for is the tick's, as one due is.
+  bool saveAsked = false;
+  for (const OverseerAct& act : acts)
+    saveAsked = Act(act.action, saveAsked) || saveAsked;
+  if (m_folder && (saveAsked || m_simulation.CurrentTick() % (std::uint64_t{UNIVERSE_SAVE_SECONDS} * TicksPerSecond()) == 0))
     SaveUniverse();
+  if (saveAsked)
+    m_askedSaveTick = m_simulation.CurrentTick();
 
   // The players the server hosts, and the snapshot each answers once every player has been sent its own.
   struct HostedTurn
@@ -672,8 +682,21 @@ void Outpost::InProcessServer::RunTick()
         m_log->Joined(m_simulation.CurrentTick(), join);
       for (const OverseerRecord& record : overseen)
         m_log->Oversaw(m_simulation.CurrentTick(), record);
+      for (const OverseerAct& act : acts)
+        m_log->Acted(m_simulation.CurrentTick(), act);
       for (const WrittenSave& written : m_folder->TakeWritten())
+      {
         m_log->Written(written.tick, written.write);
+        // The overseer hears of the save it asked for once it is written.
+        if (written.tick == m_askedSaveTick && m_overseer)
+        {
+          m_overseer->SendResult({.action = OverseerAction::SaveNow,
+                                  .done = true,
+                                  .wordsUtf8 = std::format("Saved at tick {}, written in {:.1f} ms.", written.tick,
+                                                           static_cast<double>(written.write.count()) / 1000.0)});
+          m_askedSaveTick.reset();
+        }
+      }
       std::vector<SeatTick> seats;
       seats.reserve(prepared.size());
       for (const Prepared& seat : prepared)
@@ -908,6 +931,33 @@ void Outpost::InProcessServer::SaveUniverse()
     m_log->Saved(m_simulation.CurrentTick(), bytes, encode);
   // The universe's folder keeps the commands from here on.
   m_commandLog.clear();
+}
+
+bool Outpost::InProcessServer::Act(const ActionMessage& _action, bool _saveAsked)
+{
+  const auto answer = [&](bool _done, std::string _words)
+  { m_overseer->SendResult({.action = _action.action, .seat = _action.seat, .done = _done, .wordsUtf8 = std::move(_words)}); };
+  switch (_action.action)
+  {
+  case OverseerAction::SaveNow:
+    // One save asked for at a time: the next waits until the folder has written it.
+    if (m_askedSaveTick.has_value() || _saveAsked)
+    {
+      answer(false,
+             std::format("The save asked for at tick {} is still being written.", m_askedSaveTick.value_or(m_simulation.CurrentTick())));
+      return false;
+    }
+    return true;
+  case OverseerAction::Stop:
+    m_stopAsked.store(true);
+    answer(true, "The server is stopping.");
+    return false;
+  case OverseerAction::DropLink:
+  case OverseerAction::NewToken:
+    answer(false, "The server cannot do that yet.");
+    return false;
+  }
+  return false;
 }
 
 Outpost::ServerAddress Outpost::InProcessServer::Oversee(const OverseerDesc& _desc, std::vector<OverseerSeat> _seats)

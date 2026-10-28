@@ -48,6 +48,13 @@ struct OverseerRecord
   std::string address;
 };
 
+// An action the overseer asked of the server (ADR-104), and the address it came from.
+struct OverseerAct
+{
+  ActionMessage action;
+  std::string address;
+};
+
 // A universe's log (ADR-082 decision 1): ADR-038's match log for a universe that keeps running, written by its server
 // beside its saves, for the owner's week and the universe run. It reads what the server knows after each tick: each
 // seat's snapshot, and who played it.
@@ -76,6 +83,11 @@ struct OverseerRecord
 //   overseer <tick> closed from <address>          by a newer one (ADR-101)
 //   overseer <tick> refused <why> from <address>   a connection to the overseer's listener refused: version, token,
 //                                                  malformed, or silent for no hello in time
+//   overseer <tick> save from <address>            an action the overseer asked for (ADR-104): save now, stop the server,
+//   overseer <tick> stop from <address>            drop a seat's link, its deputy taking it at once or after its minute,
+//   overseer <tick> drop player <p> deputy <now or later> from <address>
+//   overseer <tick> token player <p> from <address>
+//                                                  and give a seat a new token
 //   seat <tick> player <p> <player, deputy or ai>  who plays the seat, when it changes, and from the first tick
 //   order <tick> player <p> order <id> <action> <given, held or refused>
 //                                                  a scheduled order fired (ADR-080)
@@ -124,8 +136,9 @@ public:
   void Dropped(std::uint64_t _ticks);
   // What came of a connection, at _tick.
   void Joined(std::uint64_t _tick, const JoinRecord& _join);
-  // The overseer's coming or going, at _tick.
+  // The overseer's coming or going, at _tick; and an action it asked for, at the tick the server carried it out.
   void Oversaw(std::uint64_t _tick, const OverseerRecord& _record);
+  void Acted(std::uint64_t _tick, const OverseerAct& _act);
 
   // From here on, keeps each line it writes until TakeLines, for the overseer's stream (ADR-101).
   void KeepLines() noexcept;

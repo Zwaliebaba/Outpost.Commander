@@ -247,6 +247,24 @@ public:
     Assert::IsTrue(Lines(out.str()) == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
   }
 
+  // ADR-104: each action the overseer asked for, at the tick the server carried it out, with the address it came from.
+  TEST_METHOD(WritesTheOverseersActions)
+  {
+    std::ostringstream out;
+    Outpost::UniverseLog log(out, TICKS_PER_SECOND);
+    log.Acted(30, {.action = {.action = Outpost::OverseerAction::SaveNow}, .address = "127.0.0.1"});
+    log.Acted(
+      31, {.action = {.action = Outpost::OverseerAction::DropLink, .seat = Outpost::PlayerId{2}, .deputyAtOnce = true}, .address = "::1"});
+    log.Acted(32, {.action = {.action = Outpost::OverseerAction::DropLink, .seat = Outpost::PlayerId{3}}, .address = "::1"});
+    log.Acted(33, {.action = {.action = Outpost::OverseerAction::NewToken, .seat = Outpost::PlayerId{2}}, .address = "10.0.0.9"});
+    log.Acted(34, {.action = {.action = Outpost::OverseerAction::Stop}});
+
+    const std::vector<std::string> expected{"overseer 30 save from 127.0.0.1", "overseer 31 drop player 2 deputy now from ::1",
+                                            "overseer 32 drop player 3 deputy later from ::1", "overseer 33 token player 2 from 10.0.0.9",
+                                            "overseer 34 stop from -"};
+    Assert::IsTrue(Lines(out.str()) == expected, std::wstring(winrt::to_hstring(out.str())).c_str());
+  }
+
   // ADR-101 decision 7: the day's records, read from the whole log as the overseer's link is made, of the day since a tick and
   // each seat's last hand-over before it, a line ending in a carriage return read as its record; a save is not one.
   TEST_METHOD(ReadsTheDayRecords)
