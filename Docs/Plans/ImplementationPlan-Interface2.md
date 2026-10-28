@@ -61,24 +61,24 @@ Task numbers carry the prefix UI, as the self-play plan's carry SP, since [the h
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| UI1.1 | Sectors and nodes in the world | — | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99) and [#100](https://github.com/Zwaliebaba/Outpost.Commander/pull/100); awaiting the owner's run |
+| UI1.1 | Sectors and nodes in the world | — | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99) and [#100](https://github.com/Zwaliebaba/Outpost.Commander/pull/100); accepted at 1920×1080 from a run on 2026-10-28 but for the guarded, suppressed and cut-off borders and the nodes marked in the world; awaiting that and the run at 2880×1920 |
 | UI1.2 | Memories that look like memories | — | V3 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99); awaiting the owner's run |
-| UI1.3 | Sight that shows | UI1.2 | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99); awaiting the owner's run |
-| UI1.4 | The minimap's territory | UI1.1 | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99) and [#100](https://github.com/Zwaliebaba/Outpost.Commander/pull/100); awaiting the owner's run |
-| UI2.1 | A warning is a chip | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
+| UI1.3 | Sight that shows | UI1.2 | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99); accepted at 1920×1080 from a run on 2026-10-28 but for the grid's brightness measured; awaiting that and the run at 2880×1920 |
+| UI1.4 | The minimap's territory | UI1.1 | V2 | merged, [#99](https://github.com/Zwaliebaba/Outpost.Commander/pull/99) and [#100](https://github.com/Zwaliebaba/Outpost.Commander/pull/100); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| UI2.1 | A warning is a chip | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
 | UI2.2 | Build progress in a neutral color | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
-| UI2.3 | The blast and Ore's glyph | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
-| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
-| UI3.2 | One column, and state in bars | UI3.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
-| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); awaiting the owner's run |
-| UI4.1 | Bars on the screen | UI2.2 | V7 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
-| UI4.2 | Commands beside the selection | — | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
-| UI4.3 | Retreat as three choices | UI4.2 | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
-| UI4.4 | Controls that answer the pointer | — | — | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting a run |
-| UI4.5 | One count, one bar per ship, a short name | UI3.1 | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); awaiting the owner's run |
-| UI5.1 | Rocks that stand back | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting the owner's run |
-| UI5.2 | Fields of their own | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting the owner's run |
-| UI5.3 | The minimap's view as its four corners | — | — | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); awaiting a run |
+| UI2.3 | The blast and Ore's glyph | — | V4 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| UI3.1 | What holds the Shipyards back, and what frees them | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); accepted at 1920×1080 from a run on 2026-10-28 but for the fleet cap's and an upgrade's lines and the Lab's "every open topic done"; awaiting that and the run at 2880×1920 |
+| UI3.2 | One column, and state in bars | UI3.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| UI3.3 | Nodes and tickets that read | UI2.1 | V5 | merged, [#101](https://github.com/Zwaliebaba/Outpost.Commander/pull/101); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| UI4.1 | Bars on the screen | UI2.2 | V7 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); accepted at 1920×1080 from a run on 2026-10-28 but for the bars as the camera turns; awaiting that and the run at 2880×1920 |
+| UI4.2 | Commands beside the selection | — | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| UI4.3 | Retreat as three choices | UI4.2 | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| UI4.4 | Controls that answer the pointer | — | — | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| UI4.5 | One count, one bar per ship, a short name | UI3.1 | V6 | merged, [#104](https://github.com/Zwaliebaba/Outpost.Commander/pull/104); accepted at 1920×1080 from a run on 2026-10-28 but for a click on a ship's bar and a selection past 24 ships; awaiting that and the run at 2880×1920 |
+| UI5.1 | Rocks that stand back | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); accepted at 1920×1080 from a run on 2026-10-28 but for the review's measure; awaiting that and the run at 2880×1920 |
+| UI5.2 | Fields of their own | — | V8 | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); accepted at 1920×1080 from a run on 2026-10-28 but for the owner's `--measure` run; awaiting that and the run at 2880×1920 |
+| UI5.3 | The minimap's view as its four corners | — | — | merged, [#103](https://github.com/Zwaliebaba/Outpost.Commander/pull/103); accepted at 1920×1080 from a run on 2026-10-28 but for the outline as the camera turns; awaiting that and the run at 2880×1920 |
 
 ### Milestone order
 

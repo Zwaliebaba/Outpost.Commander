@@ -26,10 +26,10 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV1.2 | A seat's orders, refusals and bytes are in its hour | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
 | OV1.3 | Every join and every link's end is logged | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
 | OV1.4 | A save's write is timed | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
-| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | D4 | in review |
-| OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | in review |
-| OV2.3 | The universe's view and the log's stream | OV2.1 | — | in review |
-| OV2.4 | `Closing`, and the server's state | OV2.2 | — | in review |
+| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | D4 | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
+| OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
+| OV2.3 | The universe's view and the log's stream | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
+| OV2.4 | `Closing`, and the server's state | OV2.2 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
 | OV3.1 | The overseer's project and window | OV2 | D1, D5, D6 | todo |
 | OV3.2 | The overview: header, tiles, seat table, attention, who played, the log | OV3.1, the canvas plan's CV9.1 | D7 | todo |
 | OV3.3 | The map: one system's sectors, full sight and a seat's | OV3.1 | — | todo |

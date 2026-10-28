@@ -77,29 +77,32 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| CV1.1 | Window places and the scale kept on disk | — | C2 | merged, [#142](https://github.com/Zwaliebaba/Outpost.Commander/pull/142) |
-| CV2.1 | The build window | CV1.1 | C7 | merged, [#144](https://github.com/Zwaliebaba/Outpost.Commander/pull/144) |
-| CV3.1 | The display list in the engine | — | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV3.2 | A layout that measures | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV3.3 | Interaction every widget shares | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV3.4 | The theme and the widgets | CV3.2, CV3.3 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145) |
-| CV4.1 | The windows' table, and the leave and away windows | CV3.4 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
-| CV4.2 | The Controls window | CV4.1 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
-| CV4.3 | The orders window | CV4.1 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
-| CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146) |
-| CV5.1 | The production window | CV4.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
-| CV5.2 | The research window | CV5.1 | — | in review, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147) |
-| CV6.1 | The designer | CV5.1 | — | in review, [#148](https://github.com/Zwaliebaba/Outpost.Commander/pull/148) |
-| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5, C8 | in review, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154) |
-| CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | in review, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154) |
-| CV8.1 | The column under the Ore | CV3.4 | C1 | in review, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155) |
-| CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | in review, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155) |
-| CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | in review, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155) |
-| CV9.1 | The scroll view | CV3.4 | — | in review, [#153](https://github.com/Zwaliebaba/Outpost.Commander/pull/153) |
+| CV1.1 | Window places and the scale kept on disk | — | C2 | merged, [#142](https://github.com/Zwaliebaba/Outpost.Commander/pull/142); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV2.1 | The build window | CV1.1 | C7 | merged, [#144](https://github.com/Zwaliebaba/Outpost.Commander/pull/144); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV3.1 | The display list in the engine | — | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV3.2 | A layout that measures | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV3.3 | Interaction every widget shares | CV3.1 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV3.4 | The theme and the widgets | CV3.2, CV3.3 | C4 | merged, [#145](https://github.com/Zwaliebaba/Outpost.Commander/pull/145); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV4.1 | The windows' table, and the leave and away windows | CV3.4 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146); accepted at 1920×1080 from a run on 2026-10-28 but for the leave and away windows, which need a universe; awaiting that and the run at 2880×1920 |
+| CV4.2 | The Controls window | CV4.1 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV4.3 | The orders window | CV4.1 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146); accepted at 1920×1080 from a run on 2026-10-28 but for an order given and canceled; awaiting that and the run at 2880×1920 |
+| CV4.4 | The build window on the canvas | CV2.1, CV4.1 | — | merged, [#146](https://github.com/Zwaliebaba/Outpost.Commander/pull/146); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV5.1 | The production window | CV4.1 | — | merged, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV5.2 | The research window | CV5.1 | — | merged, [#147](https://github.com/Zwaliebaba/Outpost.Commander/pull/147); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV6.1 | The designer | CV5.1 | — | merged, [#148](https://github.com/Zwaliebaba/Outpost.Commander/pull/148); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5, C8 | merged, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | merged, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154); accepted at 1920×1080 from a run on 2026-10-28 but for an order given with every drop-down picked; awaiting that and the run at 2880×1920 |
+| CV8.1 | The column under the Ore | CV3.4 | C1 | merged, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | merged, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | merged, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
+| CV9.1 | The scroll view | CV3.4 | — | merged, [#153](https://github.com/Zwaliebaba/Outpost.Commander/pull/153) |
+| CV10.1 | The hint clear of the build window | CV8.3 | C9 | todo |
+| CV10.2 | The designer's "SAVED" label has its room | CV7.1 | — | todo |
+| CV10.3 | The windows open clear of the column under the Ore | CV8.1 | C10 | todo |
 
 ### Milestone order
 
-CV1 to CV8, in their numbers' order, and CV9 before CV7.
+CV1 to CV8, in their numbers' order, and CV9 before CV7; then CV10.
 
 - **CV1 goes first.** It needs nothing of the canvas, it is what the owner meets every session, and it is small.
 - **CV2 goes next, on today's code** (C7). The owner wants the build window before the canvas is built, and CV4.4 moves it onto the canvas with the other small windows.
@@ -108,6 +111,7 @@ CV1 to CV8, in their numbers' order, and CV9 before CV7.
 - **CV7 goes before CV8,** since scrolling needs the designer and the Controls window on the canvas, and nothing of the HUD. CV7.2 can go as soon as CV4.3 is done.
 - **CV8 goes last.** The HUD's panels are anchored and do not move (C1), so porting them buys least. Once it lands, `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
 - **CV9 goes before CV7.1, or before the overseer's OV3.2 if that comes first** ([the overseer's plan](ImplementationPlan-Overseer.md)), as a pull request of its own (owner, 2026-10-27). The overseer needs a scroll view from its first version, for its seat table, its log and its seat window; the game needs one only from CV7.1, after the designer. It is numbered last so that no task is renumbered.
+- **CV10 is what the owner's run of 2026-10-28 found** ([PlaytestLog.md](../Records/PlaytestLog.md), that day), at 1920×1080. CV10.2 needs no gate and can go at once; CV10.1 and CV10.3 wait for C9 and C10.
 
 A task whose gate the owner turns down is dropped, and its milestone ships without it.
 
@@ -127,6 +131,8 @@ Each is an owner decision, proposed here and in the task it gates.
 | C6 | **Where a drop-down is used.** A choice among a few is a row of cells, so that the player sees them all and picks in one press (ADR-088 decision 3); a drop-down hides its choices and takes two presses. Proposed: a drop-down only where the choices run long, which is the orders form's sectors, its target, its hour and its minute ([ADR-080](../ADR/ADR-080-events-and-scheduled-orders.md) decision 9). The trigger, the action and the condition keep their steppers. Nothing else in the game takes a drop-down. As proposed (owner, 2026-10-27). | this plan | CV7.2 | decided 2026-10-27 |
 | C7 | **The build window.** The Constructors' build buttons become a floating window of their own, built on today's code right after CV1, and moved onto the canvas in CV4.4. It opens and closes on demand, with B or with one Build button that takes the structures' place beside the selection, and never by itself. Esc cancels an armed placement before it closes a window, so that the first Esc cancels a placement armed from the build window. Picking a structure leaves the window open. It first opens at the bottom right. The owner's answers of 2026-10-27, revised the same day to these: at first the window opened by itself as a Constructor was selected, and Esc closed it before it canceled a placement, which left the placement armed. | this plan | CV2.1, CV4.4 | decided 2026-10-27 |
 | C8 | **Where the hint and the banner stand when the top row is crowded.** At 125% on a 16:9 screen the hint, 640 units wide in the middle, meets the column under the Ore, and at 150% the tag at the top right too. They stay in the middle of the top row while they clear the column and the tag at its widest, so that 100% and 110% are as now; where they do not, they stand under the top row, in the middle of the room right of the column, the banner under the hint. Moving them aside, as proposed, over shrinking them or letting them overlap (owner, 2026-10-27). | CV7.1 | CV7.1 | decided 2026-10-27 |
+| C9 | **The build window and the hint.** At 150% on a 1920×1080 screen the hint stands under the top row (C8), and the build window at its first place, above the bottom row at the right (C7), covers the hint's right end: "right-click to cancel" is hidden while a placement armed from the window is live. Proposed: at a step where the hint and the banner stand under the top row, the build window's first place keeps below them; a window the player has moved keeps its place (C2). The alternative is the hint and the banner drawn over the windows. | CV10.1 | CV10.1 | open |
+| C10 | **Where the production and research windows open.** They open at 178 units from the top, under the place the status panel keeps ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3), which is over the territory panel and the alerts: while either is open the nodes, the tickets and the drain are hidden. Proposed: their first slot stands under the foot of the whole column under the Ore, the alerts included, as the column is at the time; where that leaves a window too little room, it opens beside the column instead. It rewrites ADR-066 decision 3's place, and a window the player has moved keeps its place (C2). | CV10.3 | CV10.3 | open |
 
 ---
 
@@ -376,6 +382,37 @@ The HUD's panels stay where they are (C1). Each task is a port (rule 5).
 - **Acceptance:** `NeuronClientTests` for the clip of a solid, a hatched, a sprite and a text quad, and for the scroll view: the wheel over it and off it, the thumb dragged and held at either end, and a content shorter than the view, which does not move.
 - **Verify:** the container's tests; CI. It changes nothing on the screen, so there is nothing to run.
 - **As built (2026-10-27):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 1, 2, 3 and 6. The layout gains a scroll node, which holds what it holds as tall as that is, and a height at its least, so that a window held to a most keeps what does not scroll and its scroll view gives up the room: `BeginWindow` takes that most. The interaction measures a drag for the thumb. Every layout of the HUD harness's cases, 135,139 lines of panels, texts, sprites, regions, actions and windows, is byte-identical before and after it.
+
+---
+
+## Milestone CV10 — What the owner's run found
+
+The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three things in the layout ([PlaytestLog.md](../Records/PlaytestLog.md), that day). Each is a task here.
+
+### CV10.1 — The hint clear of the build window
+
+- **Gate:** C9.
+- **Goal:** at 150% on 1920×1080, the build window at its first place covers the right end of the placement hint, so the way to cancel a placement armed from it is hidden.
+- **Scope, as proposed:** at a step where the hint and the banner stand under the top row (C8), the build window's first place keeps below them. A window the player has moved keeps its place (C2).
+- **ADR:** [ADR-099](../ADR/ADR-099-interface-settings-kept.md), where the windows' first places are, edited in place.
+- **Acceptance:** `HudTests`: at every step the windows fit on 16:9, 16:10 and 3:2, the build window at its first place overlaps neither the hint nor the banner; the test fails on today's layout at 150% on 16:9.
+- **Verify:** the container's tests; CI; the owner's run at 150%, with a placement armed from the build window.
+
+### CV10.2 — The designer's "SAVED" label has its room
+
+- **Goal:** the label before the saved designs' chips touches the first chip at 100% on 1920×1080 and runs under it at 150%.
+- **Scope:** the label is a cell of the saved row's layout, measured with its font as the canvas measures text (CV3.2), and the chips start after it with the row's gap, at every step.
+- **Acceptance:** `HudTests`: at every step the windows fit, the label ends at least the row's gap before the first chip; the test fails on today's layout at 150%. `OverlapsNoTwoTexts` and `KeepsEveryTextInsideItsPanel` did not see it, since the label is a text and the chip a panel it is not in: the task says whether either guard should count a text against another panel, and adds that if it costs nothing else.
+- **Verify:** the container's tests; CI; the owner's run of the designer at 100% and 150%.
+
+### CV10.3 — The windows open clear of the column under the Ore
+
+- **Gate:** C10.
+- **Goal:** the production and research windows open over the territory panel and the alerts, hiding the nodes, the tickets and the drain while either is open.
+- **Scope, as proposed:** their first slot stands under the foot of the whole column under the Ore, as the column is at the time; where that leaves a window too little room, it opens beside the column. A window the player has moved keeps its place (C2).
+- **ADR:** [ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3, the place, edited in place.
+- **Acceptance:** `HudTests`: at every step the windows fit, production and research at their first places overlap none of the column's panels, with the alerts at their longest.
+- **Verify:** the container's tests; CI; the owner's run with production and research open together.
 
 ---
 
