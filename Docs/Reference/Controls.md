@@ -41,13 +41,13 @@ The orders window, the seat's scheduled orders and the form that gives one (ADR-
 |---|---|
 | `O` | `KEY_ORDERS` |
 
-The build window, the structures the selected Constructors build (ADR-031 decision 6).
+The command card's build mode, the structures the selected Constructors build in place of its buttons (ADR-088 decision 2).
 
 | Key | Constant |
 |---|---|
 | `B` | `KEY_BUILD` |
 
-Cancels a structure being placed; else closes the front window, and with none open cancels what the controls have armed.
+Cancels a structure being placed; else turns build mode off; else closes the front window, and with none open cancels what the controls have armed.
 
 | Key | Constant |
 |---|---|

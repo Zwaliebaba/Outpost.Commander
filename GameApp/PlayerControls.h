@@ -12,8 +12,10 @@ namespace Outpost
 //   ships or structures that is damaged or under construction repair or build it (ADR-016 decision 5). A, then a left-click,
 //   attack-moves; Escape cancels it. H, then a left-click, holds the sector clicked in, and T, then a left-click, patrols
 //   to the point clicked (ADR-059 decision 7). S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
-//   centers the camera on it. The HUD arms a structure's placement, which the next left-click on the ground orders the
-//   selected Constructors to build, and which right-click or Escape cancels; Shift keeps it armed for another.
+//   centers the camera on it. B turns the command card's build mode on and off while the selection holds a Constructor, as
+//   its Build button does, and Escape turns it off once nothing is armed (ADR-088 decision 2). The HUD arms a structure's
+//   placement, which the next left-click on the ground orders the selected Constructors to build, and which right-click or
+//   Escape cancels; Shift keeps it armed for another, and build mode stays on.
 class PlayerControls
 {
 public:
@@ -37,6 +39,16 @@ public:
   [[nodiscard]] std::optional<StructureKind> Placing() const noexcept
   {
     return m_placing;
+  }
+
+  // From the command card's Build button and from B alike (ADR-088 decision 2): turns build mode on while the selection
+  // holds a Constructor, or off. It lasts while the selection holds one.
+  void ToggleBuilding(std::span<const EntityView> _entities);
+
+  // Whether the command card shows the structures the selected Constructors build, in place of its buttons.
+  [[nodiscard]] bool IsBuilding() const noexcept
+  {
+    return m_building;
   }
 
   // From the HUD: a job for a Shipyard's or the Command Station's queue.
@@ -161,6 +173,7 @@ private:
   bool m_attackMoveArmed = false;
   std::optional<StandingOrder> m_standingArmed;
   std::optional<StructureKind> m_placing;
+  bool m_building = false;
 
   // The left press being held, where it went down and whether it has become a drag.
   std::optional<DirectX::XMFLOAT2> m_pressPixels;

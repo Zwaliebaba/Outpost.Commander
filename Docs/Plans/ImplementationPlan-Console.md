@@ -10,7 +10,7 @@ It is a work queue, not an authority: where it disagrees with a design, AGENTS.m
 
 ## How an agent uses this plan
 
-1. **Read AGENTS.md, then [ADR-088](../ADR/ADR-088-selection-and-commands.md), [ADR-031](../ADR/ADR-031-floating-windows.md), [ADR-043](../ADR/ADR-043-hud-in-the-windows-look.md), [ADR-070](../ADR/ADR-070-interface-scale.md), [ADR-099](../ADR/ADR-099-interface-settings-kept.md) and [ADR-100](../ADR/ADR-100-the-canvas.md), Game §interface.hud, Game §interface.windows.build and [the Style Guide](../StyleGuide.md).**
+1. **Read AGENTS.md, then [ADR-088](../ADR/ADR-088-selection-and-commands.md), [ADR-031](../ADR/ADR-031-floating-windows.md), [ADR-043](../ADR/ADR-043-hud-in-the-windows-look.md), [ADR-070](../ADR/ADR-070-interface-scale.md), [ADR-099](../ADR/ADR-099-interface-settings-kept.md) and [ADR-100](../ADR/ADR-100-the-canvas.md), Game §interface.hud and [the Style Guide](../StyleGuide.md).**
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gates are decided.** One PR per milestone (owner, 2026-09-30).
 3. **A gate is an owner decision.** The task does not start until the owner has answered, and the answer is written into the gates table, with its date, first.
 4. **ADRs are edited in place** (AGENTS.md §6). This plan reserves no number.
@@ -138,6 +138,10 @@ Each is an owner decision, proposed here and in the task it gates, and all five 
   - the feet of the minimap, the selection and the card on one line;
   - `StepsTheInterfaceAsFarAsItsWindowsFit` with the ceilings unchanged, and the guards at every step.
 - **Verify:** CI; run at 1920×1080 and at 2880×1920, with warships, a Constructor, both, and each structure selected; **owner run.**
+- **As built (2026-10-28):** ADR-088 decision 2, [ADR-070](../ADR/ADR-070-interface-scale.md) decision 3, [ADR-015](../ADR/ADR-015-ui-drawing.md) decision 4 and ADR-100 decision 7.
+  - **The selection's widest is 552 units at every scale,** not 560 or the room between the minimap and the card. With 560 and the gap before the card, the bottom row is 1,288 units, and `WindowsFit` would stop a 16:9 screen at 125%. Counting the room instead would let a match reach 175%, which "Scale" turns down. 552 keeps the row at 1,280 and the ceiling at 150%; at smaller steps a selection's widest line is cut 8 units sooner than before.
+  - **The selection stands clear of the card's place whether or not the card is drawn,** so that it does not move as the card comes and goes.
+  - `HudTests` ran in the Linux container against stand-ins for the Windows parts and a generated font: 99 of the 100 the harness can run pass, the one failure the known font artefact in `OffersToLeaveAUniverse`. `PlayerControls`, `GameClient` and the shell are CI's to build first. Not yet run on Windows.
 
 ### CN1.2 — Build mode in the command card, and the build window goes
 
@@ -149,12 +153,19 @@ Each is an owner decision, proposed here and in the task it gates, and all five 
   - **The build window goes:** its row in the windows' table, `WindowKind::Build`, `FirstPlace::BesideTheSelection`, `LayBuild`, the window `ActionKind::OpenBuild` toggles, and its count in `WindowsFit`. Its name in the interface's file, `build`, is never given to another window, and a file that names it still loads and keeps the rest, as ADR-099 decision 3 has it for a window a build does not have.
   - **Esc's order** as B3 decides.
   - **The Controls window's line for B** says what B does now.
-- **ADR:** ADR-088 decision 2 takes build mode, and what ADR-031 decisions 5 and 6 say of the build window moves to it; ADR-031 decision 2's first places, ADR-068 decision 4's line for B, ADR-099 decision 3's names, ADR-100 decisions 7 and 8, and ADR-070 decision 3 lose the build window. Game §interface.windows.build goes on the design's "Retired keys" line, and Game §interface.hud.buttons, Game §interface.windows.behavior, Game §interface.controls and Game §orders.constructors say where the structures stand.
+- **ADR:** ADR-088 decision 2 takes build mode, and what ADR-031 decisions 5 and 6 say of the build window moves to it; ADR-031 decision 2's first places, ADR-068 decision 4's line for B, ADR-099 decision 3's names, ADR-100 decisions 7 and 8, and ADR-070 decision 3 lose the build window. the build window's section of the design goes, its key on the "Retired keys" line, and Game §interface.hud.buttons, Game §interface.windows.behavior, Game §interface.controls and Game §orders.constructors say where the structures stand.
 - **Acceptance:**
   - `HudTests`: B and the Build button turn build mode on for a Constructor, a mixed selection included, and off again, and do nothing without one; each structure's cell, cost, reason and dim state, in the cells' order, the Relay's cell empty without sectors; the card the same size in both modes, with the label row and Esc's cap; Esc's order with a placement armed, with build mode on, with a window open, and in a universe; a right-click that leaves build mode on; a selection without a Constructor that ends it, and a Constructor selected again that shows the cells; the guards in build mode at every step.
   - `WindowManagerTests` without the build window, and `InterfaceSettingsTests` with a file that names `build`.
   - `PlayerControlsTests`, if build mode is kept there.
 - **Verify:** CI; run, a base built from the card, two structures placed with Shift and two without, Esc in each state, at 1920×1080 and at 2880×1920; **owner run.**
+- **As built (2026-10-28):** ADR-088 decision 2, with what [ADR-031](../ADR/ADR-031-floating-windows.md) decisions 5 and 6 said of the build window; ADR-099 decision 3 and ADR-100 decisions 6 to 8; the build window's section of the design retired.
+  - **BUILD's cap is B's, not Esc's.** A key's cap holds a letter, and B turns build mode off as Esc does.
+  - **Build mode is the controls'** (`PlayerControls::IsBuilding`), beside the armed placement. It is checked before a frame's input and after it, so that a click that selects ships without a Constructor ends it in the same frame.
+  - **A structure's cell is a button on two lines,** which the canvas's button now draws (`Neuron::ButtonContent::stacked`), tested by `CanvasTests.StacksAButtonsFigureUnderItsLabel`.
+  - **NO CONSTRUCTOR goes:** `DescribeBuild` without a Constructor dims every structure, which build mode never shows. A seventh structure would not be offered, since the card has six cells.
+  - **The Controls window's line for B** moves from WINDOWS to SELECTING AND ORDERS, its words as they were.
+  - The engine's tests ran in the container under g++ and clang++ with `-Werror`, 51 of 51; `HudTests` as CN1.1 says.
 
 ---
 

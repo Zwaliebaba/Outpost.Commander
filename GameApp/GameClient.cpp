@@ -681,11 +681,12 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                   return _event.kind == Neuron::InputEventKind::ButtonDown &&
                          m_interaction.Dismiss(m_hudLayout, static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels));
                 });
-  // Esc cancels a structure being placed first, which the controls do; else it closes the front window, and then is the
-  // window's, not the controls' (ADR-031 decision 5); in a universe, with no window to close and nothing armed for the
-  // controls to cancel, it opens the leave window (ADR-078 decision 11). D, P and R open or close the designer, the
-  // production window and the research window, F1 the Controls window (ADR-068 decision 4), O the orders window (ADR-080
-  // decision 9), and B the build window (ADR-031 decision 6). Space moves the camera to the newest alert (ADR-059).
+  // Esc cancels a structure being placed first, and then turns the command card's build mode off, which the controls do
+  // (ADR-088 decision 2); else it closes the front window, and then is the window's, not the controls' (ADR-031 decision
+  // 5); in a universe, with no window to close and nothing armed for the controls to cancel, it opens the leave window
+  // (ADR-078 decision 11). D, P and R open or close the designer, the production window and the research window, F1 the
+  // Controls window (ADR-068 decision 4), and O the orders window (ADR-080 decision 9). Space moves the camera to the
+  // newest alert (ADR-059).
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
@@ -693,9 +694,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     std::optional<WindowKind> toggled;
     if (const auto row = std::ranges::find(WINDOWS, event->key, &WindowRow::key); keyDown && event->key != 0 && row != WINDOWS.end())
       toggled = row->kind;
-    if (keyDown && event->key == KEY_CANCEL && !m_controls.Placing().has_value() && m_windows.CloseFront())
+    const bool controlsCancel = m_controls.Placing().has_value() || m_controls.IsBuilding();
+    if (keyDown && event->key == KEY_CANCEL && !controlsCancel && m_windows.CloseFront())
       event = input.events.erase(event);
-    else if (keyDown && event->key == KEY_CANCEL && !m_server.empty() && !m_controls.IsArmed())
+    else if (keyDown && event->key == KEY_CANCEL && !m_server.empty() && !controlsCancel && !m_controls.IsArmed())
     {
       m_windows.Open(WindowKind::Leave);
       event = input.events.erase(event);
@@ -821,8 +823,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_away.reset();
     if (m_away.has_value())
       content.away = Hud::DescribeAway(m_view.Newest(), *m_away, m_awayTick, m_ticksPerSecond);
-    // The structures the selected Constructors build, while the build window is open (ADR-031 decision 6).
-    if (m_windows.IsOpen(WindowKind::Build))
+    // The structures the selected Constructors build, while the command card is in build mode (ADR-088 decision 2).
+    if (m_controls.IsBuilding())
       content.build = Hud::DescribeBuild(m_view.Newest(), m_entities, selected);
     // The scheduled order the selected ships wait on, on their panel (ADR-080 decision 9).
     if (std::optional<std::string> pending = PendingOrderLine(selected, m_entities, m_view.Newest(), m_clock);
@@ -987,7 +989,7 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     m_controls.ArmPlacement(_action.structure, m_entities);
     break;
   case Hud::ActionKind::OpenBuild:
-    ToggleWindow(WindowKind::Build);
+    m_controls.ToggleBuilding(m_entities);
     break;
   case Hud::ActionKind::Queue:
     for (std::uint32_t ship = 0; ship < _action.count; ++ship)

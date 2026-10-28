@@ -31,9 +31,10 @@ inline constexpr std::uint8_t KEY_RESEARCH = 'R';
 inline constexpr std::uint8_t KEY_CONTROLS = VK_F1;
 // The orders window, the seat's scheduled orders and the form that gives one (ADR-080 decision 9).
 inline constexpr std::uint8_t KEY_ORDERS = 'O';
-// The build window, the structures the selected Constructors build (ADR-031 decision 6).
+// The command card's build mode, the structures the selected Constructors build in place of its buttons (ADR-088 decision 2).
 inline constexpr std::uint8_t KEY_BUILD = 'B';
-// Cancels a structure being placed; else closes the front window, and with none open cancels what the controls have armed.
+// Cancels a structure being placed; else turns build mode off; else closes the front window, and with none open cancels
+// what the controls have armed.
 inline constexpr std::uint8_t KEY_CANCEL = VK_ESCAPE;
 // Moves the camera to the newest alert (ADR-059).
 inline constexpr std::uint8_t KEY_LATEST_ALERT = VK_SPACE;
@@ -103,6 +104,7 @@ struct KeyBinding
     {.keys = then(KEY_HOLD_SECTOR), .does = "Hold the sector clicked in"},
     {.keys = then(KEY_PATROL), .does = "Patrol to the point clicked"},
     {.keys = KeyName(KEY_STOP), .does = "Stop"},
+    {.keys = KeyName(KEY_BUILD), .does = "Build, for the selected Constructors"},
     {.keys = std::format("Ctrl+{}-{}", KeyName(KEY_FIRST_GROUP), KeyName(KEY_LAST_GROUP)), .does = "Make a control group"},
     {.keys = std::format("{}-{}", KeyName(KEY_FIRST_GROUP), KeyName(KEY_LAST_GROUP)), .does = "Select a group; twice, look at it"},
     {.keys = "Shift+click", .does = "Place a structure and keep placing"},
@@ -121,7 +123,6 @@ struct KeyBinding
     {.keys = KeyName(KEY_PRODUCTION), .does = "Production"},
     {.keys = KeyName(KEY_RESEARCH), .does = "Research"},
     {.keys = KeyName(KEY_ORDERS), .does = "Scheduled orders"},
-    {.keys = KeyName(KEY_BUILD), .does = "Build, for the selected Constructors"},
     {.keys = KeyName(KEY_CONTROLS), .does = "These controls"},
     {.keys = KeyName(KEY_CANCEL), .does = "Close a window, cancel an order, or leave a universe"},
     {.keys = std::format("{}, held", KeyName(KEY_EVERY_HEALTH_BAR)), .does = "Every health bar"},

@@ -41,9 +41,17 @@ void Outpost::PlayerControls::Update(const Neuron::InputState& _input, std::span
 {
   const Frame frame{.entities = _entities, .player = _player, .camera = _camera, .viewport = _viewport};
   Prune(frame);
-  // A placement lasts only while there are Constructors to build it.
-  if (m_placing.has_value() && !_entities.empty() && SelectedConstructors(_entities).empty())
-    m_placing.reset();
+  // A placement, and build mode, last only while there are Constructors to build it, before this frame's input and after
+  // it, which may select others.
+  const auto keepToConstructors = [this, _entities]
+  {
+    if ((m_placing.has_value() || m_building) && !_entities.empty() && SelectedConstructors(_entities).empty())
+    {
+      m_placing.reset();
+      m_building = false;
+    }
+  };
+  keepToConstructors();
 
   if (!_input.active)
   {
@@ -64,6 +72,7 @@ void Outpost::PlayerControls::Update(const Neuron::InputState& _input, std::span
     else if (event.kind == Neuron::InputEventKind::KeyDown)
       OnKey(event, frame);
   }
+  keepToConstructors();
 
   m_cursorPixels = {static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels)};
   if (m_pressPixels.has_value() && std::hypot(m_cursorPixels.x - m_pressPixels->x, m_cursorPixels.y - m_pressPixels->y) > DRAG_PIXELS)
@@ -82,6 +91,11 @@ void Outpost::PlayerControls::ArmPlacement(StructureKind _structure, std::span<c
   m_placing.reset();
   if (!SelectedConstructors(_entities).empty())
     m_placing = _structure;
+}
+
+void Outpost::PlayerControls::ToggleBuilding(std::span<const EntityView> _entities)
+{
+  m_building = !m_building && !SelectedConstructors(_entities).empty();
 }
 
 void Outpost::PlayerControls::Queue(EntityId _producer, DesignId _design)
@@ -377,11 +391,18 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
 
 void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Frame& _frame)
 {
+  // Esc cancels whatever waits for the next click, and with nothing armed, it turns build mode off (ADR-088 decision 2).
   if (_event.key == KEY_CANCEL)
   {
+    m_building = m_building && IsArmed();
     m_attackMoveArmed = false;
     m_standingArmed.reset();
     m_placing.reset();
+    return;
+  }
+  if (_event.key == KEY_BUILD && !_event.control)
+  {
+    ToggleBuilding(_frame.entities);
     return;
   }
   if (_event.key == KEY_ATTACK_MOVE && !_event.control)

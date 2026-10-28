@@ -70,9 +70,10 @@ constexpr float FIGURE_LINE_UNITS = 17.0f;
 // (ADR-043 decision 3). It is as wide as the column under it.
 constexpr float ORE_PANEL_HEIGHT = 44.0f;
 
-// The selection panel, anchored to the bottom edge's middle, as wide as its longest line within these (ADR-043).
+// The selection panel, in the middle of the bottom edge, as wide as its longest line within these (ADR-043): at its widest,
+// the room a 16:9 screen at 150% leaves it between the minimap and the command card (ADR-088 decision 2).
 constexpr float SELECTION_PANEL_MIN_WIDTH = 280.0f;
-constexpr float SELECTION_PANEL_WIDTH = 560.0f;
+constexpr float SELECTION_PANEL_WIDTH = 552.0f;
 // Lines of designs before the rest are counted together.
 constexpr size_t SELECTION_DESIGN_LINES = 5;
 // The selection's hit points as a bar under its lines: green above half, then amber, then red, as a bar over a damaged
@@ -99,9 +100,12 @@ constexpr float ENTITY_BAR_HEIGHT_UNITS = 5.0f;
 constexpr float ENTITY_BAR_GAP_UNITS = 2.0f;
 constexpr float ENTITY_BAR_LIFT_UNITS = 4.0f;
 
-// The buttons, stacked in a panel against the selection panel's right edge (ADR-088 decision 2); a button's label and
-// cost stand this far in.
-constexpr float BUTTON_PANEL_WIDTH = 380.0f;
+// The command card, anchored to the bottom-right corner, each of its buttons in a cell of its own (ADR-088 decision 2); a
+// button's label and cost stand this far in. Build takes the left cell of its last row, and a structure's Upgrade the
+// whole of that row.
+constexpr float COMMAND_CARD_WIDTH = 380.0f;
+constexpr std::uint8_t BUILD_CELL = 4;
+constexpr std::uint8_t UPGRADE_CELL = 4;
 constexpr float BUTTON_HEIGHT = 34.0f;
 constexpr float BUTTON_GAP = 6.0f;
 constexpr float BUTTON_INSET = 12.0f;
@@ -1629,9 +1633,6 @@ template <class Build> WindowSize BuiltSize(Build&& _build)
   return {.widthUnits = scratch.windows.back().frame.width, .heightUnits = scratch.windows.back().frame.height};
 }
 
-// The build window (ADR-031 decision 6): the structures' buttons in a column, as wide as the buttons' panel held them.
-constexpr float BUILD_WINDOW_WIDTH = BUTTON_PANEL_WIDTH;
-
 // Whether Constructors are offered _type on the map of _newest: a structure the tuning data lets them build, and a Relay only
 // where there are sectors for it to hold (ADR-056).
 bool IsOffered(const Outpost::Snapshot& _newest, const Outpost::StructureTypeView& _type) noexcept
@@ -1639,13 +1640,10 @@ bool IsOffered(const Outpost::Snapshot& _newest, const Outpost::StructureTypeVie
   return _type.buildable && (_type.structure != Outpost::StructureKind::Relay || !_newest.sectors.empty());
 }
 
-// Where a window first stands on a screen _screenWidthUnits wide, as its row's first place has it (ADR-100 decision 8): an
-// anchor of the screen less a margin. The top-right corner; the right edge level with the places under the Ore; the middle;
-// or the bottom right where the selection and its buttons leave the build window room at their widest, kept clear of the
-// minimap as they are (ADR-088 decision 2), and where they do not, its foot a gap above the minimap's top, so that it does
-// not move as the selection changes. The places under the Ore are the window manager's slots, the first of which is the
-// margin.
-WindowPlace FirstPlaceOf(Outpost::FirstPlace _first, float _screenWidthUnits) noexcept
+// Where a window first stands, as its row's first place has it (ADR-100 decision 8): an anchor of the screen less a margin.
+// The top-right corner; the right edge level with the places under the Ore; or the middle. The places under the Ore are
+// the window manager's slots, the first of which is the margin.
+WindowPlace FirstPlaceOf(Outpost::FirstPlace _first) noexcept
 {
   switch (_first)
   {
@@ -1655,43 +1653,18 @@ WindowPlace FirstPlaceOf(Outpost::FirstPlace _first, float _screenWidthUnits) no
     return {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = MARGIN, .top = WINDOWS_TOP}};
   case Outpost::FirstPlace::RightUnderTheOre:
     return {.anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = WINDOWS_TOP, .right = MARGIN}};
-  case Outpost::FirstPlace::BesideTheSelection:
-  {
-    const float left = _screenWidthUnits - MARGIN - BUILD_WINDOW_WIDTH;
-    constexpr float PAIR_WIDTH = SELECTION_PANEL_WIDTH + BUTTON_PANEL_WIDTH;
-    const float pairRight = std::max((_screenWidthUnits - PAIR_WIDTH) / 2.0f, MARGIN + MINIMAP_SIZE + PANEL_GAP) + PAIR_WIDTH;
-    const float foot = left >= pairRight + PANEL_GAP ? MARGIN : MARGIN + MINIMAP_SIZE + PANEL_GAP;
-    return {.anchor = Neuron::LayoutAnchor::BottomRight, .margin = {.right = MARGIN, .bottom = foot}};
-  }
   case Outpost::FirstPlace::Middle:
     break;
   }
   return {.anchor = Neuron::LayoutAnchor::Middle, .margin = {.left = MARGIN, .top = MARGIN, .right = MARGIN, .bottom = MARGIN}};
 }
 
-// The build window: the structures' buttons in a column, inset from its sides only by the padding, as the buttons' panel
-// held them.
-void LayBuild(const WindowBench& _bench, const Hud::BuildPanel& _panel, const WindowPlace& _place)
-{
-  LayWindow(_bench, Outpost::WindowKind::Build, _place, BUILD_WINDOW_WIDTH,
-            {.padding = {.left = PADDING, .top = PADDING, .right = PADDING, .bottom = PADDING},
-             .gapUnits = BUTTON_GAP,
-             .alignX = Neuron::LayoutAlign::Stretch},
-            [&](Neuron::Canvas& _canvas)
-            {
-              for (std::size_t structure = 0; structure < _panel.structures.size(); ++structure)
-                (void)_canvas.Button(std::to_string(structure), ContentOf(*_bench.layout, _panel.structures[structure]),
-                                     {.heightUnits = BUTTON_HEIGHT});
-            });
-}
-
 void LayDesigner(const WindowBench& _bench, const Hud::DesignerPanel& _panel, const WindowPlace& _place);
 
 // How large _window stands at its least holding its most, in the match _newest is of, or the Controls window outside one,
-// for WindowsFit (ADR-070): the away window with as many lines as it shows, the build window with every structure the match
-// offers (ADR-031 decision 6), and the designer with every component of the match, locked or not, its part rows showing a
-// line of cards. The Controls window, its lines at their least, and the orders window are as large whatever they hold. A
-// window its row does not count is not measured.
+// for WindowsFit (ADR-070): the away window with as many lines as it shows, and the designer with every component of the
+// match, locked or not, its part rows showing a line of cards. The Controls window, its lines at their least, and the
+// orders window are as large whatever they hold. A window its row does not count is not measured.
 WindowSize LeastOf(Outpost::WindowKind _window, const Outpost::Snapshot* _newest)
 {
   const WindowPlace corner{.corner = Outpost::WindowManager::Point{}};
@@ -1703,12 +1676,6 @@ WindowSize LeastOf(Outpost::WindowKind _window, const Outpost::Snapshot* _newest
     return BuiltSize([&](const WindowBench& _bench) { LayOrders(_bench, {}, corner); });
   case Outpost::WindowKind::Away:
     return BuiltSize([&](const WindowBench& _bench) { LayAway(_bench, {.lines = std::vector<std::string>(Hud::AWAY_LINES)}, corner); });
-  case Outpost::WindowKind::Build:
-  {
-    const auto offered = static_cast<std::size_t>(std::ranges::count_if(
-      _newest->structureTypes, [_newest](const Outpost::StructureTypeView& _type) { return IsOffered(*_newest, _type); }));
-    return BuiltSize([&](const WindowBench& _bench) { LayBuild(_bench, {.structures = std::vector<Hud::Button>(offered)}, corner); });
-  }
   case Outpost::WindowKind::Designer:
   {
     Outpost::Designer designer;
@@ -3084,28 +3051,70 @@ void SelectionPanel(const HudBench& _bench, const Hud::Content& _content, float 
   canvas.EndPanel();
 }
 
-// The buttons against the selection's right edge, stacked from the panel's top, and at its foot the selection's retreat:
-// RETREAT, with MIXED at the right while its ships differ, over a row of three, its setting lit, each a press that sets it
-// for every ship (ADR-088 decisions 2 and 3).
-void ButtonsPanel(const HudBench& _bench, const Hud::Content& _content, float _leftUnits)
+// The command card's rows of cells (ADR-088 decision 2), each cell as wide as its row's share of the card less the gaps; a
+// structure's cell in build mode, its name over its cost or why it cannot be built, this far in from its top and its foot;
+// and the card as tall in every selection and mode: its padding, the BUILD label's line and three rows of structures,
+// within which three rows of buttons and the retreat under them fit too.
+constexpr std::size_t CARD_ROWS = Hud::CARD_CELLS / Hud::CARD_COLUMNS;
+constexpr float CARD_ROOM_UNITS = COMMAND_CARD_WIDTH - (2.0f * PADDING);
+constexpr float CARD_CELL_WIDTH =
+  (CARD_ROOM_UNITS - (static_cast<float>(Hud::CARD_COLUMNS - 1) * BUTTON_GAP)) / static_cast<float>(Hud::CARD_COLUMNS);
+constexpr float STRUCTURE_CELL_INSET = 6.0f;
+constexpr float STRUCTURE_CELL_HEIGHT = (2.0f * STRUCTURE_CELL_INSET) + NAME_LINE_UNITS + FIGURE_LINE_UNITS;
+constexpr float COMMAND_CARD_HEIGHT = (2.0f * PADDING) + RETREAT_LABEL_UNITS + (static_cast<float>(CARD_ROWS) * STRUCTURE_CELL_HEIGHT) +
+                                      (static_cast<float>(CARD_ROWS - 1) * BUTTON_GAP);
+static_assert((2.0f * PADDING) + (static_cast<float>(CARD_ROWS) * BUTTON_HEIGHT) + (static_cast<float>(CARD_ROWS) * BUTTON_GAP) +
+                RETREAT_LABEL_UNITS + BUTTON_HEIGHT <=
+              COMMAND_CARD_HEIGHT);
+
+// The place of the command card's cell _cell, _rowHeightUnits to a row, from the card's top-left corner, as wide as its row
+// when it is _wide.
+Neuron::LayoutStyle CellAt(std::uint8_t _cell, bool _wide, float _topUnits, float _rowHeightUnits)
+{
+  const int row = _cell / Hud::CARD_COLUMNS;
+  const int column = _cell % Hud::CARD_COLUMNS;
+  return At(_wide ? PADDING : PADDING + (static_cast<float>(column) * (CARD_CELL_WIDTH + BUTTON_GAP)),
+            _topUnits + (static_cast<float>(row) * (_rowHeightUnits + BUTTON_GAP)),
+            {.widthUnits = _wide ? CARD_ROOM_UNITS : CARD_CELL_WIDTH, .heightUnits = _rowHeightUnits});
+}
+
+// The command card in the bottom-right corner (ADR-088 decision 2), as tall whatever it holds: each button in its cell, a
+// row of cells under another from the card's top, and at its foot the selection's retreat: RETREAT, with MIXED at the
+// right while its ships differ, over a row of three, its setting lit, each a press that sets it for every ship (ADR-088
+// decision 3). In build mode, BUILD with B's cap at its right, the key that turns it off as Esc does, over the structures
+// the selected Constructors build, each in its cell on two lines, and neither the buttons nor the retreat.
+void CommandCard(const HudBench& _bench, const Hud::Content& _content)
 {
   Neuron::Canvas& canvas = *_bench.canvas;
   Hud::Layout& layout = *_bench.layout;
-  const auto count = static_cast<float>(_content.buttons.size());
-  const float buttonsHeight = count > 0.0f ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
-  const float retreatTop = PADDING + buttonsHeight + (count > 0.0f ? BUTTON_GAP : 0.0f);
-  const float heightUnits =
-    _content.retreat.has_value() ? retreatTop + RETREAT_LABEL_UNITS + BUTTON_HEIGHT + PADDING : (2.0f * PADDING) + buttonsHeight;
-  BeginHudPanel(canvas, _leftUnits, _bench.screenHeightUnits - MARGIN - heightUnits, BUTTON_PANEL_WIDTH, heightUnits);
-  const float room = BUTTON_PANEL_WIDTH - (2.0f * PADDING);
+  BeginHudPanel(canvas, _bench.screenWidthUnits - MARGIN - COMMAND_CARD_WIDTH, _bench.screenHeightUnits - MARGIN - COMMAND_CARD_HEIGHT,
+                COMMAND_CARD_WIDTH, COMMAND_CARD_HEIGHT);
+  if (_content.build.has_value())
+  {
+    (void)canvas.Label(TrackedText("BUILD", RETREAT_LABEL_UNITS), ROW_LABEL_COLOR, At(PADDING, PADDING));
+    (void)canvas.Tree().Begin(Neuron::LayoutKind::Row, EndingAt(PADDING, PADDING));
+    (void)canvas.KeyCap(Outpost::KeyCap(Outpost::KEY_BUILD));
+    canvas.Tree().End();
+    for (std::size_t i = 0; i < _content.build->structures.size(); ++i)
+    {
+      const Hud::Button& structure = _content.build->structures[i];
+      Neuron::ButtonContent content = ContentOfHud(_bench, structure);
+      content.stacked = true;
+      (void)canvas.Button(std::format("structure {}", i), content,
+                          CellAt(structure.cell, false, PADDING + RETREAT_LABEL_UNITS, STRUCTURE_CELL_HEIGHT));
+    }
+    canvas.EndPanel();
+    return;
+  }
   for (std::size_t i = 0; i < _content.buttons.size(); ++i)
   {
-    (void)canvas.Button(
-      std::format("button {}", i), ContentOfHud(_bench, _content.buttons[i]),
-      At(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)), {.widthUnits = room, .heightUnits = BUTTON_HEIGHT}));
+    const Hud::Button& button = _content.buttons[i];
+    (void)canvas.Button(std::format("button {}", i), ContentOfHud(_bench, button),
+                        CellAt(button.cell, button.wide, PADDING, BUTTON_HEIGHT));
   }
   if (_content.retreat.has_value())
   {
+    const float retreatTop = COMMAND_CARD_HEIGHT - PADDING - BUTTON_HEIGHT - RETREAT_LABEL_UNITS;
     const Hud::RetreatChoice& retreat = *_content.retreat;
     (void)canvas.Label(TrackedText("RETREAT", RETREAT_LABEL_UNITS), ROW_LABEL_COLOR, At(PADDING, retreatTop));
     if (retreat.mixed)
@@ -3119,11 +3128,11 @@ void ButtonsPanel(const HudBench& _bench, const Hud::Content& _content, float _l
       payloads[i] = PressOf(layout, {.kind = Hud::ActionKind::SetRetreat, .retreat = RETREAT_CHOICES[i]});
     }
     const auto picked = std::ranges::find(RETREAT_CHOICES, retreat.setting);
-    canvas.Cells("retreat", words, payloads,
-                 retreat.mixed || picked == RETREAT_CHOICES.end()
-                   ? std::nullopt
-                   : std::optional(static_cast<std::size_t>(picked - RETREAT_CHOICES.begin())),
-                 BUTTON_HEIGHT, At(PADDING, retreatTop + RETREAT_LABEL_UNITS, {.widthUnits = room, .gapUnits = RETREAT_CELL_GAP_UNITS}));
+    canvas.Cells(
+      "retreat", words, payloads,
+      retreat.mixed || picked == RETREAT_CHOICES.end() ? std::nullopt
+                                                       : std::optional(static_cast<std::size_t>(picked - RETREAT_CHOICES.begin())),
+      BUTTON_HEIGHT, At(PADDING, retreatTop + RETREAT_LABEL_UNITS, {.widthUnits = CARD_ROOM_UNITS, .gapUnits = RETREAT_CELL_GAP_UNITS}));
   }
   canvas.EndPanel();
 }
@@ -3195,26 +3204,23 @@ void LayHud(const HudBench& _bench, const Hud::Content& _content, std::span<cons
     BannerPanel(_bench, *_content.outcome, at);
   }
 
-  // The bottom middle: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
-  // centered so that the two read as one, and never over the minimap (ADR-088 decision 2). The selection's panel is as
-  // wide as its longest line, within its bounds.
-  float selectionUnits = 0.0f;
+  // The bottom row's console (ADR-088 decision 2): the selection in the middle, moved only as far as it must to stand a gap
+  // clear of the command card's place and of the minimap, as wide as its longest line within its bounds; and the command
+  // card in the bottom-right corner, while the selection offers a button, its retreat or build mode.
   if (!_content.selection.empty())
   {
     float textUnits = 0.0f;
     for (std::size_t line = 0; line < _content.selection.size(); ++line)
       textUnits = std::max(textUnits, metrics.Width(line == 0 ? Hud::Typeface::Title : Hud::Typeface::Name, _content.selection[line]));
-    selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+    const float selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+    float selectionLeft =
+      std::min((screenWidthUnits - selectionUnits) / 2.0f, screenWidthUnits - MARGIN - COMMAND_CARD_WIDTH - PANEL_GAP - selectionUnits);
+    if (_content.mapSizeMeters > 0.0f)
+      selectionLeft = std::max(selectionLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
+    SelectionPanel(_bench, _content, selectionLeft, selectionUnits);
   }
-  // The buttons' panel holds the buttons and, at its foot, the selection's retreat (ADR-088 decision 3).
-  const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
-  float pairLeft = (screenWidthUnits - selectionUnits - (buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f)) / 2.0f;
-  if (_content.mapSizeMeters > 0.0f)
-    pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
-  if (!_content.selection.empty())
-    SelectionPanel(_bench, _content, pairLeft, selectionUnits);
-  if (buttonsPanel)
-    ButtonsPanel(_bench, _content, pairLeft + selectionUnits);
+  if (!_content.buttons.empty() || _content.retreat.has_value() || _content.build.has_value())
+    CommandCard(_bench, _content);
 
   // The bottom left: the minimap's frame, its square the leaf the game draws the map into.
   std::size_t map = Neuron::LayoutNode::NO_NODE;
@@ -3771,7 +3777,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
             WorkLine("Researching", structure->research.empty() ? std::string() : TopicNameOf(_newest, structure->research.front()),
                      structure->jobPermille, structure->research.size()));
         }
-        // Each window's button shows the key that opens it too (ADR-068 decision 4).
+        // Each window's button shows the key that opens it too (ADR-068 decision 4), in the command card's first row, the
+        // first window in its left cell (ADR-088 decision 2).
         const Button production{
           .label = "Production", .action = {.kind = ActionKind::OpenProduction, .producer = structure->id}, .key = KeyCap(KEY_PRODUCTION)};
         if (structure->structure == StructureKind::CommandStation)
@@ -3781,7 +3788,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
           content.buttons.push_back(production);
           content.buttons.push_back({.label = "Ship designer",
                                      .action = {.kind = ActionKind::OpenDesigner, .producer = structure->id},
-                                     .key = KeyCap(KEY_DESIGNER)});
+                                     .key = KeyCap(KEY_DESIGNER),
+                                     .cell = 1});
         }
         else if (structure->structure == StructureKind::ResearchLab)
         {
@@ -3839,7 +3847,9 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
              .note = upgrading         ? std::format("UPGRADING{}{}%", DOT, *structure->upgradePermille / 10)
                      : missing.empty() ? std::string()
                                        : std::string("NEEDS RESEARCH"),
-             .progressPermille = structure->upgradePermille});
+             .progressPermille = structure->upgradePermille,
+             .cell = UPGRADE_CELL,
+             .wide = true});
         }
         else if (grows)
           content.selection.emplace_back("Top level");
@@ -3934,23 +3944,24 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   if (retreating > 0)
     content.selection.push_back(ships == 1 ? std::string("Retreating to be repaired")
                                            : std::format("{} retreating to be repaired", retreating));
-  // A warship's orders, first, each with its key's cap, the one armed for the next left-click lit until it is given or
-  // canceled (ADR-088 decision 2). Each does what its key does, to every selected ship. A map without sectors has
-  // none to hold (ADR-059).
+  // A warship's orders, each with its key's cap in the command card's cell it always takes, the one armed for the next
+  // left-click lit until it is given or canceled (ADR-088 decision 2). Each does what its key does, to every selected ship. A
+  // map without sectors has none to hold (ADR-059), and its cell stands empty.
   if (warships)
   {
-    const auto order = [&_armed](std::string _label, ActionKind _kind, std::uint8_t _key)
-    { return Button{.label = std::move(_label), .action = {.kind = _kind}, .selected = _armed == _kind, .key = KeyCap(_key)}; };
-    content.buttons.push_back(order("Attack-move", ActionKind::AttackMove, KEY_ATTACK_MOVE));
+    const auto order = [&_armed](std::string _label, ActionKind _kind, std::uint8_t _key, std::uint8_t _cell) {
+      return Button{.label = std::move(_label), .action = {.kind = _kind}, .selected = _armed == _kind, .key = KeyCap(_key), .cell = _cell};
+    };
+    content.buttons.push_back(order("Attack-move", ActionKind::AttackMove, KEY_ATTACK_MOVE, 0));
     if (!_newest.sectors.empty())
-      content.buttons.push_back(order("Hold sector", ActionKind::HoldSector, KEY_HOLD_SECTOR));
-    content.buttons.push_back(order("Patrol", ActionKind::Patrol, KEY_PATROL));
-    content.buttons.push_back(order("Stop", ActionKind::Stop, KEY_STOP));
+      content.buttons.push_back(order("Hold sector", ActionKind::HoldSector, KEY_HOLD_SECTOR, 1));
+    content.buttons.push_back(order("Patrol", ActionKind::Patrol, KEY_PATROL, 2));
+    content.buttons.push_back(order("Stop", ActionKind::Stop, KEY_STOP, 3));
   }
-  // Constructors offer one Build button, which opens the build window of the structures they build (ADR-031 decision 6;
-  // ADR-088 decision 2).
+  // Constructors offer one Build button, which turns the command card's build mode on, in the place of the buttons, of the
+  // structures they build (ADR-088 decision 2).
   if (constructors)
-    content.buttons.push_back({.label = "Build", .action = {.kind = ActionKind::OpenBuild}, .key = KeyCap(KEY_BUILD)});
+    content.buttons.push_back({.label = "Build", .action = {.kind = ActionKind::OpenBuild}, .key = KeyCap(KEY_BUILD), .cell = BUILD_CELL});
   // The selection's retreat, under the rest, the first ship's and whether the others differ (ADR-088 decision 3).
   if (retreat.has_value())
     content.retreat = RetreatChoice{.setting = *retreat, .mixed = mixedRetreat};
@@ -3972,12 +3983,17 @@ Hud::BuildPanel Hud::DescribeBuild(const Snapshot& _newest, std::span<const Enti
                                                    _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
                                           });
   const bool capReached = AtNodeCap(_newest.sectors, _newest.entities, _newest.player, _newest.nodeCap);
-  // Every structure Constructors build (Game §structures.building), one Research Lab a player, each dim without a Constructor
-  // to build it, so that the window keeps its size as the selection changes.
+  // Every structure Constructors build (Game §structures.building), one Research Lab a player, each in the command card's
+  // cell its place among them gives it, so that a map without sectors leaves the Relay's empty (ADR-088 decision 2). The card
+  // holds as many as it has cells.
   BuildPanel panel;
-  panel.structures.reserve(_newest.structureTypes.size());
+  panel.structures.reserve(CARD_CELLS);
+  std::uint8_t cell = 0;
   for (const StructureTypeView& type : _newest.structureTypes)
   {
+    if (!type.buildable || cell == CARD_CELLS)
+      continue;
+    const std::uint8_t at = cell++;
     if (!IsOffered(_newest, type))
       continue;
     const bool secondLab = type.structure == StructureKind::ResearchLab && hasLab;
@@ -3986,10 +4002,10 @@ Hud::BuildPanel Hud::DescribeBuild(const Snapshot& _newest, std::span<const Enti
     panel.structures.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
                                 .action = {.kind = ActionKind::Build, .structure = type.structure},
                                 .enabled = constructors && !secondLab && !capped && _newest.ore >= type.cost,
-                                .note = !constructors ? std::string("NO CONSTRUCTOR")
-                                        : secondLab   ? std::string("ONE PER PLAYER")
-                                        : capped      ? std::string("NODE CAP")
-                                                      : std::string()});
+                                .note = secondLab ? std::string("ONE PER PLAYER")
+                                        : capped  ? std::string("NODE CAP")
+                                                  : std::string(),
+                                .cell = at});
   }
   return panel;
 }
@@ -4201,8 +4217,10 @@ bool Hud::WindowsFit(const Snapshot* _newest, std::uint32_t _widthPixels, std::u
   const float screenWidthUnits = static_cast<float>(_widthPixels) / scale;
   const float screenHeightUnits = static_cast<float>(_heightPixels) / scale;
   // In a match, the HUD's bottom row at its widest: the minimap with its margin and the gap after it, the selection panel
-  // and its buttons at their widest, and the margin at the right (ADR-088 decision 2).
-  constexpr float BOTTOM_ROW_UNITS = MARGIN + MINIMAP_SIZE + PANEL_GAP + SELECTION_PANEL_WIDTH + BUTTON_PANEL_WIDTH + MARGIN;
+  // at its widest, the gap before the command card, the card, and the margin at the right (ADR-088 decision 2). It is
+  // as wide as a 16:9 screen at 150%, so that a 16:9, 16:10 or 3:2 screen holds it at 150% and no further.
+  constexpr float BOTTOM_ROW_UNITS = MARGIN + MINIMAP_SIZE + PANEL_GAP + SELECTION_PANEL_WIDTH + PANEL_GAP + COMMAND_CARD_WIDTH + MARGIN;
+  static_assert(BOTTOM_ROW_UNITS * 1.5f == REFERENCE_WIDTH_UNITS);
   if (_newest != nullptr && BOTTOM_ROW_UNITS > screenWidthUnits)
     return false;
   // Each window its row counts, at its least, as short as its scroll views let it be (ADR-100), the Controls window on the
@@ -4306,7 +4324,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // The floating windows (ADR-031), over everything else, back to front: those the manager has open, where it left them,
   // or, without a manager, every window the content has at its default place.
   std::vector<WindowKind> backToFront{WindowKind::Production, WindowKind::Research, WindowKind::Designer, WindowKind::Controls,
-                                      WindowKind::Orders,     WindowKind::Away,     WindowKind::Leave,    WindowKind::Build};
+                                      WindowKind::Orders,     WindowKind::Away,     WindowKind::Leave};
   if (_windows != nullptr)
     backToFront.assign(_windows->FrontToBack().rbegin(), _windows->FrontToBack().rend());
   // An open drop-down's list stands over every window (ADR-100 decision 6), so it stays open only while the orders window,
@@ -4323,7 +4341,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   {
     if (const std::optional<WindowManager::Point> moved = _windows != nullptr ? _windows->PositionOf(_kind) : std::nullopt)
       return WindowPlace{.corner = KeepOnScreen(*moved, _widthUnits, screenWidthUnits, screenHeightUnits)};
-    return FirstPlaceOf(RowOf(_kind).first, screenWidthUnits);
+    return FirstPlaceOf(RowOf(_kind).first);
   };
   const WindowBench bench{.layout = &layout,
                           .metrics = &_metrics,
@@ -4350,7 +4368,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
       LayResearch(bench, *_content.laboratory, {.corner = place(kind, slotted(kind, 1), RESEARCH_WINDOW_WIDTH)});
     // The windows on the canvas, each at first where its row puts it (ADR-100 decision 8): the Controls, away and leave
-    // windows in the middle, the orders window at the right under the Ore's line, and the build window at the bottom right.
+    // windows in the middle, and the orders window at the right under the Ore's line.
     else if (kind == WindowKind::Controls && _content.controls)
       LayControls(bench, placed(kind, CONTROLS_WINDOW_WIDTH));
     else if (kind == WindowKind::Orders && _content.orders.has_value())
@@ -4359,8 +4377,6 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       LayAway(bench, *_content.away, placed(kind, AWAY_WINDOW_WIDTH));
     else if (kind == WindowKind::Leave && _content.leave)
       LayLeave(bench, placed(kind, LEAVE_WINDOW_WIDTH));
-    else if (kind == WindowKind::Build && _content.build.has_value())
-      LayBuild(bench, *_content.build, placed(kind, BUILD_WINDOW_WIDTH));
   }
   return layout;
 }
