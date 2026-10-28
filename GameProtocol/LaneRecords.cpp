@@ -75,7 +75,7 @@ void Outpost::KeepLaneRecords(std::deque<std::string>& _records, std::uint64_t _
   std::map<std::uint64_t, std::size_t> lastBefore;
   for (std::size_t index = 0; index < ordered.size(); ++index)
   {
-    if (ticks[index] >= _sinceTick || HeadOf(ordered[index])->kind != "seat")
+    if (ticks[index] >= _sinceTick || HeadOf(ordered[index]).value_or(RecordHead{}).kind != "seat")
       continue;
     if (const std::optional<std::uint64_t> player = SeatPlayerOf(ordered[index]))
       lastBefore[*player] = index;

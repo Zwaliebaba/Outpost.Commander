@@ -126,7 +126,7 @@ std::vector<Outpost::Attention> Outpost::AttentionOf(const OverseerModel& _model
     const std::vector<LinkFigures> figures = LinkOf(seat.player, healths, minuteFrom);
     if (figures.size() > ATTENTION_BACKLOG_SECONDS)
     {
-      const std::span<const LinkFigures> last(figures.end() - static_cast<std::ptrdiff_t>(ATTENTION_BACKLOG_SECONDS) - 1, figures.end());
+      const std::span<const LinkFigures> last = std::span<const LinkFigures>(figures).last(ATTENTION_BACKLOG_SECONDS + 1);
       const bool grew =
         std::ranges::is_sorted(last, {}, &LinkFigures::backlogBytes) && last.back().backlogBytes > last.front().backlogBytes;
       if (grew)
