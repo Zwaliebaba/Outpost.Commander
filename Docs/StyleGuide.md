@@ -88,7 +88,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 - **A resting ring is for the far view:** it shows at its resting strength far off and fades up close, and it is at full strength only under the pointer and while a structure is placed ([ADR-042](ADR/ADR-042-faint-footprint-lines.md) decisions 1 and 2).
 - **A sector's border is brighter than the grid and never wider** ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 3).
 - **The territory and what the player remembers are drawn over the fog,** since the fog does not hide them ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decisions 3 and 4).
-- **A mark is shown only while it says something:** a node's rings only while a Relay is placed, and a health bar only while its entity is hurt or Alt is held, and a ship's far out only under the pointer, where its fleet's plate says the rest ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 3, [ADR-088](ADR/ADR-088-selection-and-commands.md) decision 5, [ADR-101](ADR/ADR-101-plates-over-the-fleets.md) decision 3).
+- **A mark is shown only while it says something:** a node's rings only while a Relay is placed, and a health bar only while its entity is hurt, while Alt is held, or over the ship under the pointer, whole or not; far out, a hurt ship's bar gives way to its fleet's plate, which says the rest ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 3, [ADR-088](ADR/ADR-088-selection-and-commands.md) decision 5, [ADR-101](ADR/ADR-101-plates-over-the-fleets.md) decision 3).
 - **An effect stands at one height above the ground,** above the ships ([ADR-019](ADR/ADR-019-glows-and-exhaust.md) decision 5).
 
 ## The scene
