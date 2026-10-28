@@ -4,7 +4,7 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-10 gates are open, in 7 documents.
+9 gates are open, in 7 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
@@ -16,7 +16,6 @@ Every owner decision that is still open: each row of a gate table whose Status i
 
 | Gate | Decision | Blocks |
 |---|---|---|
-| C9 | **The build window and the hint.** At 150% on a 1920×1080 screen the hint stands under the top row (C8), and the build window at its first place, above the bottom row at the right (C7), covers the hint's right end: "right-click to cancel" is hidden while a placement armed from the window is live. Proposed: at a step where the hint and the banner stand under the top row, the build window's first place keeps below them; a window the player has moved keeps its place (C2). The alternative is the hint and the banner drawn over the windows. | CV10.1 |
 | C10 | **Where the production and research windows open.** They open at 178 units from the top, under the place the status panel keeps ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3), which is over the territory panel and the alerts: while either is open the nodes, the tickets and the drain are hidden. Proposed: their first slot stands under the foot of the whole column under the Ore, the alerts included, as the column is at the time; where that leaves a window too little room, it opens beside the column instead. It rewrites ADR-066 decision 3's place, and a window the player has moved keeps its place (C2). | CV10.3 |
 
 ## [`Docs/Plans/ImplementationPlan-Horizon.md`](../Plans/ImplementationPlan-Horizon.md)

@@ -67,6 +67,14 @@ From [ImplementationPlan-Canvas.md](../Plans/ImplementationPlan-Canvas.md), whos
 | Run and owner run: the leave and away windows on the canvas, and an order given and canceled | The game joined to a universe on `OutpostServer` | The leave and away windows opened, dragged and closed; an order given from the orders window and canceled with its X | The owner's run accepts it. The Controls and build windows and the orders window's form were accepted from the run of 2026-10-28. | Tasks CV4.1 and CV4.3 |
 | Run: an order scheduled with every drop-down field picked | The game, with a warship selected | The orders form's hour, minute, sector and target each picked from its list, and the order given | A run of the game. The drop-downs' lists and their mark were accepted from the run of 2026-10-28. | Task CV7.2; gate C6 |
 
+### The Console plan
+
+From [ImplementationPlan-Console.md](../Plans/ImplementationPlan-Console.md), whose rule 6 has every task run and looked at, at 1920×1080 and at 2880×1920, and accepted by the owner's run.
+
+| Run | Build and configuration | What to look at | Acceptance | Source |
+|---|---|---|---|---|
+| Owner run: the console | The game at 1920×1080, and on the development machine's 2880×1920 | The selection and the command card with warships, a Constructor, both, and each structure selected; a base built from the card's build mode, two structures placed with Shift and two without; Esc with a placement armed, in build mode, and with a window open | Rule 6: the owner's run accepts it, at 1920×1080 and at 2880×1920. | Tasks CN1.1 and CN1.2; gates B2 to B5 |
+
 ### The Look plan
 
 From [ImplementationPlan-Look.md](../Plans/ImplementationPlan-Look.md), whose rule 5 has every task run and looked at, and accepted by the owner's run.
