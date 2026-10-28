@@ -31,7 +31,7 @@ A window's header has to read at a glance. A queue reads as a count against its 
 ## Consequences
 
 - **The production window is as tall as its cards.** With six designs, three lines of cards take 238 units.
-- **The name field's typing keys are not listed.** Enter, Backspace and Esc edit a design's name while the field has the keyboard ([ADR-017](ADR-017-research-and-the-designer.md)). That is text entry, not a control of the match. The designer reads its own Esc, `VK_ESCAPE`, in `Designer.cpp`.
+- **The name field's typing keys are not listed.** Enter, Backspace and Esc edit a design's name while the field has the keyboard ([ADR-017](ADR-017-research-and-the-designer.md)). That is text entry, not a control of the match. The canvas's interaction takes Esc first while the field has the keyboard ([ADR-100](ADR-100-the-canvas.md) decision 3).
 - **The tests.**
   - `HudTests.WritesTheWindowsHeaders`
   - `SaysWhatAProductionCardBuilds`

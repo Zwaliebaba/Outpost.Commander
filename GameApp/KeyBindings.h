@@ -111,7 +111,7 @@ struct KeyBinding
      .does = "Pan"},
     {.keys = "Screen edge", .does = "Pan, while the pointer is held in the window"},
     {.keys = "Middle-drag", .does = "Pan"},
-    {.keys = "Wheel", .does = "Zoom"},
+    {.keys = "Wheel", .does = "Zoom, or scroll the list under the pointer"},
     {.keys = std::format("{} and {}", KeyName(KEY_TURN_COUNTERCLOCKWISE), KeyName(KEY_TURN_CLOCKWISE)), .does = "Turn"},
     {.keys = "Minimap click", .does = "Look there"},
     {.keys = "Minimap right-click", .does = "Send the selection there"},

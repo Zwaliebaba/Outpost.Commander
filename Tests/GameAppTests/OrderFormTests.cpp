@@ -172,6 +172,61 @@ public:
     Assert::AreEqual(SOUTH, form.TriggerSector());
   }
 
+  // ADR-080 decision 9: an hour, a minute, a sector and a target are picked from a drop-down of the choices the arrows step
+  // among, in their order, each named, the one the field holds among them; a choice the field does not offer is not picked,
+  // and the trigger, the action and the condition only step.
+  TEST_METHOD(PicksAFieldAmongItsChoices)
+  {
+    const Outpost::Snapshot snapshot = ThreeSectors();
+    Outpost::OrderForm form;
+    form.Update(snapshot, snapshot.entities);
+    const auto namesOf = [&](Outpost::OrderField _field)
+    {
+      std::vector<std::string> names;
+      for (const Outpost::OrderChoice& choice : form.Choices(_field, snapshot, snapshot.entities))
+        names.push_back(choice.name);
+      return names;
+    };
+
+    const std::vector<Outpost::OrderChoice> hours = form.Choices(Outpost::OrderField::Hour, snapshot, snapshot.entities);
+    Assert::AreEqual(std::size_t{24}, hours.size());
+    Assert::AreEqual(std::string("00"), hours.front().name);
+    Assert::IsTrue(form.Holds(Outpost::OrderField::Hour, hours[2]) && !form.Holds(Outpost::OrderField::Hour, hours[3]), L"the form's 02");
+    form.Pick(Outpost::OrderField::Hour, hours[14], snapshot, snapshot.entities);
+    Assert::AreEqual(14, form.Hour());
+    const std::vector<Outpost::OrderChoice> minutes = form.Choices(Outpost::OrderField::Minute, snapshot, snapshot.entities);
+    Assert::AreEqual(std::size_t{12}, minutes.size());
+    Assert::AreEqual(std::string("55"), minutes.back().name);
+    form.Pick(Outpost::OrderField::Minute, minutes[9], snapshot, snapshot.entities);
+    Assert::AreEqual(45, form.Minute());
+    form.Pick(Outpost::OrderField::Minute, {.value = 7}, snapshot, snapshot.entities);
+    Assert::AreEqual(45, form.Minute(), L"7 is no fifth minute");
+
+    Assert::IsTrue(namesOf(Outpost::OrderField::TriggerSector) == std::vector<std::string>{"North", "South"}, L"the sectors held");
+    Assert::IsTrue(namesOf(Outpost::OrderField::ActionSector) == std::vector<std::string>{"North", "South", "East"});
+    form.Pick(Outpost::OrderField::TriggerSector, {.value = EAST}, snapshot, snapshot.entities);
+    Assert::AreEqual(NORTH, form.TriggerSector(), L"East is not the player's to watch");
+    form.Pick(Outpost::OrderField::ActionSector, {.value = EAST}, snapshot, snapshot.entities);
+    Assert::AreEqual(EAST, form.ActionSector());
+
+    form.Step(Outpost::OrderField::Action, 1, snapshot, snapshot.entities);
+    Assert::IsTrue(form.Action() == Outpost::ScheduledActionKind::Attack);
+    const std::vector<Outpost::OrderChoice> targets = form.Choices(Outpost::OrderField::Target, snapshot, snapshot.entities);
+    Assert::AreEqual(std::size_t{4}, targets.size());
+    Assert::AreEqual(std::string("Pirate Relay (3 of 4)"), targets[2].name);
+    form.Pick(Outpost::OrderField::Target, targets[3], snapshot, snapshot.entities);
+    Assert::AreEqual(10u, form.Target().value);
+    form.Pick(Outpost::OrderField::Target, {.target = Outpost::EntityId{20}}, snapshot, snapshot.entities);
+    Assert::AreEqual(10u, form.Target().value, L"an asteroid is no target of an attack");
+
+    for (const Outpost::OrderField field : {Outpost::OrderField::Trigger, Outpost::OrderField::Action, Outpost::OrderField::Condition})
+    {
+      Assert::IsFalse(Outpost::OrderForm::TakesDropDown(field));
+      Assert::IsTrue(form.Choices(field, snapshot, snapshot.entities).empty());
+    }
+    Assert::IsTrue(Outpost::OrderForm::TakesDropDown(Outpost::OrderField::Target));
+  }
+
   // The order the form gives the selection (ADR-080): its warships, or its Constructors for a rig; a time of day as the next
   // moment the player's clock reads it, or the sector its event trigger watches; the action's sector's node, or its
   // target; and the condition. Until it can be given, the button says why.

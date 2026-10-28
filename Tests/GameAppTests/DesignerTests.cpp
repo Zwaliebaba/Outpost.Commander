@@ -60,23 +60,6 @@ Outpost::Designer Picking(Outpost::HullId _hull, Outpost::DriveId _drive, Outpos
   return designer;
 }
 
-Outpost::Designer Typing(const Outpost::Snapshot& _snapshot)
-{
-  Outpost::Designer designer;
-  designer.Update(_snapshot);
-  designer.BeginEditing(_snapshot);
-  return designer;
-}
-
-Neuron::InputEvent Key(std::uint8_t _key)
-{
-  return {.kind = Neuron::InputEventKind::KeyDown, .key = _key};
-}
-
-Neuron::InputEvent Character(std::uint32_t _character)
-{
-  return {.kind = Neuron::InputEventKind::Character, .character = _character};
-}
 } // namespace
 
 TEST_CLASS(DesignerTests)
@@ -135,10 +118,7 @@ public:
     Assert::AreEqual(std::string("Lancer+SA"), lancer.Name(newest));
     Assert::AreEqual(std::string("Lancer+SA"), lancer.SaveCommand(newest).value_or(Outpost::SaveDesignCommand{}).nameUtf8);
 
-    lancer.BeginEditing(newest);
-    for (int i = 0; i < 3; ++i)
-      (void)lancer.Edit(Key(VK_BACK), newest);
-    (void)lancer.Edit(Character('!'), newest);
+    lancer.TypeName("Lancer!");
     Assert::AreEqual(std::string("Lancer!"), lancer.Name(newest), L"a typed name wins");
 
     Outpost::Designer picket = Picking(SMALL, ION, LANCE);
@@ -205,12 +185,10 @@ public:
     snapshot = Components(true);
     Assert::IsTrue(heavy.SaveCommand(snapshot).has_value());
 
-    swarm.BeginEditing(snapshot);
-    (void)swarm.Edit(Character('!'), snapshot);
-    const Outpost::SaveDesignCommand rename = swarm.Edit(Key(VK_RETURN), snapshot).value_or(Outpost::SaveDesignCommand{});
+    swarm.TypeName("Swarm!");
+    const Outpost::SaveDesignCommand rename = swarm.EnterName(snapshot).value_or(Outpost::SaveDesignCommand{});
     Assert::IsTrue(rename.design == SWARM);
     Assert::AreEqual(std::string("Swarm!"), rename.nameUtf8);
-    Assert::IsFalse(swarm.IsEditing());
     Assert::AreEqual(std::string("Swarm"), swarm.Name(snapshot), L"the name follows the snapshot again");
   }
 
@@ -351,10 +329,9 @@ public:
   {
     const Outpost::Snapshot snapshot = Components(true);
     Outpost::Designer designer = Picking(LARGE, FUSION, LANCE);
-    designer.BeginEditing(snapshot);
+    designer.TypeName("Typed");
     designer.Load(snapshot.designs.front());
     Assert::IsTrue(designer.Picked() == Outpost::DesignComponents{SMALL, ION, MASS_DRIVER});
-    Assert::IsFalse(designer.IsEditing());
     Assert::AreEqual(std::string("Swarm"), designer.Name(snapshot));
   }
 
@@ -374,33 +351,22 @@ public:
     Assert::AreEqual(size_t{0}, designer.FirstChip(), L"none saved");
   }
 
-  // The name takes printable ASCII up to the limit and Backspace; Escape drops what was typed, and a name the server
-  // would refuse saves nothing.
+  // ADR-017 decision 8: the name as typed into the canvas's field wins and stays when typing stops; Esc drops it, Enter
+  // returns what saving sends, and a name the server would refuse saves nothing and stays as typed.
   TEST_METHOD(TypesTheName)
   {
     const Outpost::Snapshot snapshot = Components();
-    Outpost::Designer designer = Typing(snapshot);
-    Assert::IsTrue(designer.IsEditing());
-    for (std::uint8_t i = 0; i < 5; ++i)
-      (void)designer.Edit(Key(VK_BACK), snapshot);
-    (void)designer.Edit(Character('X'), snapshot);
-    (void)designer.Edit(Character(0xe9), snapshot);
-    (void)designer.Edit(Character('\t'), snapshot);
-    (void)designer.Edit(Key('A'), snapshot);
-    Assert::AreEqual(std::string("X"), designer.Name(snapshot), L"Backspace, one character, and nothing the font lacks");
-    (void)designer.Edit(Key(VK_ESCAPE), snapshot);
-    Assert::IsFalse(designer.IsEditing());
+    Outpost::Designer designer;
+    designer.Update(snapshot);
+    designer.TypeName("X");
+    Assert::AreEqual(std::string("X"), designer.Name(snapshot));
+    designer.DropTypedName();
     Assert::AreEqual(std::string("Swarm"), designer.Name(snapshot));
 
     designer.PickWeapon(LANCE);
-    designer.BeginEditing(snapshot);
-    for (size_t i = 0; i < 40; ++i)
-      (void)designer.Edit(Character('z'), snapshot);
-    Assert::AreEqual(Outpost::DESIGN_NAME_LIMIT, designer.Name(snapshot).size());
-    while (!designer.Name(snapshot).empty())
-      (void)designer.Edit(Key(VK_BACK), snapshot);
-    (void)designer.Edit(Character(' '), snapshot);
-    Assert::IsFalse(designer.Edit(Key(VK_RETURN), snapshot).has_value(), L"a blank name saves nothing");
+    designer.TypeName(" ");
+    Assert::IsFalse(designer.EnterName(snapshot).has_value(), L"a blank name saves nothing");
+    Assert::AreEqual(std::string(" "), designer.Name(snapshot), L"and stays as typed");
   }
 };
 } // namespace GameAppTests
