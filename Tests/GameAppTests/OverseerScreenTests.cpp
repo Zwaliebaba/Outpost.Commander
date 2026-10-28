@@ -36,7 +36,8 @@ Outpost::OverseerWelcomeMessage Welcome()
           .replayedCommands = 7,
           .dayRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
                          "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
-                         "battle 70000 70100 sector 3 player 3 deputy player 2 ai"}};
+                         "battle 70000 70100 sector 3 player 3 deputy player 2 ai", "tick 60000 us 7200 over 3 move 4000 fight 2000",
+                         "dropped 61000 ticks 3"}};
 }
 
 // _model welcomed at START, and told a Health of _tick at _heard.
@@ -78,7 +79,8 @@ std::vector<Outpost::SeatHealth> SeatsAt(std::uint64_t _second)
 }
 
 // A universe an hour old, as the overseer knows it after 61 Health, the last heard at START plus 60 s: in the last minute
-// 1,180 ticks of 1 ms and 20 of 3 ms, before it one of 4.2 ms and 3 ticks dropped; and the log's records.
+// 1,180 ticks of 1 ms and 20 of 3 ms, before it one of 4.2 ms and 3 ticks dropped, each second's parts 12 ms of moving, 6 ms of
+// fighting and 2 ms of commands; two connections held and five joins welcomed; and the log's records.
 void Script(Outpost::OverseerModel& _model)
 {
   _model.Take(Outpost::EncodeOverseerMessage(Welcome()), START);
@@ -93,6 +95,11 @@ void Script(Outpost::OverseerModel& _model)
     }
     else if (second == 60)
       health.tickMicroseconds.assign(20, 3'000);
+    health.partMicroseconds[static_cast<std::size_t>(Outpost::TickPart::Move)] = 12'000;
+    health.partMicroseconds[static_cast<std::size_t>(Outpost::TickPart::Fight)] = 6'000;
+    health.partMicroseconds[static_cast<std::size_t>(Outpost::TickPart::Commands)] = 2'000;
+    health.joins[0] = 5;
+    health.connections = 2;
     health.process = {.workingSetBytes = 190'000'000,
                       .privateBytes = 150'000'000,
                       .cpuHundredths = 12,
@@ -102,9 +109,9 @@ void Script(Outpost::OverseerModel& _model)
                       .diskFreeBytes = 120ull * 1'024 * 1'024 * 1'024};
     _model.Take(Outpost::EncodeOverseerMessage(health), START + std::chrono::seconds{second});
   }
-  _model.Take(Outpost::EncodeOverseerMessage(
-                Outpost::LogRecordsMessage{.lines = {"start 0 new", "save 70000 bytes 12700 encode_us 310", "seat 71000 player 3 deputy",
-                                                     "battle 71500 71900 sector 4 player 1 present player 2 ai"}}),
+  _model.Take(Outpost::EncodeOverseerMessage(Outpost::LogRecordsMessage{
+                .lines = {"start 0 new", "save 70000 bytes 12700 encode_us 310", "written 70000 write_us 900", "seat 71000 player 3 deputy",
+                          "battle 71500 71900 sector 4 player 1 present player 2 ai"}}),
               START);
 }
 
@@ -192,6 +199,27 @@ const Neuron::CanvasRect& RowFaceOf(const Neuron::DrawList& _layout, std::uint32
                                          { return _panel.width > 200.0f && _panel.Contains(text.left + 1.0f, text.top + 1.0f); });
   Assert::IsTrue(face != _layout.panels.rend());
   return *face;
+}
+
+// The last text of the layout that reads _text, as a window's title stands over a heading of the same words.
+const Neuron::CanvasText& LastText(const Neuron::DrawList& _layout, std::string_view _text)
+{
+  const auto found = std::ranges::find(_layout.texts.rbegin(), _layout.texts.rend(), _text, &Neuron::CanvasText::text);
+  Assert::IsTrue(found != _layout.texts.rend(), std::wstring(winrt::to_hstring(_text)).c_str());
+  return *found;
+}
+
+// The left button pressed, held or let go at a point, as a frame's input has it.
+Neuron::InputState ButtonAt(float _xPixels, float _yPixels, std::optional<Neuron::InputEventKind> _event)
+{
+  const auto x = static_cast<std::int32_t>(_xPixels);
+  const auto y = static_cast<std::int32_t>(_yPixels);
+  Neuron::InputState input{.active = true, .cursorXPixels = x, .cursorYPixels = y};
+  if (_event != Neuron::InputEventKind::ButtonUp)
+    input.keysDown.set(VK_LBUTTON);
+  if (_event.has_value())
+    input.events.push_back({.kind = *_event, .key = VK_LBUTTON, .xPixels = x, .yPixels = y});
+  return input;
 }
 
 bool Same(const DirectX::XMFLOAT4& _first, const DirectX::XMFLOAT4& _second) noexcept
@@ -465,6 +493,7 @@ public:
     {
       OverseerScreen screen({{.player = Outpost::PlayerId{1}, .color = BLUE}});
       screen.Pick(Outpost::PlayerId{1});
+      screen.OpenServerWindow();
       const Neuron::DrawList& layout = Lay(screen, model, NOW, Link(), width, height);
       const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
       const std::wstring name = std::format(L"the overview at {} wide", width);
@@ -578,6 +607,67 @@ public:
     Assert::IsFalse(screen.Picked().has_value());
     screen.Input(PressOn(Lay(screen, scripted.model, NOW), [](const Neuron::CanvasRegion& _region) { return _region.payload == ALL; }));
     Assert::IsFalse(screen.TakeSight().has_value(), L"pressed in full sight, nothing changes");
+  }
+
+  // ADR-103 decision 7: the header's Server button opens the server window, which tells the tick by part over the hour, the
+  // longest tick of each minute against the budget, the day's long and dropped ticks, the saves with their writes, the game's
+  // listener and the process.
+  TEST_METHOD(ShowsTheServerWindow)
+  {
+    const Scripted scripted;
+    OverseerScreen screen({});
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Server));
+    constexpr std::uint32_t SERVER = 6u << 16;
+    screen.Input(PressOn(Lay(screen, scripted.model, NOW), [](const Neuron::CanvasRegion& _region) { return _region.payload == SERVER; }));
+    Assert::IsTrue(screen.IsOpen(Outpost::OverseerWindow::Server), L"the Server button");
+    const Neuron::DrawList& layout = Lay(screen, scripted.model, NOW);
+    for (const std::string_view text : {"THE TICK BY PART, THE LAST HOUR",
+                                        "move",
+                                        "60.0% \xC2\xB7 0.60 ms a tick",
+                                        "fight",
+                                        "30.0% \xC2\xB7 0.30 ms a tick",
+                                        "commands",
+                                        "10.0% \xC2\xB7 0.10 ms a tick",
+                                        "THE LONGEST TICK OF EACH MINUTE, THE LAST HOUR",
+                                        "The line is the 5.00 ms budget; the hour's longest took 4.20 ms.",
+                                        "THE DAY'S LONG TICKS",
+                                        "0:50:00 \xC2\xB7 7.20 ms \xC2\xB7 3 of its minute \xC2\xB7 move 4.00 ms \xC2\xB7 fight 2.00 ms",
+                                        "3 ticks dropped in the day, 3 the most in a minute.",
+                                        "SAVES",
+                                        "0:58:20 \xC2\xB7 12.4 KB \xC2\xB7 encoded in 0.31 ms \xC2\xB7 written in 0.90 ms",
+                                        "THE GAME'S LISTENER",
+                                        "2 connections held; the joins since the server started:",
+                                        "5 welcomed",
+                                        "0 another build",
+                                        "THE PROCESS",
+                                        "Working set 181 MB \xC2\xB7 private 143 MB \xC2\xB7 12% of a core",
+                                        "42 threads \xC2\xB7 310 handles \xC2\xB7 up 1:00:00 \xC2\xB7 120 GB free on its disk"})
+      Assert::IsTrue(Shows(layout, text), (std::wstring(winrt::to_hstring(text)) + L" | " + Texts(layout)).c_str());
+    Assert::AreEqual(std::string("SERVER"), LastText(layout, "SERVER").text, L"its title");
+  }
+
+  // ADR-103 decision 7, ADR-100: the server window is dragged by its title bar, kept where it was left, and closed by its close
+  // box.
+  TEST_METHOD(DragsAndClosesTheServerWindow)
+  {
+    const Scripted scripted;
+    OverseerScreen screen({});
+    screen.OpenServerWindow();
+    const Neuron::CanvasText title = LastText(Lay(screen, scripted.model, NOW), "SERVER");
+    const float x = title.left + 4.0f;
+    const float y = title.top + 4.0f;
+    screen.Input(ButtonAt(x, y, Neuron::InputEventKind::ButtonDown));
+    screen.Input(ButtonAt(x - 100.0f, y + 50.0f, std::nullopt));
+    screen.Input(ButtonAt(x - 100.0f, y + 50.0f, Neuron::InputEventKind::ButtonUp));
+    const Neuron::DrawList& moved = Lay(screen, scripted.model, NOW);
+    const Neuron::CanvasText movedTitle = LastText(moved, "SERVER");
+    Assert::AreEqual(title.left - 100.0f, movedTitle.left, 1.0f, L"dragged by its title bar");
+    Assert::AreEqual(title.top + 50.0f, movedTitle.top, 1.0f);
+    Assert::AreEqual(movedTitle.left, LastText(Lay(screen, scripted.model, NOW), "SERVER").left, 0.5f, L"and left there");
+
+    const Neuron::CanvasText close = LastText(moved, Outpost::Hud::Theme().closeMark);
+    screen.Input(ButtonAt(close.left + 2.0f, close.top + 2.0f, Neuron::InputEventKind::ButtonDown));
+    Assert::IsFalse(screen.IsOpen(Outpost::OverseerWindow::Server), L"closed by its close box");
   }
 
   TEST_METHOD(WritesUniverseTimeAndBytes)

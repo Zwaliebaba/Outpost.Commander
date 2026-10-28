@@ -115,6 +115,8 @@ A session is everything between starting the game and closing it: the menu, a sk
   - **With neither, All well,** and each check that passed.
 - **Its Who played panel draws the last day of universe time,** a lane a player's seat, solid in its color while its player played and hatched while its deputy did, each recovery a mark across them, and a lane of battles, filled where a player was present (ADR-103 decision 7).
 - **Its universe log** shows the log's records as they are written, the newest first, every record or the seats', the saves', the battles' or the server's own (ADR-103 decision 7).
+- **Its windows stand over the overview,** dragged by their title bars and closed by their close boxes (ADR-103 decision 7).
+- **The header's Server button opens the server window** (ADR-103 decision 7): where the tick's time goes, by part, over the last hour; the longest tick of each minute of the hour against the 5 ms budget; the day's long ticks and dropped ticks; the saves, each with its size and how long it took to encode and to write; the connections and the joins since the server started, by what came of them; and the server's process.
 
 ### Joining a universe [§session.join]
 

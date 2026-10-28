@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <numeric>
 #include <ranges>
 
 namespace
@@ -49,6 +50,28 @@ constexpr float CELL_GAP_UNITS = 4.0f;
 constexpr float MAP_SQUARE_UNITS = TOP_ROW_UNITS - (2.0f * PADDING) - CELL_UNITS - CELL_GAP_UNITS;
 constexpr float MAP_PANEL_UNITS = MAP_SQUARE_UNITS + (2.0f * PADDING);
 constexpr float ALL_CELL_UNITS = 56.0f;
+// The header's buttons.
+constexpr float BUTTON_UNITS = 34.0f;
+constexpr float HEADER_BUTTON_UNITS = 120.0f;
+// The overseer's windows (ADR-103 decision 7): how wide the server's stands, and how far down the screen a window first
+// opens, at the screen's right.
+constexpr float SERVER_WINDOW_UNITS = 860.0f;
+constexpr float WINDOW_TOP_UNITS = 140.0f;
+// The server window's sections: a tick part's name and its figures, either side of its bar; a chart's height and the gap
+// between its bars; and how many of the day's long ticks and of the saves it lists.
+constexpr float PART_NAME_UNITS = 130.0f;
+constexpr float PART_FIGURE_UNITS = 240.0f;
+constexpr float PART_BAR_UNITS = 8.0f;
+constexpr float CHART_UNITS = 120.0f;
+constexpr float CHART_GAP_UNITS = 2.0f;
+constexpr std::size_t LONG_TICKS_SHOWN = 10;
+constexpr std::size_t SAVES_SHOWN = 10;
+// A minute of Health, one a second, which the longest tick of each minute is taken over, and the hour's minutes.
+constexpr std::size_t HEALTHS_A_MINUTE = 60;
+constexpr std::size_t MINUTES_AN_HOUR = 60;
+// What came of the joins, by JoinOutcome, as the server window writes them.
+constexpr std::array<std::string_view, Outpost::JOIN_OUTCOME_COUNT> JOIN_OUTCOME_NAMES{
+  "welcomed", "another build", "seat refused", "malformed", "silent", "taken", "closed", "lost"};
 // How far a notch of the wheel scrolls the table and the log: three name lines.
 constexpr float WHEEL_NOTCH_UNITS = 3.0f * NAME_LINE_UNITS;
 
@@ -62,7 +85,8 @@ enum class PressKind : std::uint32_t
   Filter,
   Seat,
   LogFilter,
-  FullSight
+  FullSight,
+  ServerWindow
 };
 
 constexpr std::uint32_t PayloadOf(PressKind _kind, std::uint32_t _which) noexcept
@@ -302,7 +326,12 @@ void LayHeader(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, co
   const HeaderState state = StateOf(_model, _link, _now);
   (void)tree.Begin(Neuron::LayoutKind::Column, {.widthUnits = STATE_COLUMN_UNITS});
   Heading(_canvas, "SERVER");
-  (void)_canvas.Label(Fitted(state.name, Hud::Typeface::Title, TITLE_LINE_UNITS), theme.textColor);
+  // The state, and the button that opens the server window (owner, 2026-10-28).
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Center});
+  (void)_canvas.Label(Fitted(state.name, Hud::Typeface::Title, TITLE_LINE_UNITS), theme.textColor, {.grow = 1.0f});
+  (void)_canvas.Button("server button", {.label = "Server", .payload = PayloadOf(PressKind::ServerWindow, 0)},
+                       {.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS});
+  tree.End();
   for (const std::string& line : state.lines)
     (void)_canvas.Label(Fitted(line, Hud::Typeface::Name, NAME_LINE_UNITS), theme.dimTextColor);
   tree.End();
@@ -832,6 +861,254 @@ void LayWhoPlayed(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model,
   tree.End();
   _canvas.EndPanel();
 }
+// A chart of _values, a bar each in a track of _slots, the newest at its right, each as tall as its value against _most, and a
+// line across at _mark, such as a budget (ADR-103 decision 7): composites of fills, as who played's lanes are.
+void BarChart(Neuron::Canvas& _canvas, std::span<const std::uint32_t> _values, std::size_t _slots, std::uint32_t _most, std::uint32_t _mark,
+              float _widthUnits)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)tree.Begin(Neuron::LayoutKind::Stack, {.widthUnits = _widthUnits, .heightUnits = CHART_UNITS});
+  _canvas.Fill(tree.Add({.widthUnits = _widthUnits, .heightUnits = CHART_UNITS}), theme.barTrackColor);
+  const std::size_t slots = std::max(_slots, _values.size());
+  const float slot = _widthUnits / static_cast<float>(std::max<std::size_t>(slots, 1));
+  const auto most = static_cast<float>(std::max<std::uint32_t>(_most, 1));
+  for (std::size_t index = 0; index < _values.size(); ++index)
+  {
+    const float height = std::max(1.0f, CHART_UNITS * std::min(1.0f, static_cast<float>(_values[index]) / most));
+    const float left = slot * static_cast<float>(slots - _values.size() + index);
+    _canvas.Fill(tree.Add({.widthUnits = std::max(1.0f, slot - CHART_GAP_UNITS),
+                           .heightUnits = height,
+                           .anchor = Neuron::LayoutAnchor::TopLeft,
+                           .margin = {.left = left, .top = CHART_UNITS - height}}),
+                 theme.barFillColor);
+  }
+  const float markTop = CHART_UNITS * (1.0f - std::min(1.0f, static_cast<float>(_mark) / most));
+  _canvas.Fill(tree.Add({.widthUnits = _widthUnits,
+                         .heightUnits = 1.0f,
+                         .anchor = Neuron::LayoutAnchor::TopLeft,
+                         .margin = {.top = std::min(markTop, CHART_UNITS - 1.0f)}}),
+               theme.textColor);
+  tree.End();
+}
+
+// A heading of a window's section after its first, with room above it.
+void SectionHeading(Neuron::Canvas& _canvas, std::string _text)
+{
+  (void)_canvas.Tree().Add({.heightUnits = PADDING});
+  Heading(_canvas, std::move(_text));
+}
+
+// A line of the server window, in the name face.
+void WindowLine(Neuron::Canvas& _canvas, std::string _text, const DirectX::XMFLOAT4& _color, Neuron::LayoutStyle _style = {})
+{
+  (void)_canvas.Label(Fitted(std::move(_text), Hud::Typeface::Name, NAME_LINE_UNITS), _color, _style);
+}
+
+// One of the day's long ticks, as its `tick` record has it (ADR-082 decision 1): its tick, how long it took, how many of its
+// minute's ticks took as long, and each part that took a quarter of it or more, longest first.
+struct LongTick
+{
+  std::uint64_t tick = 0;
+  std::uint64_t microseconds = 0;
+  std::uint64_t over = 0;
+  std::string parts;
+};
+
+std::vector<LongTick> LongTicksOf(const std::deque<std::string>& _records)
+{
+  std::vector<LongTick> ticks;
+  for (const std::string& record : _records)
+  {
+    const std::vector<std::string_view> words = WordsOf(record);
+    if (words.size() < 2 || words.front() != "tick")
+      continue;
+    LongTick tick{.tick = NumberOf(words[1]).value_or(0),
+                  .microseconds = NumberAfter(words, "us").value_or(0),
+                  .over = NumberAfter(words, "over").value_or(0),
+                  .parts = {}};
+    const auto over = std::ranges::find(words, "over");
+    for (auto part = over == words.end() ? words.end() : std::min(over + 2, words.end()); part != words.end() && part + 1 != words.end();
+         part += 2)
+    {
+      tick.parts += std::format("{}{} {}", tick.parts.empty() ? "" : DOT, *part,
+                                MillisecondsText(static_cast<std::uint32_t>(NumberOf(*(part + 1)).value_or(0))));
+    }
+    ticks.push_back(std::move(tick));
+  }
+  return ticks;
+}
+
+// The server window (ADR-103 decision 7), its body _innerUnits wide: the tick by part over the hour of Health held, the
+// longest tick of each minute of it against the budget, the day's long ticks and dropped ticks, the saves the log's records
+// hold, the game's listener, and the process.
+void LayServerWindow(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, float _innerUnits)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const std::deque<Outpost::HeardHealth>& healths = _model.Healths();
+  const std::optional<Outpost::OverseerWelcomeMessage>& welcome = _model.Welcome();
+  const std::uint32_t perSecond = welcome.has_value() ? welcome->ticksPerSecond : 0;
+  (void)_canvas.BeginScroll("server window body", {.grow = 1.0f});
+  (void)tree.Begin(Neuron::LayoutKind::Column, {.gapUnits = CELL_GAP_UNITS, .alignX = Neuron::LayoutAlign::Stretch});
+  const float chartUnits = _innerUnits - theme.scrollLaneUnits;
+
+  // The tick by part, summed over the hour of Health held, each part's share and its time a tick.
+  Heading(_canvas, "THE TICK BY PART, THE LAST HOUR");
+  std::array<std::uint64_t, Outpost::TICK_PART_COUNT> parts{};
+  std::uint64_t ticks = 0;
+  for (const Outpost::HeardHealth& heard : healths)
+  {
+    for (std::size_t part = 0; part < parts.size(); ++part)
+      parts[part] += heard.health.partMicroseconds[part];
+    ticks += heard.health.tickMicroseconds.size();
+  }
+  const std::uint64_t total = std::accumulate(parts.begin(), parts.end(), std::uint64_t{0});
+  if (total == 0 || ticks == 0)
+    WindowLine(_canvas, "No tick timed yet.", theme.dimTextColor);
+  else
+  {
+    std::array<std::size_t, Outpost::TICK_PART_COUNT> order{};
+    std::iota(order.begin(), order.end(), std::size_t{0});
+    std::ranges::stable_sort(order, std::ranges::greater{}, [&parts](std::size_t _part) { return parts[_part]; });
+    for (const std::size_t part : order)
+    {
+      if (parts[part] == 0)
+        continue;
+      const double share = static_cast<double>(parts[part]) / static_cast<double>(total);
+      (void)tree.Begin(Neuron::LayoutKind::Row,
+                       {.heightUnits = NAME_LINE_UNITS, .gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Center});
+      WindowLine(_canvas, std::string(Outpost::TickPartName(static_cast<Outpost::TickPart>(part))), theme.labelColor,
+                 {.widthUnits = PART_NAME_UNITS});
+      (void)_canvas.ProgressBar(static_cast<float>(share), {.heightUnits = PART_BAR_UNITS, .grow = 1.0f});
+      WindowLine(_canvas,
+                 std::format("{:.1f}%{}{} a tick", 100.0 * share, DOT, MillisecondsText(static_cast<std::uint32_t>(parts[part] / ticks))),
+                 theme.textColor, {.widthUnits = PART_FIGURE_UNITS});
+      tree.End();
+    }
+  }
+
+  // The longest tick of each minute of the hour, the newest at the right, against the budget.
+  SectionHeading(_canvas, "THE LONGEST TICK OF EACH MINUTE, THE LAST HOUR");
+  std::vector<std::uint32_t> minutes;
+  for (std::size_t end = healths.size(); end > 0;)
+  {
+    const std::size_t begin = end > HEALTHS_A_MINUTE ? end - HEALTHS_A_MINUTE : 0;
+    std::uint32_t longest = 0;
+    for (std::size_t index = begin; index < end; ++index)
+    {
+      for (const std::uint32_t tick : healths[index].health.tickMicroseconds)
+        longest = std::max(longest, tick);
+    }
+    minutes.push_back(longest);
+    end = begin;
+  }
+  std::ranges::reverse(minutes);
+  const std::uint32_t hourLongest = minutes.empty() ? 0 : std::ranges::max(minutes);
+  BarChart(_canvas, minutes, MINUTES_AN_HOUR, std::max(2 * OverseerScreen::TICK_BUDGET_MICROSECONDS, hourLongest),
+           OverseerScreen::TICK_BUDGET_MICROSECONDS, chartUnits);
+  WindowLine(_canvas,
+             std::format("The line is the {} budget; the hour's longest took {}.",
+                         MillisecondsText(OverseerScreen::TICK_BUDGET_MICROSECONDS), MillisecondsText(hourLongest)),
+             theme.dimTextColor);
+
+  // The day's long ticks, the longest first, and its dropped ticks.
+  SectionHeading(_canvas, "THE DAY'S LONG TICKS");
+  std::vector<LongTick> longTicks = LongTicksOf(_model.DayRecords());
+  std::ranges::stable_sort(longTicks, std::ranges::greater{}, &LongTick::microseconds);
+  if (longTicks.empty())
+    WindowLine(_canvas, std::format("No tick took {} or more in the day.", MillisecondsText(OverseerScreen::TICK_BUDGET_MICROSECONDS)),
+               theme.dimTextColor);
+  for (std::size_t index = 0; index < std::min(longTicks.size(), LONG_TICKS_SHOWN); ++index)
+  {
+    const LongTick& tick = longTicks[index];
+    WindowLine(_canvas,
+               std::format("{}{}{}{}{} of its minute{}{}", Outpost::UniverseTime(tick.tick, perSecond), DOT,
+                           MillisecondsText(static_cast<std::uint32_t>(tick.microseconds)), DOT, tick.over, tick.parts.empty() ? "" : DOT,
+                           tick.parts),
+               theme.textColor);
+  }
+  std::uint64_t dropped = 0;
+  std::uint64_t droppedMost = 0;
+  for (const std::string& record : _model.DayRecords())
+  {
+    const std::vector<std::string_view> words = WordsOf(record);
+    if (words.empty() || words.front() != "dropped")
+      continue;
+    const std::uint64_t count = NumberAfter(words, "ticks").value_or(0);
+    dropped += count;
+    droppedMost = std::max(droppedMost, count);
+  }
+  WindowLine(_canvas,
+             dropped == 0 ? std::string("No tick dropped in the day.")
+                          : std::format("{} ticks dropped in the day, {} the most in a minute.",
+                                        Outpost::WithThousands(static_cast<std::int64_t>(dropped)), droppedMost),
+             dropped == 0 ? theme.dimTextColor : theme.textColor);
+
+  // The saves the log's records hold, the newest first, each with its write, which the folder's thread times.
+  SectionHeading(_canvas, "SAVES");
+  const std::deque<std::string>& records = _model.Records();
+  std::size_t saves = 0;
+  for (auto record = records.rbegin(); record != records.rend() && saves < SAVES_SHOWN; ++record)
+  {
+    const std::vector<std::string_view> words = WordsOf(*record);
+    if (words.size() < 2 || words.front() != "save")
+      continue;
+    const std::uint64_t tick = NumberOf(words[1]).value_or(0);
+    std::string write = "not yet written";
+    for (auto later = record.base(); later != records.end(); ++later)
+    {
+      const std::vector<std::string_view> laterWords = WordsOf(*later);
+      if (laterWords.size() >= 2 && laterWords.front() == "written" && NumberOf(laterWords[1]) == tick)
+      {
+        write = std::format("written in {}", MillisecondsText(static_cast<std::uint32_t>(NumberAfter(laterWords, "write_us").value_or(0))));
+        break;
+      }
+    }
+    WindowLine(_canvas,
+               std::format("{}{}{}{}encoded in {}{}{}", Outpost::UniverseTime(tick, perSecond), DOT,
+                           Outpost::BytesText(NumberAfter(words, "bytes").value_or(0)), DOT,
+                           MillisecondsText(static_cast<std::uint32_t>(NumberAfter(words, "encode_us").value_or(0))), DOT, write),
+               theme.textColor);
+    ++saves;
+  }
+  if (saves == 0)
+    WindowLine(_canvas, "No save in the log's records yet.", theme.dimTextColor);
+
+  // The game's listener and the process, as the newest Health says.
+  const Outpost::HeardHealth* latest = _model.LatestHealth();
+  SectionHeading(_canvas, "THE GAME'S LISTENER");
+  if (latest == nullptr)
+    WindowLine(_canvas, "No Health yet.", theme.dimTextColor);
+  else
+  {
+    const Outpost::HealthMessage& health = latest->health;
+    WindowLine(_canvas, std::format("{} connections held; the joins since the server started:", health.connections), theme.textColor);
+    (void)tree.Begin(Neuron::LayoutKind::Grid, {.gapUnits = CELL_GAP_UNITS, .columns = 4});
+    for (std::size_t outcome = 0; outcome < health.joins.size(); ++outcome)
+      WindowLine(_canvas, std::format("{} {}", health.joins[outcome], JOIN_OUTCOME_NAMES[outcome]),
+                 health.joins[outcome] == 0 ? theme.dimTextColor : theme.textColor);
+    tree.End();
+  }
+  SectionHeading(_canvas, "THE PROCESS");
+  if (latest == nullptr)
+    WindowLine(_canvas, "No Health yet.", theme.dimTextColor);
+  else
+  {
+    const Outpost::ProcessHealth& process = latest->health.process;
+    WindowLine(_canvas,
+               std::format("Working set {}{}private {}{}{}% of a core", Outpost::BytesText(process.workingSetBytes), DOT,
+                           Outpost::BytesText(process.privateBytes), DOT, process.cpuHundredths),
+               theme.textColor);
+    WindowLine(_canvas,
+               std::format("{} threads{}{} handles{}up {}{}{} free on its disk", process.threads, DOT, process.handles, DOT,
+                           Outpost::UniverseTime(process.uptimeSeconds, 1), DOT, Outpost::BytesText(process.diskFreeBytes)),
+               theme.textColor);
+  }
+  tree.End();
+  _canvas.EndScroll();
+}
+
 } // namespace
 
 Outpost::OverseerScreen::OverseerScreen(std::vector<Hud::SideColor> _seatColors)
@@ -943,7 +1220,46 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
     Hud::DrawMinimap(m_layout, {square.leftUnits * scale, square.topUnits * scale, square.widthUnits * scale, square.heightUnits * scale},
                      MapContentOf(*view, *welcome, *this), scale);
   }
+  // The windows, back to front, each on a canvas of its own over the overview and the map, as the game's are (ADR-100).
+  m_scale = scale;
+  const std::vector<OverseerWindow> open(m_windows.FrontToBack().begin(), m_windows.FrontToBack().end());
+  for (auto window = open.rbegin(); window != open.rend(); ++window)
+    LayWindow(*window, _model, _metrics, widthUnits, heightUnits);
   return m_layout;
+}
+
+void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerModel& _model, const Hud::TextMetrics& _metrics,
+                                        float _screenWidthUnits, float _screenHeightUnits)
+{
+  const auto index = static_cast<std::size_t>(_window);
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::Canvas canvas(theme, _metrics, m_interaction, _screenWidthUnits, _screenHeightUnits);
+  const Neuron::WidgetId widget = m_interaction.IdOf("server window");
+  const std::string title = "SERVER";
+  const float width = SERVER_WINDOW_UNITS;
+  m_titleBars[index] = canvas.TitleBarOf(widget);
+  m_closeBoxes[index] = canvas.CloseBoxOf(widget);
+  const Neuron::LayoutStyle body{.padding = {.left = PADDING, .top = PADDING, .right = PADDING, .bottom = PADDING},
+                                 .alignX = Neuron::LayoutAlign::Stretch};
+  // No taller than the screen leaves it; a window moved stays where it was left, kept on the screen.
+  const float most = _screenHeightUnits - (2.0f * MARGIN);
+  std::size_t frame = Neuron::LayoutNode::NO_NODE;
+  if (const std::optional<Neuron::CanvasPoint> left = m_windows.PositionOf(_window))
+  {
+    const Neuron::CanvasPoint corner =
+      Neuron::KeepOnScreen(*left, width, _screenWidthUnits, _screenHeightUnits, Hud::WINDOW_KEPT_ON_SCREEN_UNITS, theme.titleBarUnits);
+    m_windows.Settle(_window, corner);
+    frame = canvas.BeginWindow(widget, title, corner, width, body, most);
+  }
+  else
+    frame =
+      canvas.BeginWindow(widget, title, Neuron::LayoutAnchor::TopRight, {.top = WINDOW_TOP_UNITS, .right = MARGIN}, width, body, most);
+  LayServerWindow(canvas, _model, width - (2.0f * PADDING));
+  canvas.EndWindow();
+  m_windowLayers[index] = m_layout.LayerCount();
+  canvas.Finish(m_layout);
+  const Neuron::LayoutNode& placed = canvas.Tree().Node(frame);
+  m_windowCorners[index] = {.xUnits = placed.leftUnits, .yUnits = placed.topUnits};
 }
 
 void Outpost::OverseerScreen::Input(const Neuron::InputState& _input)
@@ -965,12 +1281,37 @@ void Outpost::OverseerScreen::Input(const Neuron::InputState& _input)
     if (event.kind == Neuron::InputEventKind::ButtonDown)
     {
       (void)m_interaction.Press(m_layout, eventX, eventY);
-      if (const Neuron::CanvasRegion* hit = m_layout.HitAt(eventX, eventY); hit != nullptr && hit->payload != Neuron::NO_PAYLOAD)
+      const Neuron::CanvasRegion* hit = m_layout.HitAt(eventX, eventY);
+      // A window's title bar drags it, its close box closes it, and a press anywhere in it brings it to the front.
+      const std::size_t layer = m_layout.LayerAt(eventX, eventY);
+      bool taken = false;
+      for (std::size_t index = 0; index < OVERSEER_WINDOW_COUNT; ++index)
+      {
+        const auto window = static_cast<OverseerWindow>(index);
+        if (!m_windows.IsOpen(window) || m_windowLayers[index] != layer)
+          continue;
+        if (hit != nullptr && hit->widget == m_closeBoxes[index])
+          m_windows.Close(window);
+        else if (hit != nullptr && hit->widget == m_titleBars[index])
+          m_windows.Grab(window, {.xUnits = eventX / m_scale, .yUnits = eventY / m_scale}, m_windowCorners[index]);
+        else
+        {
+          m_windows.Open(window);
+          continue;
+        }
+        taken = true;
+      }
+      if (!taken && hit != nullptr && hit->payload != Neuron::NO_PAYLOAD)
         Press(hit->payload);
     }
     else if (event.kind == Neuron::InputEventKind::ButtonUp)
+    {
+      m_windows.Release();
       (void)m_interaction.Release(m_layout, eventX, eventY);
+    }
   }
+  if (m_windows.IsDragging() && _input.IsDown(VK_LBUTTON))
+    m_windows.Drag({.xUnits = x / m_scale, .yUnits = y / m_scale});
 }
 
 void Outpost::OverseerScreen::Press(std::uint32_t _payload)
@@ -995,6 +1336,9 @@ void Outpost::OverseerScreen::Press(std::uint32_t _payload)
     break;
   case PressKind::FullSight:
     WatchFullSight();
+    break;
+  case PressKind::ServerWindow:
+    OpenServerWindow();
     break;
   }
 }
@@ -1026,6 +1370,16 @@ void Outpost::OverseerScreen::WatchFullSight()
 {
   if (m_picked.has_value())
     Pick(*m_picked);
+}
+
+void Outpost::OverseerScreen::OpenServerWindow()
+{
+  m_windows.Open(OverseerWindow::Server);
+}
+
+void Outpost::OverseerScreen::CloseWindow(OverseerWindow _window) noexcept
+{
+  m_windows.Close(_window);
 }
 
 void Outpost::OverseerScreen::FilterLog(LogFilter _filter)

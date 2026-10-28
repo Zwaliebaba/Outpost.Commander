@@ -37,7 +37,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162); awaiting the owner's run |
 | OV5.1 | A day of the windows' records at the welcome, and each away seat's report | OV4 | D8, D9 | built, on OV5's branch |
 | OV5.2 | The header states | OV4 | — | built, on OV5's branch; awaiting the owner's run |
-| OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | todo |
+| OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | built, on OV5's branch; awaiting the owner's run |
 | OV5.4 | The seat window | OV5.3 | D8, D9, D10 | todo |
 | OV6.1 | Save now and Stop | OV5 | — | todo |
 | OV6.2 | Drop link and New token | OV6.1 | D2, D3 | todo |
@@ -298,7 +298,7 @@ What the overseer lacks after OV4: the server's state told whole in the header, 
 
 - **Proposal:** §3, the server window; §6, a window stack of its own.
 - **Scope:**
-  - **The overseer's windows** stand over the overview on a `WindowStack` of the overseer's own, as the game's do (ADR-100), dragged by their title bars and closed by their close boxes: the server window, and a seat window for each seat opened.
+  - **The overseer's windows** stand over the overview on a `WindowStack` of the overseer's own, as the game's do (ADR-100), dragged by their title bars and closed by their close boxes: the server window, and the seat window, which shows the seat last opened.
   - **The header's Server button opens the server window** (gate D10); OV6 sets Save now and Stop beside it.
   - **The server window:** the tick split by part over the hour of `Health` the overseer holds; the longest tick of each minute of it against the 5 ms budget; the day's long ticks from the `tick` records, each with the parts that took most of it, and the ticks dropped from the `dropped` records; the saves the log's records hold, each with its size, encoding and write; the game's listener's connections and its joins by outcome since the server started; and the process.
   - **Its charts are composites of the overseer's own,** bars filled on the canvas as who played's lanes are, so that the canvas gains no widget; the style guide gains their rule.

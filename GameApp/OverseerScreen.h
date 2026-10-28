@@ -20,10 +20,21 @@ inline constexpr std::array<DirectX::XMFLOAT4, 6> OVERSEER_SEAT_PALETTE{{{0.1f, 
                                                                          {0.78f, 0.66f, 0.44f, 1.0f},
                                                                          {0.92f, 0.4f, 0.62f, 1.0f}}};
 
+// The overseer's windows, which stand over its overview (ADR-103 decision 7): the server's, and the seat window, which shows
+// the seat last opened.
+enum class OverseerWindow : std::uint8_t
+{
+  Server,
+  Seat
+};
+
+inline constexpr std::size_t OVERSEER_WINDOW_COUNT = 2;
+
 // The overseer's overview (ADR-103; Game §session.overseer), built on the canvas in the game's look (ADR-100) and laid out on
 // the 1920×1080 reference frame scaled to the window, as the HUD is (ADR-006 decision 5), from what its model knows: the
-// header, the health tiles, the map, what needs attention, the seat table, who played over the last day, and the universe log.
-// It keeps what its widgets share and what the owner picked on it, and no GPU state: the shell draws its display list.
+// header, the health tiles, the map, what needs attention, the seat table, who played over the last day, and the universe log;
+// and its windows over it. It keeps what its widgets share, what the owner picked on it and where its windows stand, and no
+// GPU state: the shell draws its display list.
 class OverseerScreen
 {
 public:
@@ -83,7 +94,9 @@ public:
                               const Hud::TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels);
 
   // The frame's input, against the overview as it was last laid out: where the pointer is, its presses and the wheel. A press
-  // on a heading, a filter's cell, a row or the map's All cell does what the matching call below does.
+  // on a heading, a filter's cell, a row, the map's All cell or a button does what the matching call below does; a press on a
+  // window's title bar drags it until the button is let go, on its close box closes it, and anywhere in it brings it to the
+  // front.
   void Input(const Neuron::InputState& _input);
 
   // The seat table sorted by _column, ascending, or the other way when it sorts by it already.
@@ -93,6 +106,14 @@ public:
   void Pick(PlayerId _seat);
   // Full sight again, and no seat picked, as the map's All cell gives it.
   void WatchFullSight();
+
+  // Opens the server window at the front, as the header's Server button does, or closes a window, as its close box does.
+  void OpenServerWindow();
+  void CloseWindow(OverseerWindow _window) noexcept;
+  [[nodiscard]] bool IsOpen(OverseerWindow _window) const noexcept
+  {
+    return m_windows.IsOpen(_window);
+  }
   void FilterLog(LogFilter _filter);
 
   // The sight the owner picked since the last call, which the link tells the server: a seat's, or full sight with no player;
@@ -115,9 +136,22 @@ public:
 private:
   // What a press named, by the payload of the region it fell in.
   void Press(std::uint32_t _payload);
+  // Lays _window out on a canvas of its own over what is laid out already, where it was left or where it first opens, with
+  // what it shows of _model, and keeps its widgets, its layer and its corner for the next input.
+  void LayWindow(OverseerWindow _window, const OverseerModel& _model, const Hud::TextMetrics& _metrics, float _screenWidthUnits,
+                 float _screenHeightUnits);
 
   std::vector<Hud::SideColor> m_seatColors;
   Neuron::Interaction m_interaction;
+  // The windows open, front to back, and where each was left; and, as each was last laid out, its title bar's and close box's
+  // widgets, its layer of the display list and its top-left corner in reference units, which a drag starts from; and the
+  // pixels a reference unit took.
+  Neuron::WindowStack<OverseerWindow, OVERSEER_WINDOW_COUNT> m_windows;
+  std::array<Neuron::WidgetId, OVERSEER_WINDOW_COUNT> m_titleBars{};
+  std::array<Neuron::WidgetId, OVERSEER_WINDOW_COUNT> m_closeBoxes{};
+  std::array<std::size_t, OVERSEER_WINDOW_COUNT> m_windowLayers{};
+  std::array<Neuron::CanvasPoint, OVERSEER_WINDOW_COUNT> m_windowCorners{};
+  float m_scale = 1.0f;
   // A HUD's layout, since the map is the minimap's drawing (Hud::DrawMinimap).
   Hud::Layout m_layout;
   SeatColumn m_sortColumn = SeatColumn::Seat;
