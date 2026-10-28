@@ -8,7 +8,7 @@ scripted AI plays them. The packaged settings are not changed by this; that is t
 The AI's body stays the scripted one: where it builds, how its Constructors work, how its fleet moves. The search
 moves only its numbers, the knobs below, which are what the scripted AI decides with:
 
-  - the 24 numbers of Opponent.json, each in a range of its own (KNOBS), whole numbers kept whole;
+  - the 27 numbers of Opponent.json, each in a range of its own (KNOBS), whole numbers kept whole;
   - its research order, as one key per topic: the topics are researched in the order of their keys.
 
 The counters, the default design and the scout's design stay the packaged ones.
@@ -77,7 +77,8 @@ EXE_CANDIDATES = (REPO_ROOT / "x64" / "Release" / "OutpostCommander" / "AppX" / 
 OUTPUT_NAME = "OutpostCommander-selfplay"
 STATE_NAME = "state.pickle"
 # 2: secondSlotTier's range moved, so a point saved by version 1 decodes to other settings.
-STATE_VERSION = 2
+# 3: attackCapShare, pirateMargin and scoutOwnHalfSeconds joined the knobs, so a point saved by version 2 is too short.
+STATE_VERSION = 3
 
 # Seeds: each generation takes the next block from SEARCH_SEEDS, each confirmation from CONFIRM_SEEDS. The report plays
 # seeds 1 to --report-seeds, the ones the ADRs measure on, which the search never plays.
@@ -143,6 +144,11 @@ KNOBS = (
   # holds this range to the tuning data.
   Knob("secondSlotTier", 3, 4, True),
   Knob("attackLevelMeters", 0.0, 1500.0, False),
+  # Phase 4's (ADR-041 decision 1, ADR-076 decisions 2 to 4): the share of the room under the fleet cap the attack group
+  # takes, how far a detachment outweighs a pirate outpost in Ore, and how long the scout keeps to its own half.
+  Knob("attackCapShare", 0.3, 1.0, False),
+  Knob("pirateMargin", 0.5, 4.0, False),
+  Knob("scoutOwnHalfSeconds", 0.0, 1800.0, False),
 )
 # The research keys start this much closer together than the knobs, relative to the step size: a key one step away
 # moves a topic several places in the order.
@@ -280,9 +286,11 @@ def check_settings(settings, base):
     if not 0 <= settings[share] < 1:
       problems.append(f"{share} is {settings[share]}, not a share below 1")
   for positive in ("reviewIntervalSeconds", "incomePerShipyardOrePerSecond", "defenseHoldSeconds", "rallyDistanceMeters",
-                   "attackWithoutLeadShare"):
+                   "attackWithoutLeadShare", "attackCapShare", "pirateMargin"):
     if settings[positive] <= 0:
       problems.append(f"{positive} is {settings[positive]}, not positive")
+  if settings["attackCapShare"] > 1:
+    problems.append(f"attackCapShare is {settings['attackCapShare']}, not a share of at most 1")
   if not 1 <= settings["shipyardQueueJobs"] <= 5:
     problems.append(f"shipyardQueueJobs is {settings['shipyardQueueJobs']}, not 1 to 5")
   if sorted(settings["researchOrder"]) != sorted(base["researchOrder"]):
