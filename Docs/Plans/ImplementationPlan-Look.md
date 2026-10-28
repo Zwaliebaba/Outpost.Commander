@@ -219,7 +219,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 
 ### LV4.1 to LV4.3 — As built (2026-10-27)
 
-[ADR-101](../ADR/ADR-101-plates-over-the-fleets.md); ADR-030, ADR-070 and ADR-088 decision 5 edited in place.
+[ADR-102](../ADR/ADR-102-plates-over-the-fleets.md); ADR-030, ADR-070 and ADR-088 decision 5 edited in place.
 
 - **The owner's answers of 2026-10-27:** a warship's insignia is one, two or three chevrons by its hull's size, and a Constructor's a plus; the plates show while the camera's view is wider than 300 m, so the default view of 500 m shows them.
 - **What the tasks left open, chosen here:**

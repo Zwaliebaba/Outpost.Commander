@@ -1,4 +1,4 @@
-# ADR-101 — Plates over the fleets on the screen
+# ADR-102 — Plates over the fleets on the screen
 
 Status: **accepted** · 2026-10-27
 Owns: screen-fleets, fleet-plates, plates-from-view-width

@@ -31,7 +31,7 @@ public:
   // face, and the faces of the owner's mockup (ADR-030 decision 1), which the windows and the HUD take (ADR-043): condensed
   // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed, with a
   // smaller size for a part card's numbers; and the count on a fleet's plate, in Bahnschrift's bold semicondensed face with
-  // a halo, since it stands on the scene with no panel behind it (ADR-101 decision 2).
+  // a halo, since it stands on the scene with no panel behind it (ADR-102 decision 2).
   enum class Typeface : std::uint8_t
   {
     Body,
@@ -58,7 +58,7 @@ public:
 
   // The interface's sprites (ADR-030), in the order GameClient builds the UI pipeline with them: Ore's gem, the box of
   // a part research has yet to unlock, a window's corner bracket, and a fleet plate's ring, its disc and the insignia on
-  // it: one, two or three chevrons for its hull and a plus for a Constructor (ADR-101 decision 2).
+  // it: one, two or three chevrons for its hull and a plus for a Constructor (ADR-102 decision 2).
   enum class Sprite : std::uint8_t
   {
     OreMark,
@@ -630,7 +630,7 @@ public:
 
   static constexpr std::size_t SHIP_BARS_MOST = 24;
 
-  // What a fleet's plate wears on its disc (ADR-101 decision 2): its commonest kind of ship, a warship's hull by its size
+  // What a fleet's plate wears on its disc (ADR-102 decision 2): its commonest kind of ship, a warship's hull by its size
   // among the match's hulls, smallest first, or a Constructor.
   enum class Insignia : std::uint8_t
   {
@@ -640,7 +640,7 @@ public:
     Constructor
   };
 
-  // A plate over a fleet on the screen (ADR-101 decision 2): the fleet a click on it selects, whose it is, the point it
+  // A plate over a fleet on the screen (ADR-102 decision 2): the fleet a click on it selects, whose it is, the point it
   // stands on, as ScreenFleets finds it, in back-buffer pixels; how many ships it holds, its insignia, the share of its hit
   // points left, which its ring's arc shows, its side's color, and whether it is the player's own, which a click selects.
   struct Plate
@@ -656,15 +656,15 @@ public:
   };
 
   // A plate's size, in reference units at the interface's scale, which its count's face is drawn at: its disc and the ring
-  // round it, and the count's line over them (ADR-101 decision 2).
+  // round it, and the count's line over them (ADR-102 decision 2).
   static constexpr float PLATE_WIDTH_UNITS = 28.0f;
   static constexpr float PLATE_COUNT_UNITS = 18.0f;
   static constexpr float PLATE_HEIGHT_UNITS = PLATE_WIDTH_UNITS + PLATE_COUNT_UNITS;
   // Plates stand over the fleets while the camera's view is wider than this; closer in, each ship shows its own bar as a
-  // structure does (ADR-101 decision 3).
+  // structure does (ADR-102 decision 3).
   static constexpr float PLATES_FROM_VIEW_WIDTH_METERS = 300.0f;
 
-  // What shows a bar over a ship or a structure (ADR-101 decision 3): Alt held, which shows every bar; the camera close in,
+  // What shows a bar over a ship or a structure (ADR-102 decision 3): Alt held, which shows every bar; the camera close in,
   // where a hurt ship shows its bar as a structure always does; and the ship under the pointer, which shows its own.
   struct BarRule
   {
@@ -742,7 +742,7 @@ public:
     std::optional<Connection> connection;
     // The bars over the entities that show one; GameClient fills them (ADR-088 decision 5).
     std::vector<EntityBar> entityBars;
-    // The plates over the fleets on the screen; GameClient fills them (ADR-101 decision 2).
+    // The plates over the fleets on the screen; GameClient fills them (ADR-102 decision 2).
     std::vector<Plate> plates;
   };
 
@@ -812,7 +812,7 @@ public:
     // They take no click and cover nothing, so that a click on one is the world's.
     std::vector<Rect> bars;
     // The plates over the fleets, drawn after the bars and before every layer, so under every panel and window; and where
-    // each of the player's own stands, with the fleet a click on it selects (ADR-101 decision 2).
+    // each of the player's own stands, with the fleet a click on it selects (ADR-102 decision 2).
     Neuron::DrawList plates;
     std::vector<std::pair<Rect, std::uint32_t>> plateHits;
     // The name field's text while it has the keyboard and as typing ends, for GameClient to give the designer; none
@@ -895,13 +895,13 @@ public:
 
   // The bars over _entity, standing on _footPixels with a back of _back (ADR-088 decision 5): a structure's health while it
   // is hurt, a ship's while it is hurt and the camera is close in, and either's whole or not while Alt is held or a ship's
-  // while the pointer is over it, as _rule says (ADR-101 decision 3); and its build while it is unfinished. Nothing when
+  // while the pointer is over it, as _rule says (ADR-102 decision 3); and its build while it is unfinished. Nothing when
   // neither shows, or when the player only remembers it, since its hit points and its building are as they were when it was
   // seen (ADR-081 decision 4).
   [[nodiscard]] static std::optional<EntityBar> BarOver(const EntityView& _entity, DirectX::XMFLOAT2 _footPixels,
                                                         const DirectX::XMFLOAT4& _back, BarRule _rule) noexcept;
 
-  // The plate over _fleet, which ScreenFleets found among _entities, for _newest's player (ADR-101 decision 2): its count,
+  // The plate over _fleet, which ScreenFleets found among _entities, for _newest's player (ADR-102 decision 2): its count,
   // the insignia of its commonest kind of ship, ties going to the larger hull and a warship before a Constructor, the share
   // of its hit points left, and its side's color from _sideColors, the pirates' their own.
   [[nodiscard]] static Plate PlateOver(const ScreenFleets::Fleet& _fleet, const Snapshot& _newest, std::span<const EntityView> _entities,

@@ -3249,7 +3249,7 @@ Hud::Span LayerSpan(const Hud::Layout& _layout, std::size_t _layer, std::size_t 
   return {.first = _layer == 0 ? 0 : LayerStart(_layout, _layer - 1, _first, _total), .end = LayerStart(_layout, _layer, _first, _total)};
 }
 
-// A fleet's plate (ADR-101 decision 2), in reference units at the interface's scale: its disc, the ring round it a unit
+// A fleet's plate (ADR-102 decision 2), in reference units at the interface's scale: its disc, the ring round it a unit
 // out, as a line this wide, and the insignia on the disc. The ring's arc, its count and its insignia are white, which none
 // of health's colors is, and the count stands on a dark halo. A whole fleet's ring is one sprite; a hurt fleet's is drawn
 // in this many pieces round the circle, white as far as its hit points reach and in the halo's color for the rest, so
@@ -3282,7 +3282,7 @@ Hud::Sprite SpriteOf(Hud::Insignia _insignia) noexcept
   }
 }
 
-// The plates over the fleets, each standing a bar's lift above its foot and centered over it (ADR-101 decision 2): a
+// The plates over the fleets, each standing a bar's lift above its foot and centered over it (ADR-102 decision 2): a
 // count over a disc in its side's color, ringed by the arc of its hit points, with its insignia on the disc. A plate of one
 // ship has no count. Plates of two sides that meet are moved apart, the higher up and the lower down, and a plate wholly
 // off the screen is left out. Whole pixels, so that the sprites and the count stay sharp as the plates move.
@@ -3467,7 +3467,7 @@ std::optional<Hud::EntityBar> Hud::BarOver(const EntityView& _entity, DirectX::X
   if (_entity.remembered)
     return std::nullopt;
   EntityBar bar{.footPixels = _footPixels, .health = std::nullopt, .built = std::nullopt, .back = _back};
-  // A ship far out has its fleet's plate in place of its bar, unless Alt is held or the pointer is over it (ADR-101
+  // A ship far out has its fleet's plate in place of its bar, unless Alt is held or the pointer is over it (ADR-102
   // decision 3); a structure keeps its bar.
   const bool ship = _entity.kind == EntityKind::Ship;
   const bool hurt = _entity.hitPointsHundredths < _entity.maxHitPointsHundredths;
@@ -4528,7 +4528,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       }
     }
   }
-  // Then the plates over the fleets, at the interface's scale, which their count is drawn at (ADR-101 decision 2).
+  // Then the plates over the fleets, at the interface's scale, which their count is drawn at (ADR-102 decision 2).
   LayPlates(layout, _content, _metrics, scale, width, height);
 
   // The HUD's panels on the canvas (ADR-100 decision 7).

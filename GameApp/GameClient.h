@@ -426,7 +426,7 @@ private:
   // strength.
   std::optional<PlanePosition> m_cursorGround;
   std::optional<EntityId> m_hovered;
-  // The fleets on the screen, which the plates stand over while the camera is far out (ADR-101).
+  // The fleets on the screen, which the plates stand over while the camera is far out (ADR-102).
   ScreenFleets m_fleets;
 
   // The move order being watched: its ships as the view showed them when it was given.

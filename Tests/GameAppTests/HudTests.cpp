@@ -480,7 +480,7 @@ public:
       Assert::AreEqual(units, Hud::FaceUnits(face));
       Assert::AreEqual(units, typefaces[static_cast<std::size_t>(face)].emUnits);
     }
-    // ADR-101 decision 2: a plate's count is Bahnschrift's bold semicondensed face with a halo, and only it has one.
+    // ADR-102 decision 2: a plate's count is Bahnschrift's bold semicondensed face with a halo, and only it has one.
     const Neuron::FontDesc& plate = typefaces[static_cast<std::size_t>(Hud::Typeface::Plate)];
     Assert::IsTrue(plate.families == std::vector<std::wstring>{L"Bahnschrift"} && plate.weight == 700 &&
                    plate.stretch == Neuron::FontStretch::SemiCondensed);
@@ -2792,7 +2792,7 @@ public:
   }
 
   // ADR-088 decision 5: a bar shows over a hurt structure, or any while Alt is held, and a build bar over one unfinished;
-  // none over what the player only remembers (ADR-081 decision 4), or what has no hit points. ADR-101 decision 3: a hurt
+  // none over what the player only remembers (ADR-081 decision 4), or what has no hit points. ADR-102 decision 3: a hurt
   // ship's shows only close in, where no plate stands for it; the ship under the pointer shows its own, whole or not.
   TEST_METHOD(PutsABarOnlyOverWhatShowsOne)
   {
@@ -2839,7 +2839,7 @@ public:
     Assert::IsFalse(Outpost::Hud::BarOver(rock, FOOT, BACK, Rule{.every = true}).has_value(), L"no hit points");
   }
 
-  // ADR-101 decision 2: a fleet's plate counts its ships, wears the insignia of its commonest kind, a warship's chevrons by
+  // ADR-102 decision 2: a fleet's plate counts its ships, wears the insignia of its commonest kind, a warship's chevrons by
   // its hull's size among the match's, the larger hull and a warship winning a tie, carries the share of its hit points
   // left and its side's color, the pirates' their own, and is the player's own only for its own ships.
   TEST_METHOD(DescribesAFleetsPlate)
@@ -2901,7 +2901,7 @@ public:
     Assert::IsTrue(!pirates.own && pirates.color.x != theirs->color.x, L"the pirates' own color");
   }
 
-  // ADR-101 decision 2: a plate stands a bar's lift above its foot, centered over it: a disc in its side's color, its
+  // ADR-102 decision 2: a plate stands a bar's lift above its foot, centered over it: a disc in its side's color, its
   // insignia in white on the disc, and the ring round it white from the top clockwise for the share of its hit points left
   // and dark for the rest; over them the count, white on its dark halo at 4.5:1 or more over anything behind it. A plate of
   // one ship has no count. Only the player's own takes a click, and none under a panel.
@@ -2983,7 +2983,7 @@ public:
     Assert::IsFalse(layout.PlateAt(700.0f, 300.0f).has_value());
   }
 
-  // ADR-101 decision 2: plates of two sides that would meet move apart, the higher up and the lower down, until they do not;
+  // ADR-102 decision 2: plates of two sides that would meet move apart, the higher up and the lower down, until they do not;
   // plates of one side are one fleet's, which ScreenFleets has joined, so they are not moved. A plate under a panel takes no
   // click there.
   TEST_METHOD(MovesPlatesOfTwoSidesApart)

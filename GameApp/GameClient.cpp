@@ -732,7 +732,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     PlaceKeptWindows();
 
   // A press on one of the player's own plates selects its fleet, Shift adding it to the selection, and goes no further
-  // (ADR-101 decision 2).
+  // (ADR-102 decision 2).
   std::erase_if(input.events,
                 [this](const Neuron::InputEvent& _event)
                 {
@@ -790,7 +790,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     // The bars over the entities that show one, and the plates over the fleets, each placed by the camera above its model
     // on the screen, for the HUD to lay out (ADR-088 decision 5). Far out, unless Alt is held, a fleet's plate stands for
     // its ships' bars, and only the ship under the pointer shows its own; close in, the ships show their bars as the
-    // structures do (ADR-101 decision 3).
+    // structures do (ADR-102 decision 3).
     const bool closeIn = m_camera.ViewWidthMeters() <= Hud::PLATES_FROM_VIEW_WIDTH_METERS;
     const bool plates = !closeIn && !m_everyHealthBar;
     const std::optional<EntityId> pointedShip =
@@ -825,7 +825,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     }
     if (plates)
     {
-      // The plates are laid out at the interface's scale, which their count is drawn at (ADR-101 decision 2).
+      // The plates are laid out at the interface's scale, which their count is drawn at (ADR-102 decision 2).
       m_fleets.Update(seen, {Hud::PLATE_WIDTH_UNITS * scale, Hud::PLATE_HEIGHT_UNITS * scale}, _elapsedSeconds);
       for (const ScreenFleets::Fleet& fleet : m_fleets.Fleets())
         content.plates.push_back(Hud::PlateOver(fleet, m_view.Newest(), m_entities, content.sideColors));
@@ -1494,7 +1494,7 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   // The layout's own scale, which its font size was set by.
   const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
   m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, scale);
-  // The bars over the entities, and then the plates over the fleets, under every panel (ADR-088 decision 5; ADR-101
+  // The bars over the entities, and then the plates over the fleets, under every panel (ADR-088 decision 5; ADR-102
   // decision 2).
   for (const Hud::Rect& bar : m_hudLayout.bars)
     m_ui.FillRect(bar.left, bar.top, bar.width, bar.height, bar.color);

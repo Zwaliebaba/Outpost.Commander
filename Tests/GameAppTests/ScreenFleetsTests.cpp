@@ -38,7 +38,7 @@ std::vector<Outpost::ScreenFleets::Ship> Seen(const Outpost::Camera& _camera, st
 TEST_CLASS(ScreenFleetsTests)
 {
 public:
-  // ADR-101 decision 1: two groups of a side's ships, each in formation, 40 m apart: two fleets at the default view, where
+  // ADR-102 decision 1: two groups of a side's ships, each in formation, 40 m apart: two fleets at the default view, where
   // their plates stand far apart, and one once the camera pulls back so far that their plates would meet.
   TEST_METHOD(FindsTheFleetsByNearnessOnTheScreen)
   {
@@ -65,7 +65,7 @@ public:
     Assert::AreEqual(std::size_t{8}, pulledBack.Fleets()[0].ships.size());
   }
 
-  // ADR-101 decision 1: a formation keeps three of its widest ship's radii between neighbors (ADR-010 decision 4), so two
+  // ADR-102 decision 1: a formation keeps three of its widest ship's radii between neighbors (ADR-010 decision 4), so two
   // small ships beside a large one are of its fleet however far apart the camera shows them; a side's widest ship sets
   // its own reach, not another side's.
   TEST_METHOD(HoldsAMixedFormationTogether)
@@ -87,7 +87,7 @@ public:
     Assert::AreEqual(std::size_t{5}, fleets.Fleets().size(), L"without it, 72 m is too far for small ships");
   }
 
-  // ADR-101 decision 1: a plate stands centered over its fleet's ships, level with the highest of them on the screen.
+  // ADR-102 decision 1: a plate stands centered over its fleet's ships, level with the highest of them on the screen.
   TEST_METHOD(StandsAPlateOverItsShips)
   {
     Outpost::ScreenFleets fleets;
@@ -98,7 +98,7 @@ public:
     Assert::AreEqual(480.0f, fleets.Fleets()[0].footPixels.y, 0.001f);
   }
 
-  // ADR-101 decision 1: a fleet that loses a ship keeps its identifier, and its plate starts where it stood and settles over
+  // ADR-102 decision 1: a fleet that loses a ship keeps its identifier, and its plate starts where it stood and settles over
   // the ships left, so that it does not jump; a fleet that parts keeps its identifier in the larger part.
   TEST_METHOD(KeepsAFleetAsItLosesAShip)
   {
@@ -132,7 +132,7 @@ public:
     Assert::IsTrue(fleets.Fleets()[1].id != id && fleets.Fleets()[1].ships == std::vector{Outpost::EntityId{3}});
   }
 
-  // ADR-101 decision 1: ships of two sides are never one fleet, however near they stand.
+  // ADR-102 decision 1: ships of two sides are never one fleet, however near they stand.
   TEST_METHOD(NeverMakesTwoSidesOneFleet)
   {
     Outpost::ScreenFleets fleets;
@@ -145,7 +145,7 @@ public:
     Assert::IsTrue(fleets.Fleets()[0].owner != fleets.Fleets()[1].owner);
   }
 
-  // ADR-101 decision 1: two fleets of one side whose plates would meet are one, though no ship of one is near a ship of the
+  // ADR-102 decision 1: two fleets of one side whose plates would meet are one, though no ship of one is near a ship of the
   // other: here a formation that the camera shows across 200 pixels, and a ship 40 pixels below its middle.
   TEST_METHOD(JoinsFleetsWhosePlatesWouldMeet)
   {

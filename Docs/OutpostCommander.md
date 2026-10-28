@@ -917,7 +917,7 @@ A player commands its ships by orders, and only by orders. An order is given to 
 - **A second click on the same ship within 400 ms** selects every ship of the player's on the screen of that ship's design and hull (ADR-013 decision 5).
 - **Ctrl and a digit store the selection as a control group; the digit recalls it,** and a second tap within 400 ms centers the camera on it (ADR-013 decision 5).
 - **A click on a ship's bar in the selection panel** selects that ship alone and centers the camera on it (ADR-088 decision 4; Game §interface.hud.selection).
-- **A click on one of the player's fleets' plates selects that fleet,** and Shift adds it to the selection; what waited for the next click is dropped. Another side's plate takes no click (ADR-101 decision 2; Game §interface.marks).
+- **A click on one of the player's fleets' plates selects that fleet,** and Shift adds it to the selection; what waited for the next click is dropped. Another side's plate takes no click (ADR-102 decision 2; Game §interface.marks).
 - **Ships that are gone, or are not the player's, drop out of the selection and the control groups;** another player's or the pirates' structure selected alone stays while it is seen or remembered, and joins no control group (ADR-013 decision 5).
 - **The selection is drawn as a ring round each selected ship,** green, or amber while attack-move or a standing order waits for its click (ADR-067 decision 1; Game §interface.marks).
 
@@ -1336,7 +1336,7 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 - **A window stands no taller than the screen lets it:** the designer's part rows and the Controls window's lines scroll, with the wheel over them or by dragging the thumb at their right, while the rest of the window stays put (ADR-100 decisions 6 and 7; Game §interface.windows.designer; Game §interface.windows.controls).
 - **The scale comes down to the largest step that fits** whenever the screen changes size and whenever a match starts or ends, so no window of a fixed size opens taller than the screen (ADR-070 decision 4).
 - **The step the player takes is kept from one session to the next,** and the game starts at it, brought down as far as its screen needs; a step down that a screen or a match makes is not kept. Without one, the scale starts at 100% (ADR-070 decision 5; ADR-099 decision 1).
-- **What is drawn in the world keeps the screen's own scale,** whatever the player sets: the stars, the bars over ships and structures, and the selection's ring (ADR-070 decision 7; ADR-088 decision 5). A fleet's plate takes the player's scale, as the HUD does, since it carries text (ADR-101 decision 2).
+- **What is drawn in the world keeps the screen's own scale,** whatever the player sets: the stars, the bars over ships and structures, and the selection's ring (ADR-070 decision 7; ADR-088 decision 5). A fleet's plate takes the player's scale, as the HUD does, since it carries text (ADR-102 decision 2).
 
 ### The interface's look [§interface.style]
 
@@ -1344,7 +1344,7 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 
 - **Titles are in Bahnschrift bold, semi-condensed; labels and names in Bahnschrift semibold; figures in Cascadia Mono, or Consolas where Cascadia Mono is not installed** (ADR-030 decisions 1 and 2; ADR-062 decision 1).
 - **Each face has one size, in reference units:** a title 22, a name 16, a label 13, a figure 14, a large figure 28 and a detail 13 (ADR-062 decisions 1 and 2).
-- **A fleet plate's count is in Bahnschrift bold, semi-condensed, at 15 units, white on a dark halo,** since it stands on the scene with no panel behind it; it is the only text with a halo (ADR-030 decision 8; ADR-101 decision 2).
+- **A fleet plate's count is in Bahnschrift bold, semi-condensed, at 15 units, white on a dark halo,** since it stands on the scene with no panel behind it; it is the only text with a halo (ADR-030 decision 8; ADR-102 decision 2).
 - **Labels are set in small spaced capitals** (ADR-030 decision 4).
 - **Text is printable ASCII, the middle dot · and the multiplication sign ×.** Any other character shows as `?` (ADR-030 decision 3). A minus is written as a hyphen (ADR-057 decision 8).
 - **Every text stands at 4.5:1 or more against what it is drawn on** (ADR-062 decision 3).
@@ -1465,13 +1465,13 @@ On a map with sectors, the territory panel stands under the status panel's place
   - **A Mining Rig's ring is its own footprint's, laid over its rock,** and shows only under the pointer and while a structure is placed, at full strength (ADR-042 decision 4).
   - **A structure the player only remembers stands on no ring** (ADR-081 decision 4).
 - **Bars stand over ships and structures on the screen** (ADR-088 decision 5):
-  - a health bar over a structure that is hurt; over a ship that is hurt while the camera's view is 300 m wide or less, and over the ship under the pointer, whole or not; and over every ship and structure while Alt is held (ADR-101 decision 3);
+  - a health bar over a structure that is hurt; over a ship that is hurt while the camera's view is 300 m wide or less, and over the ship under the pointer, whole or not; and over every ship and structure while Alt is held (ADR-102 decision 3);
   - a build bar under it while a structure is unfinished, in a gray that is no side's (ADR-085 decision 2);
   - each 32 by 5 units at every zoom, centered over the top of its model on the screen however the camera has turned, filling from the left;
   - each on a back of its side's color, darkened, so a bar says whose it is;
   - under every panel and window, taking no click; none over what the player only remembers (ADR-081 decision 4).
-- **Plates stand over the fleets while the camera's view is wider than 300 m,** so the default view shows them, and in place of the ships' bars; none while Alt is held (ADR-101 decisions 2 and 3):
-  - a fleet is a side's ships that stand near each other on the screen, or as near on the ground as a formation keeps its ships; two of one side whose plates would meet are one, so fleets join as the camera pulls back and part as it comes in, and a plate settles rather than jumps as a ship joins, leaves or is lost (ADR-101 decision 1);
+- **Plates stand over the fleets while the camera's view is wider than 300 m,** so the default view shows them, and in place of the ships' bars; none while Alt is held (ADR-102 decisions 2 and 3):
+  - a fleet is a side's ships that stand near each other on the screen, or as near on the ground as a formation keeps its ships; two of one side whose plates would meet are one, so fleets join as the camera pulls back and part as it comes in, and a plate settles rather than jumps as a ship joins, leaves or is lost (ADR-102 decision 1);
   - a plate is a disc in its side's color, the pirates' violet for theirs, ringed by a white arc of the fleet's hit points from the top clockwise, dark for the rest, with the fleet's count over it, and none for one ship;
   - on the disc, in white, the insignia of its commonest kind of ship: one, two or three chevrons for a warship's hull by its size among the match's hulls, smallest first, and a plus for a Constructor;
   - centered over its ships, level with the highest of them on the screen; plates of two sides that meet move apart, the higher up and the lower down;

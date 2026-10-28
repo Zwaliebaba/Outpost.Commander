@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The fleets on the screen, which the plates stand over (ADR-101 decision 1; Game §interface.marks): a side's ships that
+// The fleets on the screen, which the plates stand over (ADR-102 decision 1; Game §interface.marks): a side's ships that
 // stand near each other, found afresh each frame from where the camera shows them and kept from one frame to the next by
 // the ships they share, so that two fleets whose plates would meet become one as the camera pulls back, and part as it
 // comes in. A fleet is the client's, from what the snapshot shows; the simulation holds none.
