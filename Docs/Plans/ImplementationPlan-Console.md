@@ -1,6 +1,6 @@
 # Outpost Commander — Console Plan: The Bottom of the Screen as One Console
 
-Status: **proposed** · From the owner's request of 2026-10-28 to make the build window look natural, with two screenshots of a match at 1920×1080 and 100%, one with a Constructor selected and one without, and the owner's choice the same day of StarCraft II's console over a bar across the screen as Homeworld 2 has (gate B1) · Written against `main` at `c7652a9`
+Status: **open** · accepted by the owner on 2026-10-28, with gates B1–B5 decided that day · From the owner's request of 2026-10-28 to make the build window look natural, with two screenshots of a match at 1920×1080 and 100%, one with a Constructor selected and one without, and the owner's choice the same day of StarCraft II's console over a bar across the screen as Homeworld 2 has (gate B1) · Written against `main` at `c7652a9`
 
 The bottom of the screen is where the player picks what to do, and a window is for what needs managing. Today the bottom holds the minimap at the left and, in the middle, the selection with its buttons against its right edge, while the Constructors' structures stand in a floating window of their own at the bottom right. This plan makes the bottom of the screen one console in StarCraft II's shape: the minimap in the bottom-left corner, the selection in the middle, and a command card in the bottom-right corner, the three on one baseline. The structures become a mode of the command card, and the build window goes. Production, research, the designer, the orders and the Controls window stay windows, since each is managed rather than picked from.
 
@@ -38,7 +38,7 @@ Each figure is computed from `Hud.cpp`'s constants on `main` at `c7652a9`, or me
 
 ## The console
 
-What the gates and the tasks build, as proposed. The ADRs the tasks rewrite record what they decide.
+What the gates decided and the tasks build. The ADRs the tasks rewrite record what they decide.
 
 - **Three panels on one baseline.** The minimap in the bottom-left corner, as now; the selection in the middle of the screen; the command card in the bottom-right corner, where the build window first opens now, its left edge at 1,524 units at 100% on 16:9. Each stands with its foot at the margin, 16 units above the screen's foot, and each is as tall as its own content asks: the minimap 300 units, the card its fixed height, the selection what it holds. The three stand apart, so no two edges are asked to meet.
 - **The selection** is the selection panel as it is, moved (B4): in the middle of the screen, and moved only as far as it must to stand a gap of 8 units clear of the minimap and of the card. Its widest is 560 units, or the room between them where that is less: 552 at 150% on a 16:9 screen.
@@ -48,7 +48,7 @@ What the gates and the tasks build, as proposed. The ADRs the tasks rewrite reco
 
 ### The card's cells
 
-As B2 proposes. A structure is selected alone and ships never with one (Game §orders.selection), so the rows hold either a selection of ships' cells or a structure's.
+As B2 decides. A structure is selected alone and ships never with one (Game §orders.selection), so the rows hold either a selection of ships' cells or a structure's.
 
 | Row | Left cell | Right cell |
 |---|---|---|
@@ -64,7 +64,7 @@ Hold sector is offered only on a map with sectors, and its cell is empty without
 
 ### Build mode
 
-As B3 proposes.
+As B3 decides.
 
 - **B, or the Build button, turns build mode on** for a selection that holds a Constructor, a mixed one included, and B or the button again turns it off. Without a Constructor, B does nothing.
 - **In build mode the card holds the label row and the structures,** in the order the build window holds them now, two to a row: Shipyard and Research Lab, Mining Rig and Defence Platform, Relay and Repair Bay. Each cell shows the structure's name over its cost, or over the reason it cannot be built, ONE PER PLAYER or NODE CAP, dim as the build window's buttons are when the Ore is short (ADR-043 decision 4). On a map without sectors the Relay's cell is empty.
@@ -79,13 +79,13 @@ As B3 proposes.
 - **It overturns three decisions:** gate C7 of the canvas plan, the pair of ADR-088 decision 2 and ADR-100 decision 8's first place beside the selection, and with them CV2.1's window and its move onto the canvas in CV4.4.
 - **A card is often mostly empty.** A lone Constructor's card is 209 units tall where its buttons' panel is 118, with two empty rows; a Command Station's holds two buttons. That is the price of commands that never move.
 - **The eye travels farther** between what is selected and what it can do: from the middle of a 280-unit selection to the middle of the card, 754 units at 100% on a 16:9 screen, and 1,074 on a 2560×1080 screen. Computed.
-- **The designer covers the card's top two rows at its tallest.** With every part of the match and the Sensors bar it is 938 units tall from the top margin, so at 100% on 16:9 its foot stands at 954 units, 99 below the card's top at 855. Today it stands over the buttons' panel of a lone Constructor by 8 units. B5 proposes that it keep standing over, rather than scroll its part rows from 100%.
+- **The designer covers the card's top two rows at its tallest.** With every part of the match and the Sensors bar it is 938 units tall from the top margin, so at 100% on 16:9 its foot stands at 954 units, 99 below the card's top at 855. Today it stands over the buttons' panel of a lone Constructor by 8 units. It keeps standing over, rather than scroll its part rows from 100% (B5).
 - **Build mode hides a mixed selection's orders and retreat** until Esc or B, though their keys work throughout.
 
 ### Scale
 
 - **ADR-070's ceilings stay:** 150% in a match on 16:9, 16:10 and 3:2 screens, 175% on 21:9, and 200% on the menu, which has no console.
-- **The bottom row at its widest** is the minimap's 324 units with its margin and gap, the selection, a gap of 8, the card's 380 and the right margin's 16: 1,288 units with the selection at 560, past a 16:9 screen's 1,280 at 150%. Holding the selection's widest to the room, 552 at 150%, keeps the row within the screen and the ceiling where it is. Counting the selection at its least instead, 280, would let the row reach 175%, where the minimap's top would stand at 301 units, over the column under the Ore, which runs to 350 with its longest content ([#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154)'s measure); so that is not proposed.
+- **The bottom row at its widest** is the minimap's 324 units with its margin and gap, the selection, a gap of 8, the card's 380 and the right margin's 16: 1,288 units with the selection at 560, past a 16:9 screen's 1,280 at 150%. Holding the selection's widest to the room, 552 at 150%, keeps the row within the screen and the ceiling where it is. Counting the selection at its least instead, 280, would let the row reach 175%, where the minimap's top would stand at 301 units, over the column under the Ore, which runs to 350 with its longest content ([#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154)'s measure); so the selection is counted at its widest.
 - **The build window no longer counts** in `WindowsFit`, which it never decided.
 
 ---
@@ -105,15 +105,15 @@ One milestone, CN1, in one pull request, CN1.1 and then CN1.2, so that the build
 
 ## Gates
 
-Each is an owner decision, proposed here and in the task it gates.
+Each is an owner decision, proposed here and in the task it gates, and all five are decided.
 
 | Gate | Decision | Proposed in | Blocks | Status |
 |---|---|---|---|---|
 | B1 | **The bottom of the screen is a console of three panels,** in StarCraft II's shape: the minimap in the bottom-left corner, the selection in the middle and a command card in the bottom-right corner, on one baseline, with the gaps between them open to the battlefield. The Constructors' structures are a mode of the card, not a window; what needs managing stays a window. Chosen over a bar across the bottom as Homeworld 2 has, which on this camera would cover the nearest ground for good, and over a card that stays against the selection (owner, 2026-10-28). It overturns gate C7 of the canvas plan. | this plan | CN1.1, CN1.2 | decided 2026-10-28 |
-| B2 | **The card's cells.** Proposed: two columns and three rows of fixed cells, each command in its own as "The card's cells" lists them, empty where it is not offered, and the card 209 units tall in every selection and mode. The other way: the cells filled from the top in the order the buttons stand in now, and the card as tall as what it holds, 118 to 209 units, so that a command's cell and the card's top change with the selection. | this plan | CN1.1 | open |
-| B3 | **Build mode,** as "Build mode" says: B and the Build button turn it on and off; the structures on two lines, two to a row; picking leaves it on; Esc cancels a placement, then turns it off, before it closes a window; a selection without a Constructor ends it and it is not kept; and no structure takes a key of its own. Proposed as written. | this plan | CN1.2 | open |
-| B4 | **Where the selection stands.** Proposed: in the middle of the screen, moved only to stand a gap clear of the minimap and the card, at most 560 units wide or the room between them, 552 at 150% on 16:9. The other way: in the middle of the room between the minimap and the card, which is 40 units left of the screen's middle at 100% on 16:9. | this plan | CN1.1 | open |
-| B5 | **Windows over the console.** Proposed: a window stands over the console as it stands over the rest of the HUD, so that the designer at its tallest covers the card's top 99 units at 100% on 16:9 until the player moves it. The other way: each window first opens clear of the card where it fits at its least, and the designer then scrolls its part rows from 100%, by 107 units with every part and the Sensors bar. | this plan | CN1.1 | open |
+| B2 | **The card's cells.** Two columns and three rows of fixed cells, each command in its own as "The card's cells" lists them, empty where it is not offered, and the card 209 units tall in every selection and mode, so that a command never moves. Over cells filled from the top in the order the buttons stand in now, with the card as tall as what it holds, 118 to 209 units, which would move a command's cell and the card's top with the selection. As proposed (owner, 2026-10-28). | this plan | CN1.1 | decided 2026-10-28 |
+| B3 | **Build mode,** as "Build mode" says: B and the Build button turn it on and off; the structures on two lines, two to a row; picking leaves it on; Esc cancels a placement, then turns it off, before it closes a window; a selection without a Constructor ends it and it is not kept; and no structure takes a key of its own, which StarCraft II's B and then a letter would need a decision of its own for. As proposed (owner, 2026-10-28). | this plan | CN1.2 | decided 2026-10-28 |
+| B4 | **Where the selection stands.** In the middle of the screen, moved only to stand a gap clear of the minimap and the card, at most 560 units wide or the room between them, 552 at 150% on 16:9. Over the middle of the room between the minimap and the card, which is 40 units left of the screen's middle at 100% on 16:9. As proposed (owner, 2026-10-28). | this plan | CN1.1 | decided 2026-10-28 |
+| B5 | **Windows over the console.** A window stands over the console as it stands over the rest of the HUD, so that the designer at its tallest covers the card's top 99 units at 100% on 16:9 until the player moves it. Over each window first opening clear of the card where it fits at its least, which would scroll the designer's part rows from 100%, by 107 units with every part and the Sensors bar. As proposed (owner, 2026-10-28). | this plan | CN1.1 | decided 2026-10-28 |
 
 ---
 
@@ -124,11 +124,11 @@ Each is an owner decision, proposed here and in the task it gates.
 - **Gates:** B1, B2, B4, B5.
 - **Goal:** the review's first two findings. A command stands in one place whatever is selected, and no edge at the bottom of the screen almost meets another.
 - **Scope:**
-  - **The command card** takes the buttons' panel's place: anchored to the bottom-right corner at the margins, 380 by 209 units, its cells as B2 answers, the retreat at its foot. `Hud::Content` says which cell each button takes, rather than listing the buttons in order.
-  - **The selection** stands as B4 answers, its height and width worked out as now, its widest held to the room.
+  - **The command card** takes the buttons' panel's place: anchored to the bottom-right corner at the margins, 380 by 209 units, its cells as B2 decides, the retreat at its foot. `Hud::Content` says which cell each button takes, rather than listing the buttons in order.
+  - **The selection** stands as B4 decides, its height and width worked out as now, its widest held to the room.
   - **`WindowsFit`** counts the bottom row as "Scale" says.
   - **Until CN1.2, in the same pull request,** the Build button still opens the build window, which still first opens at the bottom right, over the card.
-- **ADR:** ADR-088 decision 2 rewritten in place for the card, its cells and its place, and the selection's place; ADR-070 decision 3 and its consequences for the bottom row's figures; and ADR-100 decision 8 if B5 is answered the other way. Game §interface.hud, Game §interface.hud.selection, Game §interface.hud.buttons and Game §interface.scale follow.
+- **ADR:** ADR-088 decision 2 rewritten in place for the card, its cells and its place, and the selection's place; and ADR-070 decision 3 and its consequences for the bottom row's figures. ADR-100 decision 8's first places stay, as B5 decides. Game §interface.hud, Game §interface.hud.selection, Game §interface.hud.buttons and Game §interface.scale follow.
 - **Acceptance:** `HudTests`:
   - the card's place and size at 100% and 150% on 16:9, at 2880×1920 and at 2560×1080;
   - every command in its cell for warships, a Constructor, a mixed selection, a Command Station, a Shipyard and a Research Lab, with Hold sector's cell empty on a map without sectors and the Upgrade across both cells;
@@ -144,10 +144,10 @@ Each is an owner decision, proposed here and in the task it gates.
 - **Gates:** B1, B3.
 - **Goal:** the review's third to sixth findings. What a Constructor builds stands where its other commands stand, in the HUD's look, and only while a Constructor is selected.
 - **Scope:**
-  - **Build mode** as B3 answers. Whether it is on is the client's, kept as an armed placement is, and `Hud::Describe` takes it as it takes the armed order; the ADR says where it is kept.
+  - **Build mode** as B3 decides. Whether it is on is the client's, kept as an armed placement is, and `Hud::Describe` takes it as it takes the armed order; the ADR says where it is kept.
   - **The structures' cells** are `Hud::BuildPanel`'s buttons, each on two lines, in the order and the cells "Build mode" gives. NO CONSTRUCTOR goes with the window.
   - **The build window goes:** its row in the windows' table, `WindowKind::Build`, `FirstPlace::BesideTheSelection`, `LayBuild`, the window `ActionKind::OpenBuild` toggles, and its count in `WindowsFit`. Its name in the interface's file, `build`, is never given to another window, and a file that names it still loads and keeps the rest, as ADR-099 decision 3 has it for a window a build does not have.
-  - **Esc's order** as B3 answers.
+  - **Esc's order** as B3 decides.
   - **The Controls window's line for B** says what B does now.
 - **ADR:** ADR-088 decision 2 takes build mode, and what ADR-031 decisions 5 and 6 say of the build window moves to it; ADR-031 decision 2's first places, ADR-068 decision 4's line for B, ADR-099 decision 3's names, ADR-100 decisions 7 and 8, and ADR-070 decision 3 lose the build window. Game §interface.windows.build goes on the design's "Retired keys" line, and Game §interface.hud.buttons, Game §interface.windows.behavior, Game §interface.controls and Game §orders.constructors say where the structures stand.
 - **Acceptance:**

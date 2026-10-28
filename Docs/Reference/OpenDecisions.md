@@ -4,22 +4,13 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-12 gates are open, in 7 documents.
+8 gates are open, in 6 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
 | Gate | Decision | Blocks |
 |---|---|---|
 | O9 | **Seasons of months** (§7): upgrade steps between state versions, the galaxy's arc over a season, how a season ends, and how far a deputy carries a seat over absences of weeks. | Seasons of months (§7; §11) |
-
-## [`Docs/Plans/ImplementationPlan-Console.md`](../Plans/ImplementationPlan-Console.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| B2 | **The card's cells.** Proposed: two columns and three rows of fixed cells, each command in its own as "The card's cells" lists them, empty where it is not offered, and the card 209 units tall in every selection and mode. The other way: the cells filled from the top in the order the buttons stand in now, and the card as tall as what it holds, 118 to 209 units, so that a command's cell and the card's top change with the selection. | CN1.1 |
-| B3 | **Build mode,** as "Build mode" says: B and the Build button turn it on and off; the structures on two lines, two to a row; picking leaves it on; Esc cancels a placement, then turns it off, before it closes a window; a selection without a Constructor ends it and it is not kept; and no structure takes a key of its own. Proposed as written. | CN1.2 |
-| B4 | **Where the selection stands.** Proposed: in the middle of the screen, moved only to stand a gap clear of the minimap and the card, at most 560 units wide or the room between them, 552 at 150% on 16:9. The other way: in the middle of the room between the minimap and the card, which is 40 units left of the screen's middle at 100% on 16:9. | CN1.1 |
-| B5 | **Windows over the console.** Proposed: a window stands over the console as it stands over the rest of the HUD, so that the designer at its tallest covers the card's top 99 units at 100% on 16:9 until the player moves it. The other way: each window first opens clear of the card where it fits at its least, and the designer then scrolls its part rows from 100%, by 107 units with every part and the Sensors bar. | CN1.1 |
 
 ## [`Docs/Plans/ImplementationPlan-Horizon.md`](../Plans/ImplementationPlan-Horizon.md)
 
