@@ -26,26 +26,29 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV1.2 | A seat's orders, refusals and bytes are in its hour | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
 | OV1.3 | Every join and every link's end is logged | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
 | OV1.4 | A save's write is timed | — | — | merged, [#143](https://github.com/Zwaliebaba/Outpost.Commander/pull/143) |
-| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | D4 | in review |
-| OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | in review |
-| OV2.3 | The universe's view and the log's stream | OV2.1 | — | in review |
-| OV2.4 | `Closing`, and the server's state | OV2.2 | — | in review |
-| OV3.1 | The overseer's project and window | OV2 | D1, D5, D6 | todo |
-| OV3.2 | The overview: header, tiles, seat table, attention, who played, the log | OV3.1, the canvas plan's CV9.1 | D7 | todo |
-| OV3.3 | The map: one system's sectors, full sight and a seat's | OV3.1 | — | todo |
-| OV4.1 | The seat window, the server window and the header states | OV3 | — | todo |
-| OV5.1 | Save now and Stop | OV4 | — | todo |
-| OV5.2 | Drop link and New token | OV5.1 | D2, D3 | todo |
+| OV2.1 | The overseer's listener and `Overseer.json` | OV1 | D4 | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
+| OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
+| OV2.3 | The universe's view and the log's stream | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
+| OV2.4 | `Closing`, and the server's state | OV2.2 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
+| OV3.1 | The overseer's project, its window and its link | OV2 | D1, D5, D6 | in progress |
+| OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | in progress |
+| OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | todo |
+| OV4.2 | Needs attention and who played | OV4.1 | — | todo |
+| OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | todo |
+| OV5.1 | The seat window, the server window and the header states | OV4 | — | todo |
+| OV6.1 | Save now and Stop | OV5 | — | todo |
+| OV6.2 | Drop link and New token | OV6.1 | D2, D3 | todo |
 
 ### Milestone order
 
-OV1, OV2, OV3, OV4, OV5.
+OV1, OV2, OV3, OV4, OV5, OV6.
 
 - **OV1 changes no message and nothing a universe saves,** so a universe made before it runs on after it. It is the server's own instrument, written to `Universe.log` whether or not an overseer ever connects, and it waits on no gate.
 - **The process's figures are OV2.2's,** not OV1's as the proposal's §10 has it: nothing reads them before `Health` does.
 - **OV2 changes no message of the game's and nothing a universe saves.** Its messages are a set of their own, and a universe made before it runs on after it, its settings taking the overseer's defaults.
-- **The galaxy view comes with the galaxy** (the Horizon plan's milestone 42). Until then a universe is one system, and OV3.3's map is its sector map.
-- **OV3 is built on the canvas** (gate D1), whose widgets are merged ([ADR-100](../ADR/ADR-100-the-canvas.md)), and waits on none of the windows the canvas plan still ports. Before OV3.2, [the canvas plan](ImplementationPlan-Canvas.md)'s scroll view, CV9.1, is merged, as a pull request of its own if nobody has taken it yet (owner, 2026-10-27); OV3.2 adds the table to the canvas with its first use (gate D7). The sector map shares the minimap's drawing, which the canvas plan ports last (CV8.3), so OV3.3 is laid out against whichever of the two stands then. OV1 and OV2 need nothing of it.
+- **The galaxy view comes with the galaxy** (the Horizon plan's milestone 42). Until then a universe is one system, and OV4.3's map is its sector map.
+- **OV3 is built on the canvas** (gate D1), whose widgets, scroll view (CV9.1) and drop-downs are on `main` ([ADR-100](../ADR/ADR-100-the-canvas.md)), with the HUD and the minimap ported to it ([the canvas plan](ImplementationPlan-Canvas.md)'s CV8). OV3.2 adds the table to the canvas with its first use (gate D7). OV1 and OV2 need nothing of it.
+- **OV3 was split in two** (owner, 2026-10-28), so that each is a pull request of a size the owner's run can accept: OV3 the overseer's project, window, link, header, tiles, seat table and log, and OV4 what needs attention, who played and the map. The seat window and the header states became OV5, and the actions OV6.
 
 ---
 
@@ -108,7 +111,7 @@ OV1, OV2, OV3, OV4, OV5.
 
 ## Milestone OV2 — The channel
 
-The overseer's own channel to the server, as the proposal's §4 has it, but for the actions, which are OV5's. Nothing in OV2 draws: its messages are checked by tests that play the overseer's end, and OV3 is the first to show them.
+The overseer's own channel to the server, as the proposal's §4 has it, but for the actions, which are OV6's. Nothing in OV2 draws: its messages are checked by tests that play the overseer's end, and OV3 is the first to show them.
 
 ### OV2.1 — The overseer's listener and `Overseer.json`
 
@@ -152,7 +155,7 @@ The overseer's own channel to the server, as the proposal's §4 has it, but for 
 - **Scope:**
   - `Closing` says how the server ends: stopped by its owner (Ctrl+C, Ctrl+Break or its window closed), by Windows (signing out or shutting down), or by a failure, with the failure's message; and the tick of the universe's last save, which it comes back from. `ServerConsole` says which event asked for the stop. `OutpostServer` sends it before the server goes, and before it reports a failure the server's thread met; the link then waits, a second at most, for the overseer to have it. A failed assertion ends the process at once and sends nothing (ADR-093).
   - No state says the server is recovering (owner, 2026-10-27): it replays its command log before its listeners exist, at most a minute of commands since its last save, so the overseer reads No word meanwhile. The welcome says what the server came back from instead: a new universe, or a save's tick and the commands replayed.
-  - Running, Stalled and No word are the overseer's to tell from `Health` (OV4).
+  - Running, Stalled and No word are the overseer's to tell from `Health` (OV5).
 - **ADR:** the overseer's channel's.
 - **Acceptance:** `OverseerLinkTests.SaysHowTheServerEnds`, for a stop and a failure, and that the welcome says what the server came back from.
 - **Verify:** the checkers; the container's tests; CI's Debug|x64 run for the QUIC test.
@@ -168,10 +171,44 @@ The overseer's own channel to the server, as the proposal's §4 has it, but for 
 
 ---
 
+## Milestone OV3 — The overseer
+
+The overseer itself: an executable of its own, its window and its end of the channel, and the overview's header, tiles, seat table and log. It is presentation: it is run against a running universe, and the owner's run accepts it.
+
+### OV3.1 — The overseer's project, its window and its link
+
+- **Proposal:** §6; gates D1, D5 and D6.
+- **Scope:**
+  - `OutpostOverseer`, a Win32 executable, not packaged (gate D5), in the solution for x64 and ARM64, Debug and Release, with ADR-002's row: it includes `NeuronCore`, `NeuronClient`, `GameProtocol` and `GameApp`, as gate D1 has it. `CheckProjectFiles.py`'s table and `.clang-tidy`'s header filter take it.
+  - It finds `Overseer.json` (ADR-101 decision 2) from its argument, a file or the folder that holds it, or in the default universe's folder in the owner's documents, as `OutpostServer` finds the universe (ADR-078 decision 1), and says plainly when there is none.
+  - Its window opens windowed and resizable, and Alt+Enter toggles full screen as the game's does; `Neuron::Window` takes where it starts. The renderer takes a hardware adapter only (gate D6): on a machine with none the overseer says so and ends.
+  - Its end of the channel, in `GameApp`: a link that connects with the file's address and certificate, says hello, sends the sight and the views it holds, and joins again every 2 s while it has no connection; and a model that keeps what the server said, apart from QUIC, so that `GameAppTests` feeds it messages: the welcome, the newest `Health` and an hour of them, the log's records, and the newest view, put together with `HeldStates` and the welcome's sectors and fields.
+  - Its frame loop draws the canvas built from the model, at the window's scale (ADR-006 decision 5; ADR-070).
+- **ADR:** a new ADR for the overseer application; [ADR-002](../ADR/ADR-002-authoritative-server.md), its row; [ADR-006](../ADR/ADR-006-renderer-shape.md) decision 1, where its window starts.
+- **Acceptance:** `OverseerModelTests`: a welcome, an hour of `Health` kept and no more, the log's records, views put together whole and as changes, the sight sent, a closing, and a connection gone and joined again; `CheckProjectFiles.py` with the new project; CI's build of it.
+- **Verify:** the checkers; the container's tests for what it builds; CI; the owner's run against a running universe.
+
+### OV3.2 — The overview: header, tiles, seat table and the log
+
+- **Proposal:** §3, the overview; gate D7.
+- **Scope:**
+  - **The canvas's table** (gate D7), in `NeuronClient`: headings that sort on a press and show the sort's direction, a picked row in the picked card's face and edge, cells of a figure over a detail line, scrolling past its height on the canvas's scroll view; and the Style Guide's rule for a table.
+  - **The overview,** built on the canvas in the game's look, which `GameApp` makes reachable from `Hud.cpp`:
+    - The header: the universe's folder and address, the server's state, Running while `Health` comes and No word after 3 s without it (the other states are OV5's), universe time and tick, how long the process has run, the last save, the wire layout, protocol and state version, the overseer's own round trip, and what the server came back from.
+    - The tiles: the tick's 99th percentile over the last minute against the 5 ms budget, with the hour's longest; ticks a second and ticks dropped; the last save, its size and encoding time, from the log's `save` records; the bytes out to every seat; the process's memory, CPU and disk.
+    - The seat table: a row a seat, with the proposal's columns; filters as a row of cells; sorting by any heading; a picked row, whose sight the map shows (OV4.3); each seat in its color, seats 1 and 2 in their sets' colors and the rest in the overseer's own palette, clear of the warning's color (owner, 2026-10-28; ADR-085).
+    - The universe log: its records as they come, filtered by kind, scrolled back through.
+  - **The layout and contrast guards** hold over the overview at 1920×1080 and 1280×720, through a helper `HudTests` shares.
+- **ADR:** the canvas's for the table ([ADR-100](../ADR/ADR-100-the-canvas.md)); the overseer application's for the overview; the Style Guide.
+- **Acceptance:** `NeuronClientTests` for the table: sorting, its direction, picking, a figure over a detail line and scrolling; `OverseerScreenTests`: each region from a scripted model, a filter, a sort, a pick, the seats' colors, and the guards.
+- **Verify:** the checkers; CI; run against a running universe at 1920×1080 and in a smaller window; the owner's run.
+
+---
+
 ## Later milestones
 
 Each is laid out task by task when the one before it is merged, and its gates are decided.
 
-- **OV3 — The overseer** (proposal §3 and §6): the project, its window, the overview and the map.
-- **OV4 — The seat window, the server window and the header states.**
-- **OV5 — The actions:** Save now and Stop, then Drop link and New token as gates D2 and D3 decide.
+- **OV4 — Attention, who played and the map** (proposal §3): first the welcome carries the last 24 hours of universe time of the records the lanes need, `seat`, `start` and `battle`, from `Universe.log`, after the last 500 (owner, 2026-10-28); then what needs attention and who played; and one system's sector map, in full sight or the picked seat's.
+- **OV5 — The seat window, the server window and the header states.**
+- **OV6 — The actions:** Save now and Stop, then Drop link and New token as gates D2 and D3 decide.
