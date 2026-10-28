@@ -83,10 +83,11 @@ struct OverseerSeat
   std::string ai;
 };
 
-// The server's answer to an overseer whose hello it took, which never changes while the server runs: the game's wire layout,
-// protocol and universe state version; the tick rate; the universe's folder; its seats; its sectors, without who holds them,
-// and its asteroid fields; and what it came back from as it started, the save of a tick and the commands logged after it that
-// it replayed, or none for a new universe (ADR-077).
+// The server's answer to an overseer whose hello it took: what never changes while the server runs, the game's wire layout,
+// protocol and universe state version, the tick rate, the universe's folder, its seats, its sectors without who holds them,
+// its asteroid fields, what it came back from as it started, the save of a tick and the commands logged after it that it
+// replayed, or none for a new universe (ADR-077), and how many seconds of ticks go between two saves; and the universe log's
+// records the overseer's lanes are drawn from, of the last LANE_SECONDS of universe time (KeepLaneRecords).
 struct OverseerWelcomeMessage
 {
   std::uint64_t wireLayoutHash = 0;
@@ -99,6 +100,8 @@ struct OverseerWelcomeMessage
   std::vector<EntityView> fields;
   std::optional<std::uint64_t> recoveredSaveTick;
   std::uint64_t replayedCommands = 0;
+  std::uint32_t saveSeconds = 0;
+  std::vector<std::string> laneRecords;
 };
 
 // A seat's link to its player: none for an AI empire's seat, open while no connection has taken it, online while the player's

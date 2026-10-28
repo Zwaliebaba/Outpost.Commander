@@ -32,7 +32,7 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV2.4 | `Closing`, and the server's state | OV2.2 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
 | OV3.1 | The overseer's project, its window and its link | OV2 | D1, D5, D6 | in review; awaiting the owner's run |
 | OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | in review; awaiting the owner's run |
-| OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | todo |
+| OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | in progress |
 | OV4.2 | Needs attention and who played | OV4.1 | — | todo |
 | OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | todo |
 | OV5.1 | The seat window, the server window and the header states | OV4 | — | todo |
@@ -221,10 +221,45 @@ The overseer itself: an executable of its own, its window and its end of the cha
 
 ---
 
+## Milestone OV4 — Attention, who played and the map
+
+What the overview lacks after OV3: what needs the owner's attention, who played each seat over the last day, and one system's sector map, in full sight or the picked seat's. It was laid out before OV3 merged, at the owner's word to go on to OV5 (owner, 2026-10-28), and stands on OV3's branch.
+
+### OV4.1 — Twenty-four hours of the lanes' records at the welcome
+
+- **Proposal:** §3, who played; §4, the welcome.
+- **Scope:**
+  - **The welcome carries the lanes' records** (owner, 2026-10-28): the universe log's `seat`, `start` and `battle` records of the last 24 hours of universe time, and each seat's last hand-over before them, which says who played it as the day began; with the seconds of ticks between two saves, which what needs attention measures the last save by (OV4.2).
+  - **The server reads them from the whole of `Universe.log` once,** as the link is made, and keeps them as the log writes them, so that an overseer that connects days later is told the day before it; a recovery's `start` drops what the log wrote past the tick it came back to. The rule is one helper, in `GameProtocol`, which the link and the overseer's model both keep their lanes by.
+  - **The overseer's model keeps them,** the welcome's and every such record the stream brings, for the day that ends at the newest tick it was told of.
+- **ADR:** [ADR-101](../ADR/ADR-101-the-overseers-channel.md) decisions 3 and 7; [ADR-102](../ADR/ADR-102-the-overseer-application.md) decision 6.
+- **Acceptance:** `LaneRecordsTests`: a record's kind and tick, the day and each seat's hand-over before it, and what a recovery went back past; `OverseerProtocolTests` with the welcome's new fields; `UniverseLogTests.ReadsTheLanesRecords`; `OverseerLinkTests.WelcomesWithTheLanesRecords`, over QUIC; `OverseerModelTests.KeepsADayOfTheLanesRecords`.
+- **Verify:** the checkers; the container's tests; CI.
+
+### OV4.2 — Needs attention and who played
+
+- **Proposal:** §3, needs attention and who played.
+- **Scope:**
+  - **What needs attention,** from rules over `Health` and the log whose thresholds live in one place (`OverseerAttention.h`): a chip for what to act on now, a game of another build refused within the hour, the disk under 5 GB, the last save older than two of its intervals (ADR-085 decision 1; ADR-066 decision 2); plain text for what to know, a seat's backlog grown for 30 s, a round trip over 250 ms at the 95th percentile of the last minute, loss over 2% in the last minute, a tick over 5 ms in the last minute, a seat that has waited over 10 minutes for its start, a deputy that has played a seat for over 24 hours, and every battle under way; and the checks that pass, so that a quiet list says all is well.
+  - **The seat table's filter for what needs a look,** the seats that a rule names.
+  - **Who played:** a lane a player's seat over the last day of universe time, solid in its color while its player played it and hatched while its deputy did, each recovery a mark across the lanes; and a lane of battles, each mark filled when a player was present and hollow when only deputies and AI fought. AI empires have no lane.
+- **ADR:** ADR-102, the overview.
+- **Acceptance:** `OverseerAttentionTests`: each rule firing and passing; `OverseerScreenTests`: the attention panel's chips, text and quiet list, the filter, the lanes, and the guards.
+- **Verify:** the checkers; the container's tests; CI; the owner's run.
+
+### OV4.3 — The map: one system's sectors, full sight and a seat's
+
+- **Proposal:** §3, the map.
+- **Scope:** the universe's one system as the minimap draws it, sharing its drawing (`Hud::DrawMinimap`): the sectors by holder, suppressed and cut off, and the ships, structures, ore and derelicts, in each seat's color as the seat table marks it. It shows full sight, or the picked seat's own, and an "All" cell over it gives full sight back (owner, 2026-10-27). No fog is drawn over a seat's sight: its snapshot holds only what the seat sees.
+- **ADR:** ADR-102, the overview; [ADR-100](../ADR/ADR-100-the-canvas.md) decision 7, the minimap shared.
+- **Acceptance:** `OverseerScreenTests`: the map's marks in full sight and in a seat's, the "All" cell, and the guards.
+- **Verify:** the checkers; the container's tests; CI; the owner's run against a running universe.
+
+---
+
 ## Later milestones
 
 Each is laid out task by task when the one before it is merged, and its gates are decided.
 
-- **OV4 — Attention, who played and the map** (proposal §3): first the welcome carries the last 24 hours of universe time of the records the lanes need, `seat`, `start` and `battle`, from `Universe.log`, after the last 500 (owner, 2026-10-28); then what needs attention and who played; and one system's sector map, in full sight or the picked seat's.
 - **OV5 — The seat window, the server window and the header states.**
 - **OV6 — The actions:** Save now and Stop, then Drop link and New token as gates D2 and D3 decide.

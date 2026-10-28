@@ -199,6 +199,22 @@ std::vector<std::string> Outpost::UniverseLog::ReadLastRecords(const std::filesy
   return lines;
 }
 
+std::deque<std::string> Outpost::UniverseLog::ReadLaneRecords(const std::filesystem::path& _file, std::uint64_t _sinceTick)
+{
+  std::ifstream file(_file, std::ios::binary);
+  std::deque<std::string> records;
+  for (std::string line; std::getline(file, line);)
+  {
+    // A log written on Windows ends its lines with a carriage return too, which is no part of the record.
+    if (line.ends_with('\r'))
+      line.pop_back();
+    if (const std::optional<RecordHead> head = HeadOf(line); head.has_value() && IsLaneRecord(head->kind))
+      records.push_back(std::move(line));
+  }
+  KeepLaneRecords(records, _sinceTick);
+  return records;
+}
+
 void Outpost::UniverseLog::Started(std::uint64_t _tick, std::optional<std::uint64_t> _saveTick, std::size_t _replayed)
 {
   // A server made afresh knows nobody's seat, and a battle it did not see the start of is not one it can tell; nor a minute.

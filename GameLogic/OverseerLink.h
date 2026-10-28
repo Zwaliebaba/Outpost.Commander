@@ -14,16 +14,18 @@ struct OverseerDesc
 
 // The server's end of its overseer's channel (ADR-101): a QUIC listener of its own beside the game's, presenting the
 // universe's kept certificate, and the one overseer that holds the channel, the newest connection to show the token. It
-// welcomes an overseer on MsQuic's thread with what it was made with, so that it does while the server's thread is stuck.
+// welcomes an overseer on MsQuic's thread with what it was made with and the lanes' records it keeps, so that it does while
+// the server's thread is stuck.
 // The server's main thread sends Health and Closing through it, and the server's thread the views and the log's records.
 // Every member may be called from any thread, apart from where it says otherwise.
 class OverseerLink : Neuron::NonCopyable
 {
 public:
-  // Listens on _desc's address, presenting the certificate kept in _identity, and welcomes an overseer with _welcome and then
-  // _records, the universe log's last ones. Throws Neuron::Exception when it cannot listen.
-  OverseerLink(const OverseerDesc& _desc, const std::filesystem::path& _identity, const OverseerWelcomeMessage& _welcome,
-               std::vector<std::string> _records);
+  // Listens on _desc's address, presenting the certificate kept in _identity, and welcomes an overseer with _welcome, with the
+  // lanes' records of the last LANE_SECONDS of universe time, _lanes and those written since, and then _records, the universe
+  // log's last ones. Throws Neuron::Exception when it cannot listen.
+  OverseerLink(const OverseerDesc& _desc, const std::filesystem::path& _identity, OverseerWelcomeMessage _welcome,
+               std::deque<std::string> _lanes, std::vector<std::string> _records);
   // Stops listening and closes the overseer's connection.
   ~OverseerLink();
 
@@ -43,8 +45,9 @@ public:
   // server's thread's.
   void SendView(Snapshot _view);
 
-  // Records the universe log wrote, in order: it keeps the last OVERSEER_RECORDS_KEPT of them for the next overseer, and
-  // sends them to the one that holds the channel.
+  // Records the universe log wrote, in order: it keeps the last OVERSEER_RECORDS_KEPT of them for the next overseer, and the
+  // lanes' records of the last LANE_SECONDS of universe time for its welcome, and sends them to the one that holds the
+  // channel.
   void SendRecords(std::vector<std::string> _lines);
 
   // Health, to the overseer that holds the channel, if one does.
@@ -68,9 +71,12 @@ private:
   // Keeps a refusal for the universe log, and closes _channel saying why.
   void Refuse(Neuron::QuicChannel& _channel, OverseerOutcome _outcome, OverseerCloseReason _reason);
 
+  // The first tick of the day of universe time the lanes cover, which ends at the newest record written. Under the lock.
+  [[nodiscard]] std::uint64_t LaneDayStart() const noexcept;
+
   SeatToken m_token{};
-  // The welcome, encoded once, and the seats a sight may name.
-  std::vector<std::byte> m_welcome;
+  // The welcome, without the lanes' records, which are added to it as it is sent; and the seats a sight may name.
+  OverseerWelcomeMessage m_welcome;
   std::vector<PlayerId> m_seats;
 
   // Guards what follows it, which MsQuic's threads and the server's two threads all touch. Every message to the overseer's
@@ -83,6 +89,9 @@ private:
   PlayerId m_sight;
   std::optional<std::uint64_t> m_held;
   std::deque<std::string> m_records;
+  // The lanes' records kept, and the tick of the newest record written, which the day they cover ends at.
+  std::deque<std::string> m_lanes;
+  std::uint64_t m_newestTick = 0;
   std::vector<OverseerRecord> m_comings;
 
   // The views sent to the overseer of one taking, which the next is sent as a change of: the server's thread's alone.

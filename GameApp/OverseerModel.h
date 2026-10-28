@@ -10,8 +10,8 @@ struct HeardHealth
 };
 
 // What the overseer knows of its universe, from what the server said on its channel (ADR-101, ADR-102): the welcome; the
-// newest Health and the last hour of them; the universe log's records; the newest view, whole; and how the server ended,
-// once it has said. It holds no connection, so that a test hands it messages as bytes, and what it knew stays as it was
+// newest Health and the last hour of them; the universe log's records, and those its lanes are drawn from over the last day;
+// the newest view, whole; and how the server ended, once it has said. It holds no connection, so that a test hands it messages as bytes, and what it knew stays as it was
 // while no connection brings more. One thread at a time.
 class OverseerModel : Neuron::NonCopyable
 {
@@ -59,6 +59,19 @@ public:
     return m_records;
   }
 
+  // The records the lanes of who played are drawn from, the welcome's and those written since, as KeepLaneRecords keeps them
+  // for the day of universe time that ends at the newest tick the overseer was told of, oldest first.
+  [[nodiscard]] const std::deque<std::string>& LaneRecords() const noexcept
+  {
+    return m_lanes;
+  }
+
+  // The newest tick the overseer was told of, by a Health or a record.
+  [[nodiscard]] std::uint64_t NewestTick() const noexcept
+  {
+    return m_newestTick;
+  }
+
   // The newest view, whole: full sight, or the seat whose sight the overseer watches.
   [[nodiscard]] const std::optional<Snapshot>& View() const noexcept
   {
@@ -82,6 +95,9 @@ public:
   }
 
 private:
+  // Lets go of the lanes' records from before the day that ends at the newest tick.
+  void KeepTheDay();
+
   std::optional<OverseerWelcomeMessage> m_welcome;
   // Whether the connection now open has been welcomed, so that its views are taken.
   bool m_welcomed = false;
@@ -89,6 +105,8 @@ private:
   CatalogMessage m_catalog;
   std::deque<HeardHealth> m_health;
   std::deque<std::string> m_records;
+  std::deque<std::string> m_lanes;
+  std::uint64_t m_newestTick = 0;
   HeldStates m_views;
   std::optional<Snapshot> m_view;
   std::optional<ClosingMessage> m_closing;

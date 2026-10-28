@@ -317,6 +317,43 @@ public:
     Assert::IsTrue(online.connections >= 1, L"the game's listener holds its connection");
   }
 
+  // ADR-101 decision 7 (owner, 2026-10-28): each welcome carries the lanes' records of the last day of universe time, those the
+  // log held as the link was made and those written since, and how many seconds of ticks go between two saves.
+  TEST_METHOD(WelcomesWithTheLanesRecords)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    universe.server->Start();
+    const auto welcomed = [&universe, &token]
+    {
+      Overseer overseer(universe.overseer);
+      overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+      return overseer.Next<Outpost::OverseerWelcomeMessage>();
+    };
+    const Outpost::OverseerWelcomeMessage first = welcomed();
+    Assert::AreEqual(Outpost::UNIVERSE_SAVE_SECONDS, first.saveSeconds);
+    const auto starts = [](const std::string& _record) { return _record.starts_with("start 0 "); };
+
+    // Seat 1 taken: its player plays it from the next tick, which the log writes as a hand-over.
+    Outpost::QuicTransport blue(universe.seat, BLUE);
+    const auto handedOver = [](const std::string& _record)
+    { return _record.starts_with("seat ") && _record.ends_with(" player 1 player"); };
+    Outpost::OverseerWelcomeMessage later;
+    const auto deadline = std::chrono::steady_clock::now() + 10s;
+    while (!std::ranges::any_of(later.laneRecords, handedOver) && std::chrono::steady_clock::now() < deadline)
+    {
+      (void)blue.Receive();
+      std::this_thread::sleep_for(500ms);
+      later = welcomed();
+    }
+    Assert::IsTrue(std::ranges::any_of(later.laneRecords, handedOver), L"the hand-over written since the link was made");
+    Assert::IsTrue(std::ranges::any_of(later.laneRecords, starts), L"and the universe's start");
+    Assert::IsTrue(std::ranges::none_of(later.laneRecords, [](const std::string& _record) { return _record.starts_with("overseer "); }),
+                   L"and no record of another kind");
+  }
+
   // A view twice a second, full sight, put together by HeldStates whole or as what changed; a seat's own sight while the
   // overseer watches it, and full sight again; and each new record of the universe log as it is written.
   TEST_METHOD(SendsTheViewAndTheLog)
