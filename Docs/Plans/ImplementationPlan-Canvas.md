@@ -92,9 +92,9 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV6.1 | The designer | CV5.1 | — | in review, [#148](https://github.com/Zwaliebaba/Outpost.Commander/pull/148) |
 | CV7.1 | Scrolling, and how far the interface scales | CV4.2, CV4.3, CV6.1, CV9.1 | C3, C5, C8 | in review, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154) |
 | CV7.2 | Drop-downs in the orders form | CV4.3 | C6 | in review, [#154](https://github.com/Zwaliebaba/Outpost.Commander/pull/154) |
-| CV8.1 | The column under the Ore | CV3.4 | C1 | todo |
-| CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | todo |
-| CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | todo |
+| CV8.1 | The column under the Ore | CV3.4 | C1 | in review, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155) |
+| CV8.2 | The selection, its buttons and its retreat | CV8.1 | C1 | in review, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155) |
+| CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | in review, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155) |
 | CV9.1 | The scroll view | CV3.4 | — | in review, [#153](https://github.com/Zwaliebaba/Outpost.Commander/pull/153) |
 
 ### Milestone order
@@ -345,18 +345,21 @@ The HUD's panels stay where they are (C1). Each task is a port (rule 5).
 - **Scope:** the Ore, the status, territory and alerts panels as anchored panels on the canvas, the column's width kept for its widest fixed text ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3).
 - **Acceptance:** the port's comparison; the column's tests as they stand.
 - **Verify:** CI; run.
+- **As built (2026-10-28):** [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 6 and 7. The HUD's panels are panels of one canvas, built before the windows in the order they are drawn, each element at the place the old layout gave it in its panel, by the layout's anchors. The status lines, the bars and their edges are the game's fills on the canvas, and a line's click a press at a node, a region that draws nothing, which the canvas gains.
 
 ### CV8.2 — The selection, its buttons and its retreat
 
 - **Scope:** the selection panel, as wide as its longest line between its least and most (ADR-043 decision 5), its ship bars, the buttons against its right edge, and the retreat's row of cells (ADR-088 decisions 2 to 4).
 - **Acceptance:** the port's comparison; the selection's tests as they stand.
 - **Verify:** CI; run, a structure, a ship and a fleet selected.
+- **As built (2026-10-28):** ADR-100 decisions 6 and 7. The retreat is the canvas's row of cells, as the designer's is. A button of the HUD is still lit while its action is the one under the pointer, with every other that takes it, as a status line that opens research lights the Research button: the canvas's button gains a light the caller sets, `ButtonContent::pointed`.
 
 ### CV8.3 — The minimap, the tag, the hint, the banner and the menu
 
 - **Scope:** the minimap's frame, with its marks, fog and view drawn by the game into its leaf; the tag at the top right; the hint; the match's end; the main menu. `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
 - **Acceptance:** the port's comparison; the minimap's and the menu's tests as they stand.
 - **Verify:** CI; run, the menu and a match to its end.
+- **As built (2026-10-28):** ADR-100 decision 7, [ADR-085](../ADR/ADR-085-one-meaning-per-color.md) decision 1 and the Style Guide's chip. The minimap's frame is a panel whose leaf the game draws the map into once the canvas has placed it (`DrawMap`); the menu is a panel of a canvas of its own. `HudTests.BuildsTheHudAndTheMenuOnTheCanvasAsBefore` compared the layout before and on the canvas, at both sizes and every step a match and the menu reach, over the longest content and eight variants of it, the pointer on each of the HUD's presses, and the menu in four states; it passed in CI. Then `Painter`, `Frame`, `AddButton`, `AddCorners` and `RetreatRow` were deleted with the old layout, and every window's layout stayed byte-identical. The one difference: a press's region and its action's rectangle carry no color on the canvas, which nothing reads.
 
 ---
 

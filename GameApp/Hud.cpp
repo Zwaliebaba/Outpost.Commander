@@ -879,32 +879,6 @@ constexpr float CLOSE_TEXT_LEFT = 11.0f;
 // The multiplication sign, in UTF-8.
 constexpr std::string_view CLOSE_MARK = "\xC3\x97";
 
-// A bracket at each corner of _frame, as a window has.
-void AddCorners(Hud::Layout& _layout, const Hud::Rect& _frame, float _scale)
-{
-  const float corner = CORNER_UNITS * _scale;
-  for (const bool right : {false, true})
-  {
-    for (const bool bottom : {false, true})
-    {
-      _layout.sprites.push_back({.sprite = Hud::SpriteOf(Hud::Sprite::Corner),
-                                 .area = {right ? _frame.left + _frame.width - corner : _frame.left,
-                                          bottom ? _frame.top + _frame.height - corner : _frame.top, corner, corner, WINDOW_EDGE_COLOR},
-                                 .mirrorX = right,
-                                 .mirrorY = bottom});
-    }
-  }
-}
-
-// A panel of the HUD, in pixels, in a window's look though it is anchored and has no title bar (ADR-043): a window's body
-// and a bracket at each corner. It returns the body.
-Hud::Rect Frame(Hud::Layout& _layout, float _left, float _top, float _width, float _height, float _scale)
-{
-  const Hud::Rect body = _layout.panels.emplace_back(Hud::Rect{_left, _top, _width, _height, WINDOW_COLOR});
-  AddCorners(_layout, body, _scale);
-  return body;
-}
-
 // The designer's window (ADR-017 decision 7), laid out as the owner's mockup, Docs/Mockups/ShipDesigner.png, which is
 // drawn at the reference scale: every place below is in reference units from the window's top-left corner.
 // Three part cards from CARDS_LEFT, a little wider than the mockup's, so 14 units of room right of them (ADR-062 decision 4).
@@ -1153,217 +1127,6 @@ float CardHeightOf(const Hud::SlotRow& _slot) noexcept
 {
   const bool noted = std::ranges::any_of(_slot.cards, [](const Hud::PartCard& _card) { return !_card.note.empty(); });
   return noted ? CARD_HEIGHT + CARD_NOTE_ROOM : CARD_HEIGHT;
-}
-
-// Draws into a window of the layout in reference units from the window's top-left corner, as the windows' layouts place
-// everything (ADR-031), measuring its text with the fonts it is drawn in (ADR-061).
-class Painter
-{
-public:
-  Painter(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, Outpost::WindowManager::Point _corner, float _scale) noexcept
-    : m_layout(_layout),
-      m_metrics(_metrics),
-      m_originX(_corner.xUnits * _scale),
-      m_originY(_corner.yUnits * _scale),
-      m_scale(_scale)
-  {
-  }
-
-  // Spaced capitals' tracking, in pixels.
-  [[nodiscard]] float Tracking() const noexcept
-  {
-    return LABEL_TRACKING_UNITS * m_scale;
-  }
-
-  // How wide _text is set in _face, in reference units, with _trackingPixels more between each two characters.
-  [[nodiscard]] float Width(std::string_view _text, Hud::Typeface _face, float _trackingPixels = 0.0f) const noexcept
-  {
-    return m_metrics.Width(_face, _text, _trackingPixels / m_scale);
-  }
-
-  // _text as _face sets it within _widthUnits, cut short when it does not fit.
-  [[nodiscard]] std::string Fit(std::string_view _text, Hud::Typeface _face, float _widthUnits, float _trackingPixels = 0.0f) const
-  {
-    return m_metrics.Fit(_face, _text, _widthUnits, _trackingPixels / m_scale);
-  }
-
-  [[nodiscard]] Hud::Rect Area(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,
-                               Hud::Fill _fill = Hud::Fill::Solid) const noexcept
-  {
-    return {m_originX + (_left * m_scale), m_originY + (_top * m_scale), _width * m_scale, _height * m_scale, _color, _fill};
-  }
-
-  Hud::Rect Panel(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color, Hud::Fill _fill = Hud::Fill::Solid)
-  {
-    return m_layout.panels.emplace_back(Area(_left, _top, _width, _height, _color, _fill));
-  }
-
-  void Text(std::string _text, float _left, float _top, const DirectX::XMFLOAT4& _color, Hud::Typeface _face, float _tracking = 0.0f)
-  {
-    m_layout.texts.push_back(
-      {std::move(_text), m_originX + (_left * m_scale), m_originY + (_top * m_scale), _color, Hud::FontOf(_face), _tracking});
-  }
-
-  // A line that ends at _right.
-  void RightText(std::string _text, float _right, float _top, const DirectX::XMFLOAT4& _color, Hud::Typeface _face, float _tracking = 0.0f)
-  {
-    const float left = _right - Width(_text, _face, _tracking);
-    Text(std::move(_text), left, _top, _color, _face, _tracking);
-  }
-
-  // How wide a warning chip of _text is set in _face, its tag and all.
-  [[nodiscard]] float ChipWidth(std::string_view _text, Hud::Typeface _face) const noexcept
-  {
-    return Width(_text, _face) + (2.0f * CHIP_PAD_UNITS);
-  }
-
-  // A warning chip whose tag starts at _left, on a line of _lineUnits from _top (ADR-085 decision 1). It returns how wide it
-  // is.
-  float Chip(std::string _text, float _left, float _top, Hud::Typeface _face, float _lineUnits)
-  {
-    const float width = ChipWidth(_text, _face);
-    Panel(_left, _top, width, _lineUnits, WARNING_COLOR);
-    Text(std::move(_text), _left + CHIP_PAD_UNITS, _top, WINDOW_COLOR, _face);
-    return width;
-  }
-
-  void Sprite(Hud::Sprite _sprite, float _left, float _top, float _size, const DirectX::XMFLOAT4& _color)
-  {
-    m_layout.sprites.push_back({.sprite = Hud::SpriteOf(_sprite), .area = Area(_left, _top, _size, _size, _color)});
-  }
-
-  // The edge round a lit rectangle.
-  void Outline(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color)
-  {
-    Panel(_left, _top, _width, LINE_UNITS, _color);
-    Panel(_left, _top + _height - LINE_UNITS, _width, LINE_UNITS, _color);
-    Panel(_left, _top, LINE_UNITS, _height, _color);
-    Panel(_left + _width - LINE_UNITS, _top, LINE_UNITS, _height, _color);
-  }
-
-  // A region that takes a press, whose payload is _action's place among the layout's actions (ADR-100).
-  void Press(const Hud::Rect& _rect, const Hud::Action& _action)
-  {
-    m_layout.regions.push_back({.area = _rect, .payload = static_cast<std::uint32_t>(m_layout.actions.size())});
-    m_layout.actions.emplace_back(_rect, _action);
-  }
-
-  // How wide an amount of Ore is set, its gem and its figure, in _face.
-  [[nodiscard]] float GemAndFigureWidth(std::int32_t _ore, Hud::Typeface _face) const
-  {
-    return std::round(Hud::FaceUnits(_face) * ORE_MARK_SHARE) + ORE_MARK_GAP_UNITS + Width(Outpost::WithThousands(_ore), _face);
-  }
-
-  // An amount of Ore that ends at _right: Ore's gem, then the figure, in _face.
-  void GemAndFigure(std::int32_t _ore, float _right, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
-  {
-    GemAndFigureFrom(_ore, _right - GemAndFigureWidth(_ore, _face), _top, _face, _color);
-  }
-
-  // An amount of Ore that starts at _left: Ore's gem, sized by the face, then the figure, in _face.
-  void GemAndFigureFrom(std::int32_t _ore, float _left, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
-  {
-    const float sizeUnits = Hud::FaceUnits(_face);
-    const float mark = std::round(sizeUnits * ORE_MARK_SHARE);
-    Sprite(Hud::Sprite::OreMark, _left, _top + ((sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
-    Text(Outpost::WithThousands(_ore), _left + mark + ORE_MARK_GAP_UNITS, _top, _color, _face);
-  }
-
-private:
-  Hud::Layout& m_layout;
-  const Hud::TextMetrics& m_metrics;
-  float m_originX;
-  float m_originY;
-  float m_scale;
-};
-
-// A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
-// any cost after a '|' as Ore's gem and the figure at its right, or its key as a cap there (ADR-068 decision 4), and its place
-// among the actions when it does something. The label is cut short only where it would meet the cost, the note or the
-// cap. Work it started that is under way runs as a bar along its foot, under the label, from left to right. Under the
-// pointer, _hovered, its edge is lit unless it is a pick, whose edge is lit already.
-void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button,
-               bool _hovered = false)
-{
-  Painter paint(_layout, _metrics, {.xUnits = _area.left / _scale, .yUnits = _area.top / _scale}, _scale);
-  const float width = _area.width / _scale;
-  const float height = _area.height / _scale;
-  const Hud::Rect face = paint.Panel(0.0f, 0.0f, width, height,
-                                     _button.selected  ? PICKED_COLOR
-                                     : _button.enabled ? CARD_COLOR
-                                                       : FIELD_COLOR);
-  if (_button.enabled)
-    paint.Press(face, _button.action);
-  paint.Outline(0.0f, 0.0f, width, height, _button.selected ? PICKED_EDGE_COLOR : _hovered ? HOVER_EDGE_COLOR : EDGE_COLOR);
-  if (_button.progressPermille.has_value())
-  {
-    const float barWidth = width - (2.0f * BUTTON_BAR_INSET);
-    const float barTop = height - BUTTON_BAR_INSET - BUTTON_BAR_UNITS;
-    paint.Panel(BUTTON_BAR_INSET, barTop, barWidth, BUTTON_BAR_UNITS, BAR_TRACK_COLOR);
-    paint.Panel(BUTTON_BAR_INSET, barTop,
-                barWidth * static_cast<float>(std::clamp(*_button.progressPermille, 0, Outpost::PERMILLE)) /
-                  static_cast<float>(Outpost::PERMILLE),
-                BUTTON_BAR_UNITS, BAR_FILL_COLOR);
-  }
-  const size_t split = _button.label.find('|');
-  const std::string label = _button.label.substr(0, split);
-  const DirectX::XMFLOAT4& labelColor = _button.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
-  const float labelTop = (height - NAME_LINE_UNITS) / 2.0f;
-  const float figureTop = (height - FIGURE_LINE_UNITS) / 2.0f;
-  float room = width - (2.0f * BUTTON_INSET);
-  if (!_button.key.empty())
-  {
-    // The key's cap: an outlined square with the letter in the label face, in the middle of it.
-    const float capLeft = width - BUTTON_INSET - KEY_CAP_UNITS;
-    const float capTop = (height - KEY_CAP_UNITS) / 2.0f;
-    paint.Panel(capLeft, capTop, KEY_CAP_UNITS, KEY_CAP_UNITS, FIELD_COLOR);
-    paint.Outline(capLeft, capTop, KEY_CAP_UNITS, KEY_CAP_UNITS, ROW_LABEL_COLOR);
-    paint.Text(_button.key, capLeft + ((KEY_CAP_UNITS - paint.Width(_button.key, Hud::Typeface::Label)) / 2.0f), capTop + KEY_CAP_TEXT_TOP,
-               ROW_LABEL_COLOR, Hud::Typeface::Label);
-    room -= KEY_CAP_UNITS + FIT_GAP_UNITS;
-  }
-  std::int32_t cost = 0;
-  const std::string figure = split == std::string::npos ? std::string() : _button.label.substr(split + 1);
-  const bool costed = split != std::string::npos && std::from_chars(figure.data(), figure.data() + figure.size(), cost).ec == std::errc{};
-  if (split != std::string::npos && !_button.enabled && !_button.note.empty())
-  {
-    paint.RightText(_button.note, width - BUTTON_INSET, figureTop, LABEL_COLOR, Hud::Typeface::Label);
-    paint.Text(paint.Fit(label, Hud::Typeface::Name, room - paint.Width(_button.note, Hud::Typeface::Label) - FIT_GAP_UNITS), BUTTON_INSET,
-               labelTop, labelColor, Hud::Typeface::Name);
-    return;
-  }
-  if (!costed)
-  {
-    paint.Text(paint.Fit(label, Hud::Typeface::Name, room), BUTTON_INSET, labelTop, labelColor, Hud::Typeface::Name);
-    return;
-  }
-  const float costWidth = paint.GemAndFigureWidth(cost, Hud::Typeface::Figure);
-  paint.Text(paint.Fit(label, Hud::Typeface::Name, room - costWidth - FIT_GAP_UNITS), BUTTON_INSET, labelTop, labelColor,
-             Hud::Typeface::Name);
-  paint.GemAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
-}
-
-// A row of the three retreats from _left, _widthUnits across, each cell _heightUnits tall with its words centered in _face
-// at _tracking, the one at _lit picked, and each a press of _kind that sets it (ADR-088 decision 3). Under the
-// pointer, _hovered, a cell's edge is lit as a button's is.
-void RetreatRow(Painter& _paint, float _left, float _top, float _widthUnits, float _heightUnits,
-                std::optional<Outpost::RetreatThreshold> _lit, Hud::ActionKind _kind, Hud::Typeface _face, float _tracking,
-                const std::optional<Hud::Action>& _hovered)
-{
-  const float cell = (_widthUnits - (2.0f * RETREAT_CELL_GAP_UNITS)) / static_cast<float>(RETREAT_CHOICES.size());
-  for (std::size_t i = 0; i < RETREAT_CHOICES.size(); ++i)
-  {
-    const Outpost::RetreatThreshold choice = RETREAT_CHOICES[i];
-    const Hud::Action action{.kind = _kind, .retreat = choice};
-    const bool lit = _lit == choice;
-    const float left = _left + (static_cast<float>(i) * (cell + RETREAT_CELL_GAP_UNITS));
-    _paint.Press(_paint.Panel(left, _top, cell, _heightUnits, lit ? PICKED_COLOR : CARD_COLOR), action);
-    _paint.Outline(left, _top, cell, _heightUnits, lit ? PICKED_EDGE_COLOR : _hovered == action ? HOVER_EDGE_COLOR : EDGE_COLOR);
-    std::string words = _face == Hud::Typeface::Label ? Capitals(RetreatCell(choice)) : std::string(RetreatCell(choice));
-    const float wordsLeft = left + ((cell - _paint.Width(words, _face, _tracking)) / 2.0f);
-    const float lineUnits = std::round(Hud::FaceUnits(_face) * RETREAT_LINE_SHARE);
-    _paint.Text(std::move(words), wordsLeft, _top + ((_heightUnits - lineUnits) / 2.0f), TEXT_COLOR, _face, _tracking);
-  }
 }
 
 // The production and research windows, in the designer's look, in reference units from the window's
@@ -3696,7 +3459,7 @@ Hud::AwayPanel Hud::DescribeAway(const Snapshot& _newest, const AwayReport& _rep
 }
 
 Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels, float _factor,
-                         const MenuState& _state, bool _ported)
+                         const MenuState& _state)
 {
   const float scale = Scale(_widthPixels, _heightPixels, _factor);
   Layout layout;
@@ -3723,63 +3486,37 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
                                     .yUnits = (static_cast<float>(_heightPixels) / scale / 2.0f) - (heightUnits / 2.0f)};
   // The menu is a panel of the canvas in the middle of the screen: its title, its subtitle, what it says, and its buttons,
   // which nothing lights under the pointer.
-  if (_ported)
-  {
-    Neuron::Interaction unpointed;
-    Neuron::Canvas canvas(GameTheme(), _metrics, unpointed, static_cast<float>(_widthPixels) / scale,
-                          static_cast<float>(_heightPixels) / scale);
-    BeginHudPanel(canvas, corner.xUnits, corner.yUnits, MENU_WIDTH, heightUnits);
-    (void)canvas.Label(LineText("Outpost Commander", Typeface::Title, TITLE_LINE_UNITS), GOLD_COLOR, At(PADDING, PADDING));
-    (void)canvas.Label(LineText("A skirmish against the AI", Typeface::Name, NAME_LINE_UNITS), DIM_TEXT_COLOR,
-                       At(PADDING, PADDING + TITLE_LINE_UNITS));
-    float top = PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS;
-    if (connecting)
-    {
-      (void)canvas.Label(
-        LineText(_metrics.Fit(Typeface::Name, std::format("Connecting to {}...", _state.connecting), MENU_WIDTH - (2.0f * PADDING)),
-                 Typeface::Name, NAME_LINE_UNITS),
-        TEXT_COLOR, At(PADDING, top));
-      top += NAME_LINE_UNITS;
-    }
-    for (const std::string& line : notice)
-    {
-      (void)canvas.Label(LineText(line, Typeface::Name, NAME_LINE_UNITS), WARNING_COLOR, At(PADDING, top));
-      top += NAME_LINE_UNITS;
-    }
-    top += BUTTON_GAP;
-    for (std::size_t button = 0; button < buttons.size(); ++button)
-    {
-      (void)canvas.Button(std::format("menu {}", button), ContentOf(layout, buttons[button]),
-                          At(PADDING, top, {.widthUnits = MENU_WIDTH - (2.0f * PADDING), .heightUnits = BUTTON_HEIGHT}));
-      top += BUTTON_HEIGHT + BUTTON_GAP;
-    }
-    canvas.EndPanel();
-    canvas.Finish(layout);
-    PlacePresses(layout, 0);
-    return layout;
-  }
-  (void)Frame(layout, corner.xUnits * scale, corner.yUnits * scale, MENU_WIDTH * scale, heightUnits * scale, scale);
-  Painter paint(layout, _metrics, corner, scale);
-  paint.Text("Outpost Commander", PADDING, PADDING, GOLD_COLOR, Typeface::Title);
-  paint.Text("A skirmish against the AI", PADDING, PADDING + TITLE_LINE_UNITS, DIM_TEXT_COLOR, Typeface::Name);
+  Neuron::Interaction unpointed;
+  Neuron::Canvas canvas(GameTheme(), _metrics, unpointed, static_cast<float>(_widthPixels) / scale,
+                        static_cast<float>(_heightPixels) / scale);
+  BeginHudPanel(canvas, corner.xUnits, corner.yUnits, MENU_WIDTH, heightUnits);
+  (void)canvas.Label(LineText("Outpost Commander", Typeface::Title, TITLE_LINE_UNITS), GOLD_COLOR, At(PADDING, PADDING));
+  (void)canvas.Label(LineText("A skirmish against the AI", Typeface::Name, NAME_LINE_UNITS), DIM_TEXT_COLOR,
+                     At(PADDING, PADDING + TITLE_LINE_UNITS));
   float top = PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS;
   if (connecting)
   {
-    paint.Text(paint.Fit(std::format("Connecting to {}...", _state.connecting), Typeface::Name, MENU_WIDTH - (2.0f * PADDING)), PADDING,
-               top, TEXT_COLOR, Typeface::Name);
+    (void)canvas.Label(
+      LineText(_metrics.Fit(Typeface::Name, std::format("Connecting to {}...", _state.connecting), MENU_WIDTH - (2.0f * PADDING)),
+               Typeface::Name, NAME_LINE_UNITS),
+      TEXT_COLOR, At(PADDING, top));
     top += NAME_LINE_UNITS;
   }
   for (const std::string& line : notice)
   {
-    paint.Text(line, PADDING, top, WARNING_COLOR, Typeface::Name);
+    (void)canvas.Label(LineText(line, Typeface::Name, NAME_LINE_UNITS), WARNING_COLOR, At(PADDING, top));
     top += NAME_LINE_UNITS;
   }
   top += BUTTON_GAP;
-  for (const Button& button : buttons)
+  for (std::size_t button = 0; button < buttons.size(); ++button)
   {
-    AddButton(layout, _metrics, scale, paint.Area(PADDING, top, MENU_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT, CARD_COLOR), button);
+    (void)canvas.Button(std::format("menu {}", button), ContentOf(layout, buttons[button]),
+                        At(PADDING, top, {.widthUnits = MENU_WIDTH - (2.0f * PADDING), .heightUnits = BUTTON_HEIGHT}));
     top += BUTTON_HEIGHT + BUTTON_GAP;
   }
+  canvas.EndPanel();
+  canvas.Finish(layout);
+  PlacePresses(layout, 0);
   return layout;
 }
 
@@ -4502,7 +4239,7 @@ float Hud::StepInterface(float _factor, int _step, const Snapshot* _newest, std:
 
 Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
                      std::span<const PlanePosition> _view, const WindowManager* _windows, float _factor, std::optional<Action> _hovered,
-                     Neuron::Interaction* _interaction, bool _ported)
+                     Neuron::Interaction* _interaction)
 {
   // The windows on the canvas name their widgets afresh each frame (ADR-100).
   Neuron::Interaction unpointed;
@@ -4554,8 +4291,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     }
   }
 
-  // The HUD's panels on the canvas, or, while it moves onto the canvas, as they were before (_ported).
-  if (_ported)
+  // The HUD's panels on the canvas (ADR-100 decision 7).
   {
     Neuron::Canvas hud(GameTheme(), _metrics, interaction, screenWidthUnits, screenHeightUnits);
     LayHud({.canvas = &hud,
@@ -4565,395 +4301,6 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
             .screenWidthUnits = screenWidthUnits,
             .screenHeightUnits = screenHeightUnits},
            _content, _view, scale);
-  }
-  else
-  {
-    const auto frame = [&layout, &_metrics, scale](WindowManager::Point _corner, float _widthUnits, float _heightUnits)
-    {
-      (void)Frame(layout, _corner.xUnits * scale, _corner.yUnits * scale, _widthUnits * scale, _heightUnits * scale, scale);
-      return Painter(layout, _metrics, _corner, scale);
-    };
-    // Whether _action is the one under the pointer, which lights what takes it (ADR-088 decision 1).
-    const auto hovered = [&_hovered](const Action& _action) { return _hovered.has_value() && *_hovered == _action; };
-    const auto addButton = [&layout, &_metrics, scale, &hovered](const Rect& _area, const Button& _button)
-    { AddButton(layout, _metrics, scale, _area, _button, _button.enabled && hovered(_button.action)); };
-
-    // The column under the Ore, its panels one width whatever they hold (ADR-066 decision 3).
-    float columnUnits = COLUMN_LEAST_UNITS;
-    const float queuedUnits = _metrics.Width(Typeface::Figure, COLUMN_WIDEST_QUEUED) + FIT_GAP_UNITS;
-    for (const std::string& name : _content.researchNames)
-      columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, name) + queuedUnits + (2.0f * PADDING));
-    for (const std::string_view line : COLUMN_WIDEST_LINES)
-      columnUnits = std::max(columnUnits, _metrics.Width(Typeface::Name, line) + (2.0f * CHIP_PAD_UNITS) + (2.0f * PADDING));
-
-    // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second, a warning chip when they earn
-    // nothing, since then nothing the player spends comes back.
-    {
-      Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, columnUnits, ORE_PANEL_HEIGHT);
-      paint.GemAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
-      const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
-      const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
-                                                              : std::format("+{:.1f}/s", static_cast<double>(income) / Outpost::HUNDREDTHS);
-      const float incomeTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
-      if (income > 0)
-        paint.RightText(incomeText, columnUnits - PADDING, incomeTop, NUMBERS_COLOR, Typeface::Figure);
-      else
-      {
-        const float chipLeft = columnUnits - PADDING - paint.ChipWidth(incomeText, Typeface::Figure);
-        (void)paint.Chip(incomeText, chipLeft, incomeTop, Typeface::Figure, FIGURE_LINE_UNITS);
-      }
-    }
-
-    // Under the Ore: what the Research Lab and the Shipyards are doing (ADR-066).
-    const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + PANEL_GAP;
-    const float underStatusUnits = underOreUnits + STATUS_PANEL_KEPT_UNITS + PANEL_GAP;
-
-    // Under the status panel's place: the nodes each side holds and each side's tickets, the player's against the enemy's,
-    // "3 : 2", the player's in its color and the enemy's in theirs (ADR-056, ADR-057). Beside "Nodes", in the labels' color,
-    // the Command Station's cap of the map's nodes, "cap 10 of 25" (ADR-064 decision 11). Under the tickets, who the drain
-    // takes from and when they run out, a warning chip when it is the player (ADR-057 decision 8).
-    const auto territoryRows = [](const Territory& _territory)
-    {
-      const bool tickets = _territory.ownTickets.has_value() && _territory.enemyTickets.has_value();
-      return 1.0f + (tickets ? 1.0f : 0.0f) + (_territory.drain.empty() ? 0.0f : 1.0f);
-    };
-    if (_content.territory.has_value())
-    {
-      const Territory& territory = *_content.territory;
-      const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
-      const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(territory) * NAME_LINE_UNITS);
-      Painter paint = frame({.xUnits = MARGIN, .yUnits = underStatusUnits}, columnUnits, heightUnits);
-      const auto row =
-        [&](const std::string& _label, const std::string& _note, const std::string& _own, const std::string& _enemy, float _top)
-      {
-        const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
-        const float right = columnUnits - PADDING;
-        std::string own = std::format("{} : ", _own);
-        const float ownRight = right - paint.Width(_enemy, Typeface::Figure);
-        const float labelRoom = ownRight - paint.Width(own, Typeface::Figure) - PADDING - FIT_GAP_UNITS;
-        std::string label = paint.Fit(_label, Typeface::Name, labelRoom);
-        const float noteLeft = PADDING + paint.Width(label, Typeface::Name) + FIT_GAP_UNITS;
-        paint.Text(std::move(label), PADDING, _top, TEXT_COLOR, Typeface::Name);
-        if (!_note.empty())
-          paint.Text(paint.Fit(_note, Typeface::Name, PADDING + labelRoom - noteLeft), noteLeft, _top, LABEL_COLOR, Typeface::Name);
-        paint.RightText(_enemy, right, figureTop, SideColorOf(_content, Side::Enemy, territory.enemy), Typeface::Figure);
-        paint.RightText(std::move(own), ownRight, figureTop, SideColorOf(_content, Side::Own, _content.player), Typeface::Figure);
-      };
-      const std::string note =
-        territory.cap > 0 ? std::format("cap {} of {}", territory.cap, territory.nodes) : std::format("of {}", territory.nodes);
-      row("Nodes", note, std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes), TERRITORY_INSET_UNITS);
-      float top = TERRITORY_INSET_UNITS + NAME_LINE_UNITS;
-      if (tickets)
-      {
-        row("Tickets", {}, WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)), top);
-        top += NAME_LINE_UNITS;
-      }
-      if (!territory.drain.empty())
-      {
-        if (territory.drainWarns)
-        {
-          const std::string drain = paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
-          (void)paint.Chip(drain, PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
-        }
-        else
-          paint.Text(paint.Fit(territory.drain, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR, Typeface::Name);
-      }
-    }
-
-    // Under the territory: the alerts, newest first, the newest a warning chip whose words line up with the others' (ADR-059,
-    // ADR-085 decision 1).
-    if (!_content.alerts.empty())
-    {
-      const float territoryUnits = _content.territory.has_value()
-                                     ? (2.0f * TERRITORY_INSET_UNITS) + (territoryRows(*_content.territory) * NAME_LINE_UNITS) + PANEL_GAP
-                                     : 0.0f;
-      const float topUnits = underStatusUnits + territoryUnits;
-      const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
-      Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, columnUnits, heightUnits);
-      for (size_t line = 0; line < _content.alerts.size(); ++line)
-      {
-        const float top = TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS);
-        if (line == 0)
-        {
-          std::string newest =
-            paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING) - (2.0f * CHIP_PAD_UNITS));
-          (void)paint.Chip(std::move(newest), PADDING - CHIP_PAD_UNITS, top, Typeface::Name, NAME_LINE_UNITS);
-        }
-        else
-          paint.Text(paint.Fit(_content.alerts[line].first, Typeface::Name, columnUnits - (2.0f * PADDING)), PADDING, top, TEXT_COLOR,
-                     Typeface::Name);
-      }
-    }
-    // The status panel: the Research Lab's line, the Shipyards' and the fleet's, an idle one's IDLE a chip, research's progress
-    // and the fleet against its cap as bars, each line a place to click (ADR-066). It is the column's width.
-    if (!_content.status.empty())
-    {
-      const auto runUnits = [&_metrics](const StatusRun& _run)
-      { return _metrics.Width(Typeface::Name, _run.text) + (_run.chip ? 2.0f * CHIP_PAD_UNITS : 0.0f); };
-      const auto rowUnits = [](const StatusLine& _line)
-      { return NAME_LINE_UNITS + (_line.bar.has_value() && _line.bar->under ? STATUS_BAR_ROW_UNITS : 0.0f); };
-      float heightUnits = 2.0f * TERRITORY_INSET_UNITS;
-      for (const StatusLine& line : _content.status)
-        heightUnits += rowUnits(line);
-      Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, columnUnits, heightUnits);
-      const float right = columnUnits - PADDING;
-      float top = TERRITORY_INSET_UNITS;
-      for (size_t line = 0; line < _content.status.size(); ++line)
-      {
-        const StatusLine& status = _content.status[line];
-        const float lineUnits = rowUnits(status);
-        // The line's row across the panel takes the click, the first and the last reaching to the panel's edge. Under the
-        // pointer it lies on the cards' color, as does any line whose click does the same.
-        const float rowTop = line == 0 ? 0.0f : top;
-        const float rowBottom = line + 1 == _content.status.size() ? heightUnits : top + lineUnits;
-        const Rect row = hovered(status.action) ? paint.Panel(0.0f, rowTop, columnUnits, rowBottom - rowTop, CARD_COLOR)
-                                                : paint.Area(0.0f, rowTop, columnUnits, rowBottom - rowTop, WINDOW_COLOR);
-        paint.Press(row, status.action);
-        // A bar's figure at the line's end, which the words stop short of, with room for a bar beside them.
-        float wordsRight = right;
-        if (status.bar.has_value() && !status.bar->figure.empty())
-        {
-          paint.RightText(status.bar->figure, right, top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR,
-                          Typeface::Figure);
-          wordsRight -= paint.Width(status.bar->figure, Typeface::Figure) + (status.bar->under ? FIT_GAP_UNITS : STATUS_BAR_GAP_UNITS);
-        }
-        // Each run after the one before; a plain run is cut short to leave room for the runs after it, a chip never is.
-        float left = PADDING;
-        for (std::size_t run = 0; run < status.runs.size(); ++run)
-        {
-          const StatusRun& words = status.runs[run];
-          if (words.chip)
-          {
-            left += paint.Chip(words.text, left, top, Typeface::Name, NAME_LINE_UNITS);
-            continue;
-          }
-          float afterUnits = 0.0f;
-          for (std::size_t later = run + 1; later < status.runs.size(); ++later)
-            afterUnits += runUnits(status.runs[later]);
-          std::string text = paint.Fit(words.text, Typeface::Name, wordsRight - left - afterUnits);
-          const float textUnitsSet = paint.Width(text, Typeface::Name);
-          paint.Text(std::move(text), left, top, TEXT_COLOR, Typeface::Name);
-          left += textUnitsSet;
-        }
-        // The bar: under the words, across the panel, or beside them, from their end to its figure; filled for its share.
-        if (status.bar.has_value())
-        {
-          const StatusBar& bar = *status.bar;
-          const float barLeft = bar.under ? PADDING : left + STATUS_BAR_GAP_UNITS;
-          const float barWidth = (bar.under ? right : wordsRight) - barLeft;
-          const float thickness = bar.under ? STATUS_UNDER_BAR_UNITS : STATUS_BESIDE_BAR_UNITS;
-          const float barTop =
-            bar.under ? top + NAME_LINE_UNITS + ((STATUS_BAR_ROW_UNITS - thickness) / 2.0f) : top + ((NAME_LINE_UNITS - thickness) / 2.0f);
-          if (barWidth > 0.0f)
-          {
-            paint.Panel(barLeft, barTop, barWidth, thickness, BAR_TRACK_COLOR);
-            if (bar.share > 0.0f)
-              paint.Panel(barLeft, barTop, barWidth * std::min(bar.share, 1.0f), thickness, BAR_FILL_COLOR);
-          }
-        }
-        top += lineUnits;
-      }
-    }
-
-    // The top row's middle (Game §interface.hud; ADR-015 decision 4): the hint, and the banner under it, stand in the middle
-    // of the screen while they clear the column at its left and the tag, at its widest and tallest, at its right. Where they
-    // do not, as the interface's scale grows, they stand aside: under the top row, in the middle of the room right of the
-    // column, the banner under the hint.
-    const bool tagged = _content.connection.has_value();
-    const float tagUnits =
-      tagged ? std::max(CONNECTION_MOST_UNITS, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS)) +
-                 (2.0f * PADDING)
-             : 0.0f;
-    const float tagHeightUnits = (2.0f * TERRITORY_INSET_UNITS) + (2.0f * NAME_LINE_UNITS);
-    const float roomLeftUnits = MARGIN + columnUnits + PANEL_GAP;
-    const float roomRightUnits = screenWidthUnits - MARGIN - (tagged ? tagUnits + PANEL_GAP : 0.0f);
-    const float underTopRowUnits = MARGIN + std::max(ORE_PANEL_HEIGHT, tagged ? tagHeightUnits : 0.0f) + PANEL_GAP;
-    const auto clears = [&](float _widthUnits)
-    {
-      const float left = (screenWidthUnits - _widthUnits) / 2.0f;
-      return left >= roomLeftUnits && left + _widthUnits <= roomRightUnits;
-    };
-    const auto asideLeft = [&](float _widthUnits) { return (roomLeftUnits + screenWidthUnits - MARGIN - _widthUnits) / 2.0f; };
-    // Where the banner stands under a hint that stands aside.
-    std::optional<WindowManager::Point> underHint;
-
-    // Top-middle anchor: what a click on the ground will do.
-    if (!_content.hint.empty())
-    {
-      const WindowManager::Point at = clears(HINT_PANEL_WIDTH)
-                                        ? WindowManager::Point{.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}
-                                        : WindowManager::Point{.xUnits = asideLeft(HINT_PANEL_WIDTH), .yUnits = underTopRowUnits};
-      if (at.yUnits > MARGIN)
-        underHint = WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = at.yUnits + ORE_PANEL_HEIGHT + PANEL_GAP};
-      Painter paint = frame(at, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
-      paint.Text(paint.Fit(_content.hint, Typeface::Name, HINT_PANEL_WIDTH - (2.0f * PADDING)), PADDING,
-                 (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
-    }
-
-    // Top-right anchor: where the match runs, "Local skirmish" or "Server 203.0.113.5:4433 · 42 ms", and under it, once no
-    // snapshot has come for SILENT_SECONDS, a warning chip, "No word from the server · 5 s" (ADR-086). The round trip is as
-    // wide as 999 ms whatever it reads, so that the tag's edge stands still as it changes. It takes no click.
-    if (_content.connection.has_value())
-    {
-      const Connection& connection = *_content.connection;
-      std::string where = connection.server.empty() ? std::string("Local skirmish") : std::format("Server {}", connection.server);
-      std::string roundTrip;
-      float roundTripUnits = 0.0f;
-      if (connection.roundTripMilliseconds.has_value())
-      {
-        roundTrip = std::format("{}{} ms", DOT, std::clamp(*connection.roundTripMilliseconds, 0, 999));
-        roundTripUnits = _metrics.Width(Typeface::Name, CONNECTION_WIDEST_ROUND_TRIP);
-      }
-      // Joining a lost connection again says so in the silence's place (ADR-078 decision 10).
-      const bool silent = connection.silentSeconds >= SILENT_SECONDS || connection.reconnectingSeconds.has_value();
-      // An address too long is cut short, so that with its round trip the tag is no wider than CONNECTION_MOST_UNITS.
-      const float whereUnits = std::min(_metrics.Width(Typeface::Name, where), CONNECTION_MOST_UNITS - roundTripUnits);
-      float textUnits = whereUnits + roundTripUnits;
-      if (silent)
-        textUnits = std::max(textUnits, _metrics.Width(Typeface::Name, CONNECTION_WIDEST_SILENCE) + (2.0f * CHIP_PAD_UNITS));
-      const float widthUnits = textUnits + (2.0f * PADDING);
-      const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + ((silent ? 2.0f : 1.0f) * NAME_LINE_UNITS);
-      Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - widthUnits, .yUnits = MARGIN}, widthUnits, heightUnits);
-      paint.Text(paint.Fit(where, Typeface::Name, whereUnits) + roundTrip, PADDING, TERRITORY_INSET_UNITS, TEXT_COLOR, Typeface::Name);
-      if (silent)
-      {
-        const std::string warning = connection.reconnectingSeconds.has_value()
-                                      ? std::format("Reconnecting{}{} s", DOT, std::clamp(*connection.reconnectingSeconds, 0, 999))
-                                      : std::format("No word from the server{}{} s", DOT, std::min(connection.silentSeconds, 999));
-        (void)paint.Chip(warning, PADDING - CHIP_PAD_UNITS, TERRITORY_INSET_UNITS + NAME_LINE_UNITS, Typeface::Name, NAME_LINE_UNITS);
-      }
-    }
-
-    // Top-middle anchor, under the hint: how the match ended, and the way back to the menu.
-    if (_content.outcome.has_value())
-    {
-      const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
-      const WindowManager::Point at = underHint.value_or(
-        clears(BANNER_WIDTH) ? WindowManager::Point{.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = underOreUnits}
-                             : WindowManager::Point{.xUnits = asideLeft(BANNER_WIDTH), .yUnits = underTopRowUnits});
-      Painter paint = frame(at, BANNER_WIDTH, heightUnits);
-      const float room = BANNER_WIDTH - (2.0f * PADDING);
-      paint.Text(paint.Fit(_content.outcome->title, Typeface::Title, room), PADDING, PADDING, GOLD_COLOR, Typeface::Title);
-      paint.Text(paint.Fit(_content.outcome->detail, Typeface::Name, room), PADDING, PADDING + TITLE_LINE_UNITS, TEXT_COLOR,
-                 Typeface::Name);
-      addButton(paint.Area(PADDING, PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP, BANNER_WIDTH - (2.0f * PADDING),
-                           BUTTON_HEIGHT, CARD_COLOR),
-                {.label = "Back to menu", .action = {.kind = ActionKind::BackToMenu}});
-    }
-
-    // Bottom-middle anchor: the selection and, against its right edge, the buttons it offers, bottom-aligned, the pair
-    // centered at the bottom so that the two read as one, and never over the minimap (ADR-088 decision 2). The
-    // selection's first line is in the title face and the rest in the name face, in a panel as wide as its longest line,
-    // within its bounds; a line longer than the widest panel holds is cut short. A button's label holds the name and the
-    // cost, split at '|', and the buttons stack downward from the panel's top.
-    const auto faceOf = [](size_t _line) { return _line == 0 ? Typeface::Title : Typeface::Name; };
-    float selectionUnits = 0.0f;
-    if (!_content.selection.empty())
-    {
-      float textUnits = 0.0f;
-      for (size_t line = 0; line < _content.selection.size(); ++line)
-        textUnits = std::max(textUnits, _metrics.Width(faceOf(line), _content.selection[line]));
-      selectionUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
-    }
-    // The buttons' panel holds the buttons and, at its foot, the selection's retreat (ADR-088 decision 3).
-    const bool buttonsPanel = !_content.buttons.empty() || _content.retreat.has_value();
-    const float buttonsUnits = buttonsPanel ? BUTTON_PANEL_WIDTH : 0.0f;
-    float pairLeft = (screenWidthUnits - selectionUnits - buttonsUnits) / 2.0f;
-    if (_content.mapSizeMeters > 0.0f)
-      pairLeft = std::max(pairLeft, MARGIN + MINIMAP_SIZE + PANEL_GAP);
-    if (!_content.selection.empty())
-    {
-      const float widthUnits = selectionUnits;
-      const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
-      // A selection's ships' bars stand in rows under the lines, or else its one bar does.
-      const size_t barRows = (_content.shipBars.size() + SHIP_BARS_A_ROW - 1) / SHIP_BARS_A_ROW;
-      float barUnits = 0.0f;
-      if (barRows > 0)
-      {
-        const auto rows = static_cast<float>(barRows);
-        barUnits = HEALTH_BAR_GAP_UNITS + (rows * SHIP_BAR_HEIGHT_UNITS) + ((rows - 1.0f) * SHIP_BAR_GAP_UNITS);
-      }
-      else if (_content.selectionHealth.has_value())
-        barUnits = HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS;
-      const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
-      Painter paint = frame({.xUnits = pairLeft, .yUnits = screenHeightUnits - MARGIN - heightUnits}, widthUnits, heightUnits);
-      const float room = widthUnits - (2.0f * PADDING);
-      paint.Text(paint.Fit(_content.selection.front(), Typeface::Title, room), PADDING, PADDING, TEXT_COLOR, Typeface::Title);
-      for (size_t line = 1; line < _content.selection.size(); ++line)
-      {
-        paint.Text(paint.Fit(_content.selection[line], Typeface::Name, room), PADDING,
-                   PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1)), NUMBERS_COLOR, Typeface::Name);
-      }
-      const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
-      // A ship's bar fills from the left as its health does, outlined in the text's color while the ship goes back to be
-      // repaired, or in the edge's under the pointer otherwise; a click on it selects that ship alone (ADR-088 decision 4).
-      for (size_t i = 0; i < _content.shipBars.size(); ++i)
-      {
-        const ShipBar& bar = _content.shipBars[i];
-        const size_t row = i / SHIP_BARS_A_ROW;
-        const size_t column = i % SHIP_BARS_A_ROW;
-        const float left = PADDING + (static_cast<float>(column) * (SHIP_BAR_WIDTH_UNITS + SHIP_BAR_GAP_UNITS));
-        const float top = barTop + (static_cast<float>(row) * (SHIP_BAR_HEIGHT_UNITS + SHIP_BAR_GAP_UNITS));
-        const Action select{.kind = ActionKind::Select, .entity = bar.ship};
-        const Rect track = paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS, SHIP_BAR_HEIGHT_UNITS, BAR_TRACK_COLOR);
-        const float share = std::clamp(bar.share, 0.0f, 1.0f);
-        if (share > 0.0f)
-          paint.Panel(left, top, SHIP_BAR_WIDTH_UNITS * share, SHIP_BAR_HEIGHT_UNITS, HealthColor(share));
-        if (bar.retreating || hovered(select))
-        {
-          paint.Outline(left - LINE_UNITS, top - LINE_UNITS, SHIP_BAR_WIDTH_UNITS + (2.0f * LINE_UNITS),
-                        SHIP_BAR_HEIGHT_UNITS + (2.0f * LINE_UNITS), bar.retreating ? TEXT_COLOR : HOVER_EDGE_COLOR);
-        }
-        paint.Press(track, select);
-      }
-      if (barRows == 0 && _content.selectionHealth.has_value())
-      {
-        const float share = std::clamp(*_content.selectionHealth, 0.0f, 1.0f);
-        const float barWidth = widthUnits - (2.0f * PADDING);
-        paint.Panel(PADDING, barTop, barWidth, HEALTH_BAR_UNITS, BAR_TRACK_COLOR);
-        if (share > 0.0f)
-          paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS, HealthColor(share));
-      }
-    }
-    if (buttonsPanel)
-    {
-      const auto count = static_cast<float>(_content.buttons.size());
-      const float buttonsHeight = count > 0.0f ? (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP) : 0.0f;
-      const float retreatTop = PADDING + buttonsHeight + (count > 0.0f ? BUTTON_GAP : 0.0f);
-      const float heightUnits =
-        _content.retreat.has_value() ? retreatTop + RETREAT_LABEL_UNITS + BUTTON_HEIGHT + PADDING : (2.0f * PADDING) + buttonsHeight;
-      Painter paint =
-        frame({.xUnits = pairLeft + selectionUnits, .yUnits = screenHeightUnits - MARGIN - heightUnits}, BUTTON_PANEL_WIDTH, heightUnits);
-      for (size_t i = 0; i < _content.buttons.size(); ++i)
-      {
-        addButton(paint.Area(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)),
-                             BUTTON_PANEL_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT, CARD_COLOR),
-                  _content.buttons[i]);
-      }
-      // The selection's retreat: RETREAT, with MIXED at the right while its ships differ, over a row of three, its setting
-      // lit, each a press that sets it for every ship.
-      if (_content.retreat.has_value())
-      {
-        const RetreatChoice& retreat = *_content.retreat;
-        paint.Text("RETREAT", PADDING, retreatTop, ROW_LABEL_COLOR, Typeface::Label, paint.Tracking());
-        if (retreat.mixed)
-          paint.RightText("MIXED", BUTTON_PANEL_WIDTH - PADDING, retreatTop, NUMBERS_COLOR, Typeface::Label, paint.Tracking());
-        RetreatRow(paint, PADDING, retreatTop + RETREAT_LABEL_UNITS, BUTTON_PANEL_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT,
-                   retreat.mixed ? std::nullopt : std::optional(retreat.setting), ActionKind::SetRetreat, Typeface::Name, 0.0f, _hovered);
-      }
-    }
-
-    // Bottom-left anchor: the minimap, with every mark and the camera's view.
-    if (_content.mapSizeMeters > 0.0f)
-    {
-      const float size = MINIMAP_SIZE * scale;
-      const float left = MARGIN * scale;
-      const float top = height - ((MARGIN + MINIMAP_SIZE) * scale);
-      (void)Frame(layout, left, top, size, size, scale);
-      const float inner = (MINIMAP_SIZE - (2.0f * MINIMAP_PADDING)) * scale;
-      layout.minimap = {left + (MINIMAP_PADDING * scale), top + (MINIMAP_PADDING * scale), inner, inner, MAP_COLOR};
-      DrawMap(layout, _content, _view, scale);
-    }
   }
 
   // The floating windows (ADR-031), over everything else, back to front: those the manager has open, where it left them,
