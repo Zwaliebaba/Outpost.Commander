@@ -205,7 +205,7 @@ The overseer itself: an executable of its own, its window and its end of the cha
 
 ### As built
 
-- **The application** is [ADR-102](../ADR/ADR-102-the-overseer-application.md); [ADR-002](../ADR/ADR-002-authoritative-server.md)'s diagram, table and boundary, [ADR-006](../ADR/ADR-006-renderer-shape.md) decision 1, [ADR-100](../ADR/ADR-100-the-canvas.md)'s theme and widgets, the Style Guide, AGENTS.md §2, the Glossary and Game §session.overseer are edited for it.
+- **The application** is [ADR-103](../ADR/ADR-103-the-overseer-application.md); [ADR-002](../ADR/ADR-002-authoritative-server.md)'s diagram, table and boundary, [ADR-006](../ADR/ADR-006-renderer-shape.md) decision 1, [ADR-100](../ADR/ADR-100-the-canvas.md)'s theme and widgets, the Style Guide, AGENTS.md §2, the Glossary and Game §session.overseer are edited for it.
 - **`Neuron::Window` also takes whether it holds the cursor** while full screen: the overseer has no edge scroll, and leaves it free.
 - **The tiles are five, not six:** the process's working set, its share of a core and the disk free share one, so that every tile's detail line fits it on the reference frame.
 - **A seat's color marks its row,** a bar at its left, and its words stay in the text's color: a side's color on the picked row's face would fall under 4.5:1.
@@ -232,7 +232,7 @@ What the overview lacks after OV3: what needs the owner's attention, who played 
   - **The welcome carries the lanes' records** (owner, 2026-10-28): the universe log's `seat`, `start` and `battle` records of the last 24 hours of universe time, and each seat's last hand-over before them, which says who played it as the day began; with the seconds of ticks between two saves, which what needs attention measures the last save by (OV4.2).
   - **The server reads them from the whole of `Universe.log` once,** as the link is made, and keeps them as the log writes them, so that an overseer that connects days later is told the day before it; a recovery's `start` drops what the log wrote past the tick it came back to. The rule is one helper, in `GameProtocol`, which the link and the overseer's model both keep their lanes by.
   - **The overseer's model keeps them,** the welcome's and every such record the stream brings, for the day that ends at the newest tick it was told of.
-- **ADR:** [ADR-101](../ADR/ADR-101-the-overseers-channel.md) decisions 3 and 7; [ADR-102](../ADR/ADR-102-the-overseer-application.md) decision 6.
+- **ADR:** [ADR-101](../ADR/ADR-101-the-overseers-channel.md) decisions 3 and 7; [ADR-103](../ADR/ADR-103-the-overseer-application.md) decision 6.
 - **Acceptance:** `LaneRecordsTests`: a record's kind and tick, the day and each seat's hand-over before it, and what a recovery went back past; `OverseerProtocolTests` with the welcome's new fields; `UniverseLogTests.ReadsTheLanesRecords`; `OverseerLinkTests.WelcomesWithTheLanesRecords`, over QUIC; `OverseerModelTests.KeepsADayOfTheLanesRecords`.
 - **Verify:** the checkers; the container's tests; CI.
 
@@ -243,7 +243,7 @@ What the overview lacks after OV3: what needs the owner's attention, who played 
   - **What needs attention,** from rules over `Health` and the log whose thresholds live in one place (`OverseerAttention.h`): a chip for what to act on now, a game of another build refused within the hour, the disk under 5 GB, the last save older than two of its intervals (ADR-085 decision 1; ADR-066 decision 2); plain text for what to know, a seat's backlog grown for 30 s, a round trip over 250 ms at the 95th percentile of the last minute, loss over 2% in the last minute, a tick over 5 ms in the last minute, a seat that has waited over 10 minutes for its start, a deputy that has played a seat for over 24 hours, and every battle under way; and the checks that pass, so that a quiet list says all is well.
   - **The seat table's filter for what needs a look,** the seats that a rule names.
   - **Who played:** a lane a player's seat over the last day of universe time, solid in its color while its player played it and hatched while its deputy did, each recovery a mark across the lanes; and a lane of battles, each mark filled when a player was present and hollow when only deputies and AI fought. AI empires have no lane.
-- **ADR:** ADR-102, the overview.
+- **ADR:** ADR-103, the overview.
 - **Acceptance:** `OverseerAttentionTests`: each rule firing and passing; `OverseerScreenTests`: the attention panel's chips, text and quiet list, the filter, the lanes, and the guards.
 - **Verify:** the checkers; the container's tests; CI; the owner's run.
 
@@ -251,7 +251,7 @@ What the overview lacks after OV3: what needs the owner's attention, who played 
 
 - **Proposal:** §3, the map.
 - **Scope:** the universe's one system as the minimap draws it, sharing its drawing (`Hud::DrawMinimap`): the sectors by holder, suppressed and cut off, and the ships, structures, ore and derelicts, in each seat's color as the seat table marks it. It shows full sight, or the picked seat's own, and an "All" cell over it gives full sight back (owner, 2026-10-27). No fog is drawn over a seat's sight: its snapshot holds only what the seat sees.
-- **ADR:** ADR-102, the overview; [ADR-100](../ADR/ADR-100-the-canvas.md) decision 7, the minimap shared.
+- **ADR:** ADR-103, the overview; [ADR-100](../ADR/ADR-100-the-canvas.md) decision 7, the minimap shared.
 - **Acceptance:** `OverseerScreenTests`: the map's marks in full sight and in a seat's, the "All" cell, and the guards.
 - **Verify:** the checkers; the container's tests; CI; the owner's run against a running universe.
 

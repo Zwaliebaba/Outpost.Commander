@@ -548,7 +548,7 @@ void FilterCells(Neuron::Canvas& _canvas, std::string_view _id, const std::array
   _canvas.Cells(_id, words, payloads, _picked, CELL_UNITS, {.gapUnits = CELL_GAP_UNITS});
 }
 
-// What needs attention (ADR-102 decision 7): a chip for each thing to act on, a line for each to know, and the checks that
+// What needs attention (ADR-103 decision 7): a chip for each thing to act on, a line for each to know, and the checks that
 // pass under them, the list headed "All well." when nothing is to be acted on or known; scrolled when it runs past its panel.
 void LayAttention(Neuron::Canvas& _canvas, std::span<const Outpost::Attention> _attention, bool _told)
 {
@@ -583,7 +583,7 @@ void LayAttention(Neuron::Canvas& _canvas, std::span<const Outpost::Attention> _
   _canvas.EndPanel();
 }
 
-// The map (ADR-102 decision 7): the heading says whose sight the view shows, full sight or a seat's, beside a cell that gives
+// The map (ADR-103 decision 7): the heading says whose sight the view shows, full sight or a seat's, beside a cell that gives
 // full sight back, lit while no seat is picked; under them the square the minimap's drawing goes into once the canvas has
 // placed it, which this returns, none while there is no view to draw.
 std::size_t LayMap(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, const OverseerScreen& _screen)
@@ -713,7 +713,7 @@ void EndLane(Neuron::Canvas& _canvas)
   _canvas.Tree().End();
 }
 
-// Who played (ADR-102 decision 7): a lane a player's seat over the day of universe time that ends at the newest tick, solid
+// Who played (ADR-103 decision 7): a lane a player's seat over the day of universe time that ends at the newest tick, solid
 // in its color while its player played it and hatched while its deputy did, each recovery a mark across it; and a lane of
 // battles, each mark filled when a player was present and hollow when only deputies and AI fought. AI empires have no lane.
 void LayWhoPlayed(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, const OverseerScreen& _screen)

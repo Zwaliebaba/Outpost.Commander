@@ -521,6 +521,7 @@ void Outpost::GameClient::ClearMatch()
   m_shardBatches.clear();
   m_controls = PlayerControls();
   m_hovered.reset();
+  m_fleets.Clear();
   m_designer = Designer();
   m_fog = FogOfWar();
   m_territory = {};
@@ -681,11 +682,12 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                   return _event.kind == Neuron::InputEventKind::ButtonDown &&
                          m_interaction.Dismiss(m_hudLayout, static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels));
                 });
-  // Esc cancels a structure being placed first, which the controls do; else it closes the front window, and then is the
-  // window's, not the controls' (ADR-031 decision 5); in a universe, with no window to close and nothing armed for the
-  // controls to cancel, it opens the leave window (ADR-078 decision 11). D, P and R open or close the designer, the
-  // production window and the research window, F1 the Controls window (ADR-068 decision 4), O the orders window (ADR-080
-  // decision 9), and B the build window (ADR-031 decision 6). Space moves the camera to the newest alert (ADR-059).
+  // Esc cancels a structure being placed first, and then turns the command card's build mode off, which the controls do
+  // (ADR-088 decision 2); else it closes the front window, and then is the window's, not the controls' (ADR-031 decision
+  // 5); in a universe, with no window to close and nothing armed for the controls to cancel, it opens the leave window
+  // (ADR-078 decision 11). D, P and R open or close the designer, the production window and the research window, F1 the
+  // Controls window (ADR-068 decision 4), and O the orders window (ADR-080 decision 9). Space moves the camera to the
+  // newest alert (ADR-059).
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
@@ -693,9 +695,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     std::optional<WindowKind> toggled;
     if (const auto row = std::ranges::find(WINDOWS, event->key, &WindowRow::key); keyDown && event->key != 0 && row != WINDOWS.end())
       toggled = row->kind;
-    if (keyDown && event->key == KEY_CANCEL && !m_controls.Placing().has_value() && m_windows.CloseFront())
+    const bool controlsCancel = m_controls.Placing().has_value() || m_controls.IsBuilding();
+    if (keyDown && event->key == KEY_CANCEL && !controlsCancel && m_windows.CloseFront())
       event = input.events.erase(event);
-    else if (keyDown && event->key == KEY_CANCEL && !m_server.empty() && !m_controls.IsArmed())
+    else if (keyDown && event->key == KEY_CANCEL && !m_server.empty() && !controlsCancel && !m_controls.IsArmed())
     {
       m_windows.Open(WindowKind::Leave);
       event = input.events.erase(event);
@@ -730,6 +733,21 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   if (!m_windows.IsDragging())
     PlaceKeptWindows();
 
+  // A press on one of the player's own plates selects its fleet, Shift adding it to the selection, and goes no further
+  // (ADR-102 decision 2).
+  std::erase_if(input.events,
+                [this](const Neuron::InputEvent& _event)
+                {
+                  if (_event.kind != Neuron::InputEventKind::ButtonDown || _event.key != VK_LBUTTON || m_view.IsEmpty())
+                    return false;
+                  const std::optional<std::uint32_t> plate =
+                    m_hudLayout.PlateAt(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels));
+                  if (!plate.has_value())
+                    return false;
+                  if (const ScreenFleets::Fleet* fleet = m_fleets.Find(plate.value_or(0)); fleet != nullptr)
+                    m_controls.SelectFleet(fleet->ships, _event.shift);
+                  return true;
+                });
   // A press on the HUD is the HUD's, not an order or a selection in the world; releases still reach the controls, so
   // that a drag begun in the world ends wherever it is let go.
   std::erase_if(input.events,
@@ -771,23 +789,51 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                                          hovered, m_ticksPerSecond, armed);
     content.fog = m_fog.CellsPerSide() > 0;
     content.sideColors = Hud::SideColorsOf(m_catalog);
-    // The bars over the entities that show one, each placed by the camera above its model on the screen, for the HUD to lay
-    // out (ADR-088 decision 5).
+    // The bars over the entities that show one, and the plates over the fleets, each placed by the camera above its model
+    // on the screen, for the HUD to lay out (ADR-088 decision 5). Far out, unless Alt is held, a fleet's plate stands for
+    // its ships' bars, and only the ship under the pointer shows its own; close in, the ships show their bars as the
+    // structures do (ADR-102 decision 3).
+    const bool closeIn = m_camera.ViewWidthMeters() <= Hud::PLATES_FROM_VIEW_WIDTH_METERS;
+    const bool plates = !closeIn && !m_everyHealthBar;
+    const std::optional<EntityId> pointedShip =
+      m_hudLayout.Covers(cursor.x, cursor.y) ? std::nullopt
+                                             : PickShip(m_entities, m_camera, m_viewport, cursor, [](const EntityView&) { return true; });
+    std::vector<ScreenFleets::Ship> seen;
     for (const EntityView& entity : m_entities)
     {
       const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
       const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
-      const std::optional<Hud::EntityBar> shown = Hud::BarOver(entity, {}, back, m_everyHealthBar);
-      if (!shown.has_value())
+      const std::optional<Hud::EntityBar> shown =
+        Hud::BarOver(entity, {}, back, {.every = m_everyHealthBar, .closeIn = closeIn, .pointed = pointedShip == entity.id});
+      const bool fleeted = plates && entity.kind == EntityKind::Ship && !entity.remembered;
+      if (!shown.has_value() && !fleeted)
         continue;
       const std::array<DirectX::XMFLOAT3, 8> corners = BoundsCorners(entity);
       const std::optional<DirectX::XMFLOAT2> foot = m_camera.PixelAbove(entity.position, corners, m_viewport);
       if (!foot.has_value())
         continue;
-      Hud::EntityBar bar = shown.value_or(Hud::EntityBar{});
-      bar.footPixels = foot.value_or(DirectX::XMFLOAT2{});
-      content.entityBars.push_back(bar);
+      if (shown.has_value())
+      {
+        Hud::EntityBar bar = shown.value_or(Hud::EntityBar{});
+        bar.footPixels = foot.value_or(DirectX::XMFLOAT2{});
+        content.entityBars.push_back(bar);
+      }
+      if (fleeted)
+        seen.push_back({.id = entity.id,
+                        .owner = entity.owner,
+                        .position = entity.position,
+                        .radiusMeters = entity.radiusMeters,
+                        .footPixels = foot.value_or(DirectX::XMFLOAT2{})});
     }
+    if (plates)
+    {
+      // The plates are laid out at the interface's scale, which their count is drawn at (ADR-102 decision 2).
+      m_fleets.Update(seen, {Hud::PLATE_WIDTH_UNITS * scale, Hud::PLATE_HEIGHT_UNITS * scale}, _elapsedSeconds);
+      for (const ScreenFleets::Fleet& fleet : m_fleets.Fleets())
+        content.plates.push_back(Hud::PlateOver(fleet, m_view.Newest(), m_entities, content.sideColors));
+    }
+    else
+      m_fleets.Clear();
     content.connection = Hud::Connection{.server = m_server,
                                          .silentSeconds = static_cast<std::int32_t>(m_silentSeconds),
                                          .roundTripMilliseconds = m_server.empty() ? std::nullopt : m_roundTripMilliseconds,
@@ -821,8 +867,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_away.reset();
     if (m_away.has_value())
       content.away = Hud::DescribeAway(m_view.Newest(), *m_away, m_awayTick, m_ticksPerSecond);
-    // The structures the selected Constructors build, while the build window is open (ADR-031 decision 6).
-    if (m_windows.IsOpen(WindowKind::Build))
+    // The structures the selected Constructors build, while the command card is in build mode (ADR-088 decision 2).
+    if (m_controls.IsBuilding())
       content.build = Hud::DescribeBuild(m_view.Newest(), m_entities, selected);
     // The scheduled order the selected ships wait on, on their panel (ADR-080 decision 9).
     if (std::optional<std::string> pending = PendingOrderLine(selected, m_entities, m_view.Newest(), m_clock);
@@ -987,7 +1033,7 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     m_controls.ArmPlacement(_action.structure, m_entities);
     break;
   case Hud::ActionKind::OpenBuild:
-    ToggleWindow(WindowKind::Build);
+    m_controls.ToggleBuilding(m_entities);
     break;
   case Hud::ActionKind::Queue:
     for (std::uint32_t ship = 0; ship < _action.count; ++ship)
@@ -1450,9 +1496,11 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   // The layout's own scale, which its font size was set by.
   const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
   m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, scale);
-  // The bars over the entities, under every panel (ADR-088 decision 5).
+  // The bars over the entities, and then the plates over the fleets, under every panel (ADR-088 decision 5; ADR-102
+  // decision 2).
   for (const Hud::Rect& bar : m_hudLayout.bars)
     m_ui.FillRect(bar.left, bar.top, bar.width, bar.height, bar.color);
+  m_ui.Draw(m_hudLayout.plates, {});
   // The HUD, then each window back to front: each layer's panels, then its lines, then its sprites, then its texts (ADR-031).
   // The only image is the minimap's fog: the fog's texture holds the grid in its corner, cell (x, z) at texel (x, z), and
   // the minimap's top is the map's far edge in z (ADR-052).

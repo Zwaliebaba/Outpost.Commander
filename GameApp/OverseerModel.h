@@ -9,7 +9,7 @@ struct HeardHealth
   HealthMessage health;
 };
 
-// What the overseer knows of its universe, from what the server said on its channel (ADR-101, ADR-102): the welcome; the
+// What the overseer knows of its universe, from what the server said on its channel (ADR-101, ADR-103): the welcome; the
 // newest Health and the last hour of them; the universe log's records, and those its lanes are drawn from over the last day;
 // the newest view, whole; and how the server ended, once it has said. It holds no connection, so that a test hands it messages as bytes, and what it knew stays as it was
 // while no connection brings more. One thread at a time.

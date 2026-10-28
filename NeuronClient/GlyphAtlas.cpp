@@ -25,6 +25,15 @@ constexpr float SPRITE_LINE_SHARE = 1.0f / 12.0f;
 // A cut stone's corners as shares of its square, y down, clockwise as the screen shows them: its flat top, its widest on the
 // right, its point, and its widest on the left.
 constexpr std::array<std::array<float, 2>, 5> GEM_CORNERS{{{0.28f, 0.14f}, {0.72f, 0.14f}, {0.97f, 0.4f}, {0.5f, 0.94f}, {0.03f, 0.4f}}};
+// A chevron as shares of its square: half its width, how far its arms drop for each unit out from its point, its stroke,
+// and how far apart stacked chevrons stand.
+constexpr float CHEVRON_HALF_WIDTH_SHARE = 0.36f;
+constexpr float CHEVRON_SLOPE = 0.55f;
+constexpr float CHEVRON_STROKE_SHARE = 0.13f;
+constexpr float CHEVRON_STEP_SHARE = 0.24f;
+// A plus's bars as shares of its square: half their length, and their width.
+constexpr float PLUS_HALF_LENGTH_SHARE = 0.36f;
+constexpr float PLUS_STROKE_SHARE = 0.2f;
 
 DWRITE_FONT_STRETCH StretchOf(Neuron::FontStretch _stretch) noexcept
 {
@@ -74,6 +83,39 @@ float InsideConvex(std::span<const std::array<float, 2>> _corners, float _extent
   }
   return inside;
 }
+
+// How far (_x, _y) lies inside _count chevrons pointing up, stacked and centered in a square of _extent: positive inside.
+float InsideChevrons(int _count, float _extent, float _x, float _y) noexcept
+{
+  const float halfWidth = CHEVRON_HALF_WIDTH_SHARE * _extent;
+  const float halfStroke = std::max(0.5f, std::round(CHEVRON_STROKE_SHARE * _extent) / 2.0f);
+  const float step = CHEVRON_STEP_SHARE * _extent;
+  // The stack's height, from the first point to the last arm's ends, centered in the square.
+  const float height = (static_cast<float>(_count - 1) * step) + (halfWidth * CHEVRON_SLOPE);
+  const float firstPoint = (_extent - height) / 2.0f;
+  const float center = _extent / 2.0f;
+  // The arm's line is y = point + slope |x - center|, and a point's distance from it is its height off it times the
+  // cosine of the arm's angle.
+  const float cosine = 1.0f / std::hypot(1.0f, CHEVRON_SLOPE);
+  float inside = -std::numeric_limits<float>::max();
+  for (int chevron = 0; chevron < _count; ++chevron)
+  {
+    const float point = firstPoint + (static_cast<float>(chevron) * step);
+    const float offLine = std::abs(_y - (point + (CHEVRON_SLOPE * std::abs(_x - center)))) * cosine;
+    inside = std::max(inside, std::min(halfStroke - offLine, halfWidth - std::abs(_x - center)));
+  }
+  return inside;
+}
+
+// How far (_x, _y) lies inside a plus centered in a square of _extent: positive inside.
+float InsidePlus(float _extent, float _x, float _y) noexcept
+{
+  const float halfLength = PLUS_HALF_LENGTH_SHARE * _extent;
+  const float halfStroke = std::max(0.5f, std::round(PLUS_STROKE_SHARE * _extent) / 2.0f);
+  const float alongX = std::abs(_x - (_extent / 2.0f));
+  const float alongY = std::abs(_y - (_extent / 2.0f));
+  return std::max(std::min(halfLength - alongX, halfStroke - alongY), std::min(halfLength - alongY, halfStroke - alongX));
+}
 } // namespace
 
 std::size_t Neuron::GlyphIndexOf(char32_t _character) noexcept
@@ -110,6 +152,11 @@ const Neuron::GlyphAtlas::Glyph& Neuron::GlyphAtlas::Font::For(char32_t _charact
   return glyphs[GlyphIndexOf(_character)];
 }
 
+const Neuron::GlyphAtlas::Glyph* Neuron::GlyphAtlas::Font::HaloFor(char32_t _character) const noexcept
+{
+  return halos.empty() ? nullptr : &halos[GlyphIndexOf(_character)];
+}
+
 float Neuron::GlyphAtlas::Font::Width(std::string_view _text, float _trackingPixels) const noexcept
 {
   float total = 0.0f;
@@ -122,14 +169,87 @@ float Neuron::GlyphAtlas::Font::Width(std::string_view _text, float _trackingPix
   return characters > 1 ? total + (_trackingPixels * static_cast<float>(characters - 1)) : total;
 }
 
+Neuron::GlyphBitmap Neuron::HaloOf(const GlyphBitmap& _glyph, std::uint32_t _reachPixels)
+{
+  GlyphBitmap halo{.width = 0, .height = 0, .offsetX = 0, .offsetY = 0, .advance = _glyph.advance, .coverage = {}};
+  if (_glyph.width == 0 || _glyph.height == 0)
+    return halo;
+  const auto reach = static_cast<std::int32_t>(_reachPixels);
+  halo.width = _glyph.width + (2 * _reachPixels);
+  halo.height = _glyph.height + (2 * _reachPixels);
+  halo.offsetX = _glyph.offsetX - reach;
+  halo.offsetY = _glyph.offsetY - reach;
+  const auto width = static_cast<std::int32_t>(halo.width);
+  const auto height = static_cast<std::int32_t>(halo.height);
+  // Widened: each texel takes the most coverage within the reach of it, in a disc so that the corners stay round.
+  std::vector<std::uint8_t> widened(std::size_t{halo.width} * halo.height, 0);
+  const std::int32_t reachSquared = (reach * reach) + reach;
+  for (std::int32_t row = 0; row < height; ++row)
+  {
+    for (std::int32_t column = 0; column < width; ++column)
+    {
+      std::uint8_t most = 0;
+      for (std::int32_t dy = -reach; dy <= reach; ++dy)
+      {
+        const std::int32_t y = row - reach + dy;
+        if (y < 0 || y >= static_cast<std::int32_t>(_glyph.height))
+          continue;
+        for (std::int32_t dx = -reach; dx <= reach; ++dx)
+        {
+          const std::int32_t x = column - reach + dx;
+          if (x < 0 || x >= static_cast<std::int32_t>(_glyph.width) || (dx * dx) + (dy * dy) > reachSquared)
+            continue;
+          most = std::max(most, _glyph.coverage[(static_cast<std::size_t>(y) * _glyph.width) + static_cast<std::size_t>(x)]);
+        }
+      }
+      widened[(static_cast<std::size_t>(row) * halo.width) + static_cast<std::size_t>(column)] = most;
+    }
+  }
+  // Blurred over the texel and its eight neighbors, so that the halo's edge is soft.
+  halo.coverage.resize(widened.size());
+  for (std::int32_t row = 0; row < height; ++row)
+  {
+    for (std::int32_t column = 0; column < width; ++column)
+    {
+      std::uint32_t sum = 0;
+      for (std::int32_t y = row - 1; y <= row + 1; ++y)
+      {
+        for (std::int32_t x = column - 1; x <= column + 1; ++x)
+        {
+          if (x >= 0 && x < width && y >= 0 && y < height)
+            sum += widened[(static_cast<std::size_t>(y) * halo.width) + static_cast<std::size_t>(x)];
+        }
+      }
+      halo.coverage[(static_cast<std::size_t>(row) * halo.width) + static_cast<std::size_t>(column)] =
+        static_cast<std::uint8_t>((sum + 4) / 9);
+    }
+  }
+  return halo;
+}
+
+std::vector<Neuron::GlyphBitmap> Neuron::HalosOf(const FontBitmaps& _font, float _emPixels, float _haloEms)
+{
+  std::vector<GlyphBitmap> halos;
+  if (_haloEms <= 0.0f)
+    return halos;
+  const auto reach = static_cast<std::uint32_t>(std::max(1L, std::lround(_emPixels * _haloEms)));
+  halos.reserve(_font.glyphs.size());
+  for (const GlyphBitmap& glyph : _font.glyphs)
+    halos.push_back(HaloOf(glyph, reach));
+  return halos;
+}
+
 Neuron::GlyphAtlas Neuron::PackGlyphs(const std::vector<FontBitmaps>& _fonts, const std::vector<GlyphBitmap>& _sprites)
 {
-  // Every bitmap in one list, the fonts' first in their order and then the sprites, so that one pass places them all.
+  // Every bitmap in one list, each font's glyphs and then its halos, in their order, and then the sprites, so that one pass
+  // places them all.
   std::vector<const GlyphBitmap*> bitmaps;
   for (const FontBitmaps& font : _fonts)
   {
     for (const GlyphBitmap& glyph : font.glyphs)
       bitmaps.push_back(&glyph);
+    for (const GlyphBitmap& halo : font.halos)
+      bitmaps.push_back(&halo);
   }
   for (const GlyphBitmap& sprite : _sprites)
     bitmaps.push_back(&sprite);
@@ -204,11 +324,13 @@ Neuron::GlyphAtlas Neuron::PackGlyphs(const std::vector<FontBitmaps>& _fonts, co
   for (const FontBitmaps& font : _fonts)
   {
     const auto count = static_cast<std::ptrdiff_t>(font.glyphs.size());
+    const auto halos = static_cast<std::ptrdiff_t>(font.halos.size());
     atlas.fonts.push_back({.family = font.family,
                            .glyphs = std::vector<GlyphAtlas::Glyph>(next, next + count),
+                           .halos = std::vector<GlyphAtlas::Glyph>(next + count, next + count + halos),
                            .ascent = font.ascent,
                            .lineHeight = font.lineHeight});
-    next += count;
+    next += count + halos;
   }
   atlas.sprites.assign(next, placed.end());
   return atlas;
@@ -333,6 +455,24 @@ Neuron::GlyphBitmap Neuron::DrawSprite(SpriteShape _shape, std::uint32_t _sizePi
         inside = std::min(toEdge, line - toEdge);
         break;
       }
+      case SpriteShape::Disc:
+        inside = (extent / 2.0f) - std::hypot(x - (extent / 2.0f), y - (extent / 2.0f));
+        break;
+      case SpriteShape::Ring:
+        inside = (line / 2.0f) - std::abs(std::hypot(x - (extent / 2.0f), y - (extent / 2.0f)) - ((extent - line) / 2.0f));
+        break;
+      case SpriteShape::Chevron:
+        inside = InsideChevrons(1, extent, x, y);
+        break;
+      case SpriteShape::TwoChevrons:
+        inside = InsideChevrons(2, extent, x, y);
+        break;
+      case SpriteShape::ThreeChevrons:
+        inside = InsideChevrons(3, extent, x, y);
+        break;
+      case SpriteShape::Plus:
+        inside = InsidePlus(extent, x, y);
+        break;
       case SpriteShape::CornerBracket:
       default:
         inside = std::min(std::max(line - x, line - y), std::min(x, y));

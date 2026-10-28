@@ -79,7 +79,7 @@ std::wstring Listed(const std::vector<Outpost::Attention>& _found)
 TEST_CLASS(OverseerAttentionTests)
 {
 public:
-  // ADR-102 decision 7: with nothing to act on or know, every check says it passes, and nothing before a Health.
+  // ADR-103 decision 7: with nothing to act on or know, every check says it passes, and nothing before a Health.
   TEST_METHOD(PassesEveryCheckWhenAllIsWell)
   {
     Assert::IsTrue(Outpost::AttentionOf(Outpost::OverseerModel()).empty(), L"nothing before a welcome and a Health");
@@ -92,7 +92,7 @@ public:
       Assert::IsTrue(Says(found, AttentionLevel::Pass, words), Listed(found).c_str());
   }
 
-  // ADR-102 decision 7, ADR-085 decision 1: what the owner can act on now is a chip: a game of another build refused within the
+  // ADR-103 decision 7, ADR-085 decision 1: what the owner can act on now is a chip: a game of another build refused within the
   // hour, the disk under 5 GB, and the last save older than two of its intervals; and it comes first.
   TEST_METHOD(ActsOnWhatTheOwnerCanFix)
   {
@@ -108,7 +108,7 @@ public:
     Assert::IsTrue(found.front().level == AttentionLevel::Act, L"what to act on first");
   }
 
-  // ADR-102 decision 7: a link wearing down is told: a backlog grown for 30 s, a round trip over 250 ms at the 95th percentile of
+  // ADR-103 decision 7: a link wearing down is told: a backlog grown for 30 s, a round trip over 250 ms at the 95th percentile of
   // the last minute, and loss over 2% in it, each naming its seat.
   TEST_METHOD(TellsOfALinkWearingDown)
   {
@@ -131,7 +131,7 @@ public:
                    L"each naming seat 1");
   }
 
-  // ADR-102 decision 7: a tick over 5 ms in the last minute, a seat that has waited over 10 minutes for its start, a deputy that
+  // ADR-103 decision 7: a tick over 5 ms in the last minute, a seat that has waited over 10 minutes for its start, a deputy that
   // has played a seat for over a day, and every battle under way are told.
   TEST_METHOD(TellsOfLongTicksWaitsDeputiesAndBattles)
   {

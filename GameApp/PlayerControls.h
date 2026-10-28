@@ -12,8 +12,10 @@ namespace Outpost
 //   ships or structures that is damaged or under construction repair or build it (ADR-016 decision 5). A, then a left-click,
 //   attack-moves; Escape cancels it. H, then a left-click, holds the sector clicked in, and T, then a left-click, patrols
 //   to the point clicked (ADR-059 decision 7). S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
-//   centers the camera on it. The HUD arms a structure's placement, which the next left-click on the ground orders the
-//   selected Constructors to build, and which right-click or Escape cancels; Shift keeps it armed for another.
+//   centers the camera on it. B turns the command card's build mode on and off while the selection holds a Constructor, as
+//   its Build button does, and Escape turns it off once nothing is armed (ADR-088 decision 2). The HUD arms a structure's
+//   placement, which the next left-click on the ground orders the selected Constructors to build, and which right-click or
+//   Escape cancels; Shift keeps it armed for another, and build mode stays on.
 class PlayerControls
 {
 public:
@@ -39,6 +41,16 @@ public:
     return m_placing;
   }
 
+  // From the command card's Build button and from B alike (ADR-088 decision 2): turns build mode on while the selection
+  // holds a Constructor, or off. It lasts while the selection holds one.
+  void ToggleBuilding(std::span<const EntityView> _entities);
+
+  // Whether the command card shows the structures the selected Constructors build, in place of its buttons.
+  [[nodiscard]] bool IsBuilding() const noexcept
+  {
+    return m_building;
+  }
+
   // From the HUD: a job for a Shipyard's or the Command Station's queue.
   void Queue(EntityId _producer, DesignId _design);
   // From the HUD: a topic for the Research Lab's queue (ADR-017 decision 1).
@@ -48,6 +60,9 @@ public:
   // From the HUD: _entity selected on its own, as a click on it selects it, and any order armed for the selection before
   // dropped with it (ADR-066 decision 1).
   void SelectAlone(EntityId _entity);
+  // From a fleet's plate: its _ships selected, or added to the selection with _add, and any order armed before dropped
+  // (ADR-102 decision 2).
+  void SelectFleet(std::vector<EntityId> _ships, bool _add);
   // From the HUD's order buttons and from their keys alike (ADR-088 decision 2): arm attack-move, or holding a
   // sector or a patrol, for the next left-click, while the selection holds a ship, dropping whatever was armed before; or
   // stop the selected ships at once. _entities is the interpolated view.
@@ -161,6 +176,7 @@ private:
   bool m_attackMoveArmed = false;
   std::optional<StandingOrder> m_standingArmed;
   std::optional<StructureKind> m_placing;
+  bool m_building = false;
 
   // The left press being held, where it went down and whether it has become a drag.
   std::optional<DirectX::XMFLOAT2> m_pressPixels;

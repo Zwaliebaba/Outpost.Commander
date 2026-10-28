@@ -10,7 +10,7 @@
 
 namespace
 {
-// The overseer (ADR-102): it oversees the universe whose Overseer.json it is given, or the default universe's, in a window of
+// The overseer (ADR-103): it oversees the universe whose Overseer.json it is given, or the default universe's, in a window of
 // its own, drawn as the game's interface is.
 constexpr auto OVERSEER_TITLE = L"Outpost Overseer";
 // Linear color, behind the overview's panels.

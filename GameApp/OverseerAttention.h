@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// How much what the overseer finds needs the owner (ADR-102 decision 7): to be acted on now, a chip (ADR-085 decision 1;
+// How much what the overseer finds needs the owner (ADR-103 decision 7): to be acted on now, a chip (ADR-085 decision 1;
 // ADR-066 decision 2); to be known, in plain text; or a check that passes, so that a quiet list says all is well.
 enum class AttentionLevel : std::uint8_t
 {
@@ -19,7 +19,7 @@ struct Attention
   PlayerId seat;
 };
 
-// The rules' thresholds, in this one place (ADR-102 decision 7): the disk free below which, and how many save intervals past
+// The rules' thresholds, in this one place (ADR-103 decision 7): the disk free below which, and how many save intervals past
 // the last save after which, the owner acts; how long a backlog grows, how slow a round trip at which percentile, how much loss
 // and how long a tick, how long a seat waits for its start and how long a deputy plays, past which the owner is told; and the
 // last minute of Health, one a second, which the link's rules and the tick's look over.

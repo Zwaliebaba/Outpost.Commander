@@ -30,10 +30,10 @@ Task numbers carry the prefix RF, and gates are lettered F.
 | RF2.4 | A click selects another player's structure, for its panel | — | F16 | merged, [#116](https://github.com/Zwaliebaba/Outpost.Commander/pull/116); done, run by the owner on 2026-10-25 |
 | RF3.1 | The HUD draws each side in its own color | — | F1 | merged, [#117](https://github.com/Zwaliebaba/Outpost.Commander/pull/117); done, run by the owner on 2026-10-25 |
 | RF4.1 | A Research Lab and a Defence Platform need a held sector | — | F5 | merged, [#118](https://github.com/Zwaliebaba/Outpost.Commander/pull/118); done, run by the owner on 2026-10-25 |
-| RF5.1 | A refused command is told to the player | — | F10 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a dedicated server |
-| RF5.2 | A waiting scheduled order can be cancelled from the Orders window | RF5.1 | F11 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run |
-| RF5.3 | No away report on a seat's first join | — | F12 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a new universe joined, left and joined again |
-| RF5.4 | Joining a universe says it is connecting | — | F14 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); awaiting a run against a server that answers and one that does not |
+| RF5.1 | A refused command is told to the player | — | F10 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); done, run by the owner on 2026-10-28 |
+| RF5.2 | A waiting scheduled order can be cancelled from the Orders window | RF5.1 | F11 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); done, run by the owner on 2026-10-28 |
+| RF5.3 | No away report on a seat's first join | — | F12 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); done, run by the owner on 2026-10-28 |
+| RF5.4 | Joining a universe says it is connecting | — | F14 | merged, [#119](https://github.com/Zwaliebaba/Outpost.Commander/pull/119); done, run by the owner on 2026-10-28 |
 
 The owner's track, beside the plan:
 
@@ -41,7 +41,7 @@ The owner's track, beside the plan:
 |---|---|---|---|
 | RF-O1 | Rework the Human Command Station's L1–L5 art toward a square plan, and bake it again | F2 | done from the owner's model sheet, and run by the owner on 2026-10-25 |
 | RF-O2 | Remove the Mining Rig's `gun` hardpoint, and bake it again | F8 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); done in the Linux container: `hp_gun` taken out of both sets' sources' glTF, their meshes and buffers left as they were, and both rigs baked again; their vertices and indices are byte for byte the same, and `--check` passes |
-| RF-O3 | Look at the designer's Large hull card at 1080p with Cascadia Mono installed | F15 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); measured in the Linux container through `Hud::Lay` with Cascadia Mono's advances: cut to "1,200 HP · ARM 14 · 2..." at 100% on 1920×1080 and on 2880×1920, and whole in Consolas (BalanceLog.md, 2026-10-25); the cards widened in [#128](https://github.com/Zwaliebaba/Outpost.Commander/pull/128) (F15), whole at every size in both faces (BalanceLog.md, 2026-10-26); awaiting the owner's look |
+| RF-O3 | Look at the designer's Large hull card at 1080p with Cascadia Mono installed | F15 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); accepted at 1920×1080 from a run on 2026-10-28, whole; awaiting the look at 2880×1920 |
 
 ### Milestone order
 

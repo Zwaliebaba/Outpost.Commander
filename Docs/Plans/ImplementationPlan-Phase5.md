@@ -25,20 +25,20 @@ Task numbers continue the Phase 4 plan's, whose last was 34.2. The horizon plan'
 |---|---|---|---|---|
 | 35.1 | A universe's state saved and loaded | — | H8 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
 | 35.2 | The universe's folder: saves, the command log and recovery | 35.1 | H7 | done, [#92](https://github.com/Zwaliebaba/Outpost.Commander/pull/92) |
-| 36.1 | `OutpostServer` and a universe's settings | 35.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
+| 36.1 | `OutpostServer` and a universe's settings | 35.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); done, run by the owner on 2026-10-28 |
 | 36.2 | Seats with tokens, taken again, and a kept certificate | 36.1 | H1 | done, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94) |
-| 36.3 | The client joins a universe | 36.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); awaiting the owner's run |
+| 36.3 | The client joins a universe | 36.2 | H1 | merged, [#94](https://github.com/Zwaliebaba/Outpost.Commander/pull/94); done, run by the owner on 2026-10-28 |
 | 37.1 | The AI starts from any state | — | — | done, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95) |
 | 37.2 | Clients on the server's thread | 35.2 | — | done, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95) |
-| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | merged, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95); awaiting the owner's run |
+| 37.3 | The seat's controller and the keeper | 37.1, 37.2 | H2, H3 | merged, [#95](https://github.com/Zwaliebaba/Outpost.Commander/pull/95); done, run by the owner on 2026-10-28 |
 | 38.1 | The server's events, and alerts read from them | — | H4 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
 | 38.2 | Scheduled orders | 38.1 | H4, H5 | done, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97) |
-| 38.3 | The client's orders window | 38.2 | H5 | merged, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97); awaiting the owner's run |
-| 39.1 | A universe without an end | 37.3 | H6 | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
+| 38.3 | The client's orders window | 38.2 | H5 | merged, [#97](https://github.com/Zwaliebaba/Outpost.Commander/pull/97); done, run by the owner on 2026-10-28 |
+| 39.1 | A universe without an end | 37.3 | H6 | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); done, run by the owner on 2026-10-28 |
 | 39.2 | The universe log and `--universe-run` | 35.2, 37.3 | — | done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98) |
 | 39.3 | The battle matchups | — | — | merged, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's run |
 | 39.4 | W1–W6 | all above | — | the container's part done, [#98](https://github.com/Zwaliebaba/Outpost.Commander/pull/98); awaiting the owner's week |
-| 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting the owner's run |
+| 39.5 | A start that enemy warships hold is not free | 39.1 | H11 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); done, run by the owner on 2026-10-28 |
 
 ### Milestone order
 

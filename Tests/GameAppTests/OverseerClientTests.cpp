@@ -101,7 +101,7 @@ template <typename T> std::vector<T> HeardOf(OverseerServer& _server)
 TEST_CLASS(OverseerClientTests)
 {
 public:
-  // ADR-102: the overseer connects with its file's address and certificate, says hello with its token and then the sight it
+  // ADR-103: the overseer connects with its file's address and certificate, says hello with its token and then the sight it
   // watches, tells the server each view it holds, and, once the connection goes, says why and joins again after
   // REJOIN_INTERVAL. QUIC runs in CI's Windows run only.
   TEST_METHOD(SaysHelloAndTheSightAndJoinsAgain)
