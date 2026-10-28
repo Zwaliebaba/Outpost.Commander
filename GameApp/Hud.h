@@ -803,9 +803,10 @@ public:
   };
 
   // The HUD on a back buffer of one size, in its pixels: the engine's display list (ADR-100), in which layer 0 is the HUD
-  // and layer i + 1 the window windows[i], and what the game keeps beside it. It is drawn in layers: the HUD, then each
-  // window back to front, each layer's panels, then its lines, then its sprites, then its texts. A click belongs to the
-  // front layer under it.
+  // and layer i + 1 the window windows[i], then the hint's and the banner's layers and an open drop-down's overlay, and what
+  // the game keeps beside it. It is drawn in layers: the HUD, then each window back to front, then the hint and the banner,
+  // then the overlay, each layer's panels, then its lines, then its sprites, then its texts. A click belongs to the front
+  // layer under it.
   struct Layout : Neuron::DrawList
   {
     float fontPixels = 0.0f;

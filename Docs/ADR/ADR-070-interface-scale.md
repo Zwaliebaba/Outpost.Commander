@@ -29,7 +29,7 @@ Owns: interface-scale-factor, interface-fit-check
 - **What scrolls on a 16:9 screen at 150%:** the designer, 913 units tall with five weapons and the module row and 938 with the Sensors bar, stands 688 units tall, and its part rows show 244 units of their 469, or 219 with the Sensors bar; the Controls window, 784 units with all its lines, stands 688 units tall too. Neither scrolls at 110%, and the Controls window does not at 125%.
 - **The column under the Ore clears the minimap at 150%:** on a 16:9 screen, 720 units tall, the column with the longest content ends at 350 units and the minimap starts at 412.
 - **Text at 150% of 13 units is 19.5 px at 1080p,** past the guideline's 18. 200% is reached on the menu and not in a match.
-- **At 110% and up, windows overlap at first.** Production, research and the designer stand side by side only at 100%. A window opens at its default place, measured in the smaller reference screen, and the player moves it.
+- **Windows overlap at first.** Production and research open beside the column under the Ore, so the second of them stands under the designer's left side at 100%, and where the screen is too narrow for both, over the first. A window opens at its default place, measured in the smaller reference screen, and the player moves it.
 - **From 125% on 16:9, the hint and the banner stand under the top row** ([ADR-015](ADR-015-ui-drawing.md) decision 4), where at 100% and 110% they stand in it.
 - **The fit is checked only when it can change**: on a key, on a new size of screen, and as a match starts or ends. Checking builds each window it counts once on the canvas, without text, on a screen of no size, so that its scroll views give up all the room they can.
 - **The tests.**
