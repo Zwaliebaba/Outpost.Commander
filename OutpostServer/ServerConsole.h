@@ -16,6 +16,9 @@ public:
   // Waits up to _wait for a stop to be asked for; true once one has been.
   [[nodiscard]] bool WaitForStop(std::chrono::milliseconds _wait);
 
+  // Whether Windows asked for the stop, signing out or shutting down, rather than the server's owner.
+  [[nodiscard]] bool StoppedByWindows() const;
+
   // Says the server has finished, which lets a handler that waits for it return.
   void Finished() noexcept;
 

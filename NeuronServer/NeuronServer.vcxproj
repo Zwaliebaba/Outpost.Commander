@@ -79,6 +79,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="Random.h" />
     <ClInclude Include="TickHost.h" />
+    <ClInclude Include="ProcessMeter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -86,6 +87,7 @@
     </ClCompile>
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="TickHost.cpp" />
+    <ClCompile Include="ProcessMeter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

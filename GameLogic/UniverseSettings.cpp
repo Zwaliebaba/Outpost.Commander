@@ -43,8 +43,10 @@ std::string Outpost::WriteUniverseSettings(const UniverseSettings& _settings)
       seat.ai.empty() ? std::format("\"token\": \"{}\"", ToHex(seat.token)) : std::format("\"ai\": {}", Neuron::QuoteJson(seat.ai));
     seats += std::format("    {{ \"player\": {}, {} }}{}\n", seat.player.value, which, i + 1 < _settings.seats.size() ? "," : "");
   }
-  return std::format("{{\n  \"address\": {},\n  \"port\": {},\n  \"host\": {},\n  \"seed\": \"{}\",\n  \"seats\": [\n{}  ]\n}}\n",
-                     Neuron::QuoteJson(_settings.address), _settings.port, Neuron::QuoteJson(_settings.host), _settings.seed, seats);
+  return std::format("{{\n  \"address\": {},\n  \"port\": {},\n  \"overseerAddress\": {},\n  \"overseerPort\": {},\n  \"host\": {},\n  "
+                     "\"seed\": \"{}\",\n  \"seats\": [\n{}  ]\n}}\n",
+                     Neuron::QuoteJson(_settings.address), _settings.port, Neuron::QuoteJson(_settings.overseerAddress),
+                     _settings.overseerPort, Neuron::QuoteJson(_settings.host), _settings.seed, seats);
 }
 
 Outpost::UniverseSettings Outpost::ReadUniverseSettings(std::string_view _text)
@@ -56,6 +58,10 @@ Outpost::UniverseSettings Outpost::ReadUniverseSettings(std::string_view _text)
     UniverseSettings settings;
     settings.address = reader.String("address");
     settings.port = ReadPort(reader, "port");
+    if (reader.Optional("overseerAddress") != nullptr)
+      settings.overseerAddress = reader.String("overseerAddress");
+    if (reader.Optional("overseerPort") != nullptr)
+      settings.overseerPort = ReadPort(reader, "overseerPort");
     settings.host = reader.String("host");
     if (settings.host.empty())
       Neuron::JsonFail(reader.PathOf("host"), "expected the name or address players reach the server at");
@@ -104,6 +110,18 @@ Outpost::JoinTicket Outpost::TicketFor(const UniverseSettings& _settings, const 
 {
   return {.address = {.host = _settings.host, .port = _settings.port, .certificate = _certificate, .token = _seat.token},
           .player = _seat.player};
+}
+
+Outpost::OverseerTicket Outpost::OverseerTicketFor(const UniverseSettings& _settings, const Neuron::CertificateHash& _certificate,
+                                                   const SeatToken& _token)
+{
+  const std::string_view address = _settings.overseerAddress;
+  std::string host(address);
+  if (address.empty())
+    host = std::string(DEFAULT_OVERSEER_ADDRESS);
+  else if (address == Neuron::QuicListener::EVERY_ADDRESS || address == "0.0.0.0" || address == "::")
+    host = _settings.host;
+  return {.address = {.host = std::move(host), .port = _settings.overseerPort, .certificate = _certificate, .token = _token}};
 }
 
 std::string Outpost::JoinFileName(PlayerId _player)

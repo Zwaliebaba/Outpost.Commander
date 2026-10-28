@@ -93,6 +93,7 @@
     </ClCompile>
     <ClCompile Include="RandomTests.cpp" />
     <ClCompile Include="TickHostTests.cpp" />
+    <ClCompile Include="ProcessMeterTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NeuronCore\NeuronCore.vcxproj">

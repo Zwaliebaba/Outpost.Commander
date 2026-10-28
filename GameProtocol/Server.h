@@ -34,8 +34,8 @@ inline constexpr std::uint32_t DEPUTY_DELAY_SECONDS = 60;
 
 // The parts of a tick the server times for measurement. They nest: Commands holds each
 // order's GroupRoute and ShipPaths, and GraphBuild is counted wherever a path graph was built, inside whichever part needed
-// it. The rest follow the simulation's step in order, Snapshots is the server building every player's snapshot, and Hosted
-// the players it plays itself deciding what to do (ADR-079).
+// it. The rest follow the simulation's step in order, Snapshots is the server building every player's snapshot, Hosted
+// the players it plays itself deciding what to do (ADR-079), and Overseer the universe's view it sends its overseer (ADR-101).
 enum class TickPart : std::uint8_t
 {
   Commands,
@@ -49,17 +49,18 @@ enum class TickPart : std::uint8_t
   Separate,
   Vision,
   Snapshots,
-  Hosted
+  Hosted,
+  Overseer
 };
 
-inline constexpr std::size_t TICK_PART_COUNT = 12;
+inline constexpr std::size_t TICK_PART_COUNT = 13;
 
 // A part's name in the measurement log.
 [[nodiscard]] constexpr std::string_view TickPartName(TickPart _part) noexcept
 {
-  constexpr std::array<std::string_view, TICK_PART_COUNT> NAMES{"commands", "graph_build", "group_route", "ship_paths",
-                                                                "fight",    "targets",     "economy",     "move",
-                                                                "separate", "vision",      "snapshots",   "hosted"};
+  constexpr std::array<std::string_view, TICK_PART_COUNT> NAMES{"commands",  "graph_build", "group_route", "ship_paths", "fight",
+                                                                "targets",   "economy",     "move",        "separate",   "vision",
+                                                                "snapshots", "hosted",      "overseer"};
   return NAMES[static_cast<std::size_t>(_part)];
 }
 

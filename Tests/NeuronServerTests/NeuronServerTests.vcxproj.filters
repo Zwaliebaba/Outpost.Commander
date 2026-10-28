@@ -7,5 +7,6 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="RandomTests.cpp" />
     <ClCompile Include="TickHostTests.cpp" />
+    <ClCompile Include="ProcessMeterTests.cpp" />
   </ItemGroup>
 </Project>

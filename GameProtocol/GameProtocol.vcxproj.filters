@@ -65,6 +65,12 @@
     <ClInclude Include="JoinTicket.h">
       <Filter>Connection</Filter>
     </ClInclude>
+    <ClInclude Include="OverseerTicket.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="OverseerProtocol.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
     <ClInclude Include="HostedPlayer.h">
       <Filter>Connection</Filter>
     </ClInclude>
@@ -96,6 +102,12 @@
       <Filter>Connection</Filter>
     </ClCompile>
     <ClCompile Include="JoinTicket.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="OverseerTicket.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="OverseerProtocol.cpp">
       <Filter>Connection</Filter>
     </ClCompile>
     <ClCompile Include="WireFormat.cpp">

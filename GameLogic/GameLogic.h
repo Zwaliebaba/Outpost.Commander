@@ -6,6 +6,7 @@
 #include "GameProtocol.h"
 
 #include <algorithm>
+#include <atomic>
 #include <concepts>
 #include <condition_variable>
 #include <deque>
@@ -35,6 +36,7 @@
 #include "UniverseSettings.h"
 #include "SeatController.h"
 #include "UniverseLog.h"
+#include "OverseerLink.h"
 #include "StressLoad.h"
 #include "InProcessServer.h"
 #include "UniverseRun.h"

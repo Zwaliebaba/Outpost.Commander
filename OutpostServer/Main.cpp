@@ -19,6 +19,8 @@ constexpr std::wstring_view NEW_UNIVERSE_SWITCH = L"--new-universe";
 constexpr std::wstring_view HOST_OPTION = L"--host";
 constexpr std::wstring_view ADDRESS_OPTION = L"--address";
 constexpr std::wstring_view PORT_OPTION = L"--port";
+constexpr std::wstring_view OVERSEER_ADDRESS_OPTION = L"--overseer-address";
+constexpr std::wstring_view OVERSEER_PORT_OPTION = L"--overseer-port";
 constexpr std::wstring_view SEED_OPTION = L"--seed";
 constexpr std::wstring_view AI_OPTION = L"--ai";
 constexpr std::wstring_view UNIVERSE_RUN_SWITCH = L"--universe-run";
@@ -32,17 +34,19 @@ constexpr std::string_view USAGE =
   "Outpost Commander's dedicated server.\n"
   "\n"
   "  OutpostServer --new-universe <folder> [--host <name>] [--address <ip>] [--port <n>] [--seed <n>]\n"
-  "                [--ai <player>[:Easy|Normal|Hard]]\n"
+  "                [--ai <player>[:Easy|Normal|Hard]] [--overseer-address <ip>] [--overseer-port <n>]\n"
   "      Makes a new universe in <folder>: its settings, Universe.json, with a seat for each of the map's\n"
   "      starts. --host is the name or address players reach this machine at, localhost by\n"
   "      default; --address what the server listens on, an IPv4 or IPv6 address, or * for every\n"
   "      address of both, * by default; --port its UDP port, 45000 by default. --ai gives a seat to\n"
-  "      an AI empire, Normal unless named.\n"
+  "      an AI empire, Normal unless named. --overseer-address and --overseer-port are where it listens\n"
+  "      for the universe's overseer, 127.0.0.1 and 45001 by default.\n"
   "\n"
   "  OutpostServer [<folder>]\n"
   "      Runs the universe in <folder>, coming back from its newest save, and writes a join file for\n"
   "      each player's seat there. Hand each player its file. A deputy keeps a player's empire\n"
-  "      running from a minute after the player leaves. Ctrl+C saves and stops it. Without <folder>\n"
+  "      running from a minute after the player leaves. Overseer.json there is the overseer's, and\n"
+  "      whoever has it oversees the universe. Ctrl+C saves and stops it. Without <folder>\n"
   "      it runs the universe in Outpost Commander\\Universe in your documents, making it first with\n"
   "      --new-universe's defaults when there is none.\n"
   "\n"
@@ -162,6 +166,10 @@ int MakeUniverse(const std::filesystem::path& _folder, std::span<const std::wstr
       settings.address = Utf8(value);
     else if (option == PORT_OPTION)
       settings.port = NumberOption<std::uint16_t>(option, value, 1);
+    else if (option == OVERSEER_ADDRESS_OPTION)
+      settings.overseerAddress = Utf8(value);
+    else if (option == OVERSEER_PORT_OPTION)
+      settings.overseerPort = NumberOption<std::uint16_t>(option, value, 1);
     else if (option == SEED_OPTION)
       settings.seed = NumberOption<std::uint64_t>(option, value, 0);
     else if (option == AI_OPTION)
@@ -193,12 +201,31 @@ std::filesystem::path DefaultUniverseFolder()
   return folder;
 }
 
+// The universe's overseer token, as its Overseer.json in _folder keeps it from the server's first run, or a new one when there
+// is none or it cannot be read (ADR-101).
+Outpost::SeatToken OverseerToken(const std::filesystem::path& _folder)
+{
+  const std::filesystem::path file = _folder / Outpost::OVERSEER_TICKET_FILE;
+  if (std::filesystem::exists(file))
+  {
+    try
+    {
+      return Outpost::ReadOverseerTicket(ReadText(file)).address.token;
+    }
+    catch (const Neuron::Exception& error)
+    {
+      Outpost::ServerConsole::Print(std::format("{} Making a new overseer's token.", error.what()));
+    }
+  }
+  return Outpost::NewSeatToken();
+}
+
 // Runs the universe in _folder until a stop is asked for, and leaves it saved.
 int RunUniverse(const std::filesystem::path& _folder)
 {
   Outpost::ServerConsole console;
   const Outpost::UniverseSettings settings = Outpost::ReadUniverseSettings(ReadText(_folder / Outpost::UNIVERSE_SETTINGS_FILE));
-  std::unique_ptr<Outpost::Server> server = Outpost::CreateInProcessServer(
+  std::unique_ptr<Outpost::InProcessServer> server = Outpost::CreateUniverseServer(
     {.seed = settings.seed, .quic = true, .quicAddress = settings.address, .quicPort = settings.port, .universe = _folder});
   // The players the server plays itself, on its thread (ADR-079): an AI empire for each AI seat, and for each player's seat
   // a deputy that keeps the empire running while its player is away, playing it as the Normal AI researches and defends.
@@ -219,14 +246,42 @@ int RunUniverse(const std::filesystem::path& _folder)
     WriteText(joinFile, Outpost::WriteJoinTicket(Outpost::TicketFor(settings, seat, address.certificate)));
     Outpost::ServerConsole::Print(std::format("Player {}'s join file: {}", seat.player.value, Utf8(joinFile)));
   }
+  // The overseer's channel (ADR-101), and its file, written at each start so that it follows the settings.
+  std::vector<Outpost::OverseerSeat> seats;
+  seats.reserve(settings.seats.size());
+  for (const Outpost::UniverseSeat& seat : settings.seats)
+    seats.push_back({.player = seat.player, .ai = seat.ai});
+  const Outpost::SeatToken overseerToken = OverseerToken(_folder);
+  const Outpost::ServerAddress overseer =
+    server->Oversee({.address = settings.overseerAddress, .port = settings.overseerPort, .token = overseerToken}, std::move(seats));
+  const std::filesystem::path overseerFile = _folder / Outpost::OVERSEER_TICKET_FILE;
+  WriteText(overseerFile, Outpost::WriteOverseerTicket(Outpost::OverseerTicketFor(settings, overseer.certificate, overseerToken)));
+  Outpost::ServerConsole::Print(std::format("The overseer's file: {}", Utf8(overseerFile)));
   server->Start();
-  Outpost::ServerConsole::Print(std::format("The universe in {} runs, listening on {} port {}. Ctrl+C saves and stops it.", Utf8(_folder),
-                                            settings.address, settings.port));
+  Outpost::ServerConsole::Print(std::format("The universe in {} runs, listening on {} port {}, and for its overseer on {} port {}. Ctrl+C "
+                                            "saves and stops it.",
+                                            Utf8(_folder), settings.address, settings.port, settings.overseerAddress,
+                                            settings.overseerPort));
 
-  // The ticks run on the server's own thread (ADR-025); this one looks at it each second, which is where a failure there
-  // is thrown again.
-  while (!console.WaitForStop(CHECK_INTERVAL))
-    (void)server->TakeTickTimings();
+  // The ticks run on the server's own thread (ADR-025); this one reports on it each second, which is where a failure there
+  // is thrown again. The overseer hears how the server ends before it goes.
+  Neuron::ProcessMeter meter;
+  try
+  {
+    while (!console.WaitForStop(CHECK_INTERVAL))
+      server->Report(meter.Measure(_folder));
+  }
+  catch (const winrt::hresult_error& error)
+  {
+    server->Close(Outpost::ServerEnding::Failed, winrt::to_string(error.message()));
+    throw;
+  }
+  catch (const std::exception& error)
+  {
+    server->Close(Outpost::ServerEnding::Failed, error.what());
+    throw;
+  }
+  server->Close(console.StoppedByWindows() ? Outpost::ServerEnding::StoppedByWindows : Outpost::ServerEnding::StoppedByOwner, {});
   Outpost::ServerConsole::Print("Stopping: the universe's last save is written as the server goes.");
   server.reset();
   console.Finished();

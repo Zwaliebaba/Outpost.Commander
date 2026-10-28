@@ -35,6 +35,8 @@ public:
     Outpost::UniverseSettings settings = Outpost::NewUniverseSettings(0xFFFF'FFFF'FFFF'FFFFull, 3);
     settings.host = "a \"quoted\" host\\name";
     settings.port = 47001;
+    settings.overseerAddress = "::";
+    settings.overseerPort = 47002;
     // The third an AI empire's (ADR-079).
     settings.seats[2].ai = "Hard";
     settings.seats[2].token = {};
@@ -47,6 +49,8 @@ public:
     const Outpost::UniverseSettings read = Outpost::ReadUniverseSettings(Outpost::WriteUniverseSettings(settings));
     Assert::AreEqual(settings.address, read.address);
     Assert::AreEqual(settings.port, read.port);
+    Assert::AreEqual(settings.overseerAddress, read.overseerAddress);
+    Assert::AreEqual(settings.overseerPort, read.overseerPort);
     Assert::AreEqual(settings.host, read.host);
     Assert::AreEqual(settings.seed, read.seed);
     Assert::AreEqual(settings.seats.size(), read.seats.size());
@@ -106,6 +110,46 @@ public:
     shortCertificate.replace(shortCertificate.find(Outpost::ToHex(certificate)), 2, "");
     Assert::ExpectException<Neuron::Exception>([&shortCertificate] { (void)Outpost::ReadJoinTicket(shortCertificate); },
                                                L"a hash too short");
+  }
+
+  // Settings made before the overseer read as its defaults, the loopback and the port after the game's, and settings that
+  // name its address and port read as they name them (ADR-101).
+  TEST_METHOD(ReadsWhereTheOverseerIsListenedFor)
+  {
+    const Outpost::UniverseSettings older = Outpost::ReadUniverseSettings(SettingsText("", ""));
+    Assert::AreEqual(std::string("127.0.0.1"), older.overseerAddress);
+    Assert::AreEqual(std::uint16_t{45'001}, older.overseerPort);
+    const Outpost::UniverseSettings named = Outpost::ReadUniverseSettings(
+      SettingsText("\"port\": 45000", "\"port\": 45000, \"overseerAddress\": \"*\", \"overseerPort\": 46000"));
+    Assert::AreEqual(std::string("*"), named.overseerAddress);
+    Assert::AreEqual(std::uint16_t{46'000}, named.overseerPort);
+    ExpectRefused("\"port\": 45000", "\"port\": 45000, \"overseerPort\": 0", L"no overseer's port");
+    ExpectRefused("\"port\": 45000", "\"port\": 45000, \"overseerPort\": 70000", L"an overseer's port out of range");
+    ExpectRefused("\"port\": 45000", "\"port\": 45000, \"overseerAddress\": 7", L"an overseer's address that is no string");
+  }
+
+  // The overseer's file names the address the server listens for it on, or its host for players when it listens on every
+  // address, the overseer's port, the certificate and the token, and reads back as it was written (ADR-101).
+  TEST_METHOD(WritesTheOverseersFile)
+  {
+    Outpost::UniverseSettings settings = Outpost::ReadUniverseSettings(SettingsText("", ""));
+    Neuron::CertificateHash certificate{};
+    for (std::size_t i = 0; i < certificate.size(); ++i)
+      certificate[i] = static_cast<std::uint8_t>(i * 5);
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    const Outpost::OverseerTicket ticket =
+      Outpost::ReadOverseerTicket(Outpost::WriteOverseerTicket(Outpost::OverseerTicketFor(settings, certificate, token)));
+    Assert::AreEqual(std::string("127.0.0.1"), ticket.address.host);
+    Assert::AreEqual(std::uint16_t{45'001}, ticket.address.port);
+    Assert::IsTrue(ticket.address.certificate == certificate);
+    Assert::IsTrue(ticket.address.token == token);
+    for (const std::string_view every : {"*", "0.0.0.0", "::"})
+    {
+      settings.overseerAddress = std::string(every);
+      Assert::AreEqual(std::string("friends.example.net"), Outpost::OverseerTicketFor(settings, certificate, token).address.host);
+    }
+    settings.overseerAddress = "192.168.1.20";
+    Assert::AreEqual(std::string("192.168.1.20"), Outpost::OverseerTicketFor(settings, certificate, token).address.host);
   }
 
   // A token and a hash cross a file as hexadecimal, two digits a byte, either case read.
