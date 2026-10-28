@@ -104,6 +104,9 @@ A session is everything between starting the game and closing it: the menu, a sk
 - **Its header names the universe's folder and its server, says how the server is, and tells universe time and its tick** (ADR-102 decision 7):
   - **Running** while the server says how it is, once a second.
   - **No word** once 3 s have gone without that, or while there is no connection, saying how the server ended when it said so, why the connection went, and when the last word came.
+- **Its tiles tell how the server keeps up** (ADR-102 decision 7): the slowest of a hundred ticks over the last minute against the 5 ms budget, and the hour's slowest; the ticks a second and those dropped in the hour; the last save, how long ago, its size and how long it took; the bytes sent to the seats a second; and the server's memory, its share of a processor core and the disk free.
+- **Its seat table has a row a seat,** marked in the seat's color, its set's for the first two seats and the overseer's own for the rest: who plays it, whether its player is online, away or gone and since when, or that it fell and when it restarts, its connection's round trip, its orders over the last minute, its Ore and income, its fleet against its cap, its nodes and its research. It shows every seat, the players', the AI empires' or the seats whose player is away; a press on a heading sorts it, and a press on a row watches that seat's sight, until it is pressed again (ADR-102 decision 7).
+- **Its universe log** shows the log's records as they are written, the newest first, every record or the seats', the saves', the battles' or the server's own (ADR-102 decision 7).
 
 ### Joining a universe [§session.join]
 

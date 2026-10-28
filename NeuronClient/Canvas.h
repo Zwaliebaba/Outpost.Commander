@@ -47,6 +47,48 @@ enum class FieldEnd : std::uint8_t
   Dropped
 };
 
+// A table's column (ADR-100): its heading; its width, or with none its share of the width the others leave; and the payload a
+// press on its heading names, as the caller sorts its rows, NO_PAYLOAD for a column that does not sort.
+struct TableColumn
+{
+  std::string heading;
+  std::optional<float> widthUnits;
+  float grow = 1.0f;
+  std::uint32_t payload = NO_PAYLOAD;
+};
+
+// Which way a table's rows run by the column that sorts them, which that column's heading shows.
+enum class TableSort : std::uint8_t
+{
+  Ascending,
+  Descending
+};
+
+// The column that sorts a table, and which way.
+struct TableSorted
+{
+  std::size_t column = 0;
+  TableSort sort = TableSort::Ascending;
+};
+
+// A table's cell: a figure, and a detail line under it; the figure in a color of the caller's, or the text's.
+struct TableCell
+{
+  std::string figure;
+  std::string detail;
+  std::optional<DirectX::XMFLOAT4> color;
+};
+
+// A table's row: its cells, in its columns' order; the payload a press on it names, NO_PAYLOAD for a row that takes none;
+// whether it is picked; and its mark, a bar at its left edge in a color of the caller's, such as a side's.
+struct TableRow
+{
+  std::vector<TableCell> cells;
+  std::uint32_t payload = NO_PAYLOAD;
+  bool picked = false;
+  std::optional<DirectX::XMFLOAT4> mark;
+};
+
 // The canvas a frame's interface is built on (ADR-100): widgets in the theme's look, each a node of the layout and what it
 // draws there, and a window, a layer of its own. The build records them in the order they are drawn: the HUD's first,
 // then each window back to front. Finish measures and places the layout and draws what was recorded into a display
@@ -143,6 +185,14 @@ public:
   std::size_t DropDown(std::string_view _id, std::string _value, std::vector<std::string> _choices, std::optional<std::size_t> _picked,
                        const std::function<std::uint32_t(std::size_t)>& _payloadOf, const LayoutStyle& _style);
 
+  // A table of _style (ADR-100): its headings in a row, each in the label's face, a press on one naming its column's payload,
+  // and the column that sorts it lit, with "^" or "v" for which way; and under them its rows, in the order given, since the
+  // caller sorts them, each a card that takes a press naming its payload, the picked one in the picked card's face and edge,
+  // and its cells each a figure over a detail line, cut short to their columns. The rows stand in a scroll view, which
+  // scrolls them past the table's height when it has one, and are all shown otherwise. The table's node.
+  std::size_t Table(std::string_view _id, std::span<const TableColumn> _columns, std::optional<TableSorted> _sorted,
+                    std::span<const TableRow> _rows, const LayoutStyle& _style);
+
   // A rectangle of _color at a node, for what the game composes of its own, such as a part's card. It may be any color but
   // the warning's, which only a chip fills.
   void Fill(std::size_t _node, const DirectX::XMFLOAT4& _color, CanvasFill _fill = CanvasFill::Solid);
@@ -176,6 +226,9 @@ private:
   void DrawButton(DrawList& _list, std::size_t _node, WidgetId _widget, const ButtonContent& _button, bool _hot) const;
   void DrawSmallButton(DrawList& _list, std::size_t _node, WidgetId _widget, const std::string& _mark, bool _enabled,
                        std::uint32_t _payload) const;
+  // A table's row at _node, its cells at the nodes _cells, in its columns' order.
+  void DrawRow(DrawList& _list, std::size_t _node, std::span<const std::size_t> _cells, WidgetId _widget, const TableRow& _row,
+               bool _hot) const;
   std::size_t OpenBox(WidgetId _widget, const BoxLook& _look, std::uint32_t _payload, const LayoutStyle& _style, CardPress _press);
   // Where what a scroll view holds starts in each list, once drawn.
   struct ListStarts

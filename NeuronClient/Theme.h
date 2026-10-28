@@ -38,6 +38,8 @@ struct Theme
   // A progress bar's track and its fill, which a scroll view's track and its thumb take too.
   DirectX::XMFLOAT4 barTrackColor{};
   DirectX::XMFLOAT4 barFillColor{};
+  // A table cell's detail line, which stands on a row's face and on a picked one's.
+  DirectX::XMFLOAT4 detailColor{};
 
   // A window's title, and its close mark; a button's label and a field's text; a key's letter, a small button's mark and
   // a reason; and a figure.
@@ -46,6 +48,8 @@ struct Theme
   std::size_t nameFont = 0;
   std::size_t labelFont = 0;
   std::size_t figureFont = 0;
+  // A table cell's detail line, under its figure.
+  std::size_t detailFont = 0;
   // The bracket at a window's top-left corner, mirrored for the others; and a checkbox's tick.
   std::size_t cornerSprite = 0;
   std::size_t checkSprite = 0;
@@ -92,5 +96,13 @@ struct Theme
   float scrollLaneUnits = 0.0f;
   float scrollThumbUnits = 0.0f;
   float scrollLeastThumbUnits = 0.0f;
+  // A table's row of headings and each of its rows, how tall; how far down a row a cell's figure stands, and its detail line;
+  // the gap between two rows; and how wide a row's mark is, at its left edge.
+  float tableHeadingUnits = 0.0f;
+  float tableRowUnits = 0.0f;
+  float tableFigureTopUnits = 0.0f;
+  float tableDetailTopUnits = 0.0f;
+  float tableRowGapUnits = 0.0f;
+  float tableMarkUnits = 0.0f;
 };
 } // namespace Neuron

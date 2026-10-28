@@ -30,8 +30,8 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV2.2 | `Health` once a second, and the process's figures | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
 | OV2.3 | The universe's view and the log's stream | OV2.1 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
 | OV2.4 | `Closing`, and the server's state | OV2.2 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
-| OV3.1 | The overseer's project, its window and its link | OV2 | D1, D5, D6 | in progress |
-| OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | in progress |
+| OV3.1 | The overseer's project, its window and its link | OV2 | D1, D5, D6 | in review; awaiting the owner's run |
+| OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | in review; awaiting the owner's run |
 | OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | todo |
 | OV4.2 | Needs attention and who played | OV4.1 | — | todo |
 | OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | todo |
@@ -202,6 +202,22 @@ The overseer itself: an executable of its own, its window and its end of the cha
 - **ADR:** the canvas's for the table ([ADR-100](../ADR/ADR-100-the-canvas.md)); the overseer application's for the overview; the Style Guide.
 - **Acceptance:** `NeuronClientTests` for the table: sorting, its direction, picking, a figure over a detail line and scrolling; `OverseerScreenTests`: each region from a scripted model, a filter, a sort, a pick, the seats' colors, and the guards.
 - **Verify:** the checkers; CI; run against a running universe at 1920×1080 and in a smaller window; the owner's run.
+
+### As built
+
+- **The application** is [ADR-102](../ADR/ADR-102-the-overseer-application.md); [ADR-002](../ADR/ADR-002-authoritative-server.md)'s diagram, table and boundary, [ADR-006](../ADR/ADR-006-renderer-shape.md) decision 1, [ADR-100](../ADR/ADR-100-the-canvas.md)'s theme and widgets, the Style Guide, AGENTS.md §2, the Glossary and Game §session.overseer are edited for it.
+- **`Neuron::Window` also takes whether it holds the cursor** while full screen: the overseer has no edge scroll, and leaves it free.
+- **The tiles are five, not six:** the process's working set, its share of a core and the disk free share one, so that every tile's detail line fits it on the reference frame.
+- **A seat's color marks its row,** a bar at its left, and its words stay in the text's color: a side's color on the picked row's face would fall under 4.5:1.
+- **The seat table's filter for what needs a look** waits for what needs attention, OV4.2.
+- **The log shows its newest records first,** so that a record stands at the top as it comes, with no scroll to follow; it shows 400 at most.
+- **A table cell's figure and detail line stand at offsets the theme gives,** 5 and 25 units down a row of 46, so that the two never meet at a scale's rounding.
+- **The guards' helper** is `Tests/GameAppTests/LayoutGuards.h`, which `HudTests` reads too.
+- **The acceptance's names as built:** `OverseerModelTests`, seven; `OverseerClientTests.SaysHelloAndTheSightAndJoinsAgain`; `OverseerScreenTests`, eleven, `HoldsTheLayoutAndContrastGuards` among them; and `CanvasTests.SetsATableUnderItsHeadings` and `ScrollsATablesRowsUnderItsHeadings`.
+- **Run in the container:** `NeuronClient`'s CPU half and `GameApp` but its GPU files, built by clang 18 against DirectXMath and stand-ins for Direct3D, DirectWrite, Windows and the test framework, with stand-in fonts of an even advance: `NeuronClientTests`' canvas, layout, display list and interaction suites, 45, pass; `GameAppTests`' overseer suites pass but `OverseerClientTests`, which needs MsQuic; and `HudTests` passes on `LayoutGuards.h` as it did before, but for `LaysOutTheOrdersWindow`, which fails there on the stand-in fonts before this milestone and after it. `OutpostOverseer`'s `WinMain.cpp` compiles there against stand-ins for the renderer's names.
+- **Not run in the container:** the executable, `OverseerClientTests`, and the guards with the fonts Windows installs. CI's Debug|x64 run 700, of `0ba16ef`, OV3.1, built the solution with `OutpostOverseer` and passed every new test, the QUIC one among them; clang-tidy found that `OverseerModel`'s move could throw under MSVC's debug library, so it is not copyable and the tests fill one in place, and that a test's link was built as a static, now a function; `QuicChannelTests.CarriesTheNewestMessagesApart` failed there, which this milestone does not touch, as its four messages crossed before its fifth was sent.
+- **The checkers:** `CheckFormat.py` on clang-format 18.1.3, `CheckProjectFiles.py`, `GenerateDocs.py --check` and `CheckCitations.py` pass; clang-tidy 18, with the repository's checks, finds nothing in the changed files but what the stand-ins make.
+- **The owner's run** against a running universe, at 1920×1080 and in a smaller window, is outstanding.
 
 ---
 

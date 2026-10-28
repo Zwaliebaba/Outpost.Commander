@@ -33,7 +33,10 @@ void Outpost::OverseerClient::Update(std::chrono::steady_clock::time_point _now)
                                          .applicationProtocol = std::string(OVERSEER_APPLICATION_PROTOCOL),
                                          .serverCertificate = m_ticket.address.certificate,
                                          .connectTimeout = std::chrono::duration_cast<std::chrono::milliseconds>(REJOIN_INTERVAL)};
-    m_connecting = std::async(std::launch::async, [desc] { return Neuron::QuicChannel::Connect(desc); });
+    // The description goes to the thread as an argument, which std::async copies, rather than in the lambda's captures, as the
+    // game's joins do.
+    m_connecting =
+      std::async(std::launch::async, [](const Neuron::QuicChannel::Desc& _desc) { return Neuron::QuicChannel::Connect(_desc); }, desc);
   }
   if (!m_channel)
     return;
