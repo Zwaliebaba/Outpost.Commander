@@ -14,7 +14,7 @@ A blast's particles are amber diamonds, a filled square on a corner ([ADR-026](A
 ## Decision
 
 1. **A warning is a chip.**
-   - A chip is its words in the windows' navy, `WINDOW_COLOR`, on a filled tag of `WARNING_COLOR`. The tag reaches 4 units beyond the words on either side and covers their whole line, so a descender stays on it. `Painter::Chip` draws it, and nothing else in the HUD draws a filled tag behind its words in that color, so a warning differs from the enemy's figures by its shape and its fill, not by a hue a degree away.
+   - A chip is its words in the windows' navy, `WINDOW_COLOR`, on a filled tag of `WARNING_COLOR`. The tag reaches 4 units beyond the words on either side and covers their whole line, so a descender stays on it. The canvas's chip draws it ([ADR-100](ADR-100-the-canvas.md) decision 6), and nothing else in the HUD draws a filled tag behind its words in that color, so a warning differs from the enemy's figures by its shape and its fill, not by a hue a degree away.
    - **It marks every warning that stands where the enemy's figures do:**
      - **an idle Research Lab or Shipyards that could start work now,** "Research Lab IDLE" and the Shipyards' "IDLE 2" ([ADR-066](ADR-066-production-status-on-the-hud.md) decision 2). A status line is a list of runs, each plain or a chip (`Hud::StatusRun`); a plain run is cut short to leave room for the runs after it, and a chip never is;
      - **an income of nothing,** "+0/s", right-aligned where the income stands. Any income above nothing is in the figures' blue;

@@ -85,26 +85,24 @@ public:
   // design; nothing when the name is not one the server takes (IsValidDesignName) or nothing would change.
   [[nodiscard]] std::optional<SaveDesignCommand> SaveCommand(const Snapshot& _newest) const;
 
-  // The name field. Editing starts from the name shown, takes printable characters up to DESIGN_NAME_LIMIT and Backspace;
-  // Enter returns what saving sends and stops, Escape drops what was typed and stops. A name typed and left stays until
-  // the design is saved.
-  void BeginEditing(const Snapshot& _newest);
-  void EndEditing() noexcept
+  // The name field, which the canvas's text field types into (ADR-017 decision 8): the name as typed there, which wins
+  // until the design is saved, and stays when typing stops; Esc's dropping it; and Enter's keeping it, which returns what
+  // saving sends, after which the name follows the snapshot again.
+  void TypeName(std::string _typed)
   {
-    m_editing = false;
+    m_typed = std::move(_typed);
   }
-  [[nodiscard]] bool IsEditing() const noexcept
+  void DropTypedName() noexcept
   {
-    return m_editing;
+    m_typed.reset();
   }
-  std::optional<SaveDesignCommand> Edit(const Neuron::InputEvent& _event, const Snapshot& _newest);
+  std::optional<SaveDesignCommand> EnterName(const Snapshot& _newest);
 
   // After a save is sent, the name and the retreat follow the snapshot again.
   void ForgetTypedName() noexcept
   {
     m_typed.reset();
     m_retreat.reset();
-    m_editing = false;
   }
 
   // How long a save may take to come back in a snapshot before it counts as refused: two seconds at the server's 20 ticks
@@ -140,7 +138,6 @@ private:
   std::size_t m_firstChip = 0;
   std::optional<std::string> m_typed;
   std::optional<RetreatThreshold> m_retreat;
-  bool m_editing = false;
   std::vector<WaitingQueue> m_waiting;
 };
 } // namespace Outpost

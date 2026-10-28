@@ -125,6 +125,7 @@ private:
   [[nodiscard]] bool IsRasterizedAt(float _scale) const noexcept;
   // Uploads _atlas and points the pipeline's view at it.
   void UseAtlas(UiAtlas _atlas);
+  // A rectangle's quad, cut to the clip of the item being drawn, if it has one.
   void AddQuad(float _left, float _top, float _right, float _bottom, float _u0, float _v0, float _u1, float _v1,
                const DirectX::XMFLOAT4& _color);
   // A quad of any shape, its corners in the order AddQuad's go round, every corner sampling one texel.
@@ -151,5 +152,7 @@ private:
   std::vector<Vertex> m_frameVertices;
   float m_widthPixels = 0.0f;
   float m_heightPixels = 0.0f;
+  // What the item Draw draws is cut to, as what a scroll view holds is (ADR-100); none for an item drawn whole.
+  const CanvasRect* m_clip = nullptr;
 };
 } // namespace Neuron

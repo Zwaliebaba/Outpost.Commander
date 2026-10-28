@@ -124,13 +124,12 @@ public:
     Queue,
     // Queues a topic at the Research Lab.
     Research,
-    // The designer: picks a component for a slot, starts typing the name, or saves the design.
+    // The designer: picks a component for a slot, or saves the design.
     PickHull,
     PickDrive,
     PickWeapon,
     // The module, or none (ADR-058 decision 7).
     PickModule,
-    EditName,
     SaveDesign,
     // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
     SaveAndQueue,
@@ -166,9 +165,10 @@ public:
     // row of three (ADR-088 decision 3).
     DesignRetreat,
     SetRetreat,
-    // The orders window's form steps a field, and gives its order to the selection, and the window cancels one of the
-    // seat's scheduled orders (ADR-080 decision 9).
+    // The orders window's form steps a field, or picks its value from its drop-down, and gives its order to the selection,
+    // and the window cancels one of the seat's scheduled orders (ADR-080 decision 9).
     StepOrder,
+    PickOrder,
     GiveOrder,
     CancelOrder,
     // Selects one of the player's own entities on its own and moves the camera to it (ADR-066 decision 1; ADR-088 decision 4).
@@ -186,7 +186,7 @@ public:
     ActionKind kind = ActionKind::Build;
     StructureKind structure = StructureKind::CommandStation;
     EntityId producer;
-    // The entity Select selects.
+    // The entity Select selects, or the target PickOrder picks.
     EntityId entity;
     // The design a Shipyard builds; no design for the Command Station's Constructor.
     DesignId design;
@@ -202,9 +202,11 @@ public:
     Difficulty difficulty = Difficulty::Normal;
     // What SetRetreat sets the selected ships to.
     RetreatThreshold retreat = DEFAULT_RETREAT;
-    // The field StepOrder steps, and which way: forward for a positive step.
+    // The field StepOrder steps, and which way: forward for a positive step; or the field PickOrder sets, and to what, an
+    // hour, a minute or a sector's id.
     OrderField field = OrderField::Trigger;
     std::int32_t step = 0;
+    std::int32_t value = 0;
     // The scheduled order CancelOrder cancels.
     std::uint32_t order = 0;
 
@@ -324,7 +326,6 @@ public:
     std::uint32_t built = 0;
     std::int32_t ore = 0;
     std::string name;
-    bool editing = false;
     // Whether the server takes the name (IsValidDesignName); it is drawn as a warning when not.
     bool nameValid = true;
     // SAVE for a new design, SAVED when the name and the parts are a saved design; RENAME for a saved design's new name.
@@ -549,12 +550,15 @@ public:
     [[nodiscard]] bool Warns() const noexcept;
   };
 
-  // A row of the orders window's form: what it sets, its value between the arrows that step it, and the field they step.
+  // A row of the orders window's form: what it sets, its value between the arrows that step it, and the field they step;
+  // and, for a field picked from a drop-down, its choices and the one it holds (ADR-080 decision 9).
   struct OrderRow
   {
     std::string label;
     std::string value;
     OrderField field = OrderField::Trigger;
+    std::vector<OrderChoice> choices;
+    std::optional<std::size_t> picked;
   };
 
   // One of the seat's scheduled orders as the orders window lists it, with the order its cancel button cancels.
@@ -779,6 +783,14 @@ public:
     std::size_t firstAction = 0;
   };
 
+  // What the designer's name field did in a frame (ADR-017 decision 8): its text, and whether typing goes on or ended,
+  // keeping it or dropping it.
+  struct TypedName
+  {
+    std::string name;
+    Neuron::FieldEnd end = Neuron::FieldEnd::Typing;
+  };
+
   // The HUD on a back buffer of one size, in its pixels: the engine's display list (ADR-100), in which layer 0 is the HUD
   // and layer i + 1 the window windows[i], and what the game keeps beside it. It is drawn in layers: the HUD, then each
   // window back to front, each layer's panels, then its lines, then its sprites, then its texts. A click belongs to the
@@ -803,6 +815,9 @@ public:
     // each of the player's own stands, with the fleet a click on it selects (ADR-101 decision 2).
     Neuron::DrawList plates;
     std::vector<std::pair<Rect, std::uint32_t>> plateHits;
+    // The name field's text while it has the keyboard and as typing ends, for GameClient to give the designer; none
+    // otherwise, when the name follows the designer.
+    std::optional<TypedName> typedName;
 
     [[nodiscard]] Span ActionsOf(std::size_t _layer) const noexcept;
     // The front window under a point, if any.

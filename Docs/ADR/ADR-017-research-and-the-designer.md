@@ -43,7 +43,7 @@ The designer shows live stats: damage per second after armor against each hull, 
    - **The name.** It must pass `IsValidDesignName`: 1–32 printable ASCII characters, the ones the HUD's font holds (ADR-015), and not all spaces. A components' name that a module's would take past that is written with the module's initials ([ADR-069](ADR-069-starting-design-names.md) decision 5). The client and the server use the same check.
    - **Refusals** have their own `CommandResult`s.
 7. **The designer is client state, drawn by the HUD.**
-   - `Outpost::Designer` in `GameApp` holds the picks, a typed name, the count and whether the name field has the keyboard.
+   - `Outpost::Designer` in `GameApp` holds the picks, a typed name and the count. Whether the name field has the keyboard is the canvas's ([ADR-100](ADR-100-the-canvas.md) decision 3).
    - **Where it shows.** It is a floating window, opened from a selected Shipyard of the player's or by its key ([ADR-031](ADR-031-floating-windows.md) decision 6). Its size and its rows are the interface ADRs' ([ADR-062](ADR-062-type-scale-and-contrast.md), [ADR-068](ADR-068-interface-polish.md)).
    - **Its target Shipyard.** Its queue goes to one of the player's finished Shipyards, which its arrows step through by number; opening it with a Shipyard selected, or selecting one while it is open, makes that one the target. Without a finished Shipyard it still designs and saves.
    - **The picks.** A hull, a drive, a weapon, and a module or none, each picked from a row of cards; a locked component's card names the topic that unlocks it. A saved design's chip loads its picks.
@@ -55,8 +55,8 @@ The designer shows live stats: damage per second after armor against each hull, 
    - **The count.** It runs from one to the target Shipyard's free queue slots, and Queue adds that many jobs.
 8. **Text reaches the game as characters, and the name field takes the keyboard while it has it.**
    - **Characters.** `Neuron::Window` turns `WM_CHAR` into `InputEventKind::Character` events, which carry the UTF-16 unit.
-   - **The keyboard while typing.** While the name field has the keyboard, `GameClient` gives every key and character to the designer and none to the controls or the camera: no order, control group or camera key reads them.
-   - **Stopping.** Enter saves, and Escape drops what was typed. A press anywhere but the field ends typing and keeps the text, and so does the designer leaving the screen.
+   - **The keyboard while typing.** The name field is the canvas's text field ([ADR-100](ADR-100-the-canvas.md) decision 6). While it has the keyboard, `GameClient` gives every character, Backspace, Enter and Esc to the canvas's interaction, and no key to the controls or the camera: no order, control group or camera key reads them. The layout carries what was typed (`Hud::Layout::typedName`), which `GameClient` gives the designer (`Designer::TypeName`); the designer reads no key of its own.
+   - **Stopping.** Enter saves (`Designer::EnterName`), and Escape drops what was typed (`Designer::DropTypedName`). A press anywhere but the field ends typing and keeps the text, and so does the designer leaving the screen.
 9. **Research shows in two places.** A line of the status panel under the Ore names the topic under way and its progress, that it waits for Ore, or that the Lab is idle ([ADR-066](ADR-066-production-status-on-the-hud.md)). The research window ([ADR-031](ADR-031-floating-windows.md) decision 6) lists the Research Lab's queue and each topic the player may still take, with what it does and its cost; a topic of a tier not open is shown as [ADR-033](ADR-033-research-tiers.md) decision 5 has it.
 
 ## Consequences

@@ -15,6 +15,15 @@ enum class OrderField : std::uint8_t
   Condition
 };
 
+// A choice a field of the orders window's form offers in its drop-down (ADR-080 decision 9): its name, and what picking it
+// sets the field to, an hour, a minute or a sector's id, or a target.
+struct OrderChoice
+{
+  std::string name;
+  std::int32_t value = 0;
+  EntityId target;
+};
+
 // The orders window's form (ADR-080 decisions 4 and 9): the scheduled order it gives the selection, a field at a time.
 // Its trigger is a time of day on the player's clock, or an event in a sector the player holds; its action goes to a
 // sector's node, or takes a target in that sector, an enemy for an attack and an ore asteroid for a Mining Rig; and its
@@ -34,6 +43,19 @@ public:
   void Step(OrderField _field, int _step, const Snapshot& _newest, std::span<const EntityView> _entities);
   // Keeps the sectors and the target among those offered: one that is gone gives way to the first.
   void Update(const Snapshot& _newest, std::span<const EntityView> _entities);
+
+  // Whether _field is picked from a drop-down, its choices running long: an hour, a minute, a sector or a target. The
+  // trigger, the action and the condition only step.
+  [[nodiscard]] static bool TakesDropDown(OrderField _field) noexcept;
+  // The choices _field offers in its drop-down, in the order its arrows step through them: every hour, every fifth minute,
+  // and the sectors and the targets Step steps among, a target named with its place among them; none for a field that
+  // only steps.
+  [[nodiscard]] std::vector<OrderChoice> Choices(OrderField _field, const Snapshot& _newest, std::span<const EntityView> _entities) const;
+  // Whether _field holds _choice now.
+  [[nodiscard]] bool Holds(OrderField _field, const OrderChoice& _choice) const noexcept;
+  // Sets _field to _choice, while it is among those _field offers: a sector or a target gone since its list was drawn is not
+  // picked.
+  void Pick(OrderField _field, const OrderChoice& _choice, const Snapshot& _newest, std::span<const EntityView> _entities);
 
   [[nodiscard]] ScheduledTriggerKind Trigger() const noexcept
   {

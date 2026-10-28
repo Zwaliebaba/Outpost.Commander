@@ -14,7 +14,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 - **A beam is its shooter's side's color, lightened toward white,** so a beam says who fires it ([ADR-034](ADR/ADR-034-shot-looks.md) decision 4).
 - **The sky's crosses are never warm,** so no star reads as a marker in Ore's gold ([ADR-028](ADR/ADR-028-vector-grid-and-crosses.md) decision 3).
 - **Ore is written one way everywhere:** its gem in `GOLD_COLOR` and its figure grouped in thousands; on a button that cannot be pressed, both take the locked text's color ([ADR-043](ADR/ADR-043-hud-in-the-windows-look.md) decision 3, [ADR-085](ADR/ADR-085-one-meaning-per-color.md) decision 3).
-- **A warning that stands where the enemy's figures do is a chip,** its words in `WINDOW_COLOR` on a filled tag of `WARNING_COLOR` drawn by `Painter::Chip`, and nothing but a warning stands on such a tag ([ADR-085](ADR/ADR-085-one-meaning-per-color.md) decision 1).
+- **A warning that stands where the enemy's figures do is a chip,** its words in `WINDOW_COLOR` on a filled tag of `WARNING_COLOR` drawn by the canvas's chip (`Canvas::Chip`), and nothing but a warning stands on such a tag ([ADR-085](ADR/ADR-085-one-meaning-per-color.md) decision 1).
 - **A warning in plain text in `WARNING_COLOR` stands only where no enemy figure does** ([ADR-085](ADR/ADR-085-one-meaning-per-color.md) decision 1).
 - **A chip marks only what the player could act on now;** a state whose remedy lies elsewhere is plain text ([ADR-066](ADR/ADR-066-production-status-on-the-hud.md) decision 2).
 - **Progress that belongs to no side is neutral gray, and the HUD's own progress is blue:** the build bar over any side's structure is `BUILD_BAR_COLOR`, and a bar on the player's own buttons, queues and status lines is `BAR_FILL_COLOR` on `BAR_TRACK_COLOR` ([ADR-085](ADR/ADR-085-one-meaning-per-color.md) decision 2, [ADR-066](ADR/ADR-066-production-status-on-the-hud.md) decision 3).
@@ -68,6 +68,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 - **What the pointer is over lights its edge, and nothing else changes:** no word, place or click ([ADR-088](ADR/ADR-088-selection-and-commands.md) decision 1).
 - **An armed order's button is lit as a pick** until the order is given or canceled ([ADR-088](ADR/ADR-088-selection-and-commands.md) decision 2).
 - **A choice among a few settings is a row of cells, the current one lit as a pick,** so the player sees every choice and picks one in a press ([ADR-088](ADR/ADR-088-selection-and-commands.md) decision 3).
+- **A choice among many is a drop-down,** its list opened by a press on its field and picked by a press, the current one lit, where a row of cells would not fit and stepping would take many presses ([ADR-100](ADR/ADR-100-the-canvas.md) decision 6, [ADR-080](ADR/ADR-080-events-and-scheduled-orders.md) decision 9).
 - **A standing state is a status line, and a place to click** ([ADR-066](ADR/ADR-066-production-status-on-the-hud.md) decisions 1 and 5).
 - **An event is an alert,** raised from the server's events, listed under the territory panel and marked on the minimap ([ADR-059](ADR/ADR-059-alerts-and-standing-orders.md) decisions 1 and 2).
 
