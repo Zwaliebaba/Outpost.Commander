@@ -4,20 +4,13 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-10 gates are open, in 7 documents.
+8 gates are open, in 6 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
 | Gate | Decision | Blocks |
 |---|---|---|
 | O9 | **Seasons of months** (§7): upgrade steps between state versions, the galaxy's arc over a season, how a season ends, and how far a deputy carries a seat over absences of weeks. | Seasons of months (§7; §11) |
-
-## [`Docs/Plans/ImplementationPlan-Canvas.md`](../Plans/ImplementationPlan-Canvas.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| C10 | **Where the production and research windows open.** They open at 178 units from the top, under the place the status panel keeps ([ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3), which is over the territory panel and the alerts: while either is open the nodes, the tickets and the drain are hidden. Proposed: their first slot stands under the foot of the whole column under the Ore, the alerts included, as the column is at the time; where that leaves a window too little room, it opens beside the column instead. It rewrites ADR-066 decision 3's place, and a window the player has moved keeps its place (C2). | CV10.3 |
-| C11 | **The hint and the banner over the windows.** A window at its first place covers the hint, and the banner under it. The designer, which first opens at the top right, covers the hint's right 30% at 100% and 44% at 110% on 16:9, 16:10 and 3:2, and from 125% the whole hint and the whole banner, its way back to the menu included; on 21:9 it covers 20% of the hint at 125%, 89% at 150% and all of it at 175%. Measured with `main`'s layout at `fa252b1`, the longest content and the designer open at its first place, in the Linux harness; the designer is 818 units wide whatever the font. No first place clears them from 125%, where the designer stands from the top margin to the bottom one. Proposed: the hint and the banner are a layer of their own over the windows and under an open drop-down's overlay, drawn after the front window and taking a press before it, so that the way back takes its press whatever window stands over its place. The hint of what the pointer is over is empty while the pointer is over a window, so the hint covers a window only while the pointer is on the battlefield or a placement is armed. The alternative is the windows closing when the match ends, which leaves the hint covered. | CV10.4 |
 
 ## [`Docs/Plans/ImplementationPlan-Horizon.md`](../Plans/ImplementationPlan-Horizon.md)
 
