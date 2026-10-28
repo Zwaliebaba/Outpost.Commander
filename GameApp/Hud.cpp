@@ -985,6 +985,9 @@ constexpr float CHIP_INSET = 8.0f;
 constexpr float CHIP_TEXT_TOP = 6.0f;
 constexpr float CHIP_LABEL_TOP = 7.0f;
 constexpr float CHIP_ARROW_GAP = 4.0f;
+// Where the third chip ends, at its width from its place; the chips start a gap after the label where it needs more room
+// than their place gives it, and share what is left to that end.
+constexpr float CHIPS_END = CHIPS_LEFT - DESIGNER_INSET + (static_cast<float>(CHIPS_SHOWN) * (CHIP_WIDTH + CHIP_GAP)) - CHIP_GAP;
 // A slot's label and pick down its row, and its divider's room above and below.
 constexpr float SLOT_LABEL_TOP = 21.0f;
 constexpr float SLOT_PICK_TOP = 39.0f;
@@ -1137,7 +1140,7 @@ float CardHeightOf(const Hud::SlotRow& _slot) noexcept
 // top-left corner: a hatched header with the window's subject and the Ore, the cards that add to the queue, and under them
 // the queue, a row for each job. The cards stay where they are as the queue grows, so that one can be clicked again and
 // again, and the window grows at its foot (ADR-043). Research is wide enough that a topic's name fits its card, and
-// production as wide as leaves both windows clear of the designer, side by side at the reference width (ADR-062).
+// production as wide as the reference width holds beside research and the designer, each a margin apart (ADR-062).
 constexpr float RESEARCH_WINDOW_WIDTH = 560.0f;
 constexpr float PRODUCTION_WINDOW_WIDTH = Hud::REFERENCE_WIDTH_UNITS - (4.0f * MARGIN) - DESIGNER_WIDTH - RESEARCH_WINDOW_WIDTH;
 constexpr float WINDOW_INSET = 24.0f;
@@ -1386,12 +1389,14 @@ void PlacePresses(Hud::Layout& _layout, std::size_t _firstRegion)
 
 // Draws the window built on _canvas into the layout, and keeps beside it the rectangle of each button among the layout's
 // actions from _firstAction, and of each card among its previews, and the window's frame, title bar, close box and corner.
-void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _frame, Outpost::WindowKind _kind, std::size_t _firstAction)
+void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _frame, Outpost::WindowKind _kind, std::size_t _firstAction,
+                  Neuron::Canvas* _front)
 {
   const std::size_t firstRegion = _layout.regions.size();
-  // The window's own layer, which an open drop-down's overlay follows.
+  // The window's own layer, which the front canvas's layers follow, if this is the front window, and then an open
+  // drop-down's overlay.
   const std::size_t layer = _layout.layers.size();
-  _canvas.Finish(_layout);
+  _canvas.Finish(_layout, _front);
   PlacePresses(_layout, firstRegion);
   const std::size_t panel = _layout.layers[layer].firstPanel;
   const Neuron::LayoutNode& frame = _canvas.Tree().Node(_frame);
@@ -1404,7 +1409,7 @@ void FinishWindow(Hud::Layout& _layout, Neuron::Canvas& _canvas, std::size_t _fr
 }
 
 // Where the windows are built: the layout they are drawn into, its metrics, what their widgets share, and the screen's size
-// in reference units.
+// in reference units; and for the front window, the canvas of what stands over the windows, which it finishes with itself.
 struct WindowBench
 {
   Hud::Layout* layout = nullptr;
@@ -1412,6 +1417,7 @@ struct WindowBench
   Neuron::Interaction* interaction = nullptr;
   float screenWidthUnits = 0.0f;
   float screenHeightUnits = 0.0f;
+  Neuron::Canvas* front = nullptr;
 };
 
 // Builds _kind's window _widthUnits wide on a canvas of its own, where _place puts it, its body of _body's style holding what
@@ -1425,7 +1431,7 @@ void LayWindow(const WindowBench& _bench, Outpost::WindowKind _kind, const Windo
   const std::size_t frame = BeginWindowAt(canvas, *_bench.interaction, _kind, _place, _widthUnits, _body, _bench.screenHeightUnits);
   std::forward<Build>(_build)(canvas);
   canvas.EndWindow();
-  FinishWindow(*_bench.layout, canvas, frame, _kind, firstAction);
+  FinishWindow(*_bench.layout, canvas, frame, _kind, firstAction, _bench.front);
 }
 
 // A label over what follows it in a window, in the label face and tracked, its line a name's, the label a little down it.
@@ -2148,22 +2154,27 @@ void NameRow(Neuron::Canvas& _canvas, const WindowBench& _bench, const Hud::Desi
 }
 
 // The saved designs, as many as fit from the first shown, each a chip with its name and its code, and the arrows that
-// scroll them when they do not all fit.
-void SavedDesigns(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::DesignerPanel& _panel)
+// scroll them when they do not all fit. The label before them has the room it is set in at every step: the chips start a
+// gap after it where their place is too near, and are as much narrower as keeps the third's end.
+void SavedDesigns(Neuron::Canvas& _canvas, const WindowBench& _bench, const Hud::DesignerPanel& _panel)
 {
   Neuron::LayoutTree& tree = _canvas.Tree();
+  Hud::Layout& layout = *_bench.layout;
+  const float chipsLeft =
+    std::max(CHIPS_LEFT - DESIGNER_INSET, _bench.metrics->Width(Hud::Typeface::Label, "SAVED", LABEL_TRACKING_UNITS) + CHIP_GAP);
+  const float chipWidth =
+    std::min(CHIP_WIDTH, (CHIPS_END - chipsLeft - (static_cast<float>(CHIPS_SHOWN - 1) * CHIP_GAP)) / static_cast<float>(CHIPS_SHOWN));
   (void)tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = CHIP_HEIGHT, .alignX = Neuron::LayoutAlign::Stretch});
   (void)_canvas.Label(TrackedText("SAVED", NAME_LINE_UNITS), LABEL_COLOR,
                       {.anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.top = CHIP_LABEL_TOP}});
-  (void)tree.Begin(Neuron::LayoutKind::Row,
-                   {.gapUnits = CHIP_GAP, .anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = CHIPS_LEFT - DESIGNER_INSET}});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = CHIP_GAP, .anchor = Neuron::LayoutAnchor::TopLeft, .margin = {.left = chipsLeft}});
   for (std::size_t i = _panel.firstChip, column = 0; i < _panel.chips.size() && column < CHIPS_SHOWN; ++i, ++column)
   {
     const Hud::DesignChip& chip = _panel.chips[i];
     (void)_canvas.BeginCard(std::format("chip {}", i),
                             {.face = chip.shown ? PICKED_COLOR : CARD_COLOR, .edge = chip.shown ? PICKED_EDGE_COLOR : EDGE_COLOR},
-                            PressOf(_layout, chip.action),
-                            {.widthUnits = CHIP_WIDTH,
+                            PressOf(layout, chip.action),
+                            {.widthUnits = chipWidth,
                              .heightUnits = CHIP_HEIGHT,
                              .padding = {.left = CHIP_INSET, .top = CHIP_TEXT_TOP, .right = CHIP_INSET},
                              .alignX = Neuron::LayoutAlign::Stretch});
@@ -2180,8 +2191,8 @@ void SavedDesigns(Neuron::Canvas& _canvas, Hud::Layout& _layout, const Hud::Desi
   {
     const bool back = _panel.firstChip > 0;
     const bool on = _panel.firstChip + CHIPS_SHOWN < _panel.chips.size();
-    const std::uint32_t previous = back ? PressOf(_layout, {.kind = Hud::ActionKind::PreviousDesigns}) : Neuron::NO_PAYLOAD;
-    const std::uint32_t next = on ? PressOf(_layout, {.kind = Hud::ActionKind::NextDesigns}) : Neuron::NO_PAYLOAD;
+    const std::uint32_t previous = back ? PressOf(layout, {.kind = Hud::ActionKind::PreviousDesigns}) : Neuron::NO_PAYLOAD;
+    const std::uint32_t next = on ? PressOf(layout, {.kind = Hud::ActionKind::NextDesigns}) : Neuron::NO_PAYLOAD;
     (void)tree.Begin(Neuron::LayoutKind::Row,
                      {.gapUnits = CHIP_ARROW_GAP, .anchor = Neuron::LayoutAnchor::TopRight, .margin = {.top = LINE_UNITS}});
     (void)_canvas.SmallButton("previous designs", "<", back, previous);
@@ -2467,7 +2478,7 @@ void LayDesigner(const WindowBench& _bench, const Hud::DesignerPanel& _panel, co
                  .grow = 1.0f});
               NameRow(_canvas, _bench, _panel);
               (void)tree.Add({.heightUnits = CHIP_ROW_TOP - NAME_ROW_TOP - NAME_ROW_HEIGHT});
-              SavedDesigns(_canvas, layout, _panel);
+              SavedDesigns(_canvas, _bench, _panel);
               (void)tree.Add({.heightUnits = SLOTS_TOP - CHIP_ROW_TOP - CHIP_HEIGHT});
               SlotRows(_canvas, layout, _panel);
               (void)tree.Begin(Neuron::LayoutKind::Stack, {.heightUnits = SECTION_GAP});
@@ -2670,6 +2681,8 @@ void DrawMap(Hud::Layout& _layout, const Hud::Content& _content, std::span<const
 struct HudBench
 {
   Neuron::Canvas* canvas = nullptr;
+  // The canvas of what stands over the windows, the hint and the banner (ADR-015 decision 4).
+  Neuron::Canvas* front = nullptr;
   Hud::Layout* layout = nullptr;
   const Hud::TextMetrics* metrics = nullptr;
   std::optional<Hud::Action> hovered;
@@ -2710,6 +2723,12 @@ Neuron::LayoutStyle EndingAt(float _rightUnits, float _topUnits)
 void BeginHudPanel(Neuron::Canvas& _canvas, float _leftUnits, float _topUnits, float _widthUnits, float _heightUnits)
 {
   (void)_canvas.BeginPanel(At(_leftUnits, _topUnits, {.widthUnits = _widthUnits, .heightUnits = _heightUnits}));
+}
+
+// A panel of the HUD that stands over the windows, a layer of its own that takes a press over them (ADR-031 decision 4).
+void BeginFrontPanel(Neuron::Canvas& _canvas, float _leftUnits, float _topUnits, float _widthUnits, float _heightUnits)
+{
+  (void)_canvas.BeginLayerPanel(At(_leftUnits, _topUnits, {.widthUnits = _widthUnits, .heightUnits = _heightUnits}));
 }
 
 // A rectangle of _color at a place in a panel, which the game composes of its own, such as a bar; its node.
@@ -2944,11 +2963,11 @@ void StatusPanel(const HudBench& _bench, const Hud::Content& _content, float _co
   canvas.EndPanel();
 }
 
-// The hint at the top middle: what a click on the ground will do, or what the pointer is over.
+// The hint at the top middle, over the windows: what a click on the ground will do, or what the pointer is over.
 void HintPanel(const HudBench& _bench, const std::string& _hint, Outpost::WindowManager::Point _at)
 {
-  Neuron::Canvas& canvas = *_bench.canvas;
-  BeginHudPanel(canvas, _at.xUnits, _at.yUnits, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+  Neuron::Canvas& canvas = *_bench.front;
+  BeginFrontPanel(canvas, _at.xUnits, _at.yUnits, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
   (void)canvas.Label(
     LineText(_bench.metrics->Fit(Hud::Typeface::Name, _hint, HINT_PANEL_WIDTH - (2.0f * PADDING)), Hud::Typeface::Name, NAME_LINE_UNITS),
     TEXT_COLOR, At(PADDING, (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f));
@@ -2993,13 +3012,13 @@ void TagPanel(const HudBench& _bench, const Hud::Connection& _connection)
   canvas.EndPanel();
 }
 
-// The banner under the hint: how the match ended, and the way back to the menu.
+// The banner under the hint, over the windows: how the match ended, and the way back to the menu.
 void BannerPanel(const HudBench& _bench, const Hud::Outcome& _outcome, Outpost::WindowManager::Point _at)
 {
-  Neuron::Canvas& canvas = *_bench.canvas;
+  Neuron::Canvas& canvas = *_bench.front;
   const Hud::TextMetrics& metrics = *_bench.metrics;
   const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
-  BeginHudPanel(canvas, _at.xUnits, _at.yUnits, BANNER_WIDTH, heightUnits);
+  BeginFrontPanel(canvas, _at.xUnits, _at.yUnits, BANNER_WIDTH, heightUnits);
   const float room = BANNER_WIDTH - (2.0f * PADDING);
   (void)canvas.Label(LineText(metrics.Fit(Hud::Typeface::Title, _outcome.title, room), Hud::Typeface::Title, TITLE_LINE_UNITS), GOLD_COLOR,
                      At(PADDING, PADDING));
@@ -4572,10 +4591,14 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // Then the plates over the fleets, at the interface's scale, which their count is drawn at (ADR-102 decision 2).
   LayPlates(layout, _content, _metrics, scale, width, height);
 
-  // The HUD's panels on the canvas (ADR-100 decision 7).
+  // The HUD's panels on the canvas (ADR-100 decision 7), and the hint and the banner on a canvas of their own, which stands
+  // over the windows (ADR-015 decision 4; ADR-031 decision 4): the front window finishes it after itself and before an
+  // open drop-down's list, or, with no window open, it is finished after the HUD.
+  Neuron::Canvas front(GameTheme(), _metrics, interaction, screenWidthUnits, screenHeightUnits);
   {
     Neuron::Canvas hud(GameTheme(), _metrics, interaction, screenWidthUnits, screenHeightUnits);
     LayHud({.canvas = &hud,
+            .front = &front,
             .layout = &layout,
             .metrics = &_metrics,
             .hovered = _hovered,
@@ -4606,26 +4629,55 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       return WindowPlace{.corner = KeepOnScreen(*moved, _widthUnits, screenWidthUnits, screenHeightUnits)};
     return FirstPlaceOf(RowOf(_kind).first);
   };
-  const WindowBench bench{.layout = &layout,
-                          .metrics = &_metrics,
-                          .interaction = &interaction,
-                          .screenWidthUnits = screenWidthUnits,
-                          .screenHeightUnits = screenHeightUnits};
-  // Production and research stand at first in the slots under the Ore, each in the one it took as it opened
-  // (ADR-031 decision 2): the first at the margin, the second beside where the other window stands in the first. Without a
-  // manager, production takes the first and research the second.
+  WindowBench bench{.layout = &layout,
+                    .metrics = &_metrics,
+                    .interaction = &interaction,
+                    .screenWidthUnits = screenWidthUnits,
+                    .screenHeightUnits = screenHeightUnits};
+  // The front window: the last of those whose content there is to lay out.
+  const auto laid = [&_content](WindowKind _kind)
+  {
+    switch (_kind)
+    {
+    case WindowKind::Designer:
+      return _content.designer.has_value();
+    case WindowKind::Research:
+      return _content.laboratory.has_value();
+    case WindowKind::Production:
+      return _content.production.has_value();
+    case WindowKind::Controls:
+      return _content.controls;
+    case WindowKind::Orders:
+      return _content.orders.has_value();
+    case WindowKind::Away:
+      return _content.away.has_value();
+    case WindowKind::Leave:
+      return _content.leave;
+    }
+    return false;
+  };
+  const auto frontWindow = std::find_if(backToFront.rbegin(), backToFront.rend(), laid);
+  // Production and research stand at first in the slots beside the column under the Ore, each in the one it took as it
+  // opened (ADR-031 decision 2; ADR-066 decision 3): the first a gap clear of the column, the second beside where the other
+  // window stands in the first, each wholly on the screen, so that the second stands over the first where the screen is
+  // too narrow for both. Without a manager, production takes the first and research the second.
+  const float besideColumnUnits = MARGIN + ColumnUnitsOf(_content, _metrics) + PANEL_GAP;
   const auto slotted = [&](WindowKind _kind, std::size_t _slot)
   {
     const std::size_t slot = _windows != nullptr ? _windows->SlotOf(_kind).value_or(_slot) : _slot;
-    const float other = _kind == WindowKind::Production ? RESEARCH_WINDOW_WIDTH : PRODUCTION_WINDOW_WIDTH;
-    return WindowManager::Point{.xUnits = slot == 0 ? MARGIN : (2.0f * MARGIN) + other, .yUnits = WINDOWS_TOP};
+    const bool production = _kind == WindowKind::Production;
+    const float other = production ? RESEARCH_WINDOW_WIDTH : PRODUCTION_WINDOW_WIDTH;
+    const float widthUnits = production ? PRODUCTION_WINDOW_WIDTH : RESEARCH_WINDOW_WIDTH;
+    const float left = slot == 0 ? besideColumnUnits : besideColumnUnits + other + MARGIN;
+    return WindowManager::Point{.xUnits = std::max(MARGIN, std::min(left, screenWidthUnits - MARGIN - widthUnits)), .yUnits = WINDOWS_TOP};
   };
   for (const WindowKind kind : backToFront)
   {
+    bench.front = frontWindow != backToFront.rend() && kind == *frontWindow ? &front : nullptr;
     // The designer, at first in the top-right corner.
     if (kind == WindowKind::Designer && _content.designer.has_value())
       LayDesigner(bench, *_content.designer, placed(kind, DESIGNER_WIDTH));
-    // Production and research, at first side by side under the Ore and the status panel, clear of the designer.
+    // Production and research, at first side by side beside the column under the Ore.
     else if (kind == WindowKind::Production && _content.production.has_value())
       LayProduction(bench, *_content.production, {.corner = place(kind, slotted(kind, 0), PRODUCTION_WINDOW_WIDTH)});
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
@@ -4640,6 +4692,12 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       LayAway(bench, *_content.away, placed(kind, AWAY_WINDOW_WIDTH));
     else if (kind == WindowKind::Leave && _content.leave)
       LayLeave(bench, placed(kind, LEAVE_WINDOW_WIDTH));
+  }
+  if (frontWindow == backToFront.rend())
+  {
+    const std::size_t firstRegion = layout.regions.size();
+    front.Finish(layout);
+    PlacePresses(layout, firstRegion);
   }
   return layout;
 }

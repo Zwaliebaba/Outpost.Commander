@@ -127,6 +127,10 @@ public:
   // A panel of the HUD, in a window's look though it has no title bar (ADR-043 decision 1): a column of _style, its body
   // and a bracket at each corner, which takes what is built until EndPanel.
   std::size_t BeginPanel(const LayoutStyle& _style);
+  // A panel, as BeginPanel's, that begins a layer of its own over every layer drawn before it, whose press falls in the
+  // panel, so that it stands over a window and takes a press there. What the canvas draws after it is in its layer until
+  // another begins.
+  std::size_t BeginLayerPanel(const LayoutStyle& _style);
   void EndPanel();
 
   // A box of _style in _look, a column that takes what is built until EndBox, for what the game composes: a frame, such as
@@ -205,7 +209,10 @@ public:
   [[nodiscard]] static bool MayFill(const Theme& _theme, const DirectX::XMFLOAT4& _color) noexcept;
 
   // Measures and places what was built, and draws it into _list, in the order it was built; once, when the build is done.
-  void Finish(DrawList& _list);
+  // With a _front, a canvas built and not finished, it measures and draws _front's after its own and before the overlays of
+  // either, so that what _front holds stands over this canvas's layers and under an open drop-down's list; _front is then
+  // finished too.
+  void Finish(DrawList& _list, Canvas* _front = nullptr);
 
 private:
   using Draw = std::function<void(DrawList&)>;

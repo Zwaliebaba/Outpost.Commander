@@ -13,7 +13,7 @@ A window's header has to read at a glance. A queue reads as a count against its 
    - The designer writes its queue over its slots as the other windows write a queue, "QUEUE · 2 / 5", and its ships built apart, "BUILT · 4", beside the slots.
    - Arrows flank what they step: "< SHIPYARD 05 > · DESIGNER" in the designer's title bar, and "< SHIPYARD 05 >" on the production window's title line. The production window's step through the player's finished producers, the Command Station first and then the Shipyards by their numbers (`ProductionTarget`), and the designer's through its Shipyards by number, round the end.
    - An arrow's button is 24 units square, and so are the research window's and the saved designs' arrows.
-   - The saved-design chips are 216 units wide, a little narrower than a part card ([ADR-062](ADR-062-type-scale-and-contrast.md) decision 4), so that the chips' arrows stand clear of the third chip.
+   - The saved-design chips are 216 units wide, a little narrower than a part card ([ADR-062](ADR-062-type-scale-and-contrast.md) decision 4), so that the chips' arrows stand clear of the third chip. Where the SAVED label before them is set wider than their place leaves it, at any step, the first chip starts a chip's gap after it, and the three are as much narrower as keeps the third's end where it stands.
    - Research says where its page is, "TOPICS · 11-20 OF" and the count of topics, with an ASCII hyphen ([ADR-030](ADR-030-typography-and-sprites.md)).
    - A window's body is opaque.
 2. *(retired)*

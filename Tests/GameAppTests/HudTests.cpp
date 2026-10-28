@@ -346,6 +346,22 @@ const Outpost::Hud::Text& TextOf(const Outpost::Hud::Layout& _layout, std::strin
   return *found;
 }
 
+// The panels of the column under the Ore in _layout: the HUD's at the left margin above the screen's middle, which the
+// minimap, at the margin too, stands under.
+std::vector<Outpost::Hud::Rect> ColumnOf(const Outpost::Hud::Layout& _layout, std::uint32_t _heightPixels)
+{
+  const float margin = 16.0f * _layout.fontPixels / Outpost::Hud::FONT_UNITS;
+  std::vector<Outpost::Hud::Rect> column;
+  const Outpost::Hud::Span panels = _layout.PanelsOf(0);
+  for (std::size_t p = panels.first; p < panels.end; ++p)
+  {
+    const Outpost::Hud::Rect& panel = _layout.panels[p];
+    if (std::abs(panel.left - margin) < 0.5f && panel.top < static_cast<float>(_heightPixels) / 2.0f)
+      column.push_back(panel);
+  }
+  return column;
+}
+
 } // namespace
 
 TEST_CLASS(HudTests)
@@ -2632,8 +2648,8 @@ public:
     Assert::IsTrue(panel.queue[1].front && panel.queue[1].permille == 120 && !panel.queue[1].waiting);
   }
 
-  // ADR-062 decision 6: the production and research windows are laid out side by side under the Ore, clear of the
-  // designer; each enabled card is a place to click, and the research window scrolls its topics a row at a time.
+  // ADR-062 decision 6: the production and research windows are laid out side by side beside the column under the Ore;
+  // each enabled card is a place to click, and the research window scrolls its topics a row at a time.
   TEST_METHOD(LaysOutTheProductionAndResearchWindows)
   {
     Outpost::Snapshot newest = DesignerSnapshot();
@@ -2658,7 +2674,7 @@ public:
     const Outpost::Hud::Window& designerWindow = layout.windows[2];
     Assert::IsTrue(production.kind == Outpost::WindowKind::Production && lab.kind == Outpost::WindowKind::Research);
     Assert::IsTrue(production.frame.left + production.frame.width <= lab.frame.left, L"side by side");
-    Assert::IsTrue(lab.frame.left + lab.frame.width <= designerWindow.frame.left, L"clear of the designer");
+    Assert::IsTrue(designerWindow.kind == Outpost::WindowKind::Designer);
     Assert::IsTrue(production.frame.top + production.frame.height < 1080.0f && lab.frame.top + lab.frame.height < 1080.0f);
 
     const auto count = [&layout](std::size_t _layer, Outpost::Hud::ActionKind _kind)
@@ -4263,9 +4279,9 @@ public:
     Assert::AreEqual(std::string("R"), Outpost::KeyCap(Outpost::KEY_RESEARCH));
   }
 
-  // ADR-031 decision 2: a production or research window not yet moved opens in the first of the two places under the Ore that
-  // no open window holds, production's and then research's, so that research alone opens at the margin, and the two stand
-  // side by side in the order they opened. A moved window stays where it was left.
+  // ADR-031 decision 2: a production or research window not yet moved opens in the first of the two places beside the column
+  // under the Ore that no open window holds, production's and then research's, so that research alone opens a gap clear of
+  // the column, and the two stand side by side in the order they opened. A moved window stays where it was left.
   TEST_METHOD(OpensAWindowWhereThereIsRoom)
   {
     Outpost::Hud::Content content;
@@ -4278,23 +4294,27 @@ public:
       return window != layout.windows.end() ? window->frame : Outpost::Hud::Rect{};
     };
     constexpr float MARGIN_UNITS = 16.0f;
+    const std::vector<Outpost::Hud::Rect> column = ColumnOf(Lay(content, 1920, 1080), 1080);
+    Assert::IsFalse(column.empty(), L"the column");
+    // The column's panels are one width (ADR-066 decision 3), and the first place is the HUD's gap clear of them.
+    const float besideColumn = column.front().left + column.front().width + 8.0f;
 
     Outpost::WindowManager windows;
     windows.Open(Outpost::WindowKind::Research);
     const Outpost::Hud::Rect alone = frameOf(windows, Outpost::WindowKind::Research);
-    Assert::AreEqual(MARGIN_UNITS, alone.left, 0.01f, L"research alone at the margin");
+    Assert::AreEqual(besideColumn, alone.left, 0.01f, L"research alone a gap clear of the column");
     windows.Open(Outpost::WindowKind::Production);
     const Outpost::Hud::Rect second = frameOf(windows, Outpost::WindowKind::Production);
     Assert::AreEqual(alone.left + alone.width + MARGIN_UNITS, second.left, 0.01f, L"production beside it");
     Assert::AreEqual(alone.top, second.top, 0.01f);
-    Assert::IsTrue(second.left + second.width <= 1920.0f - 16.0f - 818.0f, L"clear of the designer");
+    Assert::IsTrue(second.left + second.width <= 1920.0f - MARGIN_UNITS, L"on the screen");
     Assert::AreEqual(alone.left, frameOf(windows, Outpost::WindowKind::Research).left, 0.01f, L"research keeps its place");
 
     Outpost::WindowManager inOrder;
     inOrder.Open(Outpost::WindowKind::Production);
     inOrder.Open(Outpost::WindowKind::Research);
     const Outpost::Hud::Rect production = frameOf(inOrder, Outpost::WindowKind::Production);
-    Assert::AreEqual(MARGIN_UNITS, production.left, 0.01f);
+    Assert::AreEqual(besideColumn, production.left, 0.01f);
     Assert::AreEqual(production.left + production.width + MARGIN_UNITS, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
 
     // Moved, a window stays where it was left, and its place is free for the next to open.
@@ -4303,7 +4323,46 @@ public:
     inOrder.Close(Outpost::WindowKind::Research);
     inOrder.Open(Outpost::WindowKind::Research);
     Assert::AreEqual(700.0f, frameOf(inOrder, Outpost::WindowKind::Production).left, 0.01f);
-    Assert::AreEqual(MARGIN_UNITS, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
+    Assert::AreEqual(besideColumn, frameOf(inOrder, Outpost::WindowKind::Research).left, 0.01f);
+  }
+
+  // ADR-066 decision 3: at every step the windows fit on 16:9, 16:10, 3:2 and 21:9, production and research at their first
+  // places, opened together, cover none of the column under the Ore with the alerts at their longest, and stand wholly on
+  // the screen across it, the second over the first where the screen is too narrow for both.
+  TEST_METHOD(OpensTheWindowsBesideTheColumn)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot(true, true);
+    Outpost::Hud::Content content = LongestContent(true);
+    content.designer.reset();
+    content.alerts.assign(4, {"Shipyard 05 is under attack", std::nullopt});
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Production);
+    windows.Open(Outpost::WindowKind::Research);
+    for (const auto& [width, height] :
+         std::array<std::pair<std::uint32_t, std::uint32_t>, 4>{{{1920, 1080}, {1920, 1200}, {2880, 1920}, {2560, 1080}}})
+    {
+      for (const float factor : Outpost::Hud::INTERFACE_STEPS)
+      {
+        if (!Outpost::Hud::WindowsFit(&newest, width, height, factor))
+          continue;
+        const Outpost::Hud::Layout layout = Lay(content, width, height, {}, &windows, factor);
+        const std::wstring step = std::format(L" at {}x{}, {}%", width, height, std::lround(factor * 100.0f));
+        const std::vector<Outpost::Hud::Rect> column = ColumnOf(layout, height);
+        Assert::IsTrue(column.size() >= 3 && layout.windows.size() == 2, (L"the column and both windows" + step).c_str());
+        for (const Outpost::Hud::Window& window : layout.windows)
+        {
+          const Outpost::Hud::Rect& frame = window.frame;
+          Assert::IsTrue(frame.left >= 0.0f && frame.left + frame.width <= static_cast<float>(width) + 0.01f,
+                         (L"on the screen" + step).c_str());
+          for (const Outpost::Hud::Rect& panel : column)
+          {
+            const bool clear =
+              frame.left >= panel.left + panel.width || frame.top >= panel.top + panel.height || panel.top >= frame.top + frame.height;
+            Assert::IsTrue(clear, (L"clear of the column" + step).c_str());
+          }
+        }
+      }
+    }
   }
 
   // ADR-068 decision 1: the designer writes its queue as the other windows do, over its slots, and its ships built apart;
@@ -4611,6 +4670,61 @@ public:
     Assert::AreEqual(1.75f, Hud::StepInterface(1.75f, 0, nullptr, 1920, 1080), L"the menu keeps it");
   }
 
+  // ADR-017 decision 7: at every step the windows fit, the saved designs' label has the room it is set in: the first chip
+  // stands at least the row's gap after it, and the third ends at least the arrows' gap before them.
+  TEST_METHOD(LeavesTheSavedLabelItsRoom)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot(true, true);
+    std::optional<Outpost::Hud::DesignerPanel> designer = LongestContent(true).designer;
+    if (!designer.has_value() || designer->chips.empty())
+    {
+      Assert::Fail(L"the designer and a saved design");
+      return;
+    }
+    // Four saved designs, so that three chips show and the arrows scroll them.
+    const Outpost::Hud::DesignChip chip = designer->chips.front();
+    designer->chips.assign(4, chip);
+    designer->firstChip = 0;
+    Outpost::Hud::Content content;
+    content.designer = std::move(designer);
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Designer);
+    for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {2880, 1920}}})
+    {
+      for (const float factor : Outpost::Hud::INTERFACE_STEPS)
+      {
+        if (!Outpost::Hud::WindowsFit(&newest, width, height, factor))
+          continue;
+        const Outpost::Hud::Layout layout = Lay(content, width, height, {}, &windows, factor);
+        const float scale = Outpost::Hud::Scale(width, height, factor);
+        const std::wstring step = std::format(L" at {}x{}, {}%", width, height, std::lround(factor * 100.0f));
+        std::vector<Outpost::Hud::Rect> chips;
+        for (const auto& [rect, action] : layout.actions)
+        {
+          if (action.kind == Outpost::Hud::ActionKind::LoadDesign)
+            chips.push_back(rect);
+        }
+        Assert::AreEqual(size_t{3}, chips.size(), (L"three chips" + step).c_str());
+        const auto next = std::ranges::find_if(layout.actions, [](const auto& _entry)
+                                               { return _entry.second.kind == Outpost::Hud::ActionKind::NextDesigns; });
+        Assert::IsTrue(next != layout.actions.end(), (L">" + step).c_str());
+        // The label on the chips' row, not the save button's SAVED over it.
+        const auto saved = std::ranges::find_if(layout.texts, [&](const Outpost::Hud::Text& _text)
+                                                { return _text.text == "SAVED" && _text.top >= chips.front().top - 0.5f; });
+        Assert::IsTrue(saved != layout.texts.end(), (L"the label" + step).c_str());
+        const Outpost::Hud::Rect label = LineBoxOf(*saved, FontsFor(width, height, factor));
+        // The label's pen is rounded to a pixel, which moves it right by half a pixel at most; and a hundredth of one for the
+        // sums' own rounding.
+        Assert::IsTrue(label.left + label.width + (6.0f * scale) <= chips.front().left + 0.51f,
+                       (L"the row's gap after the label" + step).c_str());
+        // < stands an arrow and the arrows' gap before >.
+        const float previousLeft = next->first.left - ((24.0f + 4.0f) * scale);
+        Assert::IsTrue(chips.back().left + chips.back().width + (4.0f * scale) <= previousLeft + 0.5f,
+                       (L"the arrows' gap after the third chip" + step).c_str());
+      }
+    }
+  }
+
   // ADR-070 decision 3; ADR-100: at 150% on a 16:9 screen the designer stands within the screen, its part rows in a view
   // a line of cards tall at least, drawn cut to it, its thumb in the room right of the cards; the wheel over the rows
   // scrolls them, and brings the last row's cards into the view, where they take a press.
@@ -4645,6 +4759,44 @@ public:
                    L"scrolled to the foot, the last row's cards stand in the view");
   }
 
+  // ADR-015 decision 4; ADR-031 decision 4: at every step the windows fit on 16:9, 16:10, 3:2 and 21:9, with the designer
+  // open at its first place, the hint and the banner stand over it, each a layer of its own over every window, and the way
+  // back to the menu takes its press there.
+  TEST_METHOD(StandsTheHintAndTheBannerOverTheWindows)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot(true, true);
+    const Outpost::Hud::Content content = LongestContent(true);
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Designer);
+    for (const auto& [width, height] :
+         std::array<std::pair<std::uint32_t, std::uint32_t>, 4>{{{1920, 1080}, {1920, 1200}, {2880, 1920}, {2560, 1080}}})
+    {
+      for (const float factor : Outpost::Hud::INTERFACE_STEPS)
+      {
+        if (!Outpost::Hud::WindowsFit(&newest, width, height, factor))
+          continue;
+        const Outpost::Hud::Layout layout = Lay(content, width, height, {}, &windows, factor);
+        const std::wstring step = std::format(L" at {}x{}, {}%", width, height, std::lround(factor * 100.0f));
+        Assert::AreEqual(size_t{1}, layout.windows.size(), (L"the designer" + step).c_str());
+        const auto back = std::ranges::find_if(layout.actions, [](const auto& _entry)
+                                               { return _entry.second.kind == Outpost::Hud::ActionKind::BackToMenu; });
+        Assert::IsTrue(back != layout.actions.end(), (L"the way back" + step).c_str());
+        const Outpost::Hud::Text& hint = TextOf(layout, content.hint);
+        for (const auto& [x, y, what] : std::array<std::tuple<float, float, const wchar_t*>, 2>{
+               {{hint.left + 1.0f, hint.top + 1.0f, L"the hint"},
+                {back->first.left + (back->first.width / 2.0f), back->first.top + (back->first.height / 2.0f), L"the way back"}}})
+        {
+          const std::size_t layer = layout.LayerAt(x, y);
+          Assert::IsTrue(layer > layout.windows.size() && !layout.layers[layer - 1].overlay,
+                         (std::wstring(what) + L" over every window" + step).c_str());
+        }
+        const std::optional<Outpost::Hud::Action> pressed =
+          layout.ActionAt(back->first.left + (back->first.width / 2.0f), back->first.top + (back->first.height / 2.0f));
+        Assert::IsTrue(pressed.has_value() && pressed->kind == Outpost::Hud::ActionKind::BackToMenu, (L"takes its press" + step).c_str());
+      }
+    }
+  }
+
   // ADR-015 decision 4: the hint, and the banner under it, stand in the middle of the top row while they clear the column
   // under the Ore and the tag; where the interface's scale crowds the row, they stand under it, in the middle of the room
   // right of the column, clear of both.
@@ -4654,11 +4806,12 @@ public:
     for (const float factor : {1.0f, 1.5f})
     {
       const Outpost::Hud::Layout layout = Lay(content, 1920, 1080, {}, nullptr, factor);
-      // The smallest panel of the HUD a text stands in.
-      const auto panelOf = [&layout](const Outpost::Hud::Text& _text)
+      // The smallest panel a text stands in, of the HUD's layer, or with _front of the layer in front where it stands: the
+      // hint's and the banner's own, over the windows.
+      const auto panelOf = [&layout](const Outpost::Hud::Text& _text, bool _front = false)
       {
         const Outpost::Hud::Rect* smallest = nullptr;
-        const Outpost::Hud::Span panels = layout.PanelsOf(0);
+        const Outpost::Hud::Span panels = layout.PanelsOf(_front ? layout.LayerAt(_text.left + 1.0f, _text.top + 1.0f) : 0);
         for (std::size_t p = panels.first; p < panels.end; ++p)
         {
           const Outpost::Hud::Rect& panel = layout.panels[p];
@@ -4668,8 +4821,8 @@ public:
         }
         return smallest != nullptr ? *smallest : Outpost::Hud::Rect{};
       };
-      const Outpost::Hud::Rect hint = panelOf(TextOf(layout, content.hint));
-      const Outpost::Hud::Rect banner = panelOf(TextOf(layout, "Defeat"));
+      const Outpost::Hud::Rect hint = panelOf(TextOf(layout, content.hint), true);
+      const Outpost::Hud::Rect banner = panelOf(TextOf(layout, "Defeat"), true);
       const Outpost::Hud::Rect ore = panelOf(TextOf(layout, "99,999"));
       const auto tagText =
         std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("Server "); });
@@ -4722,7 +4875,8 @@ public:
   }
 
   // ADR-061 decision 5: at either size, with the longest content, every text ends inside the smallest panel it starts in,
-  // measured with the fonts it is drawn in. Every offender is named, not only the first.
+  // measured with the fonts it is drawn in, and runs into no panel of its layer that it does not start in, but a line two
+  // pixels thin or less, such as a divider its line's box may graze. Every offender is named, not only the first.
   TEST_METHOD(KeepsEveryTextInsideItsPanel)
   {
     std::wstring offenders;

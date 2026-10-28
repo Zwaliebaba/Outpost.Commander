@@ -97,9 +97,9 @@ What the gates and the tasks build, as proposed. The ADR of each task records wh
 | CV8.3 | The minimap, the tag, the hint, the banner and the menu | CV8.2 | C1 | merged, [#155](https://github.com/Zwaliebaba/Outpost.Commander/pull/155); accepted at 1920×1080 from a run on 2026-10-28; awaiting the run at 2880×1920 |
 | CV9.1 | The scroll view | CV3.4 | — | merged, [#153](https://github.com/Zwaliebaba/Outpost.Commander/pull/153) |
 | CV10.1 | The hint clear of the build window | CV8.3 | C9 | dropped (owner, 2026-10-28): the console plan's CN1 deleted the build window, [#158](https://github.com/Zwaliebaba/Outpost.Commander/pull/158) |
-| CV10.2 | The designer's "SAVED" label has its room | CV7.1 | — | todo |
-| CV10.3 | The windows open clear of the column under the Ore | CV8.1 | C10 | todo |
-| CV10.4 | The hint and the banner over the windows | CV8.3 | C11 | todo |
+| CV10.2 | The designer's "SAVED" label has its room | CV7.1 | — | in review, [#164](https://github.com/Zwaliebaba/Outpost.Commander/pull/164) |
+| CV10.3 | The windows open clear of the column under the Ore | CV8.1 | C10 | in review, [#164](https://github.com/Zwaliebaba/Outpost.Commander/pull/164) |
+| CV10.4 | The hint and the banner over the windows | CV8.3 | C11 | in review, [#164](https://github.com/Zwaliebaba/Outpost.Commander/pull/164) |
 
 ### Milestone order
 
@@ -401,6 +401,10 @@ The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three 
 - **Scope:** the label is a cell of the saved row's layout, measured with its font as the canvas measures text (CV3.2), and the chips start after it with the row's gap, at every step.
 - **Acceptance:** `HudTests`: at every step the windows fit, the label ends at least the row's gap before the first chip; the test fails on today's layout at 150%. `OverlapsNoTwoTexts` and `KeepsEveryTextInsideItsPanel` did not see it, since the label is a text and the chip a panel it is not in: the task says whether either guard should count a text against another panel, and adds that if it costs nothing else.
 - **Verify:** the container's tests; CI; the owner's run of the designer at 100% and 150%.
+- **As built (2026-10-28):** [ADR-068](../ADR/ADR-068-interface-polish.md) decision 1 and [ADR-061](../ADR/ADR-061-measured-text.md) decision 5.
+  - **The row:** the label is measured as the canvas sets it, with its tracking, and the first chip starts a chip's gap after it where its place, 46 units into the row, is too near; the three chips narrow as much as keeps the third's end, so the arrows keep their gap.
+  - **The test:** `HudTests.LeavesTheSavedLabelItsRoom`, at every step the windows fit on 1920×1080 and 2880×1920. On `main`'s layout it failed at 100% in the Linux harness, whose stand-in font sets the label 45 units wide.
+  - **The guard:** `TextsPastTheirPanels` (`LayoutGuards.h`), which `KeepsEveryTextInsideItsPanel` and the overseer's `HoldsTheLayoutAndContrastGuards` run, also fails a text that runs into a panel of its layer it does not start in, but a line two pixels thin or less. On `main` it caught the label, at 125% in the harness; with the change it finds nothing else, the one other text it met being a divider the "16 s each" line's box grazes by 0.7 pixels, which the thin-line exception leaves out.
 
 ### CV10.3 — The windows open clear of the column under the Ore
 
@@ -410,6 +414,10 @@ The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three 
 - **ADR:** [ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3, the place, edited in place.
 - **Acceptance:** `HudTests`: at every step the windows fit, production and research at their first places overlap none of the column's panels, with the alerts at their longest.
 - **Verify:** the container's tests; CI; the owner's run with production and research open together.
+- **As built (2026-10-28):** [ADR-066](../ADR/ADR-066-production-status-on-the-hud.md) decision 3, [ADR-031](../ADR/ADR-031-floating-windows.md) decision 2, [ADR-062](../ADR/ADR-062-type-scale-and-contrast.md) decision 6, [ADR-070](../ADR/ADR-070-interface-scale.md) and [ADR-100](../ADR/ADR-100-the-canvas.md) decision 8.
+  - **The places:** the first slot stands the HUD's gap clear of the column, the second the windows' margin past the window in the first, each held wholly on the screen, so the second stands over the first where the screen is too narrow for both.
+  - **The tests:** `HudTests.OpensTheWindowsBesideTheColumn`, at every step the windows fit on 16:9, 16:10, 3:2 and 21:9, with four alerts; it failed on `main`'s layout at 100%. `OpensAWindowWhereThereIsRoom` and `LaysOutTheProductionAndResearchWindows` follow the new places.
+  - **What it costs, which C10 did not name:** production and research no longer stand clear of the designer at 100%; the second of them stands under the designer's left side when all three are open.
 
 ### CV10.4 — The hint and the banner over the windows
 
@@ -419,6 +427,10 @@ The owner's run of 2026-10-28 accepted CV1 to CV8 at 1920×1080 and found three 
 - **ADR:** [ADR-031](../ADR/ADR-031-floating-windows.md) decision 4 and [ADR-100](../ADR/ADR-100-the-canvas.md) decision 7, the layers, and [ADR-015](../ADR/ADR-015-ui-drawing.md) decision 4, the hint and the banner, edited in place.
 - **Acceptance:** `HudTests`: at every step the windows fit on 16:9, 16:10, 3:2 and 21:9, with the designer open at its first place and the longest content, `LayerAt` at the hint's and the way back's middles is the hint and the banner's layer, and `ActionAt` at the way back's middle is `BackToMenu`; the test fails on today's layout at 125% on 16:9.
 - **Verify:** the container's tests; CI; the owner's run at 150% on 1920×1080 with the designer open, a placement armed and then a match ended.
+- **As built (2026-10-28):** [ADR-015](../ADR/ADR-015-ui-drawing.md) decision 4, [ADR-031](../ADR/ADR-031-floating-windows.md) decision 4, and [ADR-100](../ADR/ADR-100-the-canvas.md) decisions 6 and 7.
+  - **The engine:** a panel can begin a layer of its own (`Canvas::BeginLayerPanel`), and a canvas can be finished with a front canvas (`Canvas::Finish(list, front)`), whose draws go after its own and before the overlays of either. `CanvasTests.StandsAFrontCanvasOverItsLayersAndUnderItsOverlays` holds both.
+  - **The game:** the hint and the banner are built with the HUD on a front canvas, which the front window finishes with itself, or, with no window open, which is finished after the HUD; an open drop-down's list, the orders window's, stays over them.
+  - **The test:** `HudTests.StandsTheHintAndTheBannerOverTheWindows`. It failed on `main`'s layout from 100%, not only from 125% as planned, since the hint stood in the HUD's layer however little of it a window covered.
 
 ---
 

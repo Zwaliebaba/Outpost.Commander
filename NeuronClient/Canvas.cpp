@@ -132,6 +132,20 @@ std::size_t Neuron::Canvas::BeginPanel(const LayoutStyle& _style)
   return panel;
 }
 
+std::size_t Neuron::Canvas::BeginLayerPanel(const LayoutStyle& _style)
+{
+  const std::size_t panel = m_tree.Begin(LayoutKind::Column, _style);
+  m_draws.emplace_back(
+    [this, panel](DrawList& _list)
+    {
+      const CanvasRect body = RectOf(panel, m_theme.windowColor);
+      _list.BeginLayer(body);
+      _list.panels.push_back(body);
+      Corners(_list, body);
+    });
+  return panel;
+}
+
 void Neuron::Canvas::EndPanel()
 {
   m_tree.End();
@@ -688,14 +702,26 @@ bool Neuron::Canvas::MayFill(const Theme& _theme, const DirectX::XMFLOAT4& _colo
   return !SameColor(_color, _theme.warningColor);
 }
 
-void Neuron::Canvas::Finish(DrawList& _list)
+void Neuron::Canvas::Finish(DrawList& _list, Canvas* _front)
 {
-  ASSERT(m_windows.empty() && m_scrolls.empty());
+  ASSERT(m_windows.empty() && m_scrolls.empty() && _front != this);
   m_tree.Arrange(m_metrics);
   for (Draw& draw : m_draws)
     draw(_list);
+  if (_front != nullptr)
+  {
+    ASSERT(_front->m_windows.empty() && _front->m_scrolls.empty());
+    _front->m_tree.Arrange(_front->m_metrics);
+    for (Draw& draw : _front->m_draws)
+      draw(_list);
+  }
   for (Draw& draw : m_overlays)
     draw(_list);
+  if (_front != nullptr)
+  {
+    for (Draw& draw : _front->m_overlays)
+      draw(_list);
+  }
 }
 
 Neuron::WidgetId Neuron::Canvas::Claim(std::string_view _id)

@@ -111,7 +111,8 @@ inline std::wstring Named(const std::wstring& _name, const Neuron::CanvasText& _
 }
 
 // ADR-061 decision 5: every text of _layout, called _name, that does not end inside the smallest panel it starts in, measured
-// with _fonts, which it is drawn in; one a line.
+// with _fonts, which it is drawn in, or that runs into a panel of its layer it does not start in, but a line two pixels thin
+// or less, such as a divider its line's box may graze; one a line.
 inline std::wstring TextsPastTheirPanels(const Neuron::DrawList& _layout, std::span<const Neuron::GlyphAtlas::Font> _fonts,
                                          const std::wstring& _name)
 {
@@ -141,6 +142,16 @@ inline std::wstring TextsPastTheirPanels(const Neuron::DrawList& _layout, std::s
         offenders += std::format(L"{} starts in no panel\n", Named(_name, text));
       else if (const float past = box.left + box.width - smallest.left - smallest.width; past > 0.5f)
         offenders += std::format(L"{} runs {} px past its panel\n", Named(_name, text), past);
+      for (std::size_t p = panels.first; p < panels.end; ++p)
+      {
+        const Neuron::CanvasRect panel = DrawnPanelOf(_layout, p);
+        if (panel.width <= 2.0f || panel.height <= 2.0f || panel.Contains(box.left + 0.5f, box.top + 0.5f))
+          continue;
+        const float across = std::min(box.left + box.width, panel.left + panel.width) - std::max(box.left, panel.left);
+        const float down = std::min(box.top + box.height, panel.top + panel.height) - std::max(box.top, panel.top);
+        if (across > 0.5f && down > 0.5f)
+          offenders += std::format(L"{} runs {} px into a panel it does not start in\n", Named(_name, text), across);
+      }
     }
   }
   return offenders;

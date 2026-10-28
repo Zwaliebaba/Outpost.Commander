@@ -27,7 +27,7 @@ The HUD's figures and labels are what a player decides by. Xbox Accessibility Gu
    - A topic card's lines are 18 units apart.
    - A figure's line is 17 units.
    - The designer's slot rows set their label and pick 18 units apart, at 21 and 39. At 1280×720 the label face, rasterized at 9 px, has a line about 11 px tall.
-6. **Production is 478 units wide, and research 560** (owner, 2026-10-04). Both stand side by side under the Ore, clear of the designer, at the reference width: 16 + 478 + 16 + 560 + 16 + 818 + 16 = 1920. Production's width is computed from that sum, so a wider designer narrows production and does not push research under the designer.
+6. **Production is 478 units wide, and research 560** (owner, 2026-10-04). Production is as wide as the reference width holds beside research and the designer, each a margin from the next and from the screen's edges: 16 + 478 + 16 + 560 + 16 + 818 + 16 = 1920. Its width is computed from that sum, so a wider designer narrows production. Where the two first open is beside the column under the Ore ([ADR-066](ADR-066-production-status-on-the-hud.md) decision 3).
 
 ## Consequences
 
