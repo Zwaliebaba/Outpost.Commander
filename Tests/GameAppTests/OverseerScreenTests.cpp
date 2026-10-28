@@ -23,25 +23,27 @@ constexpr std::uint64_t HOUR_TICK = std::uint64_t{20} * 3'600;
 
 Outpost::OverseerWelcomeMessage Welcome()
 {
-  return {
-    .wireLayoutHash = 0x1234'5678'9abc'def0,
-    .protocolVersion = 1,
-    .stateVersion = 1,
-    .ticksPerSecond = 20,
-    .folderUtf8 = "C:\\Users\\Owner\\Documents\\Outpost Commander\\Universe",
-    .seats = {{.player = Outpost::PlayerId{1}, .ai = {}},
-              {.player = Outpost::PlayerId{2}, .ai = "Normal"},
-              {.player = Outpost::PlayerId{3}, .ai = {}},
-              {.player = Outpost::PlayerId{4}, .ai = "Hard"}},
-    .recoveredSaveTick = 1'200,
-    .replayedCommands = 7,
-    .dayRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
-                   "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
-                   "battle 70000 70100 sector 3 player 3 deputy player 2 ai", "tick 60000 us 7200 over 3 move 4000 fight 2000",
-                   "dropped 61000 ticks 3", "join 30000 welcomed player 1 from 10.0.0.5", "join 40000 gone player 1 lost from 10.0.0.5",
-                   "join 41200 welcomed player 1 from 10.0.0.5",
-                   "hour 72000 player 1 ore 12000 income 4050 fleet 120 cap 200 nodes 6 researched 9 present 3500 deputy 100 orders 7200 "
-                   "refused 3 rtt_median_us 38000 rtt_p95_us 120000 sent 360000 lost 720 backlog_most 2048 sent_bytes 36864000"}};
+  // Seat 1's hour, with its connection's figures (ADR-082 decision 3), too long for one literal of a line.
+  const std::string hour =
+    std::string("hour 72000 player 1 ore 12000 income 4050 fleet 120 cap 200 nodes 6 researched 9 present 3500 ") +
+    "deputy 100 orders 7200 refused 3 rtt_median_us 38000 rtt_p95_us 120000 sent 360000 lost 720 backlog_most 2048 " +
+    "sent_bytes 36864000";
+  return {.wireLayoutHash = 0x1234'5678'9abc'def0,
+          .protocolVersion = 1,
+          .stateVersion = 1,
+          .ticksPerSecond = 20,
+          .folderUtf8 = "C:\\Users\\Owner\\Documents\\Outpost Commander\\Universe",
+          .seats = {{.player = Outpost::PlayerId{1}, .ai = {}},
+                    {.player = Outpost::PlayerId{2}, .ai = "Normal"},
+                    {.player = Outpost::PlayerId{3}, .ai = {}},
+                    {.player = Outpost::PlayerId{4}, .ai = "Hard"}},
+          .recoveredSaveTick = 1'200,
+          .replayedCommands = 7,
+          .dayRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 0 player 3 deputy", "seat 36000 player 1 player",
+                         "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
+                         "battle 70000 70100 sector 3 player 3 deputy player 2 ai", "tick 60000 us 7200 over 3 move 4000 fight 2000",
+                         "dropped 61000 ticks 3", "join 30000 welcomed player 1 from 10.0.0.5",
+                         "join 40000 gone player 1 lost from 10.0.0.5", "join 41200 welcomed player 1 from 10.0.0.5", hour}};
 }
 
 // _model welcomed at START, and told a Health of _tick at _heard.
