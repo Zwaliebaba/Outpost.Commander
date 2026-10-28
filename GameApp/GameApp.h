@@ -34,6 +34,7 @@
 #include "FieldLayout.h"
 #include "FogOfWar.h"
 #include "TerritoryMarks.h"
+#include "ScreenFleets.h"
 #include "Alerts.h"
 #include "Designer.h"
 #include "ProductionTarget.h"

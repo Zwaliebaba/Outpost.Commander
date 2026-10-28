@@ -97,6 +97,7 @@
     <ClInclude Include="Starfield.h" />
     <ClInclude Include="FogOfWar.h" />
     <ClInclude Include="TerritoryMarks.h" />
+    <ClInclude Include="ScreenFleets.h" />
     <ClInclude Include="FieldLayout.h" />
     <ClInclude Include="Alerts.h" />
     <ClInclude Include="Designer.h" />
@@ -130,6 +131,7 @@
     <ClCompile Include="Starfield.cpp" />
     <ClCompile Include="FogOfWar.cpp" />
     <ClCompile Include="TerritoryMarks.cpp" />
+    <ClCompile Include="ScreenFleets.cpp" />
     <ClCompile Include="FieldLayout.cpp" />
     <ClCompile Include="Alerts.cpp" />
     <ClCompile Include="Designer.cpp" />

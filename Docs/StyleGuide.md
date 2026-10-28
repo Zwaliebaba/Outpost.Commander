@@ -45,6 +45,7 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 - **A line that could run past what holds it is cut short with three dots** by `TextMetrics::Fit`, leaving `FIT_GAP_UNITS` from what stands beside it, and text that wraps is broken between words by `TextMetrics::Wrap` ([ADR-061](ADR/ADR-061-measured-text.md) decision 3).
 - **Lines are spaced for the rounding of every scale,** since each face is rasterized at a whole number of pixels ([ADR-062](ADR/ADR-062-type-scale-and-contrast.md) decision 5, [ADR-061](ADR/ADR-061-measured-text.md) decision 4).
 - **A panel or a tag whose text changes is as wide as its widest fixed text,** so that its edge never moves as the text changes ([ADR-066](ADR/ADR-066-production-status-on-the-hud.md) decision 3, [ADR-086](ADR/ADR-086-where-the-match-runs.md) decision 2).
+- **A text that stands on the scene with no panel behind it has a halo,** its face's `haloEms` drawn into the atlas and its `CanvasText::halo` a dark color, so that it meets the contrast floor over whatever is behind it; only a fleet plate's count is such a text ([ADR-030](ADR/ADR-030-typography-and-sprites.md) decision 8, [ADR-102](ADR/ADR-102-plates-over-the-fleets.md) decision 2).
 - **Every new text is in the HUD tests' longest content,** so that `HudTests.KeepsEveryTextInsideItsPanel` and `HudTests.OverlapsNoTwoTexts` lay it out at both of their screen sizes ([ADR-061](ADR/ADR-061-measured-text.md) decision 5).
 
 ## Panels, buttons and windows
@@ -76,17 +77,18 @@ A rule here names its constant and its ADR decision and gives no value: the colo
 - **The player's factor multiplies the screen's fit,** and the HUD, the windows and the menu are laid out, measured and hit-tested at it ([ADR-070](ADR/ADR-070-interface-scale.md) decision 1).
 - **A window of a fixed size is counted by `Hud::WindowsFit`,** so that no step makes it taller than the screen ([ADR-070](ADR/ADR-070-interface-scale.md) decision 3).
 - **The atlas is rasterized again when the scale moves a font or a sprite by a whole pixel,** and glyphs stand on whole pixels ([ADR-015](ADR/ADR-015-ui-drawing.md) decision 3, [ADR-070](ADR/ADR-070-interface-scale.md) decision 6).
-- **A mark in the world keeps the screen's own scale, not the player's factor:** the stars, the bars over the entities and the selection's ring ([ADR-070](ADR/ADR-070-interface-scale.md) decision 7).
+- **A mark in the world keeps the screen's own scale, not the player's factor:** the stars, the bars over the entities and the selection's ring; a mark that carries text, as a fleet's plate does, takes the factor with the atlas ([ADR-070](ADR/ADR-070-interface-scale.md) decision 7, [ADR-102](ADR/ADR-102-plates-over-the-fleets.md) decision 2).
 
 ## Marks in the world
 
 - **A bar over an entity is `Hud::BarOver`'s,** its foot from `Camera::PixelAbove` over its model's bounds, on whole pixels, drawn under every panel and window and taking no click ([ADR-088](ADR/ADR-088-selection-and-commands.md) decision 5).
+- **A mark over a group of ships stands over the fleet `ScreenFleets` finds,** centered over its ships and level with the highest, on whole pixels, drawn after the bars and under every panel and window; it says whose by its side's color and how hurt in white, which no health color is ([ADR-102](ADR/ADR-102-plates-over-the-fleets.md) decisions 1 and 2).
 - **A line on the ground is one pixel wide at any zoom:** a footprint ring, a sector's border and the grid ([ADR-042](ADR/ADR-042-faint-footprint-lines.md) decision 1, [ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 3, [ADR-028](ADR/ADR-028-vector-grid-and-crosses.md) decision 1).
 - **The selection's ring is a set width in reference units at any zoom,** and the strongest mark on the ground ([ADR-067](ADR/ADR-067-selection-ring-at-a-fixed-width.md) decision 1, [ADR-042](ADR/ADR-042-faint-footprint-lines.md) decision 3).
 - **A resting ring is for the far view:** it shows at its resting strength far off and fades up close, and it is at full strength only under the pointer and while a structure is placed ([ADR-042](ADR/ADR-042-faint-footprint-lines.md) decisions 1 and 2).
 - **A sector's border is brighter than the grid and never wider** ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 3).
 - **The territory and what the player remembers are drawn over the fog,** since the fog does not hide them ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decisions 3 and 4).
-- **A mark is shown only while it says something:** a node's rings only while a Relay is placed, and a health bar only while its entity is hurt or Alt is held ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 3, [ADR-088](ADR/ADR-088-selection-and-commands.md) decision 5).
+- **A mark is shown only while it says something:** a node's rings only while a Relay is placed, and a health bar only while its entity is hurt, while Alt is held, or over the ship under the pointer, whole or not; far out, a hurt ship's bar gives way to its fleet's plate, which says the rest ([ADR-081](ADR/ADR-081-territory-and-memory-over-the-fog.md) decision 3, [ADR-088](ADR/ADR-088-selection-and-commands.md) decision 5, [ADR-102](ADR/ADR-102-plates-over-the-fleets.md) decision 3).
 - **An effect stands at one height above the ground,** above the ships ([ADR-019](ADR/ADR-019-glows-and-exhaust.md) decision 5).
 
 ## The scene

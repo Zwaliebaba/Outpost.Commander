@@ -52,9 +52,10 @@ public:
                    float _stripePixels);
 
   // One line of text in font _font, in UTF-8, with its top-left corner here and _trackingPixels more between each two
-  // characters; characters the atlas does not hold show as its fallback.
+  // characters; characters the atlas does not hold show as its fallback. With a _halo, a font the atlas holds halos for
+  // draws them under the line in that color first.
   void DrawText(std::size_t _font, std::string_view _text, float _left, float _top, const DirectX::XMFLOAT4& _color,
-                float _trackingPixels = 0.0f);
+                float _trackingPixels = 0.0f, const std::optional<DirectX::XMFLOAT4>& _halo = std::nullopt);
 
   // Sprite _sprite drawn into this rectangle, mirrored left to right or top to bottom when asked.
   void DrawSprite(std::size_t _sprite, float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,

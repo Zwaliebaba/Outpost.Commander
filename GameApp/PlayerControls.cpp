@@ -450,6 +450,15 @@ void Outpost::PlayerControls::SelectAlone(EntityId _entity)
   m_lastClickedShip.reset();
 }
 
+void Outpost::PlayerControls::SelectFleet(std::vector<EntityId> _ships, bool _add)
+{
+  Select(std::move(_ships), _add);
+  m_attackMoveArmed = false;
+  m_standingArmed.reset();
+  m_placing.reset();
+  m_lastClickedShip.reset();
+}
+
 void Outpost::PlayerControls::Give(Order _order)
 {
   // A move, an attack-move, a hold of a sector and a patrol mark their point, and an attack its target (ADR-097).

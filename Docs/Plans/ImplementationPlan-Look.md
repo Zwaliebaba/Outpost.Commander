@@ -48,9 +48,9 @@ Task numbers carry the prefix LV, and gates are lettered A.
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | LV3.1 | Beacons | LV2.2 | A5 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
-| LV4.1 | Fleets on the screen | — | A6, A7 | todo |
-| LV4.2 | Plates over the fleets | LV4.1 | A7 | todo |
-| LV4.3 | Health bars where the plates are not | LV4.2 | A7 | todo |
+| LV4.1 | Fleets on the screen | — | A6, A7 | in review, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152) |
+| LV4.2 | Plates over the fleets | LV4.1 | A7 | in review, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152) |
+| LV4.3 | Health bars where the plates are not | LV4.2 | A7 | in review, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152) |
 
 ### Milestone order
 
@@ -216,6 +216,21 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 - **Gate:** A7.
 - **Scope, as proposed:** a ship's own bar shows while Alt is held, under the pointer, and close in; elsewhere its fleet's plate stands for it. A structure keeps its bar. It rewrites ADR-088 decision 5.
 - **Acceptance:** `HudTests.PutsABarOnlyOverWhatShowsOne` for each case.
+
+### LV4.1 to LV4.3 — As built (2026-10-27)
+
+[ADR-102](../ADR/ADR-102-plates-over-the-fleets.md); ADR-030, ADR-070 and ADR-088 decision 5 edited in place.
+
+- **The owner's answers of 2026-10-27:** a warship's insignia is one, two or three chevrons by its hull's size, and a Constructor's a plus; the plates show while the camera's view is wider than 300 m, so the default view of 500 m shows them.
+- **What the tasks left open, chosen here:**
+  - **Formations are one fleet.** Ships of one side also join when they stand within 3.5 footprint radii of their side's widest ship on the ground, since a formation keeps three between neighbors (ADR-010 decision 4); at the default view a formation of Medium hulls stands about 160 pixels apart, and the screen's test alone would give each ship a plate.
+  - **A plate settles rather than jumps.** It moves with its ships, and when a ship joins, leaves or is lost it starts where it stood and settles over 0.15 s.
+  - **A plate takes the interface's scale,** the player's factor included, unlike the bars, since its count is text from the atlas.
+  - **The ring:** a whole fleet's is one sprite; a hurt fleet's is 16 pieces, white for the share of its hit points and the halo's color for the rest.
+  - **A click on one of the player's own plates selects its fleet,** Shift adding it, and drops what was armed, as a click on a ship's bar does; another side's plate takes no click.
+  - **While Alt is held there are no plates,** only every bar, and the ship under the pointer shows its bar, whole or not.
+- **Run in the container:** `NeuronClientTests` 69 and `GameAppTests` 322 pass, built by clang 18 against stand-ins for the Windows headers, C++/WinRT, DirectWrite and the test framework, with FreeType drawing the Liberation faces in place of the Windows fonts; the 7 and 9 that fail fail on `main` the same way, on Windows paths with backslashes and a font family the container lacks. `UiPipeline.cpp` and `GameClient.cpp` compile there, unlinked. Each new test was checked against a broken build: no formation reach, no join of plates that meet, no kept identifier, no owner check, no settling, a hurt ship's bar far out, no parting, a plate taking a click under a panel, a tie to the smaller hull, the arc counterclockwise, no halo on the count or the face, halos not packed, and a halo not blurred. clang-format 18 and clang-tidy 18, with the repository's checks, find nothing in the changed lines.
+- **Not run on a GPU or seen on screen.** The halo's drawing, the plates' drawing and the click on a plate are CI's to build and the owner's run to see.
 
 ---
 

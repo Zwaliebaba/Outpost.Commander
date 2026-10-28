@@ -48,6 +48,9 @@ public:
   // From the HUD: _entity selected on its own, as a click on it selects it, and any order armed for the selection before
   // dropped with it (ADR-066 decision 1).
   void SelectAlone(EntityId _entity);
+  // From a fleet's plate: its _ships selected, or added to the selection with _add, and any order armed before dropped
+  // (ADR-102 decision 2).
+  void SelectFleet(std::vector<EntityId> _ships, bool _add);
   // From the HUD's order buttons and from their keys alike (ADR-088 decision 2): arm attack-move, or holding a
   // sector or a patrol, for the next left-click, while the selection holds a ship, dropping whatever was armed before; or
   // stop the selected ships at once. _entities is the interpolated view.

@@ -38,6 +38,20 @@ std::uint8_t At(const Neuron::GlyphBitmap& _sprite, std::uint32_t _x, std::uint3
   return _sprite.coverage[(std::size_t{_y} * _sprite.width) + _x];
 }
 
+// How many separate runs of half coverage or more a sprite has down its middle column.
+int RunsDownTheMiddle(const Neuron::GlyphBitmap& _sprite)
+{
+  int runs = 0;
+  bool inside = false;
+  for (std::uint32_t y = 0; y < _sprite.height; ++y)
+  {
+    const bool covered = At(_sprite, _sprite.width / 2, y) >= 128;
+    runs += covered && !inside ? 1 : 0;
+    inside = covered;
+  }
+  return runs;
+}
+
 Neuron::FontDesc Segoe()
 {
   return {.families = {L"Segoe UI"}, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 20.0f};
@@ -51,7 +65,10 @@ public:
   // from the solid block, with its coverage.
   TEST_METHOD(PacksFontsAndSpritesWithoutOverlap)
   {
-    const std::vector<Neuron::FontBitmaps> fonts{MadeUpFont(0), MadeUpFont(100)};
+    std::vector<Neuron::FontBitmaps> fonts{MadeUpFont(0), MadeUpFont(100)};
+    // The second font has halos, which are packed after its glyphs.
+    for (const Neuron::GlyphBitmap& glyph : MadeUpFont(200).glyphs)
+      fonts[1].halos.push_back(glyph);
     const std::vector<Neuron::GlyphBitmap> sprites{Bitmap(12, 12, 251), Bitmap(10, 10, 252)};
     const Neuron::GlyphAtlas atlas = Neuron::PackGlyphs(fonts, sprites);
 
@@ -85,7 +102,12 @@ public:
       Assert::AreEqual(Neuron::GlyphAtlas::CHARACTER_COUNT, atlas.fonts[font].glyphs.size());
       for (size_t i = 0; i < fonts[font].glyphs.size(); ++i)
         claim(atlas.fonts[font].glyphs[i], fonts[font].glyphs[i]);
+      Assert::AreEqual(fonts[font].halos.size(), atlas.fonts[font].halos.size());
+      for (size_t i = 0; i < fonts[font].halos.size(); ++i)
+        claim(atlas.fonts[font].halos[i], fonts[font].halos[i]);
     }
+    Assert::IsNull(atlas.fonts[0].HaloFor(U'A'), L"no halos");
+    Assert::IsTrue(atlas.fonts[1].HaloFor(U'A') == &atlas.fonts[1].halos[Neuron::GlyphIndexOf(U'A')]);
     for (size_t i = 0; i < sprites.size(); ++i)
       claim(atlas.sprites[i], sprites[i]);
     Assert::AreEqual(-1, owner[(std::size_t{atlas.solidY} * atlas.width) + atlas.solidX]);
@@ -148,6 +170,67 @@ public:
     Assert::AreEqual(std::uint8_t{0}, At(corner, 23, 12));
 
     Assert::AreEqual(1u, Neuron::DrawSprite(Neuron::SpriteShape::Gem, 0).width, L"never empty");
+
+    const Neuron::GlyphBitmap disc = Neuron::DrawSprite(Neuron::SpriteShape::Disc, 24);
+    Assert::AreEqual(std::uint8_t{255}, At(disc, 12, 12));
+    Assert::AreEqual(std::uint8_t{255}, At(disc, 1, 12), L"full to its edge");
+    Assert::AreEqual(std::uint8_t{0}, At(disc, 1, 1), L"round");
+
+    const Neuron::GlyphBitmap ring = Neuron::DrawSprite(Neuron::SpriteShape::Ring, 24);
+    Assert::IsTrue(At(ring, 0, 12) > 240 && At(ring, 12, 23) > 240, L"a line along its edge");
+    Assert::AreEqual(std::uint8_t{0}, At(ring, 12, 12), L"empty inside");
+    Assert::AreEqual(std::uint8_t{0}, At(ring, 1, 1), L"round");
+
+    // A rank's chevrons point up and stack, centered: one, two or three runs down the middle, each wider at its foot.
+    const std::array<Neuron::SpriteShape, 3> ranks{Neuron::SpriteShape::Chevron, Neuron::SpriteShape::TwoChevrons,
+                                                   Neuron::SpriteShape::ThreeChevrons};
+    for (std::size_t rank = 0; rank < ranks.size(); ++rank)
+    {
+      const Neuron::GlyphBitmap chevrons = Neuron::DrawSprite(ranks[rank], 24);
+      Assert::AreEqual(static_cast<int>(rank) + 1, RunsDownTheMiddle(chevrons));
+      Assert::AreEqual(At(chevrons, 4, 16), At(chevrons, 19, 16), L"symmetric");
+      Assert::AreEqual(std::uint8_t{0}, At(chevrons, 0, 0));
+    }
+    const Neuron::GlyphBitmap chevron = Neuron::DrawSprite(Neuron::SpriteShape::Chevron, 24);
+    std::uint32_t point = 0;
+    while (At(chevron, 12, point) < 128)
+      ++point;
+    Assert::IsTrue(At(chevron, 12, point) >= 128 && At(chevron, 5, point) < 128 && At(chevron, 5, point + 4) >= 128,
+                   L"its point at the top, its arms lower down");
+
+    const Neuron::GlyphBitmap plus = Neuron::DrawSprite(Neuron::SpriteShape::Plus, 24);
+    Assert::AreEqual(std::uint8_t{255}, At(plus, 12, 12));
+    Assert::AreEqual(std::uint8_t{255}, At(plus, 5, 12), L"its left bar");
+    Assert::AreEqual(std::uint8_t{255}, At(plus, 12, 18), L"its lower bar");
+    Assert::AreEqual(std::uint8_t{0}, At(plus, 5, 5), L"empty between its bars");
+  }
+
+  // A halo is its glyph widened by its reach on every side and blurred, at the same pen position and advance, so that it
+  // stands under the glyph a few pixels round it; a glyph with nothing to draw has none. A font's halos reach a share of its
+  // em, a pixel at least, and a font without a halo has none.
+  TEST_METHOD(DrawsAHaloRoundEachGlyph)
+  {
+    const Neuron::GlyphBitmap glyph = Bitmap(4, 6, 255);
+    const Neuron::GlyphBitmap halo = Neuron::HaloOf(glyph, 2);
+    Assert::AreEqual(8u, halo.width);
+    Assert::AreEqual(10u, halo.height);
+    Assert::AreEqual(glyph.offsetX - 2, halo.offsetX);
+    Assert::AreEqual(glyph.offsetY - 2, halo.offsetY);
+    Assert::AreEqual(glyph.advance, halo.advance);
+    Assert::AreEqual(std::uint8_t{255}, At(halo, 4, 5), L"full where the glyph is");
+    Assert::IsTrue(At(halo, 1, 5) > 128, L"widened past the glyph's edge");
+    Assert::IsTrue(At(halo, 0, 5) > 0 && At(halo, 0, 5) < 255, L"soft at its own edge");
+    Assert::IsTrue(At(halo, 0, 0) < At(halo, 1, 5), L"round at its corners");
+
+    Assert::AreEqual(0u, Neuron::HaloOf(Neuron::GlyphBitmap{.advance = 5.0f}, 2).width, L"none for a space");
+    Assert::AreEqual(5.0f, Neuron::HaloOf(Neuron::GlyphBitmap{.advance = 5.0f}, 2).advance);
+
+    const Neuron::FontBitmaps font = MadeUpFont(0);
+    Assert::IsTrue(Neuron::HalosOf(font, 20.0f, 0.0f).empty());
+    const std::vector<Neuron::GlyphBitmap> halos = Neuron::HalosOf(font, 20.0f, 0.15f);
+    Assert::AreEqual(font.glyphs.size(), halos.size());
+    Assert::AreEqual(font.glyphs[1].width + 6u, halos[1].width, L"3 pixels of a 20-pixel em");
+    Assert::AreEqual(font.glyphs[1].width + 2u, Neuron::HalosOf(font, 4.0f, 0.15f)[1].width, L"a pixel at least");
   }
 
   // ADR-015, ADR-030: DirectWrite draws an installed font. Every character moves the pen, a letter has coverage, and a
