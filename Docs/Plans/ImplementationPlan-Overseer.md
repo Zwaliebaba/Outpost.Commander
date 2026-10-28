@@ -1,6 +1,6 @@
 # Outpost Commander — The Universe Overseer
 
-Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D7, of which D1, D4 and D7 are decided
+Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D7, of which D1, D4, D5, D6 and D7 are decided
 
 The overseer is the dedicated server's management console: a separate application, with a channel of its own to the server, that oversees the whole universe (Game §session.server). What it shows, how it reaches the server and what the server has to measure for it are [the proposal](UniverseOverseer.md)'s. This plan is the order the work is done in. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
