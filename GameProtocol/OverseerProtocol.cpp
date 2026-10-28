@@ -32,9 +32,9 @@ template <typename Self>
 auto Fields(Self& _value)
 {
   auto& [wireLayoutHash, protocolVersion, stateVersion, ticksPerSecond, folderUtf8, seats, sectors, fields, recoveredSaveTick,
-         replayedCommands] = _value;
+         replayedCommands, saveSeconds, laneRecords] = _value;
   return std::tie(wireLayoutHash, protocolVersion, stateVersion, ticksPerSecond, folderUtf8, seats, sectors, fields, recoveredSaveTick,
-                  replayedCommands);
+                  replayedCommands, saveSeconds, laneRecords);
 }
 
 template <typename Self>

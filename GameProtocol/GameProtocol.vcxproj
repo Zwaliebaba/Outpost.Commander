@@ -99,6 +99,7 @@
     <ClInclude Include="Server.h" />
     <ClInclude Include="OverseerProtocol.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="LaneRecords.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -113,6 +114,7 @@
     <ClCompile Include="WireFormat.cpp" />
     <ClCompile Include="SentStates.cpp" />
     <ClCompile Include="HeldStates.cpp" />
+    <ClCompile Include="LaneRecords.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

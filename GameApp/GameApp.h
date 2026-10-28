@@ -49,4 +49,5 @@
 #include "GameClient.h"
 #include "OverseerModel.h"
 #include "OverseerClient.h"
+#include "OverseerAttention.h"
 #include "OverseerScreen.h"

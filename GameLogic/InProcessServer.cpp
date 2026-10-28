@@ -927,8 +927,14 @@ Outpost::ServerAddress Outpost::InProcessServer::Oversee(const OverseerDesc& _de
                                        .sectors = std::move(catalog.sectors),
                                        .fields = std::move(catalog.fields),
                                        .recoveredSaveTick = m_recoveredSaveTick,
-                                       .replayedCommands = m_replayedCommands};
+                                       .replayedCommands = m_replayedCommands,
+                                       .saveSeconds = UNIVERSE_SAVE_SECONDS,
+                                       .laneRecords = {}};
+  // The lanes' records of the day of universe time before the tick the universe stands at (owner, 2026-10-28).
+  const std::uint64_t now = m_simulation.CurrentTick();
+  const std::uint64_t day = LANE_SECONDS * TicksPerSecond();
   m_overseer = std::make_unique<OverseerLink>(_desc, m_universeFolder, welcome,
+                                              UniverseLog::ReadLaneRecords(m_universeFolder / UNIVERSE_LOG_FILE, now > day ? now - day : 0),
                                               UniverseLog::ReadLastRecords(m_universeFolder / UNIVERSE_LOG_FILE, OVERSEER_RECORDS_KEPT));
   m_log->KeepLines();
   return {.host = ListenHost(_desc.address), .port = m_overseer->Port(), .certificate = m_overseer->Certificate(), .token = _desc.token};

@@ -3858,6 +3858,12 @@ std::vector<Outpost::Hud::SideColor> Outpost::Hud::SideColorsOf(const ModelCatal
   return colors;
 }
 
+void Outpost::Hud::DrawMinimap(Layout& _layout, const Rect& _square, const Content& _content, float _scale)
+{
+  _layout.minimap = {_square.left, _square.top, _square.width, _square.height, MAP_COLOR};
+  DrawMap(_layout, _content, {}, _scale);
+}
+
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
                                              const Designer* _designer, std::optional<Action> _hovered, std::uint32_t _ticksPerSecond,

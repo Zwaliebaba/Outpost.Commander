@@ -66,6 +66,7 @@ public:
     Assert::IsFalse(full.player.IsValid(), L"no player's");
     Assert::IsTrue(full.designs.empty() && full.research.empty() && full.ore == 0, L"none of a player's own");
     Assert::AreEqual(blue.sectors.size(), full.sectors.size());
+    Assert::AreEqual(blue.mapSizeMeters, full.mapSizeMeters, L"the map's size, which the overseer's map is drawn to");
   }
 
   // A player sees an enemy within its own entities' sight, measured to the enemy's edge, and not beyond; the map is always

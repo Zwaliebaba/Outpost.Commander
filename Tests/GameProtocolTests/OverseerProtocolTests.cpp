@@ -88,7 +88,9 @@ public:
                                             .folderUtf8 = "C:\\Universe \xC3\xA9",
                                             .seats = {{.player = Outpost::PlayerId{1}}, {.player = Outpost::PlayerId{2}, .ai = "Hard"}},
                                             .recoveredSaveTick = 1'200,
-                                            .replayedCommands = 4};
+                                            .replayedCommands = 4,
+                                            .saveSeconds = 60,
+                                            .laneRecords = {"seat 100 player 1 deputy", "battle 140 160 sector 3 player 1 deputy"}};
     welcome.sectors.push_back({.id = 5, .nameUtf8 = "Home", .minXMeters = -6.0f, .node = {.xMeters = 7.0f}, .adjacent = {8, 9}});
     welcome.fields.push_back({.id = Outpost::EntityId{10}, .kind = Outpost::EntityKind::AsteroidField, .radiusMeters = 11.0f});
     AssertCrosses(welcome);
@@ -110,6 +112,8 @@ public:
     const auto decodedWelcome = Decoded<Outpost::OverseerWelcomeMessage>(Outpost::EncodeOverseerMessage(welcome));
     Assert::AreEqual(std::string("Hard"), decodedWelcome.seats.at(1).ai);
     Assert::AreEqual(std::uint64_t{1'200}, decodedWelcome.recoveredSaveTick.value_or(0));
+    Assert::AreEqual(std::uint32_t{60}, decodedWelcome.saveSeconds);
+    Assert::IsTrue(decodedWelcome.laneRecords == welcome.laneRecords, L"the lanes' records");
   }
 
   TEST_METHOD(ReadsAHelloOfAnotherBuildBeforeItDecodes)

@@ -89,6 +89,9 @@
     <ClInclude Include="ByteFormat.h">
       <Filter>Connection</Filter>
     </ClInclude>
+    <ClInclude Include="LaneRecords.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -117,6 +120,9 @@
       <Filter>Connection</Filter>
     </ClCompile>
     <ClCompile Include="HeldStates.cpp">
+      <Filter>Connection</Filter>
+    </ClCompile>
+    <ClCompile Include="LaneRecords.cpp">
       <Filter>Connection</Filter>
     </ClCompile>
   </ItemGroup>

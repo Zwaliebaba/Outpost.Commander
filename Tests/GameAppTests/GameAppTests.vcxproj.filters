@@ -31,6 +31,7 @@
     <ClCompile Include="AlertsTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="OverseerModelTests.cpp" />
+    <ClCompile Include="OverseerAttentionTests.cpp" />
     <ClCompile Include="OverseerScreenTests.cpp" />
     <ClCompile Include="OverseerClientTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />

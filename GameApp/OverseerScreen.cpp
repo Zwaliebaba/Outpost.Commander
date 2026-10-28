@@ -29,10 +29,26 @@ constexpr float STATE_COLUMN_UNITS = 620.0f;
 constexpr float TIME_COLUMN_UNITS = 320.0f;
 // The tiles, in a row of this many as wide as each other.
 constexpr std::size_t TILE_COUNT = 5;
-// The universe log's panel, at the seat table's right.
-constexpr float LOG_PANEL_UNITS = 560.0f;
+// The column at the overview's right, of who played and the universe log; and the row over the seat table, of what needs
+// attention, as tall as leaves the table rows to show.
+constexpr float RIGHT_COLUMN_UNITS = 560.0f;
+constexpr float TOP_ROW_UNITS = 360.0f;
+// Who played: each lane's row, its label's width and the gap after it, the lane's height and how wide it is, what the right
+// column leaves it; a battle's mark and a recovery's.
+constexpr float LANE_ROW_UNITS = 20.0f;
+constexpr float LANE_LABEL_UNITS = 80.0f;
+constexpr float LANE_GAP_UNITS = 8.0f;
+constexpr float LANE_UNITS = 12.0f;
+constexpr float LANE_WIDTH_UNITS = RIGHT_COLUMN_UNITS - (2.0f * PADDING) - LANE_LABEL_UNITS - LANE_GAP_UNITS;
+constexpr float BATTLE_MARK_UNITS = 8.0f;
+constexpr float START_MARK_UNITS = 2.0f;
 // The filters' cells, this far apart, and the gap under them.
 constexpr float CELL_GAP_UNITS = 4.0f;
+// The map, at the top row's left: its square, as tall as the row leaves under the map's heading, its panel around it, and the
+// cell that gives full sight back.
+constexpr float MAP_SQUARE_UNITS = TOP_ROW_UNITS - (2.0f * PADDING) - CELL_UNITS - CELL_GAP_UNITS;
+constexpr float MAP_PANEL_UNITS = MAP_SQUARE_UNITS + (2.0f * PADDING);
+constexpr float ALL_CELL_UNITS = 56.0f;
 // How far a notch of the wheel scrolls the table and the log: three name lines.
 constexpr float WHEEL_NOTCH_UNITS = 3.0f * NAME_LINE_UNITS;
 
@@ -45,7 +61,8 @@ enum class PressKind : std::uint32_t
   Sort = 1,
   Filter,
   Seat,
-  LogFilter
+  LogFilter,
+  FullSight
 };
 
 constexpr std::uint32_t PayloadOf(PressKind _kind, std::uint32_t _which) noexcept
@@ -436,11 +453,13 @@ struct SeatLine
   Outpost::PlayerId player;
   bool ai = false;
   bool away = false;
+  bool needsALook = false;
   Neuron::TableRow row;
   std::array<std::int64_t, OverseerScreen::SEAT_COLUMN_COUNT> keys{};
 };
 
-std::vector<SeatLine> SeatLinesOf(const Outpost::OverseerModel& _model, const OverseerScreen& _screen)
+std::vector<SeatLine> SeatLinesOf(const Outpost::OverseerModel& _model, const OverseerScreen& _screen,
+                                  std::span<const Outpost::Attention> _attention)
 {
   const Outpost::HeardHealth* latest = _model.LatestHealth();
   const std::optional<Outpost::OverseerWelcomeMessage>& welcome = _model.Welcome();
@@ -485,6 +504,8 @@ std::vector<SeatLine> SeatLinesOf(const Outpost::OverseerModel& _model, const Ov
       {.player = seat.player,
        .ai = ai,
        .away = !ai && (seat.link != Outpost::SeatLink::Online || seat.play == Outpost::SeatPlay::Deputy),
+       .needsALook = std::ranges::any_of(_attention, [&seat](const Outpost::Attention& _found)
+                                         { return _found.seat == seat.player && _found.level != Outpost::AttentionLevel::Pass; }),
        .row = {.cells = {{.figure = std::format("Seat {}", seat.player.value), .detail = WhoPlays(seat, difficulty), .color = {}},
                          {.figure = status.name, .detail = status.detail, .color = {}},
                          link,
@@ -509,7 +530,7 @@ constexpr std::array<std::string_view, OverseerScreen::SEAT_COLUMN_COUNT> SEAT_H
 // Each column's width, or none for the one that takes what the others leave.
 constexpr std::array<std::optional<float>, OverseerScreen::SEAT_COLUMN_COUNT> SEAT_WIDTHS{150.0f, 220.0f, std::nullopt, 150.0f,
                                                                                           160.0f, 140.0f, 100.0f,       110.0f};
-constexpr std::array<std::string_view, 4> SEAT_FILTERS{"All", "Players", "AI", "Away"};
+constexpr std::array<std::string_view, 5> SEAT_FILTERS{"All", "Players", "AI", "Away", "Needs a look"};
 constexpr std::array<std::string_view, 5> LOG_FILTERS{"All", "Seats", "Saves", "Battles", "Server"};
 
 // A row of filter cells, _picked lit, each naming _kind and its index.
@@ -525,6 +546,261 @@ void FilterCells(Neuron::Canvas& _canvas, std::string_view _id, const std::array
     payloads[index] = PayloadOf(_kind, static_cast<std::uint32_t>(index));
   }
   _canvas.Cells(_id, words, payloads, _picked, CELL_UNITS, {.gapUnits = CELL_GAP_UNITS});
+}
+
+// What needs attention (ADR-103 decision 7): a chip for each thing to act on, a line for each to know, and the checks that
+// pass under them, the list headed "All well." when nothing is to be acted on or known; scrolled when it runs past its panel.
+void LayAttention(Neuron::Canvas& _canvas, std::span<const Outpost::Attention> _attention, bool _told)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  (void)BeginPanel(_canvas, {.grow = 1.0f});
+  Heading(_canvas, "NEEDS ATTENTION");
+  (void)_canvas.BeginScroll("attention", {.grow = 1.0f});
+  const bool quiet =
+    std::ranges::all_of(_attention, [](const Outpost::Attention& _found) { return _found.level == Outpost::AttentionLevel::Pass; });
+  if (!_told)
+    (void)_canvas.Label(Fitted("Nothing is told until the server says how it is.", Hud::Typeface::Name, NAME_LINE_UNITS),
+                        theme.dimTextColor);
+  else if (quiet)
+    (void)_canvas.Label(Fitted("All well.", Hud::Typeface::Name, NAME_LINE_UNITS), theme.textColor);
+  for (const Outpost::Attention& found : _attention)
+  {
+    switch (found.level)
+    {
+    case Outpost::AttentionLevel::Act:
+      (void)_canvas.Chip(Fitted(found.words, Hud::Typeface::Name, NAME_LINE_UNITS));
+      (void)_canvas.Tree().Add({.heightUnits = CELL_GAP_UNITS});
+      break;
+    case Outpost::AttentionLevel::Know:
+      (void)_canvas.Label(Fitted(found.words, Hud::Typeface::Name, NAME_LINE_UNITS), theme.textColor);
+      break;
+    case Outpost::AttentionLevel::Pass:
+      (void)_canvas.Label(Fitted(found.words, Hud::Typeface::Name, NAME_LINE_UNITS), theme.dimTextColor);
+      break;
+    }
+  }
+  _canvas.EndScroll();
+  _canvas.EndPanel();
+}
+
+// The map (ADR-103 decision 7): the heading says whose sight the view shows, full sight or a seat's, beside a cell that gives
+// full sight back, lit while no seat is picked; under them the square the minimap's drawing goes into once the canvas has
+// placed it, which this returns, none while there is no view to draw.
+std::size_t LayMap(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, const OverseerScreen& _screen)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  const std::optional<Outpost::Snapshot>& view = _model.View();
+  (void)BeginPanel(_canvas, {.widthUnits = MAP_PANEL_UNITS});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = CELL_UNITS, .gapUnits = CELL_GAP_UNITS, .alignY = Neuron::LayoutAlign::Center});
+  const std::string sight =
+    view.has_value() && view->player.IsValid() ? std::format("SEAT {}'S SIGHT", view->player.value) : std::string("FULL SIGHT");
+  (void)_canvas.Label({.text = std::format("MAP{}{}", DOT, sight),
+                       .font = Hud::FontOf(Hud::Typeface::Label),
+                       .lineUnits = NAME_LINE_UNITS,
+                       .trackingUnits = LABEL_TRACKING_UNITS,
+                       .flow = Neuron::TextFlow::Fit},
+                      theme.labelColor, {.grow = 1.0f});
+  const std::array<Neuron::LayoutText, 1> all{
+    Neuron::LayoutText{.text = "All", .font = Hud::FontOf(Hud::Typeface::Label), .lineUnits = DETAIL_LINE_UNITS}};
+  const std::array<std::uint32_t, 1> payload{PayloadOf(PressKind::FullSight, 0)};
+  _canvas.Cells("full sight", all, payload, _screen.Picked().has_value() ? std::nullopt : std::optional<std::size_t>{0}, CELL_UNITS,
+                {.widthUnits = ALL_CELL_UNITS});
+  tree.End();
+  (void)tree.Add({.heightUnits = CELL_GAP_UNITS});
+  std::size_t square = Neuron::LayoutNode::NO_NODE;
+  if (view.has_value() && view->mapSizeMeters > 0.0f)
+    square = tree.Add({.widthUnits = MAP_SQUARE_UNITS, .heightUnits = MAP_SQUARE_UNITS});
+  else
+    (void)_canvas.Label(Fitted("No view yet.", Hud::Typeface::Name, NAME_LINE_UNITS), theme.dimTextColor);
+  _canvas.EndPanel();
+  return square;
+}
+
+// What the map draws of _view: the minimap's content, every seat in the color the seat table marks it with, and no fog, since
+// a seat's own snapshot holds only what the seat sees, and full sight sees through it.
+Hud::Content MapContentOf(const Outpost::Snapshot& _view, const Outpost::OverseerWelcomeMessage& _welcome, const OverseerScreen& _screen)
+{
+  Hud::Content content = Hud::Describe(_view, _view.entities, {});
+  content.sideColors.clear();
+  content.sideColors.reserve(_welcome.seats.size());
+  for (const Outpost::OverseerSeat& seat : _welcome.seats)
+    content.sideColors.push_back({.player = seat.player, .color = _screen.SeatColor(seat.player)});
+  content.fog = false;
+  return content;
+}
+
+// Who played a seat in a span of its lane, from one tick to another.
+struct LaneSpan
+{
+  std::uint64_t from = 0;
+  std::uint64_t to = 0;
+  Outpost::SeatPlay play = Outpost::SeatPlay::Player;
+};
+
+std::optional<Outpost::SeatPlay> PlayOf(std::string_view _word) noexcept
+{
+  if (_word == "player")
+    return Outpost::SeatPlay::Player;
+  if (_word == "deputy")
+    return Outpost::SeatPlay::Deputy;
+  if (_word == "ai")
+    return Outpost::SeatPlay::Ai;
+  return std::nullopt;
+}
+
+// _seat's lane over the day from _dayStart to _dayEnd, from its hand-overs among _records, "seat <tick> player <n> <play>",
+// the last before the day saying who played it as the day began; with none, the whole day in _now's play.
+std::vector<LaneSpan> LaneOf(Outpost::PlayerId _seat, const std::deque<std::string>& _records, std::uint64_t _dayStart,
+                             std::uint64_t _dayEnd, std::optional<Outpost::SeatPlay> _now)
+{
+  std::vector<LaneSpan> spans;
+  std::optional<Outpost::SeatPlay> play;
+  std::uint64_t from = _dayStart;
+  bool told = false;
+  for (const std::string& record : _records)
+  {
+    const std::vector<std::string_view> words = WordsOf(record);
+    if (words.size() < 5 || words[0] != "seat" || words[2] != "player" || NumberOf(words[3]) != std::uint64_t{_seat.value})
+      continue;
+    const std::optional<std::uint64_t> tick = NumberOf(words[1]);
+    const std::optional<Outpost::SeatPlay> handedTo = PlayOf(words[4]);
+    if (!tick.has_value() || !handedTo.has_value())
+      continue;
+    told = true;
+    if (handedTo == play)
+      continue;
+    const std::uint64_t at = std::clamp(*tick, _dayStart, _dayEnd);
+    if (play.has_value() && at > from)
+      spans.push_back({.from = from, .to = at, .play = *play});
+    from = std::max(from, at);
+    play = handedTo;
+  }
+  if (!told)
+    play = _now;
+  if (play.has_value() && _dayEnd > from)
+    spans.push_back({.from = from, .to = _dayEnd, .play = *play});
+  return spans;
+}
+
+// A box of _color at _leftUnits across a lane, _widthUnits by _heightUnits, in its middle down.
+void LaneBox(Neuron::Canvas& _canvas, float _leftUnits, float _widthUnits, float _heightUnits, const DirectX::XMFLOAT4& _color,
+             Neuron::CanvasFill _fill = Neuron::CanvasFill::Solid)
+{
+  const std::size_t box = _canvas.Tree().Add(
+    {.widthUnits = std::max(_widthUnits, 1.0f),
+     .heightUnits = _heightUnits,
+     .anchor = Neuron::LayoutAnchor::TopLeft,
+     .margin = {.left = std::clamp(_leftUnits, 0.0f, LANE_WIDTH_UNITS - 1.0f), .top = (LANE_UNITS - _heightUnits) / 2.0f}});
+  _canvas.Fill(box, _color, _fill);
+}
+
+// A lane's row: its label, then the lane, its track filled, which what follows is drawn into until EndLane.
+void BeginLane(Neuron::Canvas& _canvas, std::string _label)
+{
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)tree.Begin(Neuron::LayoutKind::Row,
+                   {.heightUnits = LANE_ROW_UNITS, .gapUnits = LANE_GAP_UNITS, .alignY = Neuron::LayoutAlign::Center});
+  (void)_canvas.Label(Fitted(std::move(_label), Hud::Typeface::Label, FIGURE_LINE_UNITS), Hud::Theme().labelColor,
+                      {.widthUnits = LANE_LABEL_UNITS});
+  (void)tree.Begin(Neuron::LayoutKind::Stack, {.widthUnits = LANE_WIDTH_UNITS, .heightUnits = LANE_UNITS});
+  _canvas.Fill(tree.Add({.widthUnits = LANE_WIDTH_UNITS, .heightUnits = LANE_UNITS}), Hud::Theme().barTrackColor);
+}
+
+void EndLane(Neuron::Canvas& _canvas)
+{
+  _canvas.Tree().End();
+  _canvas.Tree().End();
+}
+
+// Who played (ADR-103 decision 7): a lane a player's seat over the day of universe time that ends at the newest tick, solid
+// in its color while its player played it and hatched while its deputy did, each recovery a mark across it; and a lane of
+// battles, each mark filled when a player was present and hollow when only deputies and AI fought. AI empires have no lane.
+void LayWhoPlayed(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, const OverseerScreen& _screen)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  (void)BeginPanel(_canvas);
+  Heading(_canvas, "WHO PLAYED, THE LAST DAY");
+  const std::optional<Outpost::OverseerWelcomeMessage>& welcome = _model.Welcome();
+  const Outpost::HeardHealth* latest = _model.LatestHealth();
+  const std::uint64_t dayEnd = _model.NewestTick();
+  const std::uint64_t day = Outpost::LANE_SECONDS * (welcome.has_value() ? welcome->ticksPerSecond : 0);
+  const std::uint64_t dayStart = dayEnd > day ? dayEnd - day : 0;
+  if (!welcome.has_value() || dayEnd <= dayStart)
+  {
+    (void)_canvas.Label(Fitted("Nothing is told yet.", Hud::Typeface::Name, NAME_LINE_UNITS), theme.dimTextColor);
+    _canvas.EndPanel();
+    return;
+  }
+  const auto across = [dayStart, dayEnd](std::uint64_t _tick)
+  { return LANE_WIDTH_UNITS * static_cast<float>(std::clamp(_tick, dayStart, dayEnd) - dayStart) / static_cast<float>(dayEnd - dayStart); };
+  const std::deque<std::string>& records = _model.LaneRecords();
+  // The recoveries of the day: a new universe's start is where its lanes begin, not a mark across them.
+  std::vector<std::uint64_t> starts;
+  for (const std::string& record : records)
+  {
+    if (const std::optional<Outpost::RecordHead> head = Outpost::HeadOf(record);
+        head.has_value() && head->kind == "start" && head->tick >= dayStart && record.contains(" recovered "))
+      starts.push_back(head->tick);
+  }
+  for (const Outpost::OverseerSeat& seat : welcome->seats)
+  {
+    if (!seat.ai.empty())
+      continue;
+    std::optional<Outpost::SeatPlay> now;
+    if (latest != nullptr)
+    {
+      const std::vector<Outpost::SeatHealth>& seats = latest->health.seats;
+      if (const auto found = std::ranges::find(seats, seat.player, &Outpost::SeatHealth::player); found != seats.end())
+        now = found->play;
+    }
+    BeginLane(_canvas, std::format("SEAT {}", seat.player.value));
+    const DirectX::XMFLOAT4 color = _screen.SeatColor(seat.player);
+    for (const LaneSpan& span : LaneOf(seat.player, records, dayStart, dayEnd, now))
+    {
+      if (span.play == Outpost::SeatPlay::Ai)
+        continue;
+      LaneBox(_canvas, across(span.from), across(span.to) - across(span.from), LANE_UNITS, color,
+              span.play == Outpost::SeatPlay::Player ? Neuron::CanvasFill::Solid : Neuron::CanvasFill::Hatched);
+    }
+    for (const std::uint64_t start : starts)
+      LaneBox(_canvas, across(start), START_MARK_UNITS, LANE_UNITS, theme.labelColor);
+    EndLane(_canvas);
+  }
+  BeginLane(_canvas, "BATTLES");
+  for (const std::string& record : records)
+  {
+    const std::optional<Outpost::RecordHead> head = Outpost::HeadOf(record);
+    if (!head.has_value() || head->kind != "battle" || head->tick < dayStart)
+      continue;
+    const float left = across(head->tick) - (BATTLE_MARK_UNITS / 2.0f);
+    if (record.contains(" present"))
+      LaneBox(_canvas, left, BATTLE_MARK_UNITS, BATTLE_MARK_UNITS, theme.textColor);
+    else
+    {
+      // Hollow: its four sides.
+      LaneBox(_canvas, left, BATTLE_MARK_UNITS, 1.0f, theme.textColor);
+      LaneBox(_canvas, left, 1.0f, BATTLE_MARK_UNITS, theme.textColor);
+      LaneBox(_canvas, left + BATTLE_MARK_UNITS - 1.0f, 1.0f, BATTLE_MARK_UNITS, theme.textColor);
+      const std::size_t foot = tree.Add(
+        {.widthUnits = BATTLE_MARK_UNITS,
+         .heightUnits = 1.0f,
+         .anchor = Neuron::LayoutAnchor::TopLeft,
+         .margin = {.left = std::clamp(left, 0.0f, LANE_WIDTH_UNITS - 1.0f), .top = ((LANE_UNITS + BATTLE_MARK_UNITS) / 2.0f) - 1.0f}});
+      _canvas.Fill(foot, theme.textColor);
+    }
+  }
+  EndLane(_canvas);
+  // The day's two ends, under the lanes.
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.padding = {.left = LANE_LABEL_UNITS + LANE_GAP_UNITS}});
+  (void)_canvas.Label(
+    Fitted(std::format("tick {}", Outpost::WithThousands(static_cast<std::int64_t>(dayStart))), Hud::Typeface::Detail, DETAIL_LINE_UNITS),
+    theme.dimTextColor);
+  (void)tree.AddSpacer();
+  (void)_canvas.Label(Fitted("now", Hud::Typeface::Detail, DETAIL_LINE_UNITS), theme.dimTextColor);
+  tree.End();
+  _canvas.EndPanel();
 }
 } // namespace
 
@@ -551,9 +827,17 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
   LayHeader(canvas, _model, _link, _now);
   LayTiles(canvas, _model);
   (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
+  (void)tree.Begin(Neuron::LayoutKind::Column, {.gapUnits = MARGIN, .alignX = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
+
+  // Over the seat table, the map and what needs attention.
+  const std::vector<Attention> attention = AttentionOf(_model);
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.heightUnits = TOP_ROW_UNITS, .gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Stretch});
+  const std::size_t mapSquare = LayMap(canvas, _model, *this);
+  LayAttention(canvas, attention, _model.LatestHealth() != nullptr);
+  tree.End();
 
   // The seat table: its filters, then its rows, sorted, the picked one lit.
-  std::vector<SeatLine> lines = SeatLinesOf(_model, *this);
+  std::vector<SeatLine> lines = SeatLinesOf(_model, *this, attention);
   const auto sortColumn = static_cast<std::size_t>(m_sortColumn);
   std::ranges::stable_sort(lines,
                            [this, sortColumn](const SeatLine& _first, const SeatLine& _second)
@@ -568,7 +852,8 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
   for (SeatLine& line : lines)
   {
     const bool shown = m_filter == SeatFilter::All || (m_filter == SeatFilter::Players && !line.ai) ||
-                       (m_filter == SeatFilter::Ai && line.ai) || (m_filter == SeatFilter::Away && line.away);
+                       (m_filter == SeatFilter::Ai && line.ai) || (m_filter == SeatFilter::Away && line.away) ||
+                       (m_filter == SeatFilter::NeedsALook && line.needsALook);
     if (shown)
       rows.push_back(std::move(line.row));
   }
@@ -589,9 +874,13 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
     Neuron::TableSorted{.column = sortColumn, .sort = m_sortDescending ? Neuron::TableSort::Descending : Neuron::TableSort::Ascending},
     rows, {.grow = 1.0f});
   canvas.EndPanel();
+  tree.End();
 
-  // The universe log: its filters, then its records, the newest first.
-  (void)BeginPanel(canvas, {.widthUnits = LOG_PANEL_UNITS});
+  // At the right, who played over the last day, then the universe log: its filters, then its records, the newest first.
+  (void)tree.Begin(Neuron::LayoutKind::Column,
+                   {.widthUnits = RIGHT_COLUMN_UNITS, .gapUnits = MARGIN, .alignX = Neuron::LayoutAlign::Stretch});
+  LayWhoPlayed(canvas, _model, *this);
+  (void)BeginPanel(canvas, {.grow = 1.0f});
   Heading(canvas, "UNIVERSE LOG");
   FilterCells(canvas, "log filters", LOG_FILTERS, static_cast<std::size_t>(m_logFilter), PressKind::LogFilter);
   (void)tree.Add({.heightUnits = CELL_GAP_UNITS});
@@ -609,11 +898,21 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
   }
   canvas.EndScroll();
   canvas.EndPanel();
+  tree.End();
 
   tree.End();
   tree.End();
   m_layout = {};
   canvas.Finish(m_layout);
+  // The map's drawing, into its square as the canvas placed it, as the HUD draws its minimap.
+  const std::optional<Snapshot>& view = _model.View();
+  const std::optional<OverseerWelcomeMessage>& welcome = _model.Welcome();
+  if (mapSquare != Neuron::LayoutNode::NO_NODE && view.has_value() && welcome.has_value())
+  {
+    const Neuron::LayoutNode& square = tree.Node(mapSquare);
+    Hud::DrawMinimap(m_layout, {square.leftUnits * scale, square.topUnits * scale, square.widthUnits * scale, square.heightUnits * scale},
+                     MapContentOf(*view, *welcome, *this), scale);
+  }
   return m_layout;
 }
 
@@ -664,6 +963,9 @@ void Outpost::OverseerScreen::Press(std::uint32_t _payload)
     if (which < LOG_FILTERS.size())
       FilterLog(static_cast<LogFilter>(which));
     break;
+  case PressKind::FullSight:
+    WatchFullSight();
+    break;
   }
 }
 
@@ -688,6 +990,12 @@ void Outpost::OverseerScreen::Pick(PlayerId _seat)
   }
   m_picked = _seat;
   m_sightPicked = _seat;
+}
+
+void Outpost::OverseerScreen::WatchFullSight()
+{
+  if (m_picked.has_value())
+    Pick(*m_picked);
 }
 
 void Outpost::OverseerScreen::FilterLog(LogFilter _filter)

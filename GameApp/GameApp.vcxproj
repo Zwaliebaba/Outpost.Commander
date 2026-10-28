@@ -110,6 +110,7 @@
     <ClInclude Include="OverseerModel.h" />
     <ClInclude Include="OverseerClient.h" />
     <ClInclude Include="OverseerScreen.h" />
+    <ClInclude Include="OverseerAttention.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -145,6 +146,7 @@
     <ClCompile Include="OverseerModel.cpp" />
     <ClCompile Include="OverseerClient.cpp" />
     <ClCompile Include="OverseerScreen.cpp" />
+    <ClCompile Include="OverseerAttention.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
