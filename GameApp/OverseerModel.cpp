@@ -37,7 +37,9 @@ void Outpost::OverseerModel::Take(std::span<const std::byte> _message, std::chro
       if (const std::optional<RecordHead> head = HeadOf(line))
       {
         m_newestTick = std::max(m_newestTick, head->tick);
-        if (IsLaneRecord(head->kind))
+        // The log's last records, sent again after the welcome, hold lanes' records the welcome already gave, and older ones the
+        // day has dropped, among them a start that would go back past newer records: only one not yet kept, of the day, is new.
+        if (IsLaneRecord(head->kind) && head->tick >= DayStart() && std::ranges::find(m_lanes, line) == m_lanes.end())
           m_lanes.push_back(line);
       }
     }
@@ -66,10 +68,15 @@ std::optional<std::uint64_t> Outpost::OverseerModel::TakeView(std::span<const st
   return tick;
 }
 
-void Outpost::OverseerModel::KeepTheDay()
+std::uint64_t Outpost::OverseerModel::DayStart() const noexcept
 {
   const std::uint64_t day = LANE_SECONDS * (m_welcome.has_value() ? m_welcome->ticksPerSecond : 0);
-  KeepLaneRecords(m_lanes, m_newestTick > day ? m_newestTick - day : 0);
+  return m_newestTick > day ? m_newestTick - day : 0;
+}
+
+void Outpost::OverseerModel::KeepTheDay()
+{
+  KeepLaneRecords(m_lanes, DayStart());
 }
 
 void Outpost::OverseerModel::Lost(std::string _why, std::chrono::steady_clock::time_point _now)

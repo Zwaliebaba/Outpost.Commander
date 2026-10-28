@@ -33,7 +33,10 @@ Outpost::OverseerWelcomeMessage Welcome()
                     {.player = Outpost::PlayerId{3}, .ai = {}},
                     {.player = Outpost::PlayerId{4}, .ai = "Hard"}},
           .recoveredSaveTick = 1'200,
-          .replayedCommands = 7};
+          .replayedCommands = 7,
+          .laneRecords = {"start 0 new", "seat 0 player 1 deputy", "seat 36000 player 1 player",
+                          "start 50000 recovered save 49000 replayed 2", "battle 60000 60200 sector 2 player 1 present player 2 ai",
+                          "battle 70000 70100 sector 3 player 3 deputy player 2 ai"}};
 }
 
 // _model welcomed at START, and told a Health of _tick at _heard.
@@ -153,13 +156,15 @@ std::size_t IndexOf(const Neuron::DrawList& _layout, std::string_view _text)
   return static_cast<std::size_t>(found - _layout.texts.begin());
 }
 
-// The seats the table shows, in the order it shows them.
+// The seats the table shows, in the order it shows them: each "Seat n" alone, not a sentence that names one.
 std::vector<std::string> SeatsShown(const Neuron::DrawList& _layout)
 {
   std::vector<std::string> seats;
   for (const Neuron::CanvasText& text : _layout.texts)
   {
-    if (text.text.starts_with("Seat "))
+    const std::string_view number = std::string_view(text.text).substr(std::min<std::size_t>(5, text.text.size()));
+    if (text.text.starts_with("Seat ") && !number.empty() &&
+        std::ranges::all_of(number, [](char _digit) { return _digit >= '0' && _digit <= '9'; }))
       seats.push_back(text.text);
   }
   return seats;
@@ -381,6 +386,79 @@ public:
       offenders += TextsPastTheirPanels(layout, fonts, name) + TextsThatMeet(layout, fonts, name) + TextsUnderContrast(layout, fonts, name);
     }
     Assert::IsTrue(offenders.empty(), offenders.c_str());
+  }
+
+  // ADR-102 decision 7: "All well." over the checks that pass while nothing is to be acted on or known; what is to be acted on
+  // as a chip, its words on the warning's tag.
+  TEST_METHOD(ShowsWhatNeedsAttention)
+  {
+    Outpost::OverseerModel model;
+    Script(model);
+    const Neuron::DrawList quiet = Lay(model, Link(), NOW);
+    Assert::IsTrue(Shows(quiet, "All well."), Texts(quiet).c_str());
+    Assert::IsTrue(Shows(quiet, "No link wears down."));
+    Outpost::HealthMessage low = model.LatestHealth()->health;
+    low.tick += 20;
+    low.process.diskFreeBytes = std::uint64_t{3} * 1'024 * 1'024 * 1'024;
+    model.Take(Outpost::EncodeOverseerMessage(low), NOW);
+    const Neuron::DrawList acting = Lay(model, Link(), NOW);
+    Assert::IsFalse(Shows(acting, "All well."));
+    const Neuron::CanvasText& chip = acting.texts[IndexOf(acting, "The server's disk has 3.0 GB free")];
+    Assert::IsTrue(std::ranges::any_of(acting.panels,
+                                       [&chip](const Neuron::CanvasRect& _panel) {
+                                         return Same(_panel.color, Outpost::Hud::Theme().warningColor) &&
+                                                _panel.Contains(chip.left + 1.0f, chip.top + 1.0f);
+                                       }),
+                   L"on the warning's tag");
+  }
+
+  // ADR-102 decision 7: the filter for what needs a look keeps the seats a rule names.
+  TEST_METHOD(FiltersTheSeatsThatNeedALook)
+  {
+    Outpost::OverseerModel model;
+    Script(model);
+    Outpost::HealthMessage waited = model.LatestHealth()->health;
+    waited.tick += 20;
+    waited.seats[3].restartTick = waited.tick - (std::uint64_t{20} * 12 * 60);
+    model.Take(Outpost::EncodeOverseerMessage(waited), NOW);
+    OverseerScreen screen({});
+    screen.Filter(OverseerScreen::SeatFilter::NeedsALook);
+    const Neuron::DrawList& layout = Lay(screen, model, NOW);
+    Assert::IsTrue(SeatsShown(layout) == std::vector<std::string>{"Seat 4"}, Texts(layout).c_str());
+    Assert::IsTrue(Shows(layout, "Seat 4 has waited 12:00 for its start to be clear."));
+  }
+
+  // ADR-102 decision 7: a lane a player's seat, solid in its color while its player played it and hatched while its deputy did,
+  // and the whole day in its present play when no hand-over is told; a recovery's mark across each; a lane of battles, a mark
+  // filled with a player present and hollow without; and no lane for an AI empire.
+  TEST_METHOD(DrawsWhoPlayed)
+  {
+    const Scripted scripted;
+    OverseerScreen screen({{.player = Outpost::PlayerId{1}, .color = BLUE}});
+    const Neuron::DrawList& layout = Lay(screen, scripted.model, NOW);
+    Assert::IsTrue(Shows(layout, "SEAT 1") && Shows(layout, "SEAT 3") && Shows(layout, "BATTLES"), Texts(layout).c_str());
+    Assert::IsFalse(Shows(layout, "SEAT 2") || Shows(layout, "SEAT 4"), L"no lane for an AI empire");
+    // A span of a lane is as tall as the lane, 12 units at this size; the seat table's marks are not.
+    const auto drawn = [&layout](const DirectX::XMFLOAT4& _color, Neuron::CanvasFill _fill)
+    {
+      return std::ranges::count_if(layout.panels, [&](const Neuron::CanvasRect& _panel)
+                                   { return Same(_panel.color, _color) && _panel.fill == _fill && _panel.height == 12.0f; });
+    };
+    Assert::AreEqual(std::ptrdiff_t{1}, drawn(BLUE, Neuron::CanvasFill::Solid), L"seat 1's player, from tick 36,000");
+    Assert::AreEqual(std::ptrdiff_t{1}, drawn(BLUE, Neuron::CanvasFill::Hatched), L"seat 1's deputy, before it");
+    Assert::AreEqual(std::ptrdiff_t{1}, drawn(Outpost::OVERSEER_SEAT_PALETTE[0], Neuron::CanvasFill::Hatched), L"seat 3's deputy, all day");
+    const Neuron::Theme& theme = Outpost::Hud::Theme();
+    const auto marks = [&layout, &theme](float _width, float _height)
+    {
+      return std::ranges::count_if(layout.panels, [&](const Neuron::CanvasRect& _panel)
+                                   { return Same(_panel.color, theme.textColor) && _panel.width == _width && _panel.height == _height; });
+    };
+    Assert::AreEqual(std::ptrdiff_t{2}, marks(8.0f, 8.0f), L"two battles with a player present, filled");
+    Assert::AreEqual(std::ptrdiff_t{2}, marks(8.0f, 1.0f), L"one without, hollow");
+    Assert::AreEqual(std::ptrdiff_t{2},
+                     std::ranges::count_if(layout.panels, [&theme](const Neuron::CanvasRect& _panel)
+                                           { return Same(_panel.color, theme.labelColor) && _panel.width == 2.0f; }),
+                     L"the recovery's mark across each player's lane");
   }
 
   TEST_METHOD(WritesUniverseTimeAndBytes)

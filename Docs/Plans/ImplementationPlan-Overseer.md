@@ -32,8 +32,8 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV2.4 | `Closing`, and the server's state | OV2.2 | — | merged, [#156](https://github.com/Zwaliebaba/Outpost.Commander/pull/156) |
 | OV3.1 | The overseer's project, its window and its link | OV2 | D1, D5, D6 | in review; awaiting the owner's run |
 | OV3.2 | The overview: header, tiles, seat table and the log | OV3.1, the canvas plan's CV9.1 | D7 | in review; awaiting the owner's run |
-| OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | in progress |
-| OV4.2 | Needs attention and who played | OV4.1 | — | todo |
+| OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | built, on OV4's branch |
+| OV4.2 | Needs attention and who played | OV4.1 | — | built, on OV4's branch; awaiting the owner's run |
 | OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | todo |
 | OV5.1 | The seat window, the server window and the header states | OV4 | — | todo |
 | OV6.1 | Save now and Stop | OV5 | — | todo |
@@ -209,7 +209,7 @@ The overseer itself: an executable of its own, its window and its end of the cha
 - **`Neuron::Window` also takes whether it holds the cursor** while full screen: the overseer has no edge scroll, and leaves it free.
 - **The tiles are five, not six:** the process's working set, its share of a core and the disk free share one, so that every tile's detail line fits it on the reference frame.
 - **A seat's color marks its row,** a bar at its left, and its words stay in the text's color: a side's color on the picked row's face would fall under 4.5:1.
-- **The seat table's filter for what needs a look** waits for what needs attention, OV4.2.
+- **The seat table's filter for what needs a look** came with what needs attention, OV4.2.
 - **The log shows its newest records first,** so that a record stands at the top as it comes, with no scroll to follow; it shows 400 at most.
 - **A table cell's figure and detail line stand at offsets the theme gives,** 5 and 25 units down a row of 46, so that the two never meet at a scale's rounding.
 - **The guards' helper** is `Tests/GameAppTests/LayoutGuards.h`, which `HudTests` reads too.
@@ -254,6 +254,15 @@ What the overview lacks after OV3: what needs the owner's attention, who played 
 - **ADR:** ADR-102, the overview; [ADR-100](../ADR/ADR-100-the-canvas.md) decision 7, the minimap shared.
 - **Acceptance:** `OverseerScreenTests`: the map's marks in full sight and in a seat's, the "All" cell, and the guards.
 - **Verify:** the checkers; the container's tests; CI; the owner's run against a running universe.
+
+### As built
+
+- **The overseer's model takes no lanes' record twice.** The log's last records, which the server sends again after the welcome, held lanes' records the welcome gave and older ones the day had dropped, and an old `start 0 new` among them went back past every record of the day; a lanes' record the stream brings is now taken only when it is of the day and not yet kept.
+- **A hand-over to the play a seat already has continues its span,** and only a recovery's `start` is a mark across the lanes: a new universe's is where its lanes begin.
+- **The overview's body:** the middle column holds a row 360 units tall over the seat table, what needs attention in it now, the map beside it with OV4.3; the right column, 560 units wide, holds who played over the universe log.
+- **The acceptance's names as built:** `LaneRecordsTests`, three; `UniverseLogTests.ReadsTheLanesRecords`; `OverseerLinkTests.WelcomesWithTheLanesRecords`; `OverseerModelTests.KeepsADayOfTheLanesRecords` and `TakesNoLanesRecordTwice`; `OverseerAttentionTests`, four; and `OverseerScreenTests.ShowsWhatNeedsAttention`, `FiltersTheSeatsThatNeedALook` and `DrawsWhoPlayed`.
+- **Run in the container:** the server's suites, and `GameAppTests`' overseer suites, pass on the clang 18 harnesses OV3 used, but the QUIC tests and `NeuronCoreTests`' two `FileSysTests`, which this milestone does not touch and the Linux harness fails; `HudTests.LaysOutTheOrdersWindow` still fails there on the stand-in fonts, at OV4's base as after it.
+- **Not run in the container:** the QUIC tests, the executable, and the guards with the fonts Windows installs.
 
 ---
 

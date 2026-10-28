@@ -22,7 +22,7 @@ inline constexpr std::array<DirectX::XMFLOAT4, 6> OVERSEER_SEAT_PALETTE{{{0.1f, 
 
 // The overseer's overview (ADR-102; Game §session.overseer), built on the canvas in the game's look (ADR-100) and laid out on
 // the 1920×1080 reference frame scaled to the window, as the HUD is (ADR-006 decision 5), from what its model knows: the
-// header, the health tiles, the seat table and the universe log. It keeps what its widgets share and what the owner picked
+// header, the health tiles, what needs attention, the seat table, who played over the last day, and the universe log. It keeps what its widgets share and what the owner picked
 // on it, and no GPU state: the shell draws its display list.
 class OverseerScreen
 {
@@ -50,13 +50,15 @@ public:
   };
   static constexpr std::size_t SEAT_COLUMN_COUNT = 8;
 
-  // Which seats the table shows: every one, the players' seats, the AI empires', or the players' seats whose player is away.
+  // Which seats the table shows: every one, the players' seats, the AI empires', the players' seats whose player is away, or
+  // those that something needing attention names (AttentionOf).
   enum class SeatFilter : std::uint8_t
   {
     All,
     Players,
     Ai,
-    Away
+    Away,
+    NeedsALook
   };
 
   // Which of the log's records it shows, by their kind: every one; the seats' (seat, join, lost, restart, waiting, hour and

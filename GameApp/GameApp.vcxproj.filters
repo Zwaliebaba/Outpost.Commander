@@ -137,6 +137,9 @@
     <ClInclude Include="OverseerScreen.h">
       <Filter>Overseer</Filter>
     </ClInclude>
+    <ClInclude Include="OverseerAttention.h">
+      <Filter>Overseer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -225,6 +228,9 @@
       <Filter>Overseer</Filter>
     </ClCompile>
     <ClCompile Include="OverseerScreen.cpp">
+      <Filter>Overseer</Filter>
+    </ClCompile>
+    <ClCompile Include="OverseerAttention.cpp">
       <Filter>Overseer</Filter>
     </ClCompile>
   </ItemGroup>

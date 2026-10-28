@@ -95,7 +95,8 @@ public:
   }
 
 private:
-  // Lets go of the lanes' records from before the day that ends at the newest tick.
+  // The first tick of the day that ends at the newest tick, and letting go of the lanes' records from before it.
+  [[nodiscard]] std::uint64_t DayStart() const noexcept;
   void KeepTheDay();
 
   std::optional<OverseerWelcomeMessage> m_welcome;
