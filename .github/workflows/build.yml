@@ -392,12 +392,13 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "nuget restore failed for $($config.FullName)." }
           }
 
-      # Only what writes the shader headers, and what it builds on, through the solution (AGENTS.md §3).
+      # Only what writes the shader headers, and what it builds on, through the solution (AGENTS.md §3). NeuronClient stands
+      # in the solution folder Game Engine, so its target is the folder's and its name.
       - name: Build the shader headers
         if: steps.solution.outputs.path != ''
         shell: pwsh
         run: |
-          msbuild "${{ steps.solution.outputs.path }}" /t:NeuronClient `
+          msbuild "${{ steps.solution.outputs.path }}" "/t:Game Engine\NeuronClient" `
             /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM `
             /m /nologo /v:minimal /warnaserror
 
