@@ -926,6 +926,7 @@ public:
     Fixture fixture;
     const std::array<Neuron::TableColumn, 1> columns{{{.heading = "SEAT", .payload = 1}}};
     std::vector<Neuron::TableRow> rows;
+    rows.reserve(5);
     for (std::uint32_t row = 0; row < 5; ++row)
       rows.push_back({.cells = {{.figure = std::format("Seat {}", row + 1)}}, .payload = 10 + row});
     const auto build = [&](DrawList& _list)
