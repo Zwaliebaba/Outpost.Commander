@@ -4,7 +4,7 @@
 
 Every owner decision that is still open: each row of a gate table whose Status is `open`, in every document under `Docs/`, grouped by the document that holds it. A gate is decided in its own table, and this list follows (AGENTS.md §8).
 
-8 gates are open, in 6 documents.
+6 gates are open, in 5 documents.
 
 ## [`Docs/Horizon.md`](../Horizon.md)
 
@@ -36,10 +36,3 @@ Every owner decision that is still open: each row of a gate table whose Status i
 | Gate | Decision | Blocks |
 |---|---|---|
 | H10 | Whether a galaxy or friends come next, decided from W6 and the week's universe log (§4) | The next phase design: a galaxy, or a season with friends on one system ([the horizon](../Horizon.md) §11) |
-
-## [`Docs/Plans/UniverseOverseer.md`](../Plans/UniverseOverseer.md)
-
-| Gate | Decision | Blocks |
-|---|---|---|
-| D2 | **A new token, written by the server.** New token makes a seat's token afresh, writes it into `Universe.json` and writes the seat's join file again, where ADR-078 decision 2 has the server only read its settings. Proposed: yes, written to a new file and renamed into place, as a save is; or New token stays out of the first version. | OV6, the actions |
-| D3 | **Dropping a link.** Drop link and Hand to deputy become one action, with an option for the deputy to take the seat at once rather than after ADR-079's minute. The game reads a new close reason, `DroppedByOwner`, as one it does not join again after (ADR-078 decision 10), and goes back to the menu saying the server's owner closed the connection. Proposed: as written. | OV6, the actions |
