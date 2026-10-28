@@ -94,8 +94,8 @@ As B3 decides.
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| CN1.1 | The selection in the middle and the command card in the corner | — | B1, B2, B4, B5 | todo |
-| CN1.2 | Build mode in the command card, and the build window goes | CN1.1 | B1, B3 | todo |
+| CN1.1 | The selection in the middle and the command card in the corner | — | B1, B2, B4, B5 | in review, [#158](https://github.com/Zwaliebaba/Outpost.Commander/pull/158) |
+| CN1.2 | Build mode in the command card, and the build window goes | CN1.1 | B1, B3 | in review, [#158](https://github.com/Zwaliebaba/Outpost.Commander/pull/158) |
 
 ### Milestone order
 
