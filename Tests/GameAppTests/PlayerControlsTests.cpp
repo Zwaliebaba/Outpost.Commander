@@ -604,6 +604,47 @@ public:
     Assert::IsTrue(Only<Outpost::AttackCommand>(commands)->target == Outpost::EntityId{ENEMY_YARD});
   }
 
+  // ADR-088 decision 2: B, as the command card's Build button does, turns build mode on while the selection holds a
+  // Constructor, and off again. Placing a structure leaves it on, with Shift or without; Esc cancels an armed placement
+  // first and turns build mode off after; and it lasts only while the selection holds a Constructor, which selecting one
+  // again does not bring back.
+  TEST_METHOD(TurnsBuildModeOnAndOffForConstructors)
+  {
+    Driver driver;
+    AddBase(driver.Entities());
+    driver.Click(driver.Entities()[0]);
+    driver.Key(Outpost::KEY_BUILD);
+    Assert::IsFalse(driver.Controls().IsBuilding(), L"no Constructor is selected");
+
+    driver.Click(driver.Entities()[5]);
+    driver.Key(Outpost::KEY_BUILD);
+    Assert::IsTrue(driver.Controls().IsBuilding());
+    driver.Key(Outpost::KEY_BUILD);
+    Assert::IsFalse(driver.Controls().IsBuilding(), L"B again");
+    driver.Controls().ToggleBuilding(driver.Entities());
+    Assert::IsTrue(driver.Controls().IsBuilding(), L"the Build button");
+
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.Entities());
+    (void)driver.Controls().TakeCommands();
+    driver.ClickPixel(800, 400, VK_LBUTTON, true);
+    driver.ClickPixel(900, 400);
+    Assert::IsTrue(driver.Controls().IsBuilding(), L"placing leaves it on");
+    Assert::AreEqual(size_t{2}, driver.Controls().TakeCommands().size(), L"two placed");
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.Entities());
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().Placing().has_value(), L"the first Esc cancels the placement");
+    Assert::IsTrue(driver.Controls().IsBuilding(), L"and leaves build mode on");
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().IsBuilding(), L"the second turns it off");
+
+    driver.Key(Outpost::KEY_BUILD);
+    Assert::IsTrue(driver.Controls().IsBuilding());
+    driver.Click(driver.Entities()[0]);
+    Assert::IsFalse(driver.Controls().IsBuilding(), L"a selection without a Constructor ends it");
+    driver.Click(driver.Entities()[5]);
+    Assert::IsFalse(driver.Controls().IsBuilding(), L"and selecting one again does not bring it back");
+  }
+
   // ADR-013 decision 5: the HUD arms a placement for selected Constructors; the next left-click on the ground orders the
   // build, Shift keeps it armed, and right-click or Escape cancels it.
   TEST_METHOD(PlacesAStructureWithTheNextLeftClick)

@@ -44,22 +44,24 @@ Task numbers carry the prefix LV, and gates are lettered A.
 |---|---|---|---|---|
 | LV1.1 | A warm key, a cool fill, and lines that keep their hue | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11 |
 | LV1.2 | A phosphor glow | — | A2 | done, [#107](https://github.com/Zwaliebaba/Outpost.Commander/pull/107); accepted by the owner's run on 2026-10-11, zoomed in and out |
-| LV2.1 | Occlusion baked into every vertex | LV1 | A3 | merged, [#108](https://github.com/Zwaliebaba/Outpost.Commander/pull/108); awaiting the owner's run |
+| LV2.1 | Occlusion baked into every vertex | LV1 | A3 | merged, [#108](https://github.com/Zwaliebaba/Outpost.Commander/pull/108); done, accepted from a run on 2026-10-28 |
 | LV2.2 | Paint slots: team, trim and light | LV2.1 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | LV2.3 | Two-tone lines | LV2.2 | A4 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
 | LV3.1 | Beacons | LV2.2 | A5 | merged, [#125](https://github.com/Zwaliebaba/Outpost.Commander/pull/125); awaiting a run and the owner's run |
-| LV4.1 | Fleets on the screen | — | A6, A7 | todo |
-| LV4.2 | Plates over the fleets | LV4.1 | A7 | todo |
-| LV4.3 | Health bars where the plates are not | LV4.2 | A7 | todo |
+| LV4.1 | Fleets on the screen | — | A6, A7 | merged, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152); done, accepted from a run on 2026-10-28; LV5.1 takes up what it found |
+| LV4.2 | Plates over the fleets | LV4.1 | A7 | merged, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152); done, accepted from a run on 2026-10-28; LV5.1 takes up what it found |
+| LV4.3 | Health bars where the plates are not | LV4.2 | A7 | merged, [#152](https://github.com/Zwaliebaba/Outpost.Commander/pull/152); done, accepted from a run on 2026-10-28; LV5.1 takes up what it found |
+| LV5.1 | A formation of Small hulls under one plate | LV4.1 | A7 | todo |
 
 ### Milestone order
 
-LV1, LV2, LV3, LV4.
+LV1, LV2, LV3, LV4, then LV5.
 
 - **LV1 changes no file format and no art.** It is the cheapest way to see whether the owner likes the direction.
 - **LV2's paint slots are one format change**, so the owner's models can take a second paint and lights in one bake.
 - **LV3 needs LV2's light slot only for its look,** not to work; it goes after LV2 so a beacon and a lit window are judged together.
 - **LV4 is independent of the rest** and can go at any time, since A7 is decided.
+- **LV5 is what the owner's run of 2026-10-28 found** in LV4 ([PlaytestLog.md](../Records/PlaytestLog.md), that day). It is a defect against A7 as decided, so it needs no gate of its own.
 
 The owner's models are a track of their own beside the plan: chunky proportions, one silhouette per building kind, a prop that says what it is, a mast or a dish, and `trim` and `light` materials, which LV2.2 reads. They need no task.
 
@@ -216,6 +218,34 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 - **Gate:** A7.
 - **Scope, as proposed:** a ship's own bar shows while Alt is held, under the pointer, and close in; elsewhere its fleet's plate stands for it. A structure keeps its bar. It rewrites ADR-088 decision 5.
 - **Acceptance:** `HudTests.PutsABarOnlyOverWhatShowsOne` for each case.
+
+### LV4.1 to LV4.3 — As built (2026-10-27)
+
+[ADR-102](../ADR/ADR-102-plates-over-the-fleets.md); ADR-030, ADR-070 and ADR-088 decision 5 edited in place.
+
+- **The owner's answers of 2026-10-27:** a warship's insignia is one, two or three chevrons by its hull's size, and a Constructor's a plus; the plates show while the camera's view is wider than 300 m, so the default view of 500 m shows them.
+- **What the tasks left open, chosen here:**
+  - **Formations are one fleet.** Ships of one side also join when they stand within 3.5 footprint radii of their side's widest ship on the ground, since a formation keeps three between neighbors (ADR-010 decision 4); at the default view a formation of Medium hulls stands about 160 pixels apart, and the screen's test alone would give each ship a plate.
+  - **A plate settles rather than jumps.** It moves with its ships, and when a ship joins, leaves or is lost it starts where it stood and settles over 0.15 s.
+  - **A plate takes the interface's scale,** the player's factor included, unlike the bars, since its count is text from the atlas.
+  - **The ring:** a whole fleet's is one sprite; a hurt fleet's is 16 pieces, white for the share of its hit points and the halo's color for the rest.
+  - **A click on one of the player's own plates selects its fleet,** Shift adding it, and drops what was armed, as a click on a ship's bar does; another side's plate takes no click.
+  - **While Alt is held there are no plates,** only every bar, and the ship under the pointer shows its bar, whole or not.
+- **Run in the container:** `NeuronClientTests` 69 and `GameAppTests` 322 pass, built by clang 18 against stand-ins for the Windows headers, C++/WinRT, DirectWrite and the test framework, with FreeType drawing the Liberation faces in place of the Windows fonts; the 7 and 9 that fail fail on `main` the same way, on Windows paths with backslashes and a font family the container lacks. `UiPipeline.cpp` and `GameClient.cpp` compile there, unlinked. Each new test was checked against a broken build: no formation reach, no join of plates that meet, no kept identifier, no owner check, no settling, a hurt ship's bar far out, no parting, a plate taking a click under a panel, a tie to the smaller hull, the arc counterclockwise, no halo on the count or the face, halos not packed, and a halo not blurred. clang-format 18 and clang-tidy 18, with the repository's checks, find nothing in the changed lines.
+- **Not run on a GPU or seen on screen.** The halo's drawing, the plates' drawing and the click on a plate are CI's to build and the owner's run to see.
+
+---
+
+## Milestone LV5 — What the owner's run found
+
+### LV5.1 — A formation of Small hulls under one plate
+
+- **Gate:** A7, as decided: formations are one fleet.
+- **Goal:** at the start of `--matchup 1`, 20 Small hulls standing in formation showed a plate over each ship at a middle zoom on 1920×1080, and joined into plates only when the camera pulled further back ([PlaytestLog.md](../Records/PlaytestLog.md), 2026-10-28). [ADR-102](../ADR/ADR-102-plates-over-the-fleets.md) has ships of one side join when they stand within `ScreenFleets::FORMATION_REACH_RADII`, 3.5 footprint radii of their side's widest ship, of each other, which a formation's three radii should meet.
+- **Scope:** find why they did not join: whether the matchup's start is a formation at all, whether the reach is measured from a radius other than the widest ship's, or whether the screen's test runs first and the ground's never joins what it parts. Then make a formation one plate at every zoom that shows plates, as A7 asks. If the cause is that the matchup's start is not a formation, the task says so, and the owner decides whether a start like it should be one plate.
+- **ADR:** ADR-102, edited in place, if the rule changes.
+- **Acceptance:** `HudTests`: matchup 1's start, as the server lays it out, gives one plate per side at the default view and at each zoom between it and the widest; the test fails on today's code if the defect is in the code.
+- **Verify:** the container's tests; CI; the owner's run of `--matchup 1`, zooming out from the closest view.
 
 ---
 

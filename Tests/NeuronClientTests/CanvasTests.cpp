@@ -423,6 +423,41 @@ public:
     Assert::AreEqual(Neuron::NO_WIDGET, fixture.ui.Active(), L"but presses nothing");
   }
 
+  // ADR-043 decision 4; ADR-100: a stacked button sets its figure, after its mark, or its reason under its label, both from
+  // the button's left, the two lines in its middle together, as the command card's structures are (ADR-088 decision 2).
+  TEST_METHOD(StacksAButtonsFigureUnderItsLabel)
+  {
+    Fixture fixture;
+    const Neuron::Theme& theme = fixture.theme;
+    Canvas canvas = fixture.Begin();
+    (void)canvas.Tree().Begin(LayoutKind::Column, {.widthUnits = 300.0f, .gapUnits = 10.0f, .alignX = LayoutAlign::Stretch});
+    (void)canvas.Button("platform", {.label = "Defence Platform", .figure = "450", .figureMark = GEM, .payload = 3, .stacked = true},
+                        {.heightUnits = 51.0f});
+    (void)canvas.Button("lab",
+                        {.label = "Research Lab",
+                         .figure = "200",
+                         .figureMark = GEM,
+                         .note = "ONE PER PLAYER",
+                         .payload = 4,
+                         .enabled = false,
+                         .stacked = true},
+                        {.heightUnits = 51.0f});
+    canvas.Tree().End();
+    DrawList list;
+    canvas.Finish(list);
+    Assert::AreEqual(size_t{4}, list.texts.size());
+    Assert::AreEqual(size_t{1}, list.sprites.size(), L"the figure's mark, and none beside the reason");
+    if (list.texts.size() != 4 || list.sprites.size() != 1)
+      return;
+    // Six units over the two lines, the name's 22 and the figure's 17, and six under them.
+    Assert::IsTrue(TextIs(list.texts[0], "Defence Platform", 24.0f, 12.0f, theme.textColor, NAME), L"the label on the first line, uncut");
+    Assert::IsTrue(list.sprites[0].sprite == GEM && RectIs(list.sprites[0].area, 24.0f, 60.0f, 16.0f, 16.0f, theme.figureColor),
+                   L"the mark under it, from the button's left");
+    Assert::IsTrue(TextIs(list.texts[1], "450", 50.0f, 56.0f, theme.figureColor, FIGURE), L"the figure after the mark");
+    Assert::IsTrue(TextIs(list.texts[2], "ONE PER PLAYER", 24.0f, 178.0f, theme.labelColor, LABEL), L"a reason under its label");
+    Assert::IsTrue(TextIs(list.texts[3], "Research Lab", 24.0f, 134.0f, theme.lockedTextColor, NAME));
+  }
+
   // ADR-100: a box the game composes is its face, a hatch over it if it has one, and its edge, under what it holds; a card is
   // a box that takes a press naming its payload, and none without one, or one that only answers the pointer with it; an icon
   // is its sprite at its node's padded corner.

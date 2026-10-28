@@ -96,17 +96,17 @@ A session is everything between starting the game and closing it: the menu, a sk
 
 ### The overseer [§session.overseer]
 
-- **The overseer is `OutpostOverseer`, a program of its own that is not packaged,** which watches a universe's server over the server's channel for it and changes nothing in the universe (ADR-102 decision 1; ADR-101).
-- **`OutpostOverseer <folder>` oversees the universe whose `Overseer.json` the folder holds,** or the file it names; with neither, the default universe's in the owner's documents. With no file there it says where it looked and ends (ADR-102 decision 2).
-- **It opens in a window of its own,** which Alt+Enter turns full screen and back, and leaves the cursor free (ADR-102 decision 3).
-- **It needs a graphics card that runs Direct3D 12,** as the game does. On a server without one, the owner runs it from a PC on the server's network, with the universe's `Overseer.json` and the server's overseer address opened to that network (ADR-102 decision 4).
-- **It joins the server every 2 s while it has no connection,** and shows what it was last told meanwhile (ADR-102 decisions 5 and 6).
-- **Its header names the universe's folder and its server, says how the server is, and tells universe time and its tick** (ADR-102 decision 7):
+- **The overseer is `OutpostOverseer`, a program of its own that is not packaged,** which watches a universe's server over the server's channel for it and changes nothing in the universe (ADR-103 decision 1; ADR-101).
+- **`OutpostOverseer <folder>` oversees the universe whose `Overseer.json` the folder holds,** or the file it names; with neither, the default universe's in the owner's documents. With no file there it says where it looked and ends (ADR-103 decision 2).
+- **It opens in a window of its own,** which Alt+Enter turns full screen and back, and leaves the cursor free (ADR-103 decision 3).
+- **It needs a graphics card that runs Direct3D 12,** as the game does. On a server without one, the owner runs it from a PC on the server's network, with the universe's `Overseer.json` and the server's overseer address opened to that network (ADR-103 decision 4).
+- **It joins the server every 2 s while it has no connection,** and shows what it was last told meanwhile (ADR-103 decisions 5 and 6).
+- **Its header names the universe's folder and its server, says how the server is, and tells universe time and its tick** (ADR-103 decision 7):
   - **Running** while the server says how it is, once a second.
   - **No word** once 3 s have gone without that, or while there is no connection, saying how the server ended when it said so, why the connection went, and when the last word came.
-- **Its tiles tell how the server keeps up** (ADR-102 decision 7): the slowest of a hundred ticks over the last minute against the 5 ms budget, and the hour's slowest; the ticks a second and those dropped in the hour; the last save, how long ago, its size and how long it took; the bytes sent to the seats a second; and the server's memory, its share of a processor core and the disk free.
-- **Its seat table has a row a seat,** marked in the seat's color, its set's for the first two seats and the overseer's own for the rest: who plays it, whether its player is online, away or gone and since when, or that it fell and when it restarts, its connection's round trip, its orders over the last minute, its Ore and income, its fleet against its cap, its nodes and its research. It shows every seat, the players', the AI empires' or the seats whose player is away; a press on a heading sorts it, and a press on a row watches that seat's sight, until it is pressed again (ADR-102 decision 7).
-- **Its universe log** shows the log's records as they are written, the newest first, every record or the seats', the saves', the battles' or the server's own (ADR-102 decision 7).
+- **Its tiles tell how the server keeps up** (ADR-103 decision 7): the slowest of a hundred ticks over the last minute against the 5 ms budget, and the hour's slowest; the ticks a second and those dropped in the hour; the last save, how long ago, its size and how long it took; the bytes sent to the seats a second; and the server's memory, its share of a processor core and the disk free.
+- **Its seat table has a row a seat,** marked in the seat's color, its set's for the first two seats and the overseer's own for the rest: who plays it, whether its player is online, away or gone and since when, or that it fell and when it restarts, its connection's round trip, its orders over the last minute, its Ore and income, its fleet against its cap, its nodes and its research. It shows every seat, the players', the AI empires' or the seats whose player is away; a press on a heading sorts it, and a press on a row watches that seat's sight, until it is pressed again (ADR-103 decision 7).
+- **Its universe log** shows the log's records as they are written, the newest first, every record or the seats', the saves', the battles' or the server's own (ADR-103 decision 7).
 
 ### Joining a universe [§session.join]
 
@@ -933,6 +933,7 @@ A player commands its ships by orders, and only by orders. An order is given to 
 - **A second click on the same ship within 400 ms** selects every ship of the player's on the screen of that ship's design and hull (ADR-013 decision 5).
 - **Ctrl and a digit store the selection as a control group; the digit recalls it,** and a second tap within 400 ms centers the camera on it (ADR-013 decision 5).
 - **A click on a ship's bar in the selection panel** selects that ship alone and centers the camera on it (ADR-088 decision 4; Game §interface.hud.selection).
+- **A click on one of the player's fleets' plates selects that fleet,** and Shift adds it to the selection; what waited for the next click is dropped. Another side's plate takes no click (ADR-102 decision 2; Game §interface.marks).
 - **Ships that are gone, or are not the player's, drop out of the selection and the control groups;** another player's or the pirates' structure selected alone stays while it is seen or remembered, and joins no control group (ADR-013 decision 5).
 - **The selection is drawn as a ring round each selected ship,** green, or amber while attack-move or a standing order waits for its click (ADR-067 decision 1; Game §interface.marks).
 
@@ -952,12 +953,12 @@ A player commands its ships by orders, and only by orders. An order is given to 
 - **Attack-move:** A, then a left-click on the ground, sends the ships to the point; a ship that meets an enemy stops at its own weapon's range and fires, and goes on once none is in range. Constructors in the selection go along (ADR-013 decision 5; ADR-014 decision 9).
 - **Stop:** S drops the ships' orders, and they hold where they are (ADR-013 decision 5; ADR-002 decision 2).
 - **An order waiting for its click is canceled** by Esc, once no window is open for Esc to close, or by a right-click, which gives its own order; A, H or T arms its own order in place of the one waiting (ADR-059 decision 7; ADR-013 decision 5).
-- **A selection with a warship offers its orders as buttons** beside the selection panel, Attack-move, Hold sector, Patrol and Stop, and a button does what its key does (ADR-088 decision 2; Game §interface.hud.buttons). The keys are listed in the Controls window ([Controls](Reference/Controls.md); Game §interface.windows.controls).
+- **A selection with a warship offers its orders as buttons** on the command card, Attack-move, Hold sector, Patrol and Stop, and a button does what its key does (ADR-088 decision 2; Game §interface.hud.buttons). The keys are listed in the Controls window ([Controls](Reference/Controls.md); Game §interface.windows.controls).
 
 ### Constructors' orders [§orders.constructors]
 
 - **A Constructor attacks nothing.** It takes part in moves and attack-moves, and in no attack, standing order or scheduled order other than a rig's (ADR-016 decision 9; ADR-059 decision 3; ADR-080 decision 4).
-- **Build:** a structure's button in the build window arms a placement while the selection holds a Constructor (Game §interface.windows.build). The next left-click on the ground orders the selected Constructors to build there, and Shift keeps the placement armed for another. Right-click or Esc cancels it. The ghost that follows the pointer is green where the structure may stand and red where not, and a Mining Rig snaps to its asteroid, which must be one the player has seen (ADR-013 decision 5; ADR-046 decision 8). What may stand where, and what it costs, are Game §structures.
+- **Build:** a structure's cell on the command card in build mode arms a placement while the selection holds a Constructor (Game §interface.hud.buttons). The next left-click on the ground orders the selected Constructors to build there, and Shift keeps the placement armed for another. Right-click or Esc cancels it. The ghost that follows the pointer is green where the structure may stand and red where not, and a Mining Rig snaps to its asteroid, which must be one the player has seen (ADR-013 decision 5; ADR-046 decision 8). What may stand where, and what it costs, are Game §structures.
 - **Build and repair:** a right-click on one of the player's own ships or structures that is unfinished or damaged sends the selected Constructors to work on it until it is built and whole, or destroyed. Further Constructors join a site the same way (ADR-016 decision 5; Game §structures.sites).
 - **Salvage:** a right-click on a derelict the player sees or remembers sends the selected Constructors to salvage it (ADR-074 decisions 4 and 10; Game §neutrals.salvage).
 
@@ -1346,12 +1347,12 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 ### Scale [§interface.scale]
 
 - **Ctrl+= makes the interface larger and Ctrl+- smaller**, on the keys that read = and - on a US keyboard, in steps of 100%, 110%, 125%, 150%, 175% and 200% of the size that fits the screen (ADR-070 decision 2).
-- **A step up is taken only while the windows of a fixed size still fit the screen between its margins at their least, their scrolling parts giving up the room they can,** and in a match, while the HUD's bottom row, the minimap, the selection and its buttons, fits it at its widest. In a match the windows counted are the designer laid out with every component of the match, locked or not, the Controls window, the orders window, the away window and the build window; on the menu, the Controls window alone. The production and research windows grow with what they hold, and are not counted (ADR-070 decision 3).
+- **A step up is taken only while the windows of a fixed size still fit the screen between its margins at their least, their scrolling parts giving up the room they can,** and in a match, while the HUD's bottom row, the minimap, the selection and the command card, fits it at its widest, 1,280 units. In a match the windows counted are the designer laid out with every component of the match, locked or not, the Controls window, the orders window and the away window; on the menu, the Controls window alone. The production and research windows grow with what they hold, and are not counted (ADR-070 decision 3).
 - **So a match reaches 150% on a 16:9, 16:10 or 3:2 screen, and 175% on a 21:9 one; the menu reaches 200%** (ADR-070).
 - **A window stands no taller than the screen lets it:** the designer's part rows and the Controls window's lines scroll, with the wheel over them or by dragging the thumb at their right, while the rest of the window stays put (ADR-100 decisions 6 and 7; Game §interface.windows.designer; Game §interface.windows.controls).
 - **The scale comes down to the largest step that fits** whenever the screen changes size and whenever a match starts or ends, so no window of a fixed size opens taller than the screen (ADR-070 decision 4).
 - **The step the player takes is kept from one session to the next,** and the game starts at it, brought down as far as its screen needs; a step down that a screen or a match makes is not kept. Without one, the scale starts at 100% (ADR-070 decision 5; ADR-099 decision 1).
-- **What is drawn in the world keeps the screen's own scale,** whatever the player sets: the stars, the bars over ships and structures, and the selection's ring (ADR-070 decision 7; ADR-088 decision 5).
+- **What is drawn in the world keeps the screen's own scale,** whatever the player sets: the stars, the bars over ships and structures, and the selection's ring (ADR-070 decision 7; ADR-088 decision 5). A fleet's plate takes the player's scale, as the HUD does, since it carries text (ADR-102 decision 2).
 
 ### The interface's look [§interface.style]
 
@@ -1359,6 +1360,7 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 
 - **Titles are in Bahnschrift bold, semi-condensed; labels and names in Bahnschrift semibold; figures in Cascadia Mono, or Consolas where Cascadia Mono is not installed** (ADR-030 decisions 1 and 2; ADR-062 decision 1).
 - **Each face has one size, in reference units:** a title 22, a name 16, a label 13, a figure 14, a large figure 28 and a detail 13 (ADR-062 decisions 1 and 2).
+- **A fleet plate's count is in Bahnschrift bold, semi-condensed, at 15 units, white on a dark halo,** since it stands on the scene with no panel behind it; it is the only text with a halo (ADR-030 decision 8; ADR-102 decision 2).
 - **Labels are set in small spaced capitals** (ADR-030 decision 4).
 - **Text is printable ASCII, the middle dot · and the multiplication sign ×.** Any other character shows as `?` (ADR-030 decision 3). A minus is written as a hyphen (ADR-057 decision 8).
 - **Every text stands at 4.5:1 or more against what it is drawn on** (ADR-062 decision 3).
@@ -1389,7 +1391,7 @@ The HUD stays where it is and never moves with the camera (ADR-015 decision 4; A
 - the hint at the top middle, and the banner under its place once a match ends (Game §session.end), or, where the interface's scale crowds the top row, under the Ore's row in the middle of the room right of the column, the banner under the hint (ADR-015 decision 4);
 - the tag that says where the match runs at the top right (Game §interface.hud.tag);
 - the minimap at the bottom left (Game §interface.minimap);
-- the selection at the bottom middle, with its buttons against its right edge.
+- the selection at the bottom middle, and the command card in the bottom-right corner, their feet and the minimap's on one line (Game §interface.hud.buttons).
 
 #### The column under the Ore [§interface.hud.column]
 
@@ -1423,7 +1425,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 #### The selection panel [§interface.hud.selection]
 
-- **It stands at the bottom middle, as wide as its longest line,** between 280 and 560 units. Its first line is in the title face and the others in the name face (ADR-043 decisions 2 and 5).
+- **It stands in the middle of the bottom edge, as wide as its longest line,** between 280 and 552 units, and moves aside only as far as keeps it clear of the minimap and the command card. Its first line is in the title face and the others in the name face (ADR-043 decisions 2 and 5; ADR-088 decision 2).
 - **Ships:** one ship is titled with its design's name; ships of one design with their count and the design's name once, "7 × Lancer+SA", and two Constructors "2 × Constructor"; ships of several designs with their count, "12 ships", over a line for each design, "3 × Swarm", the most numerous first, at most five lines, and "and 2 more designs" for the rest (ADR-088 decision 4). Then the selection's hit points against their whole, "Hit points 3,599 / 4,095", in whole points rounded up (ADR-088 decision 4; ADR-014 decision 3).
 - **Two to 24 ships have a bar each** under the lines, in rows of twelve, design by design in the lines' order. Each fills from the left by its ship's share of hit points; a retreating ship's bar has a line round it in the text's color; a click on a bar selects that ship alone and centers the camera on it. One ship, or more than 24, has the selection's one bar (ADR-088 decision 4).
 - **What the ships are doing:** "Holding a sector" or "On patrol" for a standing order, how many are retreating to be repaired, and the scheduled order they wait on (ADR-059 decision 6; ADR-075 decision 10; ADR-080 decision 9; Game §orders.standing).
@@ -1434,13 +1436,22 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **The player's own finished Command Station, Shipyard or Research Lab says what it is doing:** "Building Swarm · 62% · +2 queued", "Building Swarm · waiting for Ore", "· waiting for the fleet cap", "Researching Hull Plating · 62%", or "Idle" (ADR-066 decision 4).
 - **A structure that grows says what its next level gives, and offers its Upgrade** (ADR-064 decision 7; Game §structures.levels.panel).
 
-#### The buttons [§interface.hud.buttons]
+#### The command card [§interface.hud.buttons]
 
-- **The buttons' panel stands against the selection panel's right edge,** bottom-aligned, and the pair is centered at the bottom so that the two read as one. It moves right only where it would meet the minimap; with no selection beside it, it stands alone at the middle (ADR-088 decision 2).
-- **A selection with a warship offers its orders first:** Attack-move, Hold sector, Patrol and Stop, Hold sector only on a map with sectors. The order armed for the next left-click is lit as a pick until it is given or canceled (ADR-088 decision 2; Game §orders.direct).
-- **A selection with a Constructor offers one Build button,** a mixed one included, with B's cap, which opens and closes the build window; the structures stand in that window, never among these buttons (ADR-088 decision 2; Game §interface.windows.build).
+- **The command card stands in the bottom-right corner, 380 by 209 units, whatever is selected,** and each of its buttons in a cell it always takes: two to a row in three rows, a cell no button takes empty. It shows while the selection offers a button (ADR-088 decision 2).
+
+  | Row | Left | Right |
+  |---|---|---|
+  | 1 | Attack-move, or a structure's Production, or Research on a Research Lab | Hold sector, or the Shipyard's Ship designer |
+  | 2 | Patrol | Stop |
+  | 3 | Build, or a structure's Upgrade across the row | |
+
+- **A selection with a warship offers its orders:** Attack-move, Hold sector, Patrol and Stop, Hold sector only on a map with sectors. The order armed for the next left-click is lit as a pick until it is given or canceled (ADR-088 decision 2; Game §orders.direct).
 - **The player's own finished structure offers its windows:** Production on the Command Station and on a Shipyard, Ship designer on a Shipyard, and Research on the Research Lab, and its Upgrade when it grows (ADR-031 decision 6; ADR-064 decision 7).
-- **A selection of ships ends with its retreat,** a row of three under the buttons (ADR-088 decision 3; Game §orders.retreat.threshold).
+- **A selection of ships has its retreat** at the card's foot, a row of three (ADR-088 decision 3; Game §orders.retreat.threshold).
+- **A selection with a Constructor offers one Build button,** a mixed one included, with B's cap. It and B turn the card's build mode on and off (ADR-088 decision 2).
+- **In build mode the card holds BUILD over a cell for each structure the Constructors build,** in their order, two to a row, each with its name over its cost; the Relay only on a map with sectors, its cell empty without them. The Research Lab's is dim with ONE PER PLAYER once the player has one, and the Relay's with NODE CAP at the Command Station's cap; a structure the player cannot afford is dim. The orders, the windows' buttons and the retreat are not shown, and the orders' keys still give them (ADR-088 decision 2; ADR-043 decision 4; ADR-056 decision 11; Game §orders.constructors).
+- **Picking a structure arms its placement and leaves build mode on,** so that another can be picked once it is placed. Esc cancels the placement first, then turns build mode off, before it closes a window. Build mode lasts while the selection holds a Constructor, and is not kept once it holds none (ADR-088 decision 2; ADR-031 decision 5).
 
 #### The hint and the pointer [§interface.hud.hint]
 
@@ -1479,11 +1490,17 @@ On a map with sectors, the territory panel stands under the status panel's place
   - **A Mining Rig's ring is its own footprint's, laid over its rock,** and shows only under the pointer and while a structure is placed, at full strength (ADR-042 decision 4).
   - **A structure the player only remembers stands on no ring** (ADR-081 decision 4).
 - **Bars stand over ships and structures on the screen** (ADR-088 decision 5):
-  - a health bar over one that is hurt, and over every ship and structure while Alt is held;
+  - a health bar over a structure that is hurt; over a ship that is hurt while the camera's view is 300 m wide or less, and over the ship under the pointer, whole or not; and over every ship and structure while Alt is held (ADR-102 decision 3);
   - a build bar under it while a structure is unfinished, in a gray that is no side's (ADR-085 decision 2);
   - each 32 by 5 units at every zoom, centered over the top of its model on the screen however the camera has turned, filling from the left;
   - each on a back of its side's color, darkened, so a bar says whose it is;
   - under every panel and window, taking no click; none over what the player only remembers (ADR-081 decision 4).
+- **Plates stand over the fleets while the camera's view is wider than 300 m,** so the default view shows them, and in place of the ships' bars; none while Alt is held (ADR-102 decisions 2 and 3):
+  - a fleet is a side's ships that stand near each other on the screen, or as near on the ground as a formation keeps its ships; two of one side whose plates would meet are one, so fleets join as the camera pulls back and part as it comes in, and a plate settles rather than jumps as a ship joins, leaves or is lost (ADR-102 decision 1);
+  - a plate is a disc in its side's color, the pirates' violet for theirs, ringed by a white arc of the fleet's hit points from the top clockwise, dark for the rest, with the fleet's count over it, and none for one ship;
+  - on the disc, in white, the insignia of its commonest kind of ship: one, two or three chevrons for a warship's hull by its size among the match's hulls, smallest first, and a plus for a Constructor;
+  - centered over its ships, level with the highest of them on the screen; plates of two sides that meet move apart, the higher up and the lower down;
+  - under every panel and window; a click on one of the player's own selects its fleet (Game §orders.selection).
 - **A structure being placed is shown where it would stand,** its model and a band on the ground green where it may stand and red where not (ADR-013 decision 5; ADR-067 decision 4; Game §orders.constructors).
 - **The territory is drawn over the fog,** since every player sees it (ADR-081 decision 3; Game §territory.shown):
   - every side of every sector once, a line a pixel wide, brighter than the grid and never wider;
@@ -1513,14 +1530,14 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 #### How a window behaves [§interface.windows.behavior]
 
-- **The designer, the production window, the research window, the Controls window, the orders window, the away window, the leave window and the build window float over the HUD** (ADR-031 decision 6). The HUD stays put under them (ADR-043 decision 1).
-- **D, P, R, F1, O and B open and close the designer, production, research, Controls, orders and build windows** in a match, and the buttons on a structure's panel open its windows, as Build does the build window. The away window opens by itself when the report of a time away arrives, and Esc opens the leave window in a universe (ADR-031 decision 6; Game §universe.away; Game §interface.windows.leave).
+- **The designer, the production window, the research window, the Controls window, the orders window, the away window and the leave window float over the HUD** (ADR-031 decision 6). The HUD stays put under them, the command card among it (ADR-043 decision 1; ADR-088 decision 2).
+- **D, P, R, F1 and O open and close the designer, production, research, Controls and orders windows** in a match, and the buttons on a structure's command card open its windows. The away window opens by itself when the report of a time away arrives, and Esc opens the leave window in a universe (ADR-031 decision 6; Game §universe.away; Game §interface.windows.leave).
 - **A window that shows a structure opens on the one selected.** Selecting another Shipyard while the designer is open makes it the designer's target, and selecting another producer while the production window is open shows it there (ADR-031 decision 6).
 - **A window is dragged by its title bar** and kept on the screen: its whole title bar, and 120 units of its width. A smaller screen moves it back as well (ADR-031 decision 2).
-- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further, unless a structure is being placed, which Esc cancels first. With no window open, Esc reaches the controls, and in a universe, with nothing armed, opens the leave window; while the designer's name takes typing, the designer has Esc first, and while a drop-down's list is open, Esc closes it first (ADR-031 decision 5; ADR-017 decision 8; ADR-100 decision 3).
+- **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further, unless a structure is being placed or the command card is in build mode, which Esc cancels first. With no window open, Esc reaches the controls, and in a universe, with nothing armed and build mode off, opens the leave window; while the designer's name takes typing, the designer has Esc first, and while a drop-down's list is open, Esc closes it first (ADR-031 decision 5; ADR-017 decision 8; ADR-100 decision 3).
 - **Several windows can be open at once,** each drawn whole over the ones behind it (ADR-031 decision 4).
 - **A window opens where it was left,** in this session and the next: closing and opening it, starting another match or starting the game again puts it back there. It is kept from the corner of the screen nearest it, so that a window left against an edge stays against it on another screen and at another scale. Leaving a match closes every window, and the game starts with every window closed (ADR-031 decisions 1 and 2; ADR-099 decisions 1 and 6).
-- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; the Controls, away and leave windows in the middle of the screen; the build window at the bottom right, over the selection and its buttons where they leave it no room beside them (ADR-100 decision 8; ADR-031 decision 2; ADR-062 decision 6).
+- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; and the Controls, away and leave windows in the middle of the screen (ADR-100 decision 8; ADR-031 decision 2; ADR-062 decision 6).
 - **A window has the size its content gives it;** none is resized, docked or minimized (ADR-031).
 
 #### The production window [§interface.windows.production]
@@ -1558,13 +1575,6 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **O opens the orders window,** which lists the seat's scheduled orders and gives the selection a new one; it is Game §orders.scheduled.window (ADR-080 decision 9).
 - **The away window opens by itself when the report of a time away arrives,** and closing it drops the report; it is Game §universe.away (ADR-080 decision 9).
 
-#### The build window [§interface.windows.build]
-
-- **B and the Build button open and close it, and it never opens by itself** (owner, 2026-10-27; ADR-031 decision 6).
-- **It holds a button for each structure the Constructors build,** with its cost; the Relay only on a map with sectors. The Research Lab's is dim with ONE PER PLAYER once the player has one, and the Relay's with NODE CAP at the Command Station's cap. With no Constructor selected, every one is dim and says NO CONSTRUCTOR, and the window keeps its size (ADR-031 decision 6; ADR-043 decision 4; ADR-056 decision 11; Game §orders.constructors).
-- **Picking a structure arms its placement and leaves the window open,** so that another can be picked once it is placed. Esc cancels the placement before it closes any window (ADR-031 decisions 5 and 6).
-- **It first opens at the bottom right,** beside the selection and its buttons where they leave it room at their widest, and over them, its foot a gap above the minimap's top, where they do not, as from 110% on a 16:9 screen (ADR-100 decision 8).
-
 #### The leave window [§interface.windows.leave]
 
 - **In a universe, Esc opens the leave window** once no window is open and nothing is armed: "Leave for the menu?", that the deputy keeps the empire going, and Leave universe and Stay side by side. Leave universe goes back to the menu, and Stay closes the window, as its × and Esc do; it is Game §session.join (ADR-078 decision 11).
@@ -1588,9 +1598,9 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **Selecting and ordering** are Game §orders.selection and Game §orders.direct: click, drag, Shift, double-click, the control groups, right-click, A, H, T and S (ADR-013 decision 5; ADR-059 decision 7).
 - **The camera:** the arrow keys, Q and E, the wheel and a middle-drag (Game §interface.camera).
 - **The windows:** D, P, R, O and F1 (Game §interface.windows.behavior).
-- **Esc closes the front window,** with none open cancels what the controls have armed, and in a universe, with nothing armed, opens the leave window (ADR-031 decision 5; ADR-078 decision 11; Game §orders.direct).
+- **Esc cancels a placement, then turns the command card's build mode off, then closes the front window,** with none open cancels what the controls have armed, and in a universe, with nothing armed, opens the leave window (ADR-031 decision 5; ADR-088 decision 2; ADR-078 decision 11; Game §orders.direct).
 - **Space moves the camera to the newest alert** (ADR-059 decision 2).
-- **Alt, held, shows a bar over every ship and structure.** The game swallows the window's menu key, so Alt alone never stops the game in a menu; Alt+F4 and Alt+Enter still work (ADR-088 decision 5; ADR-006 decision 1).
+- **Alt, held, shows a bar over every ship and structure,** in place of the fleets' plates. The game swallows the window's menu key, so Alt alone never stops the game in a menu; Alt+F4 and Alt+Enter still work (ADR-088 decision 5; ADR-006 decision 1).
 - **Ctrl+= and Ctrl+- scale the interface** (Game §interface.scale).
 - **The keys cannot be changed** (Game §limits).
 
@@ -1752,4 +1762,4 @@ What the game does not do, at the head of `main`. A rule that a chapter already 
 
 ---
 
-Retired keys: §world, §world.overview, §world.seats, §world.handover, §world.away, §world.persistence, §world.log, §world.loss, §world.restart.
+Retired keys: §world, §world.overview, §world.seats, §world.handover, §world.away, §world.persistence, §world.log, §world.loss, §world.restart, §interface.windows.build.

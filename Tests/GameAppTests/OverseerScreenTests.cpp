@@ -198,7 +198,7 @@ bool Same(const DirectX::XMFLOAT4& _first, const DirectX::XMFLOAT4& _second) noe
 TEST_CLASS(OverseerScreenTests)
 {
 public:
-  // ADR-102: the header names the universe's folder, its server and the build it runs, says Running while Health comes, how
+  // ADR-103: the header names the universe's folder, its server and the build it runs, says Running while Health comes, how
   // long the server has run, the overseer's round trip and what the server came back from, and tells universe time and its
   // tick.
   TEST_METHOD(SaysTheServerRunsWhileHealthComes)
@@ -216,7 +216,7 @@ public:
     Assert::IsTrue(Shows(layout, "tick 72,000"), L"and its tick");
   }
 
-  // ADR-102: No word once Health has not come for NO_WORD_AFTER, saying since when and at what tick.
+  // ADR-103: No word once Health has not come for NO_WORD_AFTER, saying since when and at what tick.
   TEST_METHOD(SaysNoWordAfterThreeSecondsWithoutHealth)
   {
     Outpost::OverseerModel model;
@@ -228,7 +228,7 @@ public:
     Assert::IsTrue(Shows(Lay(model, Link(), START + std::chrono::milliseconds{2'900}), "Running"), L"until then");
   }
 
-  // ADR-102: a connection gone says why, and that the overseer joins again; what the server said as it ended says how.
+  // ADR-103: a connection gone says why, and that the overseer joins again; what the server said as it ended says how.
   TEST_METHOD(SaysWhyTheConnectionWent)
   {
     Outpost::OverseerModel model;
@@ -247,7 +247,7 @@ public:
     Assert::IsTrue(Shows(stopped, "The server was stopped by its owner; its last save is of tick 380."), Texts(stopped).c_str());
   }
 
-  // ADR-102: before any connection, the overseer says whom it joins, and shows no seat.
+  // ADR-103: before any connection, the overseer says whom it joins, and shows no seat.
   TEST_METHOD(SaysWhomItJoinsBeforeAnyConnection)
   {
     Outpost::OverseerLink joining = Link();
@@ -260,7 +260,7 @@ public:
     Assert::IsTrue(Shows(layout, "no Health yet"));
   }
 
-  // ADR-102: the tiles tell the tick's 99th percentile over the last minute against its budget and the hour's longest; the ticks
+  // ADR-103: the tiles tell the tick's 99th percentile over the last minute against its budget and the hour's longest; the ticks
   // a second and those dropped in the hour; the last save, its size and encoding time, from the log; the bytes out a second
   // and to how many seats; and the process's working set, its share of a core and the disk free.
   TEST_METHOD(ShowsTheHealthTiles)
@@ -273,7 +273,7 @@ public:
       Assert::IsTrue(Shows(layout, text), std::format(L"{}: {}", std::wstring(winrt::to_hstring(text)), Texts(layout)).c_str());
   }
 
-  // ADR-102: a row a seat, with who plays it, its status, its link, its orders a minute, its Ore and income, its fleet against
+  // ADR-103: a row a seat, with who plays it, its status, its link, its orders a minute, its Ore and income, its fleet against
   // its cap, its nodes and its research.
   TEST_METHOD(ListsTheSeats)
   {
@@ -288,7 +288,7 @@ public:
       Assert::IsTrue(Shows(layout, text), std::format(L"{}: {}", std::wstring(winrt::to_hstring(text)), Texts(layout)).c_str());
   }
 
-  // ADR-102: the filters keep the players' seats, the AI empires' or the away seats; a heading sorts by its column, a second
+  // ADR-103: the filters keep the players' seats, the AI empires' or the away seats; a heading sorts by its column, a second
   // press the other way; and a row picked asks for its sight, and asks for full sight again when pressed again.
   TEST_METHOD(FiltersSortsAndPicks)
   {
@@ -329,7 +329,7 @@ public:
     Assert::IsFalse(screen.Picked().has_value());
   }
 
-  // ADR-102: each seat's row is marked in its color, its set's or the overseer's palette's, none the warning's.
+  // ADR-103: each seat's row is marked in its color, its set's or the overseer's palette's, none the warning's.
   TEST_METHOD(DrawsEachSeatInItsColor)
   {
     OverseerScreen screen({{.player = Outpost::PlayerId{1}, .color = BLUE}});
@@ -346,7 +346,7 @@ public:
                    L"each row's mark");
   }
 
-  // ADR-102: the log shows its records the newest first, filtered by kind.
+  // ADR-103: the log shows its records the newest first, filtered by kind.
   TEST_METHOD(ShowsTheLogNewestFirst)
   {
     const Scripted scripted;

@@ -19,6 +19,9 @@ struct FontDesc
   std::uint16_t weight = 400;
   FontStretch stretch = FontStretch::Normal;
   float emUnits = 0.0f;
+  // A halo's reach as a share of the em, or none: each glyph is drawn into the atlas a second time, widened by the reach
+  // and blurred, for text that stands on the scene with no panel behind it (ADR-030 decision 8).
+  float haloEms = 0.0f;
 };
 
 // A small shape the interface draws from the atlas like a glyph, in any color (ADR-030).
@@ -29,7 +32,16 @@ enum class SpriteShape : std::uint8_t
   // The outline of a square.
   Checkbox,
   // An L along the top and the left edge; drawn flipped, it makes the other three corners.
-  CornerBracket
+  CornerBracket,
+  // A filled circle, and a circle's outline touching the square's sides.
+  Disc,
+  Ring,
+  // One, two and three chevrons pointing up, stacked and centered, as a rank's insignia.
+  Chevron,
+  TwoChevrons,
+  ThreeChevrons,
+  // A cross of two bars.
+  Plus
 };
 
 // A sprite, and how big it is drawn, in the caller's reference units.
@@ -67,16 +79,19 @@ struct GlyphAtlas
   static constexpr char32_t FALLBACK = U'?';
   static constexpr std::size_t CHARACTER_COUNT = (LAST - FIRST) + 1 + EXTRA_CHARACTERS.size();
 
-  // One font: which family it found, and its glyphs in the order above.
+  // One font: which family it found, its glyphs in the order above, and their halos in the same order, or none.
   struct Font
   {
     std::wstring family;
     std::vector<Glyph> glyphs;
+    std::vector<Glyph> halos;
     // From a line's top to its baseline, and from one line's top to the next.
     float ascent = 0.0f;
     float lineHeight = 0.0f;
 
     [[nodiscard]] const Glyph& For(char32_t _character) const noexcept;
+    // The halo of the glyph For gives, or nullptr for a font without halos.
+    [[nodiscard]] const Glyph* HaloFor(char32_t _character) const noexcept;
     // How wide _text, in UTF-8, is set on one line, in pixels, with _trackingPixels more between each two characters.
     [[nodiscard]] float Width(std::string_view _text, float _trackingPixels = 0.0f) const noexcept;
   };
@@ -112,16 +127,26 @@ struct GlyphBitmap
   std::vector<std::uint8_t> coverage;
 };
 
-// One font's bitmaps as DirectWrite draws them: CHARACTER_COUNT of them, in the atlas's order.
+// One font's bitmaps as DirectWrite draws them: CHARACTER_COUNT of them, in the atlas's order, and their halos in the same
+// order, or none.
 struct FontBitmaps
 {
   std::wstring family;
   std::vector<GlyphBitmap> glyphs;
+  std::vector<GlyphBitmap> halos;
   float ascent = 0.0f;
   float lineHeight = 0.0f;
 };
 
-// Packs every font's glyphs and the sprites into one texture in rows, with a texel of space round each so that sampling
+// _glyph widened by _reachPixels on every side and blurred, at the same pen position and advance: the coverage of its
+// halo, which is drawn under the glyph in a dark color so that light text reads on whatever is behind it.
+[[nodiscard]] GlyphBitmap HaloOf(const GlyphBitmap& _glyph, std::uint32_t _reachPixels);
+
+// The halos of _font's glyphs, drawn at _emPixels, when _haloEms gives it one: each reaches _haloEms of the em, and a pixel
+// at least. None for a font without a halo.
+[[nodiscard]] std::vector<GlyphBitmap> HalosOf(const FontBitmaps& _font, float _emPixels, float _haloEms);
+
+// Packs every font's glyphs, with their halos, and the sprites into one texture in rows, with a texel of space round each so that sampling
 // never bleeds from a neighbor, and a solid block in the top-left corner. The texture is 256 texels wide or more, both
 // sides powers of two.
 [[nodiscard]] GlyphAtlas PackGlyphs(const std::vector<FontBitmaps>& _fonts, const std::vector<GlyphBitmap>& _sprites);

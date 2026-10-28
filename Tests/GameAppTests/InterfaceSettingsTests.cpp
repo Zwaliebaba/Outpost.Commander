@@ -58,14 +58,14 @@ private:
 };
 
 // Settings as a player leaves them: a step up, the designer against the top-right corner, production low on the left and
-// the build window in the bottom-right corner.
+// the orders window in the bottom-right corner.
 InterfaceSettings Kept()
 {
   InterfaceSettings settings;
   settings.scalePercent = 125;
   settings.places[IndexOf(WindowKind::Designer)] = Place{.fromRight = true, .fromBottom = false, .xUnits = 834.0f, .yUnits = 16.0f};
   settings.places[IndexOf(WindowKind::Production)] = Place{.fromRight = false, .fromBottom = true, .xUnits = 16.0f, .yUnits = 380.5f};
-  settings.places[IndexOf(WindowKind::Build)] = Place{.fromRight = true, .fromBottom = true, .xUnits = 396.0f, .yUnits = 310.0f};
+  settings.places[IndexOf(WindowKind::Orders)] = Place{.fromRight = true, .fromBottom = true, .xUnits = 656.0f, .yUnits = 576.0f};
   return settings;
 }
 } // namespace
@@ -116,8 +116,9 @@ public:
     Assert::IsFalse(Outpost::LoadInterfaceSettings(file).has_value(), L"a file of something else");
   }
 
-  // ADR-099: a member that is not as the game writes it is left out, and so is a window this build does not have, while the
-  // rest is read: a scale that is no step, a corner with no name, a distance that is no number or past any screen.
+  // ADR-099: a member that is not as the game writes it is left out, and so is a window this build does not have, a later
+  // build's or the build window an earlier one had (ADR-088 decision 2), while the rest is read: a scale that is no step, a
+  // corner with no name, a distance that is no number or past any screen.
   TEST_METHOD(LeavesOutWhatItDoesNotKnow)
   {
     const std::optional<InterfaceSettings> read = Outpost::ReadInterfaceSettings(R"({
@@ -125,6 +126,7 @@ public:
   "scalePercent": 130,
   "windows": {
     "fleet": {"from": "topLeft", "xUnits": 10, "yUnits": 10},
+    "build": {"from": "bottomRight", "xUnits": 396, "yUnits": 310},
     "designer": {"from": "middle", "xUnits": 1, "yUnits": 1},
     "research": {"from": "topLeft", "xUnits": "16", "yUnits": 1},
     "away": {"from": "topLeft", "xUnits": 1e9, "yUnits": 0},
@@ -140,7 +142,7 @@ public:
     Assert::IsTrue(settings.places[IndexOf(WindowKind::Orders)] ==
                    Place{.fromRight = true, .fromBottom = true, .xUnits = 600.0f, .yUnits = 700.25f});
     const auto kept = std::ranges::count_if(settings.places, [](const std::optional<Place>& _place) { return _place.has_value(); });
-    Assert::IsTrue(kept == 1, L"the window this build does not have is left out");
+    Assert::IsTrue(kept == 1, L"the windows this build does not have are left out");
   }
 
   // ADR-099: a window is kept from the screen's corner nearest its middle, so that one left against the right edge stays

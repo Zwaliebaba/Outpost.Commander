@@ -87,7 +87,7 @@ std::vector<std::byte> Bytes(const Outpost::LogRecordsMessage& _message)
 TEST_CLASS(OverseerModelTests)
 {
 public:
-  // ADR-102: the welcome is what never changes while the server runs, and it starts what a connection tells the overseer.
+  // ADR-103: the welcome is what never changes while the server runs, and it starts what a connection tells the overseer.
   TEST_METHOD(TakesTheWelcome)
   {
     Outpost::OverseerModel model;
@@ -101,7 +101,7 @@ public:
     Assert::IsNull(model.LatestHealth(), L"no Health yet");
   }
 
-  // ADR-102: the newest Health, when the overseer heard it, and the last hour of them, one a second, and no more.
+  // ADR-103: the newest Health, when the overseer heard it, and the last hour of them, one a second, and no more.
   TEST_METHOD(KeepsAnHourOfHealth)
   {
     Outpost::OverseerModel model;
@@ -117,7 +117,7 @@ public:
     Assert::AreEqual(std::size_t{2}, latest->health.tickMicroseconds.size(), L"each tick's time");
   }
 
-  // ADR-102: the log's records in the order the server wrote them, the last RECORDS_KEPT of them; a new connection's welcome
+  // ADR-103: the log's records in the order the server wrote them, the last RECORDS_KEPT of them; a new connection's welcome
   // replaces them, since the server sends its last ones again after it.
   TEST_METHOD(KeepsTheLogsRecords)
   {
@@ -141,7 +141,7 @@ public:
     Assert::IsTrue(model.Records().empty(), L"a new connection's welcome replaces them");
   }
 
-  // ADR-102, ADR-101 decision 6: a view crosses whole and then as what changed since the one the overseer holds, and is put
+  // ADR-103, ADR-101 decision 6: a view crosses whole and then as what changed since the one the overseer holds, and is put
   // together with the welcome's sectors and fields into the view the server built.
   TEST_METHOD(PutsTheViewsTogether)
   {
@@ -168,7 +168,7 @@ public:
     Assert::AreEqual(std::uint32_t{1}, view.sectors.front().holder.value, L"its holder from the view");
   }
 
-  // ADR-102: how the server ended, once it has said.
+  // ADR-103: how the server ended, once it has said.
   TEST_METHOD(KeepsTheClosing)
   {
     Outpost::OverseerModel model;
@@ -184,7 +184,7 @@ public:
     Assert::IsFalse(model.Closing().has_value(), L"a server that welcomes the overseer again runs");
   }
 
-  // ADR-102: a connection gone leaves what the model knew as it was then, and says why and when; no view is taken until the next
+  // ADR-103: a connection gone leaves what the model knew as it was then, and says why and when; no view is taken until the next
   // connection's welcome, whose views the server sends whole first, and that welcome forgets why the last went.
   TEST_METHOD(KeepsWhatItKnewWhenTheConnectionGoes)
   {
@@ -208,7 +208,7 @@ public:
     Assert::AreEqual(std::uint64_t{60}, model.TakeView(next.Send(ViewAt(60), std::nullopt)).value_or(0), L"its views whole first");
   }
 
-  // ADR-102: what only an overseer sends, or no message at all, is refused.
+  // ADR-103: what only an overseer sends, or no message at all, is refused.
   TEST_METHOD(RefusesWhatTheServerDoesNotSend)
   {
     Outpost::OverseerModel model;

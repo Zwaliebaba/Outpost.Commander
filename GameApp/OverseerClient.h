@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// The overseer's end of its channel (ADR-101, ADR-102): it connects to the server its Overseer.json names, pinning the
+// The overseer's end of its channel (ADR-101, ADR-103): it connects to the server its Overseer.json names, pinning the
 // certificate the file names, says hello with the token, and hands what the server says to its model. It tells the server
 // the views it holds and the sight it watches, and joins again every REJOIN_INTERVAL while it has no connection. A
 // connection is made on a thread of its own, so that the frame loop goes on drawing meanwhile. One thread at a time: the

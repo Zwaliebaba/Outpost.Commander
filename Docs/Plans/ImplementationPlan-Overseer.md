@@ -205,7 +205,7 @@ The overseer itself: an executable of its own, its window and its end of the cha
 
 ### As built
 
-- **The application** is [ADR-102](../ADR/ADR-102-the-overseer-application.md); [ADR-002](../ADR/ADR-002-authoritative-server.md)'s diagram, table and boundary, [ADR-006](../ADR/ADR-006-renderer-shape.md) decision 1, [ADR-100](../ADR/ADR-100-the-canvas.md)'s theme and widgets, the Style Guide, AGENTS.md §2, the Glossary and Game §session.overseer are edited for it.
+- **The application** is [ADR-103](../ADR/ADR-103-the-overseer-application.md); [ADR-002](../ADR/ADR-002-authoritative-server.md)'s diagram, table and boundary, [ADR-006](../ADR/ADR-006-renderer-shape.md) decision 1, [ADR-100](../ADR/ADR-100-the-canvas.md)'s theme and widgets, the Style Guide, AGENTS.md §2, the Glossary and Game §session.overseer are edited for it.
 - **`Neuron::Window` also takes whether it holds the cursor** while full screen: the overseer has no edge scroll, and leaves it free.
 - **The tiles are five, not six:** the process's working set, its share of a core and the disk free share one, so that every tile's detail line fits it on the reference frame.
 - **A seat's color marks its row,** a bar at its left, and its words stay in the text's color: a side's color on the picked row's face would fall under 4.5:1.

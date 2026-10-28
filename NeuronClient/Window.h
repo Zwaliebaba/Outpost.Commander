@@ -68,10 +68,10 @@ public:
     // The client area the window gets the first time it leaves full screen, centered on its monitor's work area.
     std::uint32_t windowedClientWidthPixels;
     std::uint32_t windowedClientHeightPixels;
-    // Whether it opens full screen, as the game does, or in its window, as the overseer does (ADR-102).
+    // Whether it opens full screen, as the game does, or in its window, as the overseer does (ADR-103).
     bool fullScreen = true;
     // Whether it holds the cursor on its monitor while full screen, as the game does for its edge scroll (ADR-012), or lets
-    // it go, as the overseer does, which has none (ADR-102).
+    // it go, as the overseer does, which has none (ADR-103).
     bool holdsCursor = true;
   };
 

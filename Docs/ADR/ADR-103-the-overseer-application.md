@@ -1,4 +1,4 @@
-# ADR-102 — The overseer is a windowed executable of its own, drawn on the canvas, whose model and link are GameApp's
+# ADR-103 — The overseer is a windowed executable of its own, drawn on the canvas, whose model and link are GameApp's
 
 Status: **accepted** · 2026-10-28
 Owns: overseer-application, overseer-link, overseer-model, overseer-overview
