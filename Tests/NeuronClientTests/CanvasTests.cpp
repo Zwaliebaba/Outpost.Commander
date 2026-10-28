@@ -876,6 +876,51 @@ public:
     Assert::IsTrue(twenty != scrolled.texts.end() && Near(twenty->top, 802.0f), L"the twenty-first row 400 units down");
   }
 
+  // ADR-100: a panel that begins a layer of its own stands over what was drawn before it and takes a press there. A canvas
+  // finished with a front canvas draws the front's after its own and before its overlays, so that an open drop-down's list
+  // stands over the front's panel, and the panel over the rest.
+  TEST_METHOD(StandsAFrontCanvasOverItsLayersAndUnderItsOverlays)
+  {
+    Fixture fixture;
+    const Neuron::Theme& theme = fixture.theme;
+    // A field 200 by 24 units at (100, 100) under a panel of the HUD, and on the front canvas a panel 200 by 100 units at
+    // (100, 130), under the field, where its list opens, that takes a press as 5.
+    const auto build = [&fixture](DrawList& _list)
+    {
+      Canvas canvas = fixture.Begin();
+      (void)canvas.BeginPanel({.widthUnits = 400.0f, .heightUnits = 300.0f, .anchor = LayoutAnchor::TopLeft, .margin = {.left = 50.0f}});
+      canvas.EndPanel();
+      (void)canvas.DropDown(
+        "pick", "Two", {"One", "Two", "Three"}, 1, [](std::size_t _choice) { return static_cast<std::uint32_t>(10 + _choice); },
+        {.widthUnits = 200.0f, .heightUnits = 24.0f, .anchor = LayoutAnchor::TopLeft, .margin = {.left = 100.0f, .top = 100.0f}});
+      Canvas front(fixture.theme, fixture.metrics, fixture.ui, 960.0f, 540.0f);
+      const std::size_t panel = front.BeginLayerPanel(
+        {.widthUnits = 200.0f, .heightUnits = 100.0f, .anchor = LayoutAnchor::TopLeft, .margin = {.left = 100.0f, .top = 130.0f}});
+      front.EndPanel();
+      front.Press(panel, 5u);
+      canvas.Finish(_list, &front);
+    };
+
+    DrawList closed;
+    build(closed);
+    Assert::IsTrue(closed.layers.size() == 1 && !closed.layers[0].overlay, L"the front's panel a layer of its own");
+    Assert::IsTrue(RectIs(closed.layers[0].frame, 200.0f, 260.0f, 400.0f, 200.0f, theme.windowColor), L"its frame the panel");
+    Assert::IsTrue(RectIs(closed.panels[closed.PanelsOf(1).first], 200.0f, 260.0f, 400.0f, 200.0f, theme.windowColor),
+                   L"drawn after the HUD's panel and the field");
+    const Neuron::CanvasRegion* panelHit = closed.HitAt(300.0f, 300.0f);
+    Assert::IsTrue(panelHit != nullptr && panelHit->payload == 5u, L"over the HUD's panel, it takes the press");
+
+    Assert::IsTrue(fixture.ui.Press(closed, 300.0f, 210.0f));
+    DrawList open;
+    build(open);
+    (void)fixture.ui.Release(open, 300.0f, 210.0f);
+    Assert::IsTrue(open.layers.size() == 2 && !open.layers[0].overlay && open.layers[1].overlay, L"the front's layer, then the list");
+    const Neuron::CanvasRegion* row = open.HitAt(300.0f, 300.0f);
+    Assert::IsTrue(row != nullptr && row->payload == 11u, L"the list over the front's panel");
+    const Neuron::CanvasRegion* below = open.HitAt(300.0f, 440.0f);
+    Assert::IsTrue(below != nullptr && below->payload == 5u, L"the panel where the list is not");
+  }
+
   // ADR-100: a field's text stands in its content box, the theme's inset in from its sides and in its middle down, so that
   // its padding keeps room for what the caller sets over the field, such as a label before the text and a count after it;
   // and it is cut short within that room.

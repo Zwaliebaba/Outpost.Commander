@@ -1394,7 +1394,7 @@ The game draws its own interface over the battlefield: a HUD anchored to the edg
 The HUD stays where it is and never moves with the camera (ADR-015 decision 4; ADR-043 decision 1):
 
 - the Ore at the top left, and under it one column of the status, territory and alerts panels;
-- the hint at the top middle, and the banner under its place once a match ends (Game §session.end), or, where the interface's scale crowds the top row, under the Ore's row in the middle of the room right of the column, the banner under the hint (ADR-015 decision 4);
+- the hint at the top middle, and the banner under its place once a match ends (Game §session.end), or, where the interface's scale crowds the top row, under the Ore's row in the middle of the room right of the column, the banner under the hint; both stand over any window, and the banner's Back to menu takes its click there (ADR-015 decision 4; ADR-031 decision 4);
 - the tag that says where the match runs at the top right (Game §interface.hud.tag);
 - the minimap at the bottom left (Game §interface.minimap);
 - the selection at the bottom middle, and the command card in the bottom-right corner, their feet and the minimap's on one line (Game §interface.hud.buttons).
@@ -1541,9 +1541,9 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **A window that shows a structure opens on the one selected.** Selecting another Shipyard while the designer is open makes it the designer's target, and selecting another producer while the production window is open shows it there (ADR-031 decision 6).
 - **A window is dragged by its title bar** and kept on the screen: its whole title bar, and 120 units of its width. A smaller screen moves it back as well (ADR-031 decision 2).
 - **A press on a window brings it to the front;** its × closes it, and Esc closes the front window and goes no further, unless a structure is being placed or the command card is in build mode, which Esc cancels first. With no window open, Esc reaches the controls, and in a universe, with nothing armed and build mode off, opens the leave window; while the designer's name takes typing, the designer has Esc first, and while a drop-down's list is open, Esc closes it first (ADR-031 decision 5; ADR-017 decision 8; ADR-100 decision 3).
-- **Several windows can be open at once,** each drawn whole over the ones behind it (ADR-031 decision 4).
+- **Several windows can be open at once,** each drawn whole over the ones behind it, and the hint and the banner over them all (ADR-031 decision 4).
 - **A window opens where it was left,** in this session and the next: closing and opening it, starting another match or starting the game again puts it back there. It is kept from the corner of the screen nearest it, so that a window left against an edge stays against it on another screen and at another scale. Leaving a match closes every window, and the game starts with every window closed (ADR-031 decisions 1 and 2; ADR-099 decisions 1 and 6).
-- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side under the column's place, each in the first of the two places no open window holds, clear of the designer at 100%; the orders window at the right, at the same height; and the Controls, away and leave windows in the middle of the screen (ADR-100 decision 8; ADR-031 decision 2; ADR-062 decision 6).
+- **Where a window first opens:** the designer at the top-right corner; the production and research windows side by side beside the column under the Ore, the first a gap clear of it, each in the first of the two places no open window holds, the second over the first where the screen is too narrow for both, and under the designer's left side at 100%; the orders window at the right, at the same height; and the Controls, away and leave windows in the middle of the screen (ADR-100 decision 8; ADR-031 decision 2; ADR-062 decision 6).
 - **A window has the size its content gives it;** none is resized, docked or minimized (ADR-031).
 
 #### The production window [§interface.windows.production]
@@ -1552,7 +1552,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **Its cards come first, two to a row,** and stay where they are as the queue grows, so one can be clicked again and again: the Command Station's Constructor, or each of the player's saved designs at a Shipyard (ADR-043 decision 6).
 - **A design's card gives its name, its code and its cost, and a third line:** the build time at the player's Shipyard speed, and a short bar for each hull, marked S, M and L, of three segments lit as the designer rates the design against that hull, three for Good, two for Fair and one for Poor. The Constructor's card gives its build time. A design whose hull is above the Shipyard's level is dim, its code followed by "NEEDS L2" (ADR-068 decision 3; ADR-064 decision 9).
 - **The queue stands under the cards,** a row for each job and no empty ones, under "QUEUE · 2 / 5": the front job's progress as a bar and a percentage, or "WAITING FOR ORE", or "WAITING FOR FLEET CAP". The window grows at its foot (ADR-043 decision 6; ADR-068 decision 1; Game §economy.fleetcap).
-- **It is 478 units wide,** so that it, the research window and the designer stand side by side at the reference width (ADR-062 decision 6).
+- **It is 478 units wide,** what the reference width holds beside the research window and the designer, each a margin from the next (ADR-062 decision 6).
 
 #### The research window [§interface.windows.research]
 
@@ -1565,7 +1565,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 #### The ship designer [§interface.windows.designer]
 
 - **The designer is a window of the owner's mockup:** its title bar names the Shipyard its queue goes to between arrows, "< SHIPYARD 05 > · DESIGNER", over a header with that Shipyard's queue, "QUEUE · 2 / 5", over five slots, the ships it has built, "BUILT · 4", and the player's Ore (ADR-017 decision 7; ADR-068 decision 1).
-- **Under the header it holds, top to bottom:** the name with its count of characters and Save; the saved designs as chips, three at a time with arrows; a row for each slot, hull, drive, weapon and module, of cards three to a line, a locked one hatched with the topic that unlocks it; the performance bars beside the damage per second after armor against each hull; and Rename, the design's retreat, the count of ships, and Queue with one ship's build time and the cost of all (ADR-017 decision 7; ADR-062 decision 4; ADR-088 decision 3).
+- **Under the header it holds, top to bottom:** the name with its count of characters and Save; the saved designs as chips, three at a time with arrows, after the SAVED label with the room it is set in; a row for each slot, hull, drive, weapon and module, of cards three to a line, a locked one hatched with the topic that unlocks it; the performance bars beside the damage per second after armor against each hull; and Rename, the design's retreat, the count of ships, and Queue with one ship's build time and the cost of all (ADR-017 decision 7; ADR-062 decision 4; ADR-088 decision 3).
 - **What a design is, and what saving, renaming, queuing and typing a name do, are Game §ships.designer.**
 - **It is 818 units wide,** and as tall as its rows make it, or as the screen lets it: then its part rows scroll, at least a line of cards of them showing, and the header, name, saved designs, bars, damage and footer stay put, so that a part hovered anywhere in the rows still shows in the bars (ADR-062 decision 4; ADR-100 decision 7).
 
