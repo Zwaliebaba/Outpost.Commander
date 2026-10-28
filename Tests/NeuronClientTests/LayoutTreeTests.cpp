@@ -165,6 +165,52 @@ public:
     Assert::IsTrue(tree.Node(cut).lines.size() == 1 && tree.Node(cut).lines[0].text == "Shipyar...", L"and is cut short to it");
   }
 
+  // ADR-100: a scroll holds what it holds as tall as that is, however tall the scroll stands, above its top by its offset,
+  // held so that what it holds still covers it. A column held at its most gives up the room it lacks from what grows in it,
+  // a scroll down to its least, and is never shorter than what it holds at its least.
+  TEST_METHOD(ScrollsWhatAColumnHasNoRoomFor)
+  {
+    const TenUnitFont font;
+    const auto build = [](LayoutTree& _tree, float _mostUnits, float _scrollUnits)
+    {
+      (void)_tree.Begin(LayoutKind::Column, {.widthUnits = 200.0f, .mostHeightUnits = _mostUnits, .alignX = LayoutAlign::Stretch});
+      (void)_tree.Add({.heightUnits = 40.0f});
+      (void)_tree.Begin(LayoutKind::Scroll, {.leastHeightUnits = 30.0f, .grow = 1.0f, .scrollUnits = _scrollUnits});
+      (void)_tree.Begin(LayoutKind::Column, {.alignX = LayoutAlign::Stretch});
+      for (int line = 0; line < 10; ++line)
+        (void)_tree.Add({.heightUnits = 20.0f});
+      _tree.End();
+      _tree.End();
+      (void)_tree.Add({.heightUnits = 20.0f});
+      _tree.End();
+    };
+    constexpr std::size_t WINDOW = 1;
+    constexpr std::size_t VIEW = 3;
+    constexpr std::size_t CONTENT = 4;
+
+    LayoutTree held(1000.0f, 500.0f);
+    build(held, 150.0f, 500.0f);
+    held.Arrange(font.metrics);
+    AssertStands(held.Node(WINDOW), 0.0f, 0.0f, 200.0f, 150.0f, L"260 of what it holds, held at its most");
+    AssertStands(held.Node(VIEW), 0.0f, 40.0f, 200.0f, 90.0f, L"the 200 it holds less the 110 the column lacks");
+    Assert::AreEqual(110.0f, held.Node(VIEW).scrolledUnits, 0.001f, L"held where what it holds ends at its foot");
+    AssertStands(held.Node(CONTENT), 0.0f, -70.0f, 200.0f, 200.0f, L"as tall as what it holds, and 110 above its top");
+
+    LayoutTree least(1000.0f, 500.0f);
+    build(least, 50.0f, 0.0f);
+    least.Arrange(font.metrics);
+    AssertStands(least.Node(WINDOW), 0.0f, 0.0f, 200.0f, 90.0f, L"never shorter than at its least, whatever its most");
+    AssertStands(least.Node(VIEW), 0.0f, 40.0f, 200.0f, 30.0f, L"at its least");
+    Assert::AreEqual(0.0f, least.Node(VIEW).scrolledUnits);
+    AssertStands(least.Node(CONTENT), 0.0f, 40.0f, 200.0f, 200.0f, L"at its top");
+
+    LayoutTree room(1000.0f, 500.0f);
+    build(room, Neuron::UNBOUNDED_UNITS, 50.0f);
+    room.Arrange(font.metrics);
+    AssertStands(room.Node(VIEW), 0.0f, 40.0f, 200.0f, 200.0f, L"as tall as what it holds, with the room for it");
+    Assert::AreEqual(0.0f, room.Node(VIEW).scrolledUnits, L"and nothing to scroll");
+  }
+
   // ADR-100: a grid sets its cells in rows of its columns' count, each column as wide as the others and each row as tall
   // as its tallest cell; a stack is as large as the largest it holds.
   TEST_METHOD(SetsAGridAndAStack)
@@ -242,6 +288,35 @@ public:
 
     AssertStands(tree.Node(tall), 440.0f, 20.0f, 100.0f, 450.0f, L"in the middle across, at the top margin down");
     AssertStands(tree.Node(wide), 10.0f, 410.0f, 980.0f, 50.0f, L"at the left margin across, at the bottom down");
+  }
+
+  // ADR-061 decision 4; ADR-100: the nodes of a height group are as tall as the tallest of them, even one that stands
+  // anchored and takes no room, as a card of a page not shown does; what holds them grows with them, and a node outside the
+  // group keeps its own height.
+  TEST_METHOD(MakesAHeightGroupAsTallAsItsTallest)
+  {
+    const TenUnitFont font;
+    LayoutTree tree(1000.0f, 500.0f);
+    const std::size_t row = tree.Begin(LayoutKind::Row, {.gapUnits = 10.0f});
+    const std::size_t one = tree.Begin(LayoutKind::Column, {.widthUnits = 100.0f, .padding = {.top = 5.0f}, .heightGroup = 1});
+    (void)tree.AddText({.text = "One", .lineUnits = 20.0f});
+    tree.End();
+    const std::size_t two = tree.Begin(LayoutKind::Column, {.widthUnits = 100.0f, .heightGroup = 1});
+    (void)tree.AddText({.text = "Two lines of it", .lineUnits = 20.0f, .flow = TextFlow::Wrap});
+    tree.End();
+    const std::size_t alone = tree.Add({.widthUnits = 50.0f, .heightUnits = 15.0f});
+    const std::size_t unshown = tree.Begin(LayoutKind::Column, {.widthUnits = 100.0f, .anchor = LayoutAnchor::TopLeft, .heightGroup = 1});
+    (void)tree.AddText({.text = "Three short lines", .lineUnits = 20.0f, .flow = TextFlow::Wrap});
+    tree.End();
+    tree.End();
+    tree.Arrange(font.metrics);
+
+    Assert::AreEqual(60.0f, tree.Node(unshown).heightUnits, 0.001f, L"three lines of ten characters at most");
+    Assert::AreEqual(60.0f, tree.Node(one).heightUnits, 0.001f, L"one line and padding, as tall as the tallest");
+    Assert::AreEqual(60.0f, tree.Node(two).heightUnits, 0.001f, L"two lines, as tall as the tallest");
+    Assert::AreEqual(15.0f, tree.Node(alone).heightUnits, 0.001f, L"outside the group");
+    Assert::AreEqual(60.0f, tree.Node(row).heightUnits, 0.001f, L"what holds them grows with them");
+    AssertStands(tree.Node(two), 110.0f, 0.0f, 100.0f, 60.0f, L"beside the first, the anchored one taking no room");
   }
 
   // ADR-061 decision 3; ADR-100: a text wraps to the width it is given, or is cut short with three dots, or is set as it

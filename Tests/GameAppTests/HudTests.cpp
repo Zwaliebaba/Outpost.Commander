@@ -290,13 +290,15 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
   return content;
 }
 
-// The interface's own scale steps the longest content's windows fit at this size (ADR-070), from the first.
-std::vector<float> ReachableSteps(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+// The interface's own scale steps the longest content's windows fit at this size (ADR-070), from the first: in a match, or on
+// the menu.
+std::vector<float> ReachableSteps(std::uint32_t _widthPixels, std::uint32_t _heightPixels, bool _inAMatch)
 {
   const Outpost::Snapshot newest = DesignerSnapshot(true, true);
+  const Outpost::Snapshot* match = _inAMatch ? &newest : nullptr;
   const std::array<float, 6>& steps = Outpost::Hud::INTERFACE_STEPS;
   std::vector<float> reachable{steps.front()};
-  for (std::size_t step = 1; step < steps.size() && Outpost::Hud::WindowsFit(&newest, _widthPixels, _heightPixels, steps[step]); ++step)
+  for (std::size_t step = 1; step < steps.size() && Outpost::Hud::WindowsFit(match, _widthPixels, _heightPixels, steps[step]); ++step)
     reachable.push_back(steps[step]);
   return reachable;
 }
@@ -304,16 +306,17 @@ std::vector<float> ReachableSteps(std::uint32_t _widthPixels, std::uint32_t _hei
 // What 14.1's and 14.2's tests lay out: the menu, and the longest content with its parts locked and unlocked, with the
 // Small hull previewed in place of the loaded design's Medium, which makes some figures better and some worse, and with
 // the locked Large hull previewed, whose help line names its topic (ADR-017 decision 7); at every step of the interface's own scale
-// that the windows fit (ADR-070), each named with its step.
+// that the windows fit (ADR-070), the menu at the steps it reaches with no match, each named with its step.
 std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
 {
   const Outpost::Hud::Action smallHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}};
   const Outpost::Hud::Action largeHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{3}};
   std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> layouts;
-  for (const float factor : ReachableSteps(_widthPixels, _heightPixels))
+  for (const float factor : ReachableSteps(_widthPixels, _heightPixels, false))
+    layouts.emplace_back(std::format(L"the menu at {}%", std::lround(factor * 100.0f)), LayMenu(_widthPixels, _heightPixels, factor));
+  for (const float factor : ReachableSteps(_widthPixels, _heightPixels, true))
   {
     const std::wstring step = std::format(L" at {}%", std::lround(factor * 100.0f));
-    layouts.emplace_back(L"the menu" + step, LayMenu(_widthPixels, _heightPixels, factor));
     layouts.emplace_back(L"locked" + step, Lay(LongestContent(false), _widthPixels, _heightPixels, {}, nullptr, factor));
     layouts.emplace_back(L"unlocked" + step, Lay(LongestContent(true), _widthPixels, _heightPixels, {}, nullptr, factor));
     layouts.emplace_back(L"previewing" + step, Lay(LongestContent(true, smallHull), _widthPixels, _heightPixels, {}, nullptr, factor));
@@ -342,6 +345,32 @@ Outpost::Hud::Rect LineBoxOf(const Outpost::Hud::Text& _text, std::span<const Ne
           .height = font.lineHeight};
 }
 
+// _rect cut to _clip, if it has one, as UiPipeline draws what a scroll view holds (ADR-100): of no size where none of it is
+// inside.
+Outpost::Hud::Rect CutTo(Outpost::Hud::Rect _rect, const Neuron::CanvasRect* _clip)
+{
+  if (_clip == nullptr)
+    return _rect;
+  const float left = std::max(_rect.left, _clip->left);
+  const float top = std::max(_rect.top, _clip->top);
+  _rect.width = std::max(0.0f, std::min(_rect.left + _rect.width, _clip->left + _clip->width) - left);
+  _rect.height = std::max(0.0f, std::min(_rect.top + _rect.height, _clip->top + _clip->height) - top);
+  _rect.left = left;
+  _rect.top = top;
+  return _rect;
+}
+
+// What of the text and the panel of these places in _layout is drawn: its line's box, and the panel, each cut to its clip.
+Outpost::Hud::Rect DrawnBoxOf(const Outpost::Hud::Layout& _layout, std::size_t _text, std::span<const Neuron::GlyphAtlas::Font> _fonts)
+{
+  return CutTo(LineBoxOf(_layout.texts[_text], _fonts), _layout.ClipOf(&Neuron::CanvasClip::texts, _text));
+}
+
+Outpost::Hud::Rect DrawnPanelOf(const Outpost::Hud::Layout& _layout, std::size_t _panel)
+{
+  return CutTo(_layout.panels[_panel], _layout.ClipOf(&Neuron::CanvasClip::panels, _panel));
+}
+
 // WCAG's relative luminance of a linear color, which the render target encodes to sRGB, as the review computed it.
 float LuminanceOf(const DirectX::XMFLOAT3& _color) noexcept
 {
@@ -357,7 +386,8 @@ float ContrastOf(const DirectX::XMFLOAT3& _first, const DirectX::XMFLOAT3& _seco
 }
 
 // What a text can stand on: the panels of its layer under its first pixel, laid over each other in the order they are
-// drawn, at their alpha, over black. A hatched panel covers some pixels and not others, so it is taken both ways.
+// drawn, at their alpha, over black, each as far as it is drawn. A hatched panel covers some pixels and not others, so it
+// is taken both ways.
 std::vector<DirectX::XMFLOAT3> GroundsOf(const Outpost::Hud::Layout& _layout, std::size_t _layer, const Outpost::Hud::Text& _text)
 {
   const Outpost::Hud::Span panels = _layout.PanelsOf(_layer);
@@ -366,7 +396,7 @@ std::vector<DirectX::XMFLOAT3> GroundsOf(const Outpost::Hud::Layout& _layout, st
   std::vector<DirectX::XMFLOAT3> grounds{{0.0f, 0.0f, 0.0f}};
   for (std::size_t p = panels.first; p < panels.end; ++p)
   {
-    const Outpost::Hud::Rect& panel = _layout.panels[p];
+    const Outpost::Hud::Rect panel = DrawnPanelOf(_layout, p);
     if (!panel.Contains(x, y))
       continue;
     const float alpha = panel.color.w;
@@ -414,6 +444,7 @@ std::wstring Named(const std::wstring& _layout, std::uint32_t _widthPixels, cons
 {
   return std::format(L"{} at {} wide: \"{}\"", _layout, _widthPixels, std::wstring(winrt::to_hstring(_text.text)));
 }
+
 } // namespace
 
 TEST_CLASS(HudTests)
@@ -479,13 +510,55 @@ public:
                    L"the HUD's sprites are its own panels'");
 
     const Outpost::Hud::Span actions = layout.ActionsOf(1);
-    const auto name = std::ranges::find(layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.first),
+    const auto part = std::ranges::find(layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.first),
                                         layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end),
-                                        Outpost::Hud::ActionKind::EditName, [](const auto& _entry) { return _entry.second.kind; });
-    Assert::IsTrue(name != layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end));
-    Assert::AreEqual(size_t{1}, layout.LayerAt(name->first.left + 5.0f, name->first.top + 5.0f));
-    Assert::IsTrue(layout.WindowAt(name->first.left + 5.0f, name->first.top + 5.0f) == &window);
+                                        Outpost::Hud::ActionKind::PickHull, [](const auto& _entry) { return _entry.second.kind; });
+    Assert::IsTrue(part != layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end));
+    Assert::AreEqual(size_t{1}, layout.LayerAt(part->first.left + 5.0f, part->first.top + 5.0f));
+    Assert::IsTrue(layout.WindowAt(part->first.left + 5.0f, part->first.top + 5.0f) == &window);
     Assert::IsTrue(layout.Covers(window.frame.left + 1.0f, window.frame.top + 1.0f));
+  }
+
+  // ADR-017 decision 8; ADR-100: the name is the canvas's text field. A press on it gives it the keyboard, and the layout
+  // carries what is typed, for GameClient to give the designer, until Enter keeps it or Esc drops it; without the keyboard
+  // it carries nothing, and the name follows the designer.
+  TEST_METHOD(TypesTheDesignsNameOnTheCanvas)
+  {
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Designer);
+    Neuron::Interaction pointer;
+    const auto lay = [&windows, &pointer] { return Lay(WithDesigner(), 1920, 1080, {}, &windows, 1.0f, std::nullopt, &pointer); };
+    const Outpost::Hud::Layout idle = lay();
+    Assert::IsFalse(idle.typedName.has_value());
+    const Neuron::WidgetId field = Neuron::Interaction::IdUnder(Neuron::Interaction().IdOf("designer"), "name");
+    const auto region = std::ranges::find(idle.regions, field, &Neuron::CanvasRegion::widget);
+    if (region == idle.regions.end())
+    {
+      Assert::Fail(L"the name field");
+      return;
+    }
+    const float x = region->area.left + 5.0f;
+    const float y = region->area.top + 5.0f;
+    Assert::IsTrue(pointer.Press(idle, x, y));
+    const Outpost::Hud::Layout pressed = lay();
+    (void)pointer.Release(pressed, x, y);
+    Assert::IsTrue(pressed.typedName.has_value() && pressed.typedName->name == "Swarm" &&
+                     pressed.typedName->end == Neuron::FieldEnd::Typing,
+                   L"the name as it stood");
+    Assert::IsTrue(pointer.Type(U'!'));
+    const Outpost::Hud::Layout typed = lay();
+    Assert::IsTrue(typed.typedName.has_value() && typed.typedName->name == "Swarm!");
+    Assert::IsTrue(pointer.Key(Neuron::FieldKey::Enter));
+    const Outpost::Hud::Layout entered = lay();
+    Assert::IsTrue(entered.typedName.has_value() && entered.typedName->end == Neuron::FieldEnd::Entered);
+    Assert::IsFalse(lay().typedName.has_value(), L"typing has ended");
+
+    Assert::IsTrue(pointer.Press(entered, x, y));
+    (void)lay();
+    (void)pointer.Release(entered, x, y);
+    Assert::IsTrue(pointer.Escape());
+    const Outpost::Hud::Layout dropped = lay();
+    Assert::IsTrue(dropped.typedName.has_value() && dropped.typedName->end == Neuron::FieldEnd::Dropped);
   }
 
   // ADR-031: a dragged window is laid out where it was left; a HUD button under it takes no click; and however far it is
@@ -3264,6 +3337,66 @@ public:
     Assert::AreEqual(std::ptrdiff_t{4}, litEdgesOfGive(Lay(content, 1920, 1080, {}, nullptr, 1.0f, std::nullopt, &pointer)));
   }
 
+  // ADR-080 decision 9; ADR-100: the form's hour, minute, sectors and target are picked from a drop-down between their
+  // arrows, which still step. A press on the hour opens its list of every hour over the window, which is no window's; a
+  // press on one names it, and the list closes. A window brought in front of the orders window closes the list.
+  TEST_METHOD(PicksAnOrdersFieldFromItsDropDown)
+  {
+    const Outpost::Snapshot newest = OrdersSnapshot();
+    Outpost::OrderForm form;
+    form.Update(newest, newest.entities);
+    Outpost::Hud::Content content;
+    content.orders = Outpost::Hud::DescribeOrders(newest, newest.entities, {}, form, Outpost::PlayerClock{},
+                                                  std::chrono::sys_seconds{std::chrono::hours{1}});
+    const Outpost::Hud::OrderRow& hour = content.orders->rows[1];
+    Assert::AreEqual(std::size_t{24}, hour.choices.size(), L"every hour");
+    Assert::IsTrue(hour.picked == std::optional<std::size_t>{2}, L"the form's 02");
+    Assert::AreEqual(std::size_t{12}, content.orders->rows[2].choices.size(), L"every fifth minute");
+    Assert::IsTrue(content.orders->rows[0].choices.empty(), L"the trigger only steps");
+
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Orders);
+    Neuron::Interaction pointer;
+    const auto lay = [&] { return Lay(content, 1920, 1080, {}, &windows, 1.0f, std::nullopt, &pointer); };
+    const Outpost::Hud::Layout closed = lay();
+    Assert::IsTrue(std::ranges::any_of(closed.actions,
+                                       [](const auto& _entry)
+                                       {
+                                         return _entry.second == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StepOrder,
+                                                                                      .field = Outpost::OrderField::Hour,
+                                                                                      .step = 1};
+                                       }),
+                   L"its arrows still step it");
+    const Outpost::Hud::Text value = TextOf(closed, "02");
+    Assert::IsTrue(pointer.Press(closed, value.left + 4.0f, value.top + 4.0f), L"a press on the hour");
+    const Outpost::Hud::Layout open = lay();
+    (void)pointer.Release(open, value.left + 4.0f, value.top + 4.0f);
+    Assert::IsTrue(open.LayerCount() == 3 && open.layers.back().overlay, L"its list over the window");
+    Assert::AreEqual(std::size_t{1}, open.windows.size());
+    const auto pick = std::ranges::find(
+      open.actions, Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickOrder, .field = Outpost::OrderField::Hour, .value = 14},
+      [](const auto& _entry) { return _entry.second; });
+    Assert::IsTrue(pick != open.actions.end() && pick->first.width > 0.0f, L"14 among the choices");
+    const float x = pick->first.left + 10.0f;
+    const float y = pick->first.top + 5.0f;
+    Assert::IsNull(open.WindowAt(x, y), L"the list is no window's");
+    Assert::IsTrue(open.ActionAt(x, y) == std::optional<Outpost::Hud::Action>{pick->second}, L"a press on it picks it");
+    Assert::IsTrue(pointer.Press(open, x, y));
+    const Outpost::Hud::Layout picked = lay();
+    (void)pointer.Release(picked, x, y);
+    Assert::AreEqual(Neuron::NO_WIDGET, pointer.DropDown(), L"and closes the list");
+    Assert::AreEqual(std::size_t{2}, picked.LayerCount());
+
+    Assert::IsTrue(pointer.Press(picked, value.left + 4.0f, value.top + 4.0f));
+    (void)lay();
+    Assert::AreNotEqual(Neuron::NO_WIDGET, pointer.DropDown());
+    windows.Open(Outpost::WindowKind::Controls);
+    content.controls = true;
+    const Outpost::Hud::Layout covered = lay();
+    Assert::AreEqual(Neuron::NO_WIDGET, pointer.DropDown(), L"another window in front closes it");
+    Assert::IsFalse(covered.layers.back().overlay);
+  }
+
   // ADR-080 decision 9: the selection's panel names the scheduled order its ship waits on, whole.
   TEST_METHOD(NamesAShipsPendingOrder)
   {
@@ -4225,42 +4358,137 @@ public:
   }
 
   // ADR-070 decisions 2 to 4: Ctrl+= and Ctrl+- step the interface's own scale through its steps, a factor on the screen's,
-  // as far as the designer, laid out for the match's components, and the Controls window fit the screen between its margins;
-  // a new screen or match takes it down to the largest step that fits.
+  // as far as the windows of a fixed size fit the screen between its margins at their least, their scroll views giving up
+  // what room they can, and in a match as far as the HUD's bottom row fits at its widest. A match reaches 150% on 16:9, 16:10
+  // and 3:2 screens, where the bottom row stops it, and 175% on 21:9, where the height of the orders window and the
+  // designer's least do; the menu, with the Controls window alone, reaches 200%. A new screen or match takes it down to the
+  // largest step that fits.
   TEST_METHOD(StepsTheInterfaceAsFarAsItsWindowsFit)
   {
     using Hud = Outpost::Hud;
     Assert::AreEqual(1.25f, Hud::Scale(1920, 1080, 1.25f), 1e-6f);
     Assert::AreEqual(2.5f, Hud::Scale(3840, 2160, 1.25f), 1e-6f);
+    const auto furthest = [](const Outpost::Snapshot* _newest, std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+    {
+      float factor = Hud::INTERFACE_STEPS.front();
+      for (std::size_t step = 1; step < Hud::INTERFACE_STEPS.size(); ++step)
+        factor = Hud::StepInterface(factor, 1, _newest, _widthPixels, _heightPixels);
+      return factor;
+    };
 
-    // The menu has no designer: the Controls window, about 740 units tall, fits a 1080-unit screen up to 125%.
-    Assert::AreEqual(1.1f, Hud::StepInterface(1.0f, 1, nullptr, 1920, 1080));
-    Assert::AreEqual(1.25f, Hud::StepInterface(1.1f, 1, nullptr, 1920, 1080));
-    Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 1, nullptr, 1920, 1080), L"150% leaves the Controls window no room");
+    Assert::AreEqual(2.0f, furthest(nullptr, 1920, 1080), L"the menu on 16:9");
+    Assert::AreEqual(2.0f, furthest(nullptr, 1920, 1200), L"the menu on 16:10");
 
-    // With five weapons and the module row, the designer is 913 units tall: 110% fits 16:9, and 125% a 3:2 screen.
     const Outpost::Snapshot newest = DesignerSnapshot(true, true);
-    Assert::IsTrue(Hud::WindowsFit(&newest, 1920, 1080, 1.1f));
-    Assert::IsFalse(Hud::WindowsFit(&newest, 1920, 1080, 1.25f));
-    Assert::AreEqual(1.1f, Hud::StepInterface(1.0f, 1, &newest, 1920, 1080));
-    Assert::AreEqual(1.1f, Hud::StepInterface(1.1f, 1, &newest, 1920, 1080), L"no further than fits");
-    Assert::AreEqual(1.1f, Hud::StepInterface(1.1f, 1, &newest, 3840, 2160), L"the same at any 16:9 size");
-    Assert::AreEqual(1.25f, Hud::StepInterface(1.1f, 1, &newest, 2880, 1920));
-    Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 1, &newest, 2880, 1920));
+    Assert::AreEqual(1.5f, furthest(&newest, 1920, 1080), L"16:9");
+    Assert::AreEqual(1.5f, furthest(&newest, 3840, 2160), L"the same at any 16:9 size");
+    Assert::AreEqual(1.5f, furthest(&newest, 1920, 1200), L"16:10");
+    Assert::AreEqual(1.5f, furthest(&newest, 2880, 1920), L"3:2");
+    Assert::AreEqual(1.75f, furthest(&newest, 2560, 1080), L"21:9");
+    Assert::IsFalse(Hud::WindowsFit(&newest, 1920, 1080, 1.75f), L"at 175% the bottom row runs past a 16:9 screen's edge");
+    Assert::IsFalse(Hud::WindowsFit(&newest, 2560, 1080, 2.0f), L"at 200% a 21:9 screen is shorter than the orders window");
 
-    // A module with sight adds the Sensors bar's row, 938 units as the tuning data's components lay it out, and 110% still
-    // fits 16:9.
+    // A module with sight adds the Sensors bar's row, which the part rows give up the room for.
     Outpost::Snapshot sensed = newest;
     sensed.modules = {{.id = Outpost::ModuleId{1}, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .available = true}};
-    Assert::IsTrue(Hud::WindowsFit(&sensed, 1920, 1080, 1.1f));
-    Assert::AreEqual(1.1f, Hud::StepInterface(1.0f, 1, &sensed, 1920, 1080));
+    Assert::AreEqual(1.5f, furthest(&sensed, 1920, 1080));
 
-    // Down a step at a time, never below the first; and a match that starts at a step its designer does not fit at comes
-    // down to one it does.
-    Assert::AreEqual(1.1f, Hud::StepInterface(1.25f, -1, &newest, 2880, 1920));
+    // Down a step at a time, never below the first; and a match that starts at a step its windows do not fit at comes down
+    // to one they do.
+    Assert::AreEqual(1.25f, Hud::StepInterface(1.5f, -1, &newest, 1920, 1080));
     Assert::AreEqual(1.0f, Hud::StepInterface(1.0f, -1, &newest, 1920, 1080));
-    Assert::AreEqual(1.1f, Hud::StepInterface(1.25f, 0, &newest, 1920, 1080));
-    Assert::AreEqual(1.25f, Hud::StepInterface(1.25f, 0, nullptr, 1920, 1080), L"the menu keeps it");
+    Assert::AreEqual(1.5f, Hud::StepInterface(1.75f, 0, &newest, 1920, 1080));
+    Assert::AreEqual(1.75f, Hud::StepInterface(1.75f, 0, nullptr, 1920, 1080), L"the menu keeps it");
+  }
+
+  // ADR-070 decision 3; ADR-100: at 150% on a 16:9 screen the designer stands within the screen, its part rows in a view
+  // a line of cards tall at least, drawn cut to it, its thumb in the room right of the cards; the wheel over the rows
+  // scrolls them, and brings the last row's cards into the view, where they take a press.
+  TEST_METHOD(ScrollsTheDesignersPartRows)
+  {
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Designer);
+    Neuron::Interaction pointer;
+    Outpost::Hud::Content content;
+    content.designer = LongestContent(true).designer;
+    const auto lay = [&] { return Lay(content, 1920, 1080, {}, &windows, 1.5f, std::nullopt, &pointer); };
+    const Outpost::Hud::Layout top = lay();
+    Assert::AreEqual(size_t{1}, top.windows.size());
+    const Outpost::Hud::Rect frame = top.windows.front().frame;
+    Assert::IsTrue(frame.top + frame.height <= 1080.0f - (16.0f * 1.5f) + 0.01f, L"within the screen's margin");
+    Assert::AreEqual(size_t{1}, top.clips.size(), L"the part rows' view");
+    const Neuron::CanvasRect view = top.clips.front().area;
+    Assert::IsTrue(view.height >= 80.0f * 1.5f, L"a line of cards at least");
+    Assert::IsTrue(view.left + view.width <= frame.left + frame.width - (14.0f * 1.5f) + 0.01f, L"the room right of the cards kept");
+    const auto lastModule = [](const Outpost::Hud::Layout& _layout)
+    {
+      const auto found = std::find_if(_layout.actions.rbegin(), _layout.actions.rend(),
+                                      [](const auto& _entry) { return _entry.second.kind == Outpost::Hud::ActionKind::PickModule; });
+      return found == _layout.actions.rend() ? Outpost::Hud::Rect{} : found->first;
+    };
+    Assert::AreEqual(0.0f, lastModule(top).width, L"the last module's card is under the view, and takes no press");
+
+    Assert::IsTrue(pointer.Wheel(top, view.left + 10.0f, view.top + 10.0f, 10000.0f), L"the wheel over the rows is the view's");
+    const Outpost::Hud::Layout bottom = lay();
+    const Outpost::Hud::Rect card = lastModule(bottom);
+    Assert::IsTrue(card.width > 0.0f && card.top >= view.top && card.top + card.height <= view.top + view.height + 0.01f,
+                   L"scrolled to the foot, the last row's cards stand in the view");
+  }
+
+  // ADR-015 decision 4: the hint, and the banner under it, stand in the middle of the top row while they clear the column
+  // under the Ore and the tag; where the interface's scale crowds the row, they stand under it, in the middle of the room
+  // right of the column, clear of both.
+  TEST_METHOD(StandsTheHintAndTheBannerAsideOfACrowdedTopRow)
+  {
+    const Outpost::Hud::Content content = LongestContent(true);
+    for (const float factor : {1.0f, 1.5f})
+    {
+      const Outpost::Hud::Layout layout = Lay(content, 1920, 1080, {}, nullptr, factor);
+      // The smallest panel of the HUD a text stands in.
+      const auto panelOf = [&layout](const Outpost::Hud::Text& _text)
+      {
+        const Outpost::Hud::Rect* smallest = nullptr;
+        const Outpost::Hud::Span panels = layout.PanelsOf(0);
+        for (std::size_t p = panels.first; p < panels.end; ++p)
+        {
+          const Outpost::Hud::Rect& panel = layout.panels[p];
+          if (panel.Contains(_text.left + 1.0f, _text.top + 1.0f) &&
+              (smallest == nullptr || panel.width * panel.height < smallest->width * smallest->height))
+            smallest = &panel;
+        }
+        return smallest != nullptr ? *smallest : Outpost::Hud::Rect{};
+      };
+      const Outpost::Hud::Rect hint = panelOf(TextOf(layout, content.hint));
+      const Outpost::Hud::Rect banner = panelOf(TextOf(layout, "Defeat"));
+      const Outpost::Hud::Rect ore = panelOf(TextOf(layout, "99,999"));
+      const auto tagText =
+        std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.starts_with("Server "); });
+      if (tagText == layout.texts.end())
+      {
+        Assert::Fail(L"the tag");
+        return;
+      }
+      const Outpost::Hud::Rect tag = panelOf(*tagText);
+      const std::wstring step = std::format(L" at {}%", std::lround(factor * 100.0f));
+      if (factor == 1.0f)
+      {
+        Assert::AreEqual(16.0f, hint.top, 0.01f, (L"in the top row" + step).c_str());
+        Assert::AreEqual(960.0f, hint.left + (hint.width / 2.0f), 0.01f, (L"in the screen's middle" + step).c_str());
+        Assert::AreEqual(960.0f, banner.left + (banner.width / 2.0f), 0.01f);
+      }
+      else
+      {
+        Assert::IsTrue(hint.top >= tag.top + tag.height, (L"under the tag" + step).c_str());
+        Assert::IsTrue(banner.top >= hint.top + hint.height, (L"the banner under the hint" + step).c_str());
+      }
+      for (const Outpost::Hud::Rect& middle : {hint, banner})
+      {
+        Assert::IsTrue(middle.left >= ore.left + ore.width, (L"clear of the column" + step).c_str());
+        Assert::IsTrue(middle.left + middle.width <= 1920.0f, (L"on the screen" + step).c_str());
+        const bool beside = middle.left + middle.width <= tag.left || middle.top >= tag.top + tag.height;
+        Assert::IsTrue(beside, (L"clear of the tag" + step).c_str());
+      }
+    }
   }
 
   // ADR-070 decision 1: a moved window stays where it can be taken hold of across a step of the interface's own scale, and
@@ -4300,20 +4528,23 @@ public:
           for (std::size_t t = texts.first; t < texts.end; ++t)
           {
             const Outpost::Hud::Text& text = layout.texts[t];
-            if (text.text.empty())
+            const Outpost::Hud::Rect box = DrawnBoxOf(layout, t, fonts);
+            if (text.text.empty() || box.height <= 0.0f)
               continue;
-            const Outpost::Hud::Rect box = LineBoxOf(text, fonts);
-            const Outpost::Hud::Rect* smallest = nullptr;
+            Outpost::Hud::Rect smallest{};
+            float smallestArea = std::numeric_limits<float>::infinity();
             for (std::size_t p = panels.first; p < panels.end; ++p)
             {
-              const Outpost::Hud::Rect& panel = layout.panels[p];
-              if (panel.Contains(box.left + 0.5f, box.top + 0.5f) &&
-                  (smallest == nullptr || panel.width * panel.height < smallest->width * smallest->height))
-                smallest = &panel;
+              const Outpost::Hud::Rect panel = DrawnPanelOf(layout, p);
+              if (panel.Contains(box.left + 0.5f, box.top + 0.5f) && panel.width * panel.height < smallestArea)
+              {
+                smallest = panel;
+                smallestArea = panel.width * panel.height;
+              }
             }
-            if (smallest == nullptr)
+            if (std::isinf(smallestArea))
               offenders += std::format(L"{} starts in no panel\n", Named(name, width, text));
-            else if (const float past = box.left + box.width - smallest->left - smallest->width; past > 0.5f)
+            else if (const float past = box.left + box.width - smallest.left - smallest.width; past > 0.5f)
               offenders += std::format(L"{} runs {} px past its panel\n", Named(name, width, text), past);
           }
         }
@@ -4337,13 +4568,13 @@ public:
           const Outpost::Hud::Span texts = layout.TextsOf(layer);
           for (std::size_t a = texts.first; a < texts.end; ++a)
           {
-            const Outpost::Hud::Rect first = LineBoxOf(layout.texts[a], fonts);
+            const Outpost::Hud::Rect first = DrawnBoxOf(layout, a, fonts);
             for (std::size_t b = a + 1; b < texts.end; ++b)
             {
-              const Outpost::Hud::Rect second = LineBoxOf(layout.texts[b], fonts);
-              const bool meet = first.width > 0.0f && second.width > 0.0f && first.left < second.left + second.width &&
-                                second.left < first.left + first.width && first.top < second.top + second.height &&
-                                second.top < first.top + first.height;
+              const Outpost::Hud::Rect second = DrawnBoxOf(layout, b, fonts);
+              const bool meet = first.width > 0.0f && second.width > 0.0f && first.height > 0.0f && second.height > 0.0f &&
+                                first.left < second.left + second.width && second.left < first.left + first.width &&
+                                first.top < second.top + second.height && second.top < first.top + first.height;
               if (meet)
               {
                 offenders += std::format(L"{} meets \"{}\"\n", Named(name, width, layout.texts[a]),
@@ -4371,11 +4602,13 @@ public:
         for (std::size_t t = texts.first; t < texts.end; ++t)
         {
           const Outpost::Hud::Text& text = layout.texts[t];
-          if (text.text.empty())
+          const Outpost::Hud::Rect box = DrawnBoxOf(layout, t, FontsOf(layout, 1920, 1080));
+          if (text.text.empty() || box.height <= 0.0f)
             continue;
           const DirectX::XMFLOAT3 ink{text.color.x, text.color.y, text.color.z};
           float least = std::numeric_limits<float>::max();
-          for (const DirectX::XMFLOAT3& ground : GroundsOf(layout, layer, text))
+          // Its first pixel drawn, which a scroll view may cut below its line's top.
+          for (const DirectX::XMFLOAT3& ground : GroundsOf(layout, layer, {.text = text.text, .left = box.left, .top = box.top}))
             least = std::min(least, ContrastOf(ink, ground));
           if (least < 4.5f)
             offenders += std::format(L"{} stands at {:.2f}:1\n", Named(name, 1920, text), least);

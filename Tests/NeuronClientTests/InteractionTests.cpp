@@ -152,6 +152,20 @@ public:
     Assert::IsTrue(ui.TakeStrokes(FIELD) == std::vector<FieldStroke>{{.key = FieldKey::Enter}});
   }
 
+  // ADR-100: a widget dragged while it is active, as a scroll's thumb, takes how far down the pointer has moved since the
+  // press, or since it last took it.
+  TEST_METHOD(MeasuresADrag)
+  {
+    const Neuron::DrawList list = Screen();
+    Interaction ui;
+    Assert::IsTrue(ui.Press(list, 170.0f, 165.0f));
+    ui.Move(list, 175.0f, 185.0f);
+    Assert::AreEqual(20.0f, ui.TakeDragPixels());
+    Assert::AreEqual(0.0f, ui.TakeDragPixels(), L"taken once");
+    ui.Move(list, 175.0f, 175.0f);
+    Assert::AreEqual(-10.0f, ui.TakeDragPixels(), L"and back up");
+  }
+
   // ADR-100: an open drop-down's list stands in an overlay over every window; a press outside it closes it and goes no
   // further, and one inside reaches its items.
   TEST_METHOD(ClosesADropDownOnAPressOutsideIt)
@@ -173,6 +187,26 @@ public:
     Assert::AreEqual(NO_WIDGET, ui.Active());
     Assert::AreEqual(NO_WIDGET, ui.DropDown());
     Assert::IsFalse(ui.Press(list, 500.0f, 500.0f), L"closed, a press reaches the world again");
+    ui.OpenDropDown(FRONT);
+    Assert::IsFalse(ui.Dismiss(list, 165.0f, 65.0f), L"a press of any button in its overlay is its");
+    Assert::IsTrue(ui.Dismiss(list, 500.0f, 500.0f), L"one in the world closes it and goes no further");
+    Assert::AreEqual(NO_WIDGET, ui.DropDown());
+    Assert::IsFalse(ui.Dismiss(list, 500.0f, 500.0f), L"with none open, nothing is dismissed");
+  }
+
+  // ADR-100: a press on a drop-down's field opens it, and a press on it again, outside its list, closes it.
+  TEST_METHOD(OpensADropDownByAPressOnItsField)
+  {
+    Neuron::DrawList list;
+    list.panels.push_back({.left = 0.0f, .top = 0.0f, .width = 100.0f, .height = 20.0f});
+    list.regions.push_back({.area = {.left = 0.0f, .top = 0.0f, .width = 100.0f, .height = 20.0f}, .widget = FRONT, .dropsDown = true});
+    Interaction ui;
+    Assert::IsTrue(ui.Press(list, 10.0f, 10.0f));
+    Assert::AreEqual(FRONT, ui.DropDown());
+    (void)ui.Release(list, 10.0f, 10.0f);
+    Assert::IsTrue(ui.Press(list, 10.0f, 10.0f), L"a press on it again");
+    Assert::AreEqual(NO_WIDGET, ui.DropDown(), L"closes it");
+    Assert::AreEqual(NO_WIDGET, ui.Active(), L"and goes no further");
   }
 
   // ADR-100: an identifier is its label's or its index's under the one pushed, the same in every frame, and claimed once
@@ -201,6 +235,28 @@ public:
     ui.PopId();
     ui.BeginBuild();
     Assert::IsTrue(ui.Claim(build), L"once in the next frame");
+  }
+
+  // ADR-100: a field keeps the keyboard while each build builds it, and gives it back once one does not, as when the window
+  // it is in closes, so that its keys reach the game again; and a drop-down closes once a build does not build it.
+  TEST_METHOD(LetsGoOfAFieldOrADropDownNoLongerBuilt)
+  {
+    Interaction ui;
+    ui.BeginBuild();
+    Assert::IsTrue(ui.Claim(FIELD));
+    ui.Focus(FIELD);
+    ui.BeginBuild();
+    Assert::IsTrue(ui.TakesKeys(), L"built in the last frame");
+    Assert::IsTrue(ui.Claim(BUTTON));
+    ui.BeginBuild();
+    Assert::IsFalse(ui.TakesKeys(), L"not built in the last frame");
+    Assert::IsTrue(ui.Claim(BUTTON));
+    ui.OpenDropDown(BUTTON);
+    ui.BeginBuild();
+    Assert::IsTrue(ui.WasBuilt(BUTTON) && !ui.WasBuilt(FIELD), L"what the last build built");
+    Assert::AreEqual(BUTTON, ui.DropDown(), L"a drop-down built in the last frame stays open");
+    ui.BeginBuild();
+    Assert::AreEqual(NO_WIDGET, ui.DropDown(), L"and closes once it is not");
   }
 };
 } // namespace NeuronClientTests

@@ -29,7 +29,8 @@ struct FieldStroke
 class Interaction
 {
 public:
-  // Starts a frame's build: no identifier is pushed and none has been claimed.
+  // Starts a frame's build: no identifier is pushed and none has been claimed, a field the last build did not build no
+  // longer has the keyboard, and a drop-down it did not build has closed.
   void BeginBuild() noexcept;
   // _label's or _index's identifier under the identifier pushed last, or under none.
   [[nodiscard]] WidgetId IdOf(std::string_view _label) const noexcept;
@@ -42,6 +43,8 @@ public:
   // Records that _widget was built this frame: false when it already was, two widgets with one identifier, which the
   // canvas fails on (ADR-093).
   [[nodiscard]] bool Claim(WidgetId _widget);
+  // Whether the last build built _widget, as an open drop-down's list, which opens with its pick at its top.
+  [[nodiscard]] bool WasBuilt(WidgetId _widget) const noexcept;
 
   [[nodiscard]] WidgetId Hot() const noexcept
   {
@@ -58,15 +61,22 @@ public:
 
   // The pointer moved: the widget under it is hot, but while one is active, only that one can be.
   void Move(const DrawList& _list, float _xPixels, float _yPixels);
+  // A press of any button while a drop-down is open: outside its overlay it closes it, and true says that the press goes no
+  // further, to the canvas, the windows or the controls.
+  [[nodiscard]] bool Dismiss(const DrawList& _list, float _xPixels, float _yPixels) noexcept;
   // A press: the canvas's when it is on a panel of _list (ADR-015 decision 5), when the widget under it that takes a press
-  // is active until the release. A press anywhere but the field with the keyboard ends its typing and keeps its text. While
-  // a drop-down is open, a press outside its overlay closes it and goes no further.
+  // is active until the release, and a drop-down's field opens. A press anywhere but the field with the keyboard ends its
+  // typing and keeps its text. While a drop-down is open, a press outside its overlay closes it and goes no further
+  // (Dismiss).
   [[nodiscard]] bool Press(const DrawList& _list, float _xPixels, float _yPixels);
   // The release, which the canvas never takes, so that it reaches the controls too: the widget clicked, pressed and let go
   // over, if any.
   [[nodiscard]] WidgetId Release(const DrawList& _list, float _xPixels, float _yPixels);
   // The wheel turned _units over a point: the canvas's only over a region that scrolls, whose offset takes it.
   [[nodiscard]] bool Wheel(const DrawList& _list, float _xPixels, float _yPixels, float _units);
+  // How far down the pointer has moved since the press, or since this was last taken, in pixels, for a widget dragged
+  // while it is active, such as a scroll's thumb.
+  [[nodiscard]] float TakeDragPixels() noexcept;
 
   // _widget, a text field, takes the keyboard.
   void Focus(WidgetId _widget) noexcept;
@@ -102,10 +112,15 @@ private:
 
   std::vector<WidgetId> m_ids;
   std::unordered_set<WidgetId> m_claimed;
+  // What the last build claimed.
+  std::unordered_set<WidgetId> m_built;
   WidgetId m_hot = NO_WIDGET;
   WidgetId m_active = NO_WIDGET;
   WidgetId m_focused = NO_WIDGET;
   WidgetId m_dropDown = NO_WIDGET;
+  // Where the pointer is down the screen, and where a drag was last taken from.
+  float m_pointerYPixels = 0.0f;
+  float m_dragFromYPixels = 0.0f;
   // The field the strokes are for, which may have given back the keyboard since, as Esc and Enter make it.
   WidgetId m_strokesFor = NO_WIDGET;
   std::vector<FieldStroke> m_strokes;

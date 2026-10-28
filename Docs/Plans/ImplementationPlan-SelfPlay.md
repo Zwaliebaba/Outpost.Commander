@@ -31,7 +31,7 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 | SP1.2 | The search over the AI's numbers | SP1.1 | — | done, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
 | SP1.3 | The first search, and what it found | SP1.2, SP1.5 | — | todo: owner run |
 | SP1.4 | The search follows Phase 3 | SP1.2, Phase 3's AI | — | done, [#80](https://github.com/Zwaliebaba/Outpost.Commander/pull/80) |
-| SP1.5 | Knobs for Phase 4's AI numbers | SP1.4 | — | todo |
+| SP1.5 | Knobs for Phase 4's AI numbers | SP1.4 | — | in review, [#150](https://github.com/Zwaliebaba/Outpost.Commander/pull/150) |
 | SP2.1 | The network's shape, as an ADR | SP1.3 | S1, N1–N6 | todo |
 | SP2.2 | The network plays | SP2.1, Phase 3 built | — | todo |
 | SP2.3 | Trajectories, the warm start and the trainer | SP2.2 | — | todo |
@@ -103,6 +103,9 @@ The network's own questions are the blueprint's gates N1 to N6, which SP2.1 need
   - The three join the table, each with a range that holds its packaged value in `Opponent.json` and keeps to what `AiSettings` accepts: a share above 0 and at most 1, a margin above 0, and seconds not below 0. The table's 24 knobs become 27, and the script's own account of them says so.
   - The saved state's version moves on, as SP1.4's did, so a search saved with fewer knobs is refused rather than read wrongly.
 - **Verify:** `--self-test`, and a short search in the container, stopped and resumed.
+- **As built:** the three are searched from 0.3 to 1, 0.5 to 4 and 0 to 1,800 s, each around its packaged 0.8, 1.5 and 600 s. `attackCapShare` and `pirateMargin` join the loader's positive numbers in the script's check, and `attackCapShare` its shares of at most 1. The saved state's version moves to 3. CMA-ES's default population stays 15 with 50 dimensions, so a generation still plays 360 matches (ADR-063).
+  - **Run in the container:** `--self-test` passes, and failed on `main` as this task says. A search against a stand-in for the game, which scores each side by its settings' distance from a fixed point that names the three numbers, ran 4 generations of 2 seeds; stopped after 2 and resumed to 4, it gave the same history and report as a run straight to 4, and its champion moved all three toward that point. A state saved by version 2 was refused. The stand-in decides nothing as the game does, so this checks the script, not the AI.
+  - **Each check was broken on purpose:** an `attackCapShare` range reaching 1.2 failed the self-test on the loader's share of at most 1, and a missing knob failed it as `main` does.
 
 ---
 

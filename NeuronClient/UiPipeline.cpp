@@ -219,10 +219,18 @@ void Neuron::UiPipeline::AddQuad(float _left, float _top, float _right, float _b
 {
   if (m_frameVertices.size() >= std::size_t{MAX_QUADS} * VERTICES_PER_QUAD)
     return;
-  m_frameVertices.push_back({{_left, _top}, {_u0, _v0}, _color});
-  m_frameVertices.push_back({{_right, _top}, {_u1, _v0}, _color});
-  m_frameVertices.push_back({{_right, _bottom}, {_u1, _v1}, _color});
-  m_frameVertices.push_back({{_left, _bottom}, {_u0, _v1}, _color});
+  CanvasQuad quad{.left = _left, .top = _top, .right = _right, .bottom = _bottom, .u0 = _u0, .v0 = _v0, .u1 = _u1, .v1 = _v1};
+  if (m_clip != nullptr)
+  {
+    const std::optional<CanvasQuad> cut = ClipQuad(quad, *m_clip);
+    if (!cut.has_value())
+      return;
+    quad = *cut;
+  }
+  m_frameVertices.push_back({{quad.left, quad.top}, {quad.u0, quad.v0}, _color});
+  m_frameVertices.push_back({{quad.right, quad.top}, {quad.u1, quad.v0}, _color});
+  m_frameVertices.push_back({{quad.right, quad.bottom}, {quad.u1, quad.v1}, _color});
+  m_frameVertices.push_back({{quad.left, quad.bottom}, {quad.u0, quad.v1}, _color});
 }
 
 void Neuron::UiPipeline::AddQuad(const std::array<DirectX::XMFLOAT2, 4>& _corners, float _u, float _v, const DirectX::XMFLOAT4& _color)
@@ -325,6 +333,7 @@ void Neuron::UiPipeline::Draw(const DrawList& _list, const FillStyle& _fills)
     for (std::size_t i = panels.first; i < panels.end; ++i)
     {
       const CanvasRect& panel = _list.panels[i];
+      m_clip = _list.ClipOf(&CanvasClip::panels, i);
       switch (panel.fill)
       {
       case CanvasFill::Hatched:
@@ -339,6 +348,8 @@ void Neuron::UiPipeline::Draw(const DrawList& _list, const FillStyle& _fills)
         break;
       }
     }
+    // A line is never cut.
+    m_clip = nullptr;
     const CanvasSpan lines = _list.LinesOf(layer);
     for (std::size_t i = lines.first; i < lines.end; ++i)
       DrawSegment(_list.lines[i].segment, _list.lines[i].color);
@@ -346,6 +357,7 @@ void Neuron::UiPipeline::Draw(const DrawList& _list, const FillStyle& _fills)
     for (std::size_t i = sprites.first; i < sprites.end; ++i)
     {
       const CanvasSprite& mark = _list.sprites[i];
+      m_clip = _list.ClipOf(&CanvasClip::sprites, i);
       DrawSprite(mark.sprite, mark.area.left, mark.area.top, mark.area.width, mark.area.height, mark.area.color, mark.mirrorX,
                  mark.mirrorY);
     }
@@ -353,8 +365,10 @@ void Neuron::UiPipeline::Draw(const DrawList& _list, const FillStyle& _fills)
     for (std::size_t i = texts.first; i < texts.end; ++i)
     {
       const CanvasText& text = _list.texts[i];
+      m_clip = _list.ClipOf(&CanvasClip::texts, i);
       DrawText(text.font, text.text, text.left, text.top, text.color, text.trackingPixels);
     }
+    m_clip = nullptr;
   }
 }
 
