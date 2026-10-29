@@ -5,7 +5,7 @@ Owns: overseer-channel, overseer-messages, overseer-file, overseer-health, unive
 
 ## Context
 
-The overseer is the dedicated server's management console: a separate application that oversees the whole universe, its health, where its players are and how their connections do (owner, 2026-10-27). The owner decided that it sees in full sight, watches and acts on the server but never on the simulation, is drawn with the game's own interface, and reaches the server from the same machine or the LAN. What it shows and the order it is built in are [the overseer's proposal](../Plans/UniverseOverseer.md) and [its plan](../Plans/ImplementationPlan-Overseer.md). This ADR records the channel the server keeps for it, and what crosses it. The server's own measurements it reads are [ADR-082](ADR-082-universe-log-and-universe-run.md)'s; the actions, Save now, Stop, Drop link and New token, are [ADR-104](ADR-104-the-overseers-actions.md)'s.
+The overseer is the dedicated server's management console: a separate application that oversees the whole universe, its health, where its players are and how their connections do (owner, 2026-10-27). The owner decided that it sees in full sight, watches and acts on the server but never on the simulation, is drawn with the game's own interface, and reaches the server from the same machine or the LAN. What it shows was the overseer's proposal, built by its plan, which closed on 2026-10-29 ([the overseer's post-mortem](../Records/PostMortems.md#2026-10-29--the-overseer-a-console-for-the-dedicated-server)). This ADR records the channel the server keeps for it, and what crosses it. The server's own measurements it reads are [ADR-082](ADR-082-universe-log-and-universe-run.md)'s; the actions, Save now, Stop, Drop link and New token, are [ADR-104](ADR-104-the-overseers-actions.md)'s.
 
 ## Decision
 
@@ -41,8 +41,8 @@ The overseer is the dedicated server's management console: a separate applicatio
 
 ## What this forecloses
 
-- **An overseer that changes the simulation.** Nothing it sends reaches a tick; the actions it may take on the server are their own decision.
+- **An overseer that changes the simulation.** Nothing it sends reaches a tick; the actions it takes on the server are [ADR-104](ADR-104-the-overseers-actions.md)'s.
 - **Two overseers at once.** The newest holds the channel.
-- **The overseer's port reached from the internet by default.** A token in a file is too weak for a channel that will be able to stop the server; a stronger authentication would be a decision of its own.
+- **The overseer's port reached from the internet by default.** A token in a file is too weak for a channel that can stop the server; a stronger authentication would be a decision of its own.
 - **A state that says the server is recovering,** while setup replays the command log before the listeners exist.
 - **The game's messages carrying anything for the overseer.** Its messages are its own, and only their layout's hash ties the two.

@@ -261,3 +261,34 @@ The documentation reconciliation of 2026-10-25 checked every ADR and every desig
 - **R10, the thin margins against a raid.** Judged in the owner's next playtest against the AI's raids, which the playtest log carries; the numbers stand until then.
 
 **The lesson.** Eight of the ten were kept as the code has them. The two that change something, R6 and R7, were the HUD assuming the player is seat 1 and sees only its own structures: assumptions of a skirmish that a world with seats broke. A clause that leaves a question "to the owner" is a gate, and belongs in a gate table, where `OpenDecisions.md` lists it, and not only in an ADR's Consequences.
+
+## 2026-10-29 — The overseer: a console for the dedicated server
+
+The overseer plan ran from 2026-10-27 to 2026-10-29, from the owner's request of 2026-10-27 for a management console of the dedicated server. Its proposal and its plan are cited as they stood at commit `21ba45a`, the merge of #166. It delivered six milestones in six pull requests, OV1 in #143, OV2 in #156, OV3 in #161, OV4 in #162, OV5 in #165 and OV6 in #166, and closed on 2026-10-29 with every one of its twelve gates, D1 to D12, decided and every task merged.
+
+**What it built.** A universe's server now measures what it did not keep: the minute's longest tick and its dropped ticks, each seat's orders, refusals and bytes in its hour, every join and every link's end, and each save's write (ADR-082). It keeps a channel of its own for one overseer, beside the game's listener, on the loopback unless the owner opens it, guarded by the token in `Overseer.json`, over which it sends a welcome with the day's records, `Health` once a second, the universe's view twice a second in full sight or a seat's own, the universe log as it is written, and `Closing` (ADR-101). `OutpostOverseer` is a windowed executable of its own, drawn on the canvas in the game's look, whose overview has the header's states, the tiles, the map, what needs attention, the seat table, who played over the day and the log, with the server and seat windows over it (ADR-103). Its actions, Save now, Stop, Drop link and New token, act on the server and never on the simulation, the universe log writing each (ADR-104). Game §session.overseer is the overseer as built.
+
+**What changed from the proposal.**
+
+- **`Health` carries each tick's time,** not the second's percentiles, so that the overseer takes any percentile over any window.
+- **The lanes' records became the day's records,** since a seat's joins and hours and the server's long and dropped ticks came to ride the welcome beside them (gate D8).
+- **The tiles are five, not six;** a seat's color marks its row with a bar, its words staying in the text's color for contrast; and the log shows its newest records first.
+- **The picked seat's action bar stands at the seat table's foot,** not under its row as gate D10 had it, since the canvas's table has no room between its rows; and one seat window shows the seat last opened.
+- **One message for the four actions,** with its kind, rather than one an action; the actions are asked only of a Running server, since the server's thread carries each out between two ticks; and a dropped link is a `join` record of its own.
+- **The map is one system's sector map,** all a universe has until the galaxy.
+
+**ADRs.** ADR-101 (the overseer's channel), ADR-103 (the overseer application) and ADR-104 (its actions) came of the plan. ADR-002, ADR-004, ADR-006, ADR-060, ADR-078, ADR-079, ADR-082 and ADR-100 were edited in place for it.
+
+**Left undone or deferred, and where it went.**
+
+- **The owner's runs of the overseer,** of OV3 to OV6, were never made: no milestone was run against a running universe, nor built in Release or for ARM64, the development machine's platform. [PlaytestLog.md](PlaytestLog.md) holds them, the overseer's actions apart from the rest.
+- **The overseer's part of a tick** is not measured against the tick's budget, nor the overseer's own memory over an hour of `Health`. The first is a row of [Budgets.md](../Budgets.md) and of the playtest log's measurements; the second is in the owner's run.
+- **The galaxy view of the map** goes with the galaxy: the Horizon plan's milestone 45, the client's galaxy, holds it.
+- **The seats past two are drawn in the overseer's own palette** until the friends' seats decide their colors, which is gate F1 of the Horizon plan.
+- **Foreclosed:** an overseer that changes the simulation, two overseers at once, and the overseer's port reached from the internet by default (ADR-101); and a web page, which would reopen ADR-001 and R14.
+
+**The lessons.**
+
+- **A run a plan names belongs in the playtest log as it is named.** The overseer's owner runs lived only on the plan's board, as "awaiting the owner's run", from OV3 on, and reached the Outstanding table only as the plan closed. The board is a plan's status; the log is where a run to come is kept.
+- **The container's library is not MSVC's.** clang-tidy against MSVC's library found defects in OV3, OV4 and OV5 that clang-tidy against libstdc++ did not, and a log written on Windows ended its lines with a carriage return the container never writes. CI's MSVC run is the check of record for anything a library or a platform decides.
+- **A description is a claim.** #166's description, as first written, ticked a Release build and a run of the executable that nobody made, and named tests that do not exist; it was rewritten from what was run before the pull request merged. A pull request's verification is written from the runs, not from the template.
