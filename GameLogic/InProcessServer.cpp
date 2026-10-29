@@ -522,10 +522,14 @@ void Outpost::InProcessServer::RunTick()
   std::vector<std::string> silent;
   if (m_listener)
     silent = m_listener->Sweep(HELLO_TIMEOUT, static_cast<std::uint64_t>(CloseReason::MalformedMessage));
-  // And the overseer's, whose comings and goings the universe's log writes (ADR-101).
+  // And the overseer's, whose comings and goings the universe's log writes (ADR-101), with the actions it asked for (ADR-104).
   std::vector<OverseerRecord> overseen;
+  std::vector<OverseerAct> acts;
   if (m_overseer)
+  {
     overseen = m_overseer->Sweep();
+    acts = m_overseer->TakeActs();
+  }
   std::vector<Command> commands;
   for (Connection& connection : m_connections)
   {
@@ -564,8 +568,14 @@ void Outpost::InProcessServer::RunTick()
     m_folder->Log(m_simulation.CurrentTick(), commands);
   // A refused command changes nothing, and its player hears why in its snapshot (ADR-094).
   (void)m_simulation.Tick(commands, &m_profiler);
-  if (m_folder && m_simulation.CurrentTick() % (std::uint64_t{UNIVERSE_SAVE_SECONDS} * TicksPerSecond()) == 0)
+  // The overseer's actions never reach the simulation (ADR-104). A save it asks for is the tick's, as one due is.
+  bool saveAsked = false;
+  for (const OverseerAct& act : acts)
+    saveAsked = Act(act.action, saveAsked) || saveAsked;
+  if (m_folder && (saveAsked || m_simulation.CurrentTick() % (std::uint64_t{UNIVERSE_SAVE_SECONDS} * TicksPerSecond()) == 0))
     SaveUniverse();
+  if (saveAsked)
+    m_askedSaveTick = m_simulation.CurrentTick();
 
   // The players the server hosts, and the snapshot each answers once every player has been sent its own.
   struct HostedTurn
@@ -672,8 +682,21 @@ void Outpost::InProcessServer::RunTick()
         m_log->Joined(m_simulation.CurrentTick(), join);
       for (const OverseerRecord& record : overseen)
         m_log->Oversaw(m_simulation.CurrentTick(), record);
+      for (const OverseerAct& act : acts)
+        m_log->Acted(m_simulation.CurrentTick(), act);
       for (const WrittenSave& written : m_folder->TakeWritten())
+      {
         m_log->Written(written.tick, written.write);
+        // The overseer hears of the save it asked for once it is written.
+        if (written.tick == m_askedSaveTick && m_overseer)
+        {
+          m_overseer->SendResult({.action = OverseerAction::SaveNow,
+                                  .done = true,
+                                  .wordsUtf8 = std::format("Saved at tick {}, written in {:.1f} ms.", written.tick,
+                                                           static_cast<double>(written.write.count()) / 1000.0)});
+          m_askedSaveTick.reset();
+        }
+      }
       std::vector<SeatTick> seats;
       seats.reserve(prepared.size());
       for (const Prepared& seat : prepared)
@@ -908,6 +931,96 @@ void Outpost::InProcessServer::SaveUniverse()
     m_log->Saved(m_simulation.CurrentTick(), bytes, encode);
   // The universe's folder keeps the commands from here on.
   m_commandLog.clear();
+}
+
+bool Outpost::InProcessServer::Act(const ActionMessage& _action, bool _saveAsked)
+{
+  const auto answer = [&](bool _done, std::string _words)
+  { m_overseer->SendResult({.action = _action.action, .seat = _action.seat, .done = _done, .wordsUtf8 = std::move(_words)}); };
+  switch (_action.action)
+  {
+  case OverseerAction::SaveNow:
+    // One save asked for at a time: the next waits until the folder has written it.
+    if (m_askedSaveTick.has_value() || _saveAsked)
+    {
+      answer(false,
+             std::format("The save asked for at tick {} is still being written.", m_askedSaveTick.value_or(m_simulation.CurrentTick())));
+      return false;
+    }
+    return true;
+  case OverseerAction::Stop:
+    m_stopAsked.store(true);
+    answer(true, "The server is stopping.");
+    return false;
+  case OverseerAction::DropLink:
+  case OverseerAction::NewToken:
+    break;
+  }
+  // The link took only a player's seat of the universe's (OverseerLink::MayAsk).
+  const auto seat = std::ranges::find_if(m_connections, [&_action](const Connection& _connection)
+                                         { return _connection.seat && _connection.player == _action.seat; });
+  if (seat == m_connections.end())
+  {
+    answer(false, std::format("Player {} has no seat here.", _action.seat.value));
+    return false;
+  }
+  if (_action.action == OverseerAction::DropLink)
+  {
+    if (!DropLink(*seat, _action.deputyAtOnce))
+      answer(false, std::format("Seat {} has no link to drop.", _action.seat.value));
+    else if (_action.deputyAtOnce)
+      answer(true, std::format("Seat {}'s link dropped; its deputy plays it now.", _action.seat.value));
+    else
+      answer(true, std::format("Seat {}'s link dropped; its deputy plays it in {} s unless its player joins again.", _action.seat.value,
+                               DEPUTY_DELAY_SECONDS));
+    return false;
+  }
+  // A new token: written into the universe's files first, so that the server takes it only once they hold it, and then the
+  // link of whoever joined with the old one dropped, the seat's deputy playing it at once (owner, 2026-10-28).
+  if (!m_listener)
+  {
+    answer(false, "The server takes no player over QUIC.");
+    return false;
+  }
+  const SeatToken token = NewSeatToken();
+  std::filesystem::path joinFile;
+  try
+  {
+    joinFile = WriteSeatToken(m_universeFolder, _action.seat, token, m_listener->Certificate());
+  }
+  catch (const Neuron::Exception& error)
+  {
+    answer(false, error.what());
+    return false;
+  }
+  {
+    const std::scoped_lock lock(m_seatMutex);
+    seat->token = token;
+  }
+  (void)DropLink(*seat, true);
+  const std::u8string file = joinFile.u8string();
+  answer(true, std::format("Seat {} has a new token, and its join file is written again: {}", _action.seat.value,
+                           std::string(reinterpret_cast<const char*>(file.data()), file.size())));
+  return false;
+}
+
+bool Outpost::InProcessServer::DropLink(Connection& _connection, bool _deputyAtOnce)
+{
+  std::shared_ptr<Neuron::QuicChannel> quic;
+  std::uint32_t takings = 0;
+  {
+    const std::scoped_lock lock(m_seatMutex);
+    quic = _connection.quic;
+    takings = _connection.takings;
+  }
+  if (!quic || quic->HasGone())
+    return false;
+  // The server closed it itself, so the tick that sees it gone writes nothing more of it.
+  KeepJoin({.outcome = JoinOutcome::Dropped, .player = _connection.player, .address = quic->PeerAddress()});
+  quic->Shutdown(static_cast<std::uint64_t>(CloseReason::DroppedByOwner));
+  if (_connection.control.has_value())
+    _connection.control->Dropped(m_simulation.CurrentTick(), takings, _deputyAtOnce);
+  return true;
 }
 
 Outpost::ServerAddress Outpost::InProcessServer::Oversee(const OverseerDesc& _desc, std::vector<OverseerSeat> _seats)

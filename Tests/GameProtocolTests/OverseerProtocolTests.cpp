@@ -106,6 +106,11 @@ public:
     AssertCrosses(Outpost::ClosingMessage{.ending = Outpost::ServerEnding::Failed, .messageUtf8 = "a failure", .lastSaveTick = 12});
     AssertCrosses(Outpost::WatchSightMessage{.seat = Outpost::PlayerId{2}});
     AssertCrosses(Outpost::ViewHeldMessage{.tick = 0x1'0000'0013ull});
+    AssertCrosses(Outpost::ActionMessage{.action = Outpost::OverseerAction::DropLink, .seat = Outpost::PlayerId{2}, .deputyAtOnce = true});
+    AssertCrosses(Outpost::ActionResultMessage{.action = Outpost::OverseerAction::NewToken,
+                                               .seat = Outpost::PlayerId{3},
+                                               .done = true,
+                                               .wordsUtf8 = "Seat 3's join file: Join3.json"});
 
     // A few fields read back, so that a message that crossed as some other one would show.
     const auto health = Decoded<Outpost::HealthMessage>(Outpost::EncodeOverseerMessage(FullHealth()));
@@ -125,6 +130,14 @@ public:
     Assert::AreEqual(std::uint64_t{1'200}, decodedWelcome.recoveredSaveTick.value_or(0));
     Assert::AreEqual(std::uint32_t{60}, decodedWelcome.saveSeconds);
     Assert::IsTrue(decodedWelcome.dayRecords == welcome.dayRecords, L"the day's records");
+    const auto action = Decoded<Outpost::ActionMessage>(Outpost::EncodeOverseerMessage(
+      Outpost::ActionMessage{.action = Outpost::OverseerAction::DropLink, .seat = Outpost::PlayerId{2}, .deputyAtOnce = true}));
+    Assert::IsTrue(action.action == Outpost::OverseerAction::DropLink && action.seat == Outpost::PlayerId{2} && action.deputyAtOnce,
+                   L"an action");
+    const auto result = Decoded<Outpost::ActionResultMessage>(Outpost::EncodeOverseerMessage(
+      Outpost::ActionResultMessage{.action = Outpost::OverseerAction::Stop, .done = true, .wordsUtf8 = "The server is stopping."}));
+    Assert::IsTrue(result.action == Outpost::OverseerAction::Stop && result.done, L"what came of one");
+    Assert::AreEqual(std::string("The server is stopping."), result.wordsUtf8);
   }
 
   TEST_METHOD(ReadsAHelloOfAnotherBuildBeforeItDecodes)

@@ -182,9 +182,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       const std::uint32_t width = renderer->WidthPixels();
       const std::uint32_t height = renderer->HeightPixels();
       screen.Input(input);
-      // The seat whose sight the owner picked, which the server sends from here on.
+      // The seat whose sight the owner picked, which the server sends from here on, and the actions the owner asked for.
       if (const std::optional<Outpost::PlayerId> sight = screen.TakeSight())
         client.Watch(*sight);
+      for (const Outpost::ActionMessage& action : screen.TakeActions())
+        client.Act(action);
       // The overview is laid out with the fonts at its scale, which the atlas is rasterized at first when it moves.
       const float scale = Outpost::Hud::Scale(width, height);
       ui.UseScale(scale);

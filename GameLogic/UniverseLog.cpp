@@ -105,6 +105,8 @@ std::string JoinWords(const Outpost::JoinRecord& _join)
     return std::format("gone {} closed {}", player, _join.code);
   case Outpost::JoinOutcome::Lost:
     return std::format("gone {} lost", player);
+  case Outpost::JoinOutcome::Dropped:
+    return std::format("gone {} dropped", player);
   }
   return "refused malformed";
 }
@@ -289,6 +291,27 @@ void Outpost::UniverseLog::Joined(std::uint64_t _tick, const JoinRecord& _join)
 void Outpost::UniverseLog::Oversaw(std::uint64_t _tick, const OverseerRecord& _record)
 {
   Write(std::format("overseer {} {} from {}", _tick, OverseerWords(_record.outcome), _record.address.empty() ? "-" : _record.address));
+}
+
+void Outpost::UniverseLog::Acted(std::uint64_t _tick, const OverseerAct& _act)
+{
+  std::string what;
+  switch (_act.action.action)
+  {
+  case OverseerAction::SaveNow:
+    what = "save";
+    break;
+  case OverseerAction::Stop:
+    what = "stop";
+    break;
+  case OverseerAction::DropLink:
+    what = std::format("drop player {} deputy {}", _act.action.seat.value, _act.action.deputyAtOnce ? "now" : "later");
+    break;
+  case OverseerAction::NewToken:
+    what = std::format("token player {}", _act.action.seat.value);
+    break;
+  }
+  Write(std::format("overseer {} {} from {}", _tick, what, _act.address.empty() ? "-" : _act.address));
 }
 
 void Outpost::UniverseLog::Record(std::uint64_t _tick, std::span<const SeatTick> _seats)

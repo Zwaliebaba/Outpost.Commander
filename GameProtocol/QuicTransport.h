@@ -32,7 +32,8 @@ private:
 };
 
 // Whether a universe's connection that went as _error says is joined again with the same seat (ADR-078 decision 10):
-// unless the server closed it as Finished, WrongVersion, SeatRefused or SeatTaken, which joining again would not change.
+// unless the server closed it as Finished, WrongVersion, SeatRefused, SeatTaken or DroppedByOwner, which joining again would not
+// change or the server's owner meant to end (ADR-104).
 [[nodiscard]] bool MayJoinAgain(const std::exception& _error) noexcept;
 
 // A client's connection to the server over QUIC (ADR-004, ADR-060): its commands go out as WireFormat's messages, and the

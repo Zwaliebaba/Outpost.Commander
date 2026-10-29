@@ -72,6 +72,12 @@ void Outpost::OverseerClient::Watch(PlayerId _seat)
     m_channel->Send(EncodeOverseerMessage(WatchSightMessage{.seat = m_sight}));
 }
 
+void Outpost::OverseerClient::Act(const ActionMessage& _action)
+{
+  if (m_channel)
+    m_channel->Send(EncodeOverseerMessage(_action));
+}
+
 void Outpost::OverseerClient::Drop(std::string _why, std::chrono::steady_clock::time_point _now)
 {
   m_channel.reset();

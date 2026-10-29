@@ -1,6 +1,6 @@
 # Outpost Commander — The Universe Overseer
 
-Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D10, of which D1 and D4 to D10 are decided
+Status: **open** · From the owner's request of 2026-10-27 to start building [the overseer's proposal](UniverseOverseer.md) · Its gates are the proposal's, D1 to D12, every one of them decided
 
 The overseer is the dedicated server's management console: a separate application, with a channel of its own to the server, that oversees the whole universe (Game §session.server). What it shows, how it reaches the server and what the server has to measure for it are [the proposal](UniverseOverseer.md)'s. This plan is the order the work is done in. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -35,12 +35,12 @@ Task numbers carry the prefix OV, and the gates are the proposal's, lettered D.
 | OV4.1 | Twenty-four hours of the lanes' records at the welcome | OV3 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162) |
 | OV4.2 | Needs attention and who played | OV4.1 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162); awaiting the owner's run |
 | OV4.3 | The map: one system's sectors, full sight and a seat's | OV3 | — | merged, [#162](https://github.com/Zwaliebaba/Outpost.Commander/pull/162); awaiting the owner's run |
-| OV5.1 | A day of the windows' records at the welcome, and each away seat's report | OV4 | D8, D9 | built, on OV5's branch |
-| OV5.2 | The header states | OV4 | — | built, on OV5's branch; awaiting the owner's run |
-| OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | built, on OV5's branch; awaiting the owner's run |
-| OV5.4 | The seat window | OV5.3 | D8, D9, D10 | built, on OV5's branch; awaiting the owner's run |
-| OV6.1 | Save now and Stop | OV5 | — | todo |
-| OV6.2 | Drop link and New token | OV6.1 | D2, D3 | todo |
+| OV5.1 | A day of the windows' records at the welcome, and each away seat's report | OV4 | D8, D9 | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165) |
+| OV5.2 | The header states | OV4 | — | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
+| OV5.3 | The overseer's windows, and the server window | OV5.1 | D10 | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
+| OV5.4 | The seat window | OV5.3 | D8, D9, D10 | merged, [#165](https://github.com/Zwaliebaba/Outpost.Commander/pull/165); awaiting the owner's run |
+| OV6.1 | The actions' messages, Save now and Stop | OV5 | D11, D12 | done |
+| OV6.2 | Drop link and New token | OV6.1 | D2, D3, D12 | done |
 
 ### Milestone order
 
@@ -330,8 +330,42 @@ What the overseer lacks after OV4: the server's state told whole in the header, 
 
 ---
 
-## Later milestones
+## Milestone OV6 — The actions
 
-Each is laid out task by task when the one before it is merged, and its gates are decided.
+What the overseer does on the server, which never reaches the simulation (the proposal's §7): Save now and Stop, then Drop link and New token. One PR, laid out once OV5 merged and the owner decided gates D2, D3, D11 and D12 (owner, 2026-10-28). It is the plan's last milestone.
 
-- **OV6 — The actions:** Save now and Stop, then Drop link and New token as gates D2 and D3 decide.
+### OV6.1 — The actions' messages, Save now and Stop
+
+- **Proposal:** §3, the header; §4, the actions and `ActionResult`.
+- **Scope:**
+  - **The actions are messages of the overseer's own** (`OverseerProtocol.h`): `SaveNow`, `Stop`, `DropLink` and `NewToken` from the overseer, each no longer than the overseer's limit, and `ActionResult` from the server, done or refused and why. The overseer's layout changes, and so its hash, which refuses an overseer of another build; the game's messages do not.
+  - **Save now:** the server's thread saves at its next tick, as it saves each minute, and answers once the folder's thread has written it, or refuses while a save it was asked for is still being written.
+  - **Stop:** the main thread stops the server as Ctrl+C does, at most a second after it is asked, and `Closing` says the owner stopped it.
+  - **The universe log writes each action** (gate D12): an `overseer` record of what was asked, as it writes the overseer's comings and goings (gate D4).
+  - **The header's Save now and Stop beside Server** (gate D10). Stop opens a window that says what stopping does, with Stop and Keep running (gate D11). The latest action's result is told under the header's state.
+- **ADR:** a new ADR for the overseer's actions; [ADR-101](../ADR/ADR-101-the-overseers-channel.md) decisions 3, 4 and 8; [ADR-082](../ADR/ADR-082-universe-log-and-universe-run.md) decision 1, the records; [ADR-103](../ADR/ADR-103-the-overseer-application.md) decision 7.
+- **Acceptance:** `OverseerProtocolTests` with the actions; `UniverseLogTests` with the actions' records; the server's Save now and Stop, from a server stepped by hand and over QUIC in `OverseerLinkTests`; `OverseerModelTests` with an action's result; `OverseerScreenTests`: the buttons, Stop's window and its two answers, the result under the header, and the guards.
+- **Verify:** the checkers; the container's tests; CI's Debug|x64 run for the QUIC tests; the owner's run.
+
+### OV6.2 — Drop link and New token
+
+- **Proposal:** §4, the actions; gates D2 and D3.
+- **Scope:**
+  - **Drop link** (gate D3): the server closes the seat's connection with a new close reason of the game's, `DroppedByOwner`, which the game does not join again after: it goes back to its menu saying the server's owner closed the connection. The seat's deputy takes it at once, or after ADR-079's minute, as the owner picks.
+  - **New token** (gate D2): the server makes the seat's token afresh, writes it into `Universe.json`, to a new file renamed into place as a save is, writes the seat's join file again, and drops the seat's link, its deputy taking it at once, so that whoever joined with the old file is gone with it (owner, 2026-10-28). The listener takes the new token from then on.
+  - **The picked seat's action bar** gains Drop link and New token, for a player's seat. Drop link opens a window with the deputy's choice; New token opens one that says the old join file stops joining and where the new one is written.
+- **ADR:** the overseer's actions; [ADR-078](../ADR/ADR-078-dedicated-server.md) decisions 2 and 10; [ADR-060](../ADR/ADR-060-quic-in-process.md)'s close reasons where they are listed; ADR-103 decision 7.
+- **Acceptance:** the game's close reasons with `DroppedByOwner` and its rejoin rule; `UniverseSettingsTests`, a seat's token written back; the server's Drop link, both ways, and New token over QUIC, the old token refused and the new one taken; `OverseerScreenTests`: the action bar's buttons and their windows, and the guards.
+- **Verify:** the checkers; the container's tests; CI's Debug|x64 run for the QUIC tests; the owner's run against a running universe.
+
+### As built
+
+- **One message for the four actions,** `ActionMessage` with the action's kind, and one answer, `ActionResultMessage`, rather than the proposal's message an action: the four share every field but Drop link's deputy choice.
+- **Every action is carried out by the server's thread between two ticks,** Stop included: it marks the server asked, and the main thread stops it at its next second's look, so the log writes the stop at the tick it was carried out. A Stalled server carries out none, so the overseer asks for them only while the header says Running, a guard the gates did not name.
+- **A dropped link is a `join` record of its own,** `gone player <p> dropped`, a ninth `JoinOutcome`, so that the server window's joins and the seat window's time down count it beside the `overseer` record of what was asked.
+- **Drop link is dimmed unless the newest `Health` says the seat's link is online,** and the server refuses one with no link open.
+- **New token's window says the join file is in the universe's folder** rather than naming its path: the file's name is `GameLogic`'s (`JoinFileName`), which the overseer does not include (ADR-002); the answer names the path the server wrote.
+- **One confirm window,** which shows the action last asked for, rather than a window each.
+- **The acceptance's names as built:** `OverseerProtocolTests.CarriesEveryMessageAsItWasSent`, with an action and its answer; `UniverseLogTests.WritesTheOverseersActions`; `SeatControllerTests.ALinkTheOwnerDroppedHandsTheSeatOverAsPicked`; `UniverseSettingsTests.WritesASeatsTokenBack`; `QuicTransportTests`, `DroppedByOwner` among the closes not joined again; `OverseerLinkTests.SavesNowWhenAsked`, `SavesOneAskedSaveAtATime`, `StopsWhenAsked`, `RefusesAnActionThatNamesWhatItMayNot`, `DropsASeatsLinkAsTheOwnerPicks` and `GivesASeatANewToken`; `OverseerModelTests.KeepsTheLatestActionsResult`; and `OverseerScreenTests.AsksForSaveNowAndStop`, `AsksNothingOfAServerThatDoesNotRun`, `TellsWhatCameOfTheLatestAction` and `AsksToDropALinkAndForANewToken`, with `HoldsTheLayoutAndContrastGuards` run with Drop link's window open.
+- **Run in the container:** the server's suites and `GameAppTests` pass on the clang 18 harnesses, but the QUIC tests, which compile there without running; `HudTests.LaysOutTheOrdersWindow` and `KeepsEveryTextInsideItsPanel` fail there on the stand-in fonts, on `main` alone as on this branch. The overview's display list at 1920×1080 with Stop's window and with Drop link's window open, written out as an image with the stand-in fonts, shows each window in the middle of the screen over the overview, the header's buttons beside Server, a refusal wrapped under the state, and the action bar's buttons.
+- **Not run in the container:** the QUIC tests, the executables, and the guards with the fonts Windows installs. CI's run 734, of `e2c745a`, OV6.1, passed all six jobs, the QUIC tests among them.

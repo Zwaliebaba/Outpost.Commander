@@ -17,6 +17,14 @@ bool Outpost::SeatController::DeputyPlays(std::uint64_t _tick, std::uint32_t _ta
   {
     m_goneTaking = _takings;
     m_goneTick = _tick;
+    m_atOnce = false;
   }
-  return _tick >= m_goneTick + m_delayTicks;
+  return m_atOnce || _tick >= m_goneTick + m_delayTicks;
+}
+
+void Outpost::SeatController::Dropped(std::uint64_t _tick, std::uint32_t _takings, bool _deputyAtOnce) noexcept
+{
+  m_goneTaking = _takings;
+  m_goneTick = _tick;
+  m_atOnce = _deputyAtOnce;
 }

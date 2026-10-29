@@ -19,7 +19,7 @@ A deputy is a keeper, not a player (owner, 2026-10-08): it keeps as many Constru
    - the player, while its newest connection is open, and for `DEPUTY_DELAY_SECONDS` (60 s) of ticks after the server sees that connection gone (`QuicChannel::HasGone`);
    - the deputy after that, until the player takes the seat again, which hands it back at once.
 
-   A connection that closes is seen gone at once. One whose client vanished is seen gone when MsQuic's idle timeout ends it; the game sets no idle timeout of its own.
+   A connection that closes is seen gone at once. One whose client vanished is seen gone when MsQuic's idle timeout ends it; the game sets no idle timeout of its own. A link the server's owner drops from the overseer is the deputy's as soon as it is seen gone when the owner picks that, as it always is when the seat is given a new token, and otherwise after the delay from the drop (`SeatController::Dropped`, [ADR-104](ADR-104-the-overseers-actions.md) decisions 6 and 7).
 5. **A snapshot shows its owner each ship's order** (`EntityView::order`; `ShipOrder`, in `GameProtocol`), which is how a deputy tells an idle ship from a busy one. A save keeps the enemy entities each player remembers as `EntityView`s, so they are part of the state's layout (AGENTS.md R18, [ADR-077](ADR-077-universe-state-on-disk.md)).
 6. **The deputy is a keeper** (`Deputy`, in `Opponent`; owner, 2026-10-08). It decides once a second while it plays, and uses the Normal AI's settings for its research order and how long a defence holds.
    - **Research.** A Lab with a slot free takes the next topic of the AI's research order, then any topic it can take.

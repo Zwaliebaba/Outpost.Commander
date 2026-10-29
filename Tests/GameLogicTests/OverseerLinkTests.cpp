@@ -2,6 +2,8 @@
 #include "RepositoryData.h"
 #include "UniverseMatch.h"
 
+#include <charconv>
+#include <functional>
 #include <sstream>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -30,7 +32,8 @@ public:
 };
 
 // A universe's server, as the dedicated server sets one up (ADR-078): seat 1 a player's, open, with a deputy, and seat 2 an
-// AI empire's; and its overseer's link on the loopback, with _token.
+// AI empire's, as the folder's Universe.json says, which New token writes seat 1's token back into (ADR-104); and its
+// overseer's link on the loopback, with _token.
 struct Universe
 {
   std::unique_ptr<Outpost::InProcessServer> server;
@@ -40,8 +43,14 @@ struct Universe
 
 Universe OverseenUniverse(const std::filesystem::path& _folder, const Outpost::SeatToken& _token)
 {
+  const Outpost::UniverseSettings settings{.seed = 5,
+                                           .seats = {{.player = BLUE, .token = Outpost::NewSeatToken()}, {.player = RED, .ai = "Normal"}}};
+  {
+    std::ofstream file(_folder / Outpost::UNIVERSE_SETTINGS_FILE, std::ios::binary);
+    file << Outpost::WriteUniverseSettings(settings);
+  }
   Universe universe{.server = Outpost::CreateUniverseServer({.seed = 5, .quic = true, .universe = _folder})};
-  universe.seat = universe.server->OpenSeat(BLUE, Outpost::NewSeatToken());
+  universe.seat = universe.server->OpenSeat(BLUE, settings.seats[0].token);
   universe.server->Host(BLUE, std::make_unique<Idle>());
   universe.server->Host(RED, std::make_unique<Idle>());
   universe.overseer = universe.server->Oversee({.token = _token}, {{.player = BLUE}, {.player = RED, .ai = "Normal"}});
@@ -80,6 +89,27 @@ public:
       }
       Assert::IsTrue(std::chrono::steady_clock::now() < deadline, L"the server's message came in time");
       for (std::vector<std::byte>& bytes : m_channel->Receive(100ms))
+        m_pending.push_back(std::move(bytes));
+    }
+  }
+
+  // The next message of the server's that is a T, those before it passed over, from a server stepped by hand: _server steps a
+  // tick between each look, for 10 s at most.
+  template <typename T> T NextStepping(Outpost::InProcessServer& _server)
+  {
+    const auto deadline = std::chrono::steady_clock::now() + 10s;
+    while (true)
+    {
+      while (!m_pending.empty())
+      {
+        Outpost::OverseerMessage message = Outpost::DecodeOverseerMessage(m_pending.front());
+        m_pending.pop_front();
+        if (auto* found = std::get_if<T>(&message))
+          return std::move(*found);
+      }
+      Assert::IsTrue(std::chrono::steady_clock::now() < deadline, L"the server's message came in time");
+      _server.Step();
+      for (std::vector<std::byte>& bytes : m_channel->Receive(10ms))
         m_pending.push_back(std::move(bytes));
     }
   }
@@ -126,6 +156,71 @@ private:
   std::deque<std::vector<std::byte>> m_pending;
   Outpost::HeldStates m_held;
 };
+
+// What _path holds.
+std::string ReadText(const std::filesystem::path& _path)
+{
+  std::ifstream file(_path, std::ios::binary);
+  return {std::istreambuf_iterator<char>(file), {}};
+}
+
+// The reason the server closed _player's connection with, none when it went otherwise, and the words it went with, waiting at
+// most 10 s for it to go.
+std::pair<std::optional<Outpost::CloseReason>, std::string> HowItWent(Outpost::Transport& _player)
+{
+  const auto deadline = std::chrono::steady_clock::now() + 10s;
+  while (std::chrono::steady_clock::now() < deadline)
+  {
+    try
+    {
+      (void)_player.Receive();
+      std::this_thread::sleep_for(10ms);
+    }
+    catch (const Outpost::ServerClosed& closed)
+    {
+      return {closed.Reason(), closed.what()};
+    }
+    catch (const Neuron::Exception& error)
+    {
+      return {std::nullopt, error.what()};
+    }
+  }
+  return {std::nullopt, {}};
+}
+
+// _seat's Health, reported once a second from the test's thread as the server's main thread reports it, once _holds says it
+// holds what is waited for, or as last heard after 10 s.
+Outpost::SeatHealth SeatOnce(Outpost::InProcessServer& _server, Overseer& _overseer, Outpost::PlayerId _seat,
+                             const std::function<bool(const Outpost::SeatHealth&)>& _holds)
+{
+  Outpost::SeatHealth seat;
+  const auto deadline = std::chrono::steady_clock::now() + 10s;
+  while (std::chrono::steady_clock::now() < deadline)
+  {
+    std::this_thread::sleep_for(1s);
+    _server.Report({});
+    const Outpost::HealthMessage health = _overseer.Next<Outpost::HealthMessage>();
+    if (const auto found = std::ranges::find(health.seats, _seat, &Outpost::SeatHealth::player); found != health.seats.end())
+    {
+      seat = *found;
+      if (_holds(seat))
+        break;
+    }
+  }
+  return seat;
+}
+
+// The tick of the save that _words of Save now's result tell, or none.
+std::optional<std::uint64_t> SavedTick(std::string_view _words)
+{
+  constexpr std::string_view SAVED = "Saved at tick ";
+  if (!_words.starts_with(SAVED))
+    return std::nullopt;
+  _words.remove_prefix(SAVED.size());
+  std::uint64_t tick = 0;
+  const auto [end, error] = std::from_chars(_words.data(), _words.data() + _words.size(), tick);
+  return error == std::errc{} && end != _words.data() ? std::optional(tick) : std::nullopt;
+}
 
 // How many of _log's lines end with _words.
 std::size_t LinesEndingWith(const std::string& _log, std::string_view _words)
@@ -401,6 +496,209 @@ public:
                                   { return _line.starts_with("overseer ") && _line.ends_with(" opened from 127.0.0.1"); });
     }
     Assert::IsTrue(heard, L"a new record as it was written");
+  }
+
+  // ADR-104: Save now saves the universe at the server's next tick, as it saves each minute, and is answered once the folder
+  // has written it; the universe log writes what was asked, and Closing's last save is that one.
+  TEST_METHOD(SavesNowWhenAsked)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    universe.server->Start();
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::SaveNow});
+    const auto result = overseer.Next<Outpost::ActionResultMessage>();
+    Assert::IsTrue(result.action == Outpost::OverseerAction::SaveNow && result.done, Widen(result.wordsUtf8).c_str());
+    const std::uint64_t saved = SavedTick(result.wordsUtf8).value_or(0);
+    Assert::IsTrue(saved > 0, Widen(result.wordsUtf8).c_str());
+    Assert::IsTrue(result.wordsUtf8.ends_with(" ms."), L"and how long it took to write");
+
+    std::string log;
+    const std::vector<std::string> expected{std::format("overseer {} save from 127.0.0.1", saved), std::format("save {} bytes ", saved),
+                                            std::format("written {} write_us ", saved)};
+    Assert::IsTrue(LogHolds(folder.Path(), expected, log), Widen(log).c_str());
+    universe.server->Close(Outpost::ServerEnding::StoppedByOwner, {});
+    Assert::AreEqual(saved, overseer.Next<Outpost::ClosingMessage>().lastSaveTick, L"the universe's last save");
+  }
+
+  // One save asked for at a time: a second, asked for at the same tick, is refused while the first is written, and the first is
+  // answered once it is.
+  TEST_METHOD(SavesOneAskedSaveAtATime)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+
+    // Both have come before the server, stepped by hand, ticks again.
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::SaveNow});
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::SaveNow});
+    std::this_thread::sleep_for(1s);
+    const auto refused = overseer.NextStepping<Outpost::ActionResultMessage>(*universe.server);
+    Assert::IsFalse(refused.done, Widen(refused.wordsUtf8).c_str());
+    Assert::IsTrue(refused.wordsUtf8.contains("still being written"), Widen(refused.wordsUtf8).c_str());
+    const auto saved = overseer.NextStepping<Outpost::ActionResultMessage>(*universe.server);
+    Assert::IsTrue(saved.done, Widen(saved.wordsUtf8).c_str());
+    Assert::AreEqual(std::uint64_t{1}, SavedTick(saved.wordsUtf8).value_or(0), L"the first tick stepped");
+  }
+
+  // ADR-104: Stop has the server say it is stopping, for the thread that started it to stop it as Ctrl+C does, and the universe
+  // log writes what was asked.
+  TEST_METHOD(StopsWhenAsked)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+    Assert::IsFalse(universe.server->StopAsked());
+
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::Stop});
+    const auto result = overseer.NextStepping<Outpost::ActionResultMessage>(*universe.server);
+    Assert::IsTrue(result.action == Outpost::OverseerAction::Stop && result.done, Widen(result.wordsUtf8).c_str());
+    Assert::IsTrue(universe.server->StopAsked(), L"the server asked to stop");
+    std::string log;
+    const std::vector<std::string> expected{" stop from 127.0.0.1"};
+    Assert::IsTrue(LogHolds(folder.Path(), expected, log), Widen(log).c_str());
+  }
+
+  // An action that names what it may not, a seat for Stop or an AI empire's seat for Drop link, is no message of an overseer's.
+  TEST_METHOD(RefusesAnActionThatNamesWhatItMayNot)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    universe.server->Start();
+    const auto refused = [&universe, &token](const Outpost::ActionMessage& _action)
+    {
+      Overseer overseer(universe.overseer);
+      overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+      (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+      overseer.Say(_action);
+      return overseer.CloseCode();
+    };
+    const std::uint64_t malformed = static_cast<std::uint64_t>(Outpost::OverseerCloseReason::MalformedMessage);
+    Assert::AreEqual(malformed, refused({.action = Outpost::OverseerAction::Stop, .seat = BLUE}));
+    Assert::AreEqual(malformed, refused({.action = Outpost::OverseerAction::DropLink, .seat = RED}));
+    Assert::AreEqual(malformed, refused({.action = Outpost::OverseerAction::NewToken}));
+    Assert::IsFalse(universe.server->StopAsked());
+  }
+
+  // ADR-104: Drop link closes the seat's connection with DroppedByOwner, which the game is told and does not join again after,
+  // and its deputy takes the seat at once or after its minute, as the owner picked; with no link there is nothing to drop. The
+  // universe log writes what was asked, and the link's end.
+  TEST_METHOD(DropsASeatsLinkAsTheOwnerPicks)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    universe.server->Start();
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+    const std::string dropped(Outpost::DescribeClose(static_cast<std::uint64_t>(Outpost::CloseReason::DroppedByOwner)).value_or(""));
+
+    {
+      Outpost::QuicTransport blue(universe.seat, BLUE);
+      overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::DropLink, .seat = BLUE, .deputyAtOnce = true});
+      const auto result = overseer.Next<Outpost::ActionResultMessage>();
+      Assert::IsTrue(result.action == Outpost::OverseerAction::DropLink && result.seat == BLUE && result.done,
+                     Widen(result.wordsUtf8).c_str());
+      Assert::AreEqual(std::string("Seat 1's link dropped; its deputy plays it now."), result.wordsUtf8);
+      const auto [reason, why] = HowItWent(blue);
+      Assert::IsTrue(reason == Outpost::CloseReason::DroppedByOwner, Widen(why).c_str());
+      Assert::AreEqual(dropped, why, L"the game is told why");
+      const Outpost::SeatHealth seat = SeatOnce(*universe.server, overseer, BLUE,
+                                                [](const Outpost::SeatHealth& _seat) { return _seat.play == Outpost::SeatPlay::Deputy; });
+      Assert::IsTrue(seat.play == Outpost::SeatPlay::Deputy && seat.link == Outpost::SeatLink::Gone, L"its deputy plays it at once");
+    }
+
+    // Joined again from the menu, and dropped with its deputy after the minute.
+    Outpost::QuicTransport again(universe.seat, BLUE);
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::DropLink, .seat = BLUE});
+    const auto later = overseer.Next<Outpost::ActionResultMessage>();
+    Assert::AreEqual(
+      std::format("Seat 1's link dropped; its deputy plays it in {} s unless its player joins again.", Outpost::DEPUTY_DELAY_SECONDS),
+      later.wordsUtf8);
+    Assert::AreEqual(dropped, HowItWent(again).second);
+    const Outpost::SeatHealth waiting =
+      SeatOnce(*universe.server, overseer, BLUE, [](const Outpost::SeatHealth& _seat) { return _seat.link == Outpost::SeatLink::Gone; });
+    Assert::IsTrue(waiting.play == Outpost::SeatPlay::Player && waiting.deputyTick.has_value(),
+                   L"its player plays it until its deputy's minute is up");
+
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::DropLink, .seat = BLUE, .deputyAtOnce = true});
+    const auto none = overseer.Next<Outpost::ActionResultMessage>();
+    Assert::IsFalse(none.done, Widen(none.wordsUtf8).c_str());
+    Assert::AreEqual(std::string("Seat 1 has no link to drop."), none.wordsUtf8);
+
+    std::string log;
+    const std::vector<std::string> expected{" drop player 1 deputy now from 127.0.0.1", " drop player 1 deputy later from 127.0.0.1",
+                                            " gone player 1 dropped from 127.0.0.1"};
+    Assert::IsTrue(LogHolds(folder.Path(), expected, log), Widen(log).c_str());
+    Assert::AreEqual(std::size_t{2}, LinesEndingWith(log, " gone player 1 dropped from 127.0.0.1"), L"each link's end, once");
+  }
+
+  // ADR-104 (owner, 2026-10-28): New token makes the seat's token afresh and writes it into Universe.json and the seat's join
+  // file, drops whoever held the seat, its deputy playing it at once, and from then on refuses the old token and takes the new.
+  TEST_METHOD(GivesASeatANewToken)
+  {
+    const PackagedHomeDirectory home;
+    const TemporaryFolder folder;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Universe universe = OverseenUniverse(folder.Path(), token);
+    universe.server->Start();
+    Overseer overseer(universe.overseer);
+    overseer.Say(Outpost::OverseerHelloMessage{.token = token});
+    (void)overseer.Next<Outpost::OverseerWelcomeMessage>();
+
+    Outpost::QuicTransport blue(universe.seat, BLUE);
+    overseer.Say(Outpost::ActionMessage{.action = Outpost::OverseerAction::NewToken, .seat = BLUE});
+    const auto result = overseer.Next<Outpost::ActionResultMessage>();
+    Assert::IsTrue(result.done, Widen(result.wordsUtf8).c_str());
+    Assert::IsTrue(result.wordsUtf8.starts_with("Seat 1 has a new token, and its join file is written again: ") &&
+                     result.wordsUtf8.ends_with(Outpost::JoinFileName(BLUE)),
+                   Widen(result.wordsUtf8).c_str());
+    Assert::IsTrue(HowItWent(blue).first == Outpost::CloseReason::DroppedByOwner, L"whoever held the seat dropped");
+
+    const Outpost::JoinTicket ticket = Outpost::ReadJoinTicket(ReadText(folder.Path() / Outpost::JoinFileName(BLUE)));
+    Assert::IsFalse(ticket.address.token == universe.seat.token, L"a token afresh");
+    Assert::IsTrue(ticket.address.certificate == universe.seat.certificate && ticket.player == BLUE, L"in the seat's join file");
+    const Outpost::UniverseSettings settings = Outpost::ReadUniverseSettings(ReadText(folder.Path() / Outpost::UNIVERSE_SETTINGS_FILE));
+    Assert::IsTrue(settings.seats.at(0).token == ticket.address.token, L"and in Universe.json");
+    const Outpost::SeatHealth seat =
+      SeatOnce(*universe.server, overseer, BLUE, [](const Outpost::SeatHealth& _seat) { return _seat.play == Outpost::SeatPlay::Deputy; });
+    Assert::IsTrue(seat.play == Outpost::SeatPlay::Deputy, L"its deputy plays it at once");
+
+    try
+    {
+      Outpost::QuicTransport old(universe.seat, BLUE);
+      Assert::Fail(L"the old token is refused");
+    }
+    catch (const Neuron::Exception& error)
+    {
+      Assert::AreEqual(std::string(Outpost::DescribeClose(static_cast<std::uint64_t>(Outpost::CloseReason::SeatRefused)).value_or("")),
+                       std::string(error.what()));
+    }
+    // The join file names the settings' host and port; the test's server listens on the loopback, on a port the system chose.
+    Outpost::ServerAddress fresh = universe.seat;
+    fresh.token = ticket.address.token;
+    const Outpost::QuicTransport joined(fresh, BLUE);
+
+    std::string log;
+    const std::vector<std::string> expected{" token player 1 from 127.0.0.1", " gone player 1 dropped from 127.0.0.1"};
+    Assert::IsTrue(LogHolds(folder.Path(), expected, log), Widen(log).c_str());
   }
 
   // Closing says how the server ends, with a failure's message and its last save's tick, and the channel then closes; and the

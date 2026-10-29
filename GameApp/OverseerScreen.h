@@ -20,15 +20,16 @@ inline constexpr std::array<DirectX::XMFLOAT4, 6> OVERSEER_SEAT_PALETTE{{{0.1f, 
                                                                          {0.78f, 0.66f, 0.44f, 1.0f},
                                                                          {0.92f, 0.4f, 0.62f, 1.0f}}};
 
-// The overseer's windows, which stand over its overview (ADR-103 decision 7): the server's, and the seat window, which shows
-// the seat last opened.
+// The overseer's windows, which stand over its overview (ADR-103 decision 7): the server's; the seat window, which shows the
+// seat last opened; and the window that asks the owner to confirm an action (ADR-104), the one last asked for.
 enum class OverseerWindow : std::uint8_t
 {
   Server,
-  Seat
+  Seat,
+  Confirm
 };
 
-inline constexpr std::size_t OVERSEER_WINDOW_COUNT = 2;
+inline constexpr std::size_t OVERSEER_WINDOW_COUNT = 3;
 
 // The overseer's overview (ADR-103; Game §session.overseer), built on the canvas in the game's look (ADR-100) and laid out on
 // the 1920×1080 reference frame scaled to the window, as the HUD is (ADR-006 decision 5), from what its model knows: the
@@ -122,6 +123,25 @@ public:
   {
     return m_seatShown;
   }
+
+  // The server's actions (ADR-104), asked only of a running server, as the overview was last laid out: Save now, as the
+  // header's button asks for it; Stop, which the header's button opens the confirm window on; Drop link, for a player's seat
+  // whose link is online, and New token, for a player's seat, which the picked seat's action bar opens the window on; the
+  // deputy's choice in Drop link's window, at once or after DEPUTY_DELAY_SECONDS; and the action the window shows, asked for as
+  // its first button does, which closes it. Closing the window asks for nothing.
+  void SaveNow();
+  void AskToStop();
+  void AskToDropLink(PlayerId _seat);
+  void AskForNewToken(PlayerId _seat);
+  void PickDeputyAtOnce(bool _atOnce) noexcept;
+  void Confirm();
+  [[nodiscard]] const std::optional<ActionMessage>& Confirming() const noexcept
+  {
+    return m_confirming;
+  }
+
+  // The actions the owner asked for since the last call, in order, which the link asks of the server.
+  [[nodiscard]] std::vector<ActionMessage> TakeActions();
   void FilterLog(LogFilter _filter);
 
   // The sight the owner picked since the last call, which the link tells the server: a seat's, or full sight with no player;
@@ -160,6 +180,14 @@ private:
   std::array<std::size_t, OVERSEER_WINDOW_COUNT> m_windowLayers{};
   std::array<Neuron::CanvasPoint, OVERSEER_WINDOW_COUNT> m_windowCorners{};
   float m_scale = 1.0f;
+  // Whether the server ran as the overview was last laid out, which the actions are asked of only then, and its players'
+  // seats and those whose link was online then; the action the confirm window shows; and the actions asked for that
+  // TakeActions has yet to take.
+  bool m_running = false;
+  std::vector<PlayerId> m_playerSeats;
+  std::vector<PlayerId> m_onlineSeats;
+  std::optional<ActionMessage> m_confirming;
+  std::vector<ActionMessage> m_actions;
   // A HUD's layout, since the map is the minimap's drawing (Hud::DrawMinimap).
   Hud::Layout m_layout;
   SeatColumn m_sortColumn = SeatColumn::Seat;

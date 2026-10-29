@@ -150,6 +150,13 @@ public:
   // with _message for a failure, and the tick of the universe's last save, and waits a second at most for it to hear.
   void Close(ServerEnding _ending, std::string _message);
 
+  // Whether the overseer has asked the server to stop (ADR-104), which the thread that started it stops it for as Ctrl+C
+  // does. Any thread's.
+  [[nodiscard]] bool StopAsked() const noexcept
+  {
+    return m_stopAsked.load();
+  }
+
 private:
   // Runs one tick: the commands that arrived since the last, at most COMMANDS_PER_TICK of each connection's, in connection
   // order and then in the order each client sent them, and then a snapshot for every connected player. A universe's tick
@@ -160,6 +167,10 @@ private:
 
   // Hands a save of the universe as it stands to its folder, which begins its log anew there (ADR-077).
   void SaveUniverse();
+
+  // Carries out an action the overseer asked for at this tick (ADR-104), and returns whether it asks for a save, which the
+  // tick makes as it makes one due; _saveAsked says whether an action before it at this tick asked for one.
+  [[nodiscard]] bool Act(const ActionMessage& _action, bool _saveAsked);
 
   // Ticks the server dropped after a stall, for the universe's log and the next Health.
   void KeepDropped(std::uint64_t _ticks);
@@ -175,7 +186,7 @@ private:
     PlayerId player;
     std::shared_ptr<LoopbackChannel> channel;
     bool seat = false;
-    // What a hello shows to take the seat (ADR-078).
+    // What a hello shows to take the seat (ADR-078), which a new token replaces (ADR-104): guarded by m_seatMutex.
     SeatToken token{};
     // Guarded by m_seatMutex: MsQuic's thread sets it when the player's hello takes the seat, and again when a newer
     // connection takes it, and counts how often it has.
@@ -219,6 +230,11 @@ private:
 
   // Keeps what came of a connection for the universe's log, which the next tick writes. Called on MsQuic's thread.
   void KeepJoin(JoinRecord _join);
+
+  // Closes the connection that holds _connection's seat with CloseReason::DroppedByOwner, its deputy taking the seat at once
+  // with _deputyAtOnce and otherwise after DEPUTY_DELAY_SECONDS (ADR-104), and keeps its going for the universe's log.
+  // Returns whether there was a link to drop. The server's thread's.
+  [[nodiscard]] bool DropLink(Connection& _connection, bool _deputyAtOnce);
 
   // Adds a connection for _player, unless the server has started or the player has one already.
   std::shared_ptr<LoopbackChannel> AddConnection(PlayerId _player, bool _seat, const SeatToken& _token = {});
@@ -289,6 +305,10 @@ private:
   std::uint64_t m_replayedCommands = 0;
   // The tick of the universe's last save, which the server's thread writes and Close reads.
   std::atomic<std::uint64_t> m_lastSaveTick{0};
+  // The tick of the save the overseer asked for, until its folder has written it: touched by the thread that steps the server
+  // only. And whether the overseer has asked the server to stop, which its thread sets and the thread that started it reads.
+  std::optional<std::uint64_t> m_askedSaveTick;
+  std::atomic<bool> m_stopAsked{false};
   // The universe's log, beside its saves (ADR-082), and the file it writes to.
   std::ofstream m_logFile;
   std::optional<UniverseLog> m_log;

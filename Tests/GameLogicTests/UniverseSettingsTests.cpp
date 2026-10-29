@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "UniverseMatch.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -14,6 +15,12 @@ std::string SettingsText(std::string_view _from, std::string_view _to)
   if (!_from.empty())
     text.replace(text.find(_from), _from.size(), _to);
   return text;
+}
+
+std::string ReadFile(const std::filesystem::path& _path)
+{
+  std::ifstream file(_path, std::ios::binary);
+  return {std::istreambuf_iterator<char>(file), {}};
 }
 
 void ExpectRefused(std::string_view _from, std::string_view _to, const wchar_t* _why)
@@ -110,6 +117,45 @@ public:
     shortCertificate.replace(shortCertificate.find(Outpost::ToHex(certificate)), 2, "");
     Assert::ExpectException<Neuron::Exception>([&shortCertificate] { (void)Outpost::ReadJoinTicket(shortCertificate); },
                                                L"a hash too short");
+  }
+
+  // ADR-104: a seat's new token written back into Universe.json, renamed over it, and into the seat's join file, the rest of
+  // the settings as they were; an AI empire's seat, a player with none, and a folder without settings have no token to write.
+  TEST_METHOD(WritesASeatsTokenBack)
+  {
+    const TemporaryFolder folder;
+    Outpost::UniverseSettings settings = Outpost::NewUniverseSettings(7, 2);
+    settings.seats[1] = {.player = Outpost::PlayerId{2}, .ai = "Normal"};
+    {
+      std::ofstream file(folder.Path() / Outpost::UNIVERSE_SETTINGS_FILE, std::ios::binary);
+      file << Outpost::WriteUniverseSettings(settings);
+    }
+    Neuron::CertificateHash certificate{};
+    certificate[0] = 0x42;
+    const Outpost::SeatToken token = Outpost::NewSeatToken();
+    Assert::IsFalse(token == settings.seats[0].token);
+    const std::filesystem::path joinFile = Outpost::WriteSeatToken(folder.Path(), Outpost::PlayerId{1}, token, certificate);
+    Assert::IsTrue(joinFile == folder.Path() / Outpost::JoinFileName(Outpost::PlayerId{1}));
+
+    const Outpost::UniverseSettings written = Outpost::ReadUniverseSettings(ReadFile(folder.Path() / Outpost::UNIVERSE_SETTINGS_FILE));
+    Assert::IsTrue(written.seats.at(0).token == token, L"the seat's new token");
+    Assert::AreEqual(std::string("Normal"), written.seats.at(1).ai, L"and the rest as it was");
+    Assert::AreEqual(std::uint64_t{7}, written.seed);
+    const Outpost::JoinTicket ticket = Outpost::ReadJoinTicket(ReadFile(joinFile));
+    Assert::IsTrue(ticket.address.token == token && ticket.address.certificate == certificate && ticket.player == Outpost::PlayerId{1},
+                   L"the seat's join file");
+    Assert::IsTrue(std::ranges::none_of(std::filesystem::directory_iterator(folder.Path()),
+                                        [](const std::filesystem::directory_entry& _entry)
+                                        { return _entry.path().extension() == ".partial"; }),
+                   L"nothing left half written");
+
+    Assert::ExpectException<Neuron::Exception>(
+      [&] { (void)Outpost::WriteSeatToken(folder.Path(), Outpost::PlayerId{2}, token, certificate); }, L"an AI empire's seat");
+    Assert::ExpectException<Neuron::Exception>(
+      [&] { (void)Outpost::WriteSeatToken(folder.Path(), Outpost::PlayerId{3}, token, certificate); }, L"a player with no seat");
+    const TemporaryFolder empty;
+    Assert::ExpectException<Neuron::Exception>(
+      [&] { (void)Outpost::WriteSeatToken(empty.Path(), Outpost::PlayerId{1}, token, certificate); }, L"no settings");
   }
 
   // Settings made before the overseer read as its defaults, the loopback and the port after the game's, and settings that

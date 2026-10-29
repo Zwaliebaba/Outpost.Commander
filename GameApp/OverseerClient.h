@@ -4,9 +4,9 @@ namespace Outpost
 {
 // The overseer's end of its channel (ADR-101, ADR-103): it connects to the server its Overseer.json names, pinning the
 // certificate the file names, says hello with the token, and hands what the server says to its model. It tells the server
-// the views it holds and the sight it watches, and joins again every REJOIN_INTERVAL while it has no connection. A
-// connection is made on a thread of its own, so that the frame loop goes on drawing meanwhile. One thread at a time: the
-// frame loop's.
+// the views it holds, the sight it watches and the actions the owner asks for, and joins again every REJOIN_INTERVAL while it
+// has no connection. A connection is made on a thread of its own, so that the frame loop goes on drawing meanwhile. One
+// thread at a time: the frame loop's.
 class OverseerClient : Neuron::NonCopyable
 {
 public:
@@ -27,6 +27,9 @@ public:
   // The sight the views show from here on: full sight with no player, or that seat's. It is told the server now, and again
   // as each new connection is welcomed.
   void Watch(PlayerId _seat);
+
+  // Asks the server for _action (ADR-104), over the connection open now; with none, it is asked of no server.
+  void Act(const ActionMessage& _action);
 
   [[nodiscard]] const OverseerModel& Model() const noexcept
   {

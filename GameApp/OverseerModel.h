@@ -9,9 +9,16 @@ struct HeardHealth
   HealthMessage health;
 };
 
+// What came of an action the overseer asked for (ADR-104), and when the overseer heard it on its own clock.
+struct HeardResult
+{
+  std::chrono::steady_clock::time_point heard;
+  ActionResultMessage result;
+};
+
 // What the overseer knows of its universe, from what the server said on its channel (ADR-101, ADR-103): the welcome; the
 // newest Health and the last hour of them; the universe log's records, and the day's records its lanes and windows are drawn
-// from; the newest view, whole; and how the server ended, once it has said. It holds no connection, so that a test hands it
+// from; the newest view, whole; what came of the latest action it asked for; and how the server ended, once it has said. It holds no connection, so that a test hands it
 // messages as bytes, and what it knew stays as it was while no connection brings more. One thread at a time.
 class OverseerModel : Neuron::NonCopyable
 {
@@ -78,6 +85,12 @@ public:
     return m_view;
   }
 
+  // What came of the latest action the overseer asked for, until a newer connection's welcome.
+  [[nodiscard]] const std::optional<HeardResult>& LatestResult() const noexcept
+  {
+    return m_result;
+  }
+
   // How the server said it ended, and when the overseer heard it, until a newer connection's welcome.
   [[nodiscard]] const std::optional<ClosingMessage>& Closing() const noexcept
   {
@@ -116,6 +129,7 @@ private:
   std::uint64_t m_newestTick = 0;
   HeldStates m_views;
   std::optional<Snapshot> m_view;
+  std::optional<HeardResult> m_result;
   std::optional<ClosingMessage> m_closing;
   std::optional<std::chrono::steady_clock::time_point> m_closingAt;
   std::optional<std::string> m_lostWhy;

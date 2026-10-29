@@ -67,4 +67,11 @@ struct UniverseSettings
 
 // The name of _player's join file, in the universe's folder.
 [[nodiscard]] std::string JoinFileName(PlayerId _player);
+
+// Gives _player's seat of the universe in _folder _token (ADR-104): Universe.json is written again with it, to a file beside
+// it that is renamed over it once whole, as a save is (ADR-077), and then the seat's join file, the same way, for a server
+// presenting _certificate. Returns the join file. Throws Neuron::Exception when Universe.json cannot be read or holds no
+// player's seat for _player, or when either file cannot be written; Universe.json holds the token once it is renamed.
+[[nodiscard]] std::filesystem::path WriteSeatToken(const std::filesystem::path& _folder, PlayerId _player, const SeatToken& _token,
+                                                   const Neuron::CertificateHash& _certificate);
 } // namespace Outpost

@@ -57,6 +57,8 @@ constexpr float HEADER_BUTTON_UNITS = 120.0f;
 // opens, at the screen's right.
 constexpr float SERVER_WINDOW_UNITS = 860.0f;
 constexpr float SEAT_WINDOW_UNITS = 860.0f;
+constexpr float CONFIRM_WINDOW_UNITS = 620.0f;
+constexpr float CONFIRM_BUTTON_UNITS = 180.0f;
 constexpr float WINDOW_TOP_UNITS = 140.0f;
 // The server window's sections: a tick part's name and its figures, either side of its bar; a chart's height and the gap
 // between its bars; and how many of the day's long ticks and of the saves it lists.
@@ -75,7 +77,7 @@ constexpr std::uint64_t LINK_SECONDS = std::uint64_t{4} * 3'600;
 constexpr std::array<std::string_view, 6> ACTION_NAMES{"Move", "Attack-move", "Attack", "Hold sector", "Patrol", "Build a rig"};
 // What came of the joins, by JoinOutcome, as the server window writes them.
 constexpr std::array<std::string_view, Outpost::JOIN_OUTCOME_COUNT> JOIN_OUTCOME_NAMES{
-  "welcomed", "another build", "seat refused", "malformed", "silent", "taken", "closed", "lost"};
+  "welcomed", "another build", "seat refused", "malformed", "silent", "taken", "closed", "lost", "dropped"};
 // How far a notch of the wheel scrolls the table and the log: three name lines.
 constexpr float WHEEL_NOTCH_UNITS = 3.0f * NAME_LINE_UNITS;
 
@@ -91,7 +93,14 @@ enum class PressKind : std::uint32_t
   LogFilter,
   FullSight,
   ServerWindow,
-  SeatWindow
+  SeatWindow,
+  SaveNow,
+  Stop,
+  Confirm,
+  Cancel,
+  DropLink,
+  NewToken,
+  DeputyAtOnce
 };
 
 constexpr std::uint32_t PayloadOf(PressKind _kind, std::uint32_t _which) noexcept
@@ -213,11 +222,15 @@ bool Keeps(OverseerScreen::LogFilter _filter, std::string_view _kind) noexcept
   return false;
 }
 
-// The server's state as the header names it (Game §session.overseer), and the lines under it that say why and since when.
+// The server's state as the header names it (Game §session.overseer), and the lines under it that say why and since when;
+// whether the server is up, Running or Stalled, which the latest action's result is told under; and whether it runs, which
+// the actions are asked of only then (ADR-104): a stalled server's thread may never carry one out.
 struct HeaderState
 {
   std::string name;
   std::vector<std::string> lines;
+  bool up = false;
+  bool running = false;
 };
 
 // How long ago _then was at _now, in minutes and seconds.
@@ -284,12 +297,13 @@ HeaderState StateOf(const Outpost::OverseerModel& _model, const Outpost::Oversee
               .lines = {std::format("Tick {} has stood for {}; that time goes unrun.",
                                     Outpost::WithThousands(static_cast<std::int64_t>(latest->health.tick)),
                                     Outpost::MinutesAndSeconds(static_cast<std::uint64_t>(stood))),
-                        "The server's thread may be stuck; Health still comes."}};
+                        "The server's thread may be stuck; Health still comes."},
+              .up = true};
     }
     std::string up = std::format("Up {}", Outpost::MinutesAndSeconds(latest->health.process.uptimeSeconds));
     if (_link.roundTrip.has_value())
       up += std::format("; the overseer's round trip {}", MillisecondsText(static_cast<std::uint32_t>(_link.roundTrip->count())));
-    return {.name = "Running", .lines = {up + ".", CameBackFrom(*welcome)}};
+    return {.name = "Running", .lines = {up + ".", CameBackFrom(*welcome)}, .up = true, .running = true};
   }
   HeaderState state{.name = "No word", .lines = {}};
   if (const std::optional<std::string>& why = _model.LostWhy())
@@ -303,9 +317,27 @@ HeaderState StateOf(const Outpost::OverseerModel& _model, const Outpost::Oversee
   return state;
 }
 
-// The header (Game §session.overseer): the universe's folder, its server and the build it runs; the server's state, and why;
-// and universe time with its tick.
-void LayHeader(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, const Outpost::OverseerLink& _link,
+// An action as the overseer names it (ADR-104).
+std::string ActionName(Outpost::OverseerAction _action, Outpost::PlayerId _seat)
+{
+  switch (_action)
+  {
+  case Outpost::OverseerAction::SaveNow:
+    return "Save now";
+  case Outpost::OverseerAction::Stop:
+    return "Stop";
+  case Outpost::OverseerAction::DropLink:
+    return std::format("Drop seat {}'s link", _seat.value);
+  case Outpost::OverseerAction::NewToken:
+    return std::format("New token for seat {}", _seat.value);
+  }
+  return {};
+}
+
+// The header (Game §session.overseer): the universe's folder, its server and the build it runs; the server's state, and why,
+// with what came of the latest action while the server is up, and the buttons for its window and its actions; and universe
+// time with its tick.
+void LayHeader(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, const Outpost::OverseerLink& _link, const HeaderState& _state,
                std::chrono::steady_clock::time_point _now)
 {
   const Neuron::Theme& theme = Hud::Theme();
@@ -328,17 +360,30 @@ void LayHeader(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model, co
   }
   tree.End();
 
-  const HeaderState state = StateOf(_model, _link, _now);
   (void)tree.Begin(Neuron::LayoutKind::Column, {.widthUnits = STATE_COLUMN_UNITS});
   Heading(_canvas, "SERVER");
-  // The state, and the button that opens the server window (owner, 2026-10-28).
+  // The state, the button that opens the server window, and the server's actions beside it (owner, 2026-10-28).
   (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Center});
-  (void)_canvas.Label(Fitted(state.name, Hud::Typeface::Title, TITLE_LINE_UNITS), theme.textColor, {.grow = 1.0f});
-  (void)_canvas.Button("server button", {.label = "Server", .payload = PayloadOf(PressKind::ServerWindow, 0)},
-                       {.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS});
+  (void)_canvas.Label(Fitted(_state.name, Hud::Typeface::Title, TITLE_LINE_UNITS), theme.textColor, {.grow = 1.0f});
+  const Neuron::LayoutStyle button{.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS};
+  (void)_canvas.Button("server button", {.label = "Server", .payload = PayloadOf(PressKind::ServerWindow, 0)}, button);
+  (void)_canvas.Button("save now button", {.label = "Save now", .payload = PayloadOf(PressKind::SaveNow, 0), .enabled = _state.running},
+                       button);
+  (void)_canvas.Button("stop button", {.label = "Stop", .payload = PayloadOf(PressKind::Stop, 0), .enabled = _state.running}, button);
   tree.End();
-  for (const std::string& line : state.lines)
+  for (const std::string& line : _state.lines)
     (void)_canvas.Label(Fitted(line, Hud::Typeface::Name, NAME_LINE_UNITS), theme.dimTextColor);
+  // What came of the latest action, wrapped, since the server's words may name a path, and a refusal in the warning's color as
+  // a refused text is (ADR-085 decision 1).
+  if (const std::optional<Outpost::HeardResult>& heard = _model.LatestResult(); _state.up && heard.has_value())
+  {
+    (void)_canvas.Label({.text = std::format("{}, {}: {}", ActionName(heard->result.action, heard->result.seat),
+                                             AgoText(heard->heard, _now), heard->result.wordsUtf8),
+                         .font = Hud::FontOf(Hud::Typeface::Name),
+                         .lineUnits = NAME_LINE_UNITS,
+                         .flow = Neuron::TextFlow::Wrap},
+                        heard->result.done ? theme.textColor : theme.warningColor);
+  }
   tree.End();
 
   (void)tree.Begin(Neuron::LayoutKind::Column, {.widthUnits = TIME_COLUMN_UNITS});
@@ -1406,6 +1451,83 @@ void LaySeatWindow(Neuron::Canvas& _canvas, const Outpost::OverseerModel& _model
 
 } // namespace
 
+// What the confirm window says of an action (ADR-104): its title, what the action does, and its two buttons' labels, the one
+// that asks for it and the one that leaves it.
+struct ConfirmText
+{
+  std::string title;
+  std::vector<std::string> words;
+  std::string_view ask;
+  std::string_view leave;
+};
+
+ConfirmText ConfirmOf(const Outpost::ActionMessage& _action)
+{
+  const std::uint32_t seat = _action.seat.value;
+  switch (_action.action)
+  {
+  case Outpost::OverseerAction::Stop:
+    return {.title = "STOP THE SERVER",
+            .words = {"Stopping ends the server as Ctrl+C does. No tick runs until it is started again, on its own machine.",
+                      "It comes back from its folder: from its last save, with the commands logged since.",
+                      "Its players lose their connection until then, and their deputies do not play."},
+            .ask = "Stop",
+            .leave = "Keep running"};
+  case Outpost::OverseerAction::DropLink:
+    return {
+      .title = std::format("DROP SEAT {}'S LINK", seat),
+      .words = {std::format("The server closes seat {}'s connection. Its game goes back to its menu, saying the server's owner closed "
+                            "it, and does not join again by itself; its player joins again from the menu with the same join file.",
+                            seat),
+                "Its deputy takes the seat:"},
+      .ask = "Drop link",
+      .leave = "Keep the link"};
+  case Outpost::OverseerAction::NewToken:
+    return {.title = std::format("NEW TOKEN FOR SEAT {}", seat),
+            .words = {std::format("The server makes seat {} a new token, and writes it into Universe.json and the seat's join file, in the "
+                                  "universe's folder. The old join file joins no more.",
+                                  seat),
+                      "Whoever holds the seat now is dropped, and its deputy plays it at once, until its player joins with the new "
+                      "join file."},
+            .ask = "New token",
+            .leave = "Keep the token"};
+  case Outpost::OverseerAction::SaveNow:
+    break;
+  }
+  return {};
+}
+
+// The confirm window (ADR-104): what the action does, Drop link's choice of when the deputy takes the seat, and the buttons
+// that ask for it, only of a running server, or leave it.
+void LayConfirmWindow(Neuron::Canvas& _canvas, const Outpost::ActionMessage& _action, const ConfirmText& _text, bool _running)
+{
+  const Neuron::Theme& theme = Hud::Theme();
+  Neuron::LayoutTree& tree = _canvas.Tree();
+  for (const std::string& words : _text.words)
+  {
+    (void)_canvas.Label(
+      {.text = words, .font = Hud::FontOf(Hud::Typeface::Name), .lineUnits = NAME_LINE_UNITS, .flow = Neuron::TextFlow::Wrap},
+      theme.textColor);
+  }
+  // Drop link's choice of when the deputy takes the seat, by whether it is at once.
+  if (_action.action == Outpost::OverseerAction::DropLink)
+  {
+    const std::string later = std::format("In {} s", Outpost::DEPUTY_DELAY_SECONDS);
+    FilterCells(_canvas, "deputy cells", std::array<std::string_view, 2>{later, "At once"}, _action.deputyAtOnce ? 1 : 0,
+                PressKind::DeputyAtOnce);
+  }
+  if (!_running)
+    WindowLine(_canvas, "The server is not running, so nothing can be asked of it.", theme.dimTextColor);
+  (void)tree.Add({.heightUnits = PADDING});
+  (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN});
+  (void)tree.Add({.grow = 1.0f});
+  const Neuron::LayoutStyle button{.widthUnits = CONFIRM_BUTTON_UNITS, .heightUnits = BUTTON_UNITS};
+  (void)_canvas.Button("confirm button",
+                       {.label = std::string(_text.ask), .payload = PayloadOf(PressKind::Confirm, 0), .enabled = _running}, button);
+  (void)_canvas.Button("cancel button", {.label = std::string(_text.leave), .payload = PayloadOf(PressKind::Cancel, 0)}, button);
+  tree.End();
+}
+
 Outpost::OverseerScreen::OverseerScreen(std::vector<Hud::SideColor> _seatColors)
   : m_seatColors(std::move(_seatColors))
 {
@@ -1426,7 +1548,28 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
                                                 .padding = {.left = MARGIN, .top = MARGIN, .right = MARGIN, .bottom = MARGIN},
                                                 .gapUnits = MARGIN,
                                                 .alignX = Neuron::LayoutAlign::Stretch});
-  LayHeader(canvas, _model, _link, _now);
+  const HeaderState state = StateOf(_model, _link, _now);
+  m_running = state.running;
+  // The players' seats, which Drop link and New token are for, and those whose link the newest Health says is online.
+  m_playerSeats.clear();
+  m_onlineSeats.clear();
+  if (const std::optional<OverseerWelcomeMessage>& told = _model.Welcome())
+  {
+    for (const OverseerSeat& seat : told->seats)
+    {
+      if (seat.ai.empty())
+        m_playerSeats.push_back(seat.player);
+    }
+  }
+  if (const HeardHealth* latest = _model.LatestHealth())
+  {
+    for (const SeatHealth& seat : latest->health.seats)
+    {
+      if (seat.link == SeatLink::Online)
+        m_onlineSeats.push_back(seat.player);
+    }
+  }
+  LayHeader(canvas, _model, _link, state, _now);
   LayTiles(canvas, _model);
   (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
   (void)tree.Begin(Neuron::LayoutKind::Column, {.gapUnits = MARGIN, .alignX = Neuron::LayoutAlign::Stretch, .grow = 1.0f});
@@ -1475,15 +1618,26 @@ const Neuron::DrawList& Outpost::OverseerScreen::Lay(const OverseerModel& _model
     "seats", columns,
     Neuron::TableSorted{.column = sortColumn, .sort = m_sortDescending ? Neuron::TableSort::Descending : Neuron::TableSort::Ascending},
     rows, {.grow = 1.0f});
-  // The picked seat's action bar, at the table's foot (owner, 2026-10-28): its window, and the seat's actions to come.
+  // The picked seat's action bar, at the table's foot (owner, 2026-10-28): its window, and for a player's seat its actions,
+  // asked only of a running server, Drop link only while the seat's link is online (ADR-104).
   if (m_picked.has_value())
   {
+    const Neuron::LayoutStyle button{.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS};
     (void)tree.Add({.heightUnits = CELL_GAP_UNITS});
     (void)tree.Begin(Neuron::LayoutKind::Row, {.gapUnits = MARGIN, .alignY = Neuron::LayoutAlign::Center});
     (void)canvas.Label(Fitted(std::format("Seat {} picked", m_picked->value), Hud::Typeface::Name, NAME_LINE_UNITS), Hud::Theme().textColor,
                        {.grow = 1.0f});
-    (void)canvas.Button("seat button", {.label = "Seat", .payload = PayloadOf(PressKind::SeatWindow, 0)},
-                        {.widthUnits = HEADER_BUTTON_UNITS, .heightUnits = BUTTON_UNITS});
+    (void)canvas.Button("seat button", {.label = "Seat", .payload = PayloadOf(PressKind::SeatWindow, 0)}, button);
+    if (std::ranges::contains(m_playerSeats, *m_picked))
+    {
+      (void)canvas.Button("drop link button",
+                          {.label = "Drop link",
+                           .payload = PayloadOf(PressKind::DropLink, 0),
+                           .enabled = m_running && std::ranges::contains(m_onlineSeats, *m_picked)},
+                          button);
+      (void)canvas.Button("new token button", {.label = "New token", .payload = PayloadOf(PressKind::NewToken, 0), .enabled = m_running},
+                          button);
+    }
     tree.End();
   }
   canvas.EndPanel();
@@ -1540,10 +1694,23 @@ void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerMo
   const auto index = static_cast<std::size_t>(_window);
   const Neuron::Theme& theme = Hud::Theme();
   Neuron::Canvas canvas(theme, _metrics, m_interaction, _screenWidthUnits, _screenHeightUnits);
-  const bool server = _window == OverseerWindow::Server;
-  const Neuron::WidgetId widget = m_interaction.IdOf(server ? "server window" : "seat window");
-  const std::string title = server ? std::string("SERVER") : std::format("SEAT {}", m_seatShown.value);
-  const float width = server ? SERVER_WINDOW_UNITS : SEAT_WINDOW_UNITS;
+  const ActionMessage confirming = m_confirming.value_or(ActionMessage{});
+  const ConfirmText confirmText = ConfirmOf(confirming);
+  Neuron::WidgetId widget = m_interaction.IdOf("server window");
+  std::string title = "SERVER";
+  float width = SERVER_WINDOW_UNITS;
+  if (_window == OverseerWindow::Seat)
+  {
+    widget = m_interaction.IdOf("seat window");
+    title = std::format("SEAT {}", m_seatShown.value);
+    width = SEAT_WINDOW_UNITS;
+  }
+  else if (_window == OverseerWindow::Confirm)
+  {
+    widget = m_interaction.IdOf("confirm window");
+    title = confirmText.title;
+    width = CONFIRM_WINDOW_UNITS;
+  }
   m_titleBars[index] = canvas.TitleBarOf(widget);
   m_closeBoxes[index] = canvas.CloseBoxOf(widget);
   const Neuron::LayoutStyle body{.padding = {.left = PADDING, .top = PADDING, .right = PADDING, .bottom = PADDING},
@@ -1558,15 +1725,25 @@ void Outpost::OverseerScreen::LayWindow(OverseerWindow _window, const OverseerMo
     m_windows.Settle(_window, corner);
     frame = canvas.BeginWindow(widget, title, corner, width, body, most);
   }
-  else if (server)
+  else if (_window == OverseerWindow::Server)
     frame =
       canvas.BeginWindow(widget, title, Neuron::LayoutAnchor::TopRight, {.top = WINDOW_TOP_UNITS, .right = MARGIN}, width, body, most);
-  else
+  else if (_window == OverseerWindow::Seat)
     frame = canvas.BeginWindow(widget, title, Neuron::LayoutAnchor::TopLeft, {.left = MARGIN, .top = WINDOW_TOP_UNITS}, width, body, most);
-  if (server)
-    LayServerWindow(canvas, _model, width - (2.0f * PADDING));
   else
+    frame = canvas.BeginWindow(widget, title, Neuron::LayoutAnchor::Middle, {}, width, body, most);
+  switch (_window)
+  {
+  case OverseerWindow::Server:
+    LayServerWindow(canvas, _model, width - (2.0f * PADDING));
+    break;
+  case OverseerWindow::Seat:
     LaySeatWindow(canvas, _model, m_seatShown, width - (2.0f * PADDING));
+    break;
+  case OverseerWindow::Confirm:
+    LayConfirmWindow(canvas, confirming, confirmText, m_running);
+    break;
+  }
   canvas.EndWindow();
   m_windowLayers[index] = m_layout.LayerCount();
   canvas.Finish(m_layout);
@@ -1656,6 +1833,29 @@ void Outpost::OverseerScreen::Press(std::uint32_t _payload)
     if (m_picked.has_value())
       OpenSeatWindow(*m_picked);
     break;
+  case PressKind::SaveNow:
+    SaveNow();
+    break;
+  case PressKind::Stop:
+    AskToStop();
+    break;
+  case PressKind::Confirm:
+    Confirm();
+    break;
+  case PressKind::Cancel:
+    CloseWindow(OverseerWindow::Confirm);
+    break;
+  case PressKind::DropLink:
+    if (m_picked.has_value())
+      AskToDropLink(*m_picked);
+    break;
+  case PressKind::NewToken:
+    if (m_picked.has_value())
+      AskForNewToken(*m_picked);
+    break;
+  case PressKind::DeputyAtOnce:
+    PickDeputyAtOnce(which == 1);
+    break;
   }
 }
 
@@ -1702,6 +1902,56 @@ void Outpost::OverseerScreen::OpenSeatWindow(PlayerId _seat)
 void Outpost::OverseerScreen::CloseWindow(OverseerWindow _window) noexcept
 {
   m_windows.Close(_window);
+}
+
+void Outpost::OverseerScreen::SaveNow()
+{
+  // No confirm: a save changes nothing of the universe (owner, 2026-10-28).
+  if (m_running)
+    m_actions.push_back({.action = OverseerAction::SaveNow});
+}
+
+void Outpost::OverseerScreen::AskToStop()
+{
+  if (!m_running)
+    return;
+  m_confirming = ActionMessage{.action = OverseerAction::Stop};
+  m_windows.Open(OverseerWindow::Confirm);
+}
+
+void Outpost::OverseerScreen::AskToDropLink(PlayerId _seat)
+{
+  if (!m_running || !std::ranges::contains(m_onlineSeats, _seat))
+    return;
+  m_confirming = ActionMessage{.action = OverseerAction::DropLink, .seat = _seat};
+  m_windows.Open(OverseerWindow::Confirm);
+}
+
+void Outpost::OverseerScreen::AskForNewToken(PlayerId _seat)
+{
+  if (!m_running || !std::ranges::contains(m_playerSeats, _seat))
+    return;
+  m_confirming = ActionMessage{.action = OverseerAction::NewToken, .seat = _seat};
+  m_windows.Open(OverseerWindow::Confirm);
+}
+
+void Outpost::OverseerScreen::PickDeputyAtOnce(bool _atOnce) noexcept
+{
+  if (m_confirming.has_value() && m_confirming->action == OverseerAction::DropLink)
+    m_confirming->deputyAtOnce = _atOnce;
+}
+
+void Outpost::OverseerScreen::Confirm()
+{
+  if (!m_running || !m_confirming.has_value() || !m_windows.IsOpen(OverseerWindow::Confirm))
+    return;
+  m_actions.push_back(*m_confirming);
+  m_windows.Close(OverseerWindow::Confirm);
+}
+
+std::vector<Outpost::ActionMessage> Outpost::OverseerScreen::TakeActions()
+{
+  return std::exchange(m_actions, {});
 }
 
 void Outpost::OverseerScreen::FilterLog(LogFilter _filter)

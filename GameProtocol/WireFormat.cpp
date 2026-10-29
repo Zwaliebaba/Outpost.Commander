@@ -450,6 +450,8 @@ std::optional<std::string_view> DescribeClose(std::uint64_t _errorCode) noexcept
     return "The server could not read what the game sent it.";
   case static_cast<std::uint64_t>(CloseReason::SeatTaken):
     return "The seat was taken by another connection with its token.";
+  case static_cast<std::uint64_t>(CloseReason::DroppedByOwner):
+    return "The server's owner closed the connection. Join again from the menu.";
   default:
     return std::nullopt;
   }

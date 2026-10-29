@@ -16,6 +16,7 @@ void Outpost::OverseerModel::Take(std::span<const std::byte> _message, std::chro
     m_welcomed = true;
     m_views = HeldStates();
     m_records.clear();
+    m_result.reset();
     m_closing.reset();
     m_closingAt.reset();
     m_lostWhy.reset();
@@ -48,6 +49,11 @@ void Outpost::OverseerModel::Take(std::span<const std::byte> _message, std::chro
     while (m_records.size() > RECORDS_KEPT)
       m_records.pop_front();
     KeepTheDay();
+    return;
+  }
+  if (auto* result = std::get_if<ActionResultMessage>(&message))
+  {
+    m_result = HeardResult{.heard = _now, .result = std::move(*result)};
     return;
   }
   if (auto* closing = std::get_if<ClosingMessage>(&message))
