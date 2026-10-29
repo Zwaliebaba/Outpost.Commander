@@ -5,7 +5,7 @@ Owns: overseer-application, overseer-link, overseer-model, overseer-overview
 
 ## Context
 
-The overseer is the dedicated server's management console (owner, 2026-10-27): it watches a universe over a channel of its own, which [ADR-101](ADR-101-the-overseers-channel.md) owns, and never changes the simulation. What it shows and the order it is built in are [the overseer's proposal](../Plans/UniverseOverseer.md) and [its plan](../Plans/ImplementationPlan-Overseer.md). The owner decided that it is native and drawn with the game's own interface, a project of its own with its model and layout in `GameApp` (owner, 2026-10-27), not packaged (owner, 2026-10-28), and always run from a machine with a GPU (owner, 2026-10-28). This ADR records the application: its project, how it finds its universe, its window, its end of the channel, what it keeps of what the server says, and how its overview is built.
+The overseer is the dedicated server's management console (owner, 2026-10-27): it watches a universe over a channel of its own, which [ADR-101](ADR-101-the-overseers-channel.md) owns, and never changes the simulation. What it shows was the overseer's proposal, built by its plan, which closed on 2026-10-29 ([the overseer's post-mortem](../Records/PostMortems.md#2026-10-29--the-overseer-a-console-for-the-dedicated-server)). The owner decided that it is native and drawn with the game's own interface, a project of its own with its model and layout in `GameApp` (owner, 2026-10-27), not packaged (owner, 2026-10-28), and always run from a machine with a GPU (owner, 2026-10-28). This ADR records the application: its project, how it finds its universe, its window, its end of the channel, what it keeps of what the server says, and how its overview is built.
 
 ## Decision
 

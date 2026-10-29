@@ -111,7 +111,7 @@ CV1 to CV8, in their numbers' order, and CV9 before CV7; then CV10.
 - **The ports go from the smallest window to the largest,** so that the canvas meets the leave window's two buttons before the designer's mockup.
 - **CV7 goes before CV8,** since scrolling needs the designer and the Controls window on the canvas, and nothing of the HUD. CV7.2 can go as soon as CV4.3 is done.
 - **CV8 goes last.** The HUD's panels are anchored and do not move (C1), so porting them buys least. Once it lands, `Painter`, `OpenWindow`, `Frame` and `AddButton` are deleted.
-- **CV9 goes before CV7.1, or before the overseer's OV3.2 if that comes first** ([the overseer's plan](ImplementationPlan-Overseer.md)), as a pull request of its own (owner, 2026-10-27). The overseer needs a scroll view from its first version, for its seat table, its log and its seat window; the game needs one only from CV7.1, after the designer. It is numbered last so that no task is renumbered.
+- **CV9 goes before CV7.1, or before the overseer's OV3.2 if that comes first** (the overseer's plan, closed, as it stood at `21ba45a`), as a pull request of its own (owner, 2026-10-27). The overseer needs a scroll view from its first version, for its seat table, its log and its seat window; the game needs one only from CV7.1, after the designer. It is numbered last so that no task is renumbered.
 - **CV10 is what the owner's run of 2026-10-28 found** ([PlaytestLog.md](../Records/PlaytestLog.md), that day), at 1920×1080. CV10.2 needs no gate; C10 and C11, which CV10.3 and CV10.4 waited for, are decided. CV10.1 is dropped, since the build window it kept clear of the hint is gone.
 
 A task whose gate the owner turns down is dropped, and its milestone ships without it.
@@ -375,7 +375,7 @@ The HUD's panels stay where they are (C1). Each task is a port (rule 5).
 
 ### CV9.1 — The scroll view
 
-- **Goal:** a scroll view in the canvas before its first use, since the game's (CV7.1) and the overseer's ([the overseer's plan](ImplementationPlan-Overseer.md), OV3) can come in either order.
+- **Goal:** a scroll view in the canvas before its first use, since the game's (CV7.1) and the overseer's (the overseer's plan, closed, OV3, as it stood at `21ba45a`) can come in either order.
 - **Scope:**
   - **A scroll view:** its content clipped to it, moved by the wheel over it, and a thumb that is dragged. Clipping is on the CPU in `UiPipeline`: a quad cut to the clip, its texture coordinates with it, so the interface stays one draw call. A hatched quad's stripes are laid on the screen's pixels (ADR-030 decision 6) and need no change. Lines are never clipped by a scroll view; only the minimap draws them.
   - Its offset is kept in the interaction's store under its identifier (CV3.3), and its content's height is what the layout measures.

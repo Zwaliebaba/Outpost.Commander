@@ -71,7 +71,7 @@ Outlined for its design; nothing here is scoped.
 - **42 — The galaxy from the seed**, by G5, extending [ADR-072](../ADR/ADR-072-seeded-placement.md).
 - **43 — Progression from the galaxy**, by G1.
 - **44 — The economy over weeks**, by G3.
-- **45 — The client's galaxy:** the strategic view, a system's selection, the minimap per system, alerts that name their system.
+- **45 — The client's galaxy:** the strategic view, a system's selection, the minimap per system, alerts that name their system; and the overseer's map of the galaxy, each system a ring of its sectors by holder with the lanes between them and the fleets on them, opening into a system's sector map, which is all its map shows until then ([ADR-103](../ADR/ADR-103-the-overseer-application.md) decision 7).
 - **46 — The AI plays a galaxy**, deputies and AI empires alike.
 - **47 — Measured:** a 30-system universe's tick at the tick budget's percentile ([the budgets](../Budgets.md)), with every seat an AI; a two-week universe run headlessly by `--universe-run`, logging when each system is first reached, held and drained, the banks, and the share of the universe where nothing happens.
 
