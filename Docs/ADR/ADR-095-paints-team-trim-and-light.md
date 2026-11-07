@@ -5,7 +5,7 @@ Owns: mesh-paints, paint-colors, two-tone-lines
 
 ## Context
 
-Every model is one color: the side's, on every face and every line ([ADR-040](ADR-040-lines-over-dark-faces.md)). A building in the look the owner asked for (owner, 2026-10-11) paints its side's color on its body and keeps its base and trim neutral, and its windows and lamps are lit. The owner decided the slots on 2026-10-11: `team`, `trim` and `light`, by the material's name, in one version of the format. Every source has one material today, `team`, and no vertex colors.
+A model's side reads from its body color ([ADR-040](ADR-040-lines-over-dark-faces.md)). A building in the look the owner asked for (owner, 2026-10-11) paints its side's color on its body and keeps its base and trim neutral, and its windows and lamps are lit. The owner decided the slots on 2026-10-11: `team`, `trim` and `light`, by the material's name, in one version of the format. The sources carry these paints rather than vertex colors.
 
 Two constraints hold the colors:
 
@@ -26,7 +26,7 @@ Two constraints hold the colors:
 
 ## Consequences
 
-- **Nothing on the screen changes until the owner paints a model:** every source has one material, `team`, so every vertex of the 45 `.nmf` files has paint 0. A source takes `trim` and `light` from Blender's material names, with no step in the game.
+- **A source may use all three paints:** team armor, neutral machinery and frames, and lit windows, lamps and thruster faces. A source takes `trim` and `light` from Blender's material names, with no step in the game.
 - **Trim keeps the contrast, and more:** a ship's trim lines stand 3.27–3.47:1 over its trim faces and a structure's 3.67–3.92:1, against the team color's 2.77–3.49:1 and 3.43–3.93:1, over every face the camera sees, wholly open, half and shut in. The figures are computed as `SceneShadingTests` computes them, from `Models.json`'s four colors, not measured on a screen; the test holds the trim to the ships' and the structures' floors.
 - **A lamp in a recess glows as one in the open,** since occlusion does not darken it; its line is lost against it, the same color.
 - **The tests.**
