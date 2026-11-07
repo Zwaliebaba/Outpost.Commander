@@ -1862,6 +1862,23 @@ Counts taken over the source tree and its history.
 - **Source:** ADR-093, Context (commit `d647385`, #108).
 - **Note:** Not counted since.
 
+### 2026-11-07 · The Human Medium art pass
+
+| Quantity | Before | After |
+|---|---|---|
+| Human Medium triangles | 160 | 906 |
+| Human Medium vertices | 480 | 2,036 |
+| Human Medium `.nmf` bytes | 15,524 | 68,044 |
+| Human Medium paints | `team` | `team`, `trim`, `light` |
+| All 45 `.nmf` files, bytes | 1,605,784 | 1,658,304 |
+| All 45 `.nmf` files, vertices | 50,016 | 51,572 |
+
+- **Build:** The art branch based on `7326cf0`, Blender 4.3.2 import, edit and GLB export, baked by `Tools/BakeMeshes.py` in the Linux container. No renderer, model catalogue or file-format change.
+- **Seeds:** not applicable.
+- **Method:** File sizes and NMF headers read with Python. Across all vertices, 24% wholly open, 29% less than half open, 13% wholly shut in, mean openness 0.65. All 906 changed-model triangles have nonzero area and wind with their normals; normals are finite and unit length, indices are in bounds, and the three paints are present. The two gun positions and exhaust position match the original; their directions and sizes differ by less than 0.000002 after Blender's transform round trip. Longitudinal and vertical bounds match; the chamfered pods reduce the total width from 48 to 47.952759 source units, within the original silhouette.
+- **Visual check:** Offline renders of the baked model at close and reduced sizes, from the bow and stern, using the scene's paint and lighting constants, baked openness and 10-degree crease rule. These are reference renders, not game screenshots: they do not reproduce the game camera, bloom or exhaust. The Windows/D3D12 executable and native tests could not be built or run in this Linux environment; the in-game presentation and performance remain unverified.
+- **Source:** ADR-018, ADR-027, ADR-092 and ADR-095. The GLB carries layered armor, neutral engine housings and frames, a lit canopy, running lamps and thruster faces.
+
 ### 2026-11-07 · The Human Constructor rebuilt
 
 | Quantity | Before | After |
@@ -1880,3 +1897,20 @@ Counts taken over the source tree and its history.
 - **Method:** File sizes and NMF headers read with Python. All 1,180 triangles have nonzero area and wind with their normals; normals are finite and unit length, indices are in bounds, and every triangle has one supported paint. The original central exhaust position is unchanged in source coordinates; its directions and size differ by less than 0.000002 after Blender's transform round trip. The two new outboard exhausts point straight aft and away from the model's center. The source changes from 95.779598 to 80.530003 units long and from 27.638599 to 43.350002 units wide. The catalogue still fits the model to 24 m long, so its broader proportions and its fitted attachment positions follow the new silhouette. Across all vertices of the 45 baked files, 24% are wholly open, 30% less than half open, 14% wholly shut in, mean openness 0.64.
 - **Visual check:** [Before and after](../../Art/Previews/Human/ConstructorComparison.png), from bow and stern and at reduced sizes, both fitted to the same length as in the game. The offline renderer reads the baked geometry and openness, the scene paint and light constants and the 10-degree crease rule. It does not reproduce the game camera, bloom or exhaust. The Windows/D3D12 executable and native tests could not be built or run in this Linux environment; in-game presentation and performance remain unverified.
 - **Source:** ADR-018, ADR-019, ADR-027, ADR-092 and ADR-095.
+
+### 2026-11-07 · The Medium and Constructor art passes together
+
+| Quantity | Combined |
+|---|---|
+| Baked model files | 45 |
+| Baked bytes | 1,714,448 |
+| Vertices | 53,182 |
+| Wholly open | 24% |
+| Less than half open | 31% |
+| Wholly shut in | 14% |
+| Mean openness | 0.63 |
+
+- **Build:** Integration of Medium art commit `b46529c` and Constructor art commit `56d38db`, in the Linux container. Both GLB sources and baked NMF files are retained byte for byte from their art branches.
+- **Seeds:** not applicable.
+- **Method:** File sizes, vertex counts from the NMF headers and every vertex's openness byte counted with Python, as for the individual art entries above.
+- **Source:** ADR-018, ADR-092 and the individual art measurements above.
