@@ -9,7 +9,7 @@ A model reads as solid when every recess is darker than what stands out. A face 
 
 Three facts constrain it:
 
-- **The sources are flat-shaded and split.** Every one of the 45 sources has three vertices a triangle, 50,016 vertices for 16,672 triangles, counted from the baked files, so a vertex belongs to one face and its normal is the face's.
+- **The sources are flat-shaded.** Corners are split where their faces' normals differ; triangles on one flat surface may share vertices. The baker reads the source normals and averages samples where triangles share a vertex.
 - **The models are built from parts that overlap.** A face buried inside another part is shut in wholly, and a face that runs into another part has a corner inside it.
 - **The bake must stay the same bytes on every machine**, which `--check` proves in CI ([ADR-018](ADR-018-nmf-and-hardpoints.md) decision 7). CPython's `+`, `-`, `*`, `/` and `math.sqrt` are correctly rounded IEEE doubles; its trigonometric functions come from the platform's C library.
 
