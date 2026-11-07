@@ -26,7 +26,7 @@ Two constraints hold the colors:
 
 ## Consequences
 
-- **The Human Medium uses all three paints:** its armor is `team`, its machinery and frames are `trim`, and its canopy, running lamps and thruster faces are `light`. The other sources use `team` alone. A source takes `trim` and `light` from Blender's material names, with no step in the game.
+- **A source may use all three paints:** team armor, neutral machinery and frames, and lit windows, lamps and thruster faces. A source takes `trim` and `light` from Blender's material names, with no step in the game.
 - **Trim keeps the contrast, and more:** a ship's trim lines stand 3.27–3.47:1 over its trim faces and a structure's 3.67–3.92:1, against the team color's 2.77–3.49:1 and 3.43–3.93:1, over every face the camera sees, wholly open, half and shut in. The figures are computed as `SceneShadingTests` computes them, from `Models.json`'s four colors, not measured on a screen; the test holds the trim to the ships' and the structures' floors.
 - **A lamp in a recess glows as one in the open,** since occlusion does not darken it; its line is lost against it, the same color.
 - **The tests.**
