@@ -670,6 +670,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     for (const QueueShipCommand& queue : m_designer.TakeQueueCommands(m_view.Newest()))
       m_controls.Queue(queue.producer, queue.design);
   }
+  // A finished match has only its way back to the menu (ADR-020 decision 9). Keep pointer events for that button,
+  // but no typing or window shortcuts behind the result. A universe's restart notice does not end its match.
+  const bool matchOver = !m_view.IsEmpty() && m_view.Newest().matchOver;
+  if (matchOver)
+  {
+    std::erase_if(input.events, [](const Neuron::InputEvent& _event)
+                  { return _event.kind == Neuron::InputEventKind::KeyDown || _event.kind == Neuron::InputEventKind::Character; });
+  }
   HandleTyping(input);
   // While a drop-down is open, Esc closes it, and a press of any button outside its list closes it too, and neither goes
   // further, to the windows, the HUD or the controls (ADR-100 decision 3).
@@ -722,7 +730,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_interaction.Wheel(m_hudLayout, static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels),
                           -input.wheelNotches * SCROLL_UNITS_A_NOTCH))
     input.wheelNotches = 0.0f;
-  m_camera.Update(input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
+  if (!matchOver)
+    m_camera.Update(input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
   m_cursorGround =
     m_camera.GroundPointAtPixel(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels), m_viewport);
@@ -757,7 +766,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                 });
   if (!m_view.IsEmpty())
   {
-    m_controls.Update(input, m_knownEntities, m_view.Newest().player, m_camera, m_viewport);
+    if (!matchOver)
+      m_controls.Update(input, m_knownEntities, m_view.Newest().player, m_camera, m_viewport);
     const DirectX::XMFLOAT2 cursor{static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels)};
     m_hovered = m_hudLayout.Covers(cursor.x, cursor.y)
                   ? std::nullopt
