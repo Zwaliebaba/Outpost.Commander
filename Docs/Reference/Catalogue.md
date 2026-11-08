@@ -486,7 +486,7 @@ How the camera moves ([ADR-012](../ADR/ADR-012-rts-camera.md)). From [`OutpostCo
 
 | Key | Value | Unit |
 |---|---|---|
-| <a id="defaultViewWidthMeters"></a>`defaultViewWidthMeters` | 500 | m |
+| <a id="defaultViewWidthMeters"></a>`defaultViewWidthMeters` | 400 | m |
 | <a id="minimumViewWidthMeters"></a>`minimumViewWidthMeters` | 150 | m |
 | <a id="maximumViewWidthMeters"></a>`maximumViewWidthMeters` | 3000 | m |
 | <a id="pitchAtMinimumDegrees"></a>`pitchAtMinimumDegrees` | 40 | ° |

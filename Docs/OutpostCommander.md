@@ -69,7 +69,7 @@ A session is everything between starting the game and closing it: the menu, a sk
 - **A match ends once a player whose base was placed is beaten:** by losing its production (Game §universe.loss) or by running out of tickets (Game §territory.domination). It ends once, in the tick it happens, with a winner, or with a draw when both players are beaten in the same tick (ADR-020 decision 9; ADR-037 decision 1; ADR-057 decision 5).
 - **A player beaten both ways in one tick is beaten by production** (ADR-057 decision 5). The match records which ending it was (ADR-057 decision 6).
 - **The simulation runs on after the match ends, and the outcome stands** (ADR-020 decision 9).
-- **A banner says how it ended:** "Victory", "Defeat" or "Draw", and under it the match's length, after "By domination." for a domination, and a button, Back to menu (ADR-020 decision 9; ADR-057 decision 8).
+- **A centered result over a dimmed battlefield says how it ended:** "Victory", "Defeat" or "Draw", and under it the match's length, after "By domination." for a domination, and a button, Back to menu. The gameplay HUD and floating windows hide, and the result blocks clicks through to the battlefield and stops gameplay keys, typing and camera controls (ADR-020 decision 9; ADR-057 decision 8).
 - **Back to menu is the way out of a match.** It ends the match and its server, and the next skirmish's server is made as the menu comes back (ADR-025 decision 1; ADR-020 decision 10). A skirmish or a matchup that has not ended offers no way back to the menu (ADR-020 decision 9); closing the game leaves it, and the match log records it as left (ADR-038 decision 5). A universe is left from its leave window (Game §session.join).
 
 ### Battle matchups [§session.matchup]
@@ -1440,7 +1440,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 #### The selection panel [§interface.hud.selection]
 
 - **It stands in the middle of the bottom edge, as wide as its longest line,** between 280 and 552 units, and moves aside only as far as keeps it clear of the minimap and the command card. Its first line is in the title face and the others in the name face (ADR-043 decisions 2 and 5; ADR-088 decision 2).
-- **Ships:** one ship is titled with its design's name; ships of one design with their count and the design's name once, "7 × Lancer+SA", and two Constructors "2 × Constructor"; ships of several designs with their count, "12 ships", over a line for each design, "3 × Swarm", the most numerous first, at most five lines, and "and 2 more designs" for the rest (ADR-088 decision 4). Then the selection's hit points against their whole, "Hit points 3,599 / 4,095", in whole points rounded up (ADR-088 decision 4; ADR-014 decision 3).
+- **Ships:** one ship is titled with its design's name; ships of one design with their count and the design's name once, "7 × Lancer+SA", and two Constructors "2 × Constructor"; ships of several designs with their count, "12 ships", over a line for each design, "3 × Swarm", the most numerous first, at most five lines, and "and 2 more designs" for the rest (ADR-088 decision 4). Then a fleet's aggregate health as a rounded percentage, "Fleet health 88%"; one ship keeps "Hit points 3,599 / 4,095", in whole points rounded up (ADR-088 decision 4; ADR-014 decision 3).
 - **Two to 24 ships have a bar each** under the lines, in rows of twelve, design by design in the lines' order. Each fills from the left by its ship's share of hit points; a retreating ship's bar has a line round it in the text's color; a click on a bar selects that ship alone and centers the camera on it. One ship, or more than 24, has the selection's one bar (ADR-088 decision 4).
 - **What the ships are doing:** "Holding a sector" or "On patrol" for a standing order, how many are retreating to be repaired, and the scheduled order they wait on (ADR-059 decision 6; ADR-075 decision 10; ADR-080 decision 9; Game §orders.standing).
 - **A structure selected alone,** the player's own or another player's (Game §orders.selection), is named by its kind, a Shipyard by its number too (Game §structures.shipyard), and a kind that grows by its level, "Shipyard 01 · L2". Under it: how far it is built while under construction, "Upgrading to L3, 41%" while a level is built, and its hit points against their whole (ADR-064 decision 7).
@@ -1452,7 +1452,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 
 #### The command card [§interface.hud.buttons]
 
-- **The command card stands in the bottom-right corner, 380 by 209 units, whatever is selected,** and each of its buttons in a cell it always takes: two to a row in three rows, a cell no button takes empty. It shows while the selection offers a button (ADR-088 decision 2).
+- **The command card stands in the bottom-right corner, 380 units wide and sized to its occupied rows and retreat controls,** and each of its buttons in a cell it always takes: two to a row in three rows, a cell no button takes empty. It shows while the selection offers a button (ADR-088 decision 2).
 
   | Row | Left | Right |
   |---|---|---|
@@ -1464,7 +1464,7 @@ On a map with sectors, the territory panel stands under the status panel's place
 - **The player's own finished structure offers its windows:** Production on the Command Station and on a Shipyard, Ship designer on a Shipyard, and Research on the Research Lab, and its Upgrade when it grows (ADR-031 decision 6; ADR-064 decision 7).
 - **A selection of ships has its retreat** at the card's foot, a row of three (ADR-088 decision 3; Game §orders.retreat.threshold).
 - **A selection with a Constructor offers one Build button,** a mixed one included, with B's cap. It and B turn the card's build mode on and off (ADR-088 decision 2).
-- **In build mode the card holds BUILD over a cell for each structure the Constructors build,** in their order, two to a row, each with its name over its cost; the Relay only on a map with sectors, its cell empty without them. The Research Lab's is dim with ONE PER PLAYER once the player has one, and the Relay's with NODE CAP at the Command Station's cap; a structure the player cannot afford is dim. The orders, the windows' buttons and the retreat are not shown, and the orders' keys still give them (ADR-088 decision 2; ADR-043 decision 4; ADR-056 decision 11; Game §orders.constructors).
+- **In build mode the card is 209 units tall and holds BUILD over a cell for each structure the Constructors build,** in their order, two to a row, each with its name over its cost; the Relay only on a map with sectors, its cell empty without them. The Research Lab's is dim with ONE PER PLAYER once the player has one, and the Relay's with NODE CAP at the Command Station's cap; a structure the player cannot afford is dim. The orders, the windows' buttons and the retreat are not shown, and the orders' keys still give them (ADR-088 decision 2; ADR-043 decision 4; ADR-056 decision 11; Game §orders.constructors).
 - **Picking a structure arms its placement and leaves build mode on,** so that another can be picked once it is placed. Esc cancels the placement first, then turns build mode off, before it closes a window. Build mode lasts while the selection holds a Constructor, and is not kept once it holds none (ADR-088 decision 2; ADR-031 decision 5).
 
 #### The hint and the pointer [§interface.hud.hint]
@@ -1696,7 +1696,7 @@ The game is drawn in the vector look of the eighties: low-poly models with dark 
 
 ### Glow [§look.glow]
 
-- **What is bright glows, as a vector screen's phosphor does:** the lines on a model's lit side, a model's lights, the selection's ring, the exhaust, the shots, the blasts and the brightest stars. The faces, the grid and the borders stay under it, and a rock's lines glow less than a ship's (ADR-091 decisions 1 and 3).
+- **What is bright glows, as a vector screen's phosphor does:** a model's lamps, exhaust, shots and blasts, with a restrained glow on only the strongest hull edges and selection rings. The faces, the grid and the borders stay under it, and a rock's lines glow less than a ship's (ADR-091 decisions 1 and 3).
 - **The glow stays close to what is bright,** brightening the faces a few pixels from a lit line and fading out beyond (ADR-091 decision 3).
 - **The interface never glows** (ADR-091 decision 1).
 

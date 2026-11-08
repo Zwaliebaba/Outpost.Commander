@@ -1,5 +1,5 @@
 {
-  "defaultViewWidthMeters": 500,
+  "defaultViewWidthMeters": 400,
   "minimumViewWidthMeters": 150,
   "maximumViewWidthMeters": 3000,
   "pitchAtMinimumDegrees": 40,

@@ -59,14 +59,14 @@ void ExpectRejected(std::string_view _replace, std::string_view _with)
 TEST_CLASS(CameraTests)
 {
 public:
-  // Game §interface.camera: the default view is about 500 m wide, whatever the screen's shape.
+  // Game §interface.camera: the default view is about 400 m wide, whatever the screen's shape.
   TEST_METHOD(ShowsTheDefaultWidthAtTheDefaultZoom)
   {
     const Outpost::CameraSettings settings = RepositorySettings();
-    Assert::AreEqual(500.0f, settings.defaultViewWidthMeters);
+    Assert::AreEqual(400.0f, settings.defaultViewWidthMeters);
     const Outpost::Camera camera(settings);
-    Assert::AreEqual(500.0f, GroundWidth(camera, WIDE_SCREEN), TOLERANCE_METERS);
-    Assert::AreEqual(500.0f, GroundWidth(camera, LAPTOP_SCREEN), TOLERANCE_METERS);
+    Assert::AreEqual(400.0f, GroundWidth(camera, WIDE_SCREEN), TOLERANCE_METERS);
+    Assert::AreEqual(400.0f, GroundWidth(camera, LAPTOP_SCREEN), TOLERANCE_METERS);
   }
 
   TEST_METHOD(LooksAtTheFocusThroughTheMiddleOfTheScreen)
@@ -156,7 +156,7 @@ public:
     input.wheelNotches = 5.0f;
     input.keysDown.set(VK_RIGHT);
     camera.Update(input, 1.0f, 1920, 1080);
-    Assert::AreEqual(500.0f, camera.ViewWidthMeters());
+    Assert::AreEqual(400.0f, camera.ViewWidthMeters());
     Assert::AreEqual(0.0f, camera.Focus().x);
   }
 
@@ -318,7 +318,7 @@ public:
 
   TEST_METHOD(RejectsADefaultOutsideTheLimits)
   {
-    ExpectRejected(R"("defaultViewWidthMeters": 500)", R"("defaultViewWidthMeters": 5000)");
+    ExpectRejected(R"("defaultViewWidthMeters": 400)", R"("defaultViewWidthMeters": 5000)");
   }
 
   TEST_METHOD(RejectsAPitchPastStraightDown)

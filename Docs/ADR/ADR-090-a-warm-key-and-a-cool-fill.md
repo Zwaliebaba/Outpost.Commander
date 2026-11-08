@@ -29,16 +29,16 @@ The scene keeps the vector look of [ADR-027](ADR-027-rock-crease-lines.md) and [
 
   | Model | Least ratio |
   |---|---|
-  | Human ship | 2.77 |
-  | Human structure | 3.43 |
-  | Tarkan ship | 2.88 |
-  | Tarkan structure | 3.52 |
-  | Pirate ship | 2.83 |
-  | Pirate structure | 3.49 |
-  | Wreck ship | 3.49 |
-  | Wreck structure | 3.93 |
-  | Ore asteroid | 2.88 |
-  | Field rock | 2.42 |
+  | Human ship | 2.75 |
+  | Human structure | 3.40 |
+  | Tarkan ship | 2.86 |
+  | Tarkan structure | 3.50 |
+  | Pirate ship | 2.81 |
+  | Pirate structure | 3.46 |
+  | Wreck ship | 3.47 |
+  | Wreck structure | 3.90 |
+  | Ore asteroid | 2.77 |
+  | Field rock | 2.33 |
 
 - **The light is warm and cool, by design.** A face that turns to the key is warm and one that turns from it cool. The mood shows most on large faces, the structures'.
 - **The test.** `SceneShadingTests`:
