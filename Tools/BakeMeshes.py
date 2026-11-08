@@ -39,8 +39,9 @@ is refused. Each vertex carries its primitive's paint.
 How open a vertex is, its occlusion, is computed here rather than read (ADR-092): rays cast over the hemisphere about its
 normal, cosine-weighted, from a point a quarter of the way in toward its triangle's middle, and the share of them that
 meet none of the model's triangles within a quarter of its largest extent. It is made with arithmetic and square roots
-only, so it too is the same bytes on every machine. A bake takes seconds for the largest models, so --check and a bake
-of every source run one source a core.
+only, so it too is the same bytes on every machine. A full bake can take minutes, so --check and a bake of every source
+use parallel workers, report each completion and print unfinished sources every five seconds. --jobs limits the worker
+count. Ctrl-C asks the workers to stop and exits with status 130, without a traceback from each worker.
 
 The NMF layout, little-endian, version 4:
 
@@ -58,19 +59,23 @@ angle grows: clockwise, looking along the axis toward the origin, in the game's 
 Usage:
   python Tools/BakeMeshes.py                 bake every source
   python Tools/BakeMeshes.py --check         fail when an .nmf is not what its source bakes to, or has no source
+  python Tools/BakeMeshes.py --jobs 4        bake with at most four worker processes
   python Tools/BakeMeshes.py --list <glb>    print a source's hardpoints as the game will see them
   python Tools/BakeMeshes.py --self-test     bake small sources built here and check what comes out and what is refused
 
-Exit status: 0 when all is well, 1 when a check fails or a source is refused.
+Exit status: 0 when all is well, 1 when a check fails or a source is refused, 130 when canceled.
 """
 
 import argparse
 import json
 import math
+import multiprocessing
 import re
+import signal
 import struct
 import sys
-from concurrent.futures import ProcessPoolExecutor
+import time
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -117,10 +122,30 @@ OCCLUSION_NEAREST_SHARE = 1e-6
 # A ray is taken to run along a triangle's plane, and to miss it, when the determinant is within this share of the
 # extent squared.
 OCCLUSION_PARALLEL_SHARE = 1e-12
+BAKE_PROGRESS_SECONDS = 5.0
+
+# Set only in pool workers, from the pool's own multiprocessing context (ADR-018).
+g_bakeCanceled = None
 
 
 class BakeError(Exception):
   """A source the game cannot take, with the reason."""
+
+
+class BakeCanceled(Exception):
+  """The parent asked its workers to stop baking."""
+
+
+def init_bake_worker(canceled):
+  global g_bakeCanceled
+  g_bakeCanceled = canceled
+  # Ctrl-C belongs to the parent. Workers stop at a triangle boundary instead of dumping interleaved tracebacks.
+  signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
+def check_bake_canceled():
+  if g_bakeCanceled is not None and g_bakeCanceled.is_set():
+    raise BakeCanceled()
 
 
 # ── Small matrix helpers: 4x4 as rows, acting on column vectors, as glTF writes them ────────────────────────────────
@@ -393,6 +418,7 @@ def vertex_openness(vertices, indices):
   totals = [0.0] * len(vertices)
   counts = [0] * len(vertices)
   for here, (a, b, c, middle, radius, _) in enumerate(triangles):
+    check_bake_canceled()
     corners = [indices[3 * here + corner] for corner in range(3)]
     normals = [vertices[corner][3:6] for corner in corners]
     # Only a triangle near enough to reach, and with a corner above this one's plane, can stop a ray. The plane is the
@@ -761,25 +787,64 @@ def bake_file(source):
 def baked_or_refused(source):
   """A source's .nmf bytes, or the reason it was refused, as one result a worker process can hand back."""
   try:
+    check_bake_canceled()
     return bake_file(source), None
   except BakeError as error:
     return None, str(error)
 
 
-def bake_every_source():
-  """Each source with its bytes or its refusal, in the sources' order. Occlusion makes a bake take seconds, so the
-  sources are baked in processes of their own, one a core; each bake is the same bytes whichever process makes it."""
+def bake_every_source(jobs=None, context=None):
+  """Yield each completed source, with progress while occlusion is being computed (ADR-018).
+
+  The largest sources start first, but a small completed source need not wait for the largest before it is reported
+  and written. Cancellation uses the same process context as the workers, including Windows' spawn context.
+  """
   every = sources()
+  print(f"Baking {len(every)} sources; computing ambient occlusion can take a few minutes.", flush=True)
+  if not every:
+    return
   # The largest first, so that no core is left with one long bake at the end.
   largest_first = sorted(every, key=lambda source: (-source.stat().st_size, source))
-  with ProcessPoolExecutor() as pool:
-    results = dict(zip(largest_first, pool.map(baked_or_refused, largest_first)))
-  return [(source, results[source]) for source in every]
+  context = context or multiprocessing.get_context()
+  canceled = context.Event()
+  started = time.monotonic()
+  workers = min(jobs, len(every)) if jobs is not None else None
+  with ProcessPoolExecutor(max_workers=workers, mp_context=context,
+                           initializer=init_bake_worker, initargs=(canceled,)) as pool:
+    futures = {}
+    try:
+      for source in largest_first:
+        futures[pool.submit(baked_or_refused, source)] = source
+      pending = set(futures)
+      completed = 0
+      while pending:
+        done, pending = wait(pending, timeout=BAKE_PROGRESS_SECONDS, return_when=FIRST_COMPLETED)
+        elapsed = time.monotonic() - started
+        if not done:
+          remaining = [source.relative_to(ROOT).as_posix() for future, source in futures.items() if future in pending]
+          names = ", ".join(remaining[:3])
+          if len(remaining) > 3:
+            names += f", and {len(remaining) - 3} more"
+          print(f"[{completed}/{len(every)}] Still baking ({elapsed:.0f} s elapsed); unfinished: {names}", flush=True)
+        for future in sorted(done, key=lambda item: futures[item]):
+          source = futures[future]
+          result = future.result()
+          completed += 1
+          status = "refused" if result[1] is not None else "ready"
+          print(f"[{completed}/{len(every)}] {source.relative_to(ROOT).as_posix()}: {status} "
+                f"({elapsed:.0f} s elapsed)", flush=True)
+          yield source, result
+    finally:
+      canceled.set()
+      for future in futures:
+        future.cancel()
 
 
-def bake_all():
+def bake_all(jobs=None):
   failures = 0
-  for source, (baked, refusal) in bake_every_source():
+  written = 0
+  unchanged = 0
+  for source, (baked, refusal) in bake_every_source(jobs):
     if refusal is not None:
       print(refusal)
       failures += 1
@@ -788,14 +853,19 @@ def bake_all():
     target.parent.mkdir(parents=True, exist_ok=True)
     if not target.is_file() or target.read_bytes() != baked:
       target.write_bytes(baked)
-      print(f"baked {target.relative_to(ROOT).as_posix()}")
+      written += 1
+      print(f"baked {target.relative_to(ROOT).as_posix()}", flush=True)
+    else:
+      unchanged += 1
+  print(f"Meshes: {written + unchanged + failures} sources, {written} baked, {unchanged} unchanged, "
+        f"{failures} refused.")
   return 1 if failures else 0
 
 
-def check_all():
+def check_all(jobs=None):
   findings = []
   expected = set()
-  for source, (baked, refusal) in bake_every_source():
+  for source, (baked, refusal) in bake_every_source(jobs):
     target = output_for(source)
     expected.add(target)
     if refusal is not None:
@@ -809,7 +879,7 @@ def check_all():
   for target in sorted(OUTPUT_DIRECTORY.glob("*/*.nmf")):
     if target not in expected:
       findings.append(f"{target.relative_to(ROOT).as_posix()}: has no source in Art/Models")
-  for finding in findings:
+  for finding in sorted(findings):
     print(finding)
   print(f"Meshes: {len(expected)} sources, " + ("all baked and current." if not findings else f"{len(findings)} findings."))
   return 1 if findings else 0
@@ -1012,6 +1082,65 @@ def self_test():
       continue
     failures.append(f"{what} was baked rather than refused")
 
+  # Batch handling must work with Windows' spawn model too, even when another source is refused.
+  import contextlib
+  import io
+  import tempfile
+  from unittest.mock import patch
+
+  context = multiprocessing.get_context("spawn")
+  with tempfile.TemporaryDirectory(prefix=".bake-test-", dir=ROOT) as scratch:
+    folder = Path(scratch)
+    first, second, invalid = (folder / name for name in ("First.glb", "Second.glb", "Invalid.glb"))
+    first.write_bytes(good)
+    second.write_bytes(good)
+    invalid.write_bytes(b"not a GLB")
+    progress = io.StringIO()
+    with patch.object(sys.modules[__name__], "sources", return_value=[first, second, invalid]):
+      with contextlib.redirect_stdout(progress):
+        results = dict(bake_every_source(jobs=2, context=context))
+    expect(results[first] == (baked, None) and results[second] == (baked, None),
+           "spawn workers did not return the same baked bytes")
+    expect(results[invalid][0] is None and "Invalid.glb" in results[invalid][1],
+           "a refused source was lost in the batch")
+    expect(progress.getvalue().startswith("Baking 3 sources") and "[1/3]" in progress.getvalue() and
+           "[3/3]" in progress.getvalue(), "the batch did not report startup and completions")
+
+    # The command writes completed files despite a refused neighbour, then reports an unchanged rerun explicitly.
+    with patch.object(sys.modules[__name__], "OUTPUT_DIRECTORY", folder / "Baked"):
+      with patch.object(sys.modules[__name__], "sources", return_value=[first, second, invalid]):
+        with contextlib.redirect_stdout(io.StringIO()):
+          expect(bake_all(jobs=2) == 1, "a refused source did not make the bake fail")
+      expect(output_for(first).read_bytes() == baked and output_for(second).read_bytes() == baked,
+             "valid files were not written when another source was refused")
+      modified = output_for(first).stat().st_mtime_ns
+      progress = io.StringIO()
+      with patch.object(sys.modules[__name__], "sources", return_value=[first, second]):
+        with contextlib.redirect_stdout(progress):
+          expect(bake_all(jobs=2) == 0, "an unchanged bake failed")
+      expect(output_for(first).stat().st_mtime_ns == modified and "0 baked, 2 unchanged" in progress.getvalue(),
+             "an unchanged bake rewrote a file or did not report its result")
+
+    canceled = context.Event()
+    with ProcessPoolExecutor(max_workers=1, mp_context=context,
+                             initializer=init_bake_worker, initargs=(canceled,)) as pool:
+      expect(pool.submit(signal.getsignal, signal.SIGINT).result(timeout=15) == signal.SIG_IGN,
+             "a spawn worker still handles Ctrl-C itself")
+      canceled.set()
+      try:
+        pool.submit(baked_or_refused, first).result(timeout=15)
+      except BakeCanceled:
+        pass
+      else:
+        failures.append("a canceled worker started baking another file")
+    with patch.object(sys.modules[__name__], "g_bakeCanceled", canceled):
+      try:
+        vertex_openness(vertices, [0, 1, 2])
+      except BakeCanceled:
+        pass
+      else:
+        failures.append("occlusion did not stop at a triangle boundary after cancellation")
+
   for failure in failures:
     print(f"self-test: {failure}")
   print("BakeMeshes self-test: " + ("passed." if not failures else f"{len(failures)} failures."))
@@ -1020,19 +1149,26 @@ def self_test():
 
 def main():
   parser = argparse.ArgumentParser(description="Bake the meshes' glTF sources into the NMF files the game loads.")
+  parser.add_argument("--jobs", type=int,
+                      help="worker processes for a bake or --check (1 to 61; default: Python's CPU-based limit)")
   group = parser.add_mutually_exclusive_group()
   group.add_argument("--check", action="store_true", help="fail when an .nmf is not what its source bakes to")
   group.add_argument("--list", metavar="GLB", help="print a source's hardpoints in the game's frame")
   group.add_argument("--self-test", action="store_true", help="check the baker against sources built here")
   arguments = parser.parse_args()
+  if arguments.jobs is not None and not 1 <= arguments.jobs <= 61:
+    parser.error("--jobs must be between 1 and 61")
   try:
     if arguments.self_test:
       return self_test()
     if arguments.check:
-      return check_all()
+      return check_all(arguments.jobs)
     if arguments.list:
       return list_hardpoints(arguments.list)
-    return bake_all()
+    return bake_all(arguments.jobs)
+  except KeyboardInterrupt:
+    print("\nMesh bake canceled.", file=sys.stderr)
+    return 130
   except BakeError as error:
     print(error)
     return 1
