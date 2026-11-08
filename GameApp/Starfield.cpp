@@ -24,11 +24,11 @@ constexpr int BURST_COUNT = 25;
 // than MAX_PEAK. Its square reaches REACH standard deviations, where StarPS.hlsl puts its rim.
 constexpr float MIN_SPREAD_PIXELS = 0.7f;
 constexpr float MAX_SPREAD_PIXELS = 1.6f;
-constexpr float MAX_PEAK = 0.75f;
+constexpr float MAX_PEAK = 0.45f;
 constexpr float REACH = 3.0f;
 // The faintest star's light: a point at the smallest spread with this peak. The count of stars brighter than a light
 // falls as the light to the power -3/2, as it does for stars spread evenly through space.
-constexpr float MIN_FLUX = 0.018f * MIN_SPREAD_PIXELS * MIN_SPREAD_PIXELS;
+constexpr float MIN_FLUX = 0.009f * MIN_SPREAD_PIXELS * MIN_SPREAD_PIXELS;
 constexpr float COUNT_POWER = -1.5f;
 
 // A burst's square, and so its cross's arms, grows from the dimmest burst to the brightest, with the logarithm of its
@@ -37,7 +37,7 @@ constexpr float COUNT_POWER = -1.5f;
 // cross is white instead: an orange cross read as a marker in the Ore's gold (owner, 2026-10-03, ADR-028 decision 3).
 constexpr float MIN_BURST_RADIUS_PIXELS = 6.0f;
 constexpr float MAX_BURST_RADIUS_PIXELS = 16.0f;
-constexpr float BURST_PEAK = 0.6f;
+constexpr float BURST_PEAK = 0.35f;
 
 // Star colors by temperature, as linear colors with their brightest channel at 1. A star keeps this share of its tint
 // and is white for the rest, so that no star reads as a team or exhaust color.

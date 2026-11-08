@@ -12,7 +12,7 @@ Every color constant, a `constexpr` whose name ends in `_COLOR`, in the `.h` and
 | `SLUG_COLOR` | [GameApp/CombatEffects.cpp](../../GameApp/CombatEffects.cpp) | 0.9, 0.95, 1.0, 1.0 | `#F3F9FF` |
 | `BLAST_COLOR` | [GameApp/CombatEffects.cpp](../../GameApp/CombatEffects.cpp) | 1.0, 0.6, 0.25, 1.0 | `#FFCB89` |
 | `SPARK_COLOR` | [GameApp/CombatEffects.cpp](../../GameApp/CombatEffects.cpp) | 1.0, 0.7, 0.3, 1.0 | `#FFDA95` |
-| `GRID_COLOR` | [GameApp/GameClient.cpp](../../GameApp/GameClient.cpp) | 0.012, 0.013, 0.019, 1.0 | `#1D1E26` |
+| `GRID_COLOR` | [GameApp/GameClient.cpp](../../GameApp/GameClient.cpp) | 0.006, 0.0065, 0.0095, 1.0 | `#121319` |
 | `SELECTION_COLOR` | [GameApp/GameClient.cpp](../../GameApp/GameClient.cpp) | 0.25, 0.95, 0.35, 1.0 | `#89F9A0` |
 | `REFUSED_MARK_COLOR` | [GameApp/GameClient.cpp](../../GameApp/GameClient.cpp) | 1.0, 0.5, 0.35, 1.0 | `#FFBCA0` |
 | `ATTACK_MOVE_COLOR` | [GameApp/GameClient.cpp](../../GameApp/GameClient.cpp) | 1.0, 0.65, 0.1, 1.0 | `#FFD359` |

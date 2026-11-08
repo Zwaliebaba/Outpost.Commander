@@ -38,8 +38,8 @@ constexpr DirectX::XMFLOAT4 ASTEROID_FIELD_COLOR{0.13f, 0.13f, 0.14f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
 // A sector on the minimap (ADR-056): a faint wash of its holder's color under the marks, an outline of it over the fog,
 // and stripes of it while suppressed.
-constexpr float SECTOR_WASH_ALPHA = 0.12f;
-constexpr float SECTOR_OUTLINE_ALPHA = 0.55f;
+constexpr float SECTOR_WASH_ALPHA = 0.08f;
+constexpr float SECTOR_OUTLINE_ALPHA = 0.35f;
 constexpr float SECTOR_HATCH_ALPHA = 0.35f;
 constexpr float SECTOR_LINE_UNITS = 1.0f;
 // The territory over the fog: every sector's border in LATTICE_COLOR, at 2:1 against the map,
@@ -156,6 +156,7 @@ constexpr float ALERT_MARK_UNITS = 14.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
 constexpr float BANNER_WIDTH = 520.0f;
+constexpr float BANNER_HEIGHT = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
 // Where the match runs, anchored to the top-right corner (ADR-086): as wide as its words, a server's address cut short
 // beyond CONNECTION_MOST_UNITS, and as wide as CONNECTION_WIDEST_SILENCE while it warns, so that its edge stands still as
 // the seconds count.
@@ -3017,8 +3018,7 @@ void BannerPanel(const HudBench& _bench, const Hud::Outcome& _outcome, Outpost::
 {
   Neuron::Canvas& canvas = *_bench.front;
   const Hud::TextMetrics& metrics = *_bench.metrics;
-  const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
-  BeginFrontPanel(canvas, _at.xUnits, _at.yUnits, BANNER_WIDTH, heightUnits);
+  BeginFrontPanel(canvas, _at.xUnits, _at.yUnits, BANNER_WIDTH, BANNER_HEIGHT);
   const float room = BANNER_WIDTH - (2.0f * PADDING);
   (void)canvas.Label(LineText(metrics.Fit(Hud::Typeface::Title, _outcome.title, room), Hud::Typeface::Title, TITLE_LINE_UNITS), GOLD_COLOR,
                      At(PADDING, PADDING));
@@ -3090,7 +3090,7 @@ void SelectionPanel(const HudBench& _bench, const Hud::Content& _content, float 
 
 // The command card's rows of cells (ADR-088 decision 2), each cell as wide as its row's share of the card less the gaps; a
 // structure's cell in build mode, its name over its cost or why it cannot be built, this far in from its top and its foot;
-// and the card as tall in every selection and mode: its padding, the BUILD label's line and three rows of structures,
+// and the build card as tall as its padding, the BUILD label's line and three rows of structures,
 // within which three rows of buttons and the retreat under them fit too.
 constexpr std::size_t CARD_ROWS = Hud::CARD_CELLS / Hud::CARD_COLUMNS;
 constexpr float CARD_ROOM_UNITS = COMMAND_CARD_WIDTH - (2.0f * PADDING);
@@ -3115,7 +3115,7 @@ Neuron::LayoutStyle CellAt(std::uint8_t _cell, bool _wide, float _topUnits, floa
             {.widthUnits = _wide ? CARD_ROOM_UNITS : CARD_CELL_WIDTH, .heightUnits = _rowHeightUnits});
 }
 
-// The command card in the bottom-right corner (ADR-088 decision 2), as tall whatever it holds: each button in its cell, a
+// The command card in the bottom-right corner (ADR-088 decision 2), sized for its occupied rows: each button in its cell, a
 // row of cells under another from the card's top, and at its foot the selection's retreat: RETREAT, with MIXED at the
 // right while its ships differ, over a row of three, its setting lit, each a press that sets it for every ship (ADR-088
 // decision 3). In build mode, BUILD with B's cap at its right, the key that turns it off as Esc does, over the structures
@@ -3124,8 +3124,19 @@ void CommandCard(const HudBench& _bench, const Hud::Content& _content)
 {
   Neuron::Canvas& canvas = *_bench.canvas;
   Hud::Layout& layout = *_bench.layout;
-  BeginHudPanel(canvas, _bench.screenWidthUnits - MARGIN - COMMAND_CARD_WIDTH, _bench.screenHeightUnits - MARGIN - COMMAND_CARD_HEIGHT,
-                COMMAND_CARD_WIDTH, COMMAND_CARD_HEIGHT);
+  float heightUnits = COMMAND_CARD_HEIGHT;
+  if (!_content.build.has_value())
+  {
+    std::uint8_t rows = 0;
+    for (const Hud::Button& button : _content.buttons)
+      rows = std::max(rows, static_cast<std::uint8_t>((button.cell / Hud::CARD_COLUMNS) + 1));
+    heightUnits =
+      (2.0f * PADDING) + (static_cast<float>(rows) * BUTTON_HEIGHT) + (static_cast<float>(rows > 0 ? rows - 1 : 0) * BUTTON_GAP);
+    if (_content.retreat.has_value())
+      heightUnits += (rows > 0 ? BUTTON_GAP : 0.0f) + RETREAT_LABEL_UNITS + BUTTON_HEIGHT;
+  }
+  BeginHudPanel(canvas, _bench.screenWidthUnits - MARGIN - COMMAND_CARD_WIDTH, _bench.screenHeightUnits - MARGIN - heightUnits,
+                COMMAND_CARD_WIDTH, heightUnits);
   if (_content.build.has_value())
   {
     (void)canvas.Label(TrackedText("BUILD", RETREAT_LABEL_UNITS), ROW_LABEL_COLOR, At(PADDING, PADDING));
@@ -3151,7 +3162,7 @@ void CommandCard(const HudBench& _bench, const Hud::Content& _content)
   }
   if (_content.retreat.has_value())
   {
-    const float retreatTop = COMMAND_CARD_HEIGHT - PADDING - BUTTON_HEIGHT - RETREAT_LABEL_UNITS;
+    const float retreatTop = heightUnits - PADDING - BUTTON_HEIGHT - RETREAT_LABEL_UNITS;
     const Hud::RetreatChoice& retreat = *_content.retreat;
     (void)canvas.Label(TrackedText("RETREAT", RETREAT_LABEL_UNITS), ROW_LABEL_COLOR, At(PADDING, retreatTop));
     if (retreat.mixed)
@@ -3615,7 +3626,8 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
   case MatchEnding::LostProduction:
     break;
   }
-  return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
+  return Outcome{
+    .title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds)), .matchOver = true};
 }
 
 std::string Hud::ServerName(std::string_view _host, std::uint16_t _port)
@@ -4192,7 +4204,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       content.selection.push_back(std::format("and {} more designs", byDesign.size() - SELECTION_DESIGN_LINES));
   }
   content.selection.push_back(
-    std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
+    ships > 1 ? std::format("Fleet health {}%", std::lround(HealthShare(hitPoints, maxHitPoints) * 100.0f))
+              : std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
   // Two to SHIP_BARS_MOST ships have a bar each, design by design in the lines' order; one ship, or more than that, the
   // selection's one bar (ADR-088 decision 4).
   if (ships > 1 && ships <= SHIP_BARS_MOST)
@@ -4559,6 +4572,21 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // corner, as a window's content is.
   const float screenWidthUnits = width / scale;
   const float screenHeightUnits = height / scale;
+  // A completed skirmish keeps the battlefield behind a dim veil, with only the result and its way back (ADR-020).
+  // A universe's restart notice stays on the HUD while the universe runs on (ADR-084).
+  if (_content.outcome.has_value() && _content.outcome->matchOver)
+  {
+    interaction.CloseDropDown();
+    const Rect veil{0.0f, 0.0f, width, height, {0.0f, 0.0f, 0.0f, 0.65f}};
+    layout.BeginLayer(veil);
+    layout.panels.push_back(veil);
+    Neuron::Canvas result(GameTheme(), _metrics, interaction, screenWidthUnits, screenHeightUnits);
+    BannerPanel({.front = &result, .layout = &layout, .metrics = &_metrics, .hovered = _hovered}, *_content.outcome,
+                {.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = (screenHeightUnits - BANNER_HEIGHT) / 2.0f});
+    result.Finish(layout);
+    PlacePresses(layout, 0);
+    return layout;
+  }
   // First, under every panel and window, the bars over the entities: each a back of its side's color with its fill from
   // the left, the health bar over the build bar, the pair centered over its foot, a little above it, and set to whole
   // pixels, so that it keeps its size as it moves (ADR-088 decision 5). A pair wholly off the screen is left out.

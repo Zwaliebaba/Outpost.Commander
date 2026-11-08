@@ -583,7 +583,7 @@ public:
     const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
     // ADR-088 decision 4: the count and the design between a multiplication sign.
     const std::vector<std::string> expected{"4 ships", "3 \xC3\x97 Small+Ion+Mass Driver", "1 \xC3\x97 Medium+Ion+Lance",
-                                            "Hit points 946 / 1,044"};
+                                            "Fleet health 91%"};
     Assert::IsTrue(content.selection == expected);
     Assert::IsFalse(content.selectionHealth.has_value());
     const std::vector<std::uint32_t> order{2, 3, 4, 1};
@@ -613,7 +613,7 @@ public:
     entities[2].hitPointsHundredths = 4000;
     entities[5].retreating = true;
     const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
-    const std::vector<std::string> expected{"7 \xC3\x97 Small+Ion+Mass Driver", "Hit points 1,228 / 1,386", "1 retreating to be repaired"};
+    const std::vector<std::string> expected{"7 \xC3\x97 Small+Ion+Mass Driver", "Fleet health 89%", "1 retreating to be repaired"};
     Assert::IsTrue(content.selection == expected, L"one design, titled once");
     Assert::IsFalse(content.selectionHealth.has_value());
     Assert::AreEqual(size_t{7}, content.shipBars.size());
@@ -1026,7 +1026,7 @@ public:
     Assert::IsTrue(labels(describe()) == std::vector<std::string>{"Attack-move", "Patrol", "Stop"}, L"no Constructor, no Build");
   }
 
-  // ADR-088 decision 2: the command card stands in the bottom-right corner, 380 by 209 units whatever it holds, each button in
+  // ADR-088 decision 2: the command card stands in the bottom-right corner, 380 units wide and sized for its occupied rows, each button in
   // the cell it always takes, a wide one across its row, a cell no button takes empty, and the retreat at its foot; its feet
   // and the selection's and the minimap's stand on one line.
   TEST_METHOD(LaysOutTheCommandCardInCells)
@@ -1051,17 +1051,17 @@ public:
       return std::abs(_area.left - _left) < 0.01f && std::abs(_area.top - _top) < 0.01f && std::abs(_area.width - _width) < 0.01f &&
              std::abs(_area.height - _height) < 0.01f;
     };
-    // The card from 1,524 units to the right margin and from 855 to the bottom margin; its cells 175 units wide, 6 apart,
+    // The card from 1,524 units to the right margin and from 866 to the bottom margin; its cells 175 units wide, 6 apart,
     // inside its padding of 12.
     Assert::IsTrue(std::ranges::any_of(layout.panels,
-                                       [&isAt](const Outpost::Hud::Rect& _panel) { return isAt(_panel, 1524.0f, 855.0f, 380.0f, 209.0f); }),
+                                       [&isAt](const Outpost::Hud::Rect& _panel) { return isAt(_panel, 1524.0f, 866.0f, 380.0f, 198.0f); }),
                    L"the card in the corner");
-    Assert::IsTrue(isAt(areaOf(attack), 1536.0f, 867.0f, 175.0f, 34.0f), L"Attack-move, the first row's left cell");
-    Assert::IsTrue(isAt(areaOf(stop), 1717.0f, 907.0f, 175.0f, 34.0f), L"Stop, the second row's right cell");
-    Assert::IsTrue(isAt(areaOf(upgrade), 1536.0f, 947.0f, 356.0f, 34.0f), L"the Upgrade across the last row");
-    Assert::IsFalse(layout.ActionAt(1720.0f, 870.0f).has_value(), L"no button in the first row's right cell");
+    Assert::IsTrue(isAt(areaOf(attack), 1536.0f, 878.0f, 175.0f, 34.0f), L"Attack-move, the first row's left cell");
+    Assert::IsTrue(isAt(areaOf(stop), 1717.0f, 918.0f, 175.0f, 34.0f), L"Stop, the second row's right cell");
+    Assert::IsTrue(isAt(areaOf(upgrade), 1536.0f, 958.0f, 356.0f, 34.0f), L"the Upgrade across the last row");
+    Assert::IsFalse(layout.ActionAt(1720.0f, 881.0f).has_value(), L"no button in the first row's right cell");
     // The retreat's label under the last row, and its three cells at the card's foot.
-    Assert::IsTrue(TextOf(layout, "RETREAT").top >= 947.0f + 34.0f);
+    Assert::IsTrue(TextOf(layout, "RETREAT").top >= 958.0f + 34.0f);
     int retreats = 0;
     for (const auto& [area, action] : layout.actions)
     {
@@ -1073,11 +1073,11 @@ public:
     }
     Assert::AreEqual(3, retreats);
 
-    // The same card with a lone Constructor's Build and nothing else: as tall, in the same corner.
+    // The same card with a lone Constructor's Build and nothing else: still three occupied rows, in the same corner.
     content.buttons = {{.label = "Build", .action = {.kind = Outpost::Hud::ActionKind::OpenBuild}, .key = "B", .cell = 4}};
     const Outpost::Hud::Layout lone = Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(lone.panels, [&isAt](const Outpost::Hud::Rect& _panel)
-                                       { return isAt(_panel, 1524.0f, 855.0f, 380.0f, 209.0f); }));
+                                       { return isAt(_panel, 1524.0f, 866.0f, 380.0f, 198.0f); }));
     // The minimap, the selection, in the middle, and the card end on the bottom margin's line.
     const auto standsOnTheLine = [&lone](float _left, float _width)
     {
@@ -1764,7 +1764,7 @@ public:
     Assert::AreEqual(size_t{1}, layout.actions.size());
     const Outpost::Hud::Rect& area = layout.actions.front().first;
     Assert::AreEqual(1920.0f - 16.0f - 380.0f + 12.0f, area.left, 0.01f, L"the card's first cell, with no selection");
-    Assert::AreEqual(1080.0f - 16.0f - 209.0f + 12.0f, area.top, 0.01f);
+    Assert::AreEqual(1080.0f - 16.0f - 58.0f + 12.0f, area.top, 0.01f);
     Assert::IsTrue(layout.ActionAt(area.left + 5.0f, area.top + 5.0f) == build);
     Assert::IsFalse(layout.ActionAt(area.left + 5.0f, area.top + area.height + 10.0f).has_value());
     Assert::IsTrue(layout.Covers(area.left + 5.0f, area.top + 5.0f));
@@ -3216,6 +3216,7 @@ public:
     newest.winner = PLAYER;
     const auto outcome = [&newest] { return Outpost::Hud::DescribeOutcome(newest, 20).value_or(Outpost::Hud::Outcome{}); };
     Assert::AreEqual(std::string("Victory"), outcome().title);
+    Assert::IsTrue(outcome().matchOver);
     Assert::AreEqual(std::string("Match length 6:13"), outcome().detail);
 
     newest.winner = Outpost::PlayerId{2};
@@ -3244,6 +3245,7 @@ public:
     newest.restartTick = 1000 + (20 * 3725);
     const Outpost::Hud::Outcome fallen = Outpost::Hud::DescribeOutcome(newest, 20).value_or(Outpost::Hud::Outcome{});
     Assert::AreEqual(std::string("Empire fallen"), fallen.title);
+    Assert::IsFalse(fallen.matchOver, L"a universe keeps its HUD while the seat restarts");
     Assert::AreEqual(std::string("It restarts at your start in 1:02:05"), fallen.detail);
     newest.restartTick = 990;
     Assert::AreEqual(std::string("It restarts once your start is clear of the enemy"),
@@ -3758,6 +3760,40 @@ public:
     Assert::IsFalse(layout.Covers(960.0f, 540.0f), L"the middle of the screen stays on the world");
   }
 
+  // A completed match is a centered result over a full-screen veil. No hidden window, minimap or command takes a press.
+  TEST_METHOD(FocusesTheCompletedMatchOnItsResult)
+  {
+    Outpost::Hud::Content content = LongestContent(true);
+    content.outcome->matchOver = true;
+    Outpost::WindowManager windows;
+    windows.Open(Outpost::WindowKind::Designer);
+    for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 3>{{{1920, 1080}, {1280, 720}, {2560, 1080}}})
+    {
+      for (const float factor : {1.0f, 1.5f})
+      {
+        const Outpost::Hud::Layout layout = Lay(content, width, height, {}, &windows, factor);
+        Assert::IsTrue(layout.windows.empty());
+        Assert::IsTrue(layout.bars.empty() && layout.plateHits.empty());
+        Assert::AreEqual(0.0f, layout.minimap.width);
+        Assert::AreEqual(size_t{1}, layout.actions.size());
+        const auto& [area, action] = layout.actions.front();
+        Assert::IsTrue(action.kind == Outpost::Hud::ActionKind::BackToMenu);
+        Assert::IsTrue(layout.ActionAt(area.left + 1.0f, area.top + 1.0f) == action);
+        Assert::IsFalse(layout.ActionAt(1.0f, 1.0f).has_value());
+        Assert::IsTrue(layout.Covers(1.0f, 1.0f) && layout.Covers(static_cast<float>(width) - 1.0f, static_cast<float>(height) - 1.0f));
+        const Outpost::Hud::Rect& veil = layout.panels.front();
+        Assert::AreEqual(0.65f, veil.color.w);
+        const auto result =
+          std::ranges::find_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                               { return _panel.width < veil.width && _panel.Contains(area.left + 1.0f, area.top + 1.0f); });
+        Assert::IsTrue(result != layout.panels.end());
+        Assert::AreEqual(static_cast<float>(width) / 2.0f, result->left + (result->width / 2.0f), 0.01f);
+        Assert::AreEqual(static_cast<float>(height) / 2.0f, result->top + (result->height / 2.0f), 0.01f);
+        Assert::AreEqual(size_t{3}, layout.texts.size(), L"the title, detail and way back only");
+      }
+    }
+  }
+
   // ADR-065 decision 4: the main menu starts a skirmish, at each difficulty from the easiest down, or quits, from the middle
   // of the screen at any size.
   TEST_METHOD(LaysOutTheMenu)
@@ -3903,7 +3939,7 @@ public:
         const float scale = static_cast<float>(width) / 1920.0f;
         Assert::AreEqual(static_cast<float>(width) - (16.0f * scale), card.left + card.width, 0.01f, what.c_str());
         Assert::AreEqual(static_cast<float>(height) - (16.0f * scale), card.top + card.height, 0.01f, L"in the corner");
-        Assert::AreEqual(209.0f * scale, card.height, 0.01f, L"as tall whatever is selected");
+        Assert::AreEqual(158.0f * scale, card.height, 0.01f, L"two command rows and retreat, with one gap");
         Assert::AreEqual(card.top + card.height, selection.top + selection.height, 0.01f, L"on one line");
         Assert::AreEqual(static_cast<float>(width) / 2.0f, selection.left + (selection.width / 2.0f), 0.5f, L"the selection in the middle");
       }

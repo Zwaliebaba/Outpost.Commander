@@ -44,17 +44,17 @@ inline constexpr float OCCLUSION_STRENGTH = 1.0f;
 // ROCK_EDGE_BRIGHTNESS brighter and keep their gray: near white, they outshone both fleets (owner, 2026-10-02, ADR-040 decision 1).
 inline constexpr float EDGE_BRIGHTNESS = 2.0f;
 inline constexpr float EDGE_WHITE_SHARE = 0.35f;
-inline constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
-inline constexpr float FILL_SHADE = 0.3f;
-// A rock's faces are darker still, half a ship's, so that at the default zoom the terrain stands back from the fleet; its
+inline constexpr float ROCK_EDGE_BRIGHTNESS = 1.25f;
+inline constexpr float FILL_SHADE = 0.305f;
+// A rock's faces are darker still, less than half a ship's, so that at the default zoom the terrain stands back from the fleet; its
 // lines keep ROCK_EDGE_BRIGHTNESS and carry its shape (ADR-040 decision 1).
-inline constexpr float ROCK_FILL_SHADE = 0.15f;
+inline constexpr float ROCK_FILL_SHADE = 0.14f;
 // A field's rocks are darker than an ore asteroid, so the two read apart.
 inline constexpr float FIELD_SHADE = 0.7f;
 // A structure stands back from the ships, which are what take orders: its color STRUCTURE_GRAY_SHARE of the way to a gray
 // as light as it, and its faces STRUCTURE_FILL_SHADE of that rather than FILL_SHADE (ADR-040).
 inline constexpr float STRUCTURE_GRAY_SHARE = 0.35f;
-inline constexpr float STRUCTURE_FILL_SHADE = 0.22f;
+inline constexpr float STRUCTURE_FILL_SHADE = 0.225f;
 
 // A color times _scale, kept at most 1.
 [[nodiscard]] DirectX::XMFLOAT4 Shaded(const DirectX::XMFLOAT4& _color, float _scale) noexcept;

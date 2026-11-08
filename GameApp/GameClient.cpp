@@ -19,17 +19,16 @@ constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
 // The scene glows as a vector screen's phosphor glows (ADR-091 decision 3): light above SCENE_BLOOM's threshold, eased in
 // over its knee, is blurred and added back, its levels weighed by its spread so that the glow stays close to what is
-// bright. Replayed on a lit Human ship's line over its faces, the glow's passes brighten the line by a tenth, the face a
-// pixel from it by half and four pixels from it by 15%, and no channel of the line passes 1 (ADR-091). The faces, the
-// grid and the dim side of every model stay under the threshold.
-constexpr Neuron::BloomDesc SCENE_BLOOM{.thresholdLuminance = 0.35f, .kneeLuminance = 0.15f, .intensity = 2.0f, .spread = 0.6f};
+// bright. The knee begins above ordinary hull edges, so lamps and effects carry the glow while recesses retain their
+// depth (ADR-091). The faces, grid, rocks and quieter stars stay below it.
+constexpr Neuron::BloomDesc SCENE_BLOOM{.thresholdLuminance = 0.65f, .kneeLuminance = 0.1f, .intensity = 0.9f, .spread = 0.4f};
 
 // The grid covers the 10,000 m map (ADR-036 decision 4) with a line every 100 m, each a pixel wide at any zoom, in the
 // line art of the asteroids' ridges (ADR-028 decision 1). It is a dim blue-gray, barely there, so the sky shows through
 // (ADR-022) and the ridges stand out above it, and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 5000.0f;
 constexpr float GRID_SPACING_METERS = 100.0f;
-constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
+constexpr DirectX::XMFLOAT4 GRID_COLOR{0.006f, 0.0065f, 0.0095f, 1.0f};
 
 // Asteroids are drawn with three rock meshes, each 2 m long, so a rock's scale is its radius (ADR-011). They are
 // low-poly on purpose, big facets with clear ridges for the edge lines (owner 2026-10-02, ADR-027). A

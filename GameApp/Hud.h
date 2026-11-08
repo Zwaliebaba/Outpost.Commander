@@ -621,6 +621,7 @@ public:
   {
     std::string title;
     std::string detail;
+    bool matchOver = false;
   };
 
   // A selection's retreat, as the row of three under its buttons shows it (ADR-088 decision 3): the first ship's
