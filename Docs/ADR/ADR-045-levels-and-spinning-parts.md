@@ -7,10 +7,11 @@ Owns: model-level-files, spinning-parts, nmf-layout
 
 The owner's `CommandStation`, `Shipyard` and `ResearchLab` sources of both sets have five levels each, `<Model>_L1.glb` to `<Model>_L5.glb` (owner, 2026-10-03), which the structures grow through ([ADR-064](ADR-064-structure-upgrades.md)).
 
-The owner's `ResearchLab` sources also have a moving part. Each is a node named `*_pivot`, and a glTF animation turns its rotation. Blender writes each spin as five linear keys a quarter turn apart, ending a whole turn from where it starts. A script read every source on 2026-10-03:
+The `ResearchLab` sources and the Human Command Station's upper levels have moving parts. Each is a node named `*_pivot`, and a glTF animation turns its rotation. Blender writes each spin as linear rotation keys, ending a whole turn from where it starts. The sources' animations specify:
 
-- **Human**: the `radar_pivot` turns once in 8 s at every level. Level 5 adds a `relay_pivot_L` and a `relay_pivot_R`, which turn once in 5 s.
-- **Tarkan**: the `tilted_ring_pivot` turns once in 12 s at every level. Levels 3 to 5 add a `counter_ring_pivot`, which turns the other way once in 9 s.
+- **Human Research Lab**: the `radar_pivot` turns once in 8 s at every level. Level 5 adds a `relay_pivot_L` and a `relay_pivot_R`, which turn once in 5 s.
+- **Tarkan Research Lab**: the `tilted_ring_pivot` turns once in 12 s at every level. Levels 3 to 5 add a `counter_ring_pivot`, which turns the other way once in 9 s.
+- **Human Command Station**: levels 3 to 5 have a `communications_pivot` that turns its communications crown once in 12 s. Levels 1 and 2 have no moving part.
 - **No other source** is animated, and no animated node holds a hardpoint.
 
 ## Decision
@@ -51,7 +52,7 @@ The owner's `ResearchLab` sources also have a moving part. Each is a node named 
 ## Consequences
 
 - Each of the 45 sources bakes, and `--check` proves the 45 `.nmf` files current.
-- Every Research Lab in a match spins in step with every other, on the one clock. A phase for each structure would need the entity in `QueueModel`, and no one has asked for it.
+- Every Research Lab in a match spins in step with every other, on the one clock; the Human Command Stations' communications crowns likewise share their phase. A phase for each structure would need the entity in `QueueModel`, and no one has asked for it.
 - `NeuronClientTests` checks the reader and its refusals, `MeshPiece`, and the sense and period of `PartWorld`. `GameAppTests` checks the level 1 file name, and that both players' Research Labs have a part. `BakeMeshes.py --self-test` checks that a part's corners turn in the game where glTF's animation turns them, a quarter turn in. It also checks that every refusal fires.
 
 ## What this forecloses
