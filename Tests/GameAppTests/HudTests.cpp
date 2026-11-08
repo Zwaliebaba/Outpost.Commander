@@ -3764,7 +3764,7 @@ public:
   TEST_METHOD(FocusesTheCompletedMatchOnItsResult)
   {
     Outpost::Hud::Content content = LongestContent(true);
-    content.outcome->matchOver = true;
+    content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Match length 6:13", .matchOver = true};
     Outpost::WindowManager windows;
     windows.Open(Outpost::WindowKind::Designer);
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 3>{{{1920, 1080}, {1280, 720}, {2560, 1080}}})
