@@ -1914,3 +1914,22 @@ Counts taken over the source tree and its history.
 - **Seeds:** not applicable.
 - **Method:** File sizes, vertex counts from the NMF headers and every vertex's openness byte counted with Python, as for the individual art entries above.
 - **Source:** ADR-018, ADR-092 and the individual art measurements above.
+
+### 2026-11-08 · The Human Command Station rebuilt through five levels
+
+| Level | Triangles, before → after | Vertices, before → after | NMF bytes, before → after |
+|---|---|---|---|
+| L1 | 506 → 1,636 | 1,518 → 2,952 | 48,736 → 102,727 |
+| L2 | 566 → 2,004 | 1,698 → 3,624 | 54,496 → 125,959 |
+| L3 | 732 → 2,464 | 2,196 → 4,440 | 70,432 → 154,363 |
+| L4 | 894 → 2,848 | 2,682 → 5,112 | 86,116 → 177,787 |
+| L5 | 1,078 → 3,256 | 3,234 → 5,790 | 103,780 → 201,667 |
+
+- **Build:** The Command Station art branch based on `7a211d5`, Blender 4.3.2 authoring and GLB export, and `Tools/BakeMeshes.py` in the Linux container. All five Human source meshes are replaced. The model catalogue, footprint, tuning, renderer and NMF v4 format are unchanged.
+- **Seeds:** not applicable.
+- **Art direction:** A square citadel with an octagonal command keep, four recessed docks, four bastions and shadowed inner courts. L2 adds logistics galleries and habitation wings; L3 adds the upper command lantern and rotating communications crown; L4 raises the perimeter watchtowers and flying buttresses; L5 adds the suspended capital crown, taller lantern and nexus spire. Team armor, neutral structure and lit galleries carry the three existing paints. Dock openings and galleries are visual architecture, not new gameplay facilities.
+- **Attachment frames:** Every level has four gun hardpoints at its physical bastion muzzles, replacing the old model's muzzle layout, and five beacon hardpoints on stationary masts. The gun counts in tuning remain 1, 1, 2, 2 and 3; muzzle choice continues to use the existing nearest-hardpoint rule. Levels 3–5 each have one rigid communications part turning once in 12 seconds, with no hardpoints on it.
+- **Method:** File sizes, NMF headers, vertex attributes and indices read with Python. Every triangle has nonzero area, winds with its normal and has one supported paint; normals are finite and unit length, and indices are in bounds. The five sources all span 200 by 200 units in plan, and heights rise from 77 to 81, 109, 118 and 144 units. Fitting them as ADR-064 specifies keeps all levels on level 1's square. Gun frames lie at the modeled barrel ends and point outward. The rotating part stays inside the plan at quarter turns and returns to its initial pose after a full turn. Both stationary and moving index runs are nonempty and disjoint. The final five-source bake took 78.83 seconds using 4 worker processes; a subsequent `Tools/BakeMeshes.py --check` over all 45 sources passed in 119.30 seconds using its default process pool. These are not frame-time measurements.
+- **All meshes:** The 45 NMF files total 2,113,391 bytes and 63,772 vertices. Of these vertices, 20% are wholly open, 41% less than half open and 21% wholly shut in; mean openness 0.55.
+- **Visual check:** [All five levels before and after](../../Art/Previews/Human/CommandStationLevels.png) and the [L5 close, reverse and plan views](../../Art/Previews/Human/CommandStationCapital.png), using baked geometry, openness, the scene's structure paints and light, and the 10-degree crease rule. All levels share the same fitted footprint in the comparison. The [communications crown reference](../../Art/Previews/Human/CommandStationCrown.gif) turns the baked rigid part using its own axis, pivot and period. These are offline reference renders, not game screenshots; the game camera, bloom, beacon blinking and combat effects are not reproduced. The Windows/D3D12 game could not be run in this Linux environment, so final in-game presentation and frame cost remain unverified.
+- **Source:** ADR-018, ADR-027, ADR-045, ADR-064, ADR-090, ADR-092 and ADR-095.
