@@ -1933,3 +1933,21 @@ Counts taken over the source tree and its history.
 - **All meshes:** The 45 NMF files total 2,113,391 bytes and 63,772 vertices. Of these vertices, 20% are wholly open, 41% less than half open and 21% wholly shut in; mean openness 0.55.
 - **Visual check:** [All five levels before and after](../../Art/Previews/Human/CommandStationLevels.png) and the [L5 close, reverse and plan views](../../Art/Previews/Human/CommandStationCapital.png), using baked geometry, openness, the scene's structure paints and light, and the 10-degree crease rule. All levels share the same fitted footprint in the comparison. The [communications crown reference](../../Art/Previews/Human/CommandStationCrown.gif) turns the baked rigid part using its own axis, pivot and period. These are offline reference renders, not game screenshots; the game camera, bloom, beacon blinking and combat effects are not reproduced. The Windows/D3D12 game could not be run in this Linux environment, so final in-game presentation and frame cost remain unverified.
 - **Source:** ADR-018, ADR-027, ADR-045, ADR-064, ADR-090, ADR-092 and ADR-095.
+
+### 2026-11-08 · Visible progress and cancellation for mesh bakes
+
+| Check | Result |
+|---|---|
+| Original baker with spawn workers, all 45 sources | Passed in 109.22 s, with no output until completion |
+| Updated `--check --jobs 4`, all 45 sources | Passed in 103.51 s; all committed NMF bytes unchanged |
+| First output from the updated command | 0.05 s |
+| Largest measured gap between output lines | 5.02 s |
+| Ctrl-C during a spawn-mode bake | Exit 130 in 0.04 s after SIGINT; no worker tracebacks |
+
+- **Build:** Tooling branch based on `d7f7008`, CPython 3.12.14 in the Linux container. No source mesh, baked asset or occlusion arithmetic changes.
+- **Seeds:** not applicable.
+- **Trigger:** The owner reported a silent run on Windows Python 3.14 and interrupted it after two minutes. The posted tracebacks are KeyboardInterrupts from that Ctrl-C, mostly in idle workers waiting on the process queue. The owner subsequently confirmed the command completes.
+- **Method:** The original baker, copied unchanged except for its repository root and an explicit spawn context, checked the complete corpus. A subprocess driver timed the modified command's flushed output and checked its exit code. A separate driver forced spawn, waited for a heartbeat on real station bakes and sent SIGINT to its isolated process group; it timed exit and checked stdout/stderr for the cancellation message and absence of tracebacks. These Linux timings are not measurements of the owner's Windows machine, and the runs use different pool settings; no speedup is claimed.
+- **Behavior:** The parent reports startup, completed sources and a five-second heartbeat listing unfinished work, then a final bake summary even if nothing changed. Completed files are handled without waiting for the largest source. Workers ignore SIGINT, share a cancellation event and check it before a file and between occlusion triangles. The parent handles Ctrl-C and joins them before returning 130. `--jobs` can cap the pool at 1–61 processes. Every normal run still recomputes occlusion; no cache is introduced.
+- **Checks:** Baker self-test includes real spawn workers, valid sources beside a refused source, on-disk writes and an unchanged rerun, worker SIGINT handling and both cancellation checkpoints. Invalid worker counts exit with argparse status 2. The project-file, generated-document and citation/link checkers pass. CI also exercises the full baker and self-test on Windows Python 3.14.
+- **Source:** ADR-018 decision 7 and ADR-092.

@@ -454,6 +454,26 @@ jobs:
           python3 Tools/BakeMeshes.py --check
           python3 Tools/BakeMeshes.py --self-test
 
+  meshes-windows:
+    name: Meshes (Windows Python 3.14)
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    # The authoring tool runs on Windows too. Exercise its spawn workers and cancellation self-tests on Python 3.14.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Check the baked meshes and spawn workers
+        shell: pwsh
+        run: |
+          python Tools\BakeMeshes.py --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python Tools\BakeMeshes.py --self-test
+
   docs:
     name: Documents
     runs-on: ubuntu-latest
