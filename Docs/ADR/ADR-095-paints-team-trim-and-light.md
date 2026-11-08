@@ -27,7 +27,7 @@ Two constraints hold the colors:
 ## Consequences
 
 - **A source may use all three paints:** team armor, neutral machinery and frames, and lit windows, lamps and thruster faces. A source takes `trim` and `light` from Blender's material names, with no step in the game.
-- **Trim keeps the contrast, and more:** a ship's trim lines stand 3.27–3.47:1 over its trim faces and a structure's 3.67–3.92:1, against the team color's 2.77–3.49:1 and 3.43–3.93:1, over every face the camera sees, wholly open, half and shut in. The figures are computed as `SceneShadingTests` computes them, from `Models.json`'s four colors, not measured on a screen; the test holds the trim to the ships' and the structures' floors.
+- **Trim keeps the contrast, and more:** a ship's trim lines stand 3.25–3.44:1 over its trim faces and a structure's 3.64–3.89:1, against the team color's 2.75–3.47:1 and 3.40–3.90:1, over every face the camera sees, wholly open, half and shut in. The figures are computed as `SceneShadingTests` computes them, from `Models.json`'s four colors, not measured on a screen; the test holds the trim to the ships' and the structures' floors.
 - **A lamp in a recess glows as one in the open,** since occlusion does not darken it; its line is lost against it, the same color.
 - **The tests.**
   - `BakeMeshes.py --self-test`: `team`, `trim.001` and `light` painted 0, 1 and 2, a primitive with no material `team`; `chrome`, `Trim` and a material the file does not hold refused.

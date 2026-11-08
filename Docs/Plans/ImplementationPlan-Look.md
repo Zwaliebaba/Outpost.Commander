@@ -160,7 +160,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 
 - **The paints by number in the engine:** `MeshVertex::paint`, and three colors on each `MeshPipeline::Instance` with whether the third glows. `Instance::InOneColor` keeps every one-color draw as it was: rings, borders, the grid, memories and shards.
 - **The colors:** trim is the gray as light as the team color, `TrimColor`; light is (1.0, 0.86, 0.62), luminance 0.87, unlit, over the glow's threshold. A structure being built keeps its lights lit, which ADR-095 leaves open to a later decision.
-- **Contrast:** trim lines stand 3.27–3.47:1 over trim faces on ships and 3.67–3.92:1 on structures, computed as `SceneShadingTests` computes it; the test holds them to the floors.
+- **Contrast:** trim lines stand 3.25–3.44:1 over trim faces on ships and 3.64–3.89:1 on structures, computed as `SceneShadingTests` computes it; the test holds them to the floors.
 - **A rim's line,** which has one face, takes that face's paint, which LV2.3's scope did not say.
 - **The bake:** NMF version 4. Every source has one material, `team`, so every `.nmf` differs from its version 3 only in its version, and the game draws as it did until the owner paints a model. A bake of every source took 14 s on 4 cores.
 - **Run in the container:** `NeuronClientTests` 44 and `GameAppTests` 301 pass, built by clang 18 against stand-ins; `BakeMeshes.py --self-test` and `--check` pass; `MeshPipeline.cpp` and `GameClient.cpp` compile there, unlinked, which caught the instance's size assertion. Each new test was checked against a broken build: lines all in the first paint, the paint not read, a paint of 3 allowed, and trim not neutral. **The shaders were not compiled** in the container; CI's `FXCompile` builds them. Not yet seen on screen.
@@ -223,7 +223,7 @@ The owner's models are a track of their own beside the plan: chunky proportions,
 
 [ADR-102](../ADR/ADR-102-plates-over-the-fleets.md); ADR-030, ADR-070 and ADR-088 decision 5 edited in place.
 
-- **The owner's answers of 2026-10-27:** a warship's insignia is one, two or three chevrons by its hull's size, and a Constructor's a plus; the plates show while the camera's view is wider than 300 m, so the default view of 500 m shows them.
+- **The owner's answers of 2026-10-27:** a warship's insignia is one, two or three chevrons by its hull's size, and a Constructor's a plus; the plates show while the camera's view is wider than 300 m, so the default view shows them.
 - **What the tasks left open, chosen here:**
   - **Formations are one fleet.** Ships of one side also join when they stand within 3.5 footprint radii of their side's widest ship on the ground, since a formation keeps three between neighbors (ADR-010 decision 4); at the default view a formation of Medium hulls stands about 160 pixels apart, and the screen's test alone would give each ship a plate.
   - **A plate settles rather than jumps.** It moves with its ships, and when a ship joins, leaves or is lost it starts where it stood and settles over 0.15 s.
