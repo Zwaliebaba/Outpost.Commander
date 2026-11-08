@@ -621,6 +621,7 @@ public:
   {
     std::string title;
     std::string detail;
+    // A finished skirmish or matchup takes the screen; a universe's restart notice keeps the live HUD.
     bool matchOver = false;
   };
 
